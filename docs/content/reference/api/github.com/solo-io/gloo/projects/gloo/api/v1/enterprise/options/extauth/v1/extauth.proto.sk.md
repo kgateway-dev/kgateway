@@ -1163,11 +1163,11 @@ For the Aerospike backend, this data is stored as bins on the key's record
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `hostname` | `string` | he IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster. The client automatically discovers other members of the cluster after establishing a connection. |
+| `hostname` | `string` | The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster. The client automatically discovers other members of the cluster after establishing a connection. |
 | `namespace` | `string` | The Aerospike namespace of the database. Defaults to "solo-namespace". |
 | `set` | `string` | The Aerospike set to use for storage of API keys. Defaults to "apikeys". |
 | `port` | `int` | The port on which to connect to the Aerospike server. Defaults to 3000. |
-| `batchSize` | `int` | The size of the batch, which is the number of keys sent in the request. The default value is 5000. |
+| `batchSize` | `int` | The size of the batch, which is the number of keys sent in the request. Defaults to 5000. |
 | `commitAll` | `int` | "commit_all" indicates that the server waits until successfully committing the master and all replicas. Only one of `commitAll` or `commitMaster` can be set. |
 | `commitMaster` | `int` | "commit_master" indicates that the server waits until successfully committing the master only. Only one of `commitMaster` or `commitAll` can be set. |
 | `readModeSc` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc](../extauth.proto.sk/#readmodesc) | The read settings for strong consistency (SC). For possible values, see the [Aerospike read mode SC](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_sc.go). Defaults to "read_mode_sc_session". |

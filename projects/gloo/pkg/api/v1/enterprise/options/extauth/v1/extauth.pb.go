@@ -2882,7 +2882,7 @@ type AerospikeApiKeyStorage struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// he IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
+	// The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
 	// The client automatically discovers other members of the cluster after establishing a connection.
 	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
 	// The Aerospike namespace of the database. Defaults to "solo-namespace".
@@ -2891,7 +2891,7 @@ type AerospikeApiKeyStorage struct {
 	Set string `protobuf:"bytes,3,opt,name=set,proto3" json:"set,omitempty"`
 	// The port on which to connect to the Aerospike server. Defaults to 3000.
 	Port int32 `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
-	// The size of the batch, which is the number of keys sent in the request. The default value is 5000.
+	// The size of the batch, which is the number of keys sent in the request. Defaults to 5000.
 	BatchSize int32 `protobuf:"varint,5,opt,name=batch_size,json=batchSize,proto3" json:"batch_size,omitempty"`
 	// The write settings for guaranteed consistency when committing a transaction on the Aerospike server. For more information, see the [Aerospike commit policy](https://github.com/aerospike/aerospike-client-go/blob/master/commit_policy.go).
 	// Defaults to "commit_all".
