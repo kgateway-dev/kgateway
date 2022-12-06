@@ -16,13 +16,13 @@ To achieve global rate limiting, Envoy queries an external server that is backed
 
 | Query behavior | Default value | How you can change the default | 
 | --- | --- | --- |
-| Timeout for the query | 100ms | Change the timeout duration, such as to 200ms.<br><`glooctl edit settings --name default --namespace gloo-system ratelimit --request-timeout=200ms` |
-| What to do in case of query failure | Allow the request | Deny the request if the rate limit service cannot complete the query.<br>`glooctl edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true`|
+| Timeout for the query | 100ms | Change the timeout duration, such as to 200ms.<br>`glooctl edit settings --name default --namespace gloo-system ratelimit --request-timeout=200ms` |
+| Query failure behavior | Allow the request | Deny the request if the rate limit service cannot complete the query.<br>`glooctl edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true`|
 
 
 ## Change the rate limit server's backing database {#database}
 
-By default, the rate limit server is backed by a Redis instance that Gloo Edge deploys for you. Redis is a good choice for global rate limiting data storage because of its small latency. However, you might want to use a different database for the following reasons:
+By default, the rate limit server is backed by a Redis instance that Gloo Edge deploys for you. Redis is a good choice for global rate limiting data storage because of its low latency. However, you might want to use a different database for the following reasons:
 * Rate limiting across multiple data centers
 * Replicating data for multiple replicas of the database
 * Using an existing database
@@ -44,7 +44,7 @@ You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
    ```shell
    glooctl create secret aws -n gloo-system
    ```
-2. When you [install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation, complete the following steps:
+2. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation by completing the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
    2. Provide the rate limiting DynamoDB Helm chart configuration options, as shown in the following table.
 
@@ -53,7 +53,7 @@ You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
 | rateLimit.deployment.dynamodb.secretName                  | string   | Required: The name of the secret with the AWS credentials that you previously created. The secret must be in the same namespace as your Gloo installation, such as `gloo-system`.|
 | rateLimit.deployment.dynamodb.region                      | string   | The AWS region to run the DynamoDB requests in. The default region is `us-east-2`. |
 | rateLimit.deployment.dynamodb.tableName                   | string   | The name of the DynamoDB table that backs the rate limit service. The default name is `rate-limits`. |
-| rateLimit.deployment.dynamodb.consistentReads             | bool     | If `true`, the reading response from DynamoDB is _strongly consistent_, or the most up to date data. The default value is `false`, or _eventually consistent_, which might be less accurate but also has lower latency and less chance of a 500 response than _strongly consistent_. For more information, see the [DynamoDB docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).|
+| rateLimit.deployment.dynamodb.consistentReads             | bool     | If `true`, the reading response from DynamoDB is _strongly consistent_, or the most up-to-date data. The default value is `false`, or _eventually consistent_, which might be less accurate but also has lower latency and less chance of a 500 response than _strongly consistent_. For more information, see the [DynamoDB docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadConsistency.html).|
 | rateLimit.deployment.dynamodb.batchSize                   | uint8    | The batch size for `GET` requests to DynamoDB. The max value is `100`, which is also the default value. |
 
 As part of the rate limit service deployment, Gloo Edge uses the provided AWS credentials to automatically create the rate limits DynamoDB table (default name `rate-limits`) in your AWS region (default `us-east-2`). If you want to turn the table into a globally replicated table, you
@@ -70,7 +70,7 @@ If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike
 
 1. Create an Aerospike database instance to use as the backing storage for the rate limit server. For setup steps, see the [Gloo Portal documentation](https://docs.solo.io/gloo-portal/main/guides/portal_features/apikey_storage/). 
 2. To rate limit APIs that you manage with Gloo Portal, make sure that your configuration matches the configuration that you used with your [Gloo Portal Storage custom resource](https://docs.solo.io/gloo-portal/main/guides/portal_features/apikey_storage/).
-3. When you [install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation, complete the following steps:
+3. [Install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation by completing the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
    2. Provide the rate limiting Aerospike Helm chart configuration options, as shown in the following table. These values match what you configured in your Aerospike database setup. 
 

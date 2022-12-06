@@ -875,7 +875,7 @@ message K8sSecretApiKeyStorage {
 }
 
 message AerospikeApiKeyStorage {
-    // he IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
+    // The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
     // The client automatically discovers other members of the cluster after establishing a connection.
 	string hostname = 1;
     // The Aerospike namespace of the database. Defaults to "solo-namespace".
@@ -884,7 +884,7 @@ message AerospikeApiKeyStorage {
 	string set = 3;
     // The port on which to connect to the Aerospike server. Defaults to 3000.
 	int32 port = 4;
-    // The size of the batch, which is the number of keys sent in the request. The default value is 5000.
+    // The size of the batch, which is the number of keys sent in the request. Defaults to 5000.
 	int32 batch_size = 5;
 
 	// The write settings for guaranteed consistency when committing a transaction on the Aerospike server. For more information, see the [Aerospike commit policy](https://github.com/aerospike/aerospike-client-go/blob/master/commit_policy.go).
