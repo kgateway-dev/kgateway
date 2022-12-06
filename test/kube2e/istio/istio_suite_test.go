@@ -2,6 +2,7 @@ package istio_test
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/testutils/exec"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -60,8 +61,6 @@ var _ = BeforeSuite(func() {
 	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	// enabling istio-injection for the test-runner
-	createIstioInjectableNamespace(namespace)
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -90,6 +89,12 @@ var _ = BeforeSuite(func() {
 		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", namespace)
 	}, "60s", "1s").Should(HaveOccurred())
 
+	// set istio-inject for the testrunner namespace to setup istio-proxies
+	_, err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
+	expectIstioInjected()
+
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
 
@@ -117,13 +122,16 @@ var _ = AfterSuite(func() {
 	}
 })
 
-func createIstioInjectableNamespace(ns string) {
-	var err error
+// expects gateway-proxy and testrunner to have the istio-proxy sidecar
+func expectIstioInjected() {
+	// Check for istio-proxy sidecar
+	istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
+	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on gateway-proxy after injection")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	err = testutils.Kubectl("create", "ns", ns)
-	Expect(err).NotTo(HaveOccurred())
-	err = testutils.Kubectl("label", "namespace", ns, "istio-injection=enabled")
-	Expect(err).NotTo(HaveOccurred())
+	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestrunnerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
+	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the testrunner after injection")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
 func getHelmOverrides() (filename string, cleanup func()) {
@@ -131,10 +139,6 @@ func getHelmOverrides() (filename string, cleanup func()) {
 	Expect(err).NotTo(HaveOccurred())
 	// Set up gloo with istio integration enabled
 	_, err = values.Write([]byte(`
-global:
-  istioIntegration:
-    labelInstallNamespace: true
-    enableIstioSidecarOnGateway: true
 gloo:
   deployment:
     resources:
