@@ -2882,40 +2882,44 @@ type AerospikeApiKeyStorage struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The hostname or IP address of one of the cluster members
-	// The client will discover other members of the cluster once a connection has been established.
+	// The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
+	// The client automatically discovers other members of the cluster after establishing a connection.
 	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
-	// The Aerospike namespace to use for storage. Defaults to "solo-namespace"
+	// The Aerospike namespace of the database. Defaults to "solo-namespace".
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	// The Aerospike set to use for storage of apikeys. Defaults to "apikeys"
+	// The Aerospike set to use for storage of API keys. Defaults to "apikeys".
 	Set string `protobuf:"bytes,3,opt,name=set,proto3" json:"set,omitempty"`
-	// The port on which to connect to the Aerospike server. Defaults to 3000
-	Port      int32 `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
+	// The port on which to connect to the Aerospike server. Defaults to 3000.
+	Port int32 `protobuf:"varint,4,opt,name=port,proto3" json:"port,omitempty"`
+	// The size of the batch, which is the number of keys sent in the request. Defaults to 5000.
 	BatchSize int32 `protobuf:"varint,5,opt,name=batch_size,json=batchSize,proto3" json:"batch_size,omitempty"`
-	// Write settings for the desired consistency guarantee when committing a transaction on the aerospike server
-	// Defaults to commit_all
+	// The write settings for guaranteed consistency when committing a transaction on the Aerospike server. For more information, see the [Aerospike commit policy](https://github.com/aerospike/aerospike-client-go/blob/master/commit_policy.go).
+	// Defaults to "commit_all".
 	//
 	// Types that are assignable to CommitLevel:
 	//	*AerospikeApiKeyStorage_CommitAll
 	//	*AerospikeApiKeyStorage_CommitMaster
 	CommitLevel isAerospikeApiKeyStorage_CommitLevel `protobuf_oneof:"commit_level"`
-	// Read settings for strong consistency (SC)
-	// Defaults to read_mode_sc_session
+	// The read settings for strong consistency (SC). For possible values, see the [Aerospike read mode SC](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_sc.go).
+	// Defaults to "read_mode_sc_session".
 	ReadModeSc *AerospikeApiKeyStorageReadModeSc `protobuf:"bytes,8,opt,name=read_mode_sc,json=readModeSc,proto3" json:"read_mode_sc,omitempty"`
-	// Read settings for availability (AP)
-	// Defaults to read_mode_ap_one
+	// The read settings for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go).
+	// Defaults to "read_mode_ap_one".
 	ReadModeAp *AerospikeApiKeyStorageReadModeAp `protobuf:"bytes,9,opt,name=read_mode_ap,json=readModeAp,proto3" json:"read_mode_ap,omitempty"`
-	// TLS Settings, mtls is enabled on the server side
+	// TLS settings to enable mutual TLS (mTLS) on the server side. These configuration options must match what you configured in your Aerospike setup. For more information, see the Aerospike [security](https://docs.aerospike.com/server/guide/security/tls) and [network TLS](https://docs.aerospike.com/server/operations/configure/network/tls) guides.
+	// The subject name of the TLS authority. For more information, see the [Aerospike docs](https://docs.aerospike.com/reference/configuration#tls-name).
 	NodeTlsName string `protobuf:"bytes,10,opt,name=node_tls_name,json=nodeTlsName,proto3" json:"node_tls_name,omitempty"`
-	CertPath    string `protobuf:"bytes,11,opt,name=cert_path,json=certPath,proto3" json:"cert_path,omitempty"`
-	KeyPath     string `protobuf:"bytes,12,opt,name=key_path,json=keyPath,proto3" json:"key_path,omitempty"`
-	// skip the client verifying the server's certificate chain and host name
+	// The path to the TLS certfiicate.
+	CertPath string `protobuf:"bytes,11,opt,name=cert_path,json=certPath,proto3" json:"cert_path,omitempty"`
+	// The path to the key.
+	KeyPath string `protobuf:"bytes,12,opt,name=key_path,json=keyPath,proto3" json:"key_path,omitempty"`
+	// The TLS insecure setting. If set to `true`, the authority of the certificate on the client's end is not authenticated. You might use insecure mode in non-production environments when the certificate is not known.
 	AllowInsecure bool `protobuf:"varint,13,opt,name=allow_insecure,json=allowInsecure,proto3" json:"allow_insecure,omitempty"`
-	// If the RootCA is not set, add the system certs bt default
+	// If the root certificate authority (CA) is not set, add the system certs by default.
 	RootCaPath string `protobuf:"bytes,14,opt,name=root_ca_path,json=rootCaPath,proto3" json:"root_ca_path,omitempty"`
-	// TLS version, defaults to 1.3
+	// The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3
 	TlsVersion string `protobuf:"bytes,15,opt,name=tls_version,json=tlsVersion,proto3" json:"tls_version,omitempty"`
-	// TLS identifiers for the elliptic curves used
+	// The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8).
 	TlsCurveGroups []*AerospikeApiKeyStorageTlsCurveID `protobuf:"bytes,16,rep,name=tls_curve_groups,json=tlsCurveGroups,proto3" json:"tls_curve_groups,omitempty"`
 }
 
@@ -3075,12 +3079,12 @@ type isAerospikeApiKeyStorage_CommitLevel interface {
 }
 
 type AerospikeApiKeyStorage_CommitAll struct {
-	// commit_all indicates the server should wait until successfully committing master and all replicas.
+	// "commit_all" indicates that the server waits until successfully committing the master and all replicas.
 	CommitAll uint32 `protobuf:"varint,6,opt,name=commit_all,json=commitAll,proto3,oneof"`
 }
 
 type AerospikeApiKeyStorage_CommitMaster struct {
-	// commit_master indicates the server should wait until successfully committing master only.
+	// "commit_master" indicates that the server waits until successfully committing the master only.
 	CommitMaster uint32 `protobuf:"varint,7,opt,name=commit_master,json=commitMaster,proto3,oneof"`
 }
 
@@ -5348,26 +5352,26 @@ type isAerospikeApiKeyStorageReadModeSc_ReadModeSc interface {
 }
 
 type AerospikeApiKeyStorageReadModeSc_ReadModeScSession struct {
-	// session ensures this client will only see an increasing sequence of record versions.
-	// Server only reads from master.  This is the default.
+	// The session ensures this client sees only an increasing sequence of record versions.
+	// Server reads only from master, which is the default.
 	ReadModeScSession uint32 `protobuf:"varint,1,opt,name=read_mode_sc_session,json=readModeScSession,proto3,oneof"`
 }
 
 type AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize struct {
-	// linearize ensures ALL clients will only see an increasing sequence of record versions.
-	// Server only reads from master.
+	// "linearize" ensures that ALL clients see only an increasing sequence of record versions.
+	// "server" reads only from master.
 	ReadModeScLinearize uint32 `protobuf:"varint,2,opt,name=read_mode_sc_linearize,json=readModeScLinearize,proto3,oneof"`
 }
 
 type AerospikeApiKeyStorageReadModeSc_ReadModeScReplica struct {
-	// replica indicates that the server may read from master or any full (non-migrating) replica.
-	// Increasing sequence of record versions is not guaranteed.
+	// "replica" indicates that the server can read from master or any full (non-migrating) replica.
+	// An increasing sequence of record versions is not guaranteed.
 	ReadModeScReplica uint32 `protobuf:"varint,3,opt,name=read_mode_sc_replica,json=readModeScReplica,proto3,oneof"`
 }
 
 type AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable struct {
-	// allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable
-	// partitions.  Increasing sequence of record versions is not guaranteed.
+	// "allow_unavailable" indicates that the server can read from master or any full (non-migrating) replica or from unavailable
+	// partitions. An increasing sequence of record versions is not guaranteed.
 	ReadModeScAllowUnavailable uint32 `protobuf:"varint,4,opt,name=read_mode_sc_allow_unavailable,json=readModeScAllowUnavailable,proto3,oneof"`
 }
 
@@ -5452,12 +5456,12 @@ type isAerospikeApiKeyStorageReadModeAp_ReadModeAp interface {
 }
 
 type AerospikeApiKeyStorageReadModeAp_ReadModeApOne struct {
-	// one indicates that a single node should be involved in the read operation.
+	// "one" indicates that a single node is involved in the read operation.
 	ReadModeApOne uint32 `protobuf:"varint,1,opt,name=read_mode_ap_one,json=readModeApOne,proto3,oneof"`
 }
 
 type AerospikeApiKeyStorageReadModeAp_ReadModeApAll struct {
-	// all indicates that all duplicates should be consulted in
+	// "all" indicates that all duplicate nodes are consulted in
 	// the read operation.
 	ReadModeApAll uint32 `protobuf:"varint,2,opt,name=read_mode_ap_all,json=readModeApAll,proto3,oneof"`
 }
