@@ -135,9 +135,12 @@ For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enter
 
 Gloo Edge Federation lets you create consistent configurations across multiple Gloo Edge instances. You can configure Gloo resources such as Upstreams, UpstreamGroups, and Virtual Services. Then, Gloo creates federated versions with separate Custom Resource Definitions, like FederatedUpstream and FederatedVirtualService. The federated versions target one or more clusters and a namespace within each cluster.
 
-In the demo environment, two Kubernetes services are deployed: a federated `echo-blue` service in the local cluster and an unfederated `echo-green` service in the remote cluster.
+In the demo environment, two Kubernetes app are created:
+* A federated `echo-blue` deployment and related services in the local cluster.
+* An unfederated `echo-green` deployment and related services in the remote cluster.
 
-1. Check that the `default-service-blue` FederatedUpstream is created on the local cluster for the `echo-blue` app.
+Check the federated resources:
+1. Check that the `default-service-blue` FederatedUpstream is created on the local cluster for the `echo-blue` deployment.
    ```
    kubectl get FederatedUpstream -n gloo-system
    ```
@@ -181,9 +184,9 @@ You can use these federated resources to configure service failover across feder
 
 ### Service failover
 
-When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically shift traffic over to a different Gloo Edge instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The `echo-blue` service is running in the local cluster and the `echo-green` service is running in the remote cluster. 
+When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically shift traffic over to a different Gloo Edge instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The `echo-blue` deployment is running in the local cluster and the `echo-green` deployment is running in the remote cluster. 
 
-1. Review the FailoverScheme that configures the `echo-blue` service as the primary service and `echo-green` as a failover target. In the FailoverScheme, you can also configure multiple failover targets in different clusters and namespaces with different priorities. For more information, see the [Service Failover guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}).
+1. Review the FailoverScheme that configures the upstream for the `echo-blue` deployment as the primary service and the upstream for the `echo-green` deployment as a failover target. In the FailoverScheme, you can also configure multiple failover targets in different clusters and namespaces with different priorities. For more information, see the [Service Failover guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/service_failover/" %}}).
 
    ```
    kubectl get FailoverScheme -n gloo-system -o yaml
@@ -224,7 +227,7 @@ metadata:
    ```
    kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
    ```
-2. In a new tab in your terminal, verify that you can send a request to the `echo-blue` service.
+2. In a new tab in your terminal, verify that you can send a request to the `echo-blue` deployment.
    ```
    curl localhost:8080/
    ```
@@ -232,12 +235,11 @@ metadata:
    ```
    "blue-pod"
    ```
-3. Try out the service failover by first contacting the echo-blue service.
-4. In a new tab in your terminal, start the `echo-blue` deployment.
+3. In a new tab in your terminal, start the `echo-blue` deployment.
    ```
    kubectl port-forward deploy/echo-blue-deployment 19000
    ```
-5. In the previous tab in your terminal, update the `echo-blue` deployment to simulate a failure.
+4. In the previous tab in your terminal, update the `echo-blue` deployment to simulate a failure.
    ```
    curl -X POST  localhost:19000/healthcheck/fail
    ```
@@ -245,7 +247,7 @@ metadata:
    ```
    OK
    ```
-6. Repeat your previous request to contact the service. Instead of the blue pod, you see the green pod.
+5. Repeat your previous request to contact the service. Instead of the blue pod, you see the green pod.
    ```
    curl localhost:8080/
    ```
