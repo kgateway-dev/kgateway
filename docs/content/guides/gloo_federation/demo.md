@@ -55,7 +55,7 @@ The local demo environment is a sandbox for you to explore the functionality of 
    local
    remote
    ```
-2. Verify that you have `kubectl` config contexts for `kind-local` and `kind-remote`. By default, your `kubectl` context is set to `kind-local` for the local cluster by default.
+2. Verify that you have `kubectl` config contexts for `kind-local` and `kind-remote`. By default, your `kubectl` context is set to `kind-local` for the local cluster.
    ```
    kubectl config get-contexts 
    ```
@@ -115,13 +115,13 @@ For Gloo Edge to be federated, each Kubernetes cluster that runs Gloo Edge Enter
    kind-local-gloo-system    4m33s
    kind-remote-gloo-system   4m1s
    ```
-2. Check that Gloo Edge Federation automatically the necessary credentials for the remote cluster. These credentials include the service account, cluster role, and cluster role binding in the remote cluster, as well as a secret to store the access credentials to the remote cluster in the local cluster.
+2. Check that Gloo Edge Federation automatically created the necessary credentials for the remote cluster. These credentials include the service account, cluster role, and cluster role binding in the remote cluster.
    ```
    kubectl get serviceaccount kind-remote -n gloo-system --context kind-remote
    kubectl get clusterrole gloo-federation-controller --context kind-remote
    kubectl get clusterrolebinding kind-remote-gloo-federation-controller-clusterrole-binding --context kind-remote
    ```
-3. Verify that the remote cluster credentials are stored as a secret in the local cluster. The secret name is the same as the cluster-name that was specified when registering the cluster.
+3. Verify that the remote cluster credentials are stored as a secret in the local cluster. The secret name is the same as the `cluster-name` that was specified when registering the cluster.
    ```
    kubectl get secret -n gloo-system kind-remote --context kind-local
    ```
@@ -137,7 +137,7 @@ Gloo Edge Federation lets you create consistent configurations across multiple G
 
 In the demo environment, two Kubernetes services are deployed: a federated `echo-blue` service in the local cluster and an unfederated `echo-green` service in the remote cluster.
 
-1. Check the FederatedUpstream for the `echo-blue` service on the local cluster.
+1. Check that the `default-service-blue` FederatedUpstream is created on the local cluster for the `echo-blue` app.
    ```
    kubectl get FederatedUpstream -n gloo-system
    ```
@@ -146,7 +146,7 @@ In the demo environment, two Kubernetes services are deployed: a federated `echo
    NAME                   AGE
    default-service-blue   13m
    ```
-2. Verify that a matching Upstream for the FederatedUpstream is in each cluster specified by the Custom Resource. In this case, the matching Upstream is only in the local cluster.
+2. Verify that a matching Upstream for the FederatedUpstream is created in each cluster. In this example, the matching Upstream is only in the local cluster.
 
    ```
    kubectl get Upstream -n gloo-system default-service-blue-10000
@@ -156,7 +156,7 @@ In the demo environment, two Kubernetes services are deployed: a federated `echo
    NAME                         AGE
    default-service-blue-10000   18m
    ```
-3. Verify that the a matching FederatedVirtualService provides a simple route to the matching Upstream of the FederatedUpstream.
+3. Verify that the `simple-route` FederatedVirtualService is created for the Upstream. 
 
    ```
    kubectl get FederatedVirtualService -n gloo-system
@@ -166,7 +166,7 @@ In the demo environment, two Kubernetes services are deployed: a federated `echo
    NAME           AGE
    simple-route   16m
    ```
-4. Verify that a matching VirtualService for the FederatedVirtualService is in the cluster, similar to how the FederatedUpstream created a matching Upstream.
+4. Verify that a matching VirtualService is created for the FederatedVirtualService in the cluster.
 
    ```
    kubectl get VirtualService -n gloo-system
@@ -220,11 +220,11 @@ kind: List
 metadata:
   resourceVersion: ""
    {{< /highlight >}}
-1. Start the gateway service locally so that you test failover across services.
+1. Start the gateway service locally so that you can test failover across services.
    ```
    kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
    ```
-2. In a new tab in your terminal, verify that you can contact the `echo-blue` service.
+2. In a new tab in your terminal, verify that you can send a request to the `echo-blue` service.
    ```
    curl localhost:8080/
    ```

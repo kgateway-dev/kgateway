@@ -273,7 +273,7 @@ glooctl get proxy <proxy> -o yaml
 kind: List
 {{< /highlight >}}
 
-In this example, you can see the Gateway and VirtualService objects are merged into the Proxy object and this is the object that will drive the Envoy xDS/configuration model. To see *exactly* what the Envoy configuration is:
+In this example, you can see the Gateway and VirtualService objects are merged into the proxy that then drives the Envoy xDS/configuration model. To see *exactly* what the Envoy configuration is:
 
 ```bash
 glooctl proxy dump
