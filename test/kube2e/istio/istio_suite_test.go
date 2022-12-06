@@ -136,6 +136,13 @@ global:
     labelInstallNamespace: true
     whitelistDiscovery: true
     enableIstioSidecarOnGateway: true
+gloo:
+  gloo:
+    deployment:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
 gatewayProxies:
   gatewayProxy:
     healthyPanicThreshold: 0
