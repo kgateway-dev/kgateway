@@ -72,7 +72,7 @@ If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike
 2. To rate limit APIs that you manage with Gloo Portal, make sure that your configuration matches the configuration that you used with your [Gloo Portal Storage custom resource](https://docs.solo.io/gloo-portal/main/guides/portal_features/apikey_storage/).
 3. When you [install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation, complete the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
-   2. Provide the rate limiting Aerospike Helm chart configuration options, as shown in the following table.
+   2. Provide the rate limiting Aerospike Helm chart configuration options, as shown in the following table. These values match what you configured in your Aerospike database setup. 
 
 | Option | Type | Description |
 | --- | --- | --- |
@@ -86,7 +86,7 @@ If you use also use Aerospike to store your Gloo Portal API keys, your Aerospike
 |rateLimit.deployment.aerospike.readModeAP|int|The read mode for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go). The default value is `0`.|
 |rateLimit.deployment.aerospike.tls.name|string|The subject name of the TLS authority. For more information, see the [Aerospike docs](https://docs.aerospike.com/reference/configuration#tls-name).|
 |rateLimit.deployment.aerospike.tls.version|string|The TLS version. Version 1.0, 1.1, 1.2, and 1.3 are supported. The default value is `1.3`.|
-|rateLimit.deployment.aerospike.tls.insecure|bool|The TLS insecure setting. If set to `true`, teh authority of the certificate on the client's end is not authenticated. You might use insecure mode in non-production environments when the certificate is not known. The default value is `false`.|
+|rateLimit.deployment.aerospike.tls.insecure|bool|The TLS insecure setting. If set to `true`, the authority of the certificate on the client's end is not authenticated. You might use insecure mode in non-production environments when the certificate is not known. The default value is `false`.|
 |rateLimit.deployment.aerospike.tls.certSecretName|string| The name of the `kubernetes.io/tls` secret that has the `tls.crt` and `tls.key` data.|
 |rateLimit.deployment.aerospike.tls.rootCASecretName|string|The secret name for the Opaque root CA that sets the key as `tls.crt`.|
 |rateLimit.deployment.aerospike.tls.curveGroups[]|string|The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8).|

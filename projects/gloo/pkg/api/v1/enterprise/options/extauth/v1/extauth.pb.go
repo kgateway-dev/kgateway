@@ -2906,7 +2906,7 @@ type AerospikeApiKeyStorage struct {
 	// The read settings for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go).
 	// Defaults to "read_mode_ap_one".
 	ReadModeAp *AerospikeApiKeyStorageReadModeAp `protobuf:"bytes,9,opt,name=read_mode_ap,json=readModeAp,proto3" json:"read_mode_ap,omitempty"`
-	// TLS settings to enable mutual TLS (mTLS) on the server side.
+	// TLS settings to enable mutual TLS (mTLS) on the server side. These configuration options must match what you configured in your Aerospike setup. For more information, see the Aerospike [security](https://docs.aerospike.com/server/guide/security/tls) and [network TLS](https://docs.aerospike.com/server/operations/configure/network/tls) guides.
 	// The subject name of the TLS authority. For more information, see the [Aerospike docs](https://docs.aerospike.com/reference/configuration#tls-name).
 	NodeTlsName string `protobuf:"bytes,10,opt,name=node_tls_name,json=nodeTlsName,proto3" json:"node_tls_name,omitempty"`
 	// The path to the TLS certfiicate.

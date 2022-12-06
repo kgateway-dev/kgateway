@@ -932,7 +932,7 @@ message AerospikeApiKeyStorage {
         }
     }
 
-	// TLS settings to enable mutual TLS (mTLS) on the server side.
+	// TLS settings to enable mutual TLS (mTLS) on the server side. These configuration options must match what you configured in your Aerospike setup. For more information, see the Aerospike [security](https://docs.aerospike.com/server/guide/security/tls) and [network TLS](https://docs.aerospike.com/server/operations/configure/network/tls) guides.
     // The subject name of the TLS authority. For more information, see the [Aerospike docs](https://docs.aerospike.com/reference/configuration#tls-name).
 	string node_tls_name = 10;
     // The path to the TLS certfiicate.
