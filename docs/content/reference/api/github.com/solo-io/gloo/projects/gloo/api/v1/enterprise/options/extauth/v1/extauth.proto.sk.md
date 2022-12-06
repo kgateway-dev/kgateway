@@ -1163,22 +1163,22 @@ For the Aerospike backend, this data is stored as bins on the key's record
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `hostname` | `string` | The hostname or IP address of one of the cluster members The client will discover other members of the cluster once a connection has been established. |
-| `namespace` | `string` | The Aerospike namespace to use for storage. Defaults to "solo-namespace". |
-| `set` | `string` | The Aerospike set to use for storage of apikeys. Defaults to "apikeys". |
+| `hostname` | `string` | The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster. The client automatically discovers other members of the cluster after establishing a connection. |
+| `namespace` | `string` | The Aerospike namespace of the database. Defaults to "solo-namespace". |
+| `set` | `string` | The Aerospike set to use for storage of API keys. Defaults to "apikeys". |
 | `port` | `int` | The port on which to connect to the Aerospike server. Defaults to 3000. |
-| `batchSize` | `int` |  |
-| `commitAll` | `int` | commit_all indicates the server should wait until successfully committing master and all replicas. Only one of `commitAll` or `commitMaster` can be set. |
-| `commitMaster` | `int` | commit_master indicates the server should wait until successfully committing master only. Only one of `commitMaster` or `commitAll` can be set. |
-| `readModeSc` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc](../extauth.proto.sk/#readmodesc) | Read settings for strong consistency (SC) Defaults to read_mode_sc_session. |
-| `readModeAp` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeAp](../extauth.proto.sk/#readmodeap) | Read settings for availability (AP) Defaults to read_mode_ap_one. |
-| `nodeTlsName` | `string` | TLS Settings, mtls is enabled on the server side. |
-| `certPath` | `string` |  |
-| `keyPath` | `string` |  |
-| `allowInsecure` | `bool` | skip the client verifying the server's certificate chain and host name. |
-| `rootCaPath` | `string` | If the RootCA is not set, add the system certs bt default. |
-| `tlsVersion` | `string` | TLS version, defaults to 1.3. |
-| `tlsCurveGroups` | [[]enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID](../extauth.proto.sk/#tlscurveid) | TLS identifiers for the elliptic curves used. |
+| `batchSize` | `int` | The size of the batch, which is the number of keys sent in the request. Defaults to 5000. |
+| `commitAll` | `int` | "commit_all" indicates that the server waits until successfully committing the master and all replicas. Only one of `commitAll` or `commitMaster` can be set. |
+| `commitMaster` | `int` | "commit_master" indicates that the server waits until successfully committing the master only. Only one of `commitMaster` or `commitAll` can be set. |
+| `readModeSc` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeSc](../extauth.proto.sk/#readmodesc) | The read settings for strong consistency (SC). For possible values, see the [Aerospike read mode SC](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_sc.go). Defaults to "read_mode_sc_session". |
+| `readModeAp` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage.readModeAp](../extauth.proto.sk/#readmodeap) | The read settings for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go). Defaults to "read_mode_ap_one". |
+| `nodeTlsName` | `string` | TLS settings to enable mutual TLS (mTLS) on the server side. These configuration options must match what you configured in your Aerospike setup. For more information, see the Aerospike [security](https://docs.aerospike.com/server/guide/security/tls) and [network TLS](https://docs.aerospike.com/server/operations/configure/network/tls) guides. The subject name of the TLS authority. For more information, see the [Aerospike docs](https://docs.aerospike.com/reference/configuration#tls-name). |
+| `certPath` | `string` | The path to the TLS certfiicate. |
+| `keyPath` | `string` | The path to the key. |
+| `allowInsecure` | `bool` | The TLS insecure setting. If set to `true`, the authority of the certificate on the client's end is not authenticated. You might use insecure mode in non-production environments when the certificate is not known. |
+| `rootCaPath` | `string` | If the root certificate authority (CA) is not set, add the system certs by default. |
+| `tlsVersion` | `string` | The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3. |
+| `tlsCurveGroups` | [[]enterprise.gloo.solo.io.AerospikeApiKeyStorage.tlsCurveID](../extauth.proto.sk/#tlscurveid) | The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8). |
 
 
 
@@ -1198,10 +1198,10 @@ For the Aerospike backend, this data is stored as bins on the key's record
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `readModeScSession` | `int` | session ensures this client will only see an increasing sequence of record versions. Server only reads from master. This is the default. Only one of `readModeScSession`, `readModeScLinearize`, `readModeScReplica`, or `readModeScAllowUnavailable` can be set. |
-| `readModeScLinearize` | `int` | linearize ensures ALL clients will only see an increasing sequence of record versions. Server only reads from master. Only one of `readModeScLinearize`, `readModeScSession`, `readModeScReplica`, or `readModeScAllowUnavailable` can be set. |
-| `readModeScReplica` | `int` | replica indicates that the server may read from master or any full (non-migrating) replica. Increasing sequence of record versions is not guaranteed. Only one of `readModeScReplica`, `readModeScSession`, `readModeScLinearize`, or `readModeScAllowUnavailable` can be set. |
-| `readModeScAllowUnavailable` | `int` | allow_unavailable indicates that the server may read from master or any full (non-migrating) replica or from unavailable partitions. Increasing sequence of record versions is not guaranteed. Only one of `readModeScAllowUnavailable`, `readModeScSession`, `readModeScLinearize`, or `readModeScReplica` can be set. |
+| `readModeScSession` | `int` | The session ensures this client sees only an increasing sequence of record versions. Server reads only from master, which is the default. Only one of `readModeScSession`, `readModeScLinearize`, `readModeScReplica`, or `readModeScAllowUnavailable` can be set. |
+| `readModeScLinearize` | `int` | "linearize" ensures that ALL clients see only an increasing sequence of record versions. "server" reads only from master. Only one of `readModeScLinearize`, `readModeScSession`, `readModeScReplica`, or `readModeScAllowUnavailable` can be set. |
+| `readModeScReplica` | `int` | "replica" indicates that the server can read from master or any full (non-migrating) replica. An increasing sequence of record versions is not guaranteed. Only one of `readModeScReplica`, `readModeScSession`, `readModeScLinearize`, or `readModeScAllowUnavailable` can be set. |
+| `readModeScAllowUnavailable` | `int` | "allow_unavailable" indicates that the server can read from master or any full (non-migrating) replica or from unavailable partitions. An increasing sequence of record versions is not guaranteed. Only one of `readModeScAllowUnavailable`, `readModeScSession`, `readModeScLinearize`, or `readModeScReplica` can be set. |
 
 
 
@@ -1219,8 +1219,8 @@ For the Aerospike backend, this data is stored as bins on the key's record
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `readModeApOne` | `int` | one indicates that a single node should be involved in the read operation. Only one of `readModeApOne` or `readModeApAll` can be set. |
-| `readModeApAll` | `int` | all indicates that all duplicates should be consulted in the read operation. Only one of `readModeApAll` or `readModeApOne` can be set. |
+| `readModeApOne` | `int` | "one" indicates that a single node is involved in the read operation. Only one of `readModeApOne` or `readModeApAll` can be set. |
+| `readModeApAll` | `int` | "all" indicates that all duplicate nodes are consulted in the read operation. Only one of `readModeApAll` or `readModeApOne` can be set. |
 
 
 
