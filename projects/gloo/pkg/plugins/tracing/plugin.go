@@ -207,6 +207,8 @@ func processEnvoyDatadogTracing(
 	case *v3.DatadogConfig_ClusterName:
 		// Support static clusters as the collector cluster
 		collectorClusterName = collectorCluster.ClusterName
+	default:
+		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
 	envoyConfig, err := api_conversion.ToEnvoyDatadogConfiguration(datadogTracingSettings.DatadogConfig, collectorClusterName)
@@ -244,6 +246,8 @@ func processEnvoyOpenTelemetryTracing(
 	case *v3.OpenTelemetryConfig_ClusterName:
 		// Support static clusters as the collector cluster
 		collectorClusterName = collectorCluster.ClusterName
+	default:
+		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
 	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName)
