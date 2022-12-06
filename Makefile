@@ -50,7 +50,7 @@ UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
-	VERSION := 0.0.1-fork
+	VERSION ?= 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
 
@@ -142,6 +142,8 @@ BUILD_ID := $(BUILD_ID)
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
+GINKGO_ENV := GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=1.16.5
+
 #----------------------------------------------------------------------------------
 # Macros
 #----------------------------------------------------------------------------------
@@ -190,20 +192,24 @@ install-test-tools:
 	mkdir -p $(DEPSGOBIN)
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
+
+.PHONY: test ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+test: install-test-tools
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -failOnPending -failFast -noColor -trace -progress -race -compilers=4 -randomizeSuites -randomizeAllSpecs -r $(TEST_PKG)
+
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
-
 # see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md
 .PHONY: run-tests
 run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
@@ -827,6 +833,13 @@ publish-security-scan:
 	# generate_docs.go
 	gsutil cp -r $(SCAN_DIR)/gloo/markdown_results/** gs://$(SCAN_BUCKET)/gloo
 	gsutil cp -r $(SCAN_DIR)/solo-projects/markdown_results/** gs://$(SCAN_BUCKET)/solo-projects
+
+.PHONY: scan-version
+scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variable
+	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
+		-r $(IMAGE_REPO)\
+		-t $(VERSION)\
+		--images gloo,gloo-envoy-wrapper,discovery,ingress,sds,certgen,access-logger,kubectl
 
 #----------------------------------------------------------------------------------
 # Third Party License Management
