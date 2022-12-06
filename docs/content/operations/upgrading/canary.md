@@ -86,7 +86,7 @@ glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TAR
 
 ## Upgrade Gloo Edge Federation in a canary model {#canary-upgrade-fed}
 
-You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later.
+You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later. In [Gloo Edge Federation]({{< versioned_link_path fromRoot="/guides/gloo_federation/" >}}), you have a local cluster that runs both Gloo Edge Federation and Enterprise components. Then you register remote clusters with Gloo Edge Enterprise. In the canary upgrade model, you deploy both versions of Gloo Edge Federation to your local cluster. Then, you register a remote test cluster for the newer target version of Gloo Edge Federation and check your setup. Finally, you deregister the remote clusters from the older version of Gloo Edge Federation, register the remote clusters for the newer target version, and uninstall the older version.
 
 1. Update and pull the Gloo Edge Helm chart for the target version.
    ```shell
