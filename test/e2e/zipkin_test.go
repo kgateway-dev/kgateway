@@ -463,6 +463,9 @@ func startCancellableTracingServer(serverContext context.Context, address string
 		defer GinkgoRecover()
 
 		<-serverCtx.Done()
+		// tracingServer.Shutdown hangs with opentelemetry tests, probably
+		// because the agent leaves the connection open. There's no need for a
+		// graceful shutdown anyway, so just force it using Close() instead
 		tracingServer.Close()
 	}(serverContext)
 }

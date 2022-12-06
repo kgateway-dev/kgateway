@@ -98,13 +98,12 @@ type isOpenTelemetryConfig_CollectorCluster interface {
 }
 
 type OpenTelemetryConfig_CollectorUpstreamRef struct {
-	// The upstream to use for submitting traces to the OpenTelemetry agent in
-	// namespace/name format.
+	// The upstream to use for submitting traces to the OpenTelemetry agent.
 	CollectorUpstreamRef *core.ResourceRef `protobuf:"bytes,1,opt,name=collector_upstream_ref,json=collectorUpstreamRef,proto3,oneof"`
 }
 
 type OpenTelemetryConfig_ClusterName struct {
-	// The name of the Envoy clutser to use for submitting traces to the
+	// The name of the Envoy cluster to use for submitting traces to the
 	// OpenTelemetry agent
 	ClusterName string `protobuf:"bytes,2,opt,name=cluster_name,json=clusterName,proto3,oneof"`
 }

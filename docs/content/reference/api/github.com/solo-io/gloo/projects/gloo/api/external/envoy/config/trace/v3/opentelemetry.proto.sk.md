@@ -37,8 +37,8 @@ Configuration for the OpenTelemetry tracer.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `collectorUpstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to use for submitting traces to the OpenTelemetry agent in namespace/name format. Only one of `collectorUpstreamRef` or `clusterName` can be set. |
-| `clusterName` | `string` | The name of the Envoy cluster to use for submitting traces to the OpenTelemetry agent. To list Envoy clusters, run `glooctl get proxy`. Only one of `clusterName` or `collectorUpstreamRef` can be set. |
+| `collectorUpstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The upstream to use for submitting traces to the OpenTelemetry agent. Only one of `collectorUpstreamRef` or `clusterName` can be set. |
+| `clusterName` | `string` | The name of the Envoy cluster to use for submitting traces to the OpenTelemetry agent. Only one of `clusterName` or `collectorUpstreamRef` can be set. |
 
 
 
