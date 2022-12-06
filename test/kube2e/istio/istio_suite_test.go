@@ -71,8 +71,14 @@ var _ = BeforeSuite(func() {
 	values, cleanup := getHelmOverrides()
 	defer cleanup()
 
+	_ = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
+	_ = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
+
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values))
 	Expect(err).NotTo(HaveOccurred())
+
+	// patch only the gateway-proxy to be istio inject-able
+	_ = testutils.Kubectl("patch", "-n", testHelper.InstallNamespace, "deployment", "gateway-proxy", "--patch", "{\"spec\": {\"template\": {\"metadata\": {\"labels\": {\"sidecar.istio.io/inject\": \"true\"}}}}}")
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
@@ -91,8 +97,7 @@ var _ = BeforeSuite(func() {
 	}, "60s", "1s").Should(HaveOccurred())
 
 	// set istio-inject for the testrunner namespace to setup istio-proxies
-	_, err = runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
-	Expect(err).NotTo(HaveOccurred())
+	_ = testutils.Kubectl("annotate", "pods", helper.TestrunnerName, "-n", testHelper.InstallNamespace, "sidecar.istio.io/inject=true")
 
 	expectIstioInjected()
 
@@ -148,6 +153,10 @@ func getHelmOverrides() (filename string, cleanup func()) {
 	Expect(err).NotTo(HaveOccurred())
 	// Set up gloo with istio integration enabled
 	_, err = values.Write([]byte(`
+global:
+  istioIntegration:
+    disableAutoinjection: true
+    labelInstallNamespace: true
 gloo:
   deployment:
     resources:
