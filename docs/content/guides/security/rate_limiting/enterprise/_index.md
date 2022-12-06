@@ -40,9 +40,9 @@ You can use DynamoDB as the backing storage database for the Gloo Edge rate limi
 You can use DynamoDB with **Gloo Edge Enterprise** version 0.18.29 or later.
 {{% /notice %}}
 
-1. Create a secret in your cluster that includes your AWS credentials for the DynamoDB that you want to use. The secret must be in the same namespace as your Gloo installation, such as `gloo-system`. For more information, see the [AWS docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SettingUp.DynamoWebService.html).
+1. [Create a secret]({{< versioned_link_path fromRoot="/reference/cli/glooctl_create_secret_aws/">}}) in your cluster that includes your AWS credentials for the DynamoDB that you want to use. The secret must be in the same namespace as your Gloo installation, such as `gloo-system`. For more information, see the [AWS docs](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SettingUp.DynamoWebService.html).
    ```shell
-   glooctl create secret aws -n gloo-system
+   glooctl create secret aws -n gloo-system --access-key <aws_access_key> --secret-key <aws_secret_key>
    ```
 2. When you [install]({{< versioned_link_path fromRoot="/installation/enterprise/">}}) or [upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/">}}) your Gloo Edge Enterprise Helm installation, complete the following steps:
    1. Disable the default Redis server backing storage by setting `rateLimit.enabled` to `false`.
