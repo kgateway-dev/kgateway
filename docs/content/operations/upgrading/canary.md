@@ -8,7 +8,7 @@ You can upgrade your Gloo Edge Open Source, Gloo Edge Enterprise, and Gloo Edge 
 
 ## Before you begin
 
-1. Install Gloo Edge Open Source, Enterprise, or Federation **version 1.9.0 or later**.
+1. Install Gloo Edge Open Source or Enterprise **version 1.9.0 or later**, or Federation **version 1.13.0 or later**.
 2. [Upgrade your installation]({{< versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" >}}) to the latest patch version for your current minor version. For example, you might upgrade your {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} installation to the latest {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} patch.
 3. If you have Gloo Edge Enterprise or Federation, set your license key as an environment variable. To request a license, [contact Sales](https://www.solo.io/company/contact/).
    ```
@@ -85,6 +85,8 @@ glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TAR
    ```
 
 ## Upgrade Gloo Edge Federation in a canary model {#canary-upgrade-fed}
+
+You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later.
 
 1. Update and pull the Gloo Edge Helm chart for the target version.
    ```shell
