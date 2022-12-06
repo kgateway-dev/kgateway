@@ -29,11 +29,15 @@ spec:
         {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
+      {{- if or .Values.settings.linkerd .Values.gateway.cleanupJob.extraPodAnnotations }}
       annotations:
-        linkerd.io/inject: disabled
+        {{- if .Values.settings.linkerd }}
+        "linkerd.io/inject": disabled
+        {{- end }}
         {{- range $key, $value := .Values.gateway.cleanupJob.extraPodAnnotations }}
         {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
+      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-cleanup

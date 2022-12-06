@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/7488
+    resolvesIssue: true
+    description: >-
+      when settings.linkerd=true on Helm releases, linkerd injection will been disabled on all jobs to ensure the resulting pods are executed and terminated correctly
