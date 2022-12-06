@@ -2,12 +2,13 @@ package istio_test
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/testutils/exec"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/go-utils/testutils/exec"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
