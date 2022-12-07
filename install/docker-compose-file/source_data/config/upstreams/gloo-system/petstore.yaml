@@ -1,12 +1,6 @@
 metadata:
   name: petstore
   namespace: gloo-system
-  resourceVersion: "9"
-namespacedStatuses:
-  statuses:
-    gloo-system:
-      reportedBy: gloo
-      state: Accepted
 static:
   hosts:
   - addr: petstore
