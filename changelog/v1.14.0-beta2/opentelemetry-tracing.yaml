@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7406
+    resolvesIssue: false
+    description: >
+      Update the Tracer plugin to support Envoy's OpenTelemetry filter: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/opentelemetry.proto
