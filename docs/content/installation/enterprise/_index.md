@@ -336,6 +336,6 @@ glooctl uninstall --all
 
 ## Next Steps
 
-After you've installed Gloo Edge, please check out our [User Guides]({{< versioned_link_path fromRoot="/guides/" >}}).
+After you install Gloo Edge, check out the [User Guides]({{< versioned_link_path fromRoot="/guides/" >}}).
 
 {{< readfile file="static/content/upgrade-note.md" markdown="true">}}

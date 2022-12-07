@@ -60,6 +60,8 @@ message Upstream {
     // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
     // will be used.
     CircuitBreakerConfig circuit_breakers = 5;
+
+    // Settings for the load balancer that sends requests to the Upstream. The load balancing method is set to round robin by default.
     LoadBalancerConfig load_balancer_config = 6;
 
     repeated .solo.io.envoy.api.v2.core.HealthCheck health_checks = 8;

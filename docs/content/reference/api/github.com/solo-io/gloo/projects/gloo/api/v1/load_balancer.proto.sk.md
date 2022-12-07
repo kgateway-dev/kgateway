@@ -32,8 +32,7 @@ weight: 5
 ### LoadBalancerConfig
 
  
-LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream 
-endpoints.
+LoadBalancerConfig is the settings for the load balancer used to send requests to the Upstream endpoints.
 
 ```yaml
 "healthyPanicThreshold": .google.protobuf.DoubleValue
@@ -51,7 +50,7 @@ endpoints.
 | ----- | ---- | ----------- | 
 | `healthyPanicThreshold` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts reaches this percentage, envoy disregards health information. see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html). |
 | `updateMergeWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | This allows batch updates of endpoints health/weight/metadata that happen during a time window. this help lower cpu usage when endpoint change rate is high. defaults to 1 second. Set to 0 to disable and have changes applied immediately. |
-| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk/#roundrobin) | Use round robin for load balancing. Only one of `roundRobin`, `leastRequest`, `random`, `ringHash`, or `maglev` can be set. |
+| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk/#roundrobin) | Use round robin for load balancing. Round robin is the default load balancing method. Only one of `roundRobin`, `leastRequest`, `random`, `ringHash`, or `maglev` can be set. |
 | `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk/#leastrequest) | Use least request for load balancing. Only one of `leastRequest`, `roundRobin`, `random`, `ringHash`, or `maglev` can be set. |
 | `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk/#random) | Use random for load balancing. Only one of `random`, `roundRobin`, `leastRequest`, `ringHash`, or `maglev` can be set. |
 | `ringHash` | [.gloo.solo.io.LoadBalancerConfig.RingHash](../load_balancer.proto.sk/#ringhash) | Use ring hash for load balancing. Only one of `ringHash`, `roundRobin`, `leastRequest`, `random`, or `maglev` can be set. |

@@ -101,53 +101,30 @@ var _ = Describe("Kube2e: helm", func() {
 			fromRelease = earliestVersionWithV1CRDs
 		})
 
-		It("uses helm to upgrade to this gloo version without errors", func() {
-
+		It("uses helm to update the settings without errors", func() {
 			By("should start with gloo version 1.9.0")
 			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(earliestVersionWithV1CRDs))
-
-			// upgrade to the gloo version being tested
-			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, nil)
-
-			By("should have upgraded to the gloo version being tested")
-			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
-		})
-
-		It("uses helm to update the settings without errors", func() {
 
 			By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 			client := helpers.MustSettingsClient(ctx)
 			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 			Expect(err).To(BeNil())
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
+			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
 
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, []string{
 				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
+				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
 			})
+
+			By("should have upgraded to the gloo version being tested")
+			Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 
 			By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 			settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 			Expect(err).To(BeNil())
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
-		})
-
-		It("uses helm to update the validationServerGrpcMaxSizeBytes without errors", func() {
-
-			// this is the default value from the 1.9.0 chart
-			By("should start with the gateway.validation.validationServerGrpcMaxSizeBytes=4000000 (4MB)")
-			client := helpers.MustSettingsClient(ctx)
-			settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-			Expect(err).To(BeNil())
-			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
-
-			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, []string{
-				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
-			})
-
-			By("should have updated to gateway.validation.validationServerGrpcMaxSizeBytes=5000000 (5MB)")
-			settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
-			Expect(err).To(BeNil())
 			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
 		})
 

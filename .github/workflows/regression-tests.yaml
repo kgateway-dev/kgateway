@@ -64,7 +64,7 @@ jobs:
       matrix:
         # knative support has been deprecated: https://github.com/solo-io/gloo/issues/5707
         # We have removed it from our CI regression tests
-        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl']
+        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
         xds-relay: [ 'false' ]
         include:
           - kube-e2e-test-type: 'gateway'
@@ -139,6 +139,7 @@ jobs:
       if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+        GITHUB_TOKEN: ${{ github.token }}
         ACK_GINKGO_RC: true
         ACK_GINKGO_DEPRECATIONS: 1.16.5
         LEADER_ELECTION_LEASE_DURATION: 2s
