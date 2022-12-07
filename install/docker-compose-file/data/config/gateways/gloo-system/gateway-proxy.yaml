@@ -1,10 +1,22 @@
-metadata:
-  name: gateway-proxy
-  namespace: gloo-system
 bindAddress: '::'
 bindPort: 8080
 httpGateway: {}
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+  resourceVersion: "60"
+namespacedStatuses:
+  statuses:
+    gloo-system:
+      reportedBy: gloo
+      state: Accepted
+      subresourceStatuses:
+        '*v1.Proxy.gateway-proxy-duplicate_gloo-system':
+          reportedBy: gloo
+          state: Accepted
+        '*v1.Proxy.gateway-proxy_gloo-system':
+          reportedBy: gloo
+          state: Accepted
 proxyNames:
-  - gateway-proxy
-ssl: false
+- gateway-proxy
 useProxyProto: false

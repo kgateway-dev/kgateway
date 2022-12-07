@@ -18,17 +18,11 @@ make gloo-docker -B
 ## Release
 During a Gloo Edge release, the `gloo` image is published to the [Google Cloud Registry](https://console.cloud.google.com/gcr/images/gloo-edge/GLOBAL) and the [Quay repository](https://quay.io/repository/solo-io/gloo).
 
-## API
-TODO
-
 ## Components
 
 ### xDS Server
 Gloo sends Envoy dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/master/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
 
-
-## Debug
-TODO
 
 ## Testing
 Tests are run using [Ginkgo](https://onsi.github.io/ginkgo/).
