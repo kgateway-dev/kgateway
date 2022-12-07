@@ -58,10 +58,6 @@ var (
 var _ = BeforeSuite(func() {
 	var err error
 
-	// todo - may not need to set the pod namespace, since just using the deafult "gloo-system"
-	err = os.Setenv(statusutils.PodNamespaceEnvName, namespace)
-	Expect(err).NotTo(HaveOccurred())
-
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -71,14 +67,18 @@ var _ = BeforeSuite(func() {
 	values, cleanup := getHelmOverrides()
 	defer cleanup()
 
-	_ = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
-	_ = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
+	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
+	Expect(err).NotTo(HaveOccurred())
 
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values))
 	Expect(err).NotTo(HaveOccurred())
 
 	// patch only the gateway-proxy to be istio inject-able
-	_ = testutils.Kubectl("patch", "-n", testHelper.InstallNamespace, "deployment", "gateway-proxy", "--patch", "{\"spec\": {\"template\": {\"metadata\": {\"labels\": {\"sidecar.istio.io/inject\": \"true\"}}}}}")
+	err = testutils.Kubectl("patch", "-n", testHelper.InstallNamespace, "deployment", "gateway-proxy", "--patch", "{\"spec\": {\"template\": {\"metadata\": {\"labels\": {\"sidecar.istio.io/inject\": \"true\"}}}}}")
+	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
@@ -91,13 +91,15 @@ var _ = BeforeSuite(func() {
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 
 	// delete test-runner Service, as the tests create and manage their own
-	_ = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", namespace)
+	err = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", namespace)
+	Expect(err).NotTo(HaveOccurred())
 	EventuallyWithOffset(1, func() error {
 		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", namespace)
 	}, "60s", "1s").Should(HaveOccurred())
 
 	// set istio-inject for the testrunner namespace to setup istio-proxies
-	_ = testutils.Kubectl("annotate", "pods", helper.TestrunnerName, "-n", testHelper.InstallNamespace, "sidecar.istio.io/inject=true")
+	err = testutils.Kubectl("annotate", "pods", helper.TestrunnerName, "-n", testHelper.InstallNamespace, "sidecar.istio.io/inject=true")
+	Expect(err).NotTo(HaveOccurred())
 
 	expectIstioInjected()
 
