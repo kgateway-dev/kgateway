@@ -20,7 +20,7 @@ For the purposes of this example, we have two clusters `local` and `remote`. The
 
 <!--federation demo hidden for now
 {{% notice tip %}}
-Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/demo/" %}}).
 {{% /notice%}}
 -->
 

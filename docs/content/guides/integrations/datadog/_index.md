@@ -141,6 +141,11 @@ kubectl edit deployments -n gloo-system gateway-proxy
 
 Then update the `spec.template.metadata` section of the yaml with these additional annotations.  Be sure to add the annotations in the `spec.template.metadata.annotations` section, not the `metadata.annotations` section.  Adding them to the wrong section will cause the annotations not to be propagated through to the `gateway-proxy` pod.
 
+{{< notice note >}}
+The following code snippet uses the default name for the gateway in the Datadog annotations (`gateway-proxy`). If you have a multi-gateway deployment or changed the default name of the gateway, make sure to update the annotation to reflect this change. For example, if you changed the name of the gateway to `gloo`, then the Datadog annotations must follow the `ad.datadoghq.com/gloo.<datadog_config>` syntax. 
+{{< /notice >}}
+
+
 ```yaml
 spec:
   template:
