@@ -2,6 +2,7 @@ package istio_test
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"net/http"
 	"time"
 
@@ -22,7 +23,6 @@ import (
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 var _ = Describe("Gloo + Istio integration tests", func() {
@@ -34,6 +34,11 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 
 	// Sets up services
 	setupServices := func(port int32, targetPort int) {
+		// A Service's TargetPort defaults to the Port if not set
+		tPort := intstr.FromInt(int(port))
+		if targetPort != -1 {
+			tPort = intstr.FromInt(targetPort)
+		}
 		service := corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceRef.Name,
@@ -43,17 +48,14 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
-						Name:     "http",
-						Port:     port,
-						Protocol: corev1.ProtocolTCP,
+						Name:       "http",
+						Port:       port,
+						TargetPort: tPort,
+						Protocol:   corev1.ProtocolTCP,
 					},
 				},
 				Selector: map[string]string{"gloo": helper.TestrunnerName},
 			},
-		}
-		// set a targetPort if needed
-		if targetPort != -1 {
-			service.Spec.Ports[0].TargetPort = intstr.FromInt(targetPort)
 		}
 		var err error
 		_, err = resourceClientSet.ServiceClient().Write(
@@ -114,13 +116,17 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 	Context("port settings", func() {
 		AfterEach(func() {
 			var err error
-			err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{})
+			err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
 			Expect(err).NotTo(HaveOccurred())
 			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
 				return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
 			})
 
-			err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{})
+			err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() bool {
 				_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
@@ -128,7 +134,9 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				return err != nil && skerrors.IsNotExist(err)
 			}, "5s", "1s").Should(BeTrue())
 
-			err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{})
+			err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
 			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
 				return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
 			})
@@ -145,14 +153,15 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
-				Verbose:           true,
+				Verbose:           false,
 				WithoutStats:      true,
+				ReturnHeaders:     true,
 			}, fmt.Sprintf("HTTP/1.1 %d", expected), 1, time.Minute*1)
 		},
-			table.Entry("with non-matching, yet valid, port and target (app) port", int32(8000), helper.TestRunnerPort, http.StatusOK),
-			table.Entry("with matching port and target port", int32(80), helper.TestRunnerPort, http.StatusOK),
+			table.Entry("with non-matching, yet valid, port and target (app) port", int32(helper.TestRunnerPort+1), helper.TestRunnerPort, http.StatusOK),
+			table.Entry("with matching port and target port", int32(helper.TestRunnerPort), helper.TestRunnerPort, http.StatusOK),
 			table.Entry("without target port, and port matching pod's port", int32(helper.TestRunnerPort), -1, http.StatusOK),
-			table.Entry("without target port, and port not matching app's port", int32(8000), -1, http.StatusServiceUnavailable),
+			table.Entry("without target port, and port not matching app's port", int32(helper.TestRunnerPort+1), -1, http.StatusServiceUnavailable),
 			table.Entry("pointing to the wrong target port", int32(8000), helper.TestRunnerPort+1, http.StatusServiceUnavailable), // or maybe 404?
 		)
 	})
