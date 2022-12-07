@@ -38,6 +38,3 @@ To run a specific subset of tests, read the Ginkgo docs around [focusing tests](
 ```make
 TEST_PKG=projects/gloo/pkg make test
 ```
-
-## Useful Information
-TODO

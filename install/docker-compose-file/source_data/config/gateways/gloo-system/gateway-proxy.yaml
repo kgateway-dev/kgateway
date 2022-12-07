@@ -6,4 +6,5 @@ bindPort: 8080
 httpGateway: {}
 proxyNames:
 - gateway-proxy
+ssl: false
 useProxyProto: false
