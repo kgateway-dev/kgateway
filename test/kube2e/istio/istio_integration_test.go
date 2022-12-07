@@ -2,9 +2,10 @@ package istio_test
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"net/http"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
