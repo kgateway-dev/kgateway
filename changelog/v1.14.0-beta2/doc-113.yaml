@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: General doc updates for the 1.13 release, including the upgrade notice page, removing references to separate Proxy CR, and various fixes noticed while running through doc topics like Gloo Fed demo.
+  skipCI: true
