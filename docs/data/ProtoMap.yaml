@@ -1592,6 +1592,9 @@ apis:
   solo.io.envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
     package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.OpenTelemetryConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#OpenTelemetryConfig
+    package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.ZipkinConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto.sk/#ZipkinConfig
     package: solo.io.envoy.config.trace.v3

@@ -213,19 +213,14 @@ There will be times when a configuration goes awry or you encounter unexpected b
 
 #### How can I see exactly what configuration the Gloo Edge gateway-proxy should see and is seeing?
 
-To show what configuration the `gateway-proxy` *should* see, we look at the Proxy object which is Gloo Edge's lower-level domain-specific API object (VirtualService and Gateway both drive the configuration of the Proxy object):
+To show what configuration the `gateway-proxy` *should* see, check the Gloo proxy. Gloo uses the proxy configuration (which also reads in configuration from other Gloo resources such as gateways and virtual services) to translate to an Envoy proxy configuration.
 
 ```shell
-kubectl --namespace gloo-system get proxy --output yaml
+glooctl get proxy <proxy> -o yaml
 ```
 
-{{< highlight yaml "hl_lines=9-11 13-15" >}}
-apiVersion: v1
-items:
-- apiVersion: gloo.solo.io/v1
-  kind: Proxy
-    name: gateway-proxy
-    namespace: gloo-system
+{{< highlight yaml "hl_lines=4-6 8-10" >}}
+...
   spec:
     listeners:
     - bindAddress: '::'
@@ -278,7 +273,7 @@ items:
 kind: List
 {{< /highlight >}}
 
-In this example, you can see the Gateway and VirtualService objects have been merged into the Proxy object and this is the object that will drive the Envoy xDS/configuration model. To see *exactly* what the envoy configuration is:
+In this example, you can see the Gateway and VirtualService objects are merged into the proxy that then drives the Envoy xDS/configuration model. To see *exactly* what the Envoy configuration is:
 
 ```bash
 glooctl proxy dump

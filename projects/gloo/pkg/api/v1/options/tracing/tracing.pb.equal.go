@@ -149,6 +149,21 @@ func (m *ListenerTracingSettings) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ListenerTracingSettings_OpenTelemetryConfig:
+		if _, ok := target.ProviderConfig.(*ListenerTracingSettings_OpenTelemetryConfig); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOpenTelemetryConfig()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOpenTelemetryConfig()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOpenTelemetryConfig(), target.GetOpenTelemetryConfig()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.ProviderConfig != target.ProviderConfig {

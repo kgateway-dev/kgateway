@@ -45,14 +45,14 @@ helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
 helm repo update
 
 # Upgrade your Gloo Edge Federation deployment
-# Assumes your install is called gloo-fed in the gloo-system namspace
-helm upgrade -n gloo-system gloo-fed gloo-fed/gloo-fed --set enableMultiClusterRbac=true
+# Assumes your install is called gloo in the gloo-system namspace on the cluster you have installed gloo-fed
+helm upgrade -n gloo-system gloo gloo-fed/gloo-fed --set enableMultiClusterRbac=true
 ```
 
 Once the installation or upgrade is complete, you can verify by running the following:
 
 ```bash
-kubectl get deployment -n gloo-system rbac-validating-webhook-gloo-fed
+kubectl get deployment -n gloo-system rbac-validating-webhook
 ```
 
 You should see the following output:
