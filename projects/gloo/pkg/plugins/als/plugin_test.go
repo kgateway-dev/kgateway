@@ -175,6 +175,30 @@ var _ = Describe("Plugin", func() {
 					Name:      "default",
 					Namespace: "default",
 				}
+				alsOrFilter := &als.OrFilter{
+					Filters: []*als.AccessLogFilter{
+						{
+							FilterSpecifier: &als.AccessLogFilter_DurationFilter{
+								DurationFilter: &als.DurationFilter{
+									Comparison: &als.ComparisonFilter{
+										Op: als.ComparisonFilter_EQ,
+										Value: &v31.RuntimeUInt32{
+											DefaultValue: 2000,
+											RuntimeKey:   "access_log.access_error.duration",
+										},
+									},
+								},
+							},
+						},
+						{
+							FilterSpecifier: &als.AccessLogFilter_GrpcStatusFilter{
+								GrpcStatusFilter: &als.GrpcStatusFilter{
+									Statuses: []als.GrpcStatusFilter_Status(als.GrpcStatusFilter_CANCELED.String()),
+								},
+							},
+						},
+					},
+				}
 				alsAndFilter = &als.AccessLogFilter_AndFilter{
 					AndFilter: &als.AndFilter{
 						Filters: []*als.AccessLogFilter{
@@ -191,30 +215,7 @@ var _ = Describe("Plugin", func() {
 							},
 							{
 								FilterSpecifier: &als.AccessLogFilter_OrFilter{
-									OrFilter: &als.OrFilter{
-										Filters: []*als.AccessLogFilter{
-											{
-												FilterSpecifier: &als.AccessLogFilter_DurationFilter{
-													DurationFilter: &als.DurationFilter{
-														Comparison: &als.ComparisonFilter{
-															Op: als.ComparisonFilter_EQ,
-															Value: &v31.RuntimeUInt32{
-																DefaultValue: 2000,
-																RuntimeKey:   "access_log.access_error.duration",
-															},
-														},
-													},
-												},
-											},
-											{
-												FilterSpecifier: &als.AccessLogFilter_GrpcStatusFilter{
-													GrpcStatusFilter: &als.GrpcStatusFilter{
-														Statuses: []als.GrpcStatusFilter_Status(als.GrpcStatusFilter_CANCELED.String()),
-													},
-												},
-											},
-										},
-									},
+									OrFilter: alsOrFilter,
 								},
 							},
 						},

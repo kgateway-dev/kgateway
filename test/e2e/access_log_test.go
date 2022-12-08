@@ -279,6 +279,30 @@ var _ = Describe("Access Log", func() {
 			It("can create json access logs with multiple filters", func() {
 				gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
+				alsOrFilter := &als.OrFilter{
+					Filters: []*als.AccessLogFilter{
+						{
+							FilterSpecifier: &als.AccessLogFilter_DurationFilter{
+								DurationFilter: &als.DurationFilter{
+									Comparison: &als.ComparisonFilter{
+										Op: als.ComparisonFilter_EQ,
+										Value: &v31.RuntimeUInt32{
+											DefaultValue: 2000,
+											RuntimeKey:   "access_log.access_error.duration",
+										},
+									},
+								},
+							},
+						},
+						{
+							FilterSpecifier: &als.AccessLogFilter_GrpcStatusFilter{
+								GrpcStatusFilter: &als.GrpcStatusFilter{
+									Statuses: []als.GrpcStatusFilter_Status(als.GrpcStatusFilter_CANCELED.String()),
+								},
+							},
+						},
+					},
+				}
 
 				gw.Options = &gloov1.ListenerOptions{
 					AccessLoggingService: &als.AccessLoggingService{
@@ -322,30 +346,7 @@ var _ = Describe("Access Log", func() {
 												},
 												{
 													FilterSpecifier: &als.AccessLogFilter_OrFilter{
-														OrFilter: &als.OrFilter{
-															Filters: []*als.AccessLogFilter{
-																{
-																	FilterSpecifier: &als.AccessLogFilter_DurationFilter{
-																		DurationFilter: &als.DurationFilter{
-																			Comparison: &als.ComparisonFilter{
-																				Op: als.ComparisonFilter_EQ,
-																				Value: &v31.RuntimeUInt32{
-																					DefaultValue: 2000,
-																					RuntimeKey:   "access_log.access_error.duration",
-																				},
-																			},
-																		},
-																	},
-																},
-																{
-																	FilterSpecifier: &als.AccessLogFilter_GrpcStatusFilter{
-																		GrpcStatusFilter: &als.GrpcStatusFilter{
-																			Statuses: []als.GrpcStatusFilter_Status(als.GrpcStatusFilter_CANCELED.String()),
-																		},
-																	},
-																},
-															},
-														},
+														OrFilter: alsOrFilter,
 													},
 												},
 											},
