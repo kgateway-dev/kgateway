@@ -315,7 +315,13 @@ func filterEndpoints(
 		// Istio uses the service's port for routing requests
 		if istioIntegrationEnabled {
 			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-			key := Epkey{hostname, uint32(kubeServicePort.Port), spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
+			key := Epkey{
+				Address:     hostname,
+				Port:        uint32(kubeServicePort.Port),
+				Name:        spec.GetServiceName(),
+				Namespace:   spec.GetServiceNamespace(),
+				UpstreamRef: usRef,
+			}
 			copyRef := *usRef
 			endpointsMap[key] = append(endpointsMap[key], &copyRef)
 			continue
