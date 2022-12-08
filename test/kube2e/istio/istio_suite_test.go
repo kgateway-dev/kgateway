@@ -151,8 +151,19 @@ global:
   istioIntegration:
     disableAutoinjection: true
     labelInstallNamespace: true
+gloo:
+  deployment:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
 gatewayProxies:
   gatewayProxy:
+    podTemplate:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
     healthyPanicThreshold: 0
 `))
 	Expect(err).NotTo(HaveOccurred())
