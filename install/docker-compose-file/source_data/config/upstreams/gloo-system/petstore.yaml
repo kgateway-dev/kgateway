@@ -1,7 +1,6 @@
 metadata:
   name: petstore
   namespace: gloo-system
-  resourceVersion: "3"
 static:
   hosts:
   - addr: petstore
