@@ -691,6 +691,18 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openTelemetryConfig:
+                                properties:
+                                  clusterName:
+                                    type: string
+                                  collectorUpstreamRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                type: object
                               requestHeadersForTags:
                                 items:
                                   nullable: true
@@ -1129,6 +1141,18 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openTelemetryConfig:
+                                properties:
+                                  clusterName:
+                                    type: string
+                                  collectorUpstreamRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                type: object
                               requestHeadersForTags:
                                 items:
                                   nullable: true
@@ -1983,6 +2007,18 @@ spec:
                                                 type: string
                                             type: object
                                           type: array
+                                        openTelemetryConfig:
+                                          properties:
+                                            clusterName:
+                                              type: string
+                                            collectorUpstreamRef:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                namespace:
+                                                  type: string
+                                              type: object
+                                          type: object
                                         requestHeadersForTags:
                                           items:
                                             nullable: true

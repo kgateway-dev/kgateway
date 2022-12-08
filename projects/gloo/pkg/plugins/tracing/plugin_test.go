@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -389,6 +390,46 @@ var _ = Describe("Plugin", func() {
 					},
 				}
 
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+		})
+
+		Describe("when opentelemetry provider config", func() {
+			It("translates the plugin correctly", func() {
+
+				testClusterName := "test-cluster"
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+							OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
+								CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+									ClusterName: testClusterName,
+								},
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.OpenTelemetryConfig{
+					GrpcService: &envoy_config_core_v3.GrpcService{
+						TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+								ClusterName: testClusterName,
+							},
+						},
+					},
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.opentelemetry",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
 				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
 				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
 			})
