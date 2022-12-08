@@ -7,6 +7,7 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
@@ -26,7 +27,8 @@ var _ = Describe("Plugin", func() {
 	Context("ProcessAccessLogPlugins", func() {
 
 		var (
-			alsSettings *als.AccessLoggingService
+			alsSettings  *als.AccessLoggingService
+			alsAndFilter *als.AccessLogFilter_AndFilter
 		)
 
 		Context("grpc", func() {
@@ -86,7 +88,7 @@ var _ = Describe("Plugin", func() {
 
 		})
 
-		Context("Access log with filter", func() {
+		Context("Access log with single filter", func() {
 
 			var (
 				usRef *core.ResourceRef
@@ -129,6 +131,112 @@ var _ = Describe("Plugin", func() {
 										UseIndependentRandomness: true,
 									},
 								},
+							},
+						},
+					},
+				}
+			})
+
+			It("works", func() {
+				accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(accessLogConfigs).To(HaveLen(1))
+				alConfig := accessLogConfigs[0]
+
+				Expect(alConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+				var falCfg envoygrpc.HttpGrpcAccessLogConfig
+				err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
+				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
+				Expect(envoyGrpc).NotTo(BeNil())
+				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+			})
+
+		})
+
+		Context("Access log with multiple filters", func() {
+
+			var (
+				usRef *core.ResourceRef
+
+				logName      string
+				extraHeaders []string
+			)
+
+			BeforeEach(func() {
+				logName = "default"
+				extraHeaders = []string{"test"}
+				usRef = &core.ResourceRef{
+					Name:      "default",
+					Namespace: "default",
+				}
+				alsAndFilter = &als.AccessLogFilter_AndFilter{
+					AndFilter: &als.AndFilter{
+						Filters: []*als.AccessLogFilter{
+							{
+								FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+									RuntimeFilter: &als.RuntimeFilter{
+										RuntimeKey:               "filter_runtime_key",
+										UseIndependentRandomness: true,
+									},
+								},
+							},
+							{
+								FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{},
+							},
+							{
+								FilterSpecifier: &als.AccessLogFilter_OrFilter{
+									OrFilter: &als.OrFilter{
+										Filters: []*als.AccessLogFilter{
+											{
+												FilterSpecifier: &als.AccessLogFilter_DurationFilter{
+													DurationFilter: &als.DurationFilter{
+														Comparison: &als.ComparisonFilter{
+															Op: als.ComparisonFilter_EQ,
+															Value: &v31.RuntimeUInt32{
+																DefaultValue: 2000,
+																RuntimeKey:   "access_log.access_error.duration",
+															},
+														},
+													},
+												},
+											},
+											{
+												FilterSpecifier: &als.AccessLogFilter_GrpcStatusFilter{
+													GrpcStatusFilter: &als.GrpcStatusFilter{
+														Statuses: []als.GrpcStatusFilter_Status(als.GrpcStatusFilter_CANCELED.String()),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				alsSettings = &als.AccessLoggingService{
+					AccessLog: []*als.AccessLog{
+						{
+							OutputDestination: &als.AccessLog_GrpcService{
+								GrpcService: &als.GrpcService{
+									LogName: logName,
+									ServiceRef: &als.GrpcService_StaticClusterName{
+										StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+									},
+									AdditionalRequestHeadersToLog:   extraHeaders,
+									AdditionalResponseHeadersToLog:  extraHeaders,
+									AdditionalResponseTrailersToLog: extraHeaders,
+								},
+							},
+							Filter: &als.AccessLogFilter{
+								FilterSpecifier: alsAndFilter,
 							},
 						},
 					},
