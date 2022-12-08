@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2340
+    resolvesIssue: yes
+    description: This features exposes envoy's access log filters in gloo.  
