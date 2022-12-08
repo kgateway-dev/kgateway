@@ -82,9 +82,6 @@ var _ = BeforeSuite(func() {
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
-	// See https://github.com/solo-io/gloo/issues/1374
-	kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
