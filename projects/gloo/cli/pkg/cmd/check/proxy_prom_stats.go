@@ -65,7 +65,7 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
 	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+deploymentName,
-		localPort, adminPort, false, promStatsPath, 30*time.Second)
+		localPort, adminPort, false, promStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
 		return err

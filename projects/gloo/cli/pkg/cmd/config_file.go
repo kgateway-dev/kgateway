@@ -82,31 +82,8 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 		return err
 	}
 
-	setDefaultValues()
 	loadValuesIntoOptions(opts)
-
 	return nil
-}
-
-// Values to be used if a field is not specified in the config file (~/.gloo/glooctl-config.yaml)
-func setDefaultValues() {
-	viper.SetDefault(checkTimeoutSeconds, 0)
-	viper.SetDefault(checkConnectionTimeoutSeconds, 0)
-	viper.SetDefault(defaultTimeoutSeconds, 0)
-	viper.SetDefault(deploymentClientSeconds, 0)
-	viper.SetDefault(podClientTimeoutSeconds, 0)
-	viper.SetDefault(settingsClientTimeoutSeconds, 0)
-	viper.SetDefault(upstreamsClientTimeoutSeconds, 0)
-	viper.SetDefault(upstreamGroupsClientTimeoutSeconds, 0)
-	viper.SetDefault(authConfigsClientTimeoutSeconds, 0)
-	viper.SetDefault(rateLimitConfigsClientTimeoutSeconds, 0)
-	viper.SetDefault(virtualHostOptionsClientSeconds, 0)
-	viper.SetDefault(routeOptionsClientSeconds, 0)
-	viper.SetDefault(secretClientTimeoutSeconds, 30)
-	viper.SetDefault(virtualServicesClientTimeoutSeconds, 0)
-	viper.SetDefault(gatewaysClientTimeoutSeconds, 0)
-	viper.SetDefault(proxyClientTimeoutSeconds, 0)
-	viper.SetDefault(xdsMetricsTimeoutSeconds, 0)
 }
 
 func stringToDuration(str string) time.Duration {
@@ -122,8 +99,10 @@ func stringToDurationWithDefault(str, defaultString string) time.Duration {
 
 // Assigns values from config file (or default) into the provided Options struct
 func loadValuesIntoOptions(opts *options.Options) {
+	viper.SetDefault(defaultTimeoutSeconds, 0)
+
 	opts.Check = options.Check{
-		CheckTimeout:                    stringToDuration(checkTimeoutSeconds),
+		CheckTimeout:                    stringToDuration("0s"),
 		CheckConnectionTimeout:          stringToDurationWithDefault(checkConnectionTimeoutSeconds, defaultTimeoutSeconds),
 		DefaultTimeout:                  stringToDuration(defaultTimeoutSeconds),
 		DeploymentClientTimeout:         stringToDurationWithDefault(deploymentClientSeconds, defaultTimeoutSeconds),
@@ -135,7 +114,7 @@ func loadValuesIntoOptions(opts *options.Options) {
 		RateLimitConfigsClientTimeout:   stringToDurationWithDefault(rateLimitConfigsClientTimeoutSeconds, defaultTimeoutSeconds),
 		VirtualHostOptionsClientTimeout: stringToDurationWithDefault(virtualHostOptionsClientSeconds, defaultTimeoutSeconds),
 		RouteOptionsClientTimeout:       stringToDurationWithDefault(routeOptionsClientSeconds, defaultTimeoutSeconds),
-		SecretClientTimeout:             stringToDurationWithDefault(secretClientTimeoutSeconds, defaultTimeoutSeconds),
+		SecretClientTimeout:             stringToDurationWithDefault(secretClientTimeoutSeconds, "30s"),
 		VirtualServicesClientTimeout:    stringToDurationWithDefault(virtualServicesClientTimeoutSeconds, defaultTimeoutSeconds),
 		GatewaysClientTimeout:           stringToDurationWithDefault(gatewaysClientTimeoutSeconds, defaultTimeoutSeconds),
 		ProxyClientTimeout:              stringToDurationWithDefault(proxyClientTimeoutSeconds, defaultTimeoutSeconds),
