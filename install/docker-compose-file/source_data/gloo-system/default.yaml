@@ -11,7 +11,9 @@ directoryConfigSource:
   directory: /data/config
 directorySecretSource:
   directory: /data/secret
-refreshRate: 60s
+refreshRate: 5s
 watchNamespaces:
 - gloo-system
+gateway:
+  persistProxySpec: true
 
