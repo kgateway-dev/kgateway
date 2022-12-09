@@ -21,6 +21,7 @@ var _ = Describe("Root", func() {
 		vsClient gatewayv1.VirtualServiceClient
 		ctx      context.Context
 	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		ctx, _ = context.WithCancel(context.Background())
