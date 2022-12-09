@@ -43,7 +43,7 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
    docker run --network=kind -itd --name zipkin -p 9411:9411 openzipkin/zipkin
    ```
 
-2. Verify that both `zipkin` and `zipkin-tracing-control-plane` are in your local Kind cluster network, and note the `zipkin` container IP address. In the following example, the `zipkin` container IP address is `172.xx.x.2`.
+2. Verify that both `zipkin` and `zipkin-tracing-control-plane` are in your local Kind cluster network, and note the `zipkin` container IP address without the CIDR. In the following example, the `zipkin` container IP address is `172.xx.x.2`.
    ```shell
    docker network inspect kind
    ```
