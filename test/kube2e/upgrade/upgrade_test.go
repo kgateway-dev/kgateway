@@ -60,6 +60,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		// ex:current branch is 1.13.10 - this would be 1.13.9
 		CurrentPatchMostRecentMinorVersion *versionutils.Version
+		firstReleaseOfMinor                bool
 	)
 
 	// setup for all tests
@@ -73,7 +74,11 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		strictValidation = false
 
 		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(ctx, "gloo")
-		Expect(err).NotTo(HaveOccurred())
+		if strings.Contains(err.Error(), upgrade.FirstReleaseError) {
+			firstReleaseOfMinor = true
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {
@@ -95,18 +100,22 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			})
 		})
 		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
-			BeforeEach(func() {
-				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
-			})
-			AfterEach(func() {
-				uninstallGloo(testHelper, ctx, cancel)
-			})
-			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
-				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, strictValidation)
-			})
-			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
-				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, strictValidation)
-			})
+			if firstReleaseOfMinor {
+				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
+			} else {
+				BeforeEach(func() {
+					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+				})
+				AfterEach(func() {
+					uninstallGloo(testHelper, ctx, cancel)
+				})
+				It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
+					updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, strictValidation)
+				})
+				It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
+					addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, strictValidation)
+				})
+			}
 		})
 	})
 
@@ -136,15 +145,19 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		})
 
 		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
-			BeforeEach(func() {
-				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
-			})
-			AfterEach(func() {
-				uninstallGloo(testHelper, ctx, cancel)
-			})
-			It("sets validation webhook caBundle on install and upgrade", func() {
-				updateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, false)
-			})
+			if firstReleaseOfMinor {
+				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
+			} else {
+				BeforeEach(func() {
+					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+				})
+				AfterEach(func() {
+					uninstallGloo(testHelper, ctx, cancel)
+				})
+				It("sets validation webhook caBundle on install and upgrade", func() {
+					updateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, false)
+				})
+			}
 		})
 	})
 })
