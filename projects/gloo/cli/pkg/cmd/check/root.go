@@ -99,8 +99,12 @@ func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
+	if opts.Check.CheckTimeout != 0 {
+		ctx, cancel = context.WithDeadline(opts.Top.Ctx, time.Now().Add(opts.Check.CheckTimeout))
+	}
 	defer cancel()
-	err := checkConnection(ctx, opts.Metadata.GetNamespace())
+
+	err := checkConnection(ctx, opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		return multiErr
@@ -219,7 +223,7 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
-		err = checkXdsMetrics(ctx, opts, opts.Metadata.GetNamespace(), deployments)
+		err = checkXdsMetrics(ctx, opts, deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -236,7 +240,7 @@ func CheckResources(opts *options.Options) error {
 
 func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1.DeploymentList, error) {
 	printer.AppendCheck("Checking deployments... ")
-	client, err := helpers.KubeClient()
+	client, err := helpers.GetKubernetesClientWithTimeout(opts.Check.DeploymentClientTimeout)
 	if err != nil {
 		errMessage := "error getting KubeClient"
 		fmt.Println(errMessage)
@@ -313,7 +317,7 @@ func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1
 
 func checkPods(ctx context.Context, opts *options.Options) error {
 	printer.AppendCheck("Checking pods... ")
-	client, err := helpers.KubeClient()
+	client, err := helpers.GetKubernetesClientWithTimeout(opts.Check.PodClientTimeout)
 	if err != nil {
 		return err
 	}
@@ -380,7 +384,7 @@ func checkPods(ctx context.Context, opts *options.Options) error {
 }
 
 func getSettings(ctx context.Context, opts *options.Options) (*v1.Settings, error) {
-	client, err := helpers.SettingsClient(ctx, []string{opts.Metadata.GetNamespace()})
+	client, err := helpers.SettingsClient(ctx, []string{opts.Metadata.GetNamespace()}, opts.Check.SettingsClientTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +404,7 @@ func checkUpstreams(ctx context.Context, opts *options.Options, namespaces []str
 	var knownUpstreams []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		client, err := helpers.UpstreamClient(ctx, []string{ns})
+		client, err := helpers.UpstreamClient(ctx, []string{ns}, opts.Check.UpstreamsClientTimeout)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -441,7 +445,7 @@ func checkUpstreamGroups(ctx context.Context, opts *options.Options, namespaces 
 	printer.AppendCheck("Checking upstream groups... ")
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		upstreamGroupClient, err := helpers.UpstreamGroupClient(ctx, []string{ns})
+		upstreamGroupClient, err := helpers.UpstreamGroupClient(ctx, []string{ns}, opts.Check.UpstreamGroupsClientTimeout)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -485,7 +489,7 @@ func checkAuthConfigs(ctx context.Context, opts *options.Options, namespaces []s
 	var knownAuthConfigs []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		authConfigClient, err := helpers.AuthConfigClient(ctx, []string{ns})
+		authConfigClient, err := helpers.AuthConfigClient(ctx, []string{ns}, opts.Check.AuthConfigsClientTimeout)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -528,7 +532,7 @@ func checkRateLimitConfigs(ctx context.Context, opts *options.Options, namespace
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
 
-		rlcClient, err := helpers.RateLimitConfigClient(ctx, []string{ns})
+		rlcClient, err := helpers.RateLimitConfigClient(ctx, []string{ns}, opts.Check.RateLimitConfigsClientTimeout)
 		if err != nil {
 			if isCrdNotFoundErr(ratelimit.RateLimitConfigCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
@@ -567,7 +571,7 @@ func checkVirtualHostOptions(ctx context.Context, opts *options.Options, namespa
 	var knownVhOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		vhoptClient, err := helpers.VirtualHostOptionClient(ctx, []string{ns})
+		vhoptClient, err := helpers.VirtualHostOptionClient(ctx, []string{ns}, opts.Check.VirtualHostOptionsClientTimeout)
 		if err != nil {
 			if isCrdNotFoundErr(gatewayv1.VirtualHostOptionCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
@@ -612,7 +616,7 @@ func checkRouteOptions(ctx context.Context, opts *options.Options, namespaces []
 	var knownRouteOpts []string
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		routeOptionClient, err := helpers.RouteOptionClient(ctx, []string{ns})
+		routeOptionClient, err := helpers.RouteOptionClient(ctx, []string{ns}, opts.Check.RouteOptionsClientTimeout)
 		if err != nil {
 			if isCrdNotFoundErr(gatewayv1.RouteOptionCrd, err) {
 				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
@@ -657,7 +661,7 @@ func checkVirtualServices(ctx context.Context, opts *options.Options, namespaces
 	var multiErr *multierror.Error
 
 	for _, ns := range namespaces {
-		virtualServiceClient, err := helpers.VirtualServiceClient(ctx, []string{ns})
+		virtualServiceClient, err := helpers.VirtualServiceClient(ctx, []string{ns}, opts.Check.VirtualServicesClientTimeout)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -794,7 +798,7 @@ func checkGateways(ctx context.Context, opts *options.Options, namespaces []stri
 	printer.AppendCheck("Checking gateways... ")
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		gatewayClient, err := helpers.GatewayClient(ctx, []string{ns})
+		gatewayClient, err := helpers.GatewayClient(ctx, []string{ns}, opts.Check.GatewaysClientTimeout)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -844,7 +848,7 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		proxyClient, err := helpers.ProxyClient(ctx, []string{ns})
+		proxyClient, err := helpers.ProxyClient(ctx, []string{ns}, opts.Check.ProxyClientTimeout)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
@@ -893,7 +897,7 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 func checkSecrets(ctx context.Context, opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking secrets... ")
 	var multiErr *multierror.Error
-	client, err := helpers.GetSecretClient(ctx, opts.Check.SecretClientTimeout, namespaces)
+	client, err := helpers.GetSecretClient(ctx, namespaces, opts.Check.SecretClientTimeout)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
@@ -929,12 +933,12 @@ func renderNamespaceName(namespace, name string) string {
 
 // Checks whether the cluster that the kubeconfig points at is available
 // The timeout for the kubernetes client is set to a low value to notify the user of the failure
-func checkConnection(ctx context.Context, ns string) error {
-	client, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
+func checkConnection(ctx context.Context, opts *options.Options) error {
+	client, err := helpers.GetKubernetesClientWithTimeout(opts.Check.CheckConnectionTimeout)
 	if err != nil {
 		return eris.Wrapf(err, "Could not get kubernetes client")
 	}
-	_, err = client.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 	if err != nil {
 		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}

@@ -450,6 +450,26 @@ type Register struct {
 }
 
 type Check struct {
-	// The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
-	SecretClientTimeout time.Duration
+	// The maximum length of time alloted to `glooctl check`. A value of zero means no timeout.
+	CheckTimeout time.Duration
+
+	// The maximum length of time to wait before giving up on connecting to the cluster. A value of zero means no timeout.
+	CheckConnectionTimeout time.Duration
+
+	// The maximum length of time to wait before giving up on a request to a respective client. A value of zero means no timeout.
+	DefaultTimeout                  time.Duration // Override default value for all clients
+	DeploymentClientTimeout         time.Duration
+	PodClientTimeout                time.Duration
+	SettingsClientTimeout           time.Duration
+	UpstreamsClientTimeout          time.Duration
+	UpstreamGroupsClientTimeout     time.Duration
+	AuthConfigsClientTimeout        time.Duration
+	RateLimitConfigsClientTimeout   time.Duration
+	VirtualHostOptionsClientTimeout time.Duration
+	RouteOptionsClientTimeout       time.Duration
+	SecretClientTimeout             time.Duration
+	VirtualServicesClientTimeout    time.Duration
+	GatewaysClientTimeout           time.Duration
+	ProxyClientTimeout              time.Duration
+	XdsMetricsTimeout               time.Duration
 }

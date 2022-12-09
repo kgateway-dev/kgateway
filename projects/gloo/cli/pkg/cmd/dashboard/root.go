@@ -3,6 +3,7 @@ package dashboard
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -67,7 +68,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			/** port-forward command **/
 
 			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.GetNamespace(), "deployment/gloo-fed-console",
-				staticPort, staticPort, opts.Top.Verbose, "")
+				staticPort, staticPort, opts.Top.Verbose, "", 30*time.Second)
 			if err != nil {
 				return err
 			}
