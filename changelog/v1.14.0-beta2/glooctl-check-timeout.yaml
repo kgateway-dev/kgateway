@@ -2,4 +2,4 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/4204
     resolvesIssue: true
-    description: `glooctl check` now has more comprehensive timeout settings in `glooctl-config.yaml`
+    description: glooctl check now has more comprehensive timeout settings in glooctl-config.yaml
