@@ -139,7 +139,7 @@ var _ = Describe("Access Log", func() {
 					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 					g.Eventually(msgChan, 2*time.Second).Should(Receive(&entry))
 					g.Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
-				}, time.Second*21, time.Second*2)
+				}, time.Second*21, time.Second*2).Should(Succeed())
 
 			})
 
@@ -185,7 +185,7 @@ var _ = Describe("Access Log", func() {
 					var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 					g.Eventually(msgChan, 2*time.Second).Should(Receive(&entry))
 					g.Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(tu.Upstream.Metadata.Ref())))
-				}, time.Second*21, time.Second*2)
+				}, time.Second*21, time.Second*2).Should(Succeed())
 
 			})
 		})
@@ -226,7 +226,7 @@ var _ = Describe("Access Log", func() {
 					logs, err := envoyInstance.Logs()
 					g.Expect(err).NotTo(HaveOccurred())
 					g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
-				}, time.Second*30, time.Second/2)
+				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
 
 			It("can create json access logs", func() {
