@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -100,7 +99,7 @@ func CheckResources(opts *options.Options) error {
 
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
 	if opts.Check.CheckTimeout != 0 {
-		ctx, cancel = context.WithDeadline(opts.Top.Ctx, time.Now().Add(opts.Check.CheckTimeout))
+		ctx, cancel = context.WithTimeout(opts.Top.Ctx, opts.Check.CheckTimeout)
 	}
 	defer cancel()
 
