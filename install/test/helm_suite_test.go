@@ -115,6 +115,7 @@ func MustGetVersion() string {
 
 	// https://github.com/solo-io/gloo/issues/7063
 	lines := strings.Split(output, "\n")
+	Expect(lines).To(Equal("expected-failure"))
 	Expect(len(lines)).To(BeNumerically(">", 2))
 	return lines[1]
 }

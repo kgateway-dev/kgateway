@@ -127,7 +127,7 @@ var _ = Describe("Helm Test", func() {
 				}
 			})
 
-			It("should allow image digest pinning", func() {
+			FIt("should allow image digest pinning", func() {
 				shaTest := "sha256:1234123412341234123412341234213412341234123412341234123412341234"
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
