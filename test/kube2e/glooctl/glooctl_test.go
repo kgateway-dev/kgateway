@@ -206,7 +206,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 	})
-	FContext("check", func() {
+	Context("check", func() {
 
 		BeforeEach(func() {
 			// Check that everything is OK
