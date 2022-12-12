@@ -68,35 +68,18 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 	return nil
 }
 
-func stringToDuration(str string) time.Duration {
-	newStr := str
+// Assigns values from config file (or default) into the provided Options struct
+func loadValuesIntoOptions(opts *options.Options) {
+	newStr := viper.GetString(checkTimeoutSeconds)
 	_, err := strconv.Atoi(newStr)
 	if err == nil {
 		newStr += "s"
 	}
-	val, err := time.ParseDuration(newStr)
+	time, err := time.ParseDuration(newStr)
 	if err != nil {
-		return time.Duration(0)
+		time = 0
 	}
-	return val
-}
-
-func stringToDurationWithDefault(str, defaultString string) time.Duration {
-	strVal := viper.GetString(str)
-	if strVal == "" {
-		strVal = str
-	}
-	if strVal == "0s" {
-		return stringToDuration(strVal)
-	}
-	return stringToDuration(strVal)
-}
-
-// Assigns values from config file (or default) into the provided Options struct
-func loadValuesIntoOptions(opts *options.Options) {
-	opts.Check = options.Check{
-		CheckTimeout: stringToDurationWithDefault(checkTimeoutSeconds, "0s"),
-	}
+	opts.Check.CheckTimeout = time
 }
 
 // ensure that both the directory containing the file and the file itself exist

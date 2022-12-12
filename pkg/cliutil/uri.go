@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	PortForwardDefaultTimeout = 30 * time.Second
+	defaultTimeout = 30 * time.Second
 )
 
 // GetResource identified by the given URI.
@@ -206,13 +206,9 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 
 }
 
-func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, *exec.Cmd, error) {
-	return PortForwardGetWithTimeout(ctx, namespace, resource, localPort, kubePort, verbose, getPath, PortForwardDefaultTimeout)
-}
-
 // PortForwardGet call kubectl port-forward and make a GET request.
 // Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
-func PortForwardGetWithTimeout(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string, timeout time.Duration) (string, *exec.Cmd, error) {
+func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, *exec.Cmd, error) {
 
 	/** port-forward command **/
 
@@ -221,7 +217,7 @@ func PortForwardGetWithTimeout(ctx context.Context, namespace string, resource s
 		return "", nil, err
 	}
 
-	localCtx, cancel := context.WithTimeout(ctx, timeout)
+	localCtx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
 	// wait for port-forward to be ready

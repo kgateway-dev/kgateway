@@ -3,13 +3,12 @@ package check
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
-
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
+	"strconv"
+	"strings"
 )
 
 const (
@@ -83,8 +82,8 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, deployments *v1
 		printer.AppendCheck("Warning: checking xds with port forwarding is disabled\n")
 		return nil
 	}
-	stats, portFwdCmd, err := cliutil.PortForwardGetWithTimeout(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
-		localPort, adminPort, false, glooStatsPath, opts.Check.CheckTimeout)
+	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
+		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		return err
 	}
