@@ -3,12 +3,13 @@ package check
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	v1 "k8s.io/api/apps/v1"
-	"strconv"
-	"strings"
 )
 
 const (
