@@ -12,6 +12,7 @@ import (
 
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/skv2/codegen/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -24,6 +25,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,11 +47,18 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	// setup for all tests
 	BeforeEach(func() {
-		var err error
 		ctx, cancel = context.WithCancel(context.Background())
-		strictValidation = false
+		var err error
 		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 		Expect(err).NotTo(HaveOccurred())
+		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
+		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+		strictValidation = false
+
+		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(ctx, "gloo")
+		if err != nil && strings.Contains(err.Error(), upgrade.FirstReleaseError) {
+			firstReleaseOfMinor = true
+		}
 	})
 
 	AfterEach(func() {

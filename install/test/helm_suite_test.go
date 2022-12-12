@@ -109,15 +109,38 @@ func MustMakeReturnStdout(dir string, args ...string) string {
 	return stdout.String()
 }
 
+// MustGetVersion returns the VERSION that will be used to build the chart
 func MustGetVersion() string {
 	output := MustMakeReturnStdout(".", "-C", "../../", "print-VERSION") // use print-VERSION so version matches on forks
-	// sample output
-	// make: Entering directory '/var/home/kdorosh/git/forks/gloo'\n0.0.0-fork\nmake: Leaving directory '/var/home/kdorosh/git/forks/gloo'\n"
-
-	// https://github.com/solo-io/gloo/issues/7063
 	lines := strings.Split(output, "\n")
-	Expect(len(lines)).To(BeNumerically(">", 2))
-	return lines[1]
+
+	// output from a fork:
+	// <[]string | len:4, cap:4>: [
+	//	"make[1]: Entering directory '/workspace/gloo'",
+	//	"<VERSION>",
+	//	"make[1]: Leaving directory '/workspace/gloo'",
+	//	"",
+	// ]
+
+	// output from the gloo repo:
+	// <[]string | len:2, cap:2>: [
+	//	"<VERSION>",
+	//	"",
+	// ]
+
+	if len(lines) == 4 {
+		// This is being executed from a fork
+		return lines[1]
+	}
+
+	if len(lines) == 2 {
+		// This is being executed from the Gloo repo
+		return lines[0]
+	}
+
+	// Error loudly to prevent subtle failures
+	Fail(fmt.Sprintf("print-VERSION output returned unknown format. %v", lines))
+	return "version-not-found"
 }
 
 type helmValues struct {

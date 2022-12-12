@@ -16,10 +16,7 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
 
-	"github.com/solo-io/gloo/test/helpers"
-
 	"github.com/solo-io/go-utils/testutils/goimpl"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/proto"
@@ -286,12 +283,6 @@ func ToFile(content string) string {
 	ExpectWithOffset(1, n).To(Equal(len(content)))
 	_ = f.Close()
 	return f.Name()
-}
-
-// PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
-// Deprecated: Prefer the helpers.PatchResource, which is not a Kubernetes specific package
-func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource), client clients.ResourceClient) error {
-	return helpers.PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
 }
 
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
