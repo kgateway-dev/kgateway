@@ -1,7 +1,7 @@
 # Gloo Edge Helm chart
 This directory contains the resources used to generate the Gloo Edge Helm chart archive.
 
-> All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) and should be executed from the root of the repository.
+📝 [make targets](https://opensource.com/article/18/8/what-how-makefile]) are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) and should be executed from the root of the repository 📝
 
 ## Directory Structure
 ### generate.go
@@ -21,44 +21,22 @@ This directory contains the Gloo Edge `CustomResourceDefinitions`. This is the
 ### /templates
 This directory contains the Helm templates used to generate the Gloo Edge manifests.
 
-## Build
-> For each of the commands below, you can explicitly set `{VERSION}` environment variable, or not define on, and a version will be automatically provided.
+## Helm-centric commands
+Relevant commands to helm, meant to be run from the **root of this repository**
 
-### Generate Files
-To generate the `Chart.yaml` and `values.yaml` files:
-```make
-VERSION=<VERSION> make generate-helm-files
+```bash
+# VERSION is an optional environment variable.  If not specified, a default will be computed
+VERSION=$VERSION make generate-helm-files    # generate `Chart.yaml` and `values.yaml` files
+VERSION=$VERSION make package-chart          # package a helm chart to `_output/charts` directory (used for releasing)
+VERSION=$VERSION make build-test-chart       # package a helm chart to `_test` directory (used for testing)
+
+helm install gloo gloo/gloo                  # install Gloo Edge using Helm
+TEST_PKG=install/test make test              # run all tests in this project
 ```
 
-### Package Chart
-To package a Gloo Edge helm chart:
-```make
-VERSION=<VERSION> make package-chart
-```
+Further reading:
+- What is [helm](https://helm.sh/docs/helm/helm_install/)?
+- How do I [install on kubernetes with helm](https://docs.solo.io/gloo-edge/latest/installation/gateway/kubernetes/#installing-on-kubernetes-with-helm)?
+- What is a [packaged Chart archive](https://helm.sh/docs/helm/helm_package/)?
+- Where are our [gloo charts published](https://storage.googleapis.com/solo-public-helm) to?
 
-This [packaged Chart archive](https://helm.sh/docs/helm/helm_package/) is written to the `_output/charts` directory.
-
-### Package Chart for Tests
-We use Gloo Edge charts locally for tests. These tests use the `_test` directory to pull the archive. To package charts for tests:
-```make
-VERSION=<VERSION> make build-test-chart
-```
-
-## Install
-To install Gloo Edge using Helm:
-```shell
-helm install gloo gloo/gloo
-```
-
-Useful links:
-- [Helm documentation](https://helm.sh/docs/helm/helm_install/)
-- [Solo documentation](https://docs.solo.io/gloo-edge/latest/installation/gateway/kubernetes/#installing-on-kubernetes-with-helm)
-
-## Release
-During a Gloo Edge release, the `gloo` chart is published to the [Google Cloud Storage](https://storage.googleapis.com/solo-public-helm).
-
-## Testing
-To run all tests in this project:
-```make
-TEST_PKG=install/test make test
-```

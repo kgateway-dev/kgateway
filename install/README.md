@@ -1,14 +1,10 @@
 # Installing Gloo Edge
-
-## Installing on a Local Filesystem
-Refer to our [external documentation](https://docs.solo.io/gloo-edge/latest/installation/gateway/development/docker-compose-file/)
-
-## Installing on a Consul
-Refer to our [external documentation](https://docs.solo.io/gloo-edge/latest/installation/gateway/development/docker-compose-consul/)
+...[onto a local filesystem](https://docs.solo.io/gloo-edge/latest/installation/gateway/development/docker-compose-file/)
+...[onto a Consul](https://docs.solo.io/gloo-edge/latest/installation/gateway/development/docker-compose-consul/)
 
 # Installing on Kubernetes
 
-Note: if running on GKE, you need to configure permission to create rbac: 
+⚠️ if running on GKE, you need to configure permission to create rbac: ⚠️
 ```bash
 kubectl create clusterrolebinding --user <gcloud-email> <crb-name> --clusterrole=<any role with RBAC create permission>
 ```
