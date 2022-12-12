@@ -504,20 +504,20 @@ func MustSecretClient(ctx context.Context) v1.SecretClient {
 }
 
 func MustSecretClientWithOptions(ctx context.Context, timeout time.Duration, namespaces []string) v1.SecretClient {
-	client, err := GetSecretClient(ctx, timeout, namespaces)
+	client, err := GetSecretClient(ctx, namespaces)
 	if err != nil {
 		log.Fatalf("failed to create Secret client: %v", err)
 	}
 	return client
 }
 
-func GetSecretClient(ctx context.Context, timeout time.Duration, namespaces []string) (v1.SecretClient, error) {
+func GetSecretClient(ctx context.Context, namespaces []string) (v1.SecretClient, error) {
 	customFactory := getSecretClientFactory()
 	if customFactory != nil {
 		return v1.NewSecretClient(ctx, customFactory)
 	}
 
-	clientset, err := GetKubernetesClientWithTimeout(timeout)
+	clientset, err := GetKubernetesClient()
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
