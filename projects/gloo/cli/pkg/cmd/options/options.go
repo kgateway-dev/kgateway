@@ -450,6 +450,6 @@ type Register struct {
 }
 
 type Check struct {
-	// The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
-	SecretClientTimeout time.Duration
+	// The maximum length of time alloted to `glooctl check`. A value of zero means no timeout.
+	CheckTimeout time.Duration
 }
