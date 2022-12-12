@@ -33,6 +33,7 @@ secretClientTimeoutSeconds: 30
 	// built glooctl last. So we settle for this placeholder.
 	homeDir = "<home_directory>"
 
+	// note that the available keys in this config file should be kept up to date in our public docs
 	checkTimeoutSeconds = "checkTimeoutSeconds"
 )
 
