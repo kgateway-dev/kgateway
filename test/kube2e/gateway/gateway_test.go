@@ -232,7 +232,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// modify the proxy to use the deprecated label
 			// this will simulate proxies that were persisted before the label change
-			err := kube2e.PatchResource(
+			err := helpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
 					Namespace: testHelper.InstallNamespace,
@@ -249,7 +249,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			// modify the virtual service to trigger gateway reconciliation
 			// any modification will work, for simplicity we duplicate a route on the virtual host
-			err = kube2e.PatchResource(
+			err = helpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
 					Namespace: testHelper.InstallNamespace,
@@ -624,7 +624,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				})
 
 				It("when updating an upstream makes them valid", func() {
-					err = kube2e.PatchResource(
+					err = helpers.PatchResource(
 						ctx,
 						&core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
@@ -789,7 +789,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(res).To(ContainSubstring("404 Not Found"))
 
 					// update the response of the good RT
-					err = kube2e.PatchResource(
+					err = helpers.PatchResource(
 						ctx,
 						&core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
@@ -875,7 +875,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}, "Good response", 1, 60*time.Second, 1*time.Second)
 
 					By("the RT should be updated to return a direct response")
-					err := kube2e.PatchResource(
+					err := helpers.PatchResource(
 						ctx,
 						&core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
@@ -1440,7 +1440,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, "15s", "0.5s").ShouldNot(BeNil())
 
 				// now set subset config on an upstream:
-				err := kube2e.PatchResource(
+				err := helpers.PatchResource(
 					ctx,
 					&core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
@@ -1874,7 +1874,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 
 		It("routes to subsets and upstream groups", func() {
-			err := kube2e.PatchResource(
+			err := helpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
 					Namespace: testHelper.InstallNamespace,
@@ -2147,7 +2147,7 @@ spec:
 			}
 
 			// update the test runner vs
-			err := kube2e.PatchResource(
+			err := helpers.PatchResource(
 				ctx,
 				&core.ResourceRef{
 					Namespace: testRunnerVs.GetMetadata().GetNamespace(),
@@ -2189,7 +2189,7 @@ spec:
 					},
 				}
 
-				err := kube2e.PatchResource(
+				err := helpers.PatchResource(
 					ctx,
 					&core.ResourceRef{
 						Namespace: testRunnerVs.GetMetadata().GetNamespace(),
