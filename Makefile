@@ -1,5 +1,10 @@
+# imports should be after the set up flags so are lower
+
 # https://www.gnu.org/software/make/manual/html_node/Special-Variables.html#Special-Variables
 .DEFAULT_GOAL := help
+
+
+
 
 #----------------------------------------------------------------------------------
 # Help
@@ -50,7 +55,7 @@ UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
-	VERSION := 0.0.1-fork
+	VERSION ?= 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
 endif
 
@@ -142,6 +147,8 @@ BUILD_ID := $(BUILD_ID)
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
+GINKGO_ENV := GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=1.16.5
+
 #----------------------------------------------------------------------------------
 # Macros
 #----------------------------------------------------------------------------------
@@ -149,6 +156,15 @@ TEST_ASSET_DIR := $(ROOTDIR)/_test
 # This macro takes a relative path as its only argument and returns all the files
 # in the tree rooted at that directory that match the given criteria.
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
+
+
+#----------------------------------------------------------------------------------
+# Imports
+#----------------------------------------------------------------------------------
+
+# glooctl and other ci related targets are in this file.
+# they rely on some of the args set above
+include Makefile.ci
 
 #----------------------------------------------------------------------------------
 # Repo setup
@@ -190,20 +206,24 @@ install-test-tools:
 	mkdir -p $(DEPSGOBIN)
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
+
+.PHONY: test ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+test: install-test-tools
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -failOnPending -failFast -noColor -trace -progress -race -compilers=4 -randomizeSuites -randomizeAllSpecs -r $(TEST_PKG)
+
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
-
 # see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md
 .PHONY: run-tests
 run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 ifneq ($(RELEASE), "true")
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
 endif
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
-	$(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
@@ -295,34 +315,11 @@ generate-client-mocks:
 #----------------------------------------------------------------------------------
 # glooctl
 #----------------------------------------------------------------------------------
-
-CLI_DIR=projects/gloo/cli
-
-$(OUTPUT_DIR)/glooctl: $(SOURCES)
-	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
-
-$(OUTPUT_DIR)/glooctl-linux-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
-
-# NOTE: the output of the file is hard coded to amd64 regardless of GOARCH
-$(OUTPUT_DIR)/glooctl-darwin-$(GOARCH): $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $(OUTPUT_DIR)/glooctl-darwin-amd64 $(CLI_DIR)/cmd/main.go
-
-$(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe: $(SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+# build-ci and glooctl along with others are in the ci makefile
 
 
-.PHONY: glooctl
-glooctl: $(OUTPUT_DIR)/glooctl ## Builds the command line tool
-.PHONY: glooctl-linux-$(GOARCH)
-glooctl-linux-$(GOARCH): $(OUTPUT_DIR)/glooctl-linux-$(GOARCH)
-.PHONY: glooctl-darwin-$(GOARCH)
-glooctl-darwin-$(GOARCH): $(OUTPUT_DIR)/glooctl-darwin-$(GOARCH)
-.PHONY: glooctl-windows-$(GOARCH)
-glooctl-windows-$(GOARCH): $(OUTPUT_DIR)/glooctl-windows-$(GOARCH).exe
 
-.PHONY: build-cli
-build-cli: glooctl-linux-$(GOARCH) glooctl-darwin-$(GOARCH) glooctl-windows-$(GOARCH)
+
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -827,6 +824,13 @@ publish-security-scan:
 	# generate_docs.go
 	gsutil cp -r $(SCAN_DIR)/gloo/markdown_results/** gs://$(SCAN_BUCKET)/gloo
 	gsutil cp -r $(SCAN_DIR)/solo-projects/markdown_results/** gs://$(SCAN_BUCKET)/solo-projects
+
+.PHONY: scan-version
+scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variable
+	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
+		-r $(IMAGE_REPO)\
+		-t $(VERSION)\
+		--images gloo,gloo-envoy-wrapper,discovery,ingress,sds,certgen,access-logger,kubectl
 
 #----------------------------------------------------------------------------------
 # Third Party License Management
