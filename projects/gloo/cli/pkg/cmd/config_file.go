@@ -33,26 +33,7 @@ secretClientTimeoutSeconds: 30
 	// built glooctl last. So we settle for this placeholder.
 	homeDir = "<home_directory>"
 
-	// note that the available keys in this config file should be kept up to date in our public docs
-	disableUsageReporting = "disableUsageReporting"
-
-	checkTimeoutSeconds                  = "checkTimeoutSeconds"
-	checkConnectionTimeoutSeconds        = "checkConnectionTimeoutSeconds"
-	defaultTimeoutSeconds                = "defaultTimeoutSeconds"
-	deploymentClientSeconds              = "deploymentClientSeconds"
-	podClientTimeoutSeconds              = "podClientTimeoutSeconds"
-	settingsClientTimeoutSeconds         = "settingsClientTimeoutSeconds "
-	upstreamsClientTimeoutSeconds        = "upstreamsClientTimeoutSeconds"
-	upstreamGroupsClientTimeoutSeconds   = "upstreamGroupsClientTimeoutSeconds"
-	authConfigsClientTimeoutSeconds      = "authConfigsClientTimeoutSeconds"
-	rateLimitConfigsClientTimeoutSeconds = "rateLimitConfigsClientTimeoutSeconds"
-	virtualHostOptionsClientSeconds      = "virtualHostOptionsClientSeconds"
-	routeOptionsClientSeconds            = "routeOptionsClientSeconds"
-	secretClientTimeoutSeconds           = "secretClientTimeoutSeconds"
-	virtualServicesClientTimeoutSeconds  = "virtualServicesClientTimeoutSeconds"
-	gatewaysClientTimeoutSeconds         = "gatewaysClientTimeoutSeconds"
-	proxyClientTimeoutSeconds            = "proxyClientTimeoutSeconds"
-	xdsMetricsTimeoutSeconds             = "xdsMetricsTimeoutSeconds"
+	checkTimeoutSeconds = "checkTimeoutSeconds"
 )
 
 var DefaultConfigPath = path.Join(homeDir, ConfigDirName, ConfigFileName)
@@ -113,8 +94,6 @@ func stringToDurationWithDefault(str, defaultString string) time.Duration {
 
 // Assigns values from config file (or default) into the provided Options struct
 func loadValuesIntoOptions(opts *options.Options) {
-	viper.SetDefault(defaultTimeoutSeconds, "0s")
-
 	opts.Check = options.Check{
 		CheckTimeout: stringToDurationWithDefault(checkTimeoutSeconds, "0s"),
 	}

@@ -452,7 +452,4 @@ type Register struct {
 type Check struct {
 	// The maximum length of time alloted to `glooctl check`. A value of zero means no timeout.
 	CheckTimeout time.Duration
-
-	// The maximum length of time to wait before giving up on connecting to the cluster. A value of zero means no timeout.
-	CheckConnectionTimeout time.Duration
 }

@@ -84,7 +84,7 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, deployments *v1
 		return nil
 	}
 	stats, portFwdCmd, err := cliutil.PortForwardGetWithTimeout(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
-		localPort, adminPort, false, glooStatsPath, opts.Check.XdsMetricsTimeout)
+		localPort, adminPort, false, glooStatsPath, opts.Check.CheckTimeout)
 	if err != nil {
 		return err
 	}
