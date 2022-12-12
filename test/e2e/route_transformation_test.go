@@ -17,6 +17,8 @@ import (
 
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
@@ -219,6 +221,137 @@ var _ = Describe("Transformations", func() {
 		})
 
 		ExpectSuccess()
+	})
+
+	GetTrivialVirtualHostWithUpstreamRef := func(usRef *core.ResourceRef) *gloov1.VirtualHost {
+		return &gloov1.VirtualHost{
+			Name:    "virt1",
+			Domains: []string{"*"},
+			Routes: []*gloov1.Route{{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/",
+					},
+				}},
+				Action: &gloov1.Route_RouteAction{
+					RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Single{
+							Single: &gloov1.Destination{
+								DestinationType: &gloov1.Destination_Upstream{
+									Upstream: usRef,
+								},
+							},
+						},
+					},
+				},
+			}},
+		}
+	}
+
+	GetHttpbinEchoUpstream := func() *gloov1.Upstream {
+		return &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "httpbin",
+				Namespace: "default",
+			},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &gloov1static.UpstreamSpec{
+					Hosts: []*gloov1static.Host{
+						{
+							Addr: "httpbin.org",
+							Port: 80,
+						},
+					},
+				},
+			},
+		}
+	}
+
+	writeUpstream := func(us *gloov1.Upstream) {
+		// write us
+		uscli := testClients.UpstreamClient
+		_, err := uscli.Write(us, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		// wait for us to be created
+		Eventually(func() (*gloov1.Upstream, error) {
+			return uscli.Read(us.Metadata.Namespace, us.Metadata.Name, clients.ReadOpts{})
+		}, "10s", "0.5s").ShouldNot(BeNil())
+	}
+
+	FormRequestWithUrlAndHeaders := func(url string, headers map[string]string) *http.Request {
+		// form request
+		req, err := http.NewRequest("GET", url, nil)
+		Expect(err).NotTo(HaveOccurred())
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		return req
+	}
+
+	GetSuccessfulResponse := func(req *http.Request) *http.Response {
+		client := &http.Client{Timeout: time.Second}
+		var (
+			res *http.Response
+			err error
+		)
+
+		Eventually(func(g Gomega) {
+			// send request
+			res, err = client.Do(req)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(res.StatusCode).To(Equal(http.StatusOK))
+		}, "10s", "1s").Should(Succeed())
+
+		return res
+	}
+
+	// At the moment, this test fails
+	FIt("should transform response with non-json body", func() {
+		// *******************************
+		// ************ setup ************
+		// *******************************
+		us := GetHttpbinEchoUpstream()
+		writeUpstream(us)
+
+		// create a virtual host with a route to the upstream
+		vh := GetTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
+
+		// add a transformation to the virtual host
+		transform = &transformation.Transformations{
+			ResponseTransformation: &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: &envoy_transform.TransformationTemplate{
+						Headers: map[string]*envoy_transform.InjaTemplate{
+							"x-solo-resp-hdr1": {
+								Text: "{{ request_header(\"x-solo-hdr-1\") }}",
+							},
+						},
+					},
+				},
+			},
+		}
+		vh.Options = &gloov1.VirtualHostOptions{
+			Transformations: transform,
+		}
+
+		WriteVhost(vh)
+		// *******************************
+		// ********** end setup **********
+		// *******************************
+
+		// execute request
+		// NOTE: the Httpbin /html endpoint returns a non-json body, that envoy currently
+		// attempts and fails to parse as json, causing this request to error out
+		url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
+		headers := map[string]string{
+			"x-solo-hdr-1": "test",
+		}
+		req := FormRequestWithUrlAndHeaders(url, headers)
+		res := GetSuccessfulResponse(req)
+
+		// inspect response headers
+		Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
 	})
 
 })
