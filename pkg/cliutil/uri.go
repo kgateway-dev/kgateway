@@ -24,6 +24,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	portForwardDefaultTimeout = 30 * time.Second
+)
+
 // GetResource identified by the given URI.
 // The URI can either be a http(s) address or a relative/absolute file path.
 func GetResource(uri string) (io.ReadCloser, error) {
@@ -203,7 +207,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 }
 
 func PortForwardGet(ctx context.Context, namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, *exec.Cmd, error) {
-	return PortForwardGetWithTimeout(ctx, namespace, resource, localPort, kubePort, verbose, getPath, 30*time.Second)
+	return PortForwardGetWithTimeout(ctx, namespace, resource, localPort, kubePort, verbose, getPath, portForwardDefaultTimeout)
 }
 
 // PortForwardGet call kubectl port-forward and make a GET request.
@@ -217,7 +221,7 @@ func PortForwardGetWithTimeout(ctx context.Context, namespace string, resource s
 		return "", nil, err
 	}
 
-	localCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	localCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// wait for port-forward to be ready
