@@ -4,4 +4,4 @@ changelog:
     description: glooctl-config.yaml now has a checkTimeoutSettings setting for setting a timeout for glooctl check
   - type: BREAKING_CHANGE
     issueLink: https://github.com/solo-io/gloo/issues/4204
-    description: Removed disableUsageReporting in glooctl-gonfig.yaml
+    description: Removed disableUsageReporting from glooctl-gonfig.yaml
