@@ -206,7 +206,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			})
 		})
 	})
-	Context("check", func() {
+	FContext("check", func() {
 
 		BeforeEach(func() {
 			// Check that everything is OK
@@ -408,7 +408,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		It("can set timeouts (too short)", func() {
 			values, err := os.CreateTemp("", "*.yaml")
 			Expect(err).NotTo(HaveOccurred())
-			_, err = values.Write([]byte(`checkTimeoutSeconds: 1`))
+			_, err = values.Write([]byte(`checkTimeoutSeconds: 1ns`))
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = runGlooctlCommand("check", "-c", values.Name())
@@ -419,7 +419,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		It("can set timeouts (appropriately)", func() {
 			values, err := os.CreateTemp("", "*.yaml")
 			Expect(err).NotTo(HaveOccurred())
-			_, err = values.Write([]byte(`checkTimeoutSeconds: 300`))
+			_, err = values.Write([]byte(`checkTimeoutSeconds: 300s`))
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = runGlooctlCommand("check", "-c", values.Name())

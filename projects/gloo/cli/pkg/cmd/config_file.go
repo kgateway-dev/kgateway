@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -87,38 +88,35 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 }
 
 func stringToDuration(str string) time.Duration {
-	return time.Duration(viper.GetInt64(str)) * time.Second
+	newStr := str
+	_, err := strconv.Atoi(newStr)
+	if err == nil {
+		newStr += "s"
+	}
+	val, err := time.ParseDuration(newStr)
+	if err != nil {
+		return time.Duration(0)
+	}
+	return val
 }
 
 func stringToDurationWithDefault(str, defaultString string) time.Duration {
-	if viper.GetInt64(str) == 0 {
-		return stringToDuration(defaultString)
+	strVal := viper.GetString(str)
+	if strVal == "" {
+		strVal = str
 	}
-	return stringToDuration(str)
+	if strVal == "0s" {
+		return stringToDuration(strVal)
+	}
+	return stringToDuration(strVal)
 }
 
 // Assigns values from config file (or default) into the provided Options struct
 func loadValuesIntoOptions(opts *options.Options) {
-	viper.SetDefault(defaultTimeoutSeconds, 0)
+	viper.SetDefault(defaultTimeoutSeconds, "0s")
 
 	opts.Check = options.Check{
-		CheckTimeout:                    stringToDuration("0s"),
-		CheckConnectionTimeout:          stringToDurationWithDefault(checkConnectionTimeoutSeconds, defaultTimeoutSeconds),
-		DefaultTimeout:                  stringToDuration(defaultTimeoutSeconds),
-		DeploymentClientTimeout:         stringToDurationWithDefault(deploymentClientSeconds, defaultTimeoutSeconds),
-		PodClientTimeout:                stringToDurationWithDefault(podClientTimeoutSeconds, defaultTimeoutSeconds),
-		SettingsClientTimeout:           stringToDurationWithDefault(settingsClientTimeoutSeconds, defaultTimeoutSeconds),
-		UpstreamsClientTimeout:          stringToDurationWithDefault(upstreamsClientTimeoutSeconds, defaultTimeoutSeconds),
-		UpstreamGroupsClientTimeout:     stringToDurationWithDefault(upstreamGroupsClientTimeoutSeconds, defaultTimeoutSeconds),
-		AuthConfigsClientTimeout:        stringToDurationWithDefault(authConfigsClientTimeoutSeconds, defaultTimeoutSeconds),
-		RateLimitConfigsClientTimeout:   stringToDurationWithDefault(rateLimitConfigsClientTimeoutSeconds, defaultTimeoutSeconds),
-		VirtualHostOptionsClientTimeout: stringToDurationWithDefault(virtualHostOptionsClientSeconds, defaultTimeoutSeconds),
-		RouteOptionsClientTimeout:       stringToDurationWithDefault(routeOptionsClientSeconds, defaultTimeoutSeconds),
-		SecretClientTimeout:             stringToDurationWithDefault(secretClientTimeoutSeconds, "30s"),
-		VirtualServicesClientTimeout:    stringToDurationWithDefault(virtualServicesClientTimeoutSeconds, defaultTimeoutSeconds),
-		GatewaysClientTimeout:           stringToDurationWithDefault(gatewaysClientTimeoutSeconds, defaultTimeoutSeconds),
-		ProxyClientTimeout:              stringToDurationWithDefault(proxyClientTimeoutSeconds, defaultTimeoutSeconds),
-		XdsMetricsTimeout:               stringToDurationWithDefault(xdsMetricsTimeoutSeconds, defaultTimeoutSeconds),
+		CheckTimeout: stringToDurationWithDefault(checkTimeoutSeconds, "0s"),
 	}
 }
 

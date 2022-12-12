@@ -18,25 +18,3 @@ You can set the following top-level values.
 
   The maximum length of time to wait, in seconds, before giving up on an entire `glooctl check` call. A value of zero means no timeout.
 * `checkTimeoutSeconds: int`. (default 0)
-
-  The maximum length of time to wait, in seconds, before giving up on trying to connect to the cluster. A value of zero means no timeout.
-* `checkConnectionTimeoutSeconds: int`.(default 0).
-
-  Override the default value for all the values below.
-* `defaultTimeoutSeconds: int`.  (default 0).
-
-  The maximum length of time to wait, in seconds, before giving up on a request for a given resource type. A value of zero means no timeout.
-* `deploymentClientSeconds: int`.  (default 0).
-* `podClientTimeoutSeconds: int`.  (default 0).
-* `settingsClientTimeoutSeconds: int`.  (default 0).
-* `upstreamsClientTimeoutSeconds: int`.  (default 0).
-* `upstreamGroupsClientTimeoutSeconds: int`.  (default 0).
-* `authConfigsClientTimeoutSeconds: int`.  (default 0).
-* `rateLimitConfigsClientTimeoutSeconds: int`.  (default 0).
-* `virtualHostOptionsClientSeconds: int`.  (default 0).
-* `routeOptionsClientSeconds: int`.  (default 0).
-* `secretClientTimeoutSeconds: int`.  (default 30).
-* `virtualServicesClientTimeoutSeconds: int`.  (default 0).
-* `gatewaysClientTimeoutSeconds: int`.  (default 0).
-* `proxyClientTimeoutSeconds: int`.  (default 0).
-* `xdsMetricsTimeoutSeconds: int`.  (default 0).
