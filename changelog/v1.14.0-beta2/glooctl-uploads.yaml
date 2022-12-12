@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5471
+    resolvesIssue: false
+    description: >
+      Publish more glooctl images such as darwin-arm64 on github release assets (seperate from brew)

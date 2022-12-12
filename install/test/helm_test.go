@@ -863,7 +863,7 @@ var _ = Describe("Helm Test", func() {
 
 						val, ok := structuredJob.Spec.Template.ObjectMeta.Annotations[linkerdInjectionLabel]
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %s should contain an linkerd injection annotation", job.GetName()))
-						Expect(val).To(Equal("disabled"), fmt.Sprintf("Job %s should have an linkerd annotation with value of 'false'", job.GetName()))
+						Expect(val).To(Equal("disabled"), fmt.Sprintf("Job %s should have an linkerd injection annotation with value of 'disabled'", job.GetName()))
 					})
 				})
 			})
