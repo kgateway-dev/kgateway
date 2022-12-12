@@ -16,5 +16,5 @@ You can set the following top-level values.
   A signature is sent to help deduplicate the usage reports. This signature is a random UUID and contains no personally identifying information. Gloo Edge keeps the signature in-memory in the `gloo` pod, and `glooctl` keeps it on-disk at `~/.soloio/signature`. These signatures can be destroyed at any time with no negative consequences. These signatures will not be written or recorded if usage reporting is disabled as described above.
   {{% /notice %}}
 
-  The maximum length of time to wait, in seconds, before giving up on an entire `glooctl check` call. A value of zero means no timeout.
-* `checkTimeoutSeconds: int`. (default 0)
+
+* `checkTimeoutSeconds: int`. The maximum length of time to wait, in seconds, before giving up on an entire `glooctl check` call. A value of zero means no timeout. (default 0)
