@@ -422,7 +422,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 		args = append(args, strictValidationArgs...)
 	}
 
-	fmt.Printf("running helm with args: %v\n", args)
+	fmt.Printf("running helm with args: %v, from release: %v\n", args, fromRelease)
 	runAndCleanCommand("helm", args...)
 
 	// Check that everything is OK
@@ -433,6 +433,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
 func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir string) {
+	fmt.Printf("Upgrading crds release %s, crdDir %s", fromRelease, crdDir)
 	// if we're just upgrading within the same release, no need to reapply crds
 	if fromRelease == "" {
 		return
@@ -450,15 +451,21 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir stri
 	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()
 
-	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
+	var args = []string{"upgrade", testHelper.HelmChartName,
 		"-n", testHelper.InstallNamespace,
 		"--values", valueOverrideFile}
+	if fromRelease != "" {
+		args = append(args, "gloo/gloo",
+			"--version", fmt.Sprintf("v%s", fromRelease))
+	} else {
+		args = append(args, chartUri)
+	}
+	args = append(args, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
 	args = append(args, additionalArgs...)
-
-	fmt.Printf("running helm with args: %v\n", args)
+	fmt.Printf("running helm with args: %v fromRelease %v\n", args, fromRelease)
 	runAndCleanCommand("helm", args...)
 
 	// Check that everything is OK
