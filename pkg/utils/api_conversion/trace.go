@@ -1,8 +1,9 @@
 package api_conversion
 
 import (
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
-	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
+	envoytracegloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -12,7 +13,7 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytrace_gloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
+func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytracegloo.DatadogConfig, clusterName string) (*envoytrace.DatadogConfig, error) {
 	envoyDatadogConfig := &envoytrace.DatadogConfig{
 		CollectorCluster: clusterName,
 		ServiceName:      glooDatadogConfig.GetServiceName().GetValue(),
@@ -20,7 +21,7 @@ func ToEnvoyDatadogConfiguration(glooDatadogConfig *envoytrace_gloo.DatadogConfi
 	return envoyDatadogConfig, nil
 }
 
-func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytrace_gloo.ZipkinConfig, clusterName string) (*envoytrace.ZipkinConfig, error) {
+func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytracegloo.ZipkinConfig, clusterName string) (*envoytrace.ZipkinConfig, error) {
 	envoyZipkinConfig := &envoytrace.ZipkinConfig{
 		CollectorCluster:         clusterName,
 		CollectorEndpoint:        glooZipkinConfig.GetCollectorEndpoint(),
@@ -31,11 +32,25 @@ func ToEnvoyZipkinConfiguration(glooZipkinConfig *envoytrace_gloo.ZipkinConfig, 
 	return envoyZipkinConfig, nil
 }
 
-func ToEnvoyZipkinCollectorEndpointVersion(version envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion) envoytrace.ZipkinConfig_CollectorEndpointVersion {
+func ToEnvoyOpenTelemetryonfiguration(glooOpenTelemetryConfig *envoytracegloo.OpenTelemetryConfig, clusterName string) (*envoytrace.OpenTelemetryConfig, error) {
+	envoyOpenTelemetryConfig := &envoytrace.OpenTelemetryConfig{
+		GrpcService: &envoy_config_core_v3.GrpcService{
+			TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+				EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+					ClusterName: clusterName,
+				},
+			},
+		},
+	}
+
+	return envoyOpenTelemetryConfig, nil
+
+}
+func ToEnvoyZipkinCollectorEndpointVersion(version envoytracegloo.ZipkinConfig_CollectorEndpointVersion) envoytrace.ZipkinConfig_CollectorEndpointVersion {
 	switch str := version.String(); str {
-	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_HTTP_JSON)]:
+	case envoytracegloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytracegloo.ZipkinConfig_HTTP_JSON)]:
 		return envoytrace.ZipkinConfig_HTTP_JSON
-	case envoytrace_gloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytrace_gloo.ZipkinConfig_HTTP_PROTO)]:
+	case envoytracegloo.ZipkinConfig_CollectorEndpointVersion_name[int32(envoytracegloo.ZipkinConfig_HTTP_PROTO)]:
 		return envoytrace.ZipkinConfig_HTTP_PROTO
 	}
 	return envoytrace.ZipkinConfig_HTTP_JSON

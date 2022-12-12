@@ -1,7 +1,6 @@
 metadata:
   name: default
   namespace: gloo-system
-  resourceVersion: "2"
 virtualHost:
   domains:
   - '*'
