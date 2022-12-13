@@ -1,7 +1,7 @@
 ---
 title: Set up caching
 weight: 50
-description: Deploy the caching server and start caching responses from Upstream services. 
+description: Deploy the caching server and start caching responses from upstream services. 
 ---
 
 Set up the Gloo Edge caching server to cache responses from upstream services for quicker response times.
