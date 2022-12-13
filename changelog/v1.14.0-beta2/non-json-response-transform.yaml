@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add e2e testing around parsing of non-JSON responses
+  - type: NON_USER_FACING
+    description: Update docs to warn about default JSON parsing behavior in transformation filter
+    issueLink: https://github.com/solo-io/gloo/issues/7419
