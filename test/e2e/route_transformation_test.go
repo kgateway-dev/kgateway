@@ -355,7 +355,7 @@ var _ = Describe("Transformations", func() {
 				Transformations: transform,
 			}
 		})
-		FIt("should error on non-json body when ignoreErrorOnParse/parseBodyBehavior/passthrough is disabled", func() {
+		It("should error on non-json body when ignoreErrorOnParse/parseBodyBehavior/passthrough is disabled", func() {
 			WriteVhost(vh)
 
 			// execute request -- note that the Httpbin html endpoint returns a non-json body
