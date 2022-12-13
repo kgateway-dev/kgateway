@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"time"
@@ -113,7 +113,7 @@ var _ = Describe("Transformations", func() {
 			if res.StatusCode != http.StatusOK {
 				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
 			}
-			b, err := ioutil.ReadAll(res.Body)
+			b, err := io.ReadAll(res.Body)
 			return string(b), err
 		}, "20s", ".5s").Should(Equal("test"))
 	}
@@ -322,6 +322,16 @@ var _ = Describe("Transformations", func() {
 		}, "10s", "1s").Should(Succeed())
 	}
 
+	GetHtmlRequest := func() *http.Request {
+		// note that the Httpbin html endpoint returns a non-json body
+		url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
+		headers := map[string]string{
+			"x-solo-hdr-1": "test",
+		}
+		req := FormRequestWithUrlAndHeaders(url, headers)
+		return req
+	}
+
 	Context("parsing non-valid JSON", func() {
 		var (
 			us        *gloov1.Upstream
@@ -358,25 +368,15 @@ var _ = Describe("Transformations", func() {
 		It("should error on non-json body when ignoreErrorOnParse/parseBodyBehavior/passthrough is disabled", func() {
 			WriteVhost(vh)
 
-			// execute request -- note that the Httpbin html endpoint returns a non-json body
-			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
-			headers := map[string]string{
-				"x-solo-hdr-1": "test",
-			}
-			req := FormRequestWithUrlAndHeaders(url, headers)
-			ExpectUnsuccessfulResponse(req)
+			// execute request -- expect a 400 response
+			ExpectUnsuccessfulResponse(GetHtmlRequest())
 		})
 		It("should transform response with non-json body when ignoreErrorOnParse is enabled", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().IgnoreErrorOnParse = true
 			WriteVhost(vh)
 
-			// execute request -- note that the Httpbin html endpoint returns a non-json body
-			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
-			headers := map[string]string{
-				"x-solo-hdr-1": "test",
-			}
-			req := FormRequestWithUrlAndHeaders(url, headers)
-			res := GetSuccessfulResponse(req)
+			// execute request -- expect a 200 response
+			res := GetSuccessfulResponse(GetHtmlRequest())
 
 			// inspect response headers to confirm transformation was applied
 			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
@@ -389,13 +389,8 @@ var _ = Describe("Transformations", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = envoy_transform.TransformationTemplate_DontParse
 			WriteVhost(vh)
 
-			// execute request -- note that the Httpbin html endpoint returns a non-json body
-			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
-			headers := map[string]string{
-				"x-solo-hdr-1": "test",
-			}
-			req := FormRequestWithUrlAndHeaders(url, headers)
-			res := GetSuccessfulResponse(req)
+			// execute request -- expect a 200 response
+			res := GetSuccessfulResponse(GetHtmlRequest())
 
 			// inspect response headers to confirm transformation was applied
 			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
@@ -410,13 +405,8 @@ var _ = Describe("Transformations", func() {
 			}
 			WriteVhost(vh)
 
-			// execute request -- note that the Httpbin html endpoint returns a non-json body
-			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
-			headers := map[string]string{
-				"x-solo-hdr-1": "test",
-			}
-			req := FormRequestWithUrlAndHeaders(url, headers)
-			res := GetSuccessfulResponse(req)
+			// execute request -- expect a 200 response
+			res := GetSuccessfulResponse(GetHtmlRequest())
 
 			// inspect response headers to confirm transformation was applied
 			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
