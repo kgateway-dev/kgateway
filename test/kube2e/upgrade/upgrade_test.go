@@ -166,7 +166,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 // Based case test for local runs to help narrow down failures
 func baseUpgradeTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, strictValidation bool) {
 	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
-	Expect(fmt.Sprintf("v%s", getGlooServerVersion(ctx, testHelper.InstallNamespace))).To(Equal(startingVersion))
+	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(startingVersion))
 
 	// upgrade to the gloo version being tested
 	upgradeGloo(testHelper, chartUri, crdDir, strictValidation, nil)
