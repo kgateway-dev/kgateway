@@ -64,7 +64,7 @@ func RateLimitIsConnected(stats string) bool {
 	return true
 }
 
-func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) error {
+func checkXdsMetrics(ctx context.Context, opts *options.Options, deployments *v1.DeploymentList) error {
 	errMessage := "Problem while checking for gloo xds errors"
 	if deployments == nil {
 		fmt.Println("Skipping due to an error in checking deployments")
@@ -83,7 +83,7 @@ func checkXdsMetrics(ctx context.Context, opts *options.Options, glooNamespace s
 		printer.AppendCheck("Warning: checking xds with port forwarding is disabled\n")
 		return nil
 	}
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
+	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, opts.Metadata.GetNamespace(), "deploy/"+glooDeployment,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		return err
