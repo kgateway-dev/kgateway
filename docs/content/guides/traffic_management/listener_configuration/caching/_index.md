@@ -1,5 +1,5 @@
 ---
 title: Response caching
-weight: 
+weight: 50
 ---
 
