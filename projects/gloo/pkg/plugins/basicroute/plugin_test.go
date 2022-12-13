@@ -567,6 +567,45 @@ var _ = Describe("host rewrite", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
 	})
+
+	It("rewrites using regex", func() {
+		p := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{}
+
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		regex := &v3.RegexMatchAndSubstitute{
+			Pattern: &v3.RegexMatcher{
+				Regex: "^/(.+)/.+$",
+			},
+			Substitution: "\\1",
+		}
+
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				HostRewriteType: &v1.RouteOptions_HostRewritePathRegex{
+					HostRewritePathRegex: regex,
+				},
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.GetHostRewritePathRegex()).To(Equal(&envoy_type_matcher_v3.RegexMatchAndSubstitute{
+			Pattern: &envoy_type_matcher_v3.RegexMatcher{
+				Regex: "^/(.+)/.+$",
+				EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{
+						MaxProgramSize: nil,
+					},
+				},
+			},
+			Substitution: "\\1",
+		}))
+	})
 })
 
 var _ = Describe("upgrades", func() {

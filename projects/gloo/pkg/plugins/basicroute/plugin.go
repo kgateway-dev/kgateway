@@ -1,6 +1,7 @@
 package basicroute
 
 import (
+	"context"
 	"fmt"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -76,7 +77,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err := applyRetries(in, out); err != nil {
 		return err
 	}
-	if err := applyHostRewrite(in, out); err != nil {
+	if err := applyHostRewrite(params.Ctx, in, out); err != nil {
 		return err
 	}
 	if err := applyUpgrades(in, out); err != nil {
@@ -199,7 +200,7 @@ func applyRetries(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	return nil
 }
 
-func applyHostRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
+func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	hostRewriteType := in.GetOptions().GetHostRewriteType()
 	if hostRewriteType == nil {
 		return nil
@@ -221,6 +222,17 @@ func applyHostRewrite(in *v1.Route, out *envoy_config_route_v3.Route) error {
 		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: rewriteType.AutoHostRewrite,
 		}
+
+	case *v1.RouteOptions_HostRewritePathRegex:
+		regex, err := regexutils.ConvertRegexMatchAndSubstitute(ctx, rewriteType.HostRewritePathRegex)
+		if err != nil {
+			return err
+		}
+
+		routeAction.Route.HostRewriteSpecifier = &envoy_config_route_v3.RouteAction_HostRewritePathRegex{
+			HostRewritePathRegex: regex,
+		}
+
 	default:
 		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
 	}
