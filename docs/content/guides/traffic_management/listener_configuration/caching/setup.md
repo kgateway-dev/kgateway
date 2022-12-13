@@ -164,5 +164,5 @@ In the following example, the `httpbin` app is used to show how response caching
    curl -vik "$(glooctl proxy url)/status/200"
    ```
    
-6. 
+6. Try out caching without response validation. 
       
