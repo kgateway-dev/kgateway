@@ -307,6 +307,21 @@ var _ = Describe("Transformations", func() {
 		return res
 	}
 
+	ExpectUnsuccessfulResponse := func(req *http.Request) {
+		client := &http.Client{Timeout: time.Second}
+		var (
+			res *http.Response
+			err error
+		)
+
+		Eventually(func(g Gomega) {
+			// send request
+			res, err = client.Do(req)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(res.StatusCode).To(Equal(http.StatusBadRequest))
+		}, "10s", "1s").Should(Succeed())
+	}
+
 	Context("parsing non-valid JSON", func() {
 		var (
 			us        *gloov1.Upstream
@@ -339,6 +354,17 @@ var _ = Describe("Transformations", func() {
 			vh.Options = &gloov1.VirtualHostOptions{
 				Transformations: transform,
 			}
+		})
+		FIt("should error on non-json body when ignoreErrorOnParse/parseBodyBehavior/passthrough is disabled", func() {
+			WriteVhost(vh)
+
+			// execute request -- note that the Httpbin html endpoint returns a non-json body
+			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
+			headers := map[string]string{
+				"x-solo-hdr-1": "test",
+			}
+			req := FormRequestWithUrlAndHeaders(url, headers)
+			ExpectUnsuccessfulResponse(req)
 		})
 		It("should transform response with non-json body when ignoreErrorOnParse is enabled", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().IgnoreErrorOnParse = true
