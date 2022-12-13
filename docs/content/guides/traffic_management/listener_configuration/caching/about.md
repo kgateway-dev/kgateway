@@ -1,5 +1,6 @@
 ---
 title: About caching responses
+description: Learn about how caching works in Gloo Edge Enterprise with and without response validation. 
 weight: 10
 ---
 
