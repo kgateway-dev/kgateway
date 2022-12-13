@@ -55,13 +55,14 @@ https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/proj
 
 ## Configure caching for a listener
 
-After you enable the caching server, you must configure caching on a listener defined in a Gateway CRD.
+Configure your gateway to cache responses for all upstreams that are served by a listener. Enabling caching for a specific upstream is currently not supported.
+
 1. Edit the Gateway CRD where your listener is defined.
    ```sh
    kubectl edit gateway -n gloo-system gateway-proxy
    ```
 
-2. Specify the caching server in the `httpGateway.options` section. Currently, all paths for all upstreams that are served by a listener are cached.
+2. Specify the caching server in the `httpGateway.options` section. 
    {{< highlight yaml "hl_lines=11-16" >}}
    apiVersion: gateway.solo.io/v1
    kind: Gateway
@@ -83,7 +84,7 @@ After you enable the caching server, you must configure caching on a listener de
 
 <!-- future work: define matchers to specify which paths should be cached -->
 
-## Verify response caching
+## Verify response caching with httpbin
 
 In the following example, the `httpbin` app is used to show how response caching works with Gloo Edge Enterprise. 
 
@@ -132,37 +133,10 @@ In the following example, the `httpbin` app is used to show how response caching
       EOF
       ```
    
-4. Configure your gateway to cache responses for all upstreams that are served by a listener. Enabling caching for a specific upstream is currently not supported.  
-   1. Edit the Gateway CRD where your listener is defined.
-      ```sh
-      kubectl edit gateway -n gloo-system gateway-proxy
-      ```
-
-   2. Specify the caching server in the `httpGateway.options` section. 
-      {{< highlight yaml "hl_lines=11-16" >}}
-      apiVersion: gateway.solo.io/v1
-      kind: Gateway
-      metadata:
-        name: gateway-proxy
-        namespace: gloo-system
-     spec:
-        bindAddress: ‘::’
-        bindPort: 8080
-        proxyNames:
-        - gateway-proxy
-        httpGateway:
-          options:
-            caching:
-              cachingServiceRef:
-                name: caching-service
-                namespace: gloo-system
-      {{< /highlight >}}
-      
-
-5. Curl the `httpbin` app and verify that you get back a 200 HTTP response. 
+4. Curl the `httpbin` app and verify that you get back a 200 HTTP response. 
    ```shell
    curl -vik "$(glooctl proxy url)/status/200"
    ```
    
-6. Try out caching without response validation. 
+5. Try out caching without response validation. 
       
