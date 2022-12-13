@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -99,8 +98,12 @@ func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
+	if opts.Check.CheckTimeout != 0 {
+		ctx, cancel = context.WithTimeout(opts.Top.Ctx, opts.Check.CheckTimeout)
+	}
 	defer cancel()
-	err := checkConnection(ctx, opts.Metadata.GetNamespace())
+
+	err := checkConnection(ctx, opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		return multiErr
@@ -219,7 +222,7 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "xds-metrics"); included {
-		err = checkXdsMetrics(ctx, opts, opts.Metadata.GetNamespace(), deployments)
+		err = checkXdsMetrics(ctx, opts, deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -236,7 +239,7 @@ func CheckResources(opts *options.Options) error {
 
 func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1.DeploymentList, error) {
 	printer.AppendCheck("Checking deployments... ")
-	client, err := helpers.KubeClient()
+	client, err := helpers.GetKubernetesClient()
 	if err != nil {
 		errMessage := "error getting KubeClient"
 		fmt.Println(errMessage)
@@ -313,7 +316,7 @@ func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1
 
 func checkPods(ctx context.Context, opts *options.Options) error {
 	printer.AppendCheck("Checking pods... ")
-	client, err := helpers.KubeClient()
+	client, err := helpers.GetKubernetesClient()
 	if err != nil {
 		return err
 	}
@@ -893,7 +896,7 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 func checkSecrets(ctx context.Context, opts *options.Options, namespaces []string) error {
 	printer.AppendCheck("Checking secrets... ")
 	var multiErr *multierror.Error
-	client, err := helpers.GetSecretClient(ctx, opts.Check.SecretClientTimeout, namespaces)
+	client, err := helpers.GetSecretClient(ctx, namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 		printer.AppendStatus("secrets", fmt.Sprintf("%v Errors!", multiErr.Len()))
@@ -929,12 +932,12 @@ func renderNamespaceName(namespace, name string) string {
 
 // Checks whether the cluster that the kubeconfig points at is available
 // The timeout for the kubernetes client is set to a low value to notify the user of the failure
-func checkConnection(ctx context.Context, ns string) error {
-	client, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
+func checkConnection(ctx context.Context, opts *options.Options) error {
+	client, err := helpers.GetKubernetesClient()
 	if err != nil {
 		return eris.Wrapf(err, "Could not get kubernetes client")
 	}
-	_, err = client.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+	_, err = client.CoreV1().Namespaces().Get(ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 	if err != nil {
 		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}
