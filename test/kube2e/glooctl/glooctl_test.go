@@ -1,6 +1,7 @@
 package glooctl_test
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 
@@ -402,6 +403,27 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(output).To(ContainSubstring("Checking proxies... OK"))
 			Expect(output).To(ContainSubstring("Warning: checking proxies with port forwarding is disabled"))
 			Expect(output).To(ContainSubstring("Warning: checking xds with port forwarding is disabled"))
+		})
+
+		It("can set timeouts (too short)", func() {
+			values, err := os.CreateTemp("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = values.Write([]byte(`checkTimeoutSeconds: 1ns`))
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = runGlooctlCommand("check", "-c", values.Name())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("context deadline exceeded"))
+		})
+
+		It("can set timeouts (appropriately)", func() {
+			values, err := os.CreateTemp("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = values.Write([]byte(`checkTimeoutSeconds: 300s`))
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = runGlooctlCommand("check", "-c", values.Name())
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("fails if no gateway proxy deployments", func() {

@@ -29,8 +29,11 @@ spec:
         {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
         {{- end }}
-      {{- if .Values.gateway.cleanupJob.extraPodAnnotations }}
+      {{- if or .Values.settings.linkerd .Values.gateway.cleanupJob.extraPodAnnotations }}
       annotations:
+        {{- if .Values.settings.linkerd }}
+        "linkerd.io/inject": disabled
+        {{- end }}
         {{- range $key, $value := .Values.gateway.cleanupJob.extraPodAnnotations }}
         {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
