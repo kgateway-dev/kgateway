@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -306,52 +307,97 @@ var _ = Describe("Transformations", func() {
 		return res
 	}
 
-	// At the moment, this test fails
-	FIt("should transform response with non-json body", func() {
-		// *******************************
-		// ************ setup ************
-		// *******************************
-		us := GetHttpbinEchoUpstream()
-		writeUpstream(us)
+	Context("parsing non-valid JSON", func() {
+		var (
+			us        *gloov1.Upstream
+			vh        *gloov1.VirtualHost
+			transform *transformation.Transformations
+		)
+		BeforeEach(func() {
+			// create upstream that will return an html body at the /html endpoint
+			us = GetHttpbinEchoUpstream()
+			writeUpstream(us)
 
-		// create a virtual host with a route to the upstream
-		vh := GetTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
+			// create a virtual host with a route to the upstream
+			vh = GetTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
 
-		// add a transformation to the virtual host
-		transform = &transformation.Transformations{
-			ResponseTransformation: &transformation.Transformation{
-				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: &envoy_transform.TransformationTemplate{
-						Headers: map[string]*envoy_transform.InjaTemplate{
-							"x-solo-resp-hdr1": {
-								Text: "{{ request_header(\"x-solo-hdr-1\") }}",
+			// add a transformation to the virtual host
+			transform = &transformation.Transformations{
+				ResponseTransformation: &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoy_transform.TransformationTemplate{
+							Headers: map[string]*envoy_transform.InjaTemplate{
+								"x-solo-resp-hdr1": {
+									Text: "{{ request_header(\"x-solo-hdr-1\") }}",
+								},
 							},
 						},
 					},
 				},
-			},
-		}
-		vh.Options = &gloov1.VirtualHostOptions{
-			Transformations: transform,
-		}
+			}
 
-		WriteVhost(vh)
-		// *******************************
-		// ********** end setup **********
-		// *******************************
+			vh.Options = &gloov1.VirtualHostOptions{
+				Transformations: transform,
+			}
+		})
+		It("should transform response with non-json body when ignoreErrorOnParse is enabled", func() {
+			transform.ResponseTransformation.GetTransformationTemplate().IgnoreErrorOnParse = true
+			WriteVhost(vh)
 
-		// execute request
-		// NOTE: the Httpbin /html endpoint returns a non-json body, that envoy currently
-		// attempts and fails to parse as json, causing this request to error out
-		url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
-		headers := map[string]string{
-			"x-solo-hdr-1": "test",
-		}
-		req := FormRequestWithUrlAndHeaders(url, headers)
-		res := GetSuccessfulResponse(req)
+			// execute request -- note that the Httpbin html endpoint returns a non-json body
+			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
+			headers := map[string]string{
+				"x-solo-hdr-1": "test",
+			}
+			req := FormRequestWithUrlAndHeaders(url, headers)
+			res := GetSuccessfulResponse(req)
 
-		// inspect response headers
-		Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
+			// inspect response headers to confirm transformation was applied
+			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
+			// attempt to read body as json to confirm that it was not parsed
+			var body map[string]interface{}
+			err := json.NewDecoder(res.Body).Decode(&body)
+			Expect(err).To(HaveOccurred())
+		})
+		It("should transform response with non-json body when ParseBodyBehavior is set to DontParse", func() {
+			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = envoy_transform.TransformationTemplate_DontParse
+			WriteVhost(vh)
+
+			// execute request -- note that the Httpbin html endpoint returns a non-json body
+			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
+			headers := map[string]string{
+				"x-solo-hdr-1": "test",
+			}
+			req := FormRequestWithUrlAndHeaders(url, headers)
+			res := GetSuccessfulResponse(req)
+
+			// inspect response headers to confirm transformation was applied
+			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
+			// attempt to read body as json to confirm that it was not parsed
+			var body map[string]interface{}
+			err := json.NewDecoder(res.Body).Decode(&body)
+			Expect(err).To(HaveOccurred())
+		})
+		It("should transform response with non-json body when passthrough is enabled", func() {
+			transform.ResponseTransformation.GetTransformationTemplate().BodyTransformation = &envoy_transform.TransformationTemplate_Passthrough{
+				Passthrough: &envoy_transform.Passthrough{},
+			}
+			WriteVhost(vh)
+
+			// execute request -- note that the Httpbin html endpoint returns a non-json body
+			url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
+			headers := map[string]string{
+				"x-solo-hdr-1": "test",
+			}
+			req := FormRequestWithUrlAndHeaders(url, headers)
+			res := GetSuccessfulResponse(req)
+
+			// inspect response headers to confirm transformation was applied
+			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
+			// attempt to read body as json to confirm that it was not parsed
+			var body map[string]interface{}
+			err := json.NewDecoder(res.Body).Decode(&body)
+			Expect(err).To(HaveOccurred())
+		})
 	})
-
 })
