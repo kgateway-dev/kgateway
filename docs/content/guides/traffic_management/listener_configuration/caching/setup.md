@@ -138,5 +138,116 @@ In the following example, the `httpbin` app is used to show how response caching
    curl -vik "$(glooctl proxy url)/status/200"
    ```
    
-5. Try out caching without response validation. 
+5. Try out caching without response validation by using the `/cache/{value}` endpoint of the `httpbin` app. 
+   1. Send a request to the `/cache/{value}` endpoint. The `{value}` variable determines the number of seconds you want to cache the response for. In this example, the response is cached for 30 seconds. In your CLI output, verify that you get back the `cache-control` response header with a `max-age=30` value. 
+      ```shell
+      curl -vik "$(glooctl proxy url)/httpbin/cache/30"
+      ```
+      
+      Example output: 
+      ```
+      < HTTP/1.1 200 OK
+      HTTP/1.1 200 OK
+      < date: Wed, 14 Dec 2022 19:32:13 GMT
+      date: Wed, 14 Dec 2022 19:32:13 GMT
+      < content-type: application/json
+      content-type: application/json
+      < content-length: 423
+      content-length: 423
+      < server: envoy
+      server: envoy
+      < cache-control: public, max-age=30
+      cache-control: public, max-age=30
+      < access-control-allow-origin: *
+      access-control-allow-origin: *
+      < access-control-allow-credentials: true
+      access-control-allow-credentials: true
+      < x-envoy-upstream-service-time: 60
+      x-envoy-upstream-service-time: 60
+
+      < 
+     {
+       "args": {}, 
+       "headers": {
+       "Accept": "*/*", 
+       "Host": "34.173.214.185", 
+       "If-Modified-Since": "Wed, 14 Dec 2022 19:03:15 GMT", 
+       "User-Agent": "curl/7.77.0", 
+       "X-Amzn-Trace-Id": "Root=1-639a24bd-368eb5d92130a8b35144ce4d", 
+       "X-Envoy-Expected-Rq-Timeout-Ms": "15000", 
+       "X-Envoy-Original-Path": "/httpbin/cache/30"
+      }, 
+        "origin": "32.200.10.110", 
+        "url": "http://34.173.214.185/cache/30"
+      }
+      ```
+   
+   2. Send another request to the same endpoint within the 30s timeframe. In your CLI output, verify that you get back the original response. In addition, check that an `age` response header is returned indicating the age of the cached response and that the `date` header uses the date and time of the original response. 
+      ```shell
+      curl -vik "$(glooctl proxy url)/httpbin/cache/30"
+      ```
+      
+      Example output: 
+      ```
+      ...
+      date: Wed, 14 Dec 2022 19:32:13 GMT
+      < age: 24
+      age: 24
+
+      < 
+      {
+        "args": {}, 
+        "headers": {
+        "Accept": "*/*", 
+        "Host": "34.173.214.185", 
+        "If-Modified-Since": "Wed, 14 Dec 2022 19:03:15 GMT", 
+        "User-Agent": "curl/7.77.0", 
+        "X-Amzn-Trace-Id": "Root=1-639a24bd-368eb5d92130a8b35144ce4d", 
+        "X-Envoy-Expected-Rq-Timeout-Ms": "15000", 
+        "X-Envoy-Original-Path": "/httpbin/cache/30"
+      }, 
+        "origin": "32.200.10.110", 
+        "url": "http://34.173.214.185/cache/30"
+      }
+      ```
+      
+   3. Wait until the 30 seconds have passed and the response becomes stale. Send another request to the same endpoint and verify that you get back a fresh response and that no `age` header is returned. 
+      ```shell
+      curl -vik "$(glooctl proxy url)/httpbin/cache/30"
+      ```
+      
+      Example output: 
+      ```
+      cache-control: public, max-age=30
+      < access-control-allow-origin: *
+      access-control-allow-origin: *
+      < access-control-allow-credentials: true
+      access-control-allow-credentials: true
+      < x-envoy-upstream-service-time: 275
+      x-envoy-upstream-service-time: 275
+
+      < 
+       {
+         "args": {}, 
+         "headers": {
+         "Accept": "*/*", 
+         "Host": "34.173.214.185", 
+         "If-Modified-Since": "Wed, 14 Dec 2022 19:32:13 GMT", 
+         "User-Agent": "curl/7.77.0", 
+         "X-Amzn-Trace-Id": "Root=1-639a27f5-2e83d6cb694728cd3e53c8fc", 
+         "X-Envoy-Expected-Rq-Timeout-Ms": "15000", 
+         "X-Envoy-Original-Path": "/httpbin/cache/30"
+      }, 
+        "origin": "32.200.10.110", 
+        "url": "http://34.173.214.185/cache/30"
+      }
+      ```
+      
+6. Try out caching with response validation. Response validation must be implemented in the upstream service directly. The upstream must be capable of reading the date and time that is sent in the `If-Modified-Since` request header and to check whether or not the response has changed since then. 
+   1. Repeat setps 5.1 and 5.2 to 
+   
+   ```shell
+   curl -vik "$(glooctl proxy url)/httpbin/cache/30"
+   ```
+      
       
