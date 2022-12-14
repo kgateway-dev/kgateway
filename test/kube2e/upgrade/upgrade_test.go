@@ -296,8 +296,9 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
 
-	runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
+	result := runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
 		"https://storage.googleapis.com/solo-public-helm", "--force-update")
+	fmt.Printf("helm repo add result: %s\n", string(result))
 	args = append(args, "gloo/gloo",
 		"--version", fromRelease)
 

@@ -322,6 +322,7 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
 		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.ReleasedVersion = useVersion
 			defaults.Verbose = true
