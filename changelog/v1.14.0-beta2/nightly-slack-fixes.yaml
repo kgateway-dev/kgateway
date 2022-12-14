@@ -2,4 +2,4 @@ changelog:
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/4191
     resolvesIssue: false
-    description: More fixes for first pass at running nightly.
+    description: More fixes for first pass at running nightly including setting the released version correctly and sending results to slack..
