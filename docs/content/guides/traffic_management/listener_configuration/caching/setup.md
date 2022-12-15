@@ -86,9 +86,9 @@ Configure your gateway to cache responses for all upstreams that are served by a
 
 ## Verify response caching with httpbin and the Envoy caching service
 
-To verify and illustrate how caching works with and without response validation, the following apps are used: 
-- `httpbin`: The `/cache/{value}` endpoint is used to show how caching works in Gloo Edge Enterprise without response validation. 
-- Envoy caching service: The `/valid-for-minute` endpoint is used to show how caching works in Gloo Edge Enterprise with response validation. 
+To illustrate how caching works with and without response validation, the following apps are used: 
+- **`httpbin`**: The `/cache/{value}` endpoint is used to show how caching works in Gloo Edge Enterprise without response validation. 
+- **Envoy caching service**: The `/valid-for-minute` endpoint is used to show how caching works in Gloo Edge Enterprise with response validation. 
 
 Follow the steps to set up `httpbin` and the Envoy caching service, and to try out caching in Gloo Edge Enterprise. 
 
@@ -246,7 +246,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       x-envoy-upstream-service-time: 60
 
       < 
-     {
+      {
        "args": {}, 
        "headers": {
        "Accept": "*/*", 
