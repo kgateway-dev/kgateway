@@ -284,7 +284,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
       
       Example output: 
-      {{< highlight yaml "hl_lines=2-3" >}}
+      {{< highlight yaml "hl_lines=1-3" >}}
       ...
       date: Wed, 14 Dec 2022 19:32:13 GMT
       < age: 24
@@ -305,7 +305,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
         "origin": "32.200.10.110", 
         "url": "http://34.173.214.185/cache/30"
       }
-      ```
+      {{< /highlight >}}
       
    3. Wait until the 30 seconds have passed and the cached response becomes stale. Send another request to the same endpoint. Verify that you get back a fresh response and that no `age` header is returned. 
       ```shell
@@ -346,7 +346,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
       
       Example output: 
-      ```
+      {{< highlight yaml "hl_lines=7-8,13-14" >}}
       < HTTP/1.1 200 OK
       HTTP/1.1 200 OK
       < content-type: text/html; charset=utf-8
@@ -370,7 +370,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       This response will stay fresh for one minute
 
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
-      ```
+      {{< /highlight >}}
       
    2. Send another request to the same endpoint within the 1 minute timeframe. Because the response is cached for 1 minute, the original response is returned with an `age` header indicating the number of seconds that have passed since the original response was sent. Make sure that the `date` header and response body include the same information as in the original response. 
       ```shell
@@ -378,16 +378,8 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
       
       Example output: 
-      ```shell
-      < HTTP/1.1 200 OK
-      HTTP/1.1 200 OK
-      < x-envoy-upstream-service-time: 5
-      x-envoy-upstream-service-time: 5
-      < etag: "324ce9104e113743300a847331bb942ab7ace81a"
-      etag: "324ce9104e113743300a847331bb942ab7ace81a"
-      < custom-header: any value
-      custom-header: any value
-      server: envoy
+      {{< highlight yaml "hl_lines=5-6,9-10" >}}
+      ...
       < cache-control: max-age=60
       cache-control: max-age=60
       < content-length: 99
@@ -403,7 +395,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       This response will stay fresh for one minute
 
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
-      ```
+      {{< /highlight >}}
       
    3. After the 1 minute has passed and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a 304 Not Modified HTTP response code to indicate that the response has not changed. When the 304 HTTP response code is received by the Gloo Edge caching server, the caching server fetches the original response from Redis, and sends it back to the client. 
       
@@ -413,15 +405,8 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
       
       Example output: 
-      ```
-      < HTTP/1.1 200 OK
-      HTTP/1.1 200 OK
-      < cache-control: max-age=60
-      cache-control: max-age=60
-      < custom-header: any value
-      custom-header: any value
-      < etag: "324ce9104e113743300a847331bb942ab7ace81a"
-      etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      {{< highlight yaml "hl_lines=2-3,14-16" >}}
+      ...
       < date: Thu, 15 Dec 2022 15:53:55 GMT
       date: Thu, 15 Dec 2022 15:53:55 GMT
       < server: envoy
@@ -437,7 +422,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       This response will stay fresh for one minute
 
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
-      ```
+      {{< /highlight >}}
             
 {{% notice note %}}
 Because the Envoy caching app is configured to always return a 304 HTTP response code, you continue to see the cached response no matter how many requests you send to the app. To reset the app and force the app to return a fresh response, you must restart the pod. 
