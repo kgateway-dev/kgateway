@@ -61,9 +61,10 @@ var _ = Describe("Kube2e: helm", func() {
 
 		testHelper *helper.SoloTestHelper
 
-		// if set, the test will install from a released version (rather than local version) of the helm chart
+		// if set, test a released version (rather than local version) of the helm chart
 		targetVersion string
-		fromRelease   string
+		// Gloo version to install in JustBeforeEach (sometimes this is the version to upgrade from, sometimes version to install and verify)
+		fromRelease string
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
 	)

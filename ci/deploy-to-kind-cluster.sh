@@ -7,6 +7,10 @@ CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.22.4}"
 # The version used to tag images
 VERSION="${VERSION:-1.0.0-ci}"
+# Skip building docker images if we are testing a released version
+SKIP_DOCKER="${SKIP_DOCKER:false}"
+#Stop after creating the kind cluster
+JUST_KIND="${JUST_KIND:false}"
 # Automatically (lazily) determine OS type
 if [[ $OSTYPE == 'darwin'* ]]; then
   OS='darwin'

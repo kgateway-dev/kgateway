@@ -2,8 +2,10 @@ name: Nightly
 on:
   schedule:
     # run Monday-Friday mornings (midnight UTC)
-    - cron: "0 0 * * 1-5"
+    - cron: "0 5 * * 1-5"
   workflow_dispatch:
+    #TODO: don't merge with pull_request trigger
+  pull_request:
 jobs:
   prepare_env:
     name: Prepare Environment
@@ -105,12 +107,21 @@ jobs:
         # see what's in the cluster if we failed
         kubectl get all -A
         kubectl get configmaps -A
-    - name: Send Message
-      id: message-on-result
-      if: ${{ always() }}
+    - name: Send Fail Message
+      id: message-on-failure
+      if: ${{ failure() }}
       shell: bash
       run: |
         curl -X POST https://slack.com/api/chat.postMessage\
               -H "Content-Type: application/json; charset=utf-8"\
               -H "Authorization: Bearer ${{ secrets.SLACKBOT_BEARER }}"\
-              -d '{"channel":"C04CJMXAH7A","text":"The <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|regression tests> nightly run has completed. Test Suite: ${{ matrix.kube-e2e-test-type }} Result: ${{ job.status }}"}'
+              -d '{"channel":"C04CJMXAH7A","text":":red_circle: Test Suite ${{ matrix.kube-e2e-test-type }} failed. Full Results: <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|regression tests>"}'
+    - name: Send Success Message
+      id: message-on-success
+      if: ${{ success() }}
+      shell: bash
+      run: |
+        curl -X POST https://slack.com/api/chat.postMessage\
+              -H "Content-Type: application/json; charset=utf-8"\
+              -H "Authorization: Bearer ${{ secrets.SLACKBOT_BEARER }}"\
+              -d '{"channel":"C04CJMXAH7A","text":":large_green_circle: Test Suite ${{ matrix.kube-e2e-test-type }} succeeded. Full Results: <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|regression tests>"}'
