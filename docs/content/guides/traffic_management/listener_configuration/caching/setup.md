@@ -84,58 +84,138 @@ Configure your gateway to cache responses for all upstreams that are served by a
 
 <!-- future work: define matchers to specify which paths should be cached -->
 
-## Verify response caching with httpbin
+## Verify response caching with httpbin and the Envoy caching service
 
-In the following example, the `httpbin` app is used to show how response caching works with Gloo Edge Enterprise. 
+To verify and illustrate how caching works with and without response validation, the following apps are used: 
+- `httpbin`: The `/cache/{value}` endpoint is used to show how caching works in Gloo Edge Enterprise without response validation. 
+- Envoy caching service: The `/valid-for-minute` endpoint is used to show how caching works in Gloo Edge Enterprise with response validation. 
 
-1. Deploy `httpbin`. 
-   ```shell
-   kubectl create ns httpbin
-   kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo-mesh-use-cases/main/policy-demo/httpbin.yaml
-   ```
-   
-2. Verify that the app is up and running. 
-   ```shell
-   kubectl get pods -n httpbin
-   ```
-   
-   Example output: 
-   ```
-   httpbin-847f64cc8d-9kz2d   1/1     Running   0          35s
-   ```
-   
-3. Create a virtual service for the `httpbin` app. 
-   1. Get the name of the upstream that was created automatically for your `httpbin` service. 
+Follow the steps to set up `httpbin` and the Envoy caching service, and to try out caching in Gloo Edge Enterprise. 
+
+1. Deploy and configure `httpbin`. 
+   1. Create the `httpbin` namespace and deploy the app. 
       ```shell
-      kubectl get upstreams -A | grep httpbin
+      kubectl create ns httpbin
+      kubectl -n httpbin apply -f https://raw.githubusercontent.com/solo-io/gloo-mesh-use-cases/main/policy-demo/httpbin.yaml
+      ```
+   
+   2. Verify that the app is up and running. 
+      ```shell
+      kubectl get pods -n httpbin
+      ```
+   
+      Example output: 
+      ```
+      httpbin-847f64cc8d-9kz2d   1/1     Running   0          35s
+      ```
+   
+   3. Create an upstream for `httpbin`. 
+      ```shell
+      kubectl apply -f- <<EOF
+      apiVersion: gloo.solo.io/v1
+      kind: Upstream
+      metadata:
+        name: "httpbin"
+        namespace: "gloo-system"
+      spec:
+        static:
+          hosts:
+          - addr: "httpbin.org"
+            port: 80
+      ```
+
+2. Deploy and configure the Envoy caching service. 
+   1. Create a namespace for the envoy caching service. 
+      ```shell
+      kubectl create ns envoy-caching
       ```
       
-   2. Set the routing rules for the `httpbin` by creating a virtual service. 
-      ```
-      kubectl apply -f- <<EOF
-      apiVersion: gateway.solo.io/v1
-      kind: VirtualService
+   2. Deploy the caching app and expose it with a Kubernetes service. 
+      ```shell
+      kubectl apply -n envoy-caching -f- <<EOF
+      apiVersion: v1
+      kind: Pod
       metadata:
-        name: default
-        namespace: gloo-system
+        labels:
+          app: service1
+      name: service1
       spec:
-        virtualHost:
-          domains:
-          - '*'
-          routes:
-          - matchers:
-            - prefix: /
-            routeAction:
-              single:
-                upstream:
-                  name: httpbin-httpbin-8000
-                  namespace: gloo-system
+        containers:
+        - image: ghcr.io/huzlak/caching-service:0.2
+          name: service1
+          ports:
+          - name: http
+            containerPort: 8000
+          readinessProbe:
+            httpGet:
+              port: 8000
+              path: /service/1/no-cache
+
+      ---
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: service1
+      spec:
+        ports:
+          - port: 8000
+            name: http
+            targetPort: http
+        selector:
+          app: service1
       EOF
       ```
    
-4. Curl the `httpbin` app and verify that you get back a 200 HTTP response. 
+   3. Create an upstream for the Envoy caching service. 
+      ```shell
+      kubectl apply -f- <<EOF
+      apiVersion: gloo.solo.io/v1
+      kind: Upstream
+      metadata:
+        name: "envoy-caching"
+        namespace: "gloo-system"
+      spec:
+          kube:
+            serviceName: service1
+            serviceNamespace: envoy-caching
+            servicePort: 8000
+      EOF
+      ```
+   
+3. Create a virtual service to set up routing for the `httpbin` and the Envoy caching apps. 
    ```shell
+   kubectl apply -f- <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: cache-test-vs
+     namespace: gloo-system
+   spec:
+     virtualHost:
+       routes:
+         - matchers:
+             - prefix: /httpbin
+           routeAction:
+             single:
+               upstream:
+                 name: httpbin
+                 namespace: gloo-system
+           options:
+             prefixRewrite: /
+         - matchers:
+             - prefix: /
+           routeAction:
+             single:
+               upstream:
+                 name: envoy-caching
+                 namespace: gloo-system
+   EOF
+   ```
+
+4. Verify that you can successfully route to the `httpbin` and Envoy caching service and that a 200 HTTP response code is returned.
+   ```
    curl -vik "$(glooctl proxy url)/status/200"
+   curl -vik "$(glooctl proxy url)/service/1/private" 
    ```
    
 5. Try out caching without response validation by using the `/cache/{value}` endpoint of the `httpbin` app. 
@@ -182,7 +262,7 @@ In the following example, the `httpbin` app is used to show how response caching
       }
       ```
    
-   2. Send another request to the same endpoint within the 30s timeframe. In your CLI output, verify that you get back the original response. In addition, check that an `age` response header is returned indicating the age of the cached response and that the `date` header uses the date and time of the original response. 
+   2. Send another request to the same endpoint within the 30s timeframe. In your CLI output, verify that you get back the original response. In addition, check that an `age` response header is returned indicating the age of the cached response, and that the `date` header uses the date and time of the original response. 
       ```shell
       curl -vik "$(glooctl proxy url)/httpbin/cache/30"
       ```
@@ -243,11 +323,103 @@ In the following example, the `httpbin` app is used to show how response caching
       }
       ```
       
-6. Try out caching with response validation. Response validation must be implemented in the upstream service directly. The upstream must be capable of reading the date and time that is sent in the `If-Modified-Since` request header and to check whether or not the response has changed since then. 
-   1. Repeat setps 5.1 and 5.2 to 
-   
-   ```shell
-   curl -vik "$(glooctl proxy url)/httpbin/cache/30"
-   ```
+6. Try out caching with response validation by using the Envoy caching service. Response validation must be implemented in the upstream service directly. The upstream must be capable of reading the date and time that is sent in the `If-Modified-Since` request header and to check if the response has changed since then. 
+   1. Send a request to the `/valid-for-minute` endpoint. The endpoint is configured to cache the response for 1 minute. When the response becomes stale after 1 minute, the request validation process starts. 
+      ```shell
+      curl -vik "$(glooctl proxy url)/service/1/valid-for-minute"
+      ```
+      
+      Example output: 
+      ```
+      < HTTP/1.1 200 OK
+      HTTP/1.1 200 OK
+      < content-type: text/html; charset=utf-8
+      content-type: text/html; charset=utf-8
+      < content-length: 99
+      content-length: 99
+      < cache-control: max-age=60
+      cache-control: max-age=60
+      < custom-header: any value
+      custom-header: any value
+      < etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      < date: Thu, 15 Dec 2022 15:45:19 GMT
+      date: Thu, 15 Dec 2022 15:45:19 GMT
+      < server: envoy
+      server: envoy
+      < x-envoy-upstream-service-time: 5
+      x-envoy-upstream-service-time: 5
+
+      < 
+      This response will stay fresh for one minute
+
+      Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
+      ```
+      
+   2. Send another request to the same endpoint within the 1 minute timeframe. Because the response is cached for 1 minute, the original response is returned with an `age` header indicating the number of seconds that have passed since the original response was sent. Make sure that `date` header and body include the same information as in the original response. 
+      ```shell
+      curl -vik "$(glooctl proxy url)/service/1/valid-for-minute"
+      ```
+      
+      Example output: 
+      ```shell
+      < HTTP/1.1 200 OK
+      HTTP/1.1 200 OK
+      < x-envoy-upstream-service-time: 5
+      x-envoy-upstream-service-time: 5
+      < etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      < custom-header: any value
+      custom-header: any value
+      server: envoy
+      < cache-control: max-age=60
+      cache-control: max-age=60
+      < content-length: 99
+      content-length: 99
+      < date: Thu, 15 Dec 2022 15:45:19 GMT
+      date: Thu, 15 Dec 2022 15:45:19 GMT
+      < content-type: text/html; charset=utf-8
+      content-type: text/html; charset=utf-8
+      < age: 5
+      age: 5
+
+      < 
+      This response will stay fresh for one minute
+
+      Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
+      ```
+      
+   3. After the 1 minute has passed and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a 304 Not Modified HTTP response code to indicate that the response has not changed. When the 304 HTTP response code is received by the Gloo Edge caching server, the caching server fetches the original response from Redis, and sends it back to the client. You can verify that the response validation succeeded when the `date` response header is updated with the time and date that your new request was sent, the `age` response header is removed, and the response body contains the same information as the in the original response. 
+      ```shell
+      curl -vik "$(glooctl proxy url)/service/1/valid-for-minute"
+      ```
+      
+      Example output: 
+      ```
+      < HTTP/1.1 200 OK
+      HTTP/1.1 200 OK
+      < cache-control: max-age=60
+      cache-control: max-age=60
+      < custom-header: any value
+      custom-header: any value
+      < etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      etag: "324ce9104e113743300a847331bb942ab7ace81a"
+      < date: Thu, 15 Dec 2022 15:53:55 GMT
+      date: Thu, 15 Dec 2022 15:53:55 GMT
+      < server: envoy
+      server: envoy
+      < x-envoy-upstream-service-time: 5
+      x-envoy-upstream-service-time: 5
+      < content-length: 99
+      content-length: 99
+      < content-type: text/html; charset=utf-8
+      content-type: text/html; charset=utf-8
+
+      < 
+      This response will stay fresh for one minute
+
+      Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
+      ```
+      
       
       
