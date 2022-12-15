@@ -138,6 +138,9 @@ func (ConstantSampler_ConstantDecision) EnumDescriptor() ([]byte, []int) {
 }
 
 // Configuration for the OpenCensus tracer.
+//
+// The OpenCensus tracer is capable of reporting metadata to a collector using W3C-standard Trace Context: https://www.w3.org/TR/trace-context/
+// WARNING: users should take care to note that this plugin has a serious limitation that can cause a configuration freeze of Envoy's dynamic listeners. This plugin can be initialised once after Envoy has started. In order to change this plugin's configuration, users must first apply the new configuration, and then restart Envoy. Users should also be aware that once the new configuration is applied, Envoy will reject any changes to its dynamic listeners configuration until after it has been restarted.
 // [#extension: envoy.tracers.opencensus]
 type OpenCensusConfig struct {
 	state         protoimpl.MessageState
@@ -147,8 +150,7 @@ type OpenCensusConfig struct {
 	// Configuration of when to submit traces to the collector.
 	// See https://github.com/census-instrumentation/opencensus-proto/blob/3619b5dda8bff26ff1974714c24de8f6d4953811/src/opencensus/proto/trace/v1/trace_config.proto#L29 for full documentation
 	TraceConfig *TraceConfig `protobuf:"bytes,1,opt,name=trace_config,json=traceConfig,proto3" json:"trace_config,omitempty"`
-	// Enables the OpenCensus agent if set to true. ocagent_address or
-	// ocagent_grpc_service must also be set
+	// Enables the OpenCensus agent if set to true.
 	OcagentExporterEnabled bool `protobuf:"varint,2,opt,name=ocagent_exporter_enabled,json=ocagentExporterEnabled,proto3" json:"ocagent_exporter_enabled,omitempty"`
 	// Upstream to which trace data should be sent
 	//

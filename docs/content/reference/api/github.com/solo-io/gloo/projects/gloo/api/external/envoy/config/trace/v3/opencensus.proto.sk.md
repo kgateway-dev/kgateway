@@ -34,6 +34,9 @@ weight: 5
 
  
 Configuration for the OpenCensus tracer.
+
+The OpenCensus tracer is capable of reporting metadata to a collector using W3C-standard Trace Context: https://www.w3.org/TR/trace-context/
+WARNING: users should take care to note that this plugin has a serious limitation that can cause a configuration freeze of Envoy's dynamic listeners. This plugin can be initialised once after Envoy has started. In order to change this plugin's configuration, users must first apply the new configuration, and then restart Envoy. Users should also be aware that once the new configuration is applied, Envoy will reject any changes to its dynamic listeners configuration until after it has been restarted.
 [#extension: envoy.tracers.opencensus]
 
 ```yaml
@@ -49,7 +52,7 @@ Configuration for the OpenCensus tracer.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `traceConfig` | [.solo.io.envoy.config.trace.v3.TraceConfig](../opencensus.proto.sk/#traceconfig) | Configuration of when to submit traces to the collector. See https://github.com/census-instrumentation/opencensus-proto/blob/3619b5dda8bff26ff1974714c24de8f6d4953811/src/opencensus/proto/trace/v1/trace_config.proto#L29 for full documentation. |
-| `ocagentExporterEnabled` | `bool` | Enables the OpenCensus agent if set to true. ocagent_address or ocagent_grpc_service must also be set. |
+| `ocagentExporterEnabled` | `bool` | Enables the OpenCensus agent if set to true. |
 | `httpAddress` | `string` | Send to upstream over http. Only one of `httpAddress` or `grpcAddress` can be set. |
 | `grpcAddress` | [.solo.io.envoy.config.trace.v3.OpenCensusConfig.OcagentGrpcAddress](../opencensus.proto.sk/#ocagentgrpcaddress) | Send to upstream over GRPC. Only one of `grpcAddress` or `httpAddress` can be set. |
 | `incomingTraceContext` | [[]solo.io.envoy.config.trace.v3.OpenCensusConfig.TraceContext](../opencensus.proto.sk/#tracecontext) | List of incoming trace context headers to accept. First one found wins. |
