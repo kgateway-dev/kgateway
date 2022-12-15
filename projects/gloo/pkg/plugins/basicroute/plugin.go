@@ -67,6 +67,9 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if err := applyTimeout(in, out); err != nil {
 		return err
 	}
+	if err := applyIdleTimeout(in, out); err != nil {
+		return err
+	}
 	if err := applyMaxStreamDuration(in, out); err != nil {
 		return err
 	}
@@ -133,6 +136,23 @@ func applyTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	}
 
 	routeAction.Route.Timeout = in.GetOptions().GetTimeout()
+	return nil
+}
+
+func applyIdleTimeout(in *v1.Route, out *envoy_config_route_v3.Route) error {
+	if in.GetOptions().GetIdleTimeout() == nil {
+		return nil
+	}
+	routeAction, ok := out.GetAction().(*envoy_config_route_v3.Route_Route)
+	if !ok {
+		return errors.Errorf("timeout is only available for Route Actions")
+	}
+	if routeAction.Route == nil {
+		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
+			"had nil route", in.GetAction())
+	}
+
+	routeAction.Route.IdleTimeout = in.GetOptions().GetIdleTimeout()
 	return nil
 }
 
