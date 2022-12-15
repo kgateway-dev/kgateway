@@ -104,7 +104,12 @@ Set up Zipkin tracing in a [local Kind cluster]({{< versioned_link_path fromRoot
 
 3. Configure the Zipkin [tracing cluster](#cluster) with the IP address that was assigned in the previous step. In this example, the Zipkin cluster is assigned the `172.18.0.2` IP address.
 
-4. [Open Zipkin on your local machine](http://localhost:9411). 
+4. Port-forward the Zipkin service so that you can access Zipkin on your local machine. 
+   ```shell
+   kubectl port-forward svc/zipkin 9411:9411
+   ```
+
+5. [Open Zipkin on your local machine](http://localhost:9411). 
 
    ![Zipkin UI]({{% versioned_link_path fromRoot="/img/zipkin.png" %}})
 

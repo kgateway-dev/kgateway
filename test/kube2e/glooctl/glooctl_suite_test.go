@@ -37,7 +37,9 @@ func TestGlooctl(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "glooctl Suite", []Reporter{junitReporter})
 }
 
-var testHelper *helper.SoloTestHelper
+var (
+	testHelper *helper.SoloTestHelper
+)
 
 var ctx, _ = context.WithCancel(context.Background())
 var namespace = defaults.GlooSystem
