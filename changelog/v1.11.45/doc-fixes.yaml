@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Backport fixes to the tracing doc.
