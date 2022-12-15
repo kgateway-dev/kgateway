@@ -98,8 +98,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			//})
 			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
-				// TODO: demonstrate slack message for failure
-				Expect(true).To(Equal(false))
 			})
 			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
 				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)

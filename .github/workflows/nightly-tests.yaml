@@ -4,8 +4,6 @@ on:
     # run Monday-Friday mornings (midnight UTC)
     - cron: "0 5 * * 1-5"
   workflow_dispatch:
-    #TODO: don't merge with pull_request trigger
-  pull_request:
 jobs:
   prepare_env:
     name: Prepare Environment
