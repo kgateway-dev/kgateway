@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -33,8 +34,7 @@ secretClientTimeoutSeconds: 30
 	homeDir = "<home_directory>"
 
 	// note that the available keys in this config file should be kept up to date in our public docs
-	disableUsageReporting      = "disableUsageReporting"
-	secretClientTimeoutSeconds = "secretClientTimeoutSeconds"
+	checkTimeoutSeconds = "checkTimeoutSeconds"
 )
 
 var DefaultConfigPath = path.Join(homeDir, ConfigDirName, ConfigFileName)
@@ -58,7 +58,6 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-
 	viper.SetConfigFile(configFilePath)
 	viper.SetConfigType("yaml")
 	err = viper.ReadInConfig()
@@ -66,21 +65,22 @@ func ReadConfigFile(opts *options.Options, cmd *cobra.Command) error {
 		return err
 	}
 
-	setDefaultValues()
 	loadValuesIntoOptions(opts)
-
 	return nil
-}
-
-// Values to be used if a field is not specified in the config file (~/.gloo/glooctl-config.yaml)
-func setDefaultValues() {
-	viper.SetDefault(secretClientTimeoutSeconds, 30)
 }
 
 // Assigns values from config file (or default) into the provided Options struct
 func loadValuesIntoOptions(opts *options.Options) {
-	timeoutSeconds := viper.GetInt64(secretClientTimeoutSeconds)
-	opts.Check.SecretClientTimeout = time.Duration(timeoutSeconds) * time.Second
+	newStr := viper.GetString(checkTimeoutSeconds)
+	_, err := strconv.Atoi(newStr)
+	if err == nil {
+		newStr += "s"
+	}
+	time, err := time.ParseDuration(newStr)
+	if err != nil {
+		time = 0
+	}
+	opts.Check.CheckTimeout = time
 }
 
 // ensure that both the directory containing the file and the file itself exist
