@@ -115,7 +115,7 @@ func translateTraceConfig(glooTraceConfig *envoytracegloo.TraceConfig, envoyTrac
 
 func translateTraceContext(glooTraceContexts []envoytracegloo.OpenCensusConfig_TraceContext) []envoytrace.OpenCensusConfig_TraceContext {
 	result := make([]envoytrace.OpenCensusConfig_TraceContext, 0, len(glooTraceContexts))
-	for i, glooTraceContext := range glooTraceContexts {
+	for _, glooTraceContext := range glooTraceContexts {
 		var envoyTraceContext envoytrace.OpenCensusConfig_TraceContext
 		switch glooTraceContext {
 		case envoytracegloo.OpenCensusConfig_NONE:
@@ -129,7 +129,7 @@ func translateTraceContext(glooTraceContexts []envoytracegloo.OpenCensusConfig_T
 		case envoytracegloo.OpenCensusConfig_B3:
 			envoyTraceContext = envoytrace.OpenCensusConfig_B3
 		}
-		result[i] = envoyTraceContext
+		result = append(result, envoyTraceContext)
 	}
 	return result
 }
