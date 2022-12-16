@@ -1,101 +1,46 @@
 package e2e_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/e2e"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	matchers2 "github.com/solo-io/gloo/test/matchers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("Fault Injection", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		envoyInstance *services.EnvoyInstance
-
-		testClients  services.TestClients
-		testUpstream *v1helpers.TestUpstream
-
-		resourcesToCreate *gloosnapshot.ApiSnapshot
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-
-		// Run gloo
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// Run Envoy
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(envoyRole, testClients.GlooPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// The upstream that will handle requests
-		testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-
-		// The set of resources that these tests will generate
-		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways: v1.GatewayList{
-				gwdefaults.DefaultGateway(writeNamespace),
-			},
-			VirtualServices: v1.VirtualServiceList{},
-			Upstreams: gloov1.UpstreamList{
-				testUpstream.Upstream,
-			},
-		}
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		// Stop Envoy
-		envoyInstance.Clean()
-
-		cancel()
+		testContext.AfterEach()
 	})
 
 	JustBeforeEach(func() {
-		// Create Resources
-		err := testClients.WriteSnapshot(ctx, resourcesToCreate)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Wait for a proxy to be accepted
-		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		})
+		testContext.JustBeforeEach()
 	})
 
 	JustAfterEach(func() {
-		// We do not need to clean up the Snapshot that was written in the JustBeforeEach
-		// That is because each test uses its own InMemoryCache
+		testContext.JustAfterEach()
 	})
 
 	Context("Envoy Abort Fault", func() {
@@ -114,10 +59,10 @@ var _ = Describe("Fault Injection", func() {
 						},
 					},
 				}).
-				WithRouteActionToUpstream("test", testUpstream.Upstream).
+				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
 				Build()
 
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vs,
 			}
 		})
@@ -153,10 +98,10 @@ var _ = Describe("Fault Injection", func() {
 						},
 					},
 				}).
-				WithRouteActionToUpstream("test", testUpstream.Upstream).
+				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
 				Build()
 
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vs,
 			}
 		})
