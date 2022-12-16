@@ -308,7 +308,6 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
 		if useVersion == "LATEST" {
 			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
-			fmt.Println("found latest version %v", current)
 			Expect(err).NotTo(HaveOccurred())
 			useVersion = current.String()
 		}
@@ -323,6 +322,7 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
 		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.ReleasedVersion = useVersion
 			defaults.Verbose = true
