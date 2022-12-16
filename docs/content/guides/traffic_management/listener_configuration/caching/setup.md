@@ -10,7 +10,7 @@ Set up the Gloo Edge caching server to cache responses from upstream services fo
 This feature is available only for Gloo Edge Enterprise v1.12.x and later.
 {{% /notice %}}
 
-When you enable caching during installation, the caching server deployment is automatically created for you and is managed by Gloo Edge. Then, you must configure an HTTP or HTTPS listener to cache responses for its upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached for one hour, unless otherwise specified by sending a `cache-control` request header. All subsequent requests receive the cached response.
+When caching is enabled during installation, a caching server deployment is automatically created for you and managed by Gloo Edge. Then you must configure an HTTP or HTTPS listener on your gateway to cache responses for upstream services. When the listener routes a request to an upstream, the response from the upstream is automatically cached by the caching server if it contains a `cache-control` repsonse header. All subsequent requests receive the cached response, until the cache entry expires.
 
 ## Deploy the caching server
 
@@ -236,7 +236,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
    ```
    
 5. Try out caching without response validation by using the `/cache/{value}` endpoint of the `httpbin` app. 
-   1. Send a request to the `/cache/{value}` endpoint. The `{value}` variable specifies the number of seconds that you want to cache the response for. In this example, the response is cached for 30 seconds. In your CLI output, verify that you get back the `cache-control` response header with a `max-age=30` value. 
+   1. Send a request to the `/cache/{value}` endpoint. The `{value}` variable specifies the number of seconds that you want to cache the response for. In this example, the response is cached for 30 seconds. In your CLI output, verify that you get back the `cache-control` response header with a `max-age=30` value. This response header triggers Gloo Edge to cache the response. 
       ```shell
       curl -vik "$(glooctl proxy url)/httpbin/cache/30"
       ```
@@ -341,7 +341,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
       
 6. Try out caching with response validation by using the Envoy caching service. Response validation must be implemented in the upstream service directly. The upstream must be capable of reading the date and time that is sent in the `If-Modified-Since` request header and to check if the response has changed since then. 
-   1. Send a request to the `/valid-for-minute` endpoint. The endpoint is configured to cache the response for 1 minute. When the response becomes stale after 1 minute, the request validation process starts. 
+   1. Send a request to the `/valid-for-minute` endpoint. The endpoint is configured to cache the response for 1 minute (`cache-control: max-age=60`). When the response becomes stale after 1 minute, the request validation process starts. 
       ```shell
       curl -vik "$(glooctl proxy url)/service/1/valid-for-minute"
       ```
@@ -367,7 +367,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
       ```
       
-   2. Send another request to the same endpoint within the 1 minute timeframe. Because the response is cached for 1 minute, the original response is returned with an `age` header indicating the number of seconds that have passed since the original response was sent. Make sure that the `date` header and response body include the same information as in the original response. 
+   2. Send another request to the same endpoint within the 1 minute timeframe. Because the response is cached for 1 minute, the original response is returned with an `age` header indicating the number of seconds that passed since the original response was sent. Make sure that the `date` header and response body include the same information as in the original response. 
       ```shell
       curl -vik "$(glooctl proxy url)/service/1/valid-for-minute"
       ```
@@ -392,9 +392,9 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
       ```
       
-   3. After the 1 minute has passed and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a 304 Not Modified HTTP response code to indicate that the response has not changed. When the 304 HTTP response code is received by the Gloo Edge caching server, the caching server fetches the original response from Redis, and sends it back to the client. 
+   3. After the 1 minute passes and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a `304 Not Modified` HTTP response code to indicate that the response has not changed. When the `304` HTTP response code is received by the Gloo Edge caching server, the caching server fetches the original response from Redis, and sends it back to the client. 
       
-      You can verify that the response validation succeeded when the `date` response header is updated with the time and date of your new request, the `age` response header is removed, and the response body contains the same information as the in the original response. 
+      You can verify that the response validation succeeded when the `date` response header is updated with the time and date of your new request, the `age` response header is removed, and the response body contains the same information as in the original response. 
       ```shell
       curl -vik "$(glooctl proxy url)/service/1/valid-for-minute"
       ```
