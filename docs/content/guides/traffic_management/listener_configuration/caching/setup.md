@@ -17,11 +17,7 @@ When caching is enabled during installation, a caching server deployment is auto
 Create a caching server during Gloo Edge Enterprise installation time, and specify any Redis overrides. 
 
 1. [Install Gloo Edge Enterprise version 1.12.x or later by using Helm]({{% versioned_link_path fromRoot="/installation/enterprise/#customizing-your-installation-with-helm" %}}). In your `values.yaml` file, specify the following settings:
-   
-   {{% notice note %}} 
-   Due to a known issue in Gloo Edge Enterprise 1.12.x, make sure to use the current 1.13.0-rc3 release to try out caching. Run the following command to install Gloo Edge: `helm install -n gloo-system --create-namespace gloo-ee gloo-ee/gloo-ee -f values.yaml --devel --version v1.13.0-rc3 --set-string license_key=<license-key>`
-   {{% /notice %}}
-   
+      
    * Caching server: Set `global.extensions.caching.enabled: true` to enable the caching server deployment.
    * Redis overrides: By default, the caching server uses the Redis instance that is deployed with Gloo Edge. To use your own Redis instance, such as in production deployments:
      * Set `redis.disabled` to `true` to disable the default Redis instance.
