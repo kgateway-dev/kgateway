@@ -35,8 +35,6 @@ var _ = Describe("buffer", func() {
 		testClients   services.TestClients
 		envoyInstance *services.EnvoyInstance
 		up            *gloov1.Upstream
-
-		writeNamespace = defaults.GlooSystem
 	)
 
 	BeforeEach(func() {
@@ -44,7 +42,6 @@ var _ = Describe("buffer", func() {
 		defaults.HttpPort = services.NextBindPort()
 
 		// run gloo
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},

@@ -42,8 +42,6 @@ var _ = Describe("CORS", func() {
 		testUpstream  *v1helpers.TestUpstream
 
 		resourcesToCreate *gloosnapshot.ApiSnapshot
-
-		writeNamespace = defaults.GlooSystem
 	)
 
 	BeforeEach(func() {
@@ -51,7 +49,6 @@ var _ = Describe("CORS", func() {
 		defaults.HttpPort = services.NextBindPort()
 
 		// run gloo
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},

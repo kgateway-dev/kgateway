@@ -73,7 +73,6 @@ var _ = Describe("Fault Injection", func() {
 				testUpstream.Upstream,
 			},
 		}
-
 	})
 
 	AfterEach(func() {

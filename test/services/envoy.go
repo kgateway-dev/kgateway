@@ -412,15 +412,6 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 }
 
-func (ei *EnvoyInstance) RunWithId(id string) error {
-	ei.ID = id
-	return ei.RunWithRole(DefaultProxyName, 8081)
-}
-
-func (ei *EnvoyInstance) Run(port int) error {
-	return ei.RunWithRole(DefaultProxyName, port)
-}
-
 func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
 	return ei.runWithAll(eic, &templateBootstrapBuilder{
 		template: defaultBootstrapTemplate,

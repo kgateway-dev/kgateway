@@ -1,102 +1,44 @@
 package e2e_test
 
 import (
-	"context"
 	"fmt"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
 	"net/http"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	matchers2 "github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 var _ = Describe("Hybrid Gateway", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		envoyInstance *services.EnvoyInstance
-		testClients   services.TestClients
-
-		resourcesToCreate *gloosnapshot.ApiSnapshot
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-
-		// Run gloo
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// Run Envoy
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(envoyRole, testClients.GlooPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		vsToTestUpstream := helpers.NewVirtualServiceBuilder().
-			WithName("vs-test").
-			WithNamespace(writeNamespace).
-			WithDomain("test.com").
-			WithRoutePrefixMatcher("test", "/").
-			WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
-				Status: http.StatusOK,
-			}).
-			Build()
-
-		// The set of resources that these tests will generate
-		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways: v1.GatewayList{
-				// Let each test create the appropriate Gateway
-			},
-			VirtualServices: v1.VirtualServiceList{
-				vsToTestUpstream,
-			},
-		}
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		// Stop Envoy
-		envoyInstance.Clean()
-
-		cancel()
+		testContext.AfterEach()
 	})
 
 	JustBeforeEach(func() {
-		// Create Resources
-		err := testClients.WriteSnapshot(ctx, resourcesToCreate)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Wait for a proxy to be accepted
-		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		})
+		testContext.JustBeforeEach()
 	})
 
 	JustAfterEach(func() {
-		// We do not need to clean up the Snapshot that was written in the JustBeforeEach
-		// That is because each test uses its own InMemoryCache
+		testContext.JustAfterEach()
 	})
 
 	buildHttpRequestToHybridGateway := func() *http.Request {
@@ -138,8 +80,22 @@ var _ = Describe("Hybrid Gateway", func() {
 				},
 			}
 
-			resourcesToCreate.Gateways = v1.GatewayList{
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
+			}
+
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
+					Status: http.StatusOK,
+				}).
+				Build()
+
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
+				vs,
 			}
 		})
 
@@ -186,8 +142,22 @@ var _ = Describe("Hybrid Gateway", func() {
 				},
 			}
 
-			resourcesToCreate.Gateways = v1.GatewayList{
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
+			}
+
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
+					Status: http.StatusOK,
+				}).
+				Build()
+
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
+				vs,
 			}
 		})
 
@@ -229,8 +199,22 @@ var _ = Describe("Hybrid Gateway", func() {
 				},
 			}
 
-			resourcesToCreate.Gateways = v1.GatewayList{
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
+			}
+
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
+					Status: http.StatusOK,
+				}).
+				Build()
+
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
+				vs,
 			}
 		})
 

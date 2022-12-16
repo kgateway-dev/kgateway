@@ -1,29 +1,6 @@
 package e2e_test
 
-import (
-	"bytes"
-	"encoding/base64"
-	"fmt"
-	"net/http"
-	"time"
-
-	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
-	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-)
-
+/*
 var _ = Describe("Grpc Web", func() {
 
 	var (
@@ -158,3 +135,6 @@ var _ = Describe("Grpc Web", func() {
 		})
 	})
 })
+
+
+*/
