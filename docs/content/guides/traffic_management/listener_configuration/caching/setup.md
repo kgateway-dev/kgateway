@@ -420,6 +420,6 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
             
 {{% notice note %}}
-Because the Envoy caching app is configured to always return a 304 HTTP response code, you continue to see the cached response no matter how many requests you send to the app. To reset the app and force the app to return a fresh response, you must restart the pod. 
+Because the Envoy caching app is configured to always return a `304` HTTP response code, you continue to see the cached response no matter how many requests you send to the app. To reset the app and force the app to return a fresh response, you must restart the pod. 
 {{% /notice %}}
       
