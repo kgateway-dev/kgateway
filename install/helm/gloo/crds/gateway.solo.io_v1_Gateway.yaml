@@ -691,6 +691,67 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openCensusConfig:
+                                properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
+                                  incomingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  ocagentExporterEnabled:
+                                    type: boolean
+                                  outgoingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  traceConfig:
+                                    properties:
+                                      constantSampler:
+                                        properties:
+                                          decision:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                      maxNumberOfAnnotations:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfAttributes:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfLinks:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfMessageEvents:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      probabilitySampler:
+                                        properties:
+                                          samplingProbability:
+                                            type: number
+                                        type: object
+                                      rateLimitingSampler:
+                                        properties:
+                                          qps:
+                                            format: int64
+                                            type: integer
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                    type: object
+                                type: object
                               openTelemetryConfig:
                                 properties:
                                   clusterName:
@@ -1141,6 +1202,67 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openCensusConfig:
+                                properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
+                                  incomingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  ocagentExporterEnabled:
+                                    type: boolean
+                                  outgoingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  traceConfig:
+                                    properties:
+                                      constantSampler:
+                                        properties:
+                                          decision:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                      maxNumberOfAnnotations:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfAttributes:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfLinks:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfMessageEvents:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      probabilitySampler:
+                                        properties:
+                                          samplingProbability:
+                                            type: number
+                                        type: object
+                                      rateLimitingSampler:
+                                        properties:
+                                          qps:
+                                            format: int64
+                                            type: integer
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                    type: object
+                                type: object
                               openTelemetryConfig:
                                 properties:
                                   clusterName:
@@ -2007,6 +2129,67 @@ spec:
                                                 type: string
                                             type: object
                                           type: array
+                                        openCensusConfig:
+                                          properties:
+                                            grpcAddress:
+                                              properties:
+                                                statPrefix:
+                                                  type: string
+                                                targetUri:
+                                                  type: string
+                                              type: object
+                                            httpAddress:
+                                              type: string
+                                            incomingTraceContext:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            ocagentExporterEnabled:
+                                              type: boolean
+                                            outgoingTraceContext:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            traceConfig:
+                                              properties:
+                                                constantSampler:
+                                                  properties:
+                                                    decision:
+                                                      type: string
+                                                      x-kubernetes-int-or-string: true
+                                                  type: object
+                                                maxNumberOfAnnotations:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfAttributes:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfLinks:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfMessageEvents:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                probabilitySampler:
+                                                  properties:
+                                                    samplingProbability:
+                                                      type: number
+                                                  type: object
+                                                rateLimitingSampler:
+                                                  properties:
+                                                    qps:
+                                                      format: int64
+                                                      type: integer
+                                                      x-kubernetes-int-or-string: true
+                                                  type: object
+                                              type: object
+                                          type: object
                                         openTelemetryConfig:
                                           properties:
                                             clusterName:
