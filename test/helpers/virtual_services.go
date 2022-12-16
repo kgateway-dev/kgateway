@@ -143,6 +143,14 @@ func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, d
 	})
 }
 
+func (b *virtualServiceBuilder) WithRouteDirectResponseAction(routeName string, action *gloov1.DirectResponseAction) *virtualServiceBuilder {
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Action = &v1.Route_DirectResponseAction{
+			DirectResponseAction: action,
+		}
+	})
+}
+
 func (b *virtualServiceBuilder) WithRoutePrefixMatcher(routeName string, prefixMatch string) *virtualServiceBuilder {
 	return b.WithRouteMutation(routeName, func(route *v1.Route) {
 		route.Matchers = []*matchers.Matcher{{
