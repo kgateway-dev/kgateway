@@ -2,8 +2,9 @@ package e2e_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/e2e"
 	"testing"
+
+	"github.com/solo-io/gloo/test/e2e"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 

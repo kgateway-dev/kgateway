@@ -95,8 +95,6 @@ var _ = Describe("Tracing config loading", func() {
 			testUpstream *v1helpers.TestUpstream
 
 			resourcesToCreate *gloosnapshot.ApiSnapshot
-
-			writeNamespace = defaults.GlooSystem
 		)
 
 		BeforeEach(func() {
