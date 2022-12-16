@@ -19,7 +19,7 @@ The following diagram shows how response caching works without validation.
 ![Caching without validation]({{% versioned_link_path fromRoot="/img/caching-unvalidated.svg/" %}})
 
 1. The gateway forwards incoming requests to the upstream service where the request is processed. When the upstream service sends back a response to the client, the response is cached by the caching server. 
-2. Subsequent requests from clients are not forwarded to the upstream. Instead, clients receive the cached response with an `age` response header from the caching server directly. The `age` response header shows the number of seconds that passed since the original response was sent. By default, responses are cached for 1 hour, unless the client specified a different time by sending the `cache-control` request header. After the time has passed and the cached response becomes stale, requests are forwarded to the upstream service again and a new response is cached by the caching server. 
+2. Subsequent requests from clients are not forwarded to the upstream. Instead, clients receive the cached response with an `age` response header from the caching server directly. The `age` response header shows the number of seconds that passed since the original response was sent. By default, responses are cached for 1 hour, unless the client specified a different time by sending the `cache-control` request header. After the time passes and the cached response becomes stale, requests are forwarded to the upstream service again and a new response is cached by the caching server. 
 
 
 ## Caching with response validation {#caching-validated}
