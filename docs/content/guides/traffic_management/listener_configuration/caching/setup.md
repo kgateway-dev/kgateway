@@ -131,7 +131,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
 
 2. Deploy and configure the Envoy caching service. 
-   1. Create a namespace for the envoy caching service. 
+   1. Create a namespace for the Envoy caching service. 
       ```shell
       kubectl create ns envoy-caching
       ```
