@@ -16,18 +16,20 @@ type virtualServiceBuilder struct {
 	name      string
 	namespace string
 
-	domains      []string
-	routesByName map[string]*v1.Route
-	sslConfig    *gloov1.SslConfig
+	domains            []string
+	virtualHostOptions *gloov1.VirtualHostOptions
+	routesByName       map[string]*v1.Route
+	sslConfig          *gloov1.SslConfig
 }
 
 func BuilderFromVirtualService(vs *v1.VirtualService) *virtualServiceBuilder {
 	builder := &virtualServiceBuilder{
-		name:         vs.GetMetadata().GetName(),
-		namespace:    vs.GetMetadata().GetNamespace(),
-		domains:      vs.GetVirtualHost().GetDomains(),
-		sslConfig:    vs.GetSslConfig(),
-		routesByName: make(map[string]*v1.Route, 10),
+		name:               vs.GetMetadata().GetName(),
+		namespace:          vs.GetMetadata().GetNamespace(),
+		domains:            vs.GetVirtualHost().GetDomains(),
+		virtualHostOptions: vs.GetVirtualHost().GetOptions(),
+		sslConfig:          vs.GetSslConfig(),
+		routesByName:       make(map[string]*v1.Route, 10),
 	}
 	for _, r := range vs.GetVirtualHost().GetRoutes() {
 		builder.WithRoute(r.GetName(), r)
@@ -58,6 +60,11 @@ func (b *virtualServiceBuilder) WithNamespace(namespace string) *virtualServiceB
 
 func (b *virtualServiceBuilder) WithDomain(domain string) *virtualServiceBuilder {
 	b.domains = []string{domain}
+	return b
+}
+
+func (b *virtualServiceBuilder) WithVirtualHostOptions(virtualHostOptions *gloov1.VirtualHostOptions) *virtualServiceBuilder {
+	b.virtualHostOptions = virtualHostOptions
 	return b
 }
 
@@ -143,6 +150,18 @@ func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, d
 	})
 }
 
+func (b *virtualServiceBuilder) WithRouteActionToMultiDestination(routeName string, destination *gloov1.MultiDestination) *virtualServiceBuilder {
+	return b.WithRouteMutation(routeName, func(route *v1.Route) {
+		route.Action = &v1.Route_RouteAction{
+			RouteAction: &gloov1.RouteAction{
+				Destination: &gloov1.RouteAction_Multi{
+					Multi: destination,
+				},
+			},
+		}
+	})
+}
+
 func (b *virtualServiceBuilder) WithRouteDirectResponseAction(routeName string, action *gloov1.DirectResponseAction) *virtualServiceBuilder {
 	return b.WithRouteMutation(routeName, func(route *v1.Route) {
 		route.Action = &v1.Route_DirectResponseAction{
@@ -209,7 +228,7 @@ func (b *virtualServiceBuilder) Build() *v1.VirtualService {
 		VirtualHost: &v1.VirtualHost{
 			Domains: b.domains,
 			Routes:  routes,
-			Options: nil,
+			Options: b.virtualHostOptions,
 		},
 		SslConfig: b.sslConfig,
 	}

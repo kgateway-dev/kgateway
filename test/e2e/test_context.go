@@ -72,6 +72,8 @@ func (c *TestContext) BeforeEach() {
 		Build()
 
 	// The set of resources that these tests will generate
+	// Individual tests may modify these resources, but we provide the default resources
+	// required to form a Proxy and handle requests
 	c.resourcesToCreate = &gloosnapshot.ApiSnapshot{
 		Gateways: v1.GatewayList{
 			gatewaydefaults.DefaultGateway(writeNamespace),

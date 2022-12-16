@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -35,10 +34,6 @@ var _ = Describe("CORS", func() {
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
-
-		testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
-			gatewaydefaults.DefaultGateway(writeNamespace),
-		}
 	})
 
 	AfterEach(func() {

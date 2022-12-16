@@ -68,13 +68,12 @@ var _ = Describe("Fault Injection", func() {
 		})
 
 		It("works", func() {
-			client := &http.Client{}
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			req.Host = "test.com" // to match the vs-test
 
 			Eventually(func(g Gomega) (*http.Response, error) {
-				return client.Do(req)
+				return http.DefaultClient.Do(req)
 			}, "5s", ".5s").Should(matchers2.MatchHttpResponse(&http.Response{
 				StatusCode: http.StatusServiceUnavailable,
 			}))
@@ -107,14 +106,13 @@ var _ = Describe("Fault Injection", func() {
 		})
 
 		It("works", func() {
-			client := &http.Client{}
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			req.Host = "test.com" // to match the vs-test
 
 			Eventually(func(g Gomega) *http.Response {
 				start := time.Now()
-				response, err := client.Do(req)
+				response, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
 
 				elapsed := time.Now().Sub(start)
