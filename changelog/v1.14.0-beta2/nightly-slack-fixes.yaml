@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4191
+    resolvesIssue: false
+    description: More fixes for first pass at running nightly including setting the released version correctly and sending results to slack.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.1.4
+    description: Bump k8s-utils versions to get fix for leading 'v' in chart versions in test utils.

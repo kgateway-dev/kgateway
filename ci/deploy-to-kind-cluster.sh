@@ -7,6 +7,10 @@ CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.22.4}"
 # The version used to tag images
 VERSION="${VERSION:-1.0.0-ci}"
+# Skip building docker images if we are testing a released version
+SKIP_DOCKER="${SKIP_DOCKER:false}"
+#Stop after creating the kind cluster
+JUST_KIND="${JUST_KIND:false}"
 # Automatically (lazily) determine OS type
 if [[ $OSTYPE == 'darwin'* ]]; then
   OS='darwin'
@@ -130,16 +134,17 @@ if [[ $JUST_KIND == 'true' ]]; then
 fi
 
 # 2. Make all the docker images and load them to the kind cluster
-if [[ $ARCH == 'arm64' ]]; then
-  # if using arm64, push to the docker registry container, instead of kind
-  VERSION=$VERSION CREATE_TEST_ASSETS="true" TEST_ASSET_ID="docker-reg" IMAGE_REPO="localhost:$REGISTRY_PORT" make docker-push-local-arm -B
-else
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make push-kind-images
+if [[ -z $SKIP_DOCKER || $SKIP_DOCKER == 'false' ]]; then
+  if [[ $ARCH == 'arm64' ]]; then
+    # if using arm64, push to the docker registry container, instead of kind
+    VERSION=$VERSION CREATE_TEST_ASSETS="true" TEST_ASSET_ID="docker-reg" IMAGE_REPO="localhost:$REGISTRY_PORT" make docker-push-local-arm -B
+  else
+    VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make push-kind-images
+  fi
+
+  # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
+  RUNNING_REGRESSION_TESTS=true VERSION=$VERSION IMAGE_REPO="localhost:$REGISTRY_PORT" make build-test-chart
 fi
-
-# 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-RUNNING_REGRESSION_TESTS=true VERSION=$VERSION IMAGE_REPO="localhost:$REGISTRY_PORT" make build-test-chart
-
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
 make glooctl-$OS-$ARCH
 
