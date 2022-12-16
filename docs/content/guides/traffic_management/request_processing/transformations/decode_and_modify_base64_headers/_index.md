@@ -36,7 +36,7 @@ spec:
 Finally, test that Gloo Edge picked up the configuration by sending a request with a base64-encoded header.
 
 ```shell
-curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" localhost:8080/get | jq
+curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" $(glooctl proxy url)/get | jq
 ```
 
 Review the JSON output similar to the following `200` status response. Note that the `x-test` header in the payload response from postman-echo has the base64 representation of the string literal `testprefix.testsuffix` that you passed in the request.
@@ -101,7 +101,7 @@ spec:
 Test the modified Virtual Service by issuing a curl request.
 
 ```shell
-curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" localhost:8080/get | jq
+curl -v -H "x-test: $(echo -n 'testprefix.testsuffix' | base64)" $(glooctl proxy url)/get | jq
 ```
 
 Review the output similar to the following JSON response. Note that the value of the inject header `x-decoded-test` has a substring of the decoded base64 value that was sent in the `x-test` header.

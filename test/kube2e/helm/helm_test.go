@@ -61,7 +61,9 @@ var _ = Describe("Kube2e: helm", func() {
 
 		testHelper *helper.SoloTestHelper
 
-		// if set, the test will install from a released version (rather than local version) of the helm chart
+		// if set, test a released version (rather than local version) of the helm chart
+		targetVersion string
+		// Gloo version to install in JustBeforeEach (sometimes this is the version to upgrade from, sometimes version to install and verify)
 		fromRelease string
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
@@ -72,23 +74,28 @@ var _ = Describe("Kube2e: helm", func() {
 
 		cwd, err := os.Getwd()
 		Expect(err).NotTo(HaveOccurred())
+		fromRelease = ""
+		targetVersion = kube2e.GetTestReleasedVersion(ctx, "gloo")
+
 		testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
 			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.Verbose = true
+			defaults.ReleasedVersion = targetVersion
 			return defaults
 		})
 		Expect(err).NotTo(HaveOccurred())
 
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-		// the version we upgrade to - this can be stored in an environment variable, the latest released version or a version built locally
-		fromRelease = kube2e.GetTestReleasedVersion(ctx, "gloo")
 		strictValidation = false
 	})
 
 	JustBeforeEach(func() {
+		if fromRelease == "" && targetVersion != "" {
+			fromRelease = targetVersion
+		}
 		installGloo(testHelper, chartUri, fromRelease, strictValidation)
 	})
 
@@ -112,7 +119,7 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
 			Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(4000000)))
 
-			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, []string{
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, []string{
 				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
 				"--set", "gateway.validation.validationServerGrpcMaxSizeBytes=5000000",
@@ -149,7 +156,7 @@ var _ = Describe("Kube2e: helm", func() {
 			runAndCleanCommand("kubectl", "create", "ns", externalNamespace)
 			defer runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
 
-			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, settings)
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, settings)
 
 			// Ensures deployment is created for both default namespace and external one
 			// Note- name of external deployments is kebab-case of gatewayProxies NAME helm value
@@ -194,7 +201,7 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
 
 			// do an upgrade
-			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, strictValidation, nil)
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, nil)
 
 			By("the webhook caBundle and secret's root ca value should still match after upgrade")
 			webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -235,7 +242,7 @@ var _ = Describe("Kube2e: helm", func() {
 				if newFailurePolicy == admission_v1.Fail {
 					newStrictValue = true
 				}
-				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, newStrictValue, []string{})
+				upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, newStrictValue, []string{})
 
 				By(fmt.Sprintf("should have updated to gateway.validation.failurePolicy=%v", newFailurePolicy))
 				webhookConfig, err = webhookConfigClient.Get(ctx, "gloo-gateway-validation-webhook-"+testHelper.InstallNamespace, metav1.GetOptions{})
@@ -409,7 +416,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 		runAndCleanCommand("helm", "repo", "add", testHelper.HelmChartName,
 			"https://storage.googleapis.com/solo-public-helm", "--force-update")
 		args = append(args, "gloo/gloo",
-			"--version", fmt.Sprintf("v%s", fromRelease))
+			"--version", fmt.Sprintf("%s", fromRelease))
 	} else {
 		args = append(args, chartUri)
 	}
@@ -420,7 +427,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 		args = append(args, strictValidationArgs...)
 	}
 
-	fmt.Printf("running helm with args: %v\n", args)
+	fmt.Printf("running helm with args: %v, target: %v\n", args, fromRelease)
 	runAndCleanCommand("helm", args...)
 
 	// Check that everything is OK
@@ -431,6 +438,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
 func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir string) {
+	fmt.Printf("Upgrading crds release %s, crdDir %s\n", fromRelease, crdDir)
 	// if we're just upgrading within the same release, no need to reapply crds
 	if fromRelease == "" {
 		return
@@ -442,21 +450,27 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 	time.Sleep(time.Second * 5)
 }
 
-func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
+func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, targetRelease string, strictValidation bool, additionalArgs []string) {
 	upgradeCrds(testHelper, fromRelease, crdDir)
 
 	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()
 
-	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
+	var args = []string{"upgrade", testHelper.HelmChartName,
 		"-n", testHelper.InstallNamespace,
 		"--values", valueOverrideFile}
+	if targetRelease != "" {
+		args = append(args, "gloo/gloo",
+			"--version", fmt.Sprintf("%s", targetRelease))
+	} else {
+		args = append(args, chartUri)
+	}
+	args = append(args, "-n", testHelper.InstallNamespace, "--values", valueOverrideFile)
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
 	args = append(args, additionalArgs...)
-
-	fmt.Printf("running helm with args: %v\n", args)
+	fmt.Printf("running helm with args: %v target %v\n", args, targetRelease)
 	runAndCleanCommand("helm", args...)
 
 	// Check that everything is OK

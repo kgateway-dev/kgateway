@@ -145,6 +145,12 @@ func processEnvoyTracingProvider(
 	case *tracing.ListenerTracingSettings_DatadogConfig:
 		return processEnvoyDatadogTracing(snapshot, typed)
 
+	case *tracing.ListenerTracingSettings_OpenTelemetryConfig:
+		return processEnvoyOpenTelemetryTracing(snapshot, typed)
+
+	case *tracing.ListenerTracingSettings_OpenCensusConfig:
+		return processEnvoyOpenCensusTracing(snapshot, typed)
+
 	default:
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
 	}
@@ -204,6 +210,8 @@ func processEnvoyDatadogTracing(
 	case *v3.DatadogConfig_ClusterName:
 		// Support static clusters as the collector cluster
 		collectorClusterName = collectorCluster.ClusterName
+	default:
+		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
 	}
 
 	envoyConfig, err := api_conversion.ToEnvoyDatadogConfiguration(datadogTracingSettings.DatadogConfig, collectorClusterName)
@@ -218,6 +226,67 @@ func processEnvoyDatadogTracing(
 
 	return &envoy_config_trace_v3.Tracing_Http{
 		Name: "envoy.tracers.datadog",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
+}
+
+func processEnvoyOpenTelemetryTracing(
+	snapshot *v1snap.ApiSnapshot,
+	openTelemetryTracingSettings *tracing.ListenerTracingSettings_OpenTelemetryConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	var collectorClusterName string
+
+	switch collectorCluster := openTelemetryTracingSettings.OpenTelemetryConfig.GetCollectorCluster().(type) {
+	case *v3.OpenTelemetryConfig_CollectorUpstreamRef:
+		// Support upstreams as the collector cluster
+		var err error
+		collectorClusterName, err = getEnvoyTracingCollectorClusterName(snapshot, collectorCluster.CollectorUpstreamRef)
+		if err != nil {
+			return nil, err
+		}
+	case *v3.OpenTelemetryConfig_ClusterName:
+		// Support static clusters as the collector cluster
+		collectorClusterName = collectorCluster.ClusterName
+	default:
+		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", collectorCluster)
+	}
+
+	envoyConfig, err := api_conversion.ToEnvoyOpenTelemetryonfiguration(openTelemetryTracingSettings.OpenTelemetryConfig, collectorClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.opentelemetry",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
+}
+
+func processEnvoyOpenCensusTracing(
+	snapshot *v1snap.ApiSnapshot,
+	openCensusTracingSettings *tracing.ListenerTracingSettings_OpenCensusConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	envoyConfig, err := api_conversion.ToEnvoyOpenCensusConfiguration(openCensusTracingSettings.OpenCensusConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.opencensus",
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 			TypedConfig: marshalledEnvoyConfig,
 		},

@@ -16,10 +16,7 @@ import (
 
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
 
-	"github.com/solo-io/gloo/test/helpers"
-
 	"github.com/solo-io/go-utils/testutils/goimpl"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/proto"
@@ -290,12 +287,6 @@ func ToFile(content string) string {
 	return f.Name()
 }
 
-// PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
-// Deprecated: Prefer the helpers.PatchResource, which is not a Kubernetes specific package
-func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource), client clients.ResourceClient) error {
-	return helpers.PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
-}
-
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
 // We should move tests away from using the testrunner, and instead depend on EphemeralContainers.
 // The default response changed in later kube versions, which caused this value to change.
@@ -317,7 +308,6 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
 		if useVersion == "LATEST" {
 			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
-			fmt.Println("found latest version %v", current)
 			Expect(err).NotTo(HaveOccurred())
 			useVersion = current.String()
 		}
@@ -332,6 +322,7 @@ func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelpe
 	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
 		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
 			defaults.InstallNamespace = namespace
 			defaults.ReleasedVersion = useVersion
 			defaults.Verbose = true
