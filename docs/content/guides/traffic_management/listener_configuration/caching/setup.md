@@ -308,7 +308,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       }
       {{< /highlight >}}
       
-   3. Wait until the 30 seconds have passed and the cached response becomes stale. Send another request to the same endpoint. Verify that you get back a fresh response and that no `age` header is returned. 
+   3. Wait until the 30 seconds pass and the cached response becomes stale. Send another request to the same endpoint. Verify that you get back a fresh response and that no `age` header is returned. 
       ```shell
       curl -vik "$(glooctl proxy url)/httpbin/cache/30"
       ```
