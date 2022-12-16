@@ -101,11 +101,10 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request works as expected", func() {
-			client := &http.Client{}
 			req := buildHttpRequestToHybridGateway()
 
 			Eventually(func() (*http.Response, error) {
-				return client.Do(req)
+				return http.DefaultClient.Do(req)
 			}, "5s", "0.5s").Should(matchers2.MatchHttpResponse(&http.Response{
 				StatusCode: http.StatusOK,
 			}))
@@ -163,11 +162,10 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request works as expected", func() {
-			client := &http.Client{}
 			req := buildHttpRequestToHybridGateway()
 
 			Eventually(func() (*http.Response, error) {
-				return client.Do(req)
+				return http.DefaultClient.Do(req)
 			}, "5s", "0.5s").Should(matchers2.MatchHttpResponse(&http.Response{
 				StatusCode: http.StatusOK,
 			}))
@@ -220,11 +218,10 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request fails", func() {
-			client := &http.Client{}
 			req := buildHttpRequestToHybridGateway()
 
 			Consistently(func() error {
-				_, err := client.Do(req)
+				_, err := http.DefaultClient.Do(req)
 				return err
 			}, "3s", "0.5s").Should(HaveOccurred())
 
