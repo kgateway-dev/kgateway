@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7406
+    description: Expose Envoy's opencensus plugin via Gloo. This extension is provided to enable W3C-compliant tracing metadata to be sent to a collector. Note that the Envoy extension has severe limitations which are documented in this feature, so users should take great care before enabling it.
