@@ -18,7 +18,7 @@ Review the information on this page to learn more about how caching works in Glo
 
 The following diagram shows how response caching works without validation. 
 
-![Caching without validation]({{% versioned_link_path fromRoot="/img/caching-unvalidated.svg/" %}})
+![Caching without validation]({{% versioned_link_path fromRoot="/img/caching-unvalidated.svg" %}})
 
 1. When the gateway receives an incoming request from a client, it checks with the caching server if a cached response for the referenced upstream is available. Because no cached response is initially available, the request is forwarded to the upstream service where the request is processed. When the upstream service sends a response to the client, the upstream can indicate that the response is cacheable by providing the `cache-control` response header. When Gloo Edge receives a response with a `cache-control` header, the response is cached by the caching server for the amount of time that is specified in the header. 
 5. Subsequent requests from clients are not forwarded to the upstream. Instead, clients receive the cached response with an `age` response header from the caching server directly. The `age` response header shows the number of seconds that passed since the original response was sent. After the time that was specified in the `cache-control` header passes, the cached response becomes stale. Requests are then forwarded to the upstream service again and a new response is sent to the client.
@@ -27,7 +27,7 @@ The following diagram shows how response caching works without validation.
 
 The following diagram shows how response caching works when the upstream service supports response validation. 
 
-![Caching with validation]({{% versioned_link_path fromRoot="/img/caching-validated.svg/" %}})
+![Caching with validation]({{% versioned_link_path fromRoot="/img/caching-validated.svg" %}})
 
 1. When the gateway receives an incoming request from a client, it checks with the caching server if a cached response for the referenced upstream is available. Because no cached response is initially available, the request is forwarded to the upstream service where the request is processed. When the upstream service sends a response to the client, the upstream can indicate that the response is cacheable by providing the `cache-control` response header. When Gloo Edge receives a response with a `cache-control` header, the response is cached by the caching server for the amount of time that is specified in the header. 
 2. Subsequent requests from clients are not forwarded to the upstream. Instead, clients receive the cached response with an `age` response header from the caching server directly. The `age` response header shows the number of seconds that passed since the original response was sent.  
