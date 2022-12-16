@@ -62,7 +62,7 @@ https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/proj
 
 Configure your gateway to cache responses for all upstreams that are served by a listener. Enabling caching for a specific upstream is currently not supported.
 
-1. Edit the Gateway CRD where your listener is defined.
+1. Edit the Gateway custom resource where your listener is defined.
    ```sh
    kubectl edit gateway -n gloo-system gateway-proxy
    ```
