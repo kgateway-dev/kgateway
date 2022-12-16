@@ -32,7 +32,6 @@ var _ = Describe("Hybrid Gateway", func() {
 		testClients   services.TestClients
 
 		resourcesToCreate *gloosnapshot.ApiSnapshot
-		writeNamespace    = defaults.GlooSystem
 	)
 
 	BeforeEach(func() {
@@ -53,8 +52,7 @@ var _ = Describe("Hybrid Gateway", func() {
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		role := fmt.Sprintf("%s~%s", writeNamespace, gatewaydefaults.GatewayProxyName)
-		err = envoyInstance.RunWithRole(role, testClients.GlooPort)
+		err = envoyInstance.RunWithRole(envoyRole, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		vsToTestUpstream := helpers.NewVirtualServiceBuilder().

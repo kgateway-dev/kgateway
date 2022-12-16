@@ -40,7 +40,6 @@ var _ = Describe("gzip", func() {
 		testUpstream *v1helpers.TestUpstream
 
 		resourcesToCreate *gloosnapshot.ApiSnapshot
-		writeNamespace    = defaults.GlooSystem
 	)
 
 	BeforeEach(func() {
