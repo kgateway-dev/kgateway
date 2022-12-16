@@ -10,8 +10,6 @@ With response caching, you can significantly reduce the number of requests Gloo 
 This feature is available only for Gloo Edge Enterprise v1.12.x and later.
 {{% /notice %}}
 
-The Gloo Edge Enterprise caching filter is an extension built on top of the Envoy cache filter, and it is capable of all the functionality that the Envoy cache filter exposes. In addition, Gloo Edge provides the ability to store the cached objects in a Redis instance, including Redis configuration options such as setting a password.
-
 The Gloo Edge Enterprise caching filter is an extension that is built on top of the [Envoy cache filter](https://www.envoyproxy.io/docs/envoy/latest/start/sandboxes/cache), and includes all of the functionality that the Envoy cache filter exposes. In addition, Gloo Edge provides the ability to store the cached objects in a Redis instance, including Redis configuration options such as setting a password.
 
 Review the information on this page to learn more about how caching works in Gloo Edge. 
