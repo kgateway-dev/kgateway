@@ -148,6 +148,9 @@ func processEnvoyTracingProvider(
 	case *tracing.ListenerTracingSettings_OpenTelemetryConfig:
 		return processEnvoyOpenTelemetryTracing(snapshot, typed)
 
+	case *tracing.ListenerTracingSettings_OpenCensusConfig:
+		return processEnvoyOpenCensusTracing(snapshot, typed)
+
 	default:
 		return nil, errors.Errorf("Unsupported Tracing.ProviderConfiguration: %v", typed)
 	}
@@ -262,6 +265,28 @@ func processEnvoyOpenTelemetryTracing(
 
 	return &envoy_config_trace_v3.Tracing_Http{
 		Name: "envoy.tracers.opentelemetry",
+		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
+			TypedConfig: marshalledEnvoyConfig,
+		},
+	}, nil
+}
+
+func processEnvoyOpenCensusTracing(
+	snapshot *v1snap.ApiSnapshot,
+	openCensusTracingSettings *tracing.ListenerTracingSettings_OpenCensusConfig,
+) (*envoy_config_trace_v3.Tracing_Http, error) {
+	envoyConfig, err := api_conversion.ToEnvoyOpenCensusConfiguration(openCensusTracingSettings.OpenCensusConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	marshalledEnvoyConfig, err := ptypes.MarshalAny(envoyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &envoy_config_trace_v3.Tracing_Http{
+		Name: "envoy.tracers.opencensus",
 		ConfigType: &envoy_config_trace_v3.Tracing_Http_TypedConfig{
 			TypedConfig: marshalledEnvoyConfig,
 		},

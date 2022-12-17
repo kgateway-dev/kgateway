@@ -11,6 +11,9 @@ site
 .firebase
 *.code-workspace
 
+# ignore local pollution from kind setup script
+docker-local
+
 themes
 install/gloo.yaml
 
