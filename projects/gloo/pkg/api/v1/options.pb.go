@@ -1455,7 +1455,6 @@ type DestinationSpec struct {
 	// to be usable by Gloo.
 	//
 	// Types that are assignable to DestinationType:
-	//
 	//	*DestinationSpec_Aws
 	//	*DestinationSpec_Azure
 	//	*DestinationSpec_Rest
