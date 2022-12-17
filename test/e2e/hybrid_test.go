@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/helpers"
-
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -54,7 +51,6 @@ var _ = Describe("Hybrid Gateway", func() {
 
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
-
 			gw.GetHybridGateway().MatchedGateways = []*v1.MatchedGateway{
 				// HttpGateway gets a catchall matcher
 				{
@@ -84,20 +80,6 @@ var _ = Describe("Hybrid Gateway", func() {
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
 			}
-
-			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
-				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
-					Status: http.StatusOK,
-				}).
-				Build()
-
-			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vs,
-			}
 		})
 
 		It("http request works as expected", func() {
@@ -105,7 +87,7 @@ var _ = Describe("Hybrid Gateway", func() {
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "5s", "0.5s").Should(matchers2.MatchHttpResponse(&http.Response{
+			}, "5s", "0.5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 			}))
 		})
@@ -116,7 +98,6 @@ var _ = Describe("Hybrid Gateway", func() {
 
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
-
 			gw.GetHybridGateway().MatchedGateways = []*v1.MatchedGateway{
 				// HttpGateway gets a matcher our request will hit
 				{
@@ -145,20 +126,6 @@ var _ = Describe("Hybrid Gateway", func() {
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
 			}
-
-			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
-				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
-					Status: http.StatusOK,
-				}).
-				Build()
-
-			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vs,
-			}
 		})
 
 		It("http request works as expected", func() {
@@ -166,7 +133,7 @@ var _ = Describe("Hybrid Gateway", func() {
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "5s", "0.5s").Should(matchers2.MatchHttpResponse(&http.Response{
+			}, "5s", "0.5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 			}))
 
@@ -200,20 +167,6 @@ var _ = Describe("Hybrid Gateway", func() {
 
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
-			}
-
-			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
-				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteDirectResponseAction("test", &gloov1.DirectResponseAction{
-					Status: http.StatusOK,
-				}).
-				Build()
-
-			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vs,
 			}
 		})
 

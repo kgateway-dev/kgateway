@@ -30,12 +30,11 @@ import (
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
-		tu             *v1helpers.TestUpstream
-		writeNamespace string
+		ctx           context.Context
+		cancel        context.CancelFunc
+		testClients   services.TestClients
+		envoyInstance *services.EnvoyInstance
+		tu            *v1helpers.TestUpstream
 	)
 
 	BeforeEach(func() {
@@ -47,7 +46,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},

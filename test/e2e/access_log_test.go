@@ -30,12 +30,11 @@ import (
 var _ = Describe("Access Log", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		writeNamespace string
-		envoyInstance  *services.EnvoyInstance
-		tu             *v1helpers.TestUpstream
+		ctx           context.Context
+		cancel        context.CancelFunc
+		testClients   services.TestClients
+		envoyInstance *services.EnvoyInstance
+		tu            *v1helpers.TestUpstream
 
 		baseAccessLogPort = uint32(27000)
 	)
@@ -49,7 +48,6 @@ var _ = Describe("Access Log", func() {
 			defaults.HttpPort = services.NextBindPort()
 			defaults.HttpsPort = services.NextBindPort()
 
-			writeNamespace = defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},

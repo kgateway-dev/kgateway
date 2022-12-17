@@ -239,7 +239,14 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		testClients = services.RunGateway(ctx, true)
+		runOptions := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableGateway: true,
+			},
+		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()

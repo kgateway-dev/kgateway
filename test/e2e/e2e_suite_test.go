@@ -1,12 +1,9 @@
 package e2e_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/solo-io/gloo/test/e2e"
-
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
@@ -27,7 +24,6 @@ var (
 	testContextFactory *e2e.TestContextFactory
 
 	writeNamespace = defaults.GlooSystem
-	envoyRole      = fmt.Sprintf("%v~%v", writeNamespace, gatewaydefaults.GatewayProxyName)
 )
 
 var _ = BeforeSuite(func() {

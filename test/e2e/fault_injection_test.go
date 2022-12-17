@@ -10,7 +10,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -74,7 +74,7 @@ var _ = Describe("Fault Injection", func() {
 
 			Eventually(func(g Gomega) (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "5s", ".5s").Should(matchers2.MatchHttpResponse(&http.Response{
+			}, "5s", ".5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusServiceUnavailable,
 			}))
 
@@ -124,7 +124,7 @@ var _ = Describe("Fault Injection", func() {
 				g.Expect(elapsed + marginOfError).To(BeNumerically(">", 3*time.Second))
 
 				return response
-			}, "20s", ".1s").Should(matchers2.MatchHttpResponse(&http.Response{
+			}, "20s", ".1s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 			}))
 

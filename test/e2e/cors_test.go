@@ -72,14 +72,13 @@ var _ = Describe("CORS", func() {
 			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
 				vsWithCors,
 			}
-
 		})
 
 		It("should run with cors", func() {
 
 			By("Envoy config contains CORS filer")
 			Eventually(func(g Gomega) {
-				cfg, err := testContext.EnvoyInstance().EnvoyConfigDump()
+				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
@@ -132,7 +131,7 @@ var _ = Describe("CORS", func() {
 		It("should run without cors", func() {
 			By("Envoy config does not contain CORS filer")
 			Eventually(func(g Gomega) {
-				cfg, err := testContext.EnvoyInstance().EnvoyConfigDump()
+				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))

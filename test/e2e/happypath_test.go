@@ -369,6 +369,7 @@ var _ = Describe("Happy path", func() {
 				})
 			})
 
+			// TODO (sam-heilbron) - Move to kube2e
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
 					if os.Getenv("RUN_KUBE_TESTS") != "1" {

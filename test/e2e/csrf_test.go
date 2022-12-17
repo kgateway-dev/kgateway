@@ -1,14 +1,13 @@
 package e2e_test
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/helpers"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
-	"io"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -293,31 +292,17 @@ func getEnvoyStats(envoyInstance *services.EnvoyInstance) string {
 	By("Get stats")
 	envoyStats := ""
 	EventuallyWithOffset(1, func() error {
-		statsUrl := fmt.Sprintf("http://%s:%d/stats",
-			envoyInstance.LocalAddr(),
-			envoyInstance.AdminPort)
-		r, err := http.Get(statsUrl)
-		if err != nil {
-			return err
-		}
-		p := new(bytes.Buffer)
-		if _, err := io.Copy(p, r.Body); err != nil {
-			return err
-		}
-		defer r.Body.Close()
-		envoyStats = p.String()
-		return nil
+		var err error
+		envoyStats, err = envoyInstance.Statistics()
+		return err
 	}, "10s", ".1s").Should(BeNil())
 	return envoyStats
 }
 
 func EventuallyAllowedOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(request()).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-			Response: &http.Response{
-				StatusCode: http.StatusOK,
-			},
-			Body: "",
+		g.Expect(request()).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
 		}))
 
 		if validateStatistics {
@@ -330,11 +315,9 @@ func EventuallyAllowedOriginResponse(request func() (*http.Response, error), env
 
 func EventuallyInvalidOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(request()).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-			Response: &http.Response{
-				StatusCode: http.StatusForbidden,
-			},
-			Body: "Invalid origin",
+		g.Expect(request()).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+			StatusCode: http.StatusForbidden,
+			Body:       "Invalid origin",
 		}))
 
 		if validateStatistics {

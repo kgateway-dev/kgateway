@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -61,7 +61,7 @@ var _ = Describe("Grpc Web", func() {
 			grpcUpstream := &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "grpc-service",
-					Namespace: "default",
+					Namespace: writeNamespace,
 				},
 				UseHttp2: &wrappers.BoolValue{Value: true},
 				UpstreamType: &gloov1.Upstream_Static{
@@ -137,7 +137,7 @@ var _ = Describe("Grpc Web", func() {
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "10s", "0.5s").Should(matchers2.MatchHttpResponse(&http.Response{
+			}, "10s", "0.5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 			}))
 

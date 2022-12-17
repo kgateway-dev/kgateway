@@ -3,11 +3,12 @@ package e2e_test
 import (
 	"bytes"
 	"fmt"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/helpers"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -79,11 +80,9 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-					Body: "{\"value\":\"test\"}",
-					Response: &http.Response{
-						StatusCode: http.StatusOK,
-					},
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+					Body:       "{\"value\":\"test\"}",
+					StatusCode: http.StatusOK,
 				}))
 
 			})
@@ -108,11 +107,9 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-					Body: "Payload Too Large",
-					Response: &http.Response{
-						StatusCode: http.StatusRequestEntityTooLarge,
-					},
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+					Body:       "Payload Too Large",
+					StatusCode: http.StatusRequestEntityTooLarge,
 				}))
 			})
 		})
@@ -158,11 +155,9 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-					Body: "{\"value\":\"test\"}",
-					Response: &http.Response{
-						StatusCode: http.StatusOK,
-					},
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+					Body:       "{\"value\":\"test\"}",
+					StatusCode: http.StatusOK,
 				}))
 			})
 
@@ -207,11 +202,9 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-					Body: "Payload Too Large",
-					Response: &http.Response{
-						StatusCode: http.StatusRequestEntityTooLarge,
-					},
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+					Body:       "Payload Too Large",
+					StatusCode: http.StatusRequestEntityTooLarge,
 				}))
 			})
 		})
@@ -258,11 +251,9 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-					Body: "{\"value\":\"test\"}",
-					Response: &http.Response{
-						StatusCode: http.StatusOK,
-					},
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+					Body:       "{\"value\":\"test\"}",
+					StatusCode: http.StatusOK,
 				}))
 			})
 
@@ -307,11 +298,9 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-					Body: "Payload Too Large",
-					Response: &http.Response{
-						StatusCode: http.StatusRequestEntityTooLarge,
-					},
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+					Body:       "Payload Too Large",
+					StatusCode: http.StatusRequestEntityTooLarge,
 				}))
 			})
 		})

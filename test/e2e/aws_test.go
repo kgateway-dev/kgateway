@@ -17,7 +17,6 @@ import (
 	"github.com/form3tech-oss/jwt-go"
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo"
@@ -65,7 +64,14 @@ var _ = Describe("AWS Lambda", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		testClients = services.RunGateway(ctx, justGloo)
+		runOptions := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableGateway: true,
+			},
+		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
@@ -736,7 +742,6 @@ var _ = Describe("AWS Lambda", func() {
 				WhatToRun: services.What{
 					DisableGateway: justGloo,
 				},
-				KubeClient: kube2e.MustKubeClient(),
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						AwsOptions: &gloov1.GlooOptions_AWSOptions{

@@ -331,24 +331,6 @@ func (ef *EnvoyFactory) Clean() error {
 	return nil
 }
 
-func (ei *EnvoyInstance) EnvoyConfigDump() (string, error) {
-	adminUrl := fmt.Sprintf("http://%s:%d/config_dump",
-		ei.LocalAddr(),
-		ei.AdminPort)
-	response, err := http.Get(adminUrl)
-	if err != nil {
-		return "", err
-	}
-
-	configDumpBytes := new(bytes.Buffer)
-	defer response.Body.Close()
-	if _, err := io.Copy(configDumpBytes, response.Body); err != nil {
-		return "", err
-	}
-
-	return configDumpBytes.String(), nil
-}
-
 type EnvoyInstance struct {
 	AccessLogAddr string
 	AccessLogPort uint32
@@ -695,6 +677,30 @@ func (ei *EnvoyInstance) Logs() (string, error) {
 	}
 
 	return ei.logs.String(), nil
+}
+
+func (ei *EnvoyInstance) ConfigDump() (string, error) {
+	return ei.getAdminEndpointData("config_dump")
+}
+
+func (ei *EnvoyInstance) Statistics() (string, error) {
+	return ei.getAdminEndpointData("stats")
+}
+
+func (ei *EnvoyInstance) getAdminEndpointData(endpoint string) (string, error) {
+	adminUrl := fmt.Sprintf("http://%s:%d/%s", ei.LocalAddr(), ei.AdminPort, endpoint)
+	response, err := http.Get(adminUrl)
+	if err != nil {
+		return "", err
+	}
+
+	responseBytes := new(bytes.Buffer)
+	defer response.Body.Close()
+	if _, err := io.Copy(responseBytes, response.Body); err != nil {
+		return "", err
+	}
+
+	return responseBytes.String(), nil
 }
 
 // SafeBuffer is a goroutine safe bytes.Buffer

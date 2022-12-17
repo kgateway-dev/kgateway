@@ -595,7 +595,7 @@ var _ = Describe("Gateway", func() {
 
 					It("should work with ssl", func() {
 						// Check tls inspector has not been added yet
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 						vs := getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
 						vs.SslConfig = &gloov1.SslConfig{
@@ -612,7 +612,7 @@ var _ = Describe("Gateway", func() {
 
 						TestUpstreamSslReachable()
 
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 					})
 				})
 			})
@@ -703,7 +703,7 @@ var _ = Describe("Gateway", func() {
 
 				It("should work with ssl", func() {
 					// Check tls inspector has not been added yet
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 					host := &gloov1.TcpHost{
 						Name: "one",
@@ -750,7 +750,7 @@ var _ = Describe("Gateway", func() {
 					}
 
 					// Check tls inspector is correctly configured
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 
 					TestUpstreamSslReachableTcp()
 				})
@@ -1113,7 +1113,7 @@ var _ = Describe("Gateway", func() {
 
 					It("should work with ssl if ssl config is present in matcher", func() {
 						// Check tls inspector has not been added yet
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 						sslConfig := &gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -1156,7 +1156,7 @@ var _ = Describe("Gateway", func() {
 
 						TestUpstreamSslReachable()
 
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 					})
 				})
 			})
@@ -1197,7 +1197,7 @@ var _ = Describe("Gateway", func() {
 
 				It("should work with ssl", func() {
 					// Check tls inspector has not been added yet
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 					host := &gloov1.TcpHost{
 						Name: "tcp-host-one",
@@ -1268,7 +1268,7 @@ var _ = Describe("Gateway", func() {
 					}
 
 					// Check tls inspector is correctly configured
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 
 					TestUpstreamSslReachableTcp()
 				})

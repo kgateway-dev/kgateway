@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/solo-io/gloo/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -45,8 +48,13 @@ var _ = Describe("gzip", func() {
 	Context("filter undefined", func() {
 
 		BeforeEach(func() {
-			testContext.ResourcesToCreate().Gateways[0].GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				Gzip: nil,
+			}
+
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
 			}
 		})
 
@@ -61,7 +69,8 @@ var _ = Describe("gzip", func() {
 	Context("filter defined", func() {
 
 		BeforeEach(func() {
-			testContext.ResourcesToCreate().Gateways[0].GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				Gzip: &gloogzip.Gzip{
 					MemoryLevel: &wrappers.UInt32Value{
 						Value: 5,
@@ -72,6 +81,10 @@ var _ = Describe("gzip", func() {
 						Value: 12,
 					},
 				},
+			}
+
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
 			}
 		})
 

@@ -21,8 +21,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-
 	"github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
@@ -167,19 +165,6 @@ var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
-}
-
-func RunGateway(ctx context.Context, justGloo bool) TestClients {
-	ns := defaults.GlooSystem
-	ro := &RunOptions{
-		NsToWrite: ns,
-		NsToWatch: []string{"default", ns},
-		WhatToRun: What{
-			DisableGateway: justGloo,
-		},
-		KubeClient: helpers.MustKubeClient(),
-	}
-	return RunGlooGatewayUdsFds(ctx, ro)
 }
 
 type What struct {
