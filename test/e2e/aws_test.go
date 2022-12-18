@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	skhelpers "github.com/solo-io/solo-kit/test/helpers"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -70,6 +72,7 @@ var _ = Describe("AWS Lambda", func() {
 			WhatToRun: services.What{
 				DisableGateway: true,
 			},
+			KubeClient: skhelpers.MustKubeClient(),
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
@@ -742,6 +745,7 @@ var _ = Describe("AWS Lambda", func() {
 				WhatToRun: services.What{
 					DisableGateway: justGloo,
 				},
+				KubeClient: skhelpers.MustKubeClient(),
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						AwsOptions: &gloov1.GlooOptions_AWSOptions{
