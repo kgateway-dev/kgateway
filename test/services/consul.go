@@ -174,7 +174,7 @@ func (i *ConsulInstance) Run() error {
 	if err != nil {
 		return err
 	}
-	EventuallyWithOffset(2, i.session.Out, "5s").Should(gbytes.Say("New leader elected"))
+	EventuallyWithOffset(1, i.session.Out, "5s").Should(gbytes.Say("New leader elected"))
 	return nil
 }
 

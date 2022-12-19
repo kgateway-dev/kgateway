@@ -228,7 +228,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
-	ExpectHttpOK(body, rootca, envoyPort, "")
+	ExpectHttpOK(body, rootca, envoyPort, "solo.io test")
 
 	timeout := time.After(15 * time.Second)
 	var receivedRequest *ReceivedRequest

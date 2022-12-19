@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
 
@@ -81,8 +82,6 @@ var _ = Describe("Consul e2e", func() {
 			ro               *services.RunOptions
 		)
 
-		const writeNamespace = defaults.GlooSystem
-
 		queryService := func() (string, error) {
 			response, err := http.Get(fmt.Sprintf("http://localhost:%d", envoyPort))
 			if err != nil {
@@ -126,8 +125,7 @@ var _ = Describe("Consul e2e", func() {
 			envoyPort = defaults.HttpPort
 			envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
-			envoyInstance.RestXdsPort = uint32(testClients.RestXdsPort)
-			err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+			err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Run two simple web applications locally
@@ -490,7 +488,7 @@ func getProxyWithConsulRoute(ns string, bindPort uint32) *gloov1.Proxy {
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "::",
+			BindAddress: net.IPv4zero.String(),
 			BindPort:    bindPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{

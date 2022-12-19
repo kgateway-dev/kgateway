@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -230,6 +232,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
 		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort)
 	}
+	glooOpts.Settings.Gloo.RemoveUnusedFilters = &wrappers.BoolValue{Value: true}
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	glooOpts.GatewayControllerEnabled = !runOptions.WhatToRun.DisableGateway
@@ -283,55 +286,6 @@ func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, ser
 		SecretClient:         secretClient,
 		ProxyClient:          proxyClient,
 		ServiceClient:        serviceClient,
-	}
-}
-
-func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) translator.Opts {
-	ctx = contextutils.WithLogger(ctx, "gateway")
-	f := &factory.MemoryResourceClientFactory{
-		Cache: runOptions.Cache,
-	}
-
-	meta := runOptions.Settings.GetMetadata()
-
-	var validation *translator.ValidationOpts
-	if runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
-		if validation == nil {
-			validation = &translator.ValidationOpts{}
-		}
-		validation.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr()
-	}
-	if runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
-		if validation == nil {
-			validation = &translator.ValidationOpts{}
-		}
-		validation.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue()
-	}
-	if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
-		if validation == nil {
-			validation = &translator.ValidationOpts{}
-		}
-		validation.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
-	}
-	return translator.Opts{
-		GlooNamespace:           meta.GetNamespace(),
-		WriteNamespace:          runOptions.NsToWrite,
-		WatchNamespaces:         runOptions.NsToWatch,
-		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
-		Gateways:                f,
-		MatchableHttpGateways:   f,
-		VirtualServices:         f,
-		RouteTables:             f,
-		VirtualHostOptions:      f,
-		RouteOptions:            f,
-		Proxies:                 f,
-		WatchOpts: clients.WatchOpts{
-			Ctx:         ctx,
-			RefreshRate: time.Minute,
-		},
-		Validation:             validation,
-		DevMode:                false,
-		ConfigStatusMetricOpts: runOptions.Settings.GetObservabilityOptions().GetConfigStatusMetricLabels(),
 	}
 }
 
