@@ -193,7 +193,7 @@ var _ = Describe("Tracing config loading", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  http.StatusOK,
-					Message: "",
+					Message: "solo.io test",
 				},
 			)
 		}
