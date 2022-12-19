@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Aggregate Listener", func() {
+var _ = Describe("Aggregate Listener", func() {
 
 	// An AggregateListener is a type of Listener supported on a Proxy
 	// Proxies only contain this type of Listener by configuring the

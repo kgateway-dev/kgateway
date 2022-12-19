@@ -76,6 +76,7 @@ var _ = Describe("Fault Injection", func() {
 				return http.DefaultClient.Do(req)
 			}, "5s", ".5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusServiceUnavailable,
+				Body:       "fault filter abort",
 			}))
 
 		})
