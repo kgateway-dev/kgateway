@@ -138,9 +138,6 @@ var _ = Describe("Staged Transformation", func() {
 
 	Context("no auth", func() {
 
-		TestUpstreamReachable := func() {
-			v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
-		}
 		It("should transform response", func() {
 			setProxy(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
@@ -189,7 +186,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			// send a request and expect it transformed!
 			body := []byte("test")
@@ -216,7 +212,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			// send a request and expect it transformed!
 			body := []byte("test")
@@ -250,7 +245,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			var client http.Client
 			res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
@@ -278,7 +272,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			body := []byte("test")
 			encodedBodystring := base64.StdEncoding.EncodeToString(body)
@@ -305,7 +298,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			body := []byte("test")
 			encodedBody := base64.StdEncoding.EncodeToString(body)
@@ -332,7 +324,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			body := []byte("123456789")
 			// send a request, expect that the response body contains only the first 4 characters
@@ -357,7 +348,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			var client http.Client
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), nil)
@@ -405,7 +395,7 @@ var _ = Describe("Staged Transformation", func() {
 					},
 				}
 			})
-			TestUpstreamReachable()
+
 			var response *http.Response
 			Eventually(func() error {
 				var err error
