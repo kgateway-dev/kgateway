@@ -132,3 +132,7 @@ func (c *TestContext) EnvoyInstance() *services.EnvoyInstance {
 func (c *TestContext) TestUpstream() *v1helpers.TestUpstream {
 	return c.testUpstream
 }
+
+func (c *TestContext) TestClients() services.TestClients {
+	return c.testClients
+}
