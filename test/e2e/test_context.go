@@ -125,10 +125,6 @@ func (c *TestContext) ResourcesToCreate() *gloosnapshot.ApiSnapshot {
 	return c.resourcesToCreate
 }
 
-func (c *TestContext) SetResourcesToCreate(snapshot *gloosnapshot.ApiSnapshot) {
-	c.resourcesToCreate = snapshot
-}
-
 func (c *TestContext) EnvoyInstance() *services.EnvoyInstance {
 	return c.envoyInstance
 }
