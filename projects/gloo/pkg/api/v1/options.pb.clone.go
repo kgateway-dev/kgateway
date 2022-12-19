@@ -683,6 +683,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.MaxStreamDuration = proto.Clone(m.GetMaxStreamDuration()).(*RouteOptions_MaxStreamDuration)
 	}
 
+	if h, ok := interface{}(m.GetIdleTimeout()).(clone.Cloner); ok {
+		target.IdleTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.IdleTimeout = proto.Clone(m.GetIdleTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:

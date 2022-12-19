@@ -293,6 +293,8 @@ spec:
                     type: object
                   hostRewrite:
                     type: string
+                  idleTimeout:
+                    type: string
                   jwt:
                     properties:
                       disable:
