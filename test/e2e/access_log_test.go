@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync/atomic"
 	"time"
+
+	"github.com/solo-io/gloo/test/services"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
@@ -16,7 +17,6 @@ import (
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
@@ -26,10 +26,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-)
-
-var (
-	baseAccessLogPort = uint32(27000)
 )
 
 var _ = Describe("Access Log", func() {
@@ -62,7 +58,7 @@ var _ = Describe("Access Log", func() {
 		)
 
 		BeforeEach(func() {
-			accessLogPort := atomic.AddUint32(&baseAccessLogPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
+			accessLogPort := services.NextBindPort()
 			msgChan = runAccessLog(testContext.Ctx(), accessLogPort)
 			testContext.EnvoyInstance().AccessLogPort = accessLogPort
 

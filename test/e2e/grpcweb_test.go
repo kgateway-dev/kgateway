@@ -7,6 +7,9 @@ import (
 	"net/http"
 	"time"
 
+	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
+
 	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	"github.com/golang/protobuf/proto"
@@ -27,9 +30,6 @@ import (
 var _ = Describe("Grpc Web", func() {
 
 	var (
-		baseAccessLogPort = uint32(37000)
-		accessLogPort     uint32
-
 		testContext *e2e.TestContext
 	)
 
@@ -57,7 +57,7 @@ var _ = Describe("Grpc Web", func() {
 		)
 
 		BeforeEach(func() {
-			accessLogPort = services.AdvanceBindPort(&baseAccessLogPort)
+			accessLogPort := services.NextBindPort()
 			grpcUpstream := &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "grpc-service",
@@ -87,6 +87,16 @@ var _ = Describe("Grpc Web", func() {
 			// we could use any other service, but we already have the ALS setup for tests
 			msgChan = runAccessLog(testContext.Ctx(), accessLogPort)
 
+			gw := defaults2.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				GrpcWeb: &grpc_web.GrpcWeb{
+					Disable: false,
+				},
+			}
+
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
+			}
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsToGrpcUpstream,
 			}
