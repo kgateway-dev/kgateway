@@ -205,8 +205,6 @@ install-go-tools: mod-download install-test-tools ## Download and install Go dep
 install-test-tools:
 	mkdir -p $(DEPSGOBIN)
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
-
 
 .PHONY: test ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 test: install-test-tools
