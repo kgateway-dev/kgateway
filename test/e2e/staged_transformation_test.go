@@ -27,15 +27,6 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 )
 
-// These tests rely on Transformations:
-// https://docs.solo.io/gloo-edge/latest/guides/traffic_management/request_processing/transformations/
-// To validate transformations, we call out to an Envoy binary running in validate mode
-// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
-// This binary is present in our CI/CD pipeline. But when running locally it is not, so we fallback to the Upstream Envoy binary
-// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
-// and the logs will contain:
-//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
-
 var _ = Describe("Staged Transformation", func() {
 
 	var (
@@ -247,10 +238,11 @@ var _ = Describe("Staged Transformation", func() {
 			})
 
 			var client http.Client
-			res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("%+v\n", res.Header)
-			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
+			Eventually(func(g Gomega) {
+				res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 		It("Should be able to base64 encode the body", func() {
@@ -350,12 +342,14 @@ var _ = Describe("Staged Transformation", func() {
 			})
 
 			var client http.Client
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
-			res, err := client.Do(req)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(res.Header["X-New-Custom-Header"]).To(ContainElements("test2"))
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
+				res, err := client.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res.Header["X-New-Custom-Header"]).To(ContainElements("test2"))
+			}).Should(Succeed())
 		})
 
 		It("should apply transforms from most specific level only", func() {
@@ -396,18 +390,16 @@ var _ = Describe("Staged Transformation", func() {
 				}
 			})
 
-			var response *http.Response
-			Eventually(func() error {
-				var err error
-				response, err = http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
-				return err
-			}, "30s", "1s").ShouldNot(HaveOccurred())
-			// Only route level transformations should be applied here due to the nature of envoy choosing
-			// the most specific config (weighted cluster > route > vhost)
-			// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
-			// transformations down to the route level.
-			Expect(response.Header.Get("x-solo-2")).To(Equal("route header"))
-			Expect(response.Header.Get("x-solo-1")).To(BeEmpty())
+			Eventually(func(g Gomega) {
+				response, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
+				g.Expect(err).NotTo(HaveOccurred())
+				// Only route level transformations should be applied here due to the nature of envoy choosing
+				// the most specific config (weighted cluster > route > vhost)
+				// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
+				// transformations down to the route level.
+				g.Expect(response.Header.Get("x-solo-2")).To(Equal("route header"))
+				g.Expect(response.Header.Get("x-solo-1")).To(BeEmpty())
+			}).Should(Succeed())
 		})
 	})
 

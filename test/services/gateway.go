@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/imdario/mergo"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
@@ -200,59 +202,35 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if runOptions.RestXdsPort == 0 {
 		runOptions.RestXdsPort = AllocateGlooPort()
 	}
-
 	if runOptions.Cache == nil {
 		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
 
-	var settings *gloov1.Settings
-
-	if nil != runOptions.Settings { //capture any setting set by the test
-		settings = runOptions.Settings
-	} else { //we have no settings from testing - create a new setting struct to hold run option values
-		settings = &gloov1.Settings{}
-	}
-
-	//override needed settings for testing
-	settings.WatchNamespaces = runOptions.NsToWatch
-	settings.DiscoveryNamespace = runOptions.NsToWrite
-
+	settings := constructTestSettings(runOptions)
 	ctx = settingsutil.WithSettings(ctx, settings)
-	glooOpts := defaultGlooOpts(ctx, runOptions)
 
-	glooOpts.ControlPlane.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
-	glooOpts.ValidationServer.BindAddr.(*net.TCPAddr).Port = int(runOptions.ValidationPort)
+	// All Gloo Edge components run using a Bootstrap.Opts object
+	// These values are extracted from the Settings object and as part of our SetupSyncer
+	// we pull values off the Settings object to build the Bootstrap.Opts. It would be ideal if we
+	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality
+	bootstrapOpts := constructTestOpts(ctx, runOptions, settings)
 
-	if glooOpts.Settings == nil {
-		glooOpts.Settings = &gloov1.Settings{}
-	}
-	if glooOpts.Settings.GetGloo() == nil {
-		glooOpts.Settings.Gloo = &gloov1.GlooOptions{}
-	}
-	if glooOpts.Settings.GetGloo().GetRestXdsBindAddr() == "" {
-		glooOpts.Settings.GetGloo().RestXdsBindAddr = fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort)
-	}
-	glooOpts.Settings.Gloo.RemoveUnusedFilters = &wrappers.BoolValue{Value: true}
-	glooOpts.ControlPlane.StartGrpcServer = true
-	glooOpts.ValidationServer.StartGrpcServer = true
-	glooOpts.GatewayControllerEnabled = !runOptions.WhatToRun.DisableGateway
-
-	go setup.RunGloo(glooOpts)
+	go setup.RunGloo(bootstrapOpts)
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
-			fds_syncer.RunFDS(glooOpts)
+			fds_syncer.RunFDS(bootstrapOpts)
 		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
 		go func() {
 			defer GinkgoRecover()
-			uds_syncer.RunUDS(glooOpts)
+			uds_syncer.RunUDS(bootstrapOpts)
 		}()
 	}
 
-	testClients := getTestClients(ctx, runOptions.Cache, glooOpts.KubeServiceClient)
+	testClients := getTestClients(ctx, runOptions.Cache, bootstrapOpts.KubeServiceClient)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	testClients.RestXdsPort = int(runOptions.RestXdsPort)
 	return testClients
@@ -289,7 +267,39 @@ func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, ser
 	}
 }
 
-func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts {
+func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
+	// Define default Settings that all tests will inherit
+	settings := &gloov1.Settings{
+		WatchNamespaces:    runOptions.NsToWatch,
+		DiscoveryNamespace: runOptions.NsToWrite,
+		Gloo: &gloov1.GlooOptions{
+			RemoveUnusedFilters: &wrappers.BoolValue{Value: true},
+			RestXdsBindAddr:     fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
+		},
+		Gateway: &gloov1.GatewayOptions{
+			Validation: &gloov1.GatewayOptions_ValidationOptions{
+				// To validate transformations, we call out to an Envoy binary running in validate mode
+				// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
+				// This binary is present in our CI/CD pipeline. But when running locally it is not, so we fallback to the Upstream Envoy binary
+				// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
+				// and the logs will contain:
+				//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
+				DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+			},
+		},
+	}
+
+	// Allow tests to override the default Settings
+	if runOptions.Settings != nil {
+		err := mergo.Merge(settings, runOptions.Settings)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	}
+
+	return settings
+}
+
+// constructTestOpts mirrors constructOpts in our SetupSyncer
+func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gloov1.Settings) bootstrap.Opts {
 	ctx = contextutils.WithLogger(ctx, "gloo")
 	logger := contextutils.LoggerFrom(ctx)
 	grpcServer := grpc.NewServer(grpc.StreamInterceptor(
@@ -322,27 +332,27 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		Expect(err).NotTo(HaveOccurred())
 	}
 	var validationOpts *translator.ValidationOpts
-	if runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
+	if settings.GetGateway().GetValidation().GetProxyValidationServerAddr() != "" {
 		if validationOpts == nil {
 			validationOpts = &translator.ValidationOpts{}
 		}
-		validationOpts.ProxyValidationServerAddress = runOptions.Settings.GetGateway().GetValidation().GetProxyValidationServerAddr()
+		validationOpts.ProxyValidationServerAddress = settings.GetGateway().GetValidation().GetProxyValidationServerAddr()
 	}
-	if runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
+	if settings.GetGateway().GetValidation().GetAllowWarnings() != nil {
 		if validationOpts == nil {
 			validationOpts = &translator.ValidationOpts{}
 		}
-		validationOpts.AllowWarnings = runOptions.Settings.GetGateway().GetValidation().GetAllowWarnings().GetValue()
+		validationOpts.AllowWarnings = settings.GetGateway().GetValidation().GetAllowWarnings().GetValue()
 	}
-	if runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
+	if settings.GetGateway().GetValidation().GetAlwaysAccept() != nil {
 		if validationOpts == nil {
 			validationOpts = &translator.ValidationOpts{}
 		}
-		validationOpts.AlwaysAcceptResources = runOptions.Settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
+		validationOpts.AlwaysAcceptResources = settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
 	}
 	return bootstrap.Opts{
-		Settings:                runOptions.Settings,
-		WriteNamespace:          runOptions.NsToWrite,
+		Settings:                settings,
+		WriteNamespace:          settings.DiscoveryNamespace,
 		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
 		Upstreams:               f,
 		UpstreamGroups:          f,
@@ -359,18 +369,18 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		RouteOptions:            f,
 		VirtualHostOptions:      f,
 		KubeServiceClient:       newServiceClient(ctx, f, runOptions),
-		WatchNamespaces:         runOptions.NsToWatch,
+		WatchNamespaces:         settings.WatchNamespaces,
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
 		},
 		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
-			Port: 8081,
+			Port: int(runOptions.GlooPort),
 		}, nil, true),
 		ValidationServer: setup.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
 			IP:   net.IPv4zero,
-			Port: 8081,
+			Port: int(runOptions.ValidationPort),
 		}, true),
 		ProxyDebugServer: setup.NewProxyDebugServer(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
@@ -383,7 +393,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 			ConsulWatcher: runOptions.ConsulClient,
 			DnsServer:     runOptions.ConsulDnsAddress,
 		},
-		GatewayControllerEnabled: true,
+		GatewayControllerEnabled: !runOptions.WhatToRun.DisableGateway,
 		ValidationOpts:           validationOpts,
 		Identity:                 singlereplica.Identity(),
 	}

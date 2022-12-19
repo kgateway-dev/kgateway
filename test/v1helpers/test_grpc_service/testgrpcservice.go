@@ -3,9 +3,12 @@ package testgrpcservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/onsi/ginkgo"
 
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/go-utils/healthchecker"
@@ -41,7 +44,21 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	hc := healthchecker.NewGrpc("TestService", health.NewServer(), false, healthpb.HealthCheckResponse_SERVING)
 	healthpb.RegisterHealthServer(grpcServer, hc.GetServer())
 	glootest.RegisterTestServiceServer(grpcServer, srv)
-	go grpcServer.Serve(lis)
+
+	go func() {
+		defer ginkgo.GinkgoRecover()
+
+		fmt.Println("starting test grpc server")
+		_ = grpcServer.Serve(lis)
+	}()
+	go func() {
+		defer ginkgo.GinkgoRecover()
+
+		<-ctx.Done()
+		grpcServer.Stop()
+		fmt.Println("shutting down test grpc server")
+	}()
+
 	time.Sleep(time.Millisecond)
 
 	addr := lis.Addr().String()

@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -61,13 +59,6 @@ var _ = Describe("dynamic forward proxy", func() {
 			WhatToRun: services.What{
 				DisableFds: true,
 				DisableUds: true,
-			},
-			Settings: &gloov1.Settings{
-				Gateway: &gloov1.GatewayOptions{
-					Validation: &gloov1.GatewayOptions_ValidationOptions{
-						DisableTransformationValidation: &wrappers.BoolValue{Value: true},
-					},
-				},
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)

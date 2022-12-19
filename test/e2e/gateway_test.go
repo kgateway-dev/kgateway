@@ -40,10 +40,9 @@ const (
 var _ = Describe("Gateway", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		writeNamespace string
+		ctx         context.Context
+		cancel      context.CancelFunc
+		testClients services.TestClients
 
 		vsMetric = metrics.Names[gatewayv1.VirtualServiceGVK]
 	)
@@ -64,7 +63,6 @@ var _ = Describe("Gateway", func() {
 
 		BeforeEach(func() {
 			validationPort := services.AllocateGlooPort()
-			writeNamespace = defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},

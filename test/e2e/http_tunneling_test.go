@@ -52,7 +52,6 @@ var _ = Describe("tunneling", func() {
 		vs             *gatewayv1.VirtualService
 		tlsUpstream    bool
 		tlsHttpConnect bool
-		writeNamespace = defaults.GlooSystem
 	)
 
 	checkProxy := func() {
