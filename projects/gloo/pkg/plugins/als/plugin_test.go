@@ -77,8 +77,8 @@ var _ = Describe("Plugin", func() {
 				var falCfg envoygrpc.HttpGrpcAccessLogConfig
 				err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalRequestHeadersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseHeadersToLog).To(Equal(extraHeaders))
 				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
 				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
 				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
