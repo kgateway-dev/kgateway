@@ -173,7 +173,7 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		bodyChan <- &rr
 	}
 
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := getListener(tlsServer)
 	if err != nil {
 		panic(err)
 	}
@@ -198,29 +198,6 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	go func() {
 		defer GinkgoRecover()
 		h := &http.Server{Handler: mux}
-		if tlsServer > NO_TLS {
-			fmt.Fprintln(GinkgoWriter, "test server serving tls")
-			certGenFunc, keyGenFunc := helpers.Certificate, helpers.PrivateKey
-			if tlsServer == MTLS {
-				fmt.Fprintln(GinkgoWriter, "test server serving mtls")
-				certGenFunc, keyGenFunc = helpers.MtlsCertificate, helpers.MtlsPrivateKey
-			}
-			cert, key := certGenFunc(), keyGenFunc()
-			certs, err := tls.X509KeyPair([]byte(cert), []byte(key))
-			if err != nil {
-				Expect(err).NotTo(HaveOccurred())
-			}
-			tlsConfig := &tls.Config{
-				Certificates: []tls.Certificate{certs},
-			}
-			if tlsServer == MTLS {
-				certPool := x509.NewCertPool()
-				certPool.AppendCertsFromPEM([]byte(cert))
-				tlsConfig.ClientCAs = certPool
-				tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-			}
-			listener = tls.NewListener(listener, tlsConfig)
-		}
 
 		go func() {
 			defer GinkgoRecover()
@@ -239,6 +216,39 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		close(bodyChan)
 	}()
 	return uint32(port), bodyChan
+}
+
+func getListener(tlsServer UpstreamTlsRequired) (net.Listener, error) {
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return nil, err
+	}
+
+	if tlsServer > NO_TLS {
+		fmt.Fprintln(GinkgoWriter, "test server serving tls")
+		certGenFunc, keyGenFunc := helpers.Certificate, helpers.PrivateKey
+		if tlsServer == MTLS {
+			fmt.Fprintln(GinkgoWriter, "test server serving mtls")
+			certGenFunc, keyGenFunc = helpers.MtlsCertificate, helpers.MtlsPrivateKey
+		}
+		cert, key := certGenFunc(), keyGenFunc()
+		certs, err := tls.X509KeyPair([]byte(cert), []byte(key))
+		if err != nil {
+			return nil, err
+		}
+
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{certs},
+		}
+		if tlsServer == MTLS {
+			certPool := x509.NewCertPool()
+			certPool.AppendCertsFromPEM([]byte(cert))
+			tlsConfig.ClientCAs = certPool
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		}
+		listener = tls.NewListener(listener, tlsConfig)
+	}
+	return listener, nil
 }
 
 func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
