@@ -256,6 +256,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "envoyMetadata": map<string, .google.protobuf.Struct>
 "regexRewrite": .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
 "maxStreamDuration": .gloo.solo.io.RouteOptions.MaxStreamDuration
+"idleTimeout": .google.protobuf.Duration
 
 ```
 
@@ -294,6 +295,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `envoyMetadata` | `map<string, .google.protobuf.Struct>` | This field can be used to provide additional information about the route. This metadata can be consumed by the Envoy filters that process requests that match the route. For more info about metadata, see [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata). The value of this field will be propagated to the `metadata` attribute of the corresponding Envoy route. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-route) for more details about the `metadata` attribute. |
 | `regexRewrite` | [.solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute](../../external/envoy/type/matcher/v3/regex.proto.sk/#regexmatchandsubstitute) | For requests matched on this route, rewrite the HTTP request path according to the provided regex pattern before forwarding upstream Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite) for more details about the `regex_rewrite` attribute. |
 | `maxStreamDuration` | [.gloo.solo.io.RouteOptions.MaxStreamDuration](../options.proto.sk/#maxstreamduration) | Settings for maximum durations and timeouts for streams on the route. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration). |
+| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout, although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings) wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured. Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout). |
 
 
 
