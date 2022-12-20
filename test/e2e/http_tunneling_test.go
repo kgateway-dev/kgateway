@@ -50,7 +50,7 @@ var _ = Describe("tunneling", func() {
 		up             *gloov1.Upstream
 		tuPort         uint32
 		vs             *gatewayv1.VirtualService
-		tlsUpstream    bool
+		tlsRequired    v1helpers.UpstreamTlsRequired = v1helpers.NO_TLS
 		tlsHttpConnect bool
 		writeNamespace = defaults.GlooSystem
 	)
@@ -71,7 +71,7 @@ var _ = Describe("tunneling", func() {
 	}
 
 	BeforeEach(func() {
-		tlsUpstream = false
+		tlsRequired = v1helpers.NO_TLS
 		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
@@ -106,7 +106,7 @@ var _ = Describe("tunneling", func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx, tlsHttpConnect)
 
-		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream)
+		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsRequired)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 
 		up = &gloov1.Upstream{
@@ -202,6 +202,13 @@ var _ = Describe("tunneling", func() {
 				},
 			}
 
+			// set mTLS certs to be used by Envoy so we can talk to mTLS test server
+			if tlsRequired == v1helpers.MTLS {
+				secret.GetTls().CertChain = gloohelpers.MtlsCertificate()
+				secret.GetTls().PrivateKey = gloohelpers.MtlsPrivateKey()
+				secret.GetTls().RootCa = gloohelpers.MtlsCertificate()
+			}
+
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -211,7 +218,7 @@ var _ = Describe("tunneling", func() {
 				},
 			}
 
-			if tlsUpstream {
+			if tlsRequired > v1helpers.NO_TLS {
 				up.SslConfig = sslCfg
 			}
 			up.HttpProxyHostname = &wrappers.StringValue{Value: fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tuPort)} // enable HTTP tunneling,
@@ -240,7 +247,7 @@ var _ = Describe("tunneling", func() {
 		Context("with back TLS", func() {
 
 			BeforeEach(func() {
-				tlsUpstream = true
+				tlsRequired = v1helpers.TLS
 			})
 
 			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
@@ -282,11 +289,22 @@ var _ = Describe("tunneling", func() {
 			})
 		})
 
+		Context("with back mTLS", func() {
+			BeforeEach(func() {
+				tlsRequired = v1helpers.MTLS
+			})
+
+			It("should proxy encrypted bytes over plaintext HTTP Connect", func() {
+				// the request path here is [envoy] -- plaintext --> [local HTTP Connect proxy] -- encrypted --> mTLS upstream
+				jsonStr := `{"value":"Hello, world!"}`
+				expectResponseBodyOnRequest(jsonStr, http.StatusOK, ContainSubstring(jsonStr))
+			})
+		})
+
 		Context("with front and back TLS", func() {
 
 			BeforeEach(func() {
-				tlsHttpConnect = true
-				tlsUpstream = true
+				tlsRequired = v1helpers.TLS
 			})
 
 			It("should proxy encrypted bytes over encrypted HTTP Connect", func() {

@@ -983,6 +983,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetIdleTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIdleTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIdleTimeout(), target.GetIdleTimeout()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
