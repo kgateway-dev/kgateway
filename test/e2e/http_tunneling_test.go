@@ -108,13 +108,15 @@ var _ = Describe("tunneling", func() {
 		// start http proxy and setup upstream that points to it
 		port := startHttpProxy(ctx, tlsHttpConnect)
 
-		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsUpstream, mtlsUpstream)
+		var tlsRequired v1helpers.UpstreamTlsRequired = v1helpers.NO_TLS
+		if tlsUpstream {
+			tlsRequired = v1helpers.TLS
+		}
+		if mtlsUpstream {
+			tlsRequired = v1helpers.MTLS
+		}
+		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsRequired)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
-		go func() {
-			for rr := range tu.C {
-				fmt.Fprintln(GinkgoWriter, "test server received request\n", rr)
-			}
-		}()
 
 		up = &gloov1.Upstream{
 			Metadata: &core.Metadata{
