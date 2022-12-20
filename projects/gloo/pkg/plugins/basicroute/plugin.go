@@ -200,6 +200,11 @@ func applyRetries(in *v1.Route, out *envoy_config_route_v3.Route) error {
 	return nil
 }
 
+// Put functions we want to mock in tests in here
+var (
+	ConvertRegexMatchAndSubstitute = regexutils.ConvertRegexMatchAndSubstitute
+)
+
 func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	hostRewriteType := in.GetOptions().GetHostRewriteType()
 	if hostRewriteType == nil {
@@ -224,7 +229,7 @@ func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route
 		}
 
 	case *v1.RouteOptions_HostRewritePathRegex:
-		regex, err := regexutils.ConvertRegexMatchAndSubstitute(ctx, rewriteType.HostRewritePathRegex)
+		regex, err := ConvertRegexMatchAndSubstitute(ctx, rewriteType.HostRewritePathRegex)
 		if err != nil {
 			return err
 		}
