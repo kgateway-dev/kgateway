@@ -68,6 +68,9 @@ spec:
           secretName: {{ .Values.gateway.validation.secretName }}
       {{- end }}
       containers:
+      {{- if .Values.gloo.deployment.containers }}
+{{ toYaml .Values.gloo.deployment.containers | indent 6 }}
+      {{- end }}
 {{- if .Values.global.glooMtls.enabled }}
       {{- $sdsImage := merge .Values.global.glooMtls.sds.image .Values.global.image }}
       {{- $envoyImage := merge .Values.global.glooMtls.envoy.image .Values.global.image}}
