@@ -186,7 +186,6 @@ type RunOptions struct {
 	ValidationPort   int32
 	RestXdsPort      int32
 	Settings         *gloov1.Settings
-	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
 	ConsulClient     consul.ConsulWatcher
 	ConsulDnsAddress string
@@ -202,9 +201,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	}
 	if runOptions.RestXdsPort == 0 {
 		runOptions.RestXdsPort = AllocateGlooPort()
-	}
-	if runOptions.Cache == nil {
-		runOptions.Cache = memory.NewInMemoryResourceCache()
 	}
 
 	settings := constructTestSettings(runOptions)
@@ -231,30 +227,24 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		}()
 	}
 
-	testClients := getTestClients(ctx, runOptions.Cache, bootstrapOpts.KubeServiceClient)
+	testClients := getTestClients(ctx, bootstrapOpts)
 	testClients.GlooPort = int(runOptions.GlooPort)
 	testClients.RestXdsPort = int(runOptions.RestXdsPort)
 	return testClients
 }
 
-func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, serviceClient skkube.ServiceClient) TestClients {
-
-	// construct our own resources:
-	memFactory := &factory.MemoryResourceClientFactory{
-		Cache: cache,
-	}
-
-	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, memFactory)
+func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClients {
+	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, bootstrapOpts.Gateways)
 	Expect(err).NotTo(HaveOccurred())
-	httpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, memFactory)
+	httpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, bootstrapOpts.MatchableHttpGateways)
 	Expect(err).NotTo(HaveOccurred())
-	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, memFactory)
+	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, bootstrapOpts.VirtualServices)
 	Expect(err).NotTo(HaveOccurred())
-	upstreamClient, err := gloov1.NewUpstreamClient(ctx, memFactory)
+	upstreamClient, err := gloov1.NewUpstreamClient(ctx, bootstrapOpts.Upstreams)
 	Expect(err).NotTo(HaveOccurred())
-	secretClient, err := gloov1.NewSecretClient(ctx, memFactory)
+	secretClient, err := gloov1.NewSecretClient(ctx, bootstrapOpts.Secrets)
 	Expect(err).NotTo(HaveOccurred())
-	proxyClient, err := gloov1.NewProxyClient(ctx, memFactory)
+	proxyClient, err := gloov1.NewProxyClient(ctx, bootstrapOpts.Proxies)
 	Expect(err).NotTo(HaveOccurred())
 
 	return TestClients{
@@ -264,7 +254,7 @@ func getTestClients(ctx context.Context, cache memory.InMemoryResourceCache, ser
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,
 		ProxyClient:          proxyClient,
-		ServiceClient:        serviceClient,
+		ServiceClient:        bootstrapOpts.KubeServiceClient,
 	}
 }
 
@@ -294,7 +284,9 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 				// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
 				// and the logs will contain:
 				//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
-				DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+				DisableTransformationValidation: &wrappers.BoolValue{
+					Value: true,
+				},
 			},
 			EnableGatewayController: &wrappers.BoolValue{
 				Value: !runOptions.WhatToRun.DisableGateway,
@@ -345,7 +337,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		)),
 	)
 	f := &factory.MemoryResourceClientFactory{
-		Cache: runOptions.Cache,
+		Cache: memory.NewInMemoryResourceCache(),
 	}
 	var kubeCoreCache corecache.KubeCoreCache
 	if runOptions.KubeClient != nil {
