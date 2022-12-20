@@ -291,31 +291,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 				InvalidRouteResponseBody: "Invalid Route Replacement Encountered In Test",
 			},
 		},
-		Gateway: &gloov1.GatewayOptions{
-			Validation: &gloov1.GatewayOptions_ValidationOptions{
-				// To validate transformations, we call out to an Envoy binary running in validate mode
-				// https://github.com/solo-io/gloo/blob/01d04751f72c168e304977c4f67fdbcbf30232a9/projects/gloo/pkg/bootstrap/bootstrap_validation.go#L28
-				// This binary is present in our CI/CD pipeline. But when running locally it is not, so we fallback to the Upstream Envoy binary
-				// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
-				// and the logs will contain:
-				//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
-				DisableTransformationValidation: &wrappers.BoolValue{
-					Value: true,
-				},
-			},
-			EnableGatewayController: &wrappers.BoolValue{
-				Value: !runOptions.WhatToRun.DisableGateway,
-			},
-			// To make debugging slightly easier
-			PersistProxySpec: &wrappers.BoolValue{
-				Value: true,
-			},
-			// For now we default this to false, and have explicit tests (aggregate_listener_test), which validate
-			// the behavior when the setting is configured to true
-			IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
-				Value: false,
-			},
-		},
+		Gateway: nil,
 	}
 
 	// Allow tests to override the default Settings
