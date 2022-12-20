@@ -485,6 +485,8 @@
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.failureThreshold|int32|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.terminationGracePeriodSeconds|int64|||
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
+|gatewayProxies.NAME.podTemplate.extraContainers|string||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the slice of containers on the gateway proxy deployment.|
+|gatewayProxies.NAME.podTemplate.extraInitContainers|string||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the slice of initContainers on the gateway proxy deployment|
 |gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -680,6 +682,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.terminationGracePeriodSeconds|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
+|gatewayProxies.gatewayProxy.podTemplate.extraContainers|string||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the slice of containers on the gateway proxy deployment.|
+|gatewayProxies.gatewayProxy.podTemplate.extraInitContainers|string||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the slice of initContainers on the gateway proxy deployment|
 |gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
