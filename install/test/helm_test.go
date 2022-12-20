@@ -5521,10 +5521,6 @@ metadata:
 								value + ".initContainers[0].name=containerName",
 								value + ".initContainers[0].command[0]=sh",
 								value + ".initContainers[0].command[1]=-c",
-								value + ".containers[0].image=gcr.io/solo-public",
-								value + ".containers[0].name=containerName",
-								value + ".containers[0].command[0]=sh",
-								value + ".containers[0].command[1]=-c",
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5549,10 +5545,6 @@ metadata:
 								Expect(a).To(Equal("someRestartPolicy"))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "initContainers")...)
 								Expect(a).To(Equal([]interface{}{map[string]interface{}{"image": "gcr.io/solo-public", "name": "containerName", "command": []interface{}{"sh", "-c"}}}))
-								if u.GetName() == "gloo" {
-									a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "containers")...)
-									Expect(a.([]interface{})[0]).To(Equal(map[string]interface{}{"image": "gcr.io/solo-public", "name": "containerName", "command": []interface{}{"sh", "-c"}}))
-								}
 								return true
 							}
 							return false

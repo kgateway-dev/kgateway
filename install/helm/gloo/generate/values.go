@@ -78,7 +78,6 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the slice of initContainers on the deployment."`
-	Containers        []interface{}          `json:"containers,omitempty" desc:"[Containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the slice of containers on the deployment."`
 }
 
 type JobSpec struct {
