@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"sync/atomic"
 	"time"
 
@@ -275,6 +276,15 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 		Gloo: &gloov1.GlooOptions{
 			RemoveUnusedFilters: &wrappers.BoolValue{Value: true},
 			RestXdsBindAddr:     fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
+
+			// Invalid Routes can be difficult to track down
+			// By creating a Response Code and Body that are unique, hopefully it is easier to identify situations
+			// Where invalid route replacement is taking effect
+			InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+				ReplaceInvalidRoutes:     true,
+				InvalidRouteResponseCode: http.StatusTeapot,
+				InvalidRouteResponseBody: "Invalid Route Replacement Encountered In Test",
+			},
 		},
 		Gateway: &gloov1.GatewayOptions{
 			Validation: &gloov1.GatewayOptions_ValidationOptions{
@@ -285,6 +295,18 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 				// and the logs will contain:
 				//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
 				DisableTransformationValidation: &wrappers.BoolValue{Value: true},
+			},
+			EnableGatewayController: &wrappers.BoolValue{
+				Value: !runOptions.WhatToRun.DisableGateway,
+			},
+			// To make debugging slightly easier
+			PersistProxySpec: &wrappers.BoolValue{
+				Value: true,
+			},
+			// For now we default this to false, and have explicit tests (aggregate_listener_test), which validate
+			// the behavior when the setting is configured to true
+			IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
+				Value: false,
 			},
 		},
 	}
@@ -328,7 +350,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 	var kubeCoreCache corecache.KubeCoreCache
 	if runOptions.KubeClient != nil {
 		var err error
-		kubeCoreCache, err = cache.NewKubeCoreCacheWithOptions(ctx, runOptions.KubeClient, time.Hour, runOptions.NsToWatch)
+		kubeCoreCache, err = cache.NewKubeCoreCacheWithOptions(ctx, runOptions.KubeClient, time.Hour, settings.GetWatchNamespaces())
 		Expect(err).NotTo(HaveOccurred())
 	}
 	var validationOpts *translator.ValidationOpts
@@ -352,7 +374,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 	}
 	return bootstrap.Opts{
 		Settings:                settings,
-		WriteNamespace:          settings.DiscoveryNamespace,
+		WriteNamespace:          settings.GetDiscoveryNamespace(),
 		StatusReporterNamespace: statusutils.GetStatusReporterNamespaceOrDefault(defaults.GlooSystem),
 		Upstreams:               f,
 		UpstreamGroups:          f,
@@ -369,7 +391,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		RouteOptions:            f,
 		VirtualHostOptions:      f,
 		KubeServiceClient:       newServiceClient(ctx, f, runOptions),
-		WatchNamespaces:         settings.WatchNamespaces,
+		WatchNamespaces:         settings.GetWatchNamespaces(),
 		WatchOpts: clients.WatchOpts{
 			Ctx:         ctx,
 			RefreshRate: time.Second / 10,
@@ -393,7 +415,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 			ConsulWatcher: runOptions.ConsulClient,
 			DnsServer:     runOptions.ConsulDnsAddress,
 		},
-		GatewayControllerEnabled: !runOptions.WhatToRun.DisableGateway,
+		GatewayControllerEnabled: settings.GetGateway().GetEnableGatewayController().GetValue(),
 		ValidationOpts:           validationOpts,
 		Identity:                 singlereplica.Identity(),
 	}
