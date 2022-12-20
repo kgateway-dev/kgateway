@@ -25,7 +25,6 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -129,7 +128,6 @@ var _ = Describe("Rate Limit", func() {
 		ctx         context.Context
 		cancel      context.CancelFunc
 		testClients services.TestClients
-		cache       memory.InMemoryResourceCache
 	)
 
 	const (
@@ -172,7 +170,6 @@ var _ = Describe("Rate Limit", func() {
 			}
 
 			ctx, cancel = context.WithCancel(context.Background())
-			cache = memory.NewInMemoryResourceCache()
 			ro := &services.RunOptions{
 				NsToWrite: defaults.GlooSystem,
 				NsToWatch: []string{"default", defaults.GlooSystem},
@@ -181,7 +178,6 @@ var _ = Describe("Rate Limit", func() {
 					DisableUds:     true,
 					DisableFds:     true,
 				},
-				Cache: cache,
 				Settings: &gloov1.Settings{
 					RatelimitServer: rlSettings,
 				},
