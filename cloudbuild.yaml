@@ -47,6 +47,12 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'get-envoy'
 
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.24'
+  entrypoint: 'bash'
+  args: ['-c', 'make proxycontroller']
+  dir: '/workspace/gloo/example/proxycontroller'
+  id: 'build-proxycontroller-example'
+
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -99,7 +105,7 @@ steps:
   secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
 
-## Log into quay.io
+# Log into quay.io
 #- name: 'gcr.io/cloud-builders/docker'
 #  entrypoint: 'bash'
 #  env:
