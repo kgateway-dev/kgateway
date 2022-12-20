@@ -288,17 +288,6 @@ func buildRequestFromOrigin(origin string) func() (*http.Response, error) {
 	}
 }
 
-func getEnvoyStats(envoyInstance *services.EnvoyInstance) string {
-	By("Get stats")
-	envoyStats := ""
-	EventuallyWithOffset(1, func() error {
-		var err error
-		envoyStats, err = envoyInstance.Statistics()
-		return err
-	}, "10s", ".1s").Should(BeNil())
-	return envoyStats
-}
-
 func EventuallyAllowedOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
 		g.Expect(request()).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
@@ -306,7 +295,8 @@ func EventuallyAllowedOriginResponse(request func() (*http.Response, error), env
 		}))
 
 		if validateStatistics {
-			statistics := getEnvoyStats(envoyInstance)
+			statistics, err := envoyInstance.Statistics()
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(statistics).To(matchInvalidRequestEqualTo(0))
 			g.Expect(statistics).To(matchValidRequestEqualTo(1))
 		}
@@ -321,7 +311,8 @@ func EventuallyInvalidOriginResponse(request func() (*http.Response, error), env
 		}))
 
 		if validateStatistics {
-			statistics := getEnvoyStats(envoyInstance)
+			statistics, err := envoyInstance.Statistics()
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(statistics).To(matchInvalidRequestEqualTo(1))
 			g.Expect(statistics).To(matchValidRequestEqualTo(0))
 		}
