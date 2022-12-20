@@ -2530,8 +2530,6 @@ spec:
                               type: object
                             hostRewrite:
                               type: string
-                            idleTimeout:
-                              type: string
                             hostRewritePathRegex:
                               properties:
                                 pattern:
@@ -2550,6 +2548,8 @@ spec:
                                 substitution:
                                   type: string
                               type: object
+                            idleTimeout:
+                              type: string
                             jwt:
                               properties:
                                 disable:
