@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Health Checks", func() {
+var _ = FDescribe("Health Checks", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc

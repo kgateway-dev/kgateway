@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
+var _ = FDescribe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
