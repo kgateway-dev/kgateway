@@ -475,6 +475,12 @@ message RouteOptions {
     // Settings for maximum durations and timeouts for streams on the route.
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
     MaxStreamDuration max_stream_duration = 28;
+
+    // Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
+    // although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings)
+    // wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout)
+    google.protobuf.Duration idle_timeout = 29;
 }
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {
