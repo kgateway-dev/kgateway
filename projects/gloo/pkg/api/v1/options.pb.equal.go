@@ -1019,6 +1019,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	case *RouteOptions_HostRewritePathRegex:
+		if _, ok := target.HostRewriteType.(*RouteOptions_HostRewritePathRegex); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHostRewritePathRegex()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHostRewritePathRegex()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHostRewritePathRegex(), target.GetHostRewritePathRegex()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.HostRewriteType != target.HostRewriteType {
