@@ -263,13 +263,16 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 	settings := &gloov1.Settings{
 		WatchNamespaces:    runOptions.NsToWatch,
 		DiscoveryNamespace: runOptions.NsToWrite,
+		DevMode:            true,
 		Gloo: &gloov1.GlooOptions{
-			RemoveUnusedFilters: &wrappers.BoolValue{Value: true},
+			// Ideally we would set this to true.
+			// However, when we do this, any test requiring FDS start to fail and we need to understand why that is the case
+			RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 			RestXdsBindAddr:     fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
-
+			EnableRestEds:       &wrappers.BoolValue{Value: false},
 			// Invalid Routes can be difficult to track down
 			// By creating a Response Code and Body that are unique, hopefully it is easier to identify situations
-			// Where invalid route replacement is taking effect
+			// where invalid route replacement is taking effect
 			InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
 				ReplaceInvalidRoutes:     true,
 				InvalidRouteResponseCode: http.StatusTeapot,
@@ -284,22 +287,15 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 				// which doesn't have the custom Solo.io types registered with the deserializer. Therefore, when running locally tests will fail,
 				// and the logs will contain:
 				//	"Invalid type URL, unknown type: envoy.api.v2.filter.http.RouteTransformations for type Any)"
-				DisableTransformationValidation: &wrappers.BoolValue{
-					Value: true,
-				},
+				// We do not perform transformation validation as part of our in memory e2e tests, so we explicitly disable this
+				DisableTransformationValidation: &wrappers.BoolValue{Value: true},
 			},
-			EnableGatewayController: &wrappers.BoolValue{
-				Value: !runOptions.WhatToRun.DisableGateway,
-			},
+			EnableGatewayController: &wrappers.BoolValue{Value: !runOptions.WhatToRun.DisableGateway},
 			// To make debugging slightly easier
-			PersistProxySpec: &wrappers.BoolValue{
-				Value: true,
-			},
+			PersistProxySpec: &wrappers.BoolValue{Value: true},
 			// For now we default this to false, and have explicit tests (aggregate_listener_test), which validate
 			// the behavior when the setting is configured to true
-			IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
-				Value: false,
-			},
+			IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{Value: false},
 		},
 	}
 
@@ -402,7 +398,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		}, false),
 		KubeClient:    runOptions.KubeClient,
 		KubeCoreCache: kubeCoreCache,
-		DevMode:       true,
+		DevMode:       settings.GetDevMode(),
 		Consul: bootstrap.Consul{
 			ConsulWatcher: runOptions.ConsulClient,
 			DnsServer:     runOptions.ConsulDnsAddress,
