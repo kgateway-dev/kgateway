@@ -2,4 +2,5 @@ changelog:
   - type: FIX
     description: |
       - Now exposing the `fallbackToFirstFunction` field through helm.
+      - Allow `destinationSpec` to be nil if `fallbackToFirstFunction` is set.
     issueLink: https://github.com/solo-io/solo-projects/issues/4274

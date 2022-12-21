@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"net/url"
 	"os"
 	"unicode/utf8"
@@ -14,7 +15,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/hashicorp/go-multierror"
 	"github.com/imdario/mergo"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -164,11 +164,20 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	err := pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
+			dest := spec.GetDestinationSpec()
 			// check if it's aws destination
-			if spec.GetDestinationSpec() == nil {
-				return nil, nil
+			// it is incorrect to set lambda functionality on routes that do not have a lambda function specified unless we fallback
+			if dest == nil {
+				if p.settings.GetFallbackToFirstFunction().GetValue() == false {
+					return nil, nil
+				}
+				// if we fallback to first, we need to have a valid destination
+				contextutils.LoggerFrom(params.Ctx).Debug("no destinationSpec set with fallbackToFirstFunction enabled, processing as aws route")
+				dest = &v1.DestinationSpec{
+					DestinationType: &v1.DestinationSpec_Aws{},
+				}
 			}
-			awsDestinationSpec, ok := spec.GetDestinationSpec().GetDestinationType().(*v1.DestinationSpec_Aws)
+			awsDestinationSpec, ok := dest.GetDestinationType().(*v1.DestinationSpec_Aws)
 			if !ok {
 				return nil, nil
 			}
@@ -181,6 +190,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 			lambdaSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
+				if p.settings.GetFallbackToFirstFunction().GetValue() == true {
+					return nil, nil
+				}
 				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
 				contextutils.LoggerFrom(params.Ctx).Error(err)
 				return nil, err
