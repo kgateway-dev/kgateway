@@ -24,22 +24,15 @@ jobs:
       - id: is-draft-pr
         name: Process draft Pull Requests
         if: ${{ github.event.pull_request.draft }}
-        run: |
-          echo "true"
-        env:
-          IS_DRAFT_PR: ${{ toJson(true) }}
+        run: echo "true" >> $IS_DRAFT_PR
       - id: signal-docs-comment
         name: Process comments on Pull Request to signal Docs
         if: ${{ github.event.issue.pull_request }}
-        run: echo "${{ contains(github.event.comment.body, '/sig-docs') }}"
-        env: 
-          SIGNAL_DOCS_COMMENT: ${{ contains(github.event.comment.body, '/sig-docs') }}
+        run: echo "${{ contains(github.event.comment.body, '/sig-docs') }}" >> $SIGNAL_DOCS_COMMENT
       - id: skip-docs-comment
         name: Process comments on Pull Request to skip Docs
         if: ${{ github.event.issue.pull_request }}
-        run: echo "${{ contains(github.event.comment.body, '/skip-docs') }}"
-        env:
-          SKIP_DOCS_COMMENT: ${{ contains(github.event.comment.body, '/skip-docs') }}
+        run: echo "${{ contains(github.event.comment.body, '/skip-docs') }}" >> $SKIP_DOCS_COMMENT
       - id: build-docs
         name: Determine whether or not to build docs
         run: |
@@ -63,11 +56,8 @@ jobs:
 
           echo "Should build docs? $should_build"
           echo "Should auto-pass docs? $should_pass"
-          echo "$should_build"
-          echo "$should_pass"
-        env:
-          BUILD_VALUE: $should_build
-          PASS_VALUE: $should_pass
+          echo "$should_build" >> $BUILD_VALUE
+          echo "$should_pass" >> $PASS_VALUE
   build:
     name: Generate versioned docs site
     needs: prepare_env
@@ -112,9 +102,7 @@ jobs:
       shell: bash
       run: |
         echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
-        echo "true"
-      env:
-        IS_COMMUNITY_PR: ${{ toJson(true) }}
+        echo "true" >> $IS_COMMUNITY_PR
     - name: Generate versioned docs site
       if: ${{ !env.IS_COMMUNITY_PR && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       run: make -C docs build-site
