@@ -2,9 +2,10 @@ package aws_test
 
 import (
 	"context"
+	"net/url"
+
 	. "github.com/onsi/ginkgo/extensions/table"
 	"github.com/onsi/gomega/types"
-	"net/url"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
