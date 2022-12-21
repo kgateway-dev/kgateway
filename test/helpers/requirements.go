@@ -132,7 +132,7 @@ func (r RequiredConfiguration) validateTruthyEnv() error {
 	return nil
 }
 
-// Requirement represents an required property for tests.
+// Requirement represents a required property for tests.
 type Requirement func(configuration *RequiredConfiguration)
 
 func LinuxOnly() Requirement {
