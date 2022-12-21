@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"runtime"
 	"strconv"
@@ -13,9 +14,9 @@ import (
 )
 
 const (
-	// SkipInvalidTestsEnv can be set to true to skip tests which don't meet certain local requirements (like OS)
+	// SkipInvalidTestsEnvVar can be set to true to skip tests which don't meet certain local requirements (like OS)
 	// If this value is not set, tests which don't meet requirements will fail
-	SkipInvalidTestsEnv = "SKIP_INVALID_TESTS"
+	SkipInvalidTestsEnvVar = "SKIP_INVALID_TESTS"
 )
 
 type RequiredConfiguration struct {
@@ -23,10 +24,10 @@ type RequiredConfiguration struct {
 	supportedArch sets.String
 
 	// Set of env variables which must be defined
-	definedEnv []string
+	definedEnvVar []string
 
 	// Set of env variables which must have a truthy (1, true, T) value
-	truthyEnv []string
+	truthyEnvVar []string
 }
 
 // Validate returns an error is the RequiredConfiguration is not met
@@ -68,7 +69,7 @@ func (r RequiredConfiguration) validateArch() error {
 }
 
 func (r RequiredConfiguration) validateDefinedEnv() error {
-	for _, env := range r.definedEnv {
+	for _, env := range r.definedEnvVar {
 		if _, found := os.LookupEnv(env); !found {
 			return fmt.Errorf("env (%s) is not defined", env)
 		}
@@ -77,7 +78,7 @@ func (r RequiredConfiguration) validateDefinedEnv() error {
 }
 
 func (r RequiredConfiguration) validateTruthyEnv() error {
-	for _, env := range r.truthyEnv {
+	for _, env := range r.truthyEnvVar {
 		envValue := os.Getenv(env)
 		envBoolValue, _ := strconv.ParseBool(envValue)
 		if !envBoolValue {
@@ -96,7 +97,7 @@ func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 		return
 	}
 
-	skipInvalidTests := os.Getenv(SkipInvalidTestsEnv)
+	skipInvalidTests := os.Getenv(SkipInvalidTestsEnvVar)
 	boolValue, _ := strconv.ParseBool(skipInvalidTests)
 
 	message := fmt.Sprintf("Test requirements not met: %v", err)
@@ -133,9 +134,21 @@ func LinuxOnly() Requirement {
 	}
 }
 
+func DefinedEnv(env string) Requirement {
+	return func(configuration *RequiredConfiguration) {
+		configuration.definedEnvVar = append(configuration.definedEnvVar, env)
+	}
+}
+
+func TruthyEnv(env string) Requirement {
+	return func(configuration *RequiredConfiguration) {
+		configuration.truthyEnvVar = append(configuration.truthyEnvVar, env)
+	}
+}
+
 func Kubernetes() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		configuration.definedEnv = append(configuration.definedEnv, "KUBERNETES_MASTER")
-		configuration.truthyEnv = append(configuration.truthyEnv, "RUN_KUBE_TESTS")
+		DefinedEnv(clientcmd.RecommendedConfigPathEnvVar)(configuration)
+		TruthyEnv("RUN_KUBE_TESTS")(configuration)
 	}
 }
