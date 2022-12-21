@@ -95,27 +95,15 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 kubeadmConfigPatches:
 - |
-  apiVersion: kubeadm.k8s.io/v1beta2
+  apiVersion: kubeadm.k8s.io/v1beta3
   kind: ClusterConfiguration
   metadata:
     name: config
-  apiServer:
-    extraArgs:
-      "feature-gates": "EphemeralContainers=true"
-  scheduler:
-    extraArgs:
-      "feature-gates": "EphemeralContainers=true"
-  controllerManager:
-    extraArgs:
-      "feature-gates": "EphemeralContainers=true"
 - |
-  apiVersion: kubeadm.k8s.io/v1beta2
+  apiVersion: kubeadm.k8s.io/v1beta3
   kind: InitConfiguration
   metadata:
     name: config
-  nodeRegistration:
-    kubeletExtraArgs:
-      "feature-gates": "EphemeralContainers=true"
 $ARM_EXTENSION
 EOF
 
