@@ -9,7 +9,7 @@ import (
 
 type HttpResponse struct {
 	StatusCode int
-	Body       string
+	Body       interface{}
 }
 
 func MatchHttpResponse(expected *HttpResponse) types.GomegaMatcher {

@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	testmatchers "github.com/solo-io/gloo/test/matchers"
+
 	"github.com/onsi/gomega/types"
 
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -84,6 +86,14 @@ var _ = Describe("tunneling", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
+			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+						// Required for these tests to pass
+						ReplaceInvalidRoutes: false,
+					},
+				},
+			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
@@ -139,7 +149,7 @@ var _ = Describe("tunneling", func() {
 	})
 
 	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBodyMatcher types.GomegaMatcher) {
-		EventuallyWithOffset(1, func() (string, error) {
+		EventuallyWithOffset(1, func() (*http.Response, error) {
 			var client http.Client
 			scheme := "http"
 			var json = []byte(requestJsonBody)
@@ -147,22 +157,13 @@ var _ = Describe("tunneling", func() {
 			defer cancel()
 			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			if err != nil {
-				return "", err
+				return nil, err
 			}
-			res, err := client.Do(req)
-			if err != nil {
-				return "", err
-			}
-			if res.StatusCode != expectedResponseStatusCode {
-				return "", fmt.Errorf("not ok")
-			}
-			p := new(bytes.Buffer)
-			if _, err := io.Copy(p, res.Body); err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			return p.String(), nil
-		}, "10s", "0.5s").Should(expectedResponseBodyMatcher)
+			return client.Do(req)
+		}, "10s", "0.5s").Should(testmatchers.MatchHttpResponse(&testmatchers.HttpResponse{
+			StatusCode: expectedResponseStatusCode,
+			Body:       expectedResponseBodyMatcher,
+		}))
 	}
 
 	Context("plaintext", func() {
