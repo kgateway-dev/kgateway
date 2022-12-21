@@ -1,7 +1,7 @@
 package consulvaulte2e_test
 
 import (
-	"log"
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"os"
 	"testing"
 
@@ -37,14 +37,10 @@ var _ = AfterSuite(func() {
 })
 
 func TestE2e(t *testing.T) {
-	if os.Getenv("RUN_VAULT_TESTS") != "1" {
-		log.Printf("This test downloads and runs vault and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
-		return
-	}
-	if os.Getenv("RUN_CONSUL_TESTS") != "1" {
-		log.Printf("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
-		return
-	}
+	testhelpers.ValidateRequirementsAndNotifyGinkgo(
+		testhelpers.TruthyEnv("RUN_VAULT_TESTS"),
+		testhelpers.TruthyEnv("RUN_CONSUL_TESTS"),
+	)
 
 	// set KUBECONFIG to a nonexistent cfg.
 	// this way we are also testing that Gloo can run without a kubeconfig present

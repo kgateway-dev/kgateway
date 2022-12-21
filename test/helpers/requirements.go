@@ -13,9 +13,7 @@ import (
 )
 
 const (
-	// SkipInvalidTestsEnvVar can be set to true to skip tests which don't meet certain local requirements (like OS)
-	// If this value is not set, tests which don't meet requirements will fail
-	SkipInvalidTestsEnvVar = "SKIP_INVALID_TESTS"
+	InvalidTestsEnvVar = "INVALID_TESTS"
 )
 
 type RequiredConfiguration struct {
@@ -95,14 +93,18 @@ func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 	if err == nil {
 		return
 	}
-
-	skipInvalidTests := os.Getenv(SkipInvalidTestsEnvVar)
-	boolValue, _ := strconv.ParseBool(skipInvalidTests)
-
 	message := fmt.Sprintf("Test requirements not met: %v", err)
-	if boolValue {
+	switch os.Getenv(InvalidTestsEnvVar) {
+	case "run":
+		// ignore the error from validating requirements and let the tests proceed
+		return
+
+	case "skip":
 		ginkgo.Skip(message)
-	} else {
+
+	case "fail":
+		fallthrough
+	default:
 		ginkgo.Fail(message)
 	}
 }

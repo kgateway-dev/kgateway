@@ -3,7 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"net"
+	"reflect"
 	"sync/atomic"
 	"time"
 
@@ -299,11 +302,28 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 
 	// Allow tests to override the default Settings
 	if runOptions.Settings != nil {
-		err := mergo.Merge(settings, runOptions.Settings, mergo.WithOverride)
+		err := mergo.Merge(settings, runOptions.Settings, mergo.WithTransformers(&wrapperTransformer{}))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 
 	return settings
+}
+
+type wrapperTransformer struct {
+}
+
+func (t wrapperTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if typ == reflect.TypeOf(wrappers.BoolValue{}) ||
+		typ == reflect.TypeOf(wrappers.StringValue{}) ||
+		typ == reflect.TypeOf(wrappers.UInt32Value{}) ||
+		typ == reflect.TypeOf(duration.Duration{}) ||
+		typ == reflect.TypeOf(core.ResourceRef{}) {
+		return func(dst, src reflect.Value) error {
+			dst.Set(src)
+			return nil
+		}
+	}
+	return nil
 }
 
 // constructTestOpts mirrors constructOpts in our SetupSyncer
