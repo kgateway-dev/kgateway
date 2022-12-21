@@ -336,6 +336,10 @@ message RouteOptions {
         // This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is
         // of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames)
         google.protobuf.BoolValue auto_host_rewrite = 19;
+
+        // Indicates that during forwarding, the host header will be swapped with the result of the regex 
+        // substitution executed on path value with query and fragment removed.
+        .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute host_rewrite_path_regex = 101;
     };
     // Defines a CORS policy for the route
     // If a CORS policy is also defined on the route's virtual host, the policies are merged.
