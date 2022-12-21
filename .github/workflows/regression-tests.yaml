@@ -116,7 +116,7 @@ jobs:
       if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       id: kubectl
       with:
-        version: 'v1.22.4'
+        version: 'v1.24.7'
     - uses: azure/setup-helm@v1
       if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       with:
