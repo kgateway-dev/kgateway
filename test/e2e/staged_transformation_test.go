@@ -349,7 +349,7 @@ var _ = Describe("Staged Transformation", func() {
 				res, err := client.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res.Header["X-New-Custom-Header"]).To(ContainElements("test2"))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 		It("should apply transforms from most specific level only", func() {

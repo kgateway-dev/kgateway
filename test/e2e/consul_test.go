@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -22,7 +24,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -42,6 +43,11 @@ var _ = Describe("Consul e2e", func() {
 	)
 
 	BeforeEach(func() {
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.Consul(),
+			helpers.LinuxOnly(),
+		)
+
 		ctx, cancel = context.WithCancel(context.Background())
 
 		defaults.HttpPort = services.NextBindPort()

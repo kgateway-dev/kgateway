@@ -39,8 +39,8 @@ var _ = AfterSuite(func() {
 
 func TestE2e(t *testing.T) {
 	testhelpers.ValidateRequirementsAndNotifyGinkgo(
-		testhelpers.TruthyEnv("RUN_VAULT_TESTS"),
-		testhelpers.TruthyEnv("RUN_CONSUL_TESTS"),
+		testhelpers.Consul(),
+		testhelpers.Vault(),
 	)
 
 	// set KUBECONFIG to a nonexistent cfg.

@@ -368,7 +368,6 @@ var _ = Describe("Happy path", func() {
 				})
 			})
 
-			// TODO (sam-heilbron) - Move to kube2e
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
 					testhelpers.ValidateRequirementsAndNotifyGinkgo(

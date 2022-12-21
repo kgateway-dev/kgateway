@@ -23,7 +23,7 @@ const (
 // Options are:
 //	- `run`: Ignore any invalid requirements and execute the tests
 //	- `skip`: Notify Ginkgo that the current spec was skipped
-//	- `fail`: Notify Ginkgo that the current spec has failed
+//	- `fail`: Notify Ginkgo that the current spec has failed [DEFAULT]
 func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 	err := ValidateRequirements(requirements)
 	if err == nil {
@@ -156,5 +156,17 @@ func TruthyEnv(env string) Requirement {
 func Kubernetes() Requirement {
 	return func(configuration *RequiredConfiguration) {
 		TruthyEnv("RUN_KUBE_TESTS")(configuration)
+	}
+}
+
+func Consul() Requirement {
+	return func(configuration *RequiredConfiguration) {
+		TruthyEnv("RUN_CONSUL_TESTS")(configuration)
+	}
+}
+
+func Vault() Requirement {
+	return func(configuration *RequiredConfiguration) {
+		TruthyEnv("RUN_VAULT_TESTS")(configuration)
 	}
 }
