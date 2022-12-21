@@ -138,27 +138,27 @@ func (b *virtualServiceBuilder) WithRouteDelegateAction(routeName string, delega
 	})
 }
 
-func (b *virtualServiceBuilder) WithRouteActionToDestination(routeName string, destination *gloov1.Destination) *virtualServiceBuilder {
+func (b *virtualServiceBuilder) WithRouteAction(routeName string, routeAction *gloov1.RouteAction) *virtualServiceBuilder {
 	return b.WithRouteMutation(routeName, func(route *v1.Route) {
 		route.Action = &v1.Route_RouteAction{
-			RouteAction: &gloov1.RouteAction{
-				Destination: &gloov1.RouteAction_Single{
-					Single: destination,
-				},
-			},
+			RouteAction: routeAction,
 		}
 	})
 }
 
+func (b *virtualServiceBuilder) WithRouteActionToSingleDestination(routeName string, destination *gloov1.Destination) *virtualServiceBuilder {
+	return b.WithRouteAction(routeName, &gloov1.RouteAction{
+		Destination: &gloov1.RouteAction_Single{
+			Single: destination,
+		},
+	})
+}
+
 func (b *virtualServiceBuilder) WithRouteActionToMultiDestination(routeName string, destination *gloov1.MultiDestination) *virtualServiceBuilder {
-	return b.WithRouteMutation(routeName, func(route *v1.Route) {
-		route.Action = &v1.Route_RouteAction{
-			RouteAction: &gloov1.RouteAction{
-				Destination: &gloov1.RouteAction_Multi{
-					Multi: destination,
-				},
-			},
-		}
+	return b.WithRouteAction(routeName, &gloov1.RouteAction{
+		Destination: &gloov1.RouteAction_Multi{
+			Multi: destination,
+		},
 	})
 }
 

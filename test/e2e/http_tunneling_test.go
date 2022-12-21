@@ -86,14 +86,6 @@ var _ = Describe("tunneling", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
-			Settings: &gloov1.Settings{
-				Gloo: &gloov1.GlooOptions{
-					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
-						// Required for these tests to pass
-						ReplaceInvalidRoutes: false,
-					},
-				},
-			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
