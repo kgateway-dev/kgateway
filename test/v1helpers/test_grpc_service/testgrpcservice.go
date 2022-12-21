@@ -3,7 +3,6 @@ package testgrpcservice
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -48,7 +47,6 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	go func() {
 		defer ginkgo.GinkgoRecover()
 
-		fmt.Println("starting test grpc server")
 		_ = grpcServer.Serve(lis)
 	}()
 	go func() {
@@ -56,7 +54,6 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 
 		<-ctx.Done()
 		grpcServer.Stop()
-		fmt.Println("shutting down test grpc server")
 	}()
 
 	time.Sleep(time.Millisecond)

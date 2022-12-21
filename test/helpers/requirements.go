@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"runtime"
 	"strconv"
@@ -148,7 +147,6 @@ func TruthyEnv(env string) Requirement {
 
 func Kubernetes() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		DefinedEnv(clientcmd.RecommendedConfigPathEnvVar)(configuration)
 		TruthyEnv("RUN_KUBE_TESTS")(configuration)
 	}
 }

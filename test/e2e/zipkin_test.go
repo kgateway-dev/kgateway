@@ -64,6 +64,12 @@ var _ = Describe("Tracing config loading", func() {
 
 	Context("Tracing defined on Envoy bootstrap", func() {
 
+		BeforeEach(func() {
+			gloohelpers.ValidateRequirementsAndNotifyGinkgo(
+				gloohelpers.LinuxOnly(),
+			)
+		})
+
 		It("should send trace msgs to the zipkin server", func() {
 			err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 			Expect(err).NotTo(HaveOccurred())
@@ -79,7 +85,7 @@ var _ = Describe("Tracing config loading", func() {
 			startCancellableTracingServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tracingCollectorPort), zipkinHandler)
 
 			// Execute a request against the admin endpoint, as this should result in a trace
-			testRequest := createRequestWithTracingEnabled("0.0.0.0", 11082)
+			testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
 			Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
 
 			truez := true
