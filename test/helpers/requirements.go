@@ -23,7 +23,8 @@ type RequiredConfiguration struct {
 	// Set of env variables which must be defined
 	definedEnvVar []string
 
-	// Set of env variables which must have a truthy (1, true, T) value
+	// Set of env variables which must have a truthy value
+	// Examples: "1", "t", "T", "true", "TRUE", "True"
 	truthyEnvVar []string
 }
 

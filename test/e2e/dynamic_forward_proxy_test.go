@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/test/services"
 
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
@@ -33,7 +35,22 @@ var _ = Describe("dynamic forward proxy", func() {
 		testContext = testContextFactory.NewTestContext(
 			helpers.LinuxOnly(),
 		)
+
 		testContext.BeforeEach()
+		testContext.SetRunOptions(&services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableGateway: false,
+				DisableUds:     true,
+				DisableFds:     true,
+			},
+			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+				},
+			},
+		})
 	})
 
 	AfterEach(func() {
