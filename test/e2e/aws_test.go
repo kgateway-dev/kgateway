@@ -525,10 +525,17 @@ var _ = Describe("AWS Lambda", func() {
 
 	}
 
+	BeforeEach(func() {
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.Kubernetes(),
+		)
+	})
+
 	AfterEach(func() {
 		envoyInstance.Clean()
 		cancel()
 	})
+
 	Context("Basic Auth", func() {
 
 		addBasicCredentials := func() {

@@ -53,7 +53,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		EventuallyWithOffset(1, func(g Gomega) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://http:%d/get", "localhost", defaults.HttpPort), nil)
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
 			g.Expect(err).NotTo(HaveOccurred())
 
 			updateReq(req)

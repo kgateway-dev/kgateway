@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -25,7 +24,7 @@ import (
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -251,9 +250,9 @@ var _ = Describe("Happy path", func() {
 							},
 							Kind: &gloov1.Secret_Tls{
 								Tls: &gloov1.TlsSecret{
-									PrivateKey: gloohelpers.PrivateKey(),
-									CertChain:  gloohelpers.Certificate(),
-									RootCa:     gloohelpers.Certificate(),
+									PrivateKey: testhelpers.PrivateKey(),
+									CertChain:  testhelpers.Certificate(),
+									RootCa:     testhelpers.Certificate(),
 								},
 							},
 						}
@@ -362,7 +361,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						// eventually the proxy is rejected
-						gloohelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+						testhelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
 							return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 						})
 					})
@@ -372,9 +371,9 @@ var _ = Describe("Happy path", func() {
 			// TODO (sam-heilbron) - Move to kube2e
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
-					if os.Getenv("RUN_KUBE_TESTS") != "1" {
-						Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-					}
+					testhelpers.ValidateRequirementsAndNotifyGinkgo(
+						testhelpers.Kubernetes(),
+					)
 				})
 
 				var (
@@ -485,7 +484,7 @@ var _ = Describe("Happy path", func() {
 						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 						Expect(err).NotTo(HaveOccurred())
 
-						gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 							return getUpstream()
 						}, "20s", ".5s")
 					})
@@ -565,7 +564,7 @@ var _ = Describe("Happy path", func() {
 					})
 
 					It("watch all namespaces", func() {
-						gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 							return getUpstream()
 						})
 

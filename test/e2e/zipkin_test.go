@@ -79,7 +79,7 @@ var _ = Describe("Tracing config loading", func() {
 			startCancellableTracingServer(ctx, fmt.Sprintf("%s:%d", envoyInstance.LocalAddr(), tracingCollectorPort), zipkinHandler)
 
 			// Execute a request against the admin endpoint, as this should result in a trace
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
+			testRequest := createRequestWithTracingEnabled("0.0.0.0", 11082)
 			Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
 
 			truez := true
@@ -231,7 +231,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -271,7 +271,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -300,7 +300,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Not(Receive()))
@@ -342,7 +342,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -384,7 +384,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
