@@ -39,7 +39,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// now that we run CI on a kube 1.22 cluster, we must ensure that we install versions of gloo with v1 CRDs
+// now that we run CI on a kube 1.22+ cluster, we must ensure that we install versions of gloo with v1 CRDs
 // Per https://github.com/solo-io/gloo/issues/4543: CRDs were migrated from v1beta1 -> v1 in Gloo 1.9.0
 const earliestVersionWithV1CRDs = "1.9.0"
 
