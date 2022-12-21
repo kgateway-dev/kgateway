@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/url"
 
+	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/onsi/gomega/types"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -310,16 +313,39 @@ var _ = Describe("Plugin", func() {
 		JustAfterEach(func() {
 			initParams.Settings = defaultSettings
 		})
-		It("should not process with no spec", func() {
-			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+		Context("no spec", func() {
+			BeforeEach(func() {
+				destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+				destination.DestinationSpec = nil
+			})
 
-			destination.DestinationSpec = nil
+			DescribeTable("processes as expected with various fallback settings", func(pluginSettings *v1.Settings, assertKeyExists types.GomegaMatcher) {
+				initParams.Settings = pluginSettings
+				awsPlugin.(*Plugin).Init(initParams)
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
 
-			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(outroute.TypedPerFilterConfig).NotTo(HaveKey(FilterName))
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(outroute.TypedPerFilterConfig).To(assertKeyExists)
+			},
+				Entry("does not process without fallback set", defaultSettings, Not(HaveKey(FilterName))),
+				Entry("does not process with fallback set to false", &v1.Settings{
+					Gloo: &v1.GlooOptions{
+						AwsOptions: &v1.GlooOptions_AWSOptions{
+							FallbackToFirstFunction: &wrapperspb.BoolValue{Value: false},
+						},
+					},
+				}, Not(HaveKey(FilterName))),
+				Entry("does process with fallback set to true", &v1.Settings{
+					Gloo: &v1.GlooOptions{
+						AwsOptions: &v1.GlooOptions_AWSOptions{
+							FallbackToFirstFunction: &wrapperspb.BoolValue{Value: true},
+						},
+					},
+				}, HaveKey(FilterName)),
+			)
 		})
 		It("should process if fallback exists", func() {
 			initParams.Settings = &v1.Settings{
