@@ -301,7 +301,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 
 	// Allow tests to override the default Settings
 	if runOptions.Settings != nil {
-		err := mergo.Merge(settings, runOptions.Settings, mergo.WithOverwriteWithEmptyValue)
+		err := mergo.Merge(settings, runOptions.Settings, mergo.WithOverride)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 

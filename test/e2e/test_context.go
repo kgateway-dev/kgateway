@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/onsi/ginkgo"
+
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -26,7 +28,13 @@ type TestContextFactory struct {
 	EnvoyFactory *services.EnvoyFactory
 }
 
-func (f *TestContextFactory) NewTestContext() *TestContext {
+func (f *TestContextFactory) NewTestContext(testRequirements ...helpers.Requirement) *TestContext {
+	if err := helpers.DoValidate(testRequirements); err != nil {
+		// Error loudly so that it is clear why a test is not running
+		// We can make this configurable in the future, so that developers can choose to Skip tests
+		ginkgo.Fail(fmt.Sprintf("Test requiements not met: %v", err))
+	}
+
 	return &TestContext{
 		envoyInstance: f.EnvoyFactory.MustEnvoyInstance(),
 	}
