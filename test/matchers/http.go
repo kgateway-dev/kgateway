@@ -36,6 +36,8 @@ type MatchHttpResponseMatcher struct {
 	Expected *HttpResponse
 	matchers.HaveHTTPStatusMatcher
 	matchers.HaveHTTPBodyMatcher
+
+	// TODO (sam-heilbron) Add support matchers.HaveHTTPHeaderWithValueMatcher
 }
 
 func (m *MatchHttpResponseMatcher) Match(actual interface{}) (success bool, err error) {

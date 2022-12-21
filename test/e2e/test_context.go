@@ -35,6 +35,10 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...helpers.Requirem
 	}
 }
 
+// TestContext represents the aggregate set of configuration needed to run a single e2e test
+// It is intended to remove some of the boilerplate setup/teardown of tests out of the test themselves
+// to ensure that tests are easier to read and maintain since they only contain the resource changes
+// that we are validating
 type TestContext struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
