@@ -26,12 +26,11 @@ import (
 var _ = Describe("dynamic forward proxy", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
-		writeNamespace = defaults.GlooSystem
-		testVs         *gatewayv1.VirtualService
+		ctx           context.Context
+		cancel        context.CancelFunc
+		testClients   services.TestClients
+		envoyInstance *services.EnvoyInstance
+		testVs        *gatewayv1.VirtualService
 	)
 
 	checkProxy := func() {
@@ -60,6 +59,14 @@ var _ = Describe("dynamic forward proxy", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
+			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+						// Required for these tests to pass
+						ReplaceInvalidRoutes: false,
+					},
+				},
+			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
@@ -74,7 +81,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		// run envoy
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// write a virtual service so we have a proxy to our test upstream
@@ -121,7 +128,7 @@ var _ = Describe("dynamic forward proxy", func() {
 				return err
 			}
 			if res.StatusCode != http.StatusOK {
-				return fmt.Errorf("not ok")
+				return fmt.Errorf("%d is not ok", res.StatusCode)
 			}
 			p := new(bytes.Buffer)
 			if _, err := io.Copy(p, res.Body); err != nil {
