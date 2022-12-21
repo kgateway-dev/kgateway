@@ -16,7 +16,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -49,19 +48,10 @@ var _ = Describe("Aggregate Listener", func() {
 	})
 
 	JustBeforeEach(func() {
-		testContext.SetRunOptions(&services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableGateway: false,
-				DisableFds:     true,
-				DisableUds:     true,
-			},
-			Settings: &gloov1.Settings{
-				Gateway: &gloov1.GatewayOptions{
-					IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
-						Value: isolateVirtualHostsBySslConfig,
-					},
+		testContext.SetRunSettings(&gloov1.Settings{
+			Gateway: &gloov1.GatewayOptions{
+				IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
+					Value: isolateVirtualHostsBySslConfig,
 				},
 			},
 		})

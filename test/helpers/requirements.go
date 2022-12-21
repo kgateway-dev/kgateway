@@ -13,8 +13,54 @@ import (
 )
 
 const (
+	// InvalidTestsEnvVar is used to define the behavior for running tests locally when the provided requirements
+	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
 	InvalidTestsEnvVar = "INVALID_TESTS"
 )
+
+// ValidateRequirementsAndNotifyGinkgo validates that the provided Requirements are met, and if they are not, uses
+// the InvalidTestsEnvVar to determine how to proceed:
+// Options are:
+//	- `run`: Ignore any invalid requirements and execute the tests
+//	- `skip`: Notify Ginkgo that the current spec was skipped
+//	- `fail`: Notify Ginkgo that the current spec has failed
+func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
+	err := ValidateRequirements(requirements)
+	if err == nil {
+		return
+	}
+	message := fmt.Sprintf("Test requirements not met: %v", err)
+	switch os.Getenv(InvalidTestsEnvVar) {
+	case "run":
+		// ignore the error from validating requirements and let the tests proceed
+		return
+
+	case "skip":
+		ginkgo.Skip(message)
+
+	case "fail":
+		fallthrough
+	default:
+		ginkgo.Fail(message)
+	}
+}
+
+// ValidateRequirements returns an error if any of the Requirements are not met
+func ValidateRequirements(requirements []Requirement) error {
+	// default
+	requiredConfiguration := &RequiredConfiguration{
+		supportedOS:   sets.NewString(),
+		supportedArch: sets.NewString(),
+	}
+
+	// apply requirements
+	for _, requirement := range requirements {
+		requirement(requiredConfiguration)
+	}
+
+	// perform validation
+	return requiredConfiguration.Validate()
+}
 
 type RequiredConfiguration struct {
 	supportedOS   sets.String
@@ -84,47 +130,6 @@ func (r RequiredConfiguration) validateTruthyEnv() error {
 		}
 	}
 	return nil
-}
-
-// ValidateRequirementsAndNotifyGinkgo validates that the provided Requirements are met, and if they are not, either:
-// 	A. Notifies Ginkgo that the current spec was skipped if SKIP_INVALID_TESTS=1
-// 	B. Notifies Ginkgo that the current spec has failed otherwise
-func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
-	err := ValidateRequirements(requirements)
-	if err == nil {
-		return
-	}
-	message := fmt.Sprintf("Test requirements not met: %v", err)
-	switch os.Getenv(InvalidTestsEnvVar) {
-	case "run":
-		// ignore the error from validating requirements and let the tests proceed
-		return
-
-	case "skip":
-		ginkgo.Skip(message)
-
-	case "fail":
-		fallthrough
-	default:
-		ginkgo.Fail(message)
-	}
-}
-
-// ValidateRequirements returns an error if any of the Requirements are not met
-func ValidateRequirements(requirements []Requirement) error {
-	// default
-	requiredConfiguration := &RequiredConfiguration{
-		supportedOS:   sets.NewString(),
-		supportedArch: sets.NewString(),
-	}
-
-	// apply requirements
-	for _, requirement := range requirements {
-		requirement(requiredConfiguration)
-	}
-
-	// perform validation
-	return requiredConfiguration.Validate()
 }
 
 // Requirement represents an required property for tests.

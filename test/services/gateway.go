@@ -3,12 +3,15 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"net"
 	"reflect"
 	"sync/atomic"
 	"time"
+
+	"github.com/golang/protobuf/proto"
+
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/imdario/mergo"
 
@@ -302,7 +305,12 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 
 	// Allow tests to override the default Settings
 	if runOptions.Settings != nil {
-		err := mergo.Merge(settings, runOptions.Settings, mergo.WithTransformers(&wrapperTransformer{}))
+		settingsOverrides := proto.Clone(runOptions.Settings)
+		err := mergo.Merge(
+			settings,
+			settingsOverrides,
+			mergo.WithOverride,
+			mergo.WithTransformers(&wrapperTransformer{}))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 

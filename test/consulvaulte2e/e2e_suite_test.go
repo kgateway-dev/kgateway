@@ -1,9 +1,10 @@
 package consulvaulte2e_test
 
 import (
-	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"os"
 	"testing"
+
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/onsi/ginkgo/reporters"
 

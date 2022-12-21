@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"

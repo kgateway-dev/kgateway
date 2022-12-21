@@ -27,7 +27,7 @@ type TestContextFactory struct {
 }
 
 func (f *TestContextFactory) NewTestContext(testRequirements ...helpers.Requirement) *TestContext {
-	// Skip or Fail tests which do not meet the requirements
+	// Skip or Fail tests which do not satisfy the provided requirements
 	helpers.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
 	return &TestContext{
@@ -48,8 +48,12 @@ type TestContext struct {
 	resourcesToCreate *gloosnapshot.ApiSnapshot
 }
 
-func (c *TestContext) SetRunOptions(options *services.RunOptions) {
-	c.runOptions = options
+func (c *TestContext) SetRunSettings(settings *gloov1.Settings) {
+	c.runOptions.Settings = settings
+}
+
+func (c *TestContext) SetRunServices(services services.What) {
+	c.runOptions.WhatToRun = services
 }
 
 func (c *TestContext) BeforeEach() {
@@ -61,8 +65,9 @@ func (c *TestContext) BeforeEach() {
 		NsToWrite: writeNamespace,
 		NsToWatch: []string{"default", writeNamespace},
 		WhatToRun: services.What{
-			DisableFds: true,
-			DisableUds: true,
+			DisableGateway: false,
+			DisableFds:     true,
+			DisableUds:     true,
 		},
 	}
 

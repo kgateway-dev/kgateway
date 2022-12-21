@@ -3,8 +3,8 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/test/services"
+
+	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
@@ -37,20 +37,6 @@ var _ = Describe("dynamic forward proxy", func() {
 		)
 
 		testContext.BeforeEach()
-		testContext.SetRunOptions(&services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableGateway: false,
-				DisableUds:     true,
-				DisableFds:     true,
-			},
-			Settings: &gloov1.Settings{
-				Gloo: &gloov1.GlooOptions{
-					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
-				},
-			},
-		})
 	})
 
 	AfterEach(func() {
@@ -84,6 +70,11 @@ var _ = Describe("dynamic forward proxy", func() {
 	Context("without transformation", func() {
 
 		BeforeEach(func() {
+			gw := defaults2.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
+			}
+
 			vs := helpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
@@ -98,7 +89,11 @@ var _ = Describe("dynamic forward proxy", func() {
 				}).
 				Build()
 
-			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+			resourceToCreate := testContext.ResourcesToCreate()
+			resourceToCreate.Gateways = gatewayv1.GatewayList{
+				gw,
+			}
+			resourceToCreate.VirtualServices = gatewayv1.VirtualServiceList{
 				vs,
 			}
 		})
@@ -117,6 +112,10 @@ var _ = Describe("dynamic forward proxy", func() {
 	Context("with transformation can set dynamic forward proxy header to rewrite authority", func() {
 
 		BeforeEach(func() {
+			gw := defaults2.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
+			}
 			vs := helpers.NewVirtualServiceBuilder().
 				WithName("vs-test").
 				WithNamespace(writeNamespace).
@@ -149,7 +148,11 @@ var _ = Describe("dynamic forward proxy", func() {
 				}).
 				Build()
 
-			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+			resourceToCreate := testContext.ResourcesToCreate()
+			resourceToCreate.Gateways = gatewayv1.GatewayList{
+				gw,
+			}
+			resourceToCreate.VirtualServices = gatewayv1.VirtualServiceList{
 				vs,
 			}
 		})
