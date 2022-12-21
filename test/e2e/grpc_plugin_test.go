@@ -61,6 +61,9 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 				DisableFds: false,
 			},
 			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{
 					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
 				},

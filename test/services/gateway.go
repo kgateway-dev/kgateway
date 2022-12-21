@@ -264,9 +264,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 		DiscoveryNamespace: runOptions.NsToWrite,
 		DevMode:            true,
 		Gloo: &gloov1.GlooOptions{
-			// Ideally we would set this to true.
-			// However, when we do this, any test requiring FDS start to fail and we need to understand why that is the case
-			RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+			RemoveUnusedFilters: &wrappers.BoolValue{Value: true},
 			RestXdsBindAddr:     fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
 			EnableRestEds:       &wrappers.BoolValue{Value: false},
 			// Invalid Routes can be difficult to track down

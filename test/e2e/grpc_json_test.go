@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -49,6 +51,11 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 				DisableGateway: false,
 				DisableUds:     true,
 				DisableFds:     true,
+			},
+			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+				},
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)

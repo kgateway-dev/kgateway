@@ -12,6 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+const (
+	// SkipInvalidTestsEnv can be set to true to skip tests which don't meet certain local requirements (like OS)
+	// If this value is not set, tests which don't meet requirements will fail
+	SkipInvalidTestsEnv = "SKIP_INVALID_TESTS"
+)
+
 type RequiredConfiguration struct {
 	supportedOS   sets.String
 	supportedArch sets.String
@@ -50,16 +56,19 @@ func (r RequiredConfiguration) validateArch() error {
 		return nil
 	}
 
-	return fmt.Errorf("runtime os (%s), is not in supported set (%v)", runtime.GOARCH, r.supportedArch.UnsortedList())
+	return fmt.Errorf("runtime arch (%s), is not in supported set (%v)", runtime.GOARCH, r.supportedArch.UnsortedList())
 }
 
+// ValidateRequirementsAndNotifyGinkgo validates that the provided Requirements are met, and if they are not, either:
+// 	A. Notifies Ginkgo that the current spec was skipped if SKIP_INVALID_TESTS=1
+// 	B. Notifies Ginkgo that the current spec has failed otherwise
 func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 	err := ValidateRequirements(requirements)
 	if err == nil {
 		return
 	}
 
-	skipInvalidTests := os.Getenv("SKIP_INVALID_TESTS")
+	skipInvalidTests := os.Getenv(SkipInvalidTestsEnv)
 	boolValue, _ := strconv.ParseBool(skipInvalidTests)
 
 	message := fmt.Sprintf("Test requiements not met: %v", err)
