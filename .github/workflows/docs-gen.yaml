@@ -63,8 +63,11 @@ jobs:
 
           echo "Should build docs? $should_build"
           echo "Should auto-pass docs? $should_pass"
-          echo "::set-env name=BUILD_VALUE::$(echo $should_build)"
-          echo "::set-env name=PASS_VALUE::$(echo $should_pass)"
+          echo "$should_build"
+          echo "$should_pass"
+        env:
+          BUILD_VALUE: $should_build
+          PASS_VALUE: $should_pass
   build:
     name: Generate versioned docs site
     needs: prepare_env
