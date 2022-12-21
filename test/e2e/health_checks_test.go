@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -59,6 +60,9 @@ var _ = Describe("Health Checks", func() {
 				DisableFds: false,
 			},
 			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{
 					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
 				},
