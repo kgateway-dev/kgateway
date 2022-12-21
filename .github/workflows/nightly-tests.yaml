@@ -64,11 +64,11 @@ jobs:
       with:
         # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
         skipClusterCreation: true
-        version: v0.11.1
+        version: v0.17.0
     - uses: azure/setup-kubectl@v1
       id: kubectl
       with:
-        version: 'v1.22.4'
+        version: 'v1.24.7'
     - uses: azure/setup-helm@v1
       with:
         version: v3.6.3
@@ -76,7 +76,7 @@ jobs:
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
         CLUSTER_NAME: 'kind'
-        CLUSTER_NODE_VERSION: 'v1.22.4@sha256:ca3587e6e545a96c07bf82e2c46503d9ef86fc704f44c17577fca7bcabf5f978'
+        CLUSTER_NODE_VERSION: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5'
         SKIP_DOCKER: 'true'
       run: |
         ./ci/deploy-to-kind-cluster.sh
