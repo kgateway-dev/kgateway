@@ -141,21 +141,19 @@ var _ = Describe("tunneling", func() {
 	})
 
 	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBodyMatcher types.GomegaMatcher) {
-		EventuallyWithOffset(1, func() (*http.Response, error) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			var client http.Client
 			scheme := "http"
 			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			if err != nil {
-				return nil, err
-			}
-			return client.Do(req)
-		}, "10s", "0.5s").Should(testmatchers.MatchHttpResponse(&testmatchers.HttpResponse{
-			StatusCode: expectedResponseStatusCode,
-			Body:       expectedResponseBodyMatcher,
-		}))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(client.Do(req)).Should(testmatchers.MatchHttpResponse(&testmatchers.HttpResponse{
+				StatusCode: expectedResponseStatusCode,
+				Body:       expectedResponseBodyMatcher,
+			}))
+		}, "10s", "0.5s").Should(Succeed())
 	}
 
 	Context("plaintext", func() {

@@ -7,7 +7,7 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/matchers"
 
 	"net/http"
 	"time"
@@ -49,7 +49,7 @@ var _ = Describe("dynamic forward proxy", func() {
 
 	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedBody types.GomegaMatcher) {
 		By("Make request")
-		EventuallyWithOffset(1, func(g Gomega) (*http.Response, error) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			var client http.Client
 			scheme := "http"
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -58,11 +58,11 @@ var _ = Describe("dynamic forward proxy", func() {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			updateReq(req)
-			return client.Do(req)
-		}, "10s", ".1s").Should(matchers2.MatchHttpResponse(&matchers2.HttpResponse{
-			StatusCode: http.StatusOK,
-			Body:       expectedBody,
-		}))
+			g.Expect(client.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       expectedBody,
+			}))
+		}, "10s", ".1s").Should(Succeed())
 	}
 
 	Context("without transformation", func() {
