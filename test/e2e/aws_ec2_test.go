@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	skhelpers "github.com/solo-io/solo-kit/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -247,7 +247,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			WhatToRun: services.What{
 				DisableGateway: true,
 			},
-			KubeClient: skhelpers.MustKubeClient(),
+			KubeClient: kube2e.MustKubeClient(),
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 

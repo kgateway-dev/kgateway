@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -72,7 +74,7 @@ var _ = Describe("AWS Lambda", func() {
 			WhatToRun: services.What{
 				DisableGateway: justGloo,
 			},
-			KubeClient: skhelpers.MustKubeClient(),
+			KubeClient: kube2e.MustKubeClient(),
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
