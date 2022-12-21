@@ -39,6 +39,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	)
 
 	BeforeEach(func() {
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.LinuxOnly(),
+		)
+
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()

@@ -19,8 +19,6 @@ import (
 
 	testmatchers "github.com/solo-io/gloo/test/matchers"
 
-	"github.com/onsi/gomega/types"
-
 	"github.com/solo-io/gloo/test/v1helpers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -140,18 +138,16 @@ var _ = Describe("tunneling", func() {
 		cancel()
 	})
 
-	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBodyMatcher types.GomegaMatcher) {
+	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBody interface{}) {
 		EventuallyWithOffset(1, func(g Gomega) {
-			var client http.Client
-			scheme := "http"
 			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://http:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(client.Do(req)).Should(testmatchers.MatchHttpResponse(&testmatchers.HttpResponse{
+			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.MatchHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedResponseStatusCode,
-				Body:       expectedResponseBodyMatcher,
+				Body:       expectedResponseBody,
 			}))
 		}, "10s", "0.5s").Should(Succeed())
 	}
@@ -332,7 +328,7 @@ var _ = Describe("tunneling", func() {
 
 			It("should not proxy", func() {
 				jsonStr := `{"value":"Hello, world!"}`
-				expectResponseBodyOnRequest(jsonStr, http.StatusServiceUnavailable, Equal("upstream connect error or disconnect/reset before headers. reset reason: connection termination"))
+				expectResponseBodyOnRequest(jsonStr, http.StatusServiceUnavailable, "upstream connect error or disconnect/reset before headers. reset reason: connection termination")
 			})
 		})
 

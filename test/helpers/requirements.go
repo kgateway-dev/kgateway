@@ -2,29 +2,80 @@ package helpers
 
 import (
 	"fmt"
+	"os"
 	"runtime"
+	"strconv"
+
+	"github.com/hashicorp/go-multierror"
+	"github.com/onsi/ginkgo"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type RequiredConfiguration struct {
-	supportedOS sets.String // empty is considered all
+	supportedOS   sets.String
+	supportedArch sets.String
 }
 
+// Validate returns an error is the RequiredConfiguration is not met
 func (r RequiredConfiguration) Validate() error {
-	if len(r.supportedOS) > 0 {
-		if !r.supportedOS.Has(runtime.GOOS) {
-			return fmt.Errorf("runtime os (%s), is not in supported set (%+v)", runtime.GOOS, r.supportedOS)
-		}
+	var errs *multierror.Error
+
+	errs = multierror.Append(
+		errs,
+		r.validateOS(),
+		r.validateArch())
+
+	return errs.ErrorOrNil()
+}
+
+func (r RequiredConfiguration) validateOS() error {
+	if r.supportedOS.Len() == 0 {
+		// An empty set is considered to support all
+		return nil
+	}
+	if r.supportedOS.Has(runtime.GOOS) {
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("runtime os (%s), is not in supported set (%v)", runtime.GOOS, r.supportedOS.UnsortedList())
 }
 
-func DoValidate(requirements []Requirement) error {
+func (r RequiredConfiguration) validateArch() error {
+	if r.supportedArch.Len() == 0 {
+		// An empty set is considered to support all
+		return nil
+	}
+	if r.supportedArch.Has(runtime.GOARCH) {
+		return nil
+	}
+
+	return fmt.Errorf("runtime os (%s), is not in supported set (%v)", runtime.GOARCH, r.supportedArch.UnsortedList())
+}
+
+func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
+	err := ValidateRequirements(requirements)
+	if err == nil {
+		return
+	}
+
+	skipInvalidTests := os.Getenv("SKIP_INVALID_TESTS")
+	boolValue, _ := strconv.ParseBool(skipInvalidTests)
+
+	message := fmt.Sprintf("Test requiements not met: %v", err)
+	if boolValue {
+		ginkgo.Skip(message)
+	} else {
+		ginkgo.Fail(message)
+	}
+}
+
+// ValidateRequirements returns an error if any of the Requirements are not met
+func ValidateRequirements(requirements []Requirement) error {
 	// default
 	requiredConfiguration := &RequiredConfiguration{
-		supportedOS: sets.NewString(),
+		supportedOS:   sets.NewString(),
+		supportedArch: sets.NewString(),
 	}
 
 	// apply requirements
