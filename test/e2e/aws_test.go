@@ -70,7 +70,7 @@ var _ = Describe("AWS Lambda", func() {
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
 			WhatToRun: services.What{
-				DisableGateway: true,
+				DisableGateway: justGloo,
 			},
 			KubeClient: skhelpers.MustKubeClient(),
 		}
