@@ -31,12 +31,12 @@ Refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/proj
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
 
-| Name            | Default | Description                                                                                                                                                                                                                                        |
-|-----------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ENVOY_IMAGE_TAG | ""      | The tag of the gloo-envoy-wrapper-docker image built during setup                                                                                                                                                                                  |
-| TEST_PKG        | ""      | The path to the package of the test suite you want to run                                                                                                                                                                                          |
-| WAIT_ON_FAIL    | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
-| INVALID_TESTS   | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
+| Name              | Default | Description                                                                                                                                                                                                                                        |
+|-------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ENVOY_IMAGE_TAG   | ""      | The tag of the gloo-envoy-wrapper-docker image built during setup                                                                                                                                                                                  |
+| TEST_PKG          | ""      | The path to the package of the test suite you want to run                                                                                                                                                                                          |
+| WAIT_ON_FAIL      | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
+| INVALID_TEST_REQS | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
 
 Example:
 ```bash
@@ -51,10 +51,10 @@ To avoid this clean up, run the test(s) with `WAIT_ON_FAIL=1`. When the test fai
 
 Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/master/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
 
-#### Use INVALID_TESTS
+#### Use INVALID_TEST_REQS
 Certain test require environmental conditions to be true for them to succeed. For example, certain tests will only run on a Linux machine.
 
-By setting `INVALID_TESTS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.
+By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.
 
 ## Additional Notes
 
