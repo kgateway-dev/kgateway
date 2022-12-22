@@ -1,0 +1,9 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/7247
+    resolvesIssue: false
+    description: |
+      Adding `gatewayProxies.gatewayProxy.podTemplate.extraInitContainers` and 
+      `gatewayProxies.gatewayProxy.podTemplate.extraContainers` to the helm chart. These will 
+      add initContainers and containers to the gateway proxy deployment respectfully.
+      Adding in `initContainers` as well to the podSpecs of deployments.
