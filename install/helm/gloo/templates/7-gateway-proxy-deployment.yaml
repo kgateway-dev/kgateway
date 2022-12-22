@@ -159,11 +159,19 @@ spec:
       {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if $spec.extraInitContainersHelper }}
+      {{- if (or $spec.podTemplate.extraInitContainers $spec.extraInitContainersHelper) }}
       initContainers:
+      {{- if $spec.podTemplate.extraInitContainers }}
+{{ toYaml $spec.podTemplate.extraInitContainers | indent 6 }}
+      {{- end }}
+      {{- if $spec.extraInitContainersHelper }}
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
+      {{- end }}{{/* or */}}
       containers:
+      {{- if $spec.podTemplate.extraContainers }}
+{{ toYaml $spec.podTemplate.extraContainers | indent 6 }}
+      {{- end }}
       - args:
           - --disable-hot-restart
         {{- if $spec.envoyLogLevel }}
