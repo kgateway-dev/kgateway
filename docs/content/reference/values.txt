@@ -55,6 +55,7 @@
 |settings.integrations.knative.proxy.tolerations[].tolerationSeconds|int64|||
 |settings.integrations.knative.proxy.affinity.NAME|interface|||
 |settings.integrations.knative.proxy.hostAliases[]|interface|||
+|settings.integrations.knative.proxy.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
@@ -174,6 +175,7 @@
 |gloo.deployment.tolerations[].tolerationSeconds|int64|||
 |gloo.deployment.affinity.NAME|interface|||
 |gloo.deployment.hostAliases[]|interface|||
+|gloo.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gloo.deployment.resources.limits.memory|string||amount of memory|
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
@@ -239,6 +241,7 @@
 |discovery.deployment.tolerations[].tolerationSeconds|int64|||
 |discovery.deployment.affinity.NAME|interface|||
 |discovery.deployment.hostAliases[]|interface|||
+|discovery.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |discovery.deployment.resources.limits.memory|string||amount of memory|
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
@@ -288,6 +291,7 @@
 |gateway.certGenJob.tolerations[].tolerationSeconds|int64|||
 |gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
+|gateway.certGenJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.certGenJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
@@ -317,6 +321,7 @@
 |gateway.rolloutJob.tolerations[].tolerationSeconds|int64|||
 |gateway.rolloutJob.affinity.NAME|interface|||
 |gateway.rolloutJob.hostAliases[]|interface|||
+|gateway.rolloutJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
@@ -348,6 +353,7 @@
 |gateway.cleanupJob.tolerations[].tolerationSeconds|int64|||
 |gateway.cleanupJob.affinity.NAME|interface|||
 |gateway.cleanupJob.hostAliases[]|interface|||
+|gateway.cleanupJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.cleanupJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
@@ -409,6 +415,7 @@
 |gatewayProxies.NAME.kind.deployment.tolerations[].tolerationSeconds|int64|||
 |gatewayProxies.NAME.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
+|gatewayProxies.NAME.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
@@ -486,6 +493,8 @@
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.failureThreshold|int32|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.terminationGracePeriodSeconds|int64|||
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
+|gatewayProxies.NAME.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
+|gatewayProxies.NAME.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
 |gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -604,6 +613,7 @@
 |gatewayProxies.gatewayProxy.kind.deployment.tolerations[].tolerationSeconds|int64|||
 |gatewayProxies.gatewayProxy.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
+|gatewayProxies.gatewayProxy.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
@@ -681,6 +691,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.failureThreshold|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.terminationGracePeriodSeconds|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
+|gatewayProxies.gatewayProxy.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
+|gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -819,6 +831,7 @@
 |ingress.deployment.tolerations[].tolerationSeconds|int64|||
 |ingress.deployment.affinity.NAME|interface|||
 |ingress.deployment.hostAliases[]|interface|||
+|ingress.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
@@ -874,6 +887,7 @@
 |ingressProxy.deployment.tolerations[].tolerationSeconds|int64|||
 |ingressProxy.deployment.affinity.NAME|interface|||
 |ingressProxy.deployment.hostAliases[]|interface|||
+|ingressProxy.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
@@ -947,6 +961,7 @@
 |accessLogger.tolerations[].tolerationSeconds|int64|||
 |accessLogger.affinity.NAME|interface|||
 |accessLogger.hostAliases[]|interface|||
+|accessLogger.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |accessLogger.resources.limits.memory|string||amount of memory|
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|
