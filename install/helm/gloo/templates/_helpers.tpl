@@ -58,6 +58,9 @@ affinity: {{ toYaml . | nindent 2 }}
 {{- with .restartPolicy -}}
 restartPolicy: {{ . }}
 {{ end -}}
+{{- with .initContainers -}}
+initContainers: {{ toYaml . | nindent 2 }}
+{{ end -}}
 {{- end -}}
 {{- /*
 This takes an array of three values:
