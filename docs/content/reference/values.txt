@@ -307,6 +307,7 @@
 |gateway.deployment.tolerations[].tolerationSeconds|int64|||
 |gateway.deployment.affinity.NAME|interface|||
 |gateway.deployment.hostAliases[]|interface|||
+|gateway.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.deployment.resources.limits.memory|string||amount of memory|
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
 |gateway.deployment.resources.requests.memory|string||amount of memory|
