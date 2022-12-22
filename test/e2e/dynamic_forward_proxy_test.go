@@ -103,7 +103,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
-				r.Host = "test.com"
+				r.Host = e2e.DefaultHost
 				r.Header.Set("x-rewrite-me", destEcho)
 			}, ContainSubstring(expectedSubstr))
 		})
@@ -163,7 +163,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
-				r.Host = "test.com"
+				r.Host = e2e.DefaultHost
 			}, ContainSubstring(expectedSubstr))
 		})
 	})

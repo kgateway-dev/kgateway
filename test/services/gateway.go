@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"reflect"
 	"sync/atomic"
 	"time"
@@ -276,12 +277,11 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 			// Invalid Routes can be difficult to track down
 			// By creating a Response Code and Body that are unique, hopefully it is easier to identify situations
 			// where invalid route replacement is taking effect.
-			// This is not included because it causes unexpected behaviors in tests currently
-			// InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
-			//	ReplaceInvalidRoutes:     true,
-			//	InvalidRouteResponseCode: http.StatusTeapot,
-			//	InvalidRouteResponseBody: "Invalid Route Replacement Encountered In Test",
-			// },
+			InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+				ReplaceInvalidRoutes:     true,
+				InvalidRouteResponseCode: http.StatusTeapot,
+				InvalidRouteResponseBody: "Invalid Route Replacement Encountered In Test",
+			},
 		},
 		Gateway: &gloov1.GatewayOptions{
 			Validation: &gloov1.GatewayOptions_ValidationOptions{
