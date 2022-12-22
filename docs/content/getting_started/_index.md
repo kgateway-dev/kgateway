@@ -11,7 +11,7 @@ After you have a cluster, you can install Gloo Edge through the command line wit
 
 {{< tabs >}}
 {{% tab name="glooctl"%}}
-1. Install `glooctl`. The steps vary on your operating system.
+1. Install `glooctl`. The steps vary by operating system.
    * Linux or macOS
      ```shell
      curl -sL https://run.solo.io/gloo/install | sh
