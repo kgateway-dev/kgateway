@@ -61,6 +61,9 @@ restartPolicy: {{ . }}
 {{- with .priorityClassName -}}
 priorityClassName: {{ . }}
 {{ end -}}
+{{- with .initContainers -}}
+initContainers: {{ toYaml . | nindent 2 }}
+{{ end -}}
 {{- end -}}
 {{- /*
 This takes an array of three values:

@@ -77,6 +77,7 @@ type PodSpec struct {
 	Tolerations       []*appsv1.Toleration   `json:"tolerations,omitempty"`
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
+	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
 }
 
 type JobSpec struct {
@@ -493,6 +494,8 @@ type GatewayProxyPodTemplate struct {
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
 	CustomLivenessProbe           *appsv1.Probe         `json:"customLivenessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
+	ExtraContainers               []interface{}         `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
+	ExtraInitContainers           []interface{}         `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
 	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
 }
 
