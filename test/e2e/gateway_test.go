@@ -726,26 +726,17 @@ var _ = Describe("Gateway", func() {
 					}
 
 					// Update gateway with tcp hosts
-					gatewayClient := testClients.GatewayClient
-					gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+					tcpGatewayRef := gatewaydefaults.DefaultTcpSslGateway(writeNamespace).GetMetadata().Ref()
+					err := gloohelpers.PatchResource(
+						ctx,
+						tcpGatewayRef,
+						func(resource resources.Resource) {
+							gw := resource.(*gatewayv1.Gateway)
+							gw.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{host}
+						},
+						testClients.GatewayClient.BaseClient(),
+					)
 					Expect(err).NotTo(HaveOccurred())
-
-					for _, g := range gw {
-						tcpGateway := g.GetTcpGateway()
-						if tcpGateway != nil {
-							tcpGateway.TcpHosts = []*gloov1.TcpHost{host}
-						}
-						Eventually(func() error {
-							current, err := gatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-							if err != nil {
-								return err
-							}
-							g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
-							_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-							return err
-						}, "5s", "0.3s").ShouldNot(HaveOccurred())
-
-					}
 
 					// Check tls inspector is correctly configured
 					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
