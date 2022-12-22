@@ -238,7 +238,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	BeforeEach(func() {
 		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.Kubernetes(),
+			helpers.Kubernetes("Uses a Kubernetes client"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

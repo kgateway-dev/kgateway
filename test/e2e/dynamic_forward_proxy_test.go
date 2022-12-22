@@ -33,7 +33,7 @@ var _ = Describe("dynamic forward proxy", func() {
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext(
-			helpers.LinuxOnly(),
+			helpers.LinuxOnly("Unknown"),
 		)
 
 		testContext.BeforeEach()

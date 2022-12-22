@@ -71,7 +71,7 @@ var _ = Describe("tunneling", func() {
 
 	BeforeEach(func() {
 		testhelpers.ValidateRequirementsAndNotifyGinkgo(
-			testhelpers.LinuxOnly(),
+			testhelpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
 		)
 
 		tlsRequired = v1helpers.NO_TLS

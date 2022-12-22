@@ -525,7 +525,7 @@ var _ = Describe("AWS Lambda", func() {
 
 	BeforeEach(func() {
 		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.Kubernetes(),
+			helpers.Kubernetes("Uses a Kubernetes client"),
 		)
 	})
 

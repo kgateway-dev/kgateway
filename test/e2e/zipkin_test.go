@@ -66,7 +66,7 @@ var _ = Describe("Tracing config loading", func() {
 
 		BeforeEach(func() {
 			gloohelpers.ValidateRequirementsAndNotifyGinkgo(
-				gloohelpers.LinuxOnly(),
+				gloohelpers.LinuxOnly("Uses 127.0.0.1"),
 			)
 		})
 

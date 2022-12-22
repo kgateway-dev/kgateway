@@ -51,6 +51,7 @@ func ValidateRequirements(requirements []Requirement) error {
 	requiredConfiguration := &RequiredConfiguration{
 		supportedOS:   sets.NewString(),
 		supportedArch: sets.NewString(),
+		reasons:       map[string]string{},
 	}
 
 	// apply requirements
@@ -72,6 +73,9 @@ type RequiredConfiguration struct {
 	// Set of env variables which must have a truthy value
 	// Examples: "1", "t", "T", "true", "TRUE", "True"
 	truthyEnvVar []string
+
+	// User defined reasons for why particular environmental conditions are required
+	reasons map[string]string
 }
 
 // Validate returns an error is the RequiredConfiguration is not met
@@ -84,6 +88,18 @@ func (r RequiredConfiguration) Validate() error {
 		r.validateArch(),
 		r.validateDefinedEnv(),
 		r.validateTruthyEnv())
+
+	// If there are no errors, return
+	if errs.ErrorOrNil() == nil {
+		return nil
+	}
+
+	// If there are reasons defined, include them in the error message
+	if len(r.reasons) > 0 {
+		errs = multierror.Append(
+			errs,
+			fmt.Errorf("user defined reasons: %+v", r.reasons))
+	}
 
 	return errs.ErrorOrNil()
 }
@@ -135,9 +151,10 @@ func (r RequiredConfiguration) validateTruthyEnv() error {
 // Requirement represents a required property for tests.
 type Requirement func(configuration *RequiredConfiguration)
 
-func LinuxOnly() Requirement {
+func LinuxOnly(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.supportedOS = sets.NewString("linux")
+		configuration.reasons["linux"] = reason
 	}
 }
 
@@ -153,8 +170,9 @@ func TruthyEnv(env string) Requirement {
 	}
 }
 
-func Kubernetes() Requirement {
+func Kubernetes(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
+		configuration.reasons["kubernetes"] = reason
 		TruthyEnv("RUN_KUBE_TESTS")(configuration)
 	}
 }

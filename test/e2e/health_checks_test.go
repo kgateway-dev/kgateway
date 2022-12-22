@@ -40,7 +40,7 @@ var _ = Describe("Health Checks", func() {
 
 	BeforeEach(func() {
 		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.LinuxOnly(),
+			helpers.LinuxOnly("Relies on FDS"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

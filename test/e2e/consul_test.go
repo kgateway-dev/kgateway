@@ -45,7 +45,7 @@ var _ = Describe("Consul e2e", func() {
 	BeforeEach(func() {
 		helpers.ValidateRequirementsAndNotifyGinkgo(
 			helpers.Consul(),
-			helpers.LinuxOnly(),
+			helpers.LinuxOnly("Unknown"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

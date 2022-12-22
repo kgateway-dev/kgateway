@@ -371,7 +371,7 @@ var _ = Describe("Happy path", func() {
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
 					testhelpers.ValidateRequirementsAndNotifyGinkgo(
-						testhelpers.Kubernetes(),
+						testhelpers.Kubernetes("Uses a Kubernetes cluster"),
 					)
 				})
 

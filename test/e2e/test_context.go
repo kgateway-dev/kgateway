@@ -20,6 +20,13 @@ import (
 var (
 	writeNamespace = defaults.GlooSystem
 	envoyRole      = fmt.Sprintf("%v~%v", writeNamespace, gatewaydefaults.GatewayProxyName)
+
+	// DefaultHost defines the Host header that should be used to route traffic to the
+	// default VirtualService that the TestContext creates
+	// To make our tests more explicit we define VirtualServices with an explicit set
+	// of domains (which match the `Host` header of a request), and DefaultHost
+	// is the domain we use by default
+	DefaultHost = "test.com"
 )
 
 type TestContextFactory struct {
@@ -78,7 +85,7 @@ func (c *TestContext) BeforeEach() {
 	vsToTestUpstream := helpers.NewVirtualServiceBuilder().
 		WithName("vs-test").
 		WithNamespace(writeNamespace).
-		WithDomain("test.com").
+		WithDomain(DefaultHost).
 		WithRoutePrefixMatcher("test", "/").
 		WithRouteActionToUpstream("test", c.testUpstream.Upstream).
 		Build()
