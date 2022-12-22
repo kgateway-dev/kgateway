@@ -3365,7 +3365,7 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
-					It("correctly sets the gateway circuitBreakers fields in the settings", func() {
+					FIt("correctly sets the gateway circuitBreakers fields in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_circuit_breakers.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
@@ -3376,14 +3376,6 @@ spec:
 								"settings.circuitBreakers.maxRetries=3",
 							},
 						})
-						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
-					})
-					It("always enables persisting proxy specs when not in gateway mode", func() {
-						settings := makeUnstructureFromTemplateFile("fixtures/settings/disabled_gateway.yaml", namespace)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gateway.enabled=false",
-							}})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 					It("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
