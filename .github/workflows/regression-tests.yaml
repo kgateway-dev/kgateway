@@ -8,8 +8,8 @@ on:
 env:
   VERSION: '1.0.0-ci'
   HELM_VERSION: 'v3.6.0'
-  KUBECTL_VERSION: 'v1.22.4'
-  CLUSTER_NODE_VERSION: 'v1.22.4@sha256:ca3587e6e545a96c07bf82e2c46503d9ef86fc704f44c17577fca7bcabf5f978'
+  KUBECTL_VERSION: 'v1.24.7'
+  CLUSTER_NODE_VERSION: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5'
   GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
 jobs:
@@ -119,7 +119,7 @@ jobs:
       with:
         # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
         skipClusterCreation: true
-        version: v0.11.1
+        version: v0.17.0
     - uses: azure/setup-kubectl@v1
       if: needs.prepare_env.outputs.should-pass-regression-tests != 'true'
       id: kubectl

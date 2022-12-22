@@ -983,6 +983,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetIdleTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIdleTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIdleTimeout(), target.GetIdleTimeout()) {
+			return false
+		}
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -1005,6 +1015,21 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetAutoHostRewrite(), target.GetAutoHostRewrite()) {
+				return false
+			}
+		}
+
+	case *RouteOptions_HostRewritePathRegex:
+		if _, ok := target.HostRewriteType.(*RouteOptions_HostRewritePathRegex); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHostRewritePathRegex()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHostRewritePathRegex()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHostRewritePathRegex(), target.GetHostRewritePathRegex()) {
 				return false
 			}
 		}
