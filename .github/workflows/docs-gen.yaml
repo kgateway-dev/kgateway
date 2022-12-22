@@ -18,46 +18,46 @@ jobs:
     name: Prepare Environment
     runs-on: ubuntu-22.04
     outputs:
-      should-build-docs: ${{ steps.build-docs.outputs.build_value }}
-      should-pass-docs: ${{ steps.build-docs.outputs.pass_value }}
+      should-build-docs: ${{ env.build_value }}
+      should-pass-docs: ${{ env.pass_value }}
     steps:
       - id: is-draft-pr
         name: Process draft Pull Requests
         if: ${{ github.event.pull_request.draft }}
-        run: echo "::set-output name=value::$(echo true)"
+        run: echo "is_draft_pr=true" >> $GITHUB_ENV
       - id: signal-docs-comment
         name: Process comments on Pull Request to signal Docs
         if: ${{ github.event.issue.pull_request }}
-        run: echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/sig-docs') }})"
+        run: echo "signal_docs_comment=${{ contains(github.event.comment.body, '/sig-docs') }}" >> $GITHUB_ENV
       - id: skip-docs-comment
         name: Process comments on Pull Request to skip Docs
         if: ${{ github.event.issue.pull_request }}
-        run: echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/skip-docs') }})"
+        run: echo "skip_docs_comment=${{ contains(github.event.comment.body, '/skip-docs') }}" >> $GITHUB_ENV
       - id: build-docs
         name: Determine whether or not to build docs
         run: |
           should_build=true
           should_pass=false
 
-          is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
+          is_draft_pr=${{ env.is_draft_pr }}
           if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
             should_build=false
           fi
 
-          pr_comment_signal=${{ steps.signal-docs-comment.outputs.value }}
+          pr_comment_signal=${{ env.signal_docs_comment }}
           if [[ ! -z $pr_comment_signal && $pr_comment_signal = true ]] ; then
             should_build=true
           fi
 
-          pr_comment_skip=${{ steps.skip-docs-comment.outputs.value }}
+          pr_comment_skip=${{ env.skip_docs_comment }}
           if [[ ! -z $pr_comment_skip && $pr_comment_skip = true ]] ; then
             should_pass=true
           fi
 
           echo "Should build docs? $should_build"
           echo "Should auto-pass docs? $should_pass"
-          echo "::set-output name=build_value::$(echo $should_build)"
-          echo "::set-output name=pass_value::$(echo $should_pass)"
+          echo "build_value=$should_build" >> $GITHUB_ENV
+          echo "pass_value=$should_pass" >> $GITHUB_ENV
   build:
     name: Generate versioned docs site
     needs: prepare_env
@@ -84,7 +84,7 @@ jobs:
         df -h
     - name: Set up Go
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: 1.18.2
       id: go
@@ -95,16 +95,16 @@ jobs:
         hugo-version: '0.69.2'
     - name: Check out code into the Go module directory
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Detect Community PR
       id: community-pr-check
       if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
       shell: bash
       run: |
-        echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
-        echo "::set-output name=IS_COMMUNITY_PR::true"
+        echo "Pull Request is from a fork. Setting is_community_pr to true"
+        echo "is_community_pr=true" >> $GITHUB_ENV
     - name: Generate versioned docs site
-      if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR && needs.prepare_env.outputs.should-pass-docs != 'true' }}
+      if: ${{ !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -123,7 +123,7 @@ jobs:
         entryPoint: ./docs/ci
     - name: Deploy to Firebase (preview)
       # Generate live preview of docs for PRs to master
-      if: ${{ github.event_name == 'pull_request' && !steps.community-pr-check.outputs.IS_COMMUNITY_PR && needs.prepare_env.outputs.should-pass-docs != 'true' }}
+      if: ${{ github.event_name == 'pull_request' && !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
