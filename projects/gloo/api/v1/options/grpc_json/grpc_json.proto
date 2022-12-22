@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package grpc_json.options.gloo.solo.io;
 
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json";
 
 import "extproto/ext.proto";
@@ -42,6 +44,13 @@ message GrpcJsonTranscoder {
         bool preserve_proto_field_names = 4;
     }
 
+    message DescriptorConfigMap {
+        // The Kubernetes configmap that has the data in some format.
+        core.solo.io.ResourceRef config_map_ref = 1;
+        
+        bool is_base64_encoded = 2;
+    }
+
     oneof descriptor_set {
         option (validate.required) = true;
 
@@ -55,7 +64,12 @@ message GrpcJsonTranscoder {
         // services.
         // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
         bytes proto_descriptor_bin = 4;
+
+        DescriptorConfigMap proto_descriptor_config_map = 10;
+        
+
     }
+
 
     // A list of strings that
     // supplies the fully qualified service names (i.e. "package_name.service_name") that
