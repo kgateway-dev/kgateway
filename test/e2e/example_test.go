@@ -56,7 +56,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 		// and sent to Envoy to handle traffic
 
 		It("can route traffic", func() {
-			// GET returns 200
+			By("GET returns 200")
 			Eventually(func(g Gomega) {
 				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 				g.Expect(err).NotTo(HaveOccurred())
@@ -66,9 +66,9 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 				}))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 
-			// GET returns 404
+			By("GET returns 404")
 			Eventually(func(g Gomega) {
 				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 				g.Expect(err).NotTo(HaveOccurred())
@@ -78,9 +78,9 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusNotFound,
 				}))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 
-			// POST returns 200
+			By("POST returns 200")
 			Eventually(func(g Gomega) {
 				requestBody := "some custom data"
 				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), bytes.NewBufferString(requestBody))
@@ -92,7 +92,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 					StatusCode: http.StatusOK,
 					Body:       requestBody, // The default server that we route to is an echo server
 				}))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 		It("can access envoy config dump", func() {
@@ -106,7 +106,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				// We expect the envoy configuration to contain these properties in the configuration dump
 				g.Expect(cfg).To(MatchRegexp(fmt.Sprintf("%v", vs.GetVirtualHost().GetDomains())))
 				g.Expect(cfg).To(MatchRegexp(vs.GetMetadata().GetName()))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 		It("can access statistics", func() {
@@ -119,7 +119,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 				// We expect the Envoy statistics to contain details about the listener generated from that Gateway object
 				g.Expect(cfg).To(MatchRegexp(fmt.Sprintf("http.http.rds.listener-__-%d-routes.version_text", gw.GetBindPort())))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 		})
 	})
 
@@ -150,7 +150,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 					StatusCode: http.StatusOK,
 					Body:       "",
 				}))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 
 		})
 	})
@@ -168,7 +168,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 				}))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 
 			By("Patch the VS to only handle traffic prefixed with /new")
 			err := helpers.PatchResource(
@@ -193,7 +193,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusNotFound,
 				}))
-			}).Should(Succeed())
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 	})
