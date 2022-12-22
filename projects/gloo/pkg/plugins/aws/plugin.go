@@ -167,7 +167,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		func(spec *v1.Destination) (proto.Message, error) {
 			// local variable to avoid side effects for calls that are not to aws upstreams
 			dest := spec.GetDestinationSpec()
-			tryingNonExplicitAWSDest := spec.GetDestinationSpec() == nil && p.settings.GetFallbackToFirstFunction().GetValue()
+			tryingNonExplicitAWSDest := dest == nil && p.settings.GetFallbackToFirstFunction().GetValue()
 
 			// users do not have to set the aws destination spec on the route if they have fallback enabled.
 			// check for this and update the local variable to not cause destination side effects until the end when we
