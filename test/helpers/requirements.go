@@ -29,7 +29,7 @@ func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 	if err == nil {
 		return
 	}
-	message := fmt.Sprintf("Test requirements not met: %v", err)
+	message := fmt.Sprintf("Test requirements not met: %v \n\n Consider using %s=skip to skip these tests", err, InvalidTestsEnvVar)
 	switch os.Getenv(InvalidTestsEnvVar) {
 	case "run":
 		// ignore the error from validating requirements and let the tests proceed
