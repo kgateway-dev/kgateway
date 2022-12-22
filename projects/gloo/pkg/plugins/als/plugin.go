@@ -10,6 +10,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"google.golang.org/protobuf/runtime/protoiface"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -63,28 +64,48 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *
 func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
-		switch cfgType := al.GetOutputDestination().(type) {
+
+		var config protoiface.MessageV1 // als.isAccessLog_OutputDestination?
+		var name string
+		cfg0 := al.GetOutputDestination()
+		// cfgType0 := reflect.TypeOf(cfg0).String()
+		// fmt.Printf("%s", cfgType0)
+		// Process OutputDestination
+		switch cfgType := cfg0.(type) {
 		case *als.AccessLog_FileSink:
 			var cfg envoyalfile.FileAccessLog
-			if err := copyFileSettings(&cfg, cfgType); err != nil {
-				return nil, err
-			}
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.FileAccessLog, &cfg)
+			err := copyFileSettings(&cfg, cfgType)
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, &newAlsCfg)
+			config = &cfg
+			name = wellknown.FileAccessLog
+
 		case *als.AccessLog_GrpcService:
 			var cfg envoygrpc.HttpGrpcAccessLogConfig
-			if err := copyGrpcSettings(&cfg, cfgType); err != nil {
-				return nil, err
-			}
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
+			err := copyGrpcSettings(&cfg, cfgType)
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, &newAlsCfg)
+			config = &cfg
+			name = wellknown.HTTPGRPCAccessLog
 		}
+
+		//accessLogFilter = protoiface.MessageV1
+		//accessLogFilter := copyFilter(al)
+		//err := copyFilterSettings()
+		// Process AccessLogFilter
+		// switch filter := al.GetFilter().FilterSpecifier.(type) {
+		// case *als.AccessLogFilter_StatusCodeFilter:
+
+		// }
+
+		newCfg, err := translatorutil.NewAccessLogWithConfig(name, config)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, &newCfg)
+
 	}
 	logCfg = append(logCfg, results...)
 	return logCfg, nil
@@ -151,4 +172,8 @@ func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog
 		}
 	}
 	return cfg.Validate()
+}
+
+func copyFilter(cfg *envoyal.AccessLogFilter, accessLog *als.AccessLog) error {
+	return nil
 }
