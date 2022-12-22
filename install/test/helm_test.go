@@ -3365,7 +3365,7 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
-					FIt("correctly sets the gateway circuitBreakers fields in the settings", func() {
+					It("correctly sets the gateway circuitBreakers fields in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_circuit_breakers.yaml", namespace)
 
 						prepareMakefile(namespace, helmValues{
