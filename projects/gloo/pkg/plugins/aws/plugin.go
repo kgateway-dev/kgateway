@@ -169,8 +169,8 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			dest := spec.GetDestinationSpec()
 			tryingNonExplicitAWSDest := spec.GetDestinationSpec() == nil && p.settings.GetFallbackToFirstFunction().GetValue()
 
-			// users do not have to set the awsdestination spec on the route if they have fallback enabled.
-			// check for this and update the local variable to not cause destination sideeffects until the end when we
+			// users do not have to set the aws destination spec on the route if they have fallback enabled.
+			// check for this and update the local variable to not cause destination side effects until the end when we
 			// are sure that this is pointing to a valid aws upstream
 			if tryingNonExplicitAWSDest {
 				contextutils.LoggerFrom(params.Ctx).Debug("no destinationSpec set with fallbackToFirstFunction enabled, processing as aws route")
@@ -182,7 +182,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 
 			// it is incorrect to set lambda functionality on routes that do not have a lambda function specified
-			// unless we fallback. and the fallback case has been handled above. Therefore skip.
+			// unless we fallback. and the fallback case has been handled above. Therefore, skip.
 			if dest == nil {
 				return nil, nil
 			}
@@ -219,9 +219,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				spec.DestinationSpec = dest
 			}
 
-			awsLambda, err := p.perRouteConfigGenerator(p.settings, awsDestinationSpec.Aws, lambdaSpec)
-
-			return awsLambda, err
+			return p.perRouteConfigGenerator(p.settings, awsDestinationSpec.Aws, lambdaSpec)
 		},
 	)
 
