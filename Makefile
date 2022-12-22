@@ -700,9 +700,20 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gloo-docker gloo-race-docker \
+docker: docker-local docker-non-arm
+
+.PHONY: docker-local
+docker-local: discovery-docker gloo-docker \
 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
 		ingress-docker access-logger-docker kubectl-docker
+		touch $@
+
+.PHONY: docker-non-arm
+ifeq ($(UNAME_M), arm64)
+docker-non-arm:
+else
+docker-non-arm: gloo-race-docker
+endif
 
 .PHONY: docker-push-local-arm
 docker-push-local-arm: docker docker-push
@@ -712,16 +723,24 @@ docker-push-local-arm: docker docker-push
 # to be used for local testing.
 # docker-push-non-arm is intended to be run on CI only, where as docker-push-local is intended for local builds. Primarily used for arm support.
 .PHONY: docker-push
-docker-push: $(DOCKER_IMAGES)
+docker-push: docker-push-local docker-push-non-arm
+
+.PHONY: docker-push-local
+docker-push-local: $(DOCKER_IMAGES)
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+
+.PHONY: docker-push-non-arm
+docker-push-non-arm:
+ifneq ($(and $(filter $(CREATE_ASSETS), "true"), $(filter-out $(UNAME_M), arm64)),)
+	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race
+endif
 
 .PHONY: docker-push-extended
 docker-push-extended:
