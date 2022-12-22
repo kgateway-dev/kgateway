@@ -301,9 +301,78 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
+	Context("no spec", func() {
+		var destination *v1.Destination
+		var curParams plugins.Params
+		defaultSettings := initParams.Settings
+		JustBeforeEach(func() {
+			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+			destination.DestinationSpec = nil
+			curParams = params.CopyWithoutContext()
+		})
+		// Force a cleanup to make it less likely to have pollution via programming error
+		JustAfterEach(func() {
+			initParams.Settings = defaultSettings
+		})
+
+		DescribeTable("processes as expected with various fallback settings", func(pluginSettings *v1.Settings, assertKeyExists types.GomegaMatcher) {
+			initParams.Settings = pluginSettings
+			awsPlugin.(*Plugin).Init(initParams)
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(outroute.TypedPerFilterConfig).To(assertKeyExists)
+		},
+			Entry("does not process without fallback set", defaultSettings, Not(HaveKey(FilterName))),
+			Entry("does not process with fallback set to false", &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: false},
+					},
+				},
+			}, Not(HaveKey(FilterName))),
+			Entry("does process with fallback set to true", &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: true},
+					},
+				},
+			}, HaveKey(FilterName)),
+		)
+
+		DescribeTable("response transform override", func(fallback bool, outrouteAssertions ...types.GomegaMatcher) {
+			initParams.Settings = &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: fallback},
+					},
+				},
+			}
+			awsPlugin.(*Plugin).Init(initParams)
+			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+			destination.DestinationSpec = nil
+
+			upstream.GetAws().DestinationOverrides = &aws.DestinationSpec{ResponseTransformation: true}
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			// go through the list of outroute assertions passed
+			for _, assert := range outrouteAssertions {
+				Expect(outroute.TypedPerFilterConfig).To(assert)
+			}
+		},
+			Entry("gets applied with fallback enabled", true, HaveKey(FilterName), HaveKey(transformation.FilterName)),
+			Entry("does not get applies with fallback disabled", false, Not(HaveKey(FilterName)), Not(HaveKey(transformation.FilterName))),
+		)
+	})
+
 	Context("routes with params", func() {
 		// setup similar to the routes context but should exercise special params.
-		var destination *v1.Destination
 		var curParams plugins.Params
 		defaultSettings := initParams.Settings
 		JustBeforeEach(func() {
@@ -312,40 +381,6 @@ var _ = Describe("Plugin", func() {
 		// Force a cleanup to make it less likely to have pollution via programming error
 		JustAfterEach(func() {
 			initParams.Settings = defaultSettings
-		})
-		Context("no spec", func() {
-			BeforeEach(func() {
-				destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
-				destination.DestinationSpec = nil
-			})
-
-			DescribeTable("processes as expected with various fallback settings", func(pluginSettings *v1.Settings, assertKeyExists types.GomegaMatcher) {
-				initParams.Settings = pluginSettings
-				awsPlugin.(*Plugin).Init(initParams)
-				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(outroute.TypedPerFilterConfig).To(assertKeyExists)
-			},
-				Entry("does not process without fallback set", defaultSettings, Not(HaveKey(FilterName))),
-				Entry("does not process with fallback set to false", &v1.Settings{
-					Gloo: &v1.GlooOptions{
-						AwsOptions: &v1.GlooOptions_AWSOptions{
-							FallbackToFirstFunction: &wrapperspb.BoolValue{Value: false},
-						},
-					},
-				}, Not(HaveKey(FilterName))),
-				Entry("does process with fallback set to true", &v1.Settings{
-					Gloo: &v1.GlooOptions{
-						AwsOptions: &v1.GlooOptions_AWSOptions{
-							FallbackToFirstFunction: &wrapperspb.BoolValue{Value: true},
-						},
-					},
-				}, HaveKey(FilterName)),
-			)
 		})
 		It("should process if fallback exists", func() {
 			initParams.Settings = &v1.Settings{
@@ -358,7 +393,6 @@ var _ = Describe("Plugin", func() {
 			awsPlugin.(*Plugin).Init(initParams)
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
 
 			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
