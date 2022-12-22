@@ -147,9 +147,7 @@ var _ = Describe("Grpc Web", func() {
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "10s", "0.5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			}))
+			}, "10s", "0.5s").Should(matchers.HaveOkResponse())
 
 			var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 			Eventually(msgChan, time.Second).Should(Receive(&entry))

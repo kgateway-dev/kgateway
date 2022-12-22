@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	// InvalidTestsEnvVar is used to define the behavior for running tests locally when the provided requirements
+	// InvalidTestReqsEnvVar is used to define the behavior for running tests locally when the provided requirements
 	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
-	InvalidTestsEnvVar = "INVALID_TESTS"
+	InvalidTestReqsEnvVar = "INVALID_TEST_REQS"
 )
 
 // ValidateRequirementsAndNotifyGinkgo validates that the provided Requirements are met, and if they are not, uses
-// the InvalidTestsEnvVar to determine how to proceed:
+// the InvalidTestReqsEnvVar to determine how to proceed:
 // Options are:
 //	- `run`: Ignore any invalid requirements and execute the tests
 //	- `skip`: Notify Ginkgo that the current spec was skipped
@@ -29,8 +29,8 @@ func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 	if err == nil {
 		return
 	}
-	message := fmt.Sprintf("Test requirements not met: %v \n\n Consider using %s=skip to skip these tests", err, InvalidTestsEnvVar)
-	switch os.Getenv(InvalidTestsEnvVar) {
+	message := fmt.Sprintf("Test requirements not met: %v \n\n Consider using %s=skip to skip these tests", err, InvalidTestReqsEnvVar)
+	switch os.Getenv(InvalidTestReqsEnvVar) {
 	case "run":
 		// ignore the error from validating requirements and let the tests proceed
 		return

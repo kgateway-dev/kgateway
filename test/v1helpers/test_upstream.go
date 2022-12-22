@@ -362,7 +362,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 		}
 
 		return client.Do(req)
-	}, "30s", "1s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+	}, "30s", "1s").Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 		StatusCode: expectedResponse.Status,
 		Body:       expectedResponse.Message,
 	}))

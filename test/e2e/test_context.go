@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/onsi/ginkgo"
+
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -59,15 +61,8 @@ type TestContext struct {
 	resourcesToCreate *gloosnapshot.ApiSnapshot
 }
 
-func (c *TestContext) SetRunSettings(settings *gloov1.Settings) {
-	c.runOptions.Settings = settings
-}
-
-func (c *TestContext) SetRunServices(services services.What) {
-	c.runOptions.WhatToRun = services
-}
-
 func (c *TestContext) BeforeEach() {
+	ginkgo.By("TestContext.BeforeEach: Setting up default configuration")
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
 	c.testUpstream = v1helpers.NewTestHttpUpstream(c.ctx, c.EnvoyInstance().LocalAddr())
@@ -107,6 +102,7 @@ func (c *TestContext) BeforeEach() {
 }
 
 func (c *TestContext) AfterEach() {
+	ginkgo.By("TestContext.AfterEach: Stopping Envoy and cancelling test context")
 	// Stop Envoy
 	c.envoyInstance.Clean()
 
@@ -114,6 +110,7 @@ func (c *TestContext) AfterEach() {
 }
 
 func (c *TestContext) JustBeforeEach() {
+	ginkgo.By("TestContext.JustBeforeEach: Running Gloo and Envoy, writing resource snapshot to storage")
 	// Run Gloo
 	c.testClients = services.RunGlooGatewayUdsFds(c.ctx, c.runOptions)
 
@@ -132,26 +129,55 @@ func (c *TestContext) JustBeforeEach() {
 }
 
 func (c *TestContext) JustAfterEach() {
+	ginkgo.By("TestContext.JustAfterEach: Cleaning up resource snapshot")
 	// We do not need to clean up the Snapshot that was written in the JustBeforeEach
 	// That is because each test uses its own InMemoryCache
 }
 
+// SetRunSettings can be used to modify the runtime Settings object for a test
+// This should be called after the TestContext.BeforeEach (when the default settings are applied)
+// and before the TestContext.JustBeforeEach (when the settings are consumed)
+func (c *TestContext) SetRunSettings(settings *gloov1.Settings) {
+	c.runOptions.Settings = settings
+}
+
+// SetRunServices can be used to modify the services (gloo, fds, uds) which will run for a test
+// This should be called after the TestContext.BeforeEach (when the default services are applied)
+// and before the TestContext.JustBeforeEach (when the services are run)
+func (c *TestContext) SetRunServices(services services.What) {
+	c.runOptions.WhatToRun = services
+}
+
+// Ctx returns the Context maintained by the TestContext
+// The Context is cancelled during the AfterEach portion of tests
 func (c *TestContext) Ctx() context.Context {
 	return c.ctx
 }
 
+// ResourcesToCreate returns the ApiSnapshot of resources the TestContext maintains
+// This snapshot is what is written to storage during the JustBeforeEach portion
+// We return a reference to the object, so that individual tests can modify the snapshot
+// before we write it to storage
 func (c *TestContext) ResourcesToCreate() *gloosnapshot.ApiSnapshot {
 	return c.resourcesToCreate
 }
 
+// EnvoyInstance returns the wrapper for the running instance of Envoy that this test is using
+// It contains utility methods to easily inspect the live configuration and statistics for the instance
 func (c *TestContext) EnvoyInstance() *services.EnvoyInstance {
 	return c.envoyInstance
 }
 
+// TestUpstream returns the TestUpstream object that the TestContext built
+// A TestUpstream is used to run an echo server and define the Gloo Upstream object to route to it
 func (c *TestContext) TestUpstream() *v1helpers.TestUpstream {
 	return c.testUpstream
 }
 
+// TestClients returns the set of resource clients that can be used to perform CRUD operations
+// on resources used by these tests
+// Instead of using the resource clients directly, we recommend placing resources on the
+// ResourcesToCreate object, and letting the TestContext handle the lifecycle of those objects
 func (c *TestContext) TestClients() services.TestClients {
 	return c.testClients
 }

@@ -2,17 +2,59 @@ package matchers
 
 import (
 	"fmt"
+	"net/http"
+
+	"github.com/onsi/gomega"
 
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
 )
 
-type HttpResponse struct {
-	StatusCode int
-	Body       interface{}
+// HaveOkResponse expects a 200 response with an empty body
+func HaveOkResponse() types.GomegaMatcher {
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       "",
+	})
 }
 
-func MatchHttpResponse(expected *HttpResponse) types.GomegaMatcher {
+// HaveStatusCode expects an http response with a particular status code and an empty body
+func HaveStatusCode(statusCode int) types.GomegaMatcher {
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: statusCode,
+		Body:       "",
+	})
+}
+
+// HaveExactResponseBody expects a 200 response with a response body that matches the provided string
+func HaveExactResponseBody(body string) types.GomegaMatcher {
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gomega.Equal(body),
+	})
+}
+
+// HavePartialResponseBody expects a 200 response with a response body that contains the provided substring
+func HavePartialResponseBody(substring string) types.GomegaMatcher {
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gomega.ContainSubstring(substring),
+	})
+}
+
+// HttpResponse defines the set of properties that we can validate from an http.Response
+type HttpResponse struct {
+	// StatusCode is the expected status code for an http.Response
+	StatusCode int
+	// Body is the expected response body for an http.Response
+	// Body can be of type: {string, bytes, GomegaMatcher}
+	Body interface{}
+}
+
+// HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains
+// particular expected properties (status, body..etc)
+// If an expected body isn't defined, we default to expecting an empty response
+func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 	expectedBody := expected.Body
 	if expectedBody == nil {
 		// Default to an empty body

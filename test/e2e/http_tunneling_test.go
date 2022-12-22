@@ -149,7 +149,7 @@ var _ = Describe("tunneling", func() {
 			defer cancel()
 			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.MatchHttpResponse(&testmatchers.HttpResponse{
+			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedResponseStatusCode,
 				Body:       expectedResponseBody,
 			}))

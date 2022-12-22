@@ -302,9 +302,7 @@ func EventuallyOk(hostname string, port uint32) {
 	time.Sleep(3 * time.Second)
 	EventuallyWithOffset(1, func() (*http.Response, error) {
 		return get(hostname, port)
-	}, "5s", ".1s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-		StatusCode: http.StatusOK,
-	}))
+	}, "5s", ".1s").Should(matchers.HaveOkResponse())
 }
 
 func ConsistentlyNotRateLimited(hostname string, port uint32) {
@@ -313,17 +311,13 @@ func ConsistentlyNotRateLimited(hostname string, port uint32) {
 
 	ConsistentlyWithOffset(1, func() (*http.Response, error) {
 		return get(hostname, port)
-	}, "5s", ".1s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-		StatusCode: http.StatusOK,
-	}))
+	}, "5s", ".1s").Should(matchers.HaveOkResponse())
 }
 
 func EventuallyRateLimited(hostname string, port uint32) {
 	EventuallyWithOffset(1, func() (*http.Response, error) {
 		return get(hostname, port)
-	}, "5s", ".1s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-		StatusCode: http.StatusTooManyRequests,
-	}))
+	}, "5s", ".1s").Should(matchers.HaveStatusCode(http.StatusTooManyRequests))
 }
 
 func get(hostname string, port uint32) (*http.Response, error) {

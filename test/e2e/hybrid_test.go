@@ -87,9 +87,7 @@ var _ = Describe("Hybrid Gateway", func() {
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "5s", "0.5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			}))
+			}, "5s", "0.5s").Should(matchers.HaveOkResponse())
 		})
 
 	})
@@ -133,10 +131,7 @@ var _ = Describe("Hybrid Gateway", func() {
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "5s", "0.5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			}))
-
+			}, "5s", "0.5s").Should(matchers.HaveOkResponse())
 		})
 
 	})

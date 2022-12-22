@@ -63,9 +63,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 				// The default Virtual Service routes traffic only with a particular Host header
 				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					StatusCode: http.StatusOK,
-				}))
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
 
 			By("GET returns 404")
@@ -75,9 +73,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 				// The default Virtual Service routes traffic only with a particular Host header
 				req.Host = fmt.Sprintf("bad-prefix-%s", e2e.DefaultHost)
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					StatusCode: http.StatusNotFound,
-				}))
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed())
 
 			By("POST returns 200")
@@ -88,10 +84,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 				// The default Virtual Service routes traffic only with a particular Host header
 				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					StatusCode: http.StatusOK,
-					Body:       requestBody, // The default server that we route to is an echo server
-				}))
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
 			}, "5s", ".5s").Should(Succeed())
 		})
 
@@ -146,10 +139,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				req.Host = "custom-domain.com" // to match the customVS.domains definition
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					StatusCode: http.StatusOK,
-					Body:       "",
-				}))
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
 
 		})
@@ -165,9 +155,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					StatusCode: http.StatusOK,
-				}))
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
 
 			By("Patch the VS to only handle traffic prefixed with /new")
@@ -190,9 +178,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 
 				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					StatusCode: http.StatusNotFound,
-				}))
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed())
 		})
 

@@ -74,7 +74,7 @@ var _ = Describe("Fault Injection", func() {
 
 			Eventually(func(g Gomega) (*http.Response, error) {
 				return http.DefaultClient.Do(req)
-			}, "5s", ".5s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+			}, "5s", ".5s").Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusServiceUnavailable,
 				Body:       "fault filter abort",
 			}))
@@ -125,9 +125,7 @@ var _ = Describe("Fault Injection", func() {
 				g.Expect(elapsed + marginOfError).To(BeNumerically(">", 3*time.Second))
 
 				return response
-			}, "20s", ".1s").Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			}))
+			}, "20s", ".1s").Should(matchers.HaveOkResponse())
 
 		})
 	})

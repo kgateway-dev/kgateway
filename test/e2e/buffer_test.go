@@ -80,11 +80,7 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					Body:       "{\"value\":\"test\"}",
-					StatusCode: http.StatusOK,
-				}))
-
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
 			})
 
 		})
@@ -107,7 +103,7 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					Body:       "Payload Too Large",
 					StatusCode: http.StatusRequestEntityTooLarge,
 				}))
@@ -155,10 +151,7 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					Body:       "{\"value\":\"test\"}",
-					StatusCode: http.StatusOK,
-				}))
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
 			})
 
 		})
@@ -202,7 +195,7 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					Body:       "Payload Too Large",
 					StatusCode: http.StatusRequestEntityTooLarge,
 				}))
@@ -251,10 +244,7 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
-					Body:       "{\"value\":\"test\"}",
-					StatusCode: http.StatusOK,
-				}))
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
 			})
 
 		})
@@ -298,7 +288,7 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					Body:       "Payload Too Large",
 					StatusCode: http.StatusRequestEntityTooLarge,
 				}))

@@ -12,6 +12,11 @@ This is the most common type of end-to-end test, since it is the quickest to set
 1. Apply Gloo resources using [in-memory resource clients](https://github.com/solo-io/gloo/blob/1f457f4ef5f32aedabc58ef164aeea92acbf481e/test/services/gateway.go#L175)
 1. Execute requests against the Envoy proxy and confirm the expected response. This validates that the Gloo resources have been picked up by the controllers, were been translated correctly into Envoy configuration, the configuration was sent to the Envoy proxy, and the proxy behaves appropriately.
 
+### Example Test
+We have an [example test](./example_test.go) which outlines how these tests work. It also provides some examples for basic testing operations. If you are writing a new e2e test, we recommend that you review the example test first.
+
+This was introduced in a [pull request](https://github.com/solo-io/gloo/pull/7555) which includes other useful details about e2e test considerations.
+
 ## CI
 These tests are run by [build-bot](https://github.com/solo-io/build-bot) in Google Cloud as part of our CI pipeline.
 

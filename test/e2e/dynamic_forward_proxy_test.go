@@ -33,7 +33,7 @@ var _ = Describe("dynamic forward proxy", func() {
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext(
-			helpers.LinuxOnly("Unknown"),
+			helpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
 		)
 
 		testContext.BeforeEach()
@@ -60,7 +60,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			g.Expect(err).NotTo(HaveOccurred())
 
 			updateReq(req)
-			g.Expect(http.DefaultClient.Do(req)).Should(matchers.MatchHttpResponse(&matchers.HttpResponse{
+			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 				Body:       expectedBody,
 			}))
