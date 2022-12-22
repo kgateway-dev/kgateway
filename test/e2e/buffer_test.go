@@ -41,7 +41,7 @@ var _ = Describe("buffer", func() {
 		testContext.JustBeforeEach()
 	})
 
-	JustBeforeEach(func() {
+	JustAfterEach(func() {
 		testContext.JustAfterEach()
 	})
 
@@ -49,9 +49,8 @@ var _ = Describe("buffer", func() {
 		return func() (*http.Response, error) {
 			var json = []byte(`{"value":"test"}`)
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			//req.Header.Add("Content-Length",size)
 			req.Header.Set("Content-Type", "application/json")
-			req.Host = "test.com"
+			req.Host = e2e.DefaultHost
 			if err != nil {
 				return nil, err
 			}

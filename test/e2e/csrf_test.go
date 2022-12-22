@@ -281,7 +281,7 @@ func buildRequestFromOrigin(origin string) func() (*http.Response, error) {
 		if err != nil {
 			return nil, err
 		}
-		req.Host = "test.com" // to match the vs-test
+		req.Host = e2e.DefaultHost
 		req.Header.Set("Origin", origin)
 
 		return http.DefaultClient.Do(req)

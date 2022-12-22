@@ -42,7 +42,7 @@ var _ = Describe("Hybrid Gateway", func() {
 	buildHttpRequestToHybridGateway := func() *http.Request {
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HybridPort), nil)
 		Expect(err).NotTo(HaveOccurred())
-		req.Host = "test.com" // to match the vs-test
+		req.Host = e2e.DefaultHost
 
 		return req
 	}

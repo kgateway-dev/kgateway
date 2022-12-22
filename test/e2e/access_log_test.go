@@ -88,7 +88,7 @@ var _ = Describe("Access Log", func() {
 			Eventually(func(g Gomega) {
 				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = "test.com" // to match the vs-test
+				req.Host = e2e.DefaultHost
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 
 				var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
@@ -130,7 +130,7 @@ var _ = Describe("Access Log", func() {
 				Eventually(func(g Gomega) {
 					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 					g.Expect(err).NotTo(HaveOccurred())
-					req.Host = "test.com" // to match the vs-test
+					req.Host = e2e.DefaultHost
 					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 
 					logs, err := testContext.EnvoyInstance().Logs()
@@ -184,7 +184,7 @@ var _ = Describe("Access Log", func() {
 				Eventually(func(g Gomega) {
 					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 					g.Expect(err).NotTo(HaveOccurred())
-					req.Host = "test.com" // to match the vs-test
+					req.Host = e2e.DefaultHost
 					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 
 					logs, err := testContext.EnvoyInstance().Logs()

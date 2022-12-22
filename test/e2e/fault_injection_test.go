@@ -70,7 +70,7 @@ var _ = Describe("Fault Injection", func() {
 		It("works", func() {
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
-			req.Host = "test.com" // to match the vs-test
+			req.Host = e2e.DefaultHost
 
 			Eventually(func(g Gomega) (*http.Response, error) {
 				return http.DefaultClient.Do(req)
@@ -109,7 +109,7 @@ var _ = Describe("Fault Injection", func() {
 		It("works", func() {
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
-			req.Host = "test.com" // to match the vs-test
+			req.Host = e2e.DefaultHost
 
 			Eventually(func(g Gomega) *http.Response {
 				start := time.Now()
