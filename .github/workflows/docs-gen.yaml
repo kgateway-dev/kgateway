@@ -104,7 +104,7 @@ jobs:
         echo "Pull Request is from a fork. Setting is_community_pr to true"
         echo "is_community_pr=true" >> $GITHUB_ENV
     - name: Generate versioned docs site
-      if: ${{ !env.IS_COMMUNITY_PR && needs.prepare_env.outputs.should-pass-docs != 'true' }}
+      if: ${{ !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -123,7 +123,7 @@ jobs:
         entryPoint: ./docs/ci
     - name: Deploy to Firebase (preview)
       # Generate live preview of docs for PRs to master
-      if: ${{ github.event_name == 'pull_request' && !env.IS_COMMUNITY_PR && needs.prepare_env.outputs.should-pass-docs != 'true' }}
+      if: ${{ github.event_name == 'pull_request' && !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       uses: FirebaseExtended/action-hosting-deploy@v0
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
