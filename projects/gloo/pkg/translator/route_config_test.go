@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-var _ = FDescribe("Route Configs", func() {
+var _ = Describe("Route Configs", func() {
 	DescribeTable("validate route path", func(path string, expectedValue bool) {
 		Expect(translator.ValidateRoutePath(path)).To(Equal(expectedValue))
 	},
