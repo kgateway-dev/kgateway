@@ -310,6 +310,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 			settings,
 			settingsOverrides,
 			mergo.WithOverride,
+			mergo.WithOverwriteWithEmptyValue,
 			mergo.WithTransformers(&wrapperTransformer{}))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
