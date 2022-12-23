@@ -92,7 +92,8 @@ var _ = Describe("tunneling", func() {
 				Gloo: &gloov1.GlooOptions{
 					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
 						// These tests fail when ReplaceInvalidRoutes is true
-						ReplaceInvalidRoutes: false,
+						ReplaceInvalidRoutes:     false,
+						InvalidRouteResponseBody: "Http Tunneling Response Body",
 					},
 				},
 			},

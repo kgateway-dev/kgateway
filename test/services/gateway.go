@@ -310,28 +310,39 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 			settings,
 			settingsOverrides,
 			mergo.WithOverride,
-			mergo.WithOverwriteWithEmptyValue,
-			mergo.WithTransformers(&wrapperTransformer{}))
+			mergo.WithTransformers(&emptyValueTransformer{}))
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	}
 
 	return settings
 }
 
-type wrapperTransformer struct {
+// mergo.Merge struggles to distinguish empty values and nil values
+// Using mergo.WithOverwriteWithEmptyValue is overly aggressive since all empty values
+// are used to override. This custom transformer supports certain types which we need
+// to override in our Settings object
+type emptyValueTransformer struct {
 }
 
-func (t wrapperTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
-	if typ == reflect.TypeOf(wrappers.BoolValue{}) ||
-		typ == reflect.TypeOf(wrappers.StringValue{}) ||
-		typ == reflect.TypeOf(wrappers.UInt32Value{}) ||
-		typ == reflect.TypeOf(duration.Duration{}) ||
-		typ == reflect.TypeOf(core.ResourceRef{}) {
-		return func(dst, src reflect.Value) error {
-			dst.Set(src)
-			return nil
+func (t emptyValueTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	overridableTypes := []any{
+		wrappers.BoolValue{},
+		wrappers.StringValue{},
+		wrappers.UInt32Value{},
+		duration.Duration{},
+		core.ResourceRef{},
+		gloov1.GlooOptions_InvalidConfigPolicy{},
+	}
+
+	for _, overridableType := range overridableTypes {
+		if typ == reflect.TypeOf(overridableType) {
+			return func(dst, src reflect.Value) error {
+				dst.Set(src)
+				return nil
+			}
 		}
 	}
+
 	return nil
 }
 
