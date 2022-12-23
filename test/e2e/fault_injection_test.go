@@ -111,21 +111,21 @@ var _ = Describe("Fault Injection", func() {
 			Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
 
-			Eventually(func(g Gomega) *http.Response {
+			Eventually(func(g Gomega) {
 				start := time.Now()
 				response, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-
 				elapsed := time.Now().Sub(start)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(response).Should(matchers.HaveOkResponse())
+
 				// This test regularly flakes, and the error is usually of the form:
 				// "Elapsed time 2.998280684s not longer than delay 3s"
 				// There's a small precision issue when communicating with Envoy, so including a small
 				// margin of error to eliminate the test flake.
 				marginOfError := 100 * time.Millisecond
 				g.Expect(elapsed + marginOfError).To(BeNumerically(">", 3*time.Second))
-
-				return response
-			}, "20s", ".1s").Should(matchers.HaveOkResponse())
+			}, "20s", ".1s").Should(Succeed())
 
 		})
 	})
