@@ -23,7 +23,7 @@ func AddCheckOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 }
 
 func AddVersionFlag(set *pflag.FlagSet, version *string) {
-	set.StringVarP(version, VersionFlag, "", "", "CRD version to check against")
+	set.StringVarP(version, VersionFlag, "", "", "version of gloo's CRDs to check against")
 }
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {

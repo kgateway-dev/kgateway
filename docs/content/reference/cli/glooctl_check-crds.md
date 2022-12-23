@@ -18,7 +18,7 @@ glooctl check-crds [flags]
 
 ```
   -h, --help             help for check-crds
-      --version string   CRD version to check against
+      --version string   version of gloo's CRDs to check against
 ```
 
 ### Options inherited from parent commands
