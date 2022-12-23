@@ -80,9 +80,7 @@ func CheckCRDS(opts *options.Options) error {
 		}
 	}
 	if len(diffs) != 0 {
-		err = eris.New("Diffs detected on the following CRDs:\n\t" + strings.Join(diffs, "\n\t"))
-		printer.AppendMessage(err.Error())
-		return err
+		return eris.New("Diffs detected on the following CRDs:\n\t" + strings.Join(diffs, "\n\t"))
 	}
 	printer.AppendMessage("All CRDs are up to date")
 	return nil
