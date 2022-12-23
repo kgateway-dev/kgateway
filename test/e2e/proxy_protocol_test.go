@@ -95,17 +95,16 @@ var _ = Describe("Proxy Protocol", func() {
 			BeforeEach(func() {
 				requestScheme = "http"
 				rootCACert = ""
+
+				testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
+					gatewaydefaults.DefaultGateway(writeNamespace),
+				}
 			})
 
 			Context("without PROXY protocol", func() {
 
 				BeforeEach(func() {
-					gw := gatewaydefaults.DefaultGateway(defaults.GlooSystem)
-					gw.UseProxyProto = &wrappers.BoolValue{Value: false}
-
-					testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
-						gw,
-					}
+					testContext.ResourcesToCreate().Gateways[0].UseProxyProto = &wrappers.BoolValue{Value: false}
 				})
 
 				It("works", func() {
@@ -118,12 +117,7 @@ var _ = Describe("Proxy Protocol", func() {
 			Context("with PROXY protocol", func() {
 
 				BeforeEach(func() {
-					gw := gatewaydefaults.DefaultGateway(defaults.GlooSystem)
-					gw.UseProxyProto = &wrappers.BoolValue{Value: true}
-
-					testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
-						gw,
-					}
+					testContext.ResourcesToCreate().Gateways[0].UseProxyProto = &wrappers.BoolValue{Value: true}
 				})
 
 				It("works", func() {
