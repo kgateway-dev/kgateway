@@ -510,11 +510,12 @@ var _ = Describe("Kube2e: glooctl", func() {
 	Context("check-crds", func() {
 		It("connection fails on incorrect namespace check", func() {
 			_, err := runGlooctlCommand("check-crds")
-			Expect(err).To(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 		})
 		It("connection fails on incorrect namespace check", func() {
 			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
 			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("test"))
 		})
 	})
 })
