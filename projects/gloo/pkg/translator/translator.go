@@ -380,7 +380,7 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 
 // ValidateRouteConfig will validate all the Virtual Hosts routes paths
 func ValidateRouteConfig(ecr *envoy_config_route_v3.RouteConfiguration) bool {
-	for _, vh := range ecr.VirtualHosts {
+	for _, vh := range ecr.GetVirtualHosts() {
 		for _, r := range vh.Routes {
 			match := r.Match
 			// NOTE: What about "/"
