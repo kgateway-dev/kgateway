@@ -31,6 +31,7 @@ message AccessLog {
         GrpcService grpc_service = 3;
     }
     // Filter which is used to determine if the access log needs to be written.
+    //.solo.io.envoy.config.core.v3.AccessLogFilter filter = 4;
     AccessLogFilter filter = 4;
 }
 
@@ -149,7 +150,7 @@ message RuntimeFilter {
   
     // The default sampling percentage. If not specified, defaults to 0% with
     // denominator of 100.
-    .solo.io.envoy.type.v3.FractionalPercent percent_sampled = 2;
+    solo.io.envoy.type.v3.FractionalPercent percent_sampled = 2;
 
     // By default, sampling pivots on the header
     // :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` being
@@ -191,78 +192,78 @@ message HeaderFilter {
     .solo.io.envoy.config.route.v3.HeaderMatcher header = 1 [(validate.rules).message = {required: true}];
 }
   
-  // Filters requests that received responses with an Envoy response flag set.
-  // A list of the response flags can be found
-  // in the access log formatter
-  // :ref:`documentation<config_access_log_format_response_flags>`.
-  message ResponseFlagFilter {
-  
-    // Only responses with the any of the flags listed in this field will be
-    // logged. This field is optional. If it is not specified, then any response
-    // flag will pass the filter check.
-    repeated string flags = 1 [(validate.rules).repeated = {
-      items {
-        string {
-          in: "LH"
-          in: "UH"
-          in: "UT"
-          in: "LR"
-          in: "UR"
-          in: "UF"
-          in: "UC"
-          in: "UO"
-          in: "NR"
-          in: "DI"
-          in: "FI"
-          in: "RL"
-          in: "UAEX"
-          in: "RLSE"
-          in: "DC"
-          in: "URX"
-          in: "SI"
-          in: "IH"
-          in: "DPE"
-          in: "UMSDR"
-          in: "RFCF"
-          in: "NFCF"
-          in: "DT"
-          in: "UPE"
-          in: "NC"
-          in: "OM"
-        }
+// Filters requests that received responses with an Envoy response flag set.
+// A list of the response flags can be found
+// in the access log formatter
+// :ref:`documentation<config_access_log_format_response_flags>`.
+message ResponseFlagFilter {
+
+  // Only responses with the any of the flags listed in this field will be
+  // logged. This field is optional. If it is not specified, then any response
+  // flag will pass the filter check.
+  repeated string flags = 1 [(validate.rules).repeated = {
+    items {
+      string {
+        in: "LH"
+        in: "UH"
+        in: "UT"
+        in: "LR"
+        in: "UR"
+        in: "UF"
+        in: "UC"
+        in: "UO"
+        in: "NR"
+        in: "DI"
+        in: "FI"
+        in: "RL"
+        in: "UAEX"
+        in: "RLSE"
+        in: "DC"
+        in: "URX"
+        in: "SI"
+        in: "IH"
+        in: "DPE"
+        in: "UMSDR"
+        in: "RFCF"
+        in: "NFCF"
+        in: "DT"
+        in: "UPE"
+        in: "NC"
+        in: "OM"
       }
-    }];
-  }
-  
-  // Filters gRPC requests based on their response status. If a gRPC status is not
-  // provided, the filter will infer the status from the HTTP status code.
-  message GrpcStatusFilter {
-    enum Status {
-      OK = 0;
-      CANCELED = 1;
-      UNKNOWN = 2;
-      INVALID_ARGUMENT = 3;
-      DEADLINE_EXCEEDED = 4;
-      NOT_FOUND = 5;
-      ALREADY_EXISTS = 6;
-      PERMISSION_DENIED = 7;
-      RESOURCE_EXHAUSTED = 8;
-      FAILED_PRECONDITION = 9;
-      ABORTED = 10;
-      OUT_OF_RANGE = 11;
-      UNIMPLEMENTED = 12;
-      INTERNAL = 13;
-      UNAVAILABLE = 14;
-      DATA_LOSS = 15;
-      UNAUTHENTICATED = 16;
     }
-  
-    // Logs only responses that have any one of the gRPC statuses in this field.
-    repeated Status statuses = 1 [(validate.rules).repeated = {items {enum {defined_only: true}}}];
-  
-    // If included and set to true, the filter will instead block all responses
-    // with a gRPC status or inferred gRPC status enumerated in statuses, and
-    // allow all other responses.
-    bool exclude = 2;
+  }];
+}
+
+// Filters gRPC requests based on their response status. If a gRPC status is not
+// provided, the filter will infer the status from the HTTP status code.
+message GrpcStatusFilter {
+  enum Status {
+    OK = 0;
+    CANCELED = 1;
+    UNKNOWN = 2;
+    INVALID_ARGUMENT = 3;
+    DEADLINE_EXCEEDED = 4;
+    NOT_FOUND = 5;
+    ALREADY_EXISTS = 6;
+    PERMISSION_DENIED = 7;
+    RESOURCE_EXHAUSTED = 8;
+    FAILED_PRECONDITION = 9;
+    ABORTED = 10;
+    OUT_OF_RANGE = 11;
+    UNIMPLEMENTED = 12;
+    INTERNAL = 13;
+    UNAVAILABLE = 14;
+    DATA_LOSS = 15;
+    UNAUTHENTICATED = 16;
   }
+
+  // Logs only responses that have any one of the gRPC statuses in this field.
+  repeated Status statuses = 1 [(validate.rules).repeated = {items {enum {defined_only: true}}}];
+
+  // If included and set to true, the filter will instead block all responses
+  // with a gRPC status or inferred gRPC status enumerated in statuses, and
+  // allow all other responses.
+  bool exclude = 2;
+}
 
