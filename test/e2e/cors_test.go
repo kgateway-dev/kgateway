@@ -2,10 +2,10 @@ package e2e_test
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/matchers"
 	"net/http"
 	"strings"
-
-	"github.com/solo-io/gloo/test/e2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -91,24 +91,33 @@ var _ = Describe("CORS", func() {
 			preFlightRequest.Host = allowedOrigin
 
 			By("Request with allowed origin")
+			req := preFlightRequest
 			Eventually(func(g Gomega) {
-				headers := executeRequestWithAccessControlHeaders(preFlightRequest, allowedOrigins[0], "GET")
-				v, ok := headers[requestACHMethods]
-				g.Expect(ok).To(BeTrue())
-				g.Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
+				req.Header.Set("Origin", allowedOrigins[0])
+				req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+				req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
 
-				v, ok = headers[requestACHOrigin]
-				g.Expect(ok).To(BeTrue())
-				g.Expect(len(v)).To(Equal(1))
-				g.Expect(v[0]).To(Equal(allowedOrigins[0]))
-			}).ShouldNot(HaveOccurred())
+				resp, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+					requestACHOrigin:  Equal(allowedOrigins[0]),
+				}))
+			}).Should(Succeed())
 
 			By("Request with disallowed origin")
+			req = preFlightRequest
 			Eventually(func(g Gomega) {
-				headers := executeRequestWithAccessControlHeaders(preFlightRequest, unAllowedOrigin, "GET")
-				_, ok := headers[requestACHMethods]
-				g.Expect(ok).To(BeFalse())
-			}).ShouldNot(HaveOccurred())
+				req.Header.Set("Origin", unAllowedOrigin)
+				req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+				req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
+
+				resp, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+					requestACHMethods: BeEmpty(),
+				}))
+			}).Should(Succeed())
 		})
 
 	})
@@ -141,19 +150,3 @@ var _ = Describe("CORS", func() {
 	})
 
 })
-
-func executeRequestWithAccessControlHeaders(req *http.Request, origin, method string) http.Header {
-	h := http.Header{}
-	Eventually(func(g Gomega) {
-		req.Header.Set("Origin", origin)
-		req.Header.Set("Access-Control-Request-Method", method)
-		req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
-
-		resp, err := http.DefaultClient.Do(req)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		defer resp.Body.Close()
-		h = resp.Header
-	}).ShouldNot(HaveOccurred())
-	return h
-}

@@ -42,13 +42,28 @@ func HavePartialResponseBody(substring string) types.GomegaMatcher {
 	})
 }
 
+// HaveOkResponseWithHeaders expects an 200 response with a set of headers that match the provided headers
+func HaveOkResponseWithHeaders(headers map[string]interface{}) types.GomegaMatcher {
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       "",
+		Headers:    headers,
+	})
+}
+
 // HttpResponse defines the set of properties that we can validate from an http.Response
 type HttpResponse struct {
 	// StatusCode is the expected status code for an http.Response
+	// Required
 	StatusCode int
 	// Body is the expected response body for an http.Response
 	// Body can be of type: {string, bytes, GomegaMatcher}
+	// Optional: If not provided, defaults to an empty string
 	Body interface{}
+	// Headers is the set of expected header values for an http.Response
+	// Each header can be of type: {string, GomegaMatcher}
+	// Optional: If not provided, performs not header validation
+	Headers map[string]interface{}
 }
 
 // HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains
@@ -61,6 +76,14 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 		expectedBody = ""
 	}
 
+	var headerMatchers []matchers.HaveHTTPHeaderWithValueMatcher
+	for headerName, headerMatch := range expected.Headers {
+		headerMatchers = append(headerMatchers, matchers.HaveHTTPHeaderWithValueMatcher{
+			Header: headerName,
+			Value:  headerMatch,
+		})
+	}
+
 	return &MatchHttpResponseMatcher{
 		Expected: expected,
 		HaveHTTPStatusMatcher: matchers.HaveHTTPStatusMatcher{
@@ -71,6 +94,7 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 		HaveHTTPBodyMatcher: matchers.HaveHTTPBodyMatcher{
 			Expected: expectedBody,
 		},
+		headerMatchers: headerMatchers,
 	}
 }
 
@@ -79,7 +103,7 @@ type MatchHttpResponseMatcher struct {
 	matchers.HaveHTTPStatusMatcher
 	matchers.HaveHTTPBodyMatcher
 
-	// TODO (sam-heilbron) Add support matchers.HaveHTTPHeaderWithValueMatcher
+	headerMatchers []matchers.HaveHTTPHeaderWithValueMatcher
 }
 
 func (m *MatchHttpResponseMatcher) Match(actual interface{}) (success bool, err error) {
@@ -89,6 +113,12 @@ func (m *MatchHttpResponseMatcher) Match(actual interface{}) (success bool, err 
 
 	if ok, matchBodyErr := m.HaveHTTPBodyMatcher.Match(actual); !ok {
 		return false, matchBodyErr
+	}
+
+	for _, headerMatcher := range m.headerMatchers {
+		if ok, headerMatchErr := headerMatcher.Match(actual); !ok {
+			return false, headerMatchErr
+		}
 	}
 
 	return true, nil
