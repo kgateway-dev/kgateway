@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -796,4 +797,15 @@ func isWarningErr(err error) bool {
 	default:
 		return false
 	}
+}
+
+// ValidateRoutePath will validate a string for all
+// "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
+// https://www.rfc-editor.org/rfc/rfc3986/
+func ValidateRoutePath(s string) bool {
+	re, err := regexp.Compile("^(?:([a-z0-9A-Z:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$")
+	if err != nil {
+		return false
+	}
+	return re.Match([]byte(s))
 }
