@@ -26,22 +26,20 @@ func HaveStatusCode(statusCode int) types.GomegaMatcher {
 	})
 }
 
-// HaveBodyMatcher expects a 200 response with a body that matches the provided matcher
-func HaveBodyMatcher(bodyMatcher types.GomegaMatcher) types.GomegaMatcher {
-	return HaveHttpResponse(&HttpResponse{
-		StatusCode: http.StatusOK,
-		Body:       bodyMatcher,
-	})
-}
-
 // HaveExactResponseBody expects a 200 response with a body that matches the provided string
 func HaveExactResponseBody(body string) types.GomegaMatcher {
-	return HaveBodyMatcher(gomega.Equal(body))
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       body,
+	})
 }
 
 // HavePartialResponseBody expects a 200 response with a body that contains the provided substring
 func HavePartialResponseBody(substring string) types.GomegaMatcher {
-	return HaveBodyMatcher(gomega.ContainSubstring(substring))
+	return HaveHttpResponse(&HttpResponse{
+		StatusCode: http.StatusOK,
+		Body:       gomega.ContainSubstring(substring),
+	})
 }
 
 // HttpResponse defines the set of properties that we can validate from an http.Response
