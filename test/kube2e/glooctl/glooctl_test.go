@@ -507,7 +507,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
 		})
 	})
-	FContext("check-crds", func() {
+	Context("check-crds", func() {
 		It("validate correct CRDs", func() {
 			_, err := runGlooctlCommand("check-crds")
 			Expect(err).ToNot(HaveOccurred())
