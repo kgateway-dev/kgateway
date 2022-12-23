@@ -79,6 +79,13 @@ var _ = Describe("Staged Transformation", func() {
 				Extauth: &extauthv1.Settings{
 					ExtauthzServerRef: ref,
 				},
+				Gloo: &gloov1.GlooOptions{
+					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+						// These tests fail when ReplaceInvalidRoutes is true
+						ReplaceInvalidRoutes:     false,
+						InvalidRouteResponseBody: "Staged Transformation Response Body",
+					},
+				},
 			},
 			WhatToRun: services.What{
 				DisableGateway: true,
