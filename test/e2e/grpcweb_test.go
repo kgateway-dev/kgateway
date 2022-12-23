@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Grpc Web", func() {
+var _ = Describe("Grpc Web", func() {
 
 	var (
 		testContext *e2e.TestContext
