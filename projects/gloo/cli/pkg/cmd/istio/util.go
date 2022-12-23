@@ -134,7 +134,7 @@ func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
 // GetGlooVersionWithoutV mirrors the above function but returns the version without the leading 'v'
 func GetGlooVersionWithoutV(ctx context.Context, namespace string) (string, error) {
 	version, err := GetGlooVersion(ctx, namespace)
-	if err != nil {
+	if err == nil {
 		return version[1:], nil
 	}
 	return version, err

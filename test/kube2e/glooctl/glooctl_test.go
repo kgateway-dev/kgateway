@@ -507,15 +507,15 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
 		})
 	})
-	Context("check-crds", func() {
-		It("connection fails on incorrect namespace check", func() {
+	FContext("check-crds", func() {
+		It("validate correct CRDs", func() {
 			_, err := runGlooctlCommand("check-crds")
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("connection fails on incorrect namespace check", func() {
+		It("fails with CRD mismatch", func() {
 			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("test"))
+			Expect(err.Error()).To(ContainSubstring("Diffs detected on the following CRDs:"))
 		})
 	})
 })
