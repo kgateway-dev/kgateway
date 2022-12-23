@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/4193
+    description: >
+      Added `glooctl check-crds (--version <string>)` to if diffs exist between deployed CRDs and the CRDs in the
+      latest release or `--versions` release.
+

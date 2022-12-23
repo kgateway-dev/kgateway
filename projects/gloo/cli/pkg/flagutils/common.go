@@ -12,13 +12,18 @@ import (
 )
 
 const (
-	OutputFlag = "output"
-	FileFlag   = "file"
-	DryRunFlag = "dry-run"
+	OutputFlag  = "output"
+	FileFlag    = "file"
+	DryRunFlag  = "dry-run"
+	VersionFlag = "version"
 )
 
 func AddCheckOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 	set.VarP(outputType, OutputFlag, "o", "output format: (json, table)")
+}
+
+func AddVersionFlag(set *pflag.FlagSet, version *string) {
+	set.StringVarP(version, VersionFlag, "", "", "CRD version to check against")
 }
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {

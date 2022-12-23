@@ -507,6 +507,16 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
 		})
 	})
+	Context("check-crds", func() {
+		It("connection fails on incorrect namespace check", func() {
+			_, err := runGlooctlCommand("check-crds")
+			Expect(err).To(HaveOccurred())
+		})
+		It("connection fails on incorrect namespace check", func() {
+			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
+			Expect(err).To(HaveOccurred())
+		})
+	})
 })
 
 // runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
