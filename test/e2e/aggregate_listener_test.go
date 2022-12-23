@@ -258,13 +258,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HttpListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHttpListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHttpListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -288,13 +290,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -359,13 +363,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -506,13 +512,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -536,13 +544,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -766,13 +776,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -796,13 +808,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
