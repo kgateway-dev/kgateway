@@ -125,7 +125,7 @@ var _ = Describe("gzip", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Body:       matchers.HaveDecompressedValue(longJsonStr),
+					Body:       WithTransform(matchers.WithDecompressorTransform(), Equal(longJsonStr)),
 				}))
 			}).Should(Succeed())
 		})
