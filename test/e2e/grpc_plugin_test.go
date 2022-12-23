@@ -62,6 +62,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
+					// https://github.com/solo-io/gloo/issues/7577
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{

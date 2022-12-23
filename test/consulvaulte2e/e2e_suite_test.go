@@ -22,6 +22,11 @@ var (
 )
 
 var _ = BeforeSuite(func() {
+	testhelpers.ValidateRequirementsAndNotifyGinkgo(
+		testhelpers.Consul(),
+		testhelpers.Vault(),
+	)
+
 	var err error
 	envoyFactory, err = services.NewEnvoyFactory()
 	Expect(err).NotTo(HaveOccurred())
@@ -38,11 +43,6 @@ var _ = AfterSuite(func() {
 })
 
 func TestE2e(t *testing.T) {
-	testhelpers.ValidateRequirementsAndNotifyGinkgo(
-		testhelpers.Consul(),
-		testhelpers.Vault(),
-	)
-
 	// set KUBECONFIG to a nonexistent cfg.
 	// this way we are also testing that Gloo can run without a kubeconfig present
 	os.Setenv("KUBECONFIG", ".")

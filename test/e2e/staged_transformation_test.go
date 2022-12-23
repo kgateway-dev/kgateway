@@ -82,6 +82,7 @@ var _ = Describe("Staged Transformation", func() {
 				Gloo: &gloov1.GlooOptions{
 					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
 						// These tests fail when ReplaceInvalidRoutes is true
+						// https://github.com/solo-io/gloo/issues/7577
 						ReplaceInvalidRoutes:     false,
 						InvalidRouteResponseBody: "Staged Transformation Response Body",
 					},
