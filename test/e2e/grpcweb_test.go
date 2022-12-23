@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 	"net/http"
 	"time"
+
+	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"

@@ -2,10 +2,11 @@ package e2e_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/matchers"
 	"net/http"
 	"strings"
+
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
