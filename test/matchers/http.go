@@ -62,7 +62,7 @@ type HttpResponse struct {
 	Body interface{}
 	// Headers is the set of expected header values for an http.Response
 	// Each header can be of type: {string, GomegaMatcher}
-	// Optional: If not provided, performs not header validation
+	// Optional: If not provided, does not perform header validation
 	Headers map[string]interface{}
 }
 

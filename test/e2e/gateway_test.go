@@ -667,9 +667,10 @@ var _ = Describe("Gateway", func() {
 					err := gloohelpers.PatchResource(
 						ctx,
 						tcpGatewayRef,
-						func(resource resources.Resource) {
+						func(resource resources.Resource) resources.Resource {
 							gw := resource.(*gatewayv1.Gateway)
 							gw.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{host}
+							return gw
 						},
 						testClients.GatewayClient.BaseClient(),
 					)

@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -111,9 +110,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HttpListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
+				proxy, err := testContext.ReadDefaultProxy()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -134,9 +131,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
+				proxy, err := testContext.ReadDefaultProxy()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -259,9 +254,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single HttpListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -291,9 +284,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single AggregateListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -364,9 +355,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single HybridListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -388,9 +377,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
+				proxy, err := testContext.ReadDefaultProxy()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -513,9 +500,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single HybridListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -545,9 +530,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single AggregateListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -620,9 +603,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
+				proxy, err := testContext.ReadDefaultProxy()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -643,9 +624,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-					Ctx: testContext.Ctx(),
-				})
+				proxy, err := testContext.ReadDefaultProxy()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -777,9 +756,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single HybridListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -809,9 +786,7 @@ var _ = Describe("Aggregate Listener", func() {
 
 			It("produces a Proxy with a single AggregateListener", func() {
 				Eventually(func(g Gomega) {
-					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
-						Ctx: testContext.Ctx(),
-					})
+					proxy, err := testContext.ReadDefaultProxy()
 					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(proxy.GetListeners()).To(HaveLen(1))
