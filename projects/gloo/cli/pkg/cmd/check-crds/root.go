@@ -61,7 +61,7 @@ func CheckCRDS(opts *options.Options) error {
 	}
 	acceptedCRDs, err := getCRDsFromHelm(chartPath)
 	if err != nil {
-		return eris.Wrapf(err, "Error getting names and definitions of CRDs for version %s")
+		return eris.Wrapf(err, "Error getting names and definitions of CRDs from %s", chartPath)
 	}
 	clusterCRDs, err := getCRDsInCluster()
 	if err != nil {
@@ -75,10 +75,14 @@ func CheckCRDS(opts *options.Options) error {
 
 	diffs := []string{}
 	for _, crd := range clusterCRDs {
-		clu, _ := yaml.Marshal(crd.Spec)
-		acc, _ := yaml.Marshal(lookupTable[crd.Name].Spec)
-		if string(clu) != string(acc) {
+		clusterCrdBytes, _ := yaml.Marshal(crd.Spec)
+		if acceptedCrd, ok := lookupTable[crd.Name]; !ok {
 			diffs = append(diffs, crd.Name)
+		} else {
+			acceptedCrdBytes, _ := yaml.Marshal(acceptedCrd.Spec)
+			if string(clusterCrdBytes) != string(acceptedCrdBytes) {
+				diffs = append(diffs, crd.Name)
+			}
 		}
 	}
 	if len(diffs) != 0 {
