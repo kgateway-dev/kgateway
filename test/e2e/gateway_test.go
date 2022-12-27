@@ -61,7 +61,6 @@ var _ = Describe("Gateway", func() {
 	Describe("in memory", func() {
 
 		BeforeEach(func() {
-
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
