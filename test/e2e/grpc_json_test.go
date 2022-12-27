@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
@@ -26,12 +28,11 @@ import (
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
-		tu             *v1helpers.TestUpstream
-		writeNamespace string
+		ctx           context.Context
+		cancel        context.CancelFunc
+		testClients   services.TestClients
+		envoyInstance *services.EnvoyInstance
+		tu            *v1helpers.TestUpstream
 	)
 
 	BeforeEach(func() {
@@ -43,7 +44,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
@@ -51,6 +51,12 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 				DisableGateway: false,
 				DisableUds:     true,
 				DisableFds:     true,
+			},
+			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					// https://github.com/solo-io/gloo/issues/7577
+					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+				},
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)

@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/test/matchers"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/golang/protobuf/proto"
@@ -258,7 +260,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
-	ExpectHttpOK(body, rootca, envoyPort, "")
+	ExpectHttpOK(body, rootca, envoyPort, "solo.io test")
 
 	timeout := time.After(15 * time.Second)
 	var receivedRequest *ReceivedRequest
@@ -322,8 +324,7 @@ type CurlResponse struct {
 
 func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse CurlResponse) {
 
-	var res *http.Response
-	EventuallyWithOffset(offset+1, func() error {
+	EventuallyWithOffset(offset+1, func(g Gomega) (*http.Response, error) {
 		// send a request with a body
 		var buf bytes.Buffer
 		buf.Write(request.Body)
@@ -336,7 +337,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 			caCertPool := x509.NewCertPool()
 			ok := caCertPool.AppendCertsFromPEM([]byte(*request.RootCA))
 			if !ok {
-				return fmt.Errorf("ca cert is not OK")
+				return nil, fmt.Errorf("ca cert is not OK")
 			}
 
 			tlsConfig := &tls.Config{
@@ -350,9 +351,8 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 
 		requestUrl := fmt.Sprintf("%s://%s:%d%s", scheme, "localhost", request.Port, request.Path)
 		req, err := http.NewRequest("POST", requestUrl, &buf)
-		if err != nil {
-			return err
-		}
+		g.Expect(err).NotTo(HaveOccurred())
+
 		if request.Host != "" {
 			req.Host = request.Host
 		}
@@ -360,24 +360,12 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 		for headerName, headerValue := range request.Headers {
 			req.Header.Set(headerName, headerValue)
 		}
-		res, err = client.Do(req)
-		if err != nil {
-			return err
-		}
 
-		if res.StatusCode != expectedResponse.Status {
-			return fmt.Errorf("received status code (%v) is not expected status code (%v)", res.StatusCode, expectedResponse.Status)
-		}
-
-		return nil
-	}, "30s", "1s").Should(BeNil())
-
-	if expectedResponse.Message != "" {
-		body, err := ioutil.ReadAll(res.Body)
-		ExpectWithOffset(offset, err).NotTo(HaveOccurred())
-		defer res.Body.Close()
-		ExpectWithOffset(offset, string(body)).To(Equal(expectedResponse.Message))
-	}
+		return client.Do(req)
+	}, "30s", "1s").Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+		StatusCode: expectedResponse.Status,
+		Body:       expectedResponse.Message,
+	}))
 }
 
 func ExpectGrpcHealthOK(rootca *string, envoyPort uint32, service string) {

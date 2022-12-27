@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/onsi/gomega/types"
+	testmatchers "github.com/solo-io/gloo/test/matchers"
 
 	"github.com/solo-io/gloo/test/v1helpers"
 
@@ -29,7 +29,7 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -52,7 +52,6 @@ var _ = Describe("tunneling", func() {
 		vs             *gatewayv1.VirtualService
 		tlsRequired    v1helpers.UpstreamTlsRequired = v1helpers.NO_TLS
 		tlsHttpConnect bool
-		writeNamespace = defaults.GlooSystem
 	)
 
 	checkProxy := func() {
@@ -71,6 +70,10 @@ var _ = Describe("tunneling", func() {
 	}
 
 	BeforeEach(func() {
+		testhelpers.ValidateRequirementsAndNotifyGinkgo(
+			testhelpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
+		)
+
 		tlsRequired = v1helpers.NO_TLS
 		tlsHttpConnect = false
 		var err error
@@ -85,11 +88,21 @@ var _ = Describe("tunneling", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
+			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+						// These tests fail when ReplaceInvalidRoutes is true
+						// https://github.com/solo-io/gloo/issues/7577
+						ReplaceInvalidRoutes:     false,
+						InvalidRouteResponseBody: "Http Tunneling Response Body",
+					},
+				},
+			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 		// write gateways and wait for them to be created
-		err = gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+		err = testhelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 		Eventually(func() (gatewayv1.GatewayList, error) {
 			return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
@@ -139,31 +152,18 @@ var _ = Describe("tunneling", func() {
 		cancel()
 	})
 
-	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBodyMatcher types.GomegaMatcher) {
-		EventuallyWithOffset(1, func() (string, error) {
-			var client http.Client
-			scheme := "http"
+	expectResponseBodyOnRequest := func(requestJsonBody string, expectedResponseStatusCode int, expectedResponseBody interface{}) {
+		EventuallyWithOffset(1, func(g Gomega) {
 			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("%s://%s:%d/test", scheme, "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			if err != nil {
-				return "", err
-			}
-			res, err := client.Do(req)
-			if err != nil {
-				return "", err
-			}
-			if res.StatusCode != expectedResponseStatusCode {
-				return "", fmt.Errorf("not ok")
-			}
-			p := new(bytes.Buffer)
-			if _, err := io.Copy(p, res.Body); err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			return p.String(), nil
-		}, "10s", "0.5s").Should(expectedResponseBodyMatcher)
+			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				StatusCode: expectedResponseStatusCode,
+				Body:       expectedResponseBody,
+			}))
+		}, "10s", "0.5s").Should(Succeed())
 	}
 
 	Context("plaintext", func() {
@@ -195,18 +195,18 @@ var _ = Describe("tunneling", func() {
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
-						CertChain:  gloohelpers.Certificate(),
-						PrivateKey: gloohelpers.PrivateKey(),
-						RootCa:     gloohelpers.Certificate(),
+						CertChain:  testhelpers.Certificate(),
+						PrivateKey: testhelpers.PrivateKey(),
+						RootCa:     testhelpers.Certificate(),
 					},
 				},
 			}
 
 			// set mTLS certs to be used by Envoy so we can talk to mTLS test server
 			if tlsRequired == v1helpers.MTLS {
-				secret.GetTls().CertChain = gloohelpers.MtlsCertificate()
-				secret.GetTls().PrivateKey = gloohelpers.MtlsPrivateKey()
-				secret.GetTls().RootCa = gloohelpers.MtlsCertificate()
+				secret.GetTls().CertChain = testhelpers.MtlsCertificate()
+				secret.GetTls().PrivateKey = testhelpers.MtlsPrivateKey()
+				secret.GetTls().RootCa = testhelpers.MtlsCertificate()
 			}
 
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
@@ -342,7 +342,7 @@ var _ = Describe("tunneling", func() {
 
 			It("should not proxy", func() {
 				jsonStr := `{"value":"Hello, world!"}`
-				expectResponseBodyOnRequest(jsonStr, http.StatusServiceUnavailable, Equal("upstream connect error or disconnect/reset before headers. reset reason: connection termination"))
+				expectResponseBodyOnRequest(jsonStr, http.StatusServiceUnavailable, "upstream connect error or disconnect/reset before headers. reset reason: connection termination")
 			})
 		})
 
@@ -377,8 +377,8 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
 		if useTLS {
-			cert := []byte(gloohelpers.Certificate())
-			key := []byte(gloohelpers.PrivateKey())
+			cert := []byte(testhelpers.Certificate())
+			key := []byte(testhelpers.PrivateKey())
 			cer, err := tls.X509KeyPair(cert, key)
 			Expect(err).NotTo(HaveOccurred())
 

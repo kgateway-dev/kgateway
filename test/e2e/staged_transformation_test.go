@@ -79,6 +79,14 @@ var _ = Describe("Staged Transformation", func() {
 				Extauth: &extauthv1.Settings{
 					ExtauthzServerRef: ref,
 				},
+				Gloo: &gloov1.GlooOptions{
+					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+						// These tests fail when ReplaceInvalidRoutes is true
+						// https://github.com/solo-io/gloo/issues/7577
+						ReplaceInvalidRoutes:     false,
+						InvalidRouteResponseBody: "Staged Transformation Response Body",
+					},
+				},
 			},
 			WhatToRun: services.What{
 				DisableGateway: true,
@@ -129,9 +137,6 @@ var _ = Describe("Staged Transformation", func() {
 
 	Context("no auth", func() {
 
-		TestUpstreamReachable := func() {
-			v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
-		}
 		It("should transform response", func() {
 			setProxy(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
@@ -180,7 +185,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			// send a request and expect it transformed!
 			body := []byte("test")
@@ -207,7 +211,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			// send a request and expect it transformed!
 			body := []byte("test")
@@ -241,13 +244,13 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			var client http.Client
-			res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
-			Expect(err).NotTo(HaveOccurred())
-			fmt.Printf("%+v\n", res.Header)
-			Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
+			Eventually(func(g Gomega) {
+				res, err := client.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res.Header["X-Custom-Header"]).To(ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2"))
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 		It("Should be able to base64 encode the body", func() {
@@ -269,7 +272,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			body := []byte("test")
 			encodedBodystring := base64.StdEncoding.EncodeToString(body)
@@ -296,7 +298,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			body := []byte("test")
 			encodedBody := base64.StdEncoding.EncodeToString(body)
@@ -323,7 +324,6 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			body := []byte("123456789")
 			// send a request, expect that the response body contains only the first 4 characters
@@ -348,15 +348,16 @@ var _ = Describe("Staged Transformation", func() {
 					}},
 				},
 			})
-			TestUpstreamReachable()
 
 			var client http.Client
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
-			res, err := client.Do(req)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(res.Header["X-New-Custom-Header"]).To(ContainElements("test2"))
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
+				res, err := client.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res.Header["X-New-Custom-Header"]).To(ContainElements("test2"))
+			}, "5s", ".5s").Should(Succeed())
 		})
 
 		It("should apply transforms from most specific level only", func() {
@@ -396,19 +397,17 @@ var _ = Describe("Staged Transformation", func() {
 					},
 				}
 			})
-			TestUpstreamReachable()
-			var response *http.Response
-			Eventually(func() error {
-				var err error
-				response, err = http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
-				return err
-			}, "30s", "1s").ShouldNot(HaveOccurred())
-			// Only route level transformations should be applied here due to the nature of envoy choosing
-			// the most specific config (weighted cluster > route > vhost)
-			// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
-			// transformations down to the route level.
-			Expect(response.Header.Get("x-solo-2")).To(Equal("route header"))
-			Expect(response.Header.Get("x-solo-1")).To(BeEmpty())
+
+			Eventually(func(g Gomega) {
+				response, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
+				g.Expect(err).NotTo(HaveOccurred())
+				// Only route level transformations should be applied here due to the nature of envoy choosing
+				// the most specific config (weighted cluster > route > vhost)
+				// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
+				// transformations down to the route level.
+				g.Expect(response.Header.Get("x-solo-2")).To(Equal("route header"))
+				g.Expect(response.Header.Get("x-solo-1")).To(BeEmpty())
+			}).Should(Succeed())
 		})
 	})
 

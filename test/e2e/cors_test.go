@@ -1,27 +1,21 @@
 package e2e_test
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/gloo/test/e2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 const (
@@ -34,68 +28,24 @@ const (
 var _ = Describe("CORS", func() {
 
 	var (
-		err           error
-		ctx           context.Context
-		cancel        context.CancelFunc
-		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
-		testUpstream  *v1helpers.TestUpstream
-
-		resourcesToCreate *gloosnapshot.ApiSnapshot
-
-		writeNamespace = defaults.GlooSystem
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-
-		// run gloo
-		writeNamespace = defaults.GlooSystem
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// run envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// this is the upstream that will handle requests
-		testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-
-		// The set of resources that these tests will generate
-		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways: gatewayv1.GatewayList{
-				gatewaydefaults.DefaultGateway(writeNamespace),
-			},
-			Upstreams: gloov1.UpstreamList{
-				testUpstream.Upstream,
-			},
-		}
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		envoyInstance.Clean()
-		cancel()
+		testContext.AfterEach()
 	})
 
 	JustBeforeEach(func() {
-		// Create Resources
-		err = testClients.WriteSnapshot(ctx, resourcesToCreate)
-		Expect(err).NotTo(HaveOccurred())
+		testContext.JustBeforeEach()
+	})
 
-		// Wait for a proxy to be accepted
-		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		})
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
 	})
 
 	Context("With CORS", func() {
@@ -109,7 +59,7 @@ var _ = Describe("CORS", func() {
 			vsWithCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
 				WithName("vs-cors").
 				WithDomain(allowedOrigin).
-				WithRouteActionToUpstream("route", testUpstream.Upstream).
+				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher("route", "/cors").
 				WithRouteOptions("route", &gloov1.RouteOptions{
 					Cors: &cors.CorsPolicy{
@@ -119,17 +69,16 @@ var _ = Describe("CORS", func() {
 					}}).
 				Build()
 
-			resourcesToCreate.VirtualServices = gatewayv1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
 				vsWithCors,
 			}
-
 		})
 
 		It("should run with cors", func() {
 
 			By("Envoy config contains CORS filer")
 			Eventually(func(g Gomega) {
-				cfg, err := envoyInstance.EnvoyConfigDump()
+				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
@@ -137,7 +86,7 @@ var _ = Describe("CORS", func() {
 				g.Expect(cfg).To(MatchRegexp(allowedOrigin))
 			}, "10s", ".1s").ShouldNot(HaveOccurred())
 
-			preFlightRequest, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", envoyInstance.LocalAddr(), defaults.HttpPort), nil)
+			preFlightRequest, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			preFlightRequest.Host = allowedOrigin
 
@@ -170,11 +119,11 @@ var _ = Describe("CORS", func() {
 			vsWithoutCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
 				WithName("vs-cors").
 				WithDomain("cors.com").
-				WithRouteActionToUpstream("route", testUpstream.Upstream).
+				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher("route", "/cors").
 				Build()
 
-			resourcesToCreate.VirtualServices = gatewayv1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
 				vsWithoutCors,
 			}
 		})
@@ -182,7 +131,7 @@ var _ = Describe("CORS", func() {
 		It("should run without cors", func() {
 			By("Envoy config does not contain CORS filer")
 			Eventually(func(g Gomega) {
-				cfg, err := envoyInstance.EnvoyConfigDump()
+				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
