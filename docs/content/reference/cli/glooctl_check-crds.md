@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl check-crds
 
-Checks Gloo CRDs for consistency with deployed (or `--version`'s) release
+Checks Gloos CRDs for consistency against an official (or local) helm charts CRDs
 
 ### Synopsis
 

@@ -68,7 +68,7 @@ var (
 
 	CHECK_CRD_COMMAND = cobra.Command{
 		Use:   "check-crds",
-		Short: "Checks Gloo CRDs for consistency with deployed (or `--version`'s) release",
+		Short: "Checks Gloos CRDs for consistency against an official (or local) helm charts CRDs",
 	}
 
 	CREATE_COMMAND = cobra.Command{
