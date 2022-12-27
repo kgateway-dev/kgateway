@@ -113,7 +113,7 @@ func preprocessCRD(crd *apiextv1.CustomResourceDefinition) {
 	crd.Spec.Conversion = &apiextv1.CustomResourceConversion{}
 }
 
-// getCRDsInCluster gets a list of all custom resources currently in the local cluster
+// getCRDsInCluster gets all custom resources currently in the local cluster
 func getCRDsInCluster() ([]apiextv1.CustomResourceDefinition, error) {
 	crds := []apiextv1.CustomResourceDefinition{}
 	out, err := cliutil.KubectlOut(nil, "get", "crd")
