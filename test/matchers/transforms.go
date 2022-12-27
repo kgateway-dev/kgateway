@@ -9,7 +9,6 @@ import (
 
 const (
 	invalidDecompressorResponse = "Failed to decompress bytes"
-	invalidDecodingResponse     = "Failed to decode bytes"
 )
 
 // WithDecompressorTransform returns a Gomega Transform that decompresses
