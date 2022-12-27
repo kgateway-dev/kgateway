@@ -3,7 +3,7 @@ gatewayProxies:
     topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: zone
-      whenUnsatisfiable: DoNotSchedule
+      whenUnsatisfiable: ScheduleAnyway
       labelSelector:
         matchLabels:
           gloo: gateway-proxy
