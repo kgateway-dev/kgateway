@@ -44,9 +44,9 @@ func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 
 		skSecret := &v1.Secret{
 			Metadata: &skcore.Metadata{
-				Name:        secret.Name,
-				Namespace:   secret.Namespace,
-				Cluster:     secret.ClusterName,
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+				// Cluster:     secret.ClusterName,
 				Labels:      secret.Labels,
 				Annotations: secret.Annotations,
 			},
