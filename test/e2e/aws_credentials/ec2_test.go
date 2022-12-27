@@ -25,31 +25,23 @@ import (
 )
 
 var _ = Describe("", func() {
-	const region = "us-east-1"
 
 	var (
-		secret       *v1.Secret
-		secretClient v1.SecretClient
-		roleArn      string
-		ctx          context.Context
-		cancel       context.CancelFunc
+		ctx    context.Context
+		cancel context.CancelFunc
+
+		secret *v1.Secret
 	)
 
-	addCredentials := func() {
+	createSecret := func() {
+		secretClient, err := getInMemorySecretClient(ctx)
+		Expect(err).NotTo(HaveOccurred())
+
 		localAwsCredentials := credentials.NewSharedCredentials("", "")
 		v, err := localAwsCredentials.Get()
 		if err != nil {
-			Skip("no AWS creds available")
+			Fail("no AWS creds available")
 		}
-		// role arn format: "arn:aws:iam::[account_number]:role/[role_name]"
-		roleArn = os.Getenv("AWS_ARN_ROLE_1")
-		if roleArn == "" {
-			Skip("no AWS role ARN available")
-		}
-		var opts clients.WriteOpts
-
-		accessKey := v.AccessKeyID
-		secretKey := v.SecretAccessKey
 
 		secret = &v1.Secret{
 			Metadata: &core.Metadata{
@@ -58,41 +50,36 @@ var _ = Describe("", func() {
 			},
 			Kind: &v1.Secret_Aws{
 				Aws: &v1.AwsSecret{
-					AccessKey: accessKey,
-					SecretKey: secretKey,
+					AccessKey: v.AccessKeyID,
+					SecretKey: v.SecretAccessKey,
 				},
 			},
 		}
-
-		_, err = secretClient.Write(secret, opts)
+		_, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 
 	}
 
 	BeforeEach(func() {
-		var err error
 		ctx, cancel = context.WithCancel(context.Background())
-		secretClient, err = getSecretClient(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Setenv("AWS_ARN_ROLE_1", "arn:aws:iam::410461945957:role/describe-all-ec2-poc")).NotTo(HaveOccurred())
 
-		addCredentials()
+		createSecret()
 	})
 
 	AfterEach(func() {
+		// The secret we created is stored in memory, so it will be cleaned up between test runs
+
 		cancel()
 	})
 
 	It("should assume role correctly", func() {
-		region := "us-east-1"
-		secretRef := secret.Metadata.Ref()
 		var filters []*glooec2.TagFilter
 		withRole := &v1.Upstream{
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    region,
-					SecretRef: secretRef,
-					RoleArn:   roleArn,
+					SecretRef: secret.Metadata.Ref(),
+					RoleArn:   os.Getenv(roleArnEnvVar),
 					Filters:   filters,
 					PublicIp:  false,
 					Port:      80,
@@ -104,7 +91,7 @@ var _ = Describe("", func() {
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:   region,
-					RoleArn:  roleArn,
+					RoleArn:  os.Getenv(roleArnEnvVar),
 					Filters:  filters,
 					PublicIp: false,
 					Port:     80,
@@ -116,7 +103,7 @@ var _ = Describe("", func() {
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    region,
-					SecretRef: secretRef,
+					SecretRef: secret.Metadata.Ref(),
 					Filters:   filters,
 					PublicIp:  false,
 					Port:      80,
@@ -150,7 +137,7 @@ var _ = Describe("", func() {
 
 })
 
-func getSecretClient(ctx context.Context) (v1.SecretClient, error) {
+func getInMemorySecretClient(ctx context.Context) (v1.SecretClient, error) {
 	secretClientFactory := &factory.MemoryResourceClientFactory{
 		Cache: memory.NewInMemoryResourceCache(),
 	}
