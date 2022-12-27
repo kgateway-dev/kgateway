@@ -136,7 +136,7 @@ func getCRDsInCluster() ([]apiextv1.CustomResourceDefinition, error) {
 	return crds, nil
 }
 
-// getCRDsForVersion gets all custom resources for a helm chart
+// getCRDsForVersion gets all custom resources for a given version of gloo via helm client
 func getCRDsFromHelm(uri string) ([]apiextv1.CustomResourceDefinition, error) {
 	crds := []apiextv1.CustomResourceDefinition{}
 	helmClient := install.DefaultHelmClient()
