@@ -1,50 +1,50 @@
 package e2e
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 
-    "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-    "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo"
 
-    . "github.com/onsi/gomega"
-    v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-    gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-    gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-    "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-    "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-    "github.com/solo-io/gloo/test/helpers"
-    "github.com/solo-io/gloo/test/services"
-    "github.com/solo-io/gloo/test/v1helpers"
-    "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-    "github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/services"
+	"github.com/solo-io/gloo/test/v1helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
 var (
-    writeNamespace = defaults.GlooSystem
-    proxyName      = gatewaydefaults.GatewayProxyName
-    envoyRole      = fmt.Sprintf("%v~%v", writeNamespace, proxyName)
+	writeNamespace = defaults.GlooSystem
+	proxyName      = gatewaydefaults.GatewayProxyName
+	envoyRole      = fmt.Sprintf("%v~%v", writeNamespace, proxyName)
 
-    // DefaultHost defines the Host header that should be used to route traffic to the
-    // default VirtualService that the TestContext creates
-    // To make our tests more explicit we define VirtualServices with an explicit set
-    // of domains (which match the `Host` header of a request), and DefaultHost
-    // is the domain we use by default
-    DefaultHost = "test.com"
+	// DefaultHost defines the Host header that should be used to route traffic to the
+	// default VirtualService that the TestContext creates
+	// To make our tests more explicit we define VirtualServices with an explicit set
+	// of domains (which match the `Host` header of a request), and DefaultHost
+	// is the domain we use by default
+	DefaultHost = "test.com"
 )
 
 type TestContextFactory struct {
-    EnvoyFactory *services.EnvoyFactory
+	EnvoyFactory *services.EnvoyFactory
 }
 
 func (f *TestContextFactory) NewTestContext(testRequirements ...helpers.Requirement) *TestContext {
-    // Skip or Fail tests which do not satisfy the provided requirements
-    helpers.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
+	// Skip or Fail tests which do not satisfy the provided requirements
+	helpers.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
-    return &TestContext{
-        envoyInstance: f.EnvoyFactory.MustEnvoyInstance(),
-    }
+	return &TestContext{
+		envoyInstance: f.EnvoyFactory.MustEnvoyInstance(),
+	}
 }
 
 // TestContext represents the aggregate set of configuration needed to run a single e2e test
@@ -52,109 +52,109 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...helpers.Requirem
 // to ensure that tests are easier to read and maintain since they only contain the resource changes
 // that we are validating
 type TestContext struct {
-    ctx           context.Context
-    cancel        context.CancelFunc
-    envoyInstance *services.EnvoyInstance
+	ctx           context.Context
+	cancel        context.CancelFunc
+	envoyInstance *services.EnvoyInstance
 
-    runOptions  *services.RunOptions
-    testClients services.TestClients
+	runOptions  *services.RunOptions
+	testClients services.TestClients
 
-    testUpstream *v1helpers.TestUpstream
+	testUpstream *v1helpers.TestUpstream
 
-    resourcesToCreate *gloosnapshot.ApiSnapshot
+	resourcesToCreate *gloosnapshot.ApiSnapshot
 }
 
 func (c *TestContext) BeforeEach() {
-    ginkgo.By("TestContext.BeforeEach: Setting up default configuration")
-    c.ctx, c.cancel = context.WithCancel(context.Background())
+	ginkgo.By("TestContext.BeforeEach: Setting up default configuration")
+	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-    c.testUpstream = v1helpers.NewTestHttpUpstream(c.ctx, c.EnvoyInstance().LocalAddr())
+	c.testUpstream = v1helpers.NewTestHttpUpstream(c.ctx, c.EnvoyInstance().LocalAddr())
 
-    c.runOptions = &services.RunOptions{
-        NsToWrite: writeNamespace,
-        NsToWatch: []string{"default", writeNamespace},
-        WhatToRun: services.What{
-            DisableGateway: false,
-            DisableFds:     true,
-            DisableUds:     true,
-        },
-    }
+	c.runOptions = &services.RunOptions{
+		NsToWrite: writeNamespace,
+		NsToWatch: []string{"default", writeNamespace},
+		WhatToRun: services.What{
+			DisableGateway: false,
+			DisableFds:     true,
+			DisableUds:     true,
+		},
+	}
 
-    vsToTestUpstream := helpers.NewVirtualServiceBuilder().
-        WithName("vs-test").
-        WithNamespace(writeNamespace).
-        WithDomain(DefaultHost).
-        WithRoutePrefixMatcher("test", "/").
-        WithRouteActionToUpstream("test", c.testUpstream.Upstream).
-        Build()
+	vsToTestUpstream := helpers.NewVirtualServiceBuilder().
+		WithName("vs-test").
+		WithNamespace(writeNamespace).
+		WithDomain(DefaultHost).
+		WithRoutePrefixMatcher("test", "/").
+		WithRouteActionToUpstream("test", c.testUpstream.Upstream).
+		Build()
 
-    // The set of resources that these tests will generate
-    // Individual tests may modify these resources, but we provide the default resources
-    // required to form a Proxy and handle requests
-    c.resourcesToCreate = &gloosnapshot.ApiSnapshot{
-        Gateways: v1.GatewayList{
-            gatewaydefaults.DefaultGateway(writeNamespace),
-        },
-        VirtualServices: v1.VirtualServiceList{
-            vsToTestUpstream,
-        },
-        Upstreams: gloov1.UpstreamList{
-            c.testUpstream.Upstream,
-        },
-    }
+	// The set of resources that these tests will generate
+	// Individual tests may modify these resources, but we provide the default resources
+	// required to form a Proxy and handle requests
+	c.resourcesToCreate = &gloosnapshot.ApiSnapshot{
+		Gateways: v1.GatewayList{
+			gatewaydefaults.DefaultGateway(writeNamespace),
+		},
+		VirtualServices: v1.VirtualServiceList{
+			vsToTestUpstream,
+		},
+		Upstreams: gloov1.UpstreamList{
+			c.testUpstream.Upstream,
+		},
+	}
 }
 
 func (c *TestContext) AfterEach() {
-    ginkgo.By("TestContext.AfterEach: Stopping Envoy and cancelling test context")
-    // Stop Envoy
-    c.envoyInstance.Clean()
+	ginkgo.By("TestContext.AfterEach: Stopping Envoy and cancelling test context")
+	// Stop Envoy
+	c.envoyInstance.Clean()
 
-    c.cancel()
+	c.cancel()
 }
 
 func (c *TestContext) JustBeforeEach() {
-    ginkgo.By("TestContext.JustBeforeEach: Running Gloo and Envoy, writing resource snapshot to storage")
-    // Run Gloo
-    c.testClients = services.RunGlooGatewayUdsFds(c.ctx, c.runOptions)
+	ginkgo.By("TestContext.JustBeforeEach: Running Gloo and Envoy, writing resource snapshot to storage")
+	// Run Gloo
+	c.testClients = services.RunGlooGatewayUdsFds(c.ctx, c.runOptions)
 
-    // Run Envoy
-    err := c.envoyInstance.RunWithRole(envoyRole, c.testClients.GlooPort)
-    ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	// Run Envoy
+	err := c.envoyInstance.RunWithRole(envoyRole, c.testClients.GlooPort)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-    // Create Resources
-    err = c.testClients.WriteSnapshot(c.ctx, c.resourcesToCreate)
-    ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	// Create Resources
+	err = c.testClients.WriteSnapshot(c.ctx, c.resourcesToCreate)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-    // Wait for a proxy to be accepted
-    helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-        return c.testClients.ProxyClient.Read(writeNamespace, proxyName, clients.ReadOpts{Ctx: c.ctx})
-    })
+	// Wait for a proxy to be accepted
+	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+		return c.testClients.ProxyClient.Read(writeNamespace, proxyName, clients.ReadOpts{Ctx: c.ctx})
+	})
 }
 
 func (c *TestContext) JustAfterEach() {
-    ginkgo.By("TestContext.JustAfterEach: Cleaning up resource snapshot")
-    // We do not need to clean up the Snapshot that was written in the JustBeforeEach
-    // That is because each test uses its own InMemoryCache
+	ginkgo.By("TestContext.JustAfterEach: Cleaning up resource snapshot")
+	// We do not need to clean up the Snapshot that was written in the JustBeforeEach
+	// That is because each test uses its own InMemoryCache
 }
 
 // SetRunSettings can be used to modify the runtime Settings object for a test
 // This should be called after the TestContext.BeforeEach (when the default settings are applied)
 // and before the TestContext.JustBeforeEach (when the settings are consumed)
 func (c *TestContext) SetRunSettings(settings *gloov1.Settings) {
-    c.runOptions.Settings = settings
+	c.runOptions.Settings = settings
 }
 
 // SetRunServices can be used to modify the services (gloo, fds, uds) which will run for a test
 // This should be called after the TestContext.BeforeEach (when the default services are applied)
 // and before the TestContext.JustBeforeEach (when the services are run)
 func (c *TestContext) SetRunServices(services services.What) {
-    c.runOptions.WhatToRun = services
+	c.runOptions.WhatToRun = services
 }
 
 // Ctx returns the Context maintained by the TestContext
 // The Context is cancelled during the AfterEach portion of tests
 func (c *TestContext) Ctx() context.Context {
-    return c.ctx
+	return c.ctx
 }
 
 // ResourcesToCreate returns the ApiSnapshot of resources the TestContext maintains
@@ -162,19 +162,19 @@ func (c *TestContext) Ctx() context.Context {
 // We return a reference to the object, so that individual tests can modify the snapshot
 // before we write it to storage
 func (c *TestContext) ResourcesToCreate() *gloosnapshot.ApiSnapshot {
-    return c.resourcesToCreate
+	return c.resourcesToCreate
 }
 
 // EnvoyInstance returns the wrapper for the running instance of Envoy that this test is using
 // It contains utility methods to easily inspect the live configuration and statistics for the instance
 func (c *TestContext) EnvoyInstance() *services.EnvoyInstance {
-    return c.envoyInstance
+	return c.envoyInstance
 }
 
 // TestUpstream returns the TestUpstream object that the TestContext built
 // A TestUpstream is used to run an echo server and define the Gloo Upstream object to route to it
 func (c *TestContext) TestUpstream() *v1helpers.TestUpstream {
-    return c.testUpstream
+	return c.testUpstream
 }
 
 // TestClients returns the set of resource clients that can be used to perform CRUD operations
@@ -182,27 +182,27 @@ func (c *TestContext) TestUpstream() *v1helpers.TestUpstream {
 // Instead of using the resource clients directly, we recommend placing resources on the
 // ResourcesToCreate object, and letting the TestContext handle the lifecycle of those objects
 func (c *TestContext) TestClients() services.TestClients {
-    return c.testClients
+	return c.testClients
 }
 
 // ReadDefaultProxy returns the Proxy object that will be generated by the resources in the TestContext
 func (c *TestContext) ReadDefaultProxy() (*gloov1.Proxy, error) {
-    return c.testClients.ProxyClient.Read(writeNamespace, proxyName, clients.ReadOpts{Ctx: c.ctx})
+	return c.testClients.ProxyClient.Read(writeNamespace, proxyName, clients.ReadOpts{Ctx: c.ctx})
 }
 
 // PatchDefaultVirtualService mutates the existing VirtualService generated by the TestContext
 func (c *TestContext) PatchDefaultVirtualService(mutator func(vs *v1.VirtualService) *v1.VirtualService) {
-    err := helpers.PatchResourceWithOffset(
-        1,
-        c.ctx,
-        &core.ResourceRef{
-            Name:      "vs-test",
-            Namespace: writeNamespace,
-        },
-        func(resource resources.Resource) resources.Resource {
-            return mutator(resource.(*v1.VirtualService))
-        },
-        c.testClients.VirtualServiceClient.BaseClient(),
-    )
-    ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	err := helpers.PatchResourceWithOffset(
+		1,
+		c.ctx,
+		&core.ResourceRef{
+			Name:      "vs-test",
+			Namespace: writeNamespace,
+		},
+		func(resource resources.Resource) resources.Resource {
+			return mutator(resource.(*v1.VirtualService))
+		},
+		c.testClients.VirtualServiceClient.BaseClient(),
+	)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }

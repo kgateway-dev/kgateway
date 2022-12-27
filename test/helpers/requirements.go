@@ -6,12 +6,8 @@ import (
 	"runtime"
 	"strconv"
 
-<<<<<<< HEAD
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/golang/protobuf/ptypes/wrappers"
-
-=======
->>>>>>> master
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo"
 
@@ -82,14 +78,11 @@ type RequiredConfiguration struct {
 
 	// User defined reasons for why particular environmental conditions are required
 	reasons map[string]string
-<<<<<<< HEAD
 
 	// nil: no credentials required
 	// false: credentials not defined
 	// true: credentials defined
 	awsCredentials *wrappers.BoolValue
-=======
->>>>>>> master
 }
 
 // Validate returns an error is the RequiredConfiguration is not met
@@ -101,12 +94,8 @@ func (r RequiredConfiguration) Validate() error {
 		r.validateOS(),
 		r.validateArch(),
 		r.validateDefinedEnv(),
-<<<<<<< HEAD
 		r.validateTruthyEnv(),
 		r.validateAwsCredentials())
-=======
-		r.validateTruthyEnv())
->>>>>>> master
 
 	// If there are no errors, return
 	if errs.ErrorOrNil() == nil {
@@ -167,7 +156,6 @@ func (r RequiredConfiguration) validateTruthyEnv() error {
 	return nil
 }
 
-<<<<<<< HEAD
 func (r RequiredConfiguration) validateAwsCredentials() error {
 	if r.awsCredentials == nil {
 		// credentials not required
@@ -182,8 +170,6 @@ func (r RequiredConfiguration) validateAwsCredentials() error {
 	return fmt.Errorf("aws credentials needs to be set, but are not")
 }
 
-=======
->>>>>>> master
 // Requirement represents a required property for tests.
 type Requirement func(configuration *RequiredConfiguration)
 
@@ -224,7 +210,6 @@ func Vault() Requirement {
 		TruthyEnv("RUN_VAULT_TESTS")(configuration)
 	}
 }
-<<<<<<< HEAD
 
 func Aws() Requirement {
 	return func(configuration *RequiredConfiguration) {
@@ -236,5 +221,3 @@ func Aws() Requirement {
 		DefinedEnv("AWS_ARN_ROLE_1")(configuration)
 	}
 }
-=======
->>>>>>> master
