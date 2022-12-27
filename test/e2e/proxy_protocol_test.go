@@ -5,10 +5,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"github.com/solo-io/gloo/test/e2e"
-	testmatchers "github.com/solo-io/gloo/test/matchers"
 	"net"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/e2e"
+	testmatchers "github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"

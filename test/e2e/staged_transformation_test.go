@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/onsi/gomega/types"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
 
+	"net/http"
+
 	"github.com/solo-io/gloo/test/e2e"
 	testmatchers "github.com/solo-io/gloo/test/matchers"
-	"net/http"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,17 +46,13 @@ var _ = Describe("Staged Transformation", func() {
 		testContext.JustAfterEach()
 	})
 
-	eventuallyRequestMatches := func(body string, matcher types.GomegaMatcher) {
-		EventuallyWithOffset(1, func(g Gomega) {
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), bytes.NewBufferString(body))
-			g.Expect(err).NotTo(HaveOccurred())
-			req.Header.Set("Content-Type", "application/octet-stream")
-			req.Host = e2e.DefaultHost
+	newRequestWithBody := func(body string) *http.Request {
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), bytes.NewBufferString(body))
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		req.Header.Set("Content-Type", "application/octet-stream")
+		req.Host = e2e.DefaultHost
 
-			res, err := http.DefaultClient.Do(req)
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(res).To(matcher)
-		}, "15s", ".5s").Should(Succeed())
+		return req
 	}
 
 	Context("no auth", func() {
@@ -115,11 +112,15 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			// send a request and expect it transformed!
-			eventuallyRequestMatches("test", testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-				StatusCode: http.StatusOK,
-				Body:       "early-transformed",
-			}))
+			req := newRequestWithBody("test")
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       "early-transformed",
+				}))
+			}, "15s", ".5s").Should(Succeed())
 		})
 
 		It("should allow multiple header values for the same header when using HeadersToAppend", func() {
@@ -156,10 +157,17 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			// send a request and expect it transformed!
-			eventuallyRequestMatches("", testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
-				"X-Custom-Header": MatchRegexp("original header, APPENDED HEADER 1, APPENDED HEADER 2"),
-			}))
+			req := newRequestWithBody("")
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       BeEmpty(),
+					// The default Header matcher only works with single headers, so we supply a custom matcher in this case
+					Custom: WithTransform(testmatchers.WithHeaderValues("X-Custom-Header"), ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2")),
+				}))
+			}, "15s", ".5s").Should(Succeed())
 		})
 
 		It("Should be able to base64 encode the body", func() {
@@ -188,11 +196,16 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
+			req := newRequestWithBody("test")
 			// send a request, expect that the response body is base64 encoded
-			eventuallyRequestMatches("test", testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-				StatusCode: http.StatusOK,
-				Body:       WithTransform(testmatchers.WithBase64DecodingTransform(), Equal("test")),
-			}))
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       base64.StdEncoding.EncodeToString([]byte("test")),
+				}))
+			}, "15s", ".5s").Should(Succeed())
 		})
 
 		It("Should be able to base64 decode the body", func() {
@@ -224,10 +237,15 @@ var _ = Describe("Staged Transformation", func() {
 			// send a request, expect that the response body is base64 decoded
 			body := "test"
 			encodedBody := base64.StdEncoding.EncodeToString([]byte(body))
-			eventuallyRequestMatches(encodedBody, testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-				StatusCode: http.StatusOK,
-				Body:       WithTransform(testmatchers.WithBase64EncodingTransform(), Equal(body)),
-			}))
+			req := newRequestWithBody(encodedBody)
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       body,
+				}))
+			}, "15s", ".5s").Should(Succeed())
 		})
 
 		It("Can extract a substring from the body", func() {
@@ -256,8 +274,16 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
+			req := newRequestWithBody("123456789")
 			// send a request, expect that the response body contains only the first 4 characters
-			eventuallyRequestMatches("123456789", testmatchers.HaveExactResponseBody("1234"))
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       "1234",
+				}))
+			}, "15s", ".5s").Should(Succeed())
 		})
 
 		It("Can base64 decode and transform headers", func() {
@@ -285,11 +311,10 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
+			req := newRequestWithBody("")
+			req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
+
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
@@ -299,7 +324,6 @@ var _ = Describe("Staged Transformation", func() {
 		})
 
 		It("should apply transforms from most specific level only", func() {
-
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vsBuilder := helpers.BuilderFromVirtualService(vs)
 				vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
@@ -341,11 +365,8 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
+			req := newRequestWithBody("")
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-
 				response, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
 				// Only route level transformations should be applied here due to the nature of envoy choosing
@@ -353,7 +374,7 @@ var _ = Describe("Staged Transformation", func() {
 				// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
 				// transformations down to the route level.
 				g.Expect(response).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
-					"x-solo-2": Expect("route header"),
+					"x-solo-2": Equal("route header"),
 					"x-solo-1": BeEmpty(),
 				}))
 			}).Should(Succeed())

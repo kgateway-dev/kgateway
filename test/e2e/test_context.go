@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/onsi/ginkgo"

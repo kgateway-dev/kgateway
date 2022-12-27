@@ -3,8 +3,10 @@ package matchers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
 
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
@@ -14,7 +16,7 @@ import (
 func HaveOkResponse() types.GomegaMatcher {
 	return HaveHttpResponse(&HttpResponse{
 		StatusCode: http.StatusOK,
-		Body:       "",
+		Body:       gomega.BeEmpty(),
 	})
 }
 
@@ -22,7 +24,7 @@ func HaveOkResponse() types.GomegaMatcher {
 func HaveStatusCode(statusCode int) types.GomegaMatcher {
 	return HaveHttpResponse(&HttpResponse{
 		StatusCode: statusCode,
-		Body:       "",
+		Body:       gomega.BeEmpty(),
 	})
 }
 
@@ -46,7 +48,7 @@ func HavePartialResponseBody(substring string) types.GomegaMatcher {
 func HaveOkResponseWithHeaders(headers map[string]interface{}) types.GomegaMatcher {
 	return HaveHttpResponse(&HttpResponse{
 		StatusCode: http.StatusOK,
-		Body:       "",
+		Body:       gomega.BeEmpty(),
 		Headers:    headers,
 	})
 }
@@ -64,11 +66,16 @@ type HttpResponse struct {
 	// Each header can be of type: {string, GomegaMatcher}
 	// Optional: If not provided, does not perform header validation
 	Headers map[string]interface{}
+	// Custom is a generic matcher that can be applied to validate any other properties of an http.Response
+	// Optional: If not provided, does not perform additional validation
+	Custom types.GomegaMatcher
 }
 
 // HaveHttpResponse returns a GomegaMatcher which validates that an http.Response contains
 // particular expected properties (status, body..etc)
 // If an expected body isn't defined, we default to expecting an empty response
+// NOTE TO DEVELOPERS: The underlying matchers cache properties, so if you are wrapping this
+// matcher in an Eventually, be sure to create a new matcher each iteration.
 func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 	expectedBody := expected.Body
 	if expectedBody == nil {
@@ -78,10 +85,18 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 
 	var headerMatchers []matchers.HaveHTTPHeaderWithValueMatcher
 	for headerName, headerMatch := range expected.Headers {
+		// HttpHeaderWithValueMatcher uses Header.Get under the hood, which only extracts
+		// the first value associated with a given header
 		headerMatchers = append(headerMatchers, matchers.HaveHTTPHeaderWithValueMatcher{
 			Header: headerName,
 			Value:  headerMatch,
 		})
+	}
+
+	expectedCustomMatcher := expected.Custom
+	if expected.Custom == nil {
+		// Default to an always accept matcher
+		expectedCustomMatcher = gstruct.Ignore()
 	}
 
 	return &MatchHttpResponseMatcher{
@@ -95,6 +110,7 @@ func HaveHttpResponse(expected *HttpResponse) types.GomegaMatcher {
 			Expected: expectedBody,
 		},
 		headerMatchers: headerMatchers,
+		customMatcher:  expectedCustomMatcher,
 	}
 }
 
@@ -104,6 +120,8 @@ type MatchHttpResponseMatcher struct {
 	matchers.HaveHTTPBodyMatcher
 
 	headerMatchers []matchers.HaveHTTPHeaderWithValueMatcher
+
+	customMatcher types.GomegaMatcher
 }
 
 func (m *MatchHttpResponseMatcher) Match(actual interface{}) (success bool, err error) {
@@ -121,19 +139,43 @@ func (m *MatchHttpResponseMatcher) Match(actual interface{}) (success bool, err 
 		}
 	}
 
+	if ok, customMatchErr := m.customMatcher.Match(actual); !ok {
+		return false, customMatchErr
+	}
+
 	return true, nil
 }
 
 func (m *MatchHttpResponseMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("%s\n%s\ndiff: %s",
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n\ndiff: %s",
 		m.HaveHTTPStatusMatcher.FailureMessage(actual),
 		m.HaveHTTPBodyMatcher.FailureMessage(actual),
+		m.headersFailureMessage(actual),
+		m.customMatcher.FailureMessage(actual),
 		diff(m.Expected, actual))
 }
 
 func (m *MatchHttpResponseMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("%s\n%s\ndiff: %s",
+	return fmt.Sprintf("%s\n%s\n%s\n%s\n\ndiff: %s",
 		m.HaveHTTPStatusMatcher.NegatedFailureMessage(actual),
 		m.HaveHTTPBodyMatcher.NegatedFailureMessage(actual),
+		m.headersNegatedFailureMessage(actual),
+		m.customMatcher.NegatedFailureMessage(actual),
 		diff(m.Expected, actual))
+}
+
+func (m *MatchHttpResponseMatcher) headersFailureMessage(actual interface{}) (message string) {
+	var lines []string
+	for _, headerMatcher := range m.headerMatchers {
+		lines = append(lines, headerMatcher.FailureMessage(actual))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *MatchHttpResponseMatcher) headersNegatedFailureMessage(actual interface{}) (message string) {
+	var lines []string
+	for _, headerMatcher := range m.headerMatchers {
+		lines = append(lines, headerMatcher.NegatedFailureMessage(actual))
+	}
+	return strings.Join(lines, "\n")
 }
