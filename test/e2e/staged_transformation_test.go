@@ -381,7 +381,7 @@ var _ = Describe("Staged Transformation", func() {
 					"x-solo-2": Equal("route header"),
 					"x-solo-1": BeEmpty(),
 				}))
-			}).Should(Succeed())
+			}, "15s", ".5s").Should(Succeed())
 		})
 	})
 
