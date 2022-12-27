@@ -2923,16 +2923,16 @@ spec:
 
 					It("sets topologySpreadConstraints", func() {
 
-						gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints = []v1.TopologySpreadConstraint{
-							{
+						gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints = append(
+							gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints,
+							v1.TopologySpreadConstraint{
 								MaxSkew:           1,
 								TopologyKey:       "zone",
 								WhenUnsatisfiable: "ScheduleAnyway",
 								LabelSelector: &metav1.LabelSelector{
 									MatchLabels: map[string]string{"gloo": "gateway-proxy"},
 								},
-							},
-						}
+							})
 
 						prepareMakefileFromValuesFile("values/val_gwp_topologyspreadconstraints.yaml")
 
