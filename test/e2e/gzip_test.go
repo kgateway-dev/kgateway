@@ -3,134 +3,58 @@ package e2e_test
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
+	"github.com/solo-io/gloo/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloogzip "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 var _ = Describe("gzip", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		envoyInstance *services.EnvoyInstance
-
-		testClients  services.TestClients
-		testUpstream *v1helpers.TestUpstream
-
-		resourcesToCreate *gloosnapshot.ApiSnapshot
-		writeNamespace    = defaults.GlooSystem
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-
-		// run gloo
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// run envoy
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// this is the upstream that will handle requests
-		testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-
-		vsToTestUpstream := gloohelpers.NewVirtualServiceBuilder().
-			WithName("vs-test").
-			WithNamespace(writeNamespace).
-			WithDomain("test.com").
-			WithRoutePrefixMatcher("test", "/").
-			WithRouteActionToUpstream("test", testUpstream.Upstream).
-			Build()
-
-		// The set of resources that these tests will generate
-		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways: gatewayv1.GatewayList{
-				gatewaydefaults.DefaultGateway(writeNamespace),
-			},
-			VirtualServices: gatewayv1.VirtualServiceList{
-				vsToTestUpstream,
-			},
-			Upstreams: gloov1.UpstreamList{
-				testUpstream.Upstream,
-			},
-		}
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		envoyInstance.Clean()
-		cancel()
+		testContext.AfterEach()
 	})
 
 	JustBeforeEach(func() {
-		// Create Resources
-		err := testClients.WriteSnapshot(ctx, resourcesToCreate)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Wait for a proxy to be accepted
-		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		})
-
-		// Ensure the testUpstream is reachable
-		v1helpers.ExpectCurlWithOffset(
-			0,
-			v1helpers.CurlRequest{
-				RootCA: nil,
-				Port:   defaults.HttpPort,
-				Host:   "test.com", // to match the vs-test
-				Path:   "/",
-				Body:   []byte("solo.io test"),
-			},
-			v1helpers.CurlResponse{
-				Status:  http.StatusOK,
-				Message: "",
-			},
-		)
+		testContext.JustBeforeEach()
 	})
 
 	JustAfterEach(func() {
-		// We do not need to clean up the Snapshot that was written in the JustBeforeEach
-		// That is because each test uses its own InMemoryCache
+		testContext.JustAfterEach()
 	})
 
 	Context("filter undefined", func() {
 
 		BeforeEach(func() {
-			resourcesToCreate.Gateways[0].GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				Gzip: nil,
+			}
+
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
 			}
 		})
 
@@ -145,7 +69,8 @@ var _ = Describe("gzip", func() {
 	Context("filter defined", func() {
 
 		BeforeEach(func() {
-			resourcesToCreate.Gateways[0].GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				Gzip: &gloogzip.Gzip{
 					MemoryLevel: &wrappers.UInt32Value{
 						Value: 5,
@@ -156,6 +81,10 @@ var _ = Describe("gzip", func() {
 						Value: 12,
 					},
 				},
+			}
+
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
 			}
 		})
 
