@@ -21,10 +21,7 @@ import (
 )
 
 var (
-	printer            printers.P
-	ApiVersionMismatch = func(expected, actual string) error {
-		return eris.Errorf("Expected ApiVersion [%s] but found [%s]", expected, actual)
-	}
+	printer printers.P
 )
 
 const (
