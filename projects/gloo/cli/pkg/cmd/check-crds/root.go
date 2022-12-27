@@ -105,7 +105,7 @@ func getDeployedVersion(ctx context.Context, opts *options.Options) (string, err
 
 // preprocessCRD sets fields that would be set on the crd when deployed to a cluster but arent currently set
 // crd.Spec.Names.Singular defaults to lowercased crd.Spec.Names.Kind if unset
-// crd.Spec.Conversion defaults to apiextv1.NoneConverter if unset
+// crd.Spec.Conversion.Strategy defaults to apiextv1.NoneConverter if unset
 func preprocessCRD(crd *apiextv1.CustomResourceDefinition) {
 	if crd.Spec.Names.Singular != "" {
 		crd.Spec.Names.Singular = strings.ToLower(crd.Spec.Names.Kind)
