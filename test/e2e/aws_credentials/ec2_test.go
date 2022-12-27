@@ -37,11 +37,11 @@ var _ = Describe("", func() {
 		secretClient, err := getInMemorySecretClient(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
+		// In the BeforeSuite, we validate that credentials are present
+		// Therefore, if somehow we have reached here, we error loudly
 		localAwsCredentials := credentials.NewSharedCredentials("", "")
 		v, err := localAwsCredentials.Get()
-		if err != nil {
-			Fail("no AWS creds available")
-		}
+		Expect(err).NotTo(HaveOccurred())
 
 		secret = &v1.Secret{
 			Metadata: &core.Metadata{
@@ -57,7 +57,6 @@ var _ = Describe("", func() {
 		}
 		_, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
-
 	}
 
 	BeforeEach(func() {
@@ -145,7 +144,7 @@ func getInMemorySecretClient(ctx context.Context) (v1.SecretClient, error) {
 	if err != nil {
 		return nil, eris.Wrapf(err, "creating Secrets client")
 	}
-	if err := secretClient.Register(); err != nil {
+	if err = secretClient.Register(); err != nil {
 		return nil, err
 	}
 	return secretClient, nil
