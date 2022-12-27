@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	OutputFlag  = "output"
-	FileFlag    = "file"
-	DryRunFlag  = "dry-run"
-	VersionFlag = "version"
+	OutputFlag     = "output"
+	FileFlag       = "file"
+	DryRunFlag     = "dry-run"
+	VersionFlag    = "version"
+	LocalChartFlag = "local-chart"
 )
 
 func AddCheckOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
@@ -24,6 +25,10 @@ func AddCheckOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 
 func AddVersionFlag(set *pflag.FlagSet, version *string) {
 	set.StringVarP(version, VersionFlag, "", "", "version of gloo's CRDs to check against")
+}
+
+func AddLocalChartFlag(set *pflag.FlagSet, localChart *string) {
+	set.StringVarP(localChart, LocalChartFlag, "", "", "check against CRDs in helm chart at path specified by this flag (supersedes --version)")
 }
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {

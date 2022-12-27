@@ -456,5 +456,6 @@ type Check struct {
 }
 
 type CheckCRD struct {
-	Version string
+	Version    string
+	LocalChart string
 }

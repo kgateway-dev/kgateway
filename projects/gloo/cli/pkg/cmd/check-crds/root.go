@@ -24,6 +24,10 @@ var (
 	printer printers.P
 )
 
+const (
+	helmChartRepo = "https://storage.googleapis.com/solo-public-helm/charts/"
+)
+
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   constants.CHECK_CRD_COMMAND.Use,
@@ -38,6 +42,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddVersionFlag(pflags, &opts.CheckCRD.Version)
+	flagutils.AddLocalChartFlag(pflags, &opts.CheckCRD.LocalChart)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -50,9 +55,13 @@ func CheckCRDS(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
-	acceptedCRDs, err := getCRDsFromHelm("https://storage.googleapis.com/solo-public-helm/charts/gloo-" + version + ".tgz")
+	chartPath := helmChartRepo + "gloo-" + version + ".tgz"
+	if opts.CheckCRD.LocalChart != "" {
+		chartPath = opts.CheckCRD.LocalChart
+	}
+	acceptedCRDs, err := getCRDsFromHelm(chartPath)
 	if err != nil {
-		return eris.Wrapf(err, "Error getting names and definitions of CRDs for version %s", version)
+		return eris.Wrapf(err, "Error getting names and definitions of CRDs for version %s")
 	}
 	clusterCRDs, err := getCRDsInCluster()
 	if err != nil {
