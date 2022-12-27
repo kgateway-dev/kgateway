@@ -17,8 +17,9 @@ glooctl check-crds [flags]
 ### Options
 
 ```
-  -h, --help             help for check-crds
-      --version string   version of gloo's CRDs to check against
+  -h, --help                 help for check-crds
+      --local-chart string   check against CRDs in helm chart at path specified by this flag (supersedes --version)
+      --version string       version of gloo's CRDs to check against
 ```
 
 ### Options inherited from parent commands
