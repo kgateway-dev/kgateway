@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"time"
+
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -21,7 +24,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -41,6 +43,11 @@ var _ = Describe("Consul e2e", func() {
 	)
 
 	BeforeEach(func() {
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.Consul(),
+			helpers.LinuxOnly("Unknown"),
+		)
+
 		ctx, cancel = context.WithCancel(context.Background())
 
 		defaults.HttpPort = services.NextBindPort()
@@ -80,8 +87,6 @@ var _ = Describe("Consul e2e", func() {
 			svc1, svc2, svc3 *v1helpers.TestUpstream
 			ro               *services.RunOptions
 		)
-
-		const writeNamespace = defaults.GlooSystem
 
 		queryService := func() (string, error) {
 			response, err := http.Get(fmt.Sprintf("http://localhost:%d", envoyPort))
@@ -126,8 +131,7 @@ var _ = Describe("Consul e2e", func() {
 			envoyPort = defaults.HttpPort
 			envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
-			envoyInstance.RestXdsPort = uint32(testClients.RestXdsPort)
-			err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+			err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Run two simple web applications locally
@@ -490,7 +494,7 @@ func getProxyWithConsulRoute(ns string, bindPort uint32) *gloov1.Proxy {
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "::",
+			BindAddress: net.IPv4zero.String(),
 			BindPort:    bindPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{

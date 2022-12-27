@@ -137,7 +137,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			WithNamespace(testHelper.InstallNamespace).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
-			WithRouteActionToDestination(helper.TestrunnerName, testRunnerDestination).
+			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
 			Build()
 
 		// The set of resources that these tests will generate
@@ -394,7 +394,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					WithNamespace(testHelper.InstallNamespace).
 					WithDomain(helper.HttpEchoName).
 					WithRoutePrefixMatcher(helper.HttpEchoName, "/").
-					WithRouteActionToDestination(helper.HttpEchoName, httpEchoDestination).
+					WithRouteActionToSingleDestination(helper.HttpEchoName, httpEchoDestination).
 					Build()
 
 				glooResources.VirtualServices = []*gatewayv1.VirtualService{httpEchoVs}
@@ -576,7 +576,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						WithNamespace(testHelper.InstallNamespace).
 						WithDomain("petstore.com").
 						WithRoutePrefixMatcher(petstoreName, "/").
-						WithRouteActionToDestination(petstoreName,
+						WithRouteActionToSingleDestination(petstoreName,
 							&gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
 									Upstream: &core.ResourceRef{
