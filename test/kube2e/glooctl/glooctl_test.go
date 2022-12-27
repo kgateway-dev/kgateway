@@ -509,7 +509,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 	})
 	Context("check-crds", func() {
 		It("validate correct CRDs", func() {
-			_, err := runGlooctlCommand("check-crds", "--version", os.Getenv("VERSION"))
+			_, err := runGlooctlCommand("check-crds")
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("fails with CRD mismatch", func() {
