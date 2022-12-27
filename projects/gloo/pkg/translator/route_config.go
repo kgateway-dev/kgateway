@@ -806,8 +806,7 @@ func ValidateRoutePath(s string) bool {
 	if s == "" {
 		return true
 	}
-	// TODO-JAKE add in /  because paths can have them
-	re, err := regexp.Compile("^(?:([a-z0-9A-Z:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$")
+	re, err := regexp.Compile("^(?:([/a-z0-9A-Z:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$")
 	if err != nil {
 		return false
 	}

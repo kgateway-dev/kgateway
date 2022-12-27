@@ -55,7 +55,7 @@ var _ = Describe("Route Configs", func() {
 			Expect(translator.ValidateRoutePath(string(c))).To(Equal(true))
 		}
 		// invalid characters
-		invalid := "<>?/\\|[]{}\"^%#"
+		invalid := "<>?\\|[]{}\"^%#"
 		for _, c := range invalid {
 			Expect(translator.ValidateRoutePath(string(c))).To(Equal(false))
 		}
