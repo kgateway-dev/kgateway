@@ -24,10 +24,6 @@ var (
 	printer printers.P
 )
 
-const (
-	v1 = "apiextensions.k8s.io/v1"
-)
-
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   constants.CHECK_CRD_COMMAND.Use,
