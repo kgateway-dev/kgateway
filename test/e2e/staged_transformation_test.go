@@ -5,8 +5,12 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"net/http"
 
@@ -381,119 +385,77 @@ var _ = Describe("Staged Transformation", func() {
 		})
 	})
 
-	/*
-		Context("with auth", func() {
+	Context("with auth", func() {
 
-			BeforeEach(func() {
-				// this upstream doesn't need to exist - in fact, we want ext auth to fail.
-				extAuthUpstream := &gloov1.Upstream{
-					Metadata: &core.Metadata{
-						Name:      "extauth-server",
-						Namespace: "default",
-					},
-					UseHttp2: &wrappers.BoolValue{Value: true},
-					UpstreamType: &gloov1.Upstream_Static{
-						Static: &gloov1static.UpstreamSpec{
-							Hosts: []*gloov1static.Host{{
-								Addr: "127.2.3.4",
-								Port: 1234,
-							}},
-						},
-					},
-				}
-
-				testContext.ResourcesToCreate().Upstreams = append(testContext.ResourcesToCreate().Upstreams, extAuthUpstream)
-
-				testContext.SetRunSettings(&gloov1.Settings{Extauth: &extauthv1.Settings{
-					ExtauthzServerRef: extAuthUpstream.GetMetadata().Ref(),
-				}})
-			})
-
-			Context("disabled", func() {
-
-
-			})
-
-			Context("enabled", func() {
-
-			})
-
-			TestUpstreamReachable := func() {
-				Eventually(func() error {
-					resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
-					if resp != nil && resp.StatusCode != 403 {
-						return errors.New("Expected status 403")
-					}
-					return err
-				}, "30s", "1s").ShouldNot(HaveOccurred())
-			}
-
-			It("should transform response code details", func() {
-				setProxyWithModifier(&transformation.TransformationStages{
-					Early: &transformation.RequestResponseTransformations{
-						ResponseTransforms: []*transformation.ResponseMatch{{
-							ResponseCodeDetails: "ext_authz_error",
-							ResponseTransformation: &transformation.Transformation{
-								TransformationType: &transformation.Transformation_TransformationTemplate{
-									TransformationTemplate: &envoytransformation.TransformationTemplate{
-										ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-										BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-											Body: &envoytransformation.InjaTemplate{
-												Text: "early-transformed",
-											},
-										},
-									},
-								},
-							},
+		BeforeEach(func() {
+			// this upstream doesn't need to exist - in fact, we want ext auth to fail.
+			extAuthUpstream := &gloov1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      "extauth-server",
+					Namespace: "default",
+				},
+				UseHttp2: &wrappers.BoolValue{Value: true},
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &gloov1static.UpstreamSpec{
+						Hosts: []*gloov1static.Host{{
+							Addr: "127.2.3.4",
+							Port: 1234,
 						}},
 					},
-				}, func(vs *gloov1.VirtualHost) {
-					vs.Options.Extauth = &extauthv1.ExtAuthExtension{
-						Spec: &extauthv1.ExtAuthExtension_CustomAuth{
-							CustomAuth: &extauthv1.CustomAuth{},
-						},
-					}
-				})
-				TestUpstreamReachable()
-				// send a request and expect it transformed!
-				res, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
-				Expect(err).NotTo(HaveOccurred())
+				},
+			}
 
-				body, err := ioutil.ReadAll(res.Body)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(body)).To(Equal("early-transformed"))
-			})
+			testContext.ResourcesToCreate().Upstreams = append(testContext.ResourcesToCreate().Upstreams, extAuthUpstream)
 
-			It("should not transform when auth succeeds", func() {
-				testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) {
-					vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
-						StagedTransformations: &transformation.TransformationStages{
-							Early: &transformation.RequestResponseTransformations{
-								ResponseTransforms: []*transformation.ResponseMatch{{
-									ResponseCodeDetails: "ext_authz_error",
-									ResponseTransformation: &transformation.Transformation{
-										TransformationType: &transformation.Transformation_TransformationTemplate{
-											TransformationTemplate: &envoytransformation.TransformationTemplate{
-												ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-												BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-													Body: &envoytransformation.InjaTemplate{
-														Text: "early-transformed",
-													},
+			testContext.SetRunSettings(&gloov1.Settings{Extauth: &extauthv1.Settings{
+				ExtauthzServerRef: extAuthUpstream.GetMetadata().Ref(),
+			}})
+		})
+
+		It("should transform response code details", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vsBuilder := helpers.BuilderFromVirtualService(vs)
+				vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Early: &transformation.RequestResponseTransformations{
+							ResponseTransforms: []*transformation.ResponseMatch{{
+								ResponseCodeDetails: "ext_authz_error",
+								ResponseTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &envoytransformation.TransformationTemplate{
+											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+												Body: &envoytransformation.InjaTemplate{
+													Text: "early-transformed",
 												},
 											},
 										},
 									},
-								}},
-							},
+								},
+							}},
 						},
-					}
+					},
+					Extauth: &extauthv1.ExtAuthExtension{
+						Spec: &extauthv1.ExtAuthExtension_CustomAuth{
+							CustomAuth: &extauthv1.CustomAuth{},
+						},
+					},
 				})
-
-				// send a request and expect it not transformed!
-				eventuallyRequestMatches("test", testmatchers.HaveExactResponseBody("test"))
+				return vsBuilder.Build()
 			})
+
+			req := newRequestWithBody("test")
+			// send a request and expect it transformed!
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusForbidden,
+					Body:       "early-transformed",
+				}))
+			}, "15s", ".5s").Should(Succeed())
 		})
 
-	*/
+	})
 
 })
