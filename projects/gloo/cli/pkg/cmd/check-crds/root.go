@@ -61,11 +61,11 @@ func CheckCRDS(opts *options.Options) error {
 	}
 	acceptedCRDs, err := getCRDsFromHelm(chartPath)
 	if err != nil {
-		return eris.Wrapf(err, "Error getting names and definitions of CRDs from %s", chartPath)
+		return eris.Wrapf(err, "Error getting CRDs from %s", chartPath)
 	}
 	clusterCRDs, err := getCRDsInCluster()
 	if err != nil {
-		return eris.Wrapf(err, "Error getting names and definitions of CRDs in current cluster")
+		return eris.Wrapf(err, "Error getting CRDs in current cluster")
 	}
 
 	lookupTable := map[string]apiextv1.CustomResourceDefinition{}
