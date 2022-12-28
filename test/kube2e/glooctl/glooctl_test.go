@@ -507,6 +507,23 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
 		})
 	})
+	Context("check-crds", func() {
+		It("validates correct CRDs", func() {
+			if testHelper.ReleasedVersion != "" {
+				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ReleasedVersion)
+				Expect(err).ToNot(HaveOccurred())
+			} else {
+				chartUri := filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+				_, err := runGlooctlCommand("check-crds", "--local-chart", chartUri)
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+		It("fails with CRD mismatch", func() {
+			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("One or more CRDs are out of date"))
+		})
+	})
 })
 
 // runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
