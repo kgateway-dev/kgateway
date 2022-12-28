@@ -454,26 +454,6 @@ var _ = Describe("Translator", func() {
 		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(MatchProto(&wrappers.UInt32Value{Value: 4096}))
 	})
 
-	It("validate invalid route with exact matcher", func() {
-		proxyClone := proto.Clone(proxy).(*v1.Proxy)
-		proxyRoute := proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].GetRoutes()[0]
-		proxyRoute.Matchers = []*matchers.Matcher{
-			{
-				PathSpecifier: &matchers.Matcher_Exact{
-					Exact: "?",
-				},
-			},
-		}
-
-		snap, errs, report := translator.Translate(params, proxyClone)
-		Expect(errs.Validate()).NotTo(HaveOccurred())
-		Expect(snap).NotTo(BeNil())
-		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
-
-		routes := snap.GetResources(types.RouteTypeV3)
-		Expect(routes.Version).To(Equal("routes-validationErr"))
-	})
-
 	Context("Auth configs", func() {
 		It("will error if auth config is missing", func() {
 			proxyClone := proto.Clone(proxy).(*v1.Proxy)
