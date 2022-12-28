@@ -30,9 +30,26 @@ import (
 )
 
 var (
-	NoDestinationSpecifiedError = errors.New("must specify at least one weighted destination for multi destination routes")
+	// invalidPathSequences are path sequences that should not be contained in a path
+	invalidPathSequences = []string{"//", "/./", "/../", "%2f", "%2F", "#"}
+	// invalidPathSuffixes are path suffixes that should be at the end of a path
+	invalidPathSuffixes = []string{"/..", "/."}
+	// TODO-JAKE why no @
+	// validPathCharacters = "^[A-Za-z0-9\\/\\-._~%!$&'()*+,;=:]+$"
+	// TODO-JAKE do we want to include the validation for Hexes [%][0-9a-fA-F]{2}
+	// validCharacterRegex pattern based off RFC 3986
+	validCharacterRegex = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
-	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not")
+	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
+	SubsetsMisconfiguredErr           = errors.New("route has a subset config, but the upstream does not")
+	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validCharacterRegex)
+	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validCharacterRegex)
+	PathContainsInvalidCharacterError = func(s, invalid string) error {
+		return errors.Errorf("path [%s] cannot contain [%s]", s, invalid)
+	}
+	PathEndsWithInvalidCharactersError = func(s, invalid string) error {
+		return errors.Errorf("path [%s] cannot end with [%s]", s, invalid)
+	}
 )
 
 type RouteConfigurationTranslator interface {
@@ -186,7 +203,9 @@ func initRoutes(
 				generatedName,
 			)
 		}
-		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
+		// TODO-JAKE may need to change and validate the route here instead.... after the case, so that we keep
+		// the Exported Method in Sync with the current versioning
+		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, routeReport, matcher, generatedName)
 		out[i] = &envoy_config_route_v3.Route{
 			Match: &match,
 		}
@@ -201,7 +220,7 @@ func initRoutes(
 }
 
 // utility function to transform gloo matcher to envoy route matcher
-func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) envoy_config_route_v3.RouteMatch {
+func GlooMatcherToEnvoyMatcher(ctx context.Context, routeReport *validationapi.RouteReport, matcher *matchers.Matcher, name string) envoy_config_route_v3.RouteMatch {
 	match := envoy_config_route_v3.RouteMatch{
 		Headers:         envoyHeaderMatcher(ctx, matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
@@ -216,7 +235,7 @@ func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) e
 	}
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
-	setEnvoyPathMatcher(ctx, matcher, &match)
+	setEnvoyPathMatcher(ctx, routeReport, matcher, &match, name)
 	match.CaseSensitive = matcher.GetCaseSensitive()
 	return match
 }
@@ -279,9 +298,11 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		h.runRouteActionPlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
+		hostRedirect := action.RedirectAction.GetHostRedirect()
+		validatePath(hostRedirect, out.Name, routeReport)
 		out.Action = &envoy_config_route_v3.Route_Redirect{
 			Redirect: &envoy_config_route_v3.RedirectAction{
-				HostRedirect:           action.RedirectAction.GetHostRedirect(),
+				HostRedirect:           hostRedirect,
 				ResponseCode:           envoy_config_route_v3.RedirectAction_RedirectResponseCode(action.RedirectAction.GetResponseCode()),
 				SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.GetHttpsRedirect()},
 				StripQuery:             action.RedirectAction.GetStripQuery(),
@@ -290,12 +311,16 @@ func (h *httpRouteConfigurationTranslator) setAction(
 
 		switch pathRewrite := action.RedirectAction.GetPathRewriteSpecifier().(type) {
 		case *v1.RedirectAction_PathRedirect:
+			pathRedirect := pathRewrite.PathRedirect
+			validatePath(pathRedirect, out.Name, routeReport)
 			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PathRedirect{
-				PathRedirect: pathRewrite.PathRedirect,
+				PathRedirect: pathRedirect,
 			}
 		case *v1.RedirectAction_PrefixRewrite:
+			prefixRewrite := pathRewrite.PrefixRewrite
+			validatePath(prefixRewrite, out.Name, routeReport)
 			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PrefixRewrite{
-				PrefixRewrite: pathRewrite.PrefixRewrite,
+				PrefixRewrite: prefixRewrite,
 			}
 		case *v1.RedirectAction_RegexRewrite:
 			regex, err := regexutils.ConvertRegexMatchAndSubstitute(params.Ctx, pathRewrite.RegexRewrite)
@@ -569,17 +594,21 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch) {
+func setEnvoyPathMatcher(ctx context.Context, routeReport *validationapi.RouteReport, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch, name string) {
 	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
+		exact := path.Exact
+		validatePath(exact, name, routeReport)
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Path{
-			Path: path.Exact,
+			Path: exact,
 		}
 	case *matchers.Matcher_Regex:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_SafeRegex{
 			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
+		prefix := path.Prefix
+		validatePath(prefix, name, routeReport)
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
 			Prefix: path.Prefix,
 		}
@@ -799,34 +828,35 @@ func isWarningErr(err error) bool {
 	}
 }
 
-// ValidateRoutePath will validate a string for all
+func validatePath(path, name string, routeReport *validationapi.RouteReport) {
+	if err := ValidateRoutePath(path); err != nil {
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, err.Error(), name)
+	}
+}
+
+// ValidateRoutePath will validate a string for all characters according to RFC 3986
 // "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 // https://www.rfc-editor.org/rfc/rfc3986/
-func ValidateRoutePath(s string) bool {
+func ValidateRoutePath(s string) error {
 	if s == "" {
-		return true
+		return nil
 	}
-	invalidPathSequences := []string{"//", "/./", "/../", "%2f", "%2F", "#"}
-	invalidPathSuffixes := []string{"/..", "/."}
-	// validPathCharacters = "^[A-Za-z0-9\\/\\-._~%!$&'()*+,;=:]+$"
-	// TODO-JAKE why no @
-	// TODO-JAKE do we want to include the validation for Hexes [%][0-9a-fA-F]{2}
-	re, err := regexp.Compile("^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$")
+	re, err := regexp.Compile(validCharacterRegex)
 	if err != nil {
-		return false
+		return CompilingRoutePathRegexError
 	}
 	if !re.Match([]byte(s)) {
-		return false
+		return ValidRoutePatternError
 	}
 	for _, invalid := range invalidPathSequences {
 		if strings.Contains(s, invalid) {
-			return false
+			return PathContainsInvalidCharacterError(s, invalid)
 		}
 	}
 	for _, invalid := range invalidPathSuffixes {
 		if strings.HasSuffix(s, invalid) {
-			return false
+			return PathEndsWithInvalidCharactersError(s, invalid)
 		}
 	}
-	return true
+	return nil
 }

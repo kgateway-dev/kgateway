@@ -380,28 +380,28 @@ func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) 
 
 // ValidateRouteConfig will validate all the Virtual Hosts routes paths
 func ValidateRouteConfig(ecr *envoy_config_route_v3.RouteConfiguration) bool {
-	for _, vh := range ecr.GetVirtualHosts() {
-		for _, r := range vh.GetRoutes() {
-			match := r.GetMatch()
-			route := r.GetRoute()
-			re := r.GetRedirect()
-			valid := ValidateRoutePath(match.GetPath())
-			valid = valid && ValidateRoutePath(match.GetPrefix())
-			valid = valid && ValidateRoutePath(match.GetPathSeparatedPrefix())
-			valid = valid && ValidateRoutePath(route.GetPrefixRewrite())
-			valid = valid && ValidateRoutePath(re.GetPrefixRewrite())
-			valid = valid && ValidateRoutePath(re.GetPathRedirect())
-			valid = valid && ValidateRoutePath(re.GetHostRedirect())
-			valid = valid && ValidateRoutePath(re.GetSchemeRedirect())
-			// what about RegexRewrite?, this is a special type of case that will need to be handled
-			// route.GetRegexRewrite()
-			// match.GetSafeRegex()
-			// re.GetRegexRewrite()
-			if !valid {
-				return false
-			}
-		}
-	}
+	// for _, vh := range ecr.GetVirtualHosts() {
+	// 	for _, r := range vh.GetRoutes() {
+	// 		match := r.GetMatch()
+	// 		route := r.GetRoute()
+	// 		re := r.GetRedirect()
+	// 		valid := ValidateRoutePath(match.GetPath())
+	// 		valid = valid && ValidateRoutePath(match.GetPrefix())
+	// 		valid = valid && ValidateRoutePath(match.GetPathSeparatedPrefix())
+	// 		valid = valid && ValidateRoutePath(route.GetPrefixRewrite())
+	// 		valid = valid && ValidateRoutePath(re.GetPrefixRewrite())
+	// 		valid = valid && ValidateRoutePath(re.GetPathRedirect())
+	// 		valid = valid && ValidateRoutePath(re.GetHostRedirect())
+	// 		valid = valid && ValidateRoutePath(re.GetSchemeRedirect())
+	// 		// what about RegexRewrite?, this is a special type of case that will need to be handled
+	// 		// route.GetRegexRewrite()
+	// 		// match.GetSafeRegex()
+	// 		// re.GetRegexRewrite()
+	// 		if !valid {
+	// 			return false
+	// 		}
+	// 	}
+	// }
 	return true
 }
 

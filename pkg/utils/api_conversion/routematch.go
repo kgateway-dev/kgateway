@@ -20,6 +20,7 @@ import (
 
 // todo consider movinng this to solo-projects
 // used in enterprise code
+// TODO-JAKE is this deprecated
 func ToGlooRouteMatch(routeMatch *envoy_config_route_v3.RouteMatch) *envoyroute_gloo.RouteMatch {
 	if routeMatch == nil {
 		return nil
@@ -34,6 +35,7 @@ func ToGlooRouteMatch(routeMatch *envoy_config_route_v3.RouteMatch) *envoyroute_
 	}
 	switch typed := routeMatch.GetPathSpecifier().(type) {
 	case *envoy_config_route_v3.RouteMatch_Prefix:
+		// TODO-JAKE-RV
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Prefix{
 			Prefix: typed.Prefix,
 		}
@@ -42,6 +44,7 @@ func ToGlooRouteMatch(routeMatch *envoy_config_route_v3.RouteMatch) *envoyroute_
 			Regex: typed.SafeRegex.GetRegex(),
 		}
 	case *envoy_config_route_v3.RouteMatch_Path:
+		// TODO-JAKE-RV
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Path{
 			Path: typed.Path,
 		}

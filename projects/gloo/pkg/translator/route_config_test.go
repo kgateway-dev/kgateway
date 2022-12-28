@@ -11,8 +11,13 @@ import (
 )
 
 var _ = Describe("Route Configs", func() {
+
 	DescribeTable("validate route path", func(path string, expectedValue bool) {
-		Expect(translator.ValidateRoutePath(path)).To(Equal(expectedValue))
+		if expectedValue {
+			Expect(translator.ValidateRoutePath(path)).ToNot(HaveOccurred())
+		} else {
+			Expect(translator.ValidateRoutePath(path)).To(HaveOccurred())
+		}
 	},
 		Entry("Hex", "%af", true),
 		Entry("Hex Camel", "%Af", true),
@@ -40,32 +45,32 @@ var _ = Describe("Route Configs", func() {
 		// unreserved
 		// alpha Upper and Lower
 		for i := 'a'; i <= 'z'; i++ {
-			Expect(translator.ValidateRoutePath(string(i))).To(Equal(true))
-			Expect(translator.ValidateRoutePath(strings.ToUpper(string(i)))).To(Equal(true))
+			Expect(translator.ValidateRoutePath(string(i))).ToNot(HaveOccurred())
+			Expect(translator.ValidateRoutePath(strings.ToUpper(string(i)))).ToNot(HaveOccurred())
 		}
 		// digit
 		for i := 0; i < 10; i++ {
-			Expect(translator.ValidateRoutePath(strconv.Itoa(i))).To(Equal(true))
+			Expect(translator.ValidateRoutePath(strconv.Itoa(i))).ToNot(HaveOccurred())
 		}
 		unreservedChars := "-._~"
 		for _, c := range unreservedChars {
-			Expect(translator.ValidateRoutePath(string(c))).To(Equal(true))
+			Expect(translator.ValidateRoutePath(string(c))).ToNot(HaveOccurred())
 		}
 		// sub-delims
 		subDelims := "!$&'()*+,;="
 		Expect(len(subDelims)).To(Equal(11))
 		for _, c := range subDelims {
-			Expect(translator.ValidateRoutePath(string(c))).To(Equal(true))
+			Expect(translator.ValidateRoutePath(string(c))).ToNot(HaveOccurred())
 		}
 		// pchar
 		pchar := ":@"
 		for _, c := range pchar {
-			Expect(translator.ValidateRoutePath(string(c))).To(Equal(true))
+			Expect(translator.ValidateRoutePath(string(c))).ToNot(HaveOccurred())
 		}
 		// invalid characters
 		invalid := "<>?\\|[]{}\"^%#"
 		for _, c := range invalid {
-			Expect(translator.ValidateRoutePath(string(c))).To(Equal(false))
+			Expect(translator.ValidateRoutePath(string(c))).To(HaveOccurred())
 		}
 	})
 
