@@ -25,6 +25,7 @@ var (
 )
 
 const (
+	betaMessage   = "NOTE: this feature is still in beta and may return false positives, if this is suspected use the --show-yaml flag and inspect CRDs manually\n "
 	helmChartRepo = "https://storage.googleapis.com/solo-public-helm/charts/"
 )
 
@@ -36,13 +37,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		RunE: func(cmd *cobra.Command, args []string) error {
 			printer = printers.P{OutputType: opts.Top.Output}
 			printer.CheckResult = printer.NewCheckResult()
-
-			return CheckCRDS(opts)
+			err := CheckCRDS(opts)
+			printer.AppendMessage(betaMessage)
+			return err
 		},
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddVersionFlag(pflags, &opts.CheckCRD.Version)
 	flagutils.AddLocalChartFlag(pflags, &opts.CheckCRD.LocalChart)
+	flagutils.AddShowYamlFlag(pflags, &opts.CheckCRD.ShowYaml)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -81,14 +84,20 @@ func CheckCRDS(opts *options.Options) error {
 		} else {
 			clusterCrdBytes, _ := yaml.Marshal(clusterCrd.Spec)
 			if string(expectedCrdBytes) != string(clusterCrdBytes) {
-				diffs = append(diffs, crd.Name)
+				if opts.CheckCRD.ShowYaml {
+					diffs = append(diffs, "Yaml for deployed "+clusterCrd.Name+" :", string(clusterCrdBytes))
+					diffs = append(diffs, "Yaml for expected "+crd.Name+":", string(expectedCrdBytes))
+				} else {
+					diffs = append(diffs, crd.Name)
+				}
 			}
 		}
 	}
 	if len(diffs) != 0 {
 		crdsWithDiffs := strings.Join(diffs, "\n")
-		errString := strings.Join([]string{"Diffs detected on the following CRDs:", crdsWithDiffs, "See https://docs.solo.io/gloo-edge/latest/operations/upgrading/upgrade_steps/#step-3-apply-minor-version-specific-changes for more details"}, "\n\n")
-		return eris.New(errString)
+		errString := strings.Join([]string{"Diffs detected on the following CRDs:", crdsWithDiffs}, "\n\n")
+		printer.AppendMessage(errString)
+		return eris.New("One or more CRDs are out of date, see https://docs.solo.io/gloo-edge/latest/operations/upgrading/upgrade_steps/#step-3-apply-minor-version-specific-changes for more details")
 	}
 	printer.AppendMessage("All CRDs are up to date")
 	return nil

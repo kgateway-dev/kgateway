@@ -458,4 +458,5 @@ type Check struct {
 type CheckCRD struct {
 	Version    string
 	LocalChart string
+	ShowYaml   bool
 }

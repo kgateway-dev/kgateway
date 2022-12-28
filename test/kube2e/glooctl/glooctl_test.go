@@ -521,7 +521,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		It("fails with CRD mismatch", func() {
 			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Diffs detected on the following CRDs:"))
+			Expect(err.Error()).To(ContainSubstring("One or more CRDs are out of date"))
 		})
 	})
 })
