@@ -229,37 +229,6 @@ var _ = Describe("Plugin", func() {
 				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
 			})
 
-			It("Filter test", func() {
-
-				accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(accessLogConfigs).To(HaveLen(1))
-				alConfig := accessLogConfigs[0]
-
-				alsFilter := alConfig.GetFilter().GetFilterSpecifier()
-				expectedFilter := &envoyal.AccessLogFilter_TraceableFilter{
-					TraceableFilter: &envoyal.TraceableFilter{},
-				}
-
-				Expect(alsFilter).To(Equal(expectedFilter))
-
-				fmt.Printf("%+v", alsFilter)
-				Expect(alConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
-				var falCfg envoygrpc.HttpGrpcAccessLogConfig
-				err = translatorutil.ParseTypedConfig(alConfig, &falCfg)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(falCfg.AdditionalRequestHeadersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.AdditionalResponseHeadersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
-				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
-				Expect(envoyGrpc).NotTo(BeNil())
-				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
-			})
-
-		})
-
 		Context("Access log with single filter", func() {
 
 			var (
