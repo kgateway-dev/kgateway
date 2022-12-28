@@ -12,11 +12,13 @@ import (
 )
 
 // PatchResource mutates an existing persisted resource, retrying if a resourceVersionError is encountered
+// The mutator method must return the full object that will be persisted, any side effects from the mutator will be ignored
 func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource) resources.Resource, client clients.ResourceClient) error {
 	return PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
 }
 
 // PatchResourceWithOffset mutates an existing persisted resource, retrying if a resourceVersionError is encountered
+// The mutator method must return the full object that will be persisted, any side effects from the mutator will be ignored
 func PatchResourceWithOffset(offset int, ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource) resources.Resource, client clients.ResourceClient) error {
 	// There is a potential bug in our resource writing implementation that leads to test flakes
 	// https://github.com/solo-io/gloo/issues/7044
