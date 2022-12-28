@@ -59,7 +59,7 @@ var _ = Describe("CORS", func() {
 		BeforeEach(func() {
 			vsWithCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
 				WithName("vs-cors").
-				WithDomain(allowedOrigin).
+				WithDomain(e2e.DefaultHost).
 				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher("route", "/cors").
 				WithRouteOptions("route", &gloov1.RouteOptions{
@@ -87,18 +87,16 @@ var _ = Describe("CORS", func() {
 				g.Expect(cfg).To(MatchRegexp(allowedOrigin))
 			}, "10s", ".1s").ShouldNot(HaveOccurred())
 
-			preFlightRequest, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			preFlightRequest.Host = allowedOrigin
-
 			By("Request with allowed origin")
-			req := preFlightRequest
-			Eventually(func(g Gomega) {
-				req.Header.Set("Origin", allowedOrigins[0])
-				req.Header.Set("Access-Control-Request-Method", http.MethodGet)
-				req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
+			reqWithAllowedOrigin, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			reqWithAllowedOrigin.Host = e2e.DefaultHost
+			reqWithAllowedOrigin.Header.Set("Origin", allowedOrigins[0])
+			reqWithAllowedOrigin.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			reqWithAllowedOrigin.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
 
-				resp, err := http.DefaultClient.Do(req)
+			Eventually(func(g Gomega) {
+				resp, err := http.DefaultClient.Do(reqWithAllowedOrigin)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
@@ -107,13 +105,15 @@ var _ = Describe("CORS", func() {
 			}).Should(Succeed())
 
 			By("Request with disallowed origin")
-			req = preFlightRequest
-			Eventually(func(g Gomega) {
-				req.Header.Set("Origin", unAllowedOrigin)
-				req.Header.Set("Access-Control-Request-Method", http.MethodGet)
-				req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
+			reqWithDisallowedOrigin, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			reqWithDisallowedOrigin.Host = e2e.DefaultHost
+			reqWithDisallowedOrigin.Header.Set("Origin", unAllowedOrigin)
+			reqWithDisallowedOrigin.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			reqWithDisallowedOrigin.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
 
-				resp, err := http.DefaultClient.Do(req)
+			Eventually(func(g Gomega) {
+				resp, err := http.DefaultClient.Do(reqWithDisallowedOrigin)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					requestACHMethods: BeEmpty(),
@@ -146,7 +146,7 @@ var _ = Describe("CORS", func() {
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
 				g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
-			}).ShouldNot(HaveOccurred())
+			}).Should(Succeed())
 		})
 	})
 

@@ -11,12 +11,12 @@ import (
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 )
 
-// PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
+// PatchResource mutates an existing persisted resource, retrying if a resourceVersionError is encountered
 func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource) resources.Resource, client clients.ResourceClient) error {
 	return PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
 }
 
-// PatchResourceWithOffset mutates an existing resource, retrying if a resourceVersionError is encountered
+// PatchResourceWithOffset mutates an existing persisted resource, retrying if a resourceVersionError is encountered
 func PatchResourceWithOffset(offset int, ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource) resources.Resource, client clients.ResourceClient) error {
 	// There is a potential bug in our resource writing implementation that leads to test flakes
 	// https://github.com/solo-io/gloo/issues/7044
