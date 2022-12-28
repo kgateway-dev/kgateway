@@ -806,9 +806,27 @@ func ValidateRoutePath(s string) bool {
 	if s == "" {
 		return true
 	}
-	re, err := regexp.Compile("^(?:([/a-z0-9A-Z:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$")
+	invalidPathSequences := []string{"//", "/./", "/../", "%2f", "%2F", "#"}
+	invalidPathSuffixes := []string{"/..", "/."}
+	// validPathCharacters = "^[A-Za-z0-9\\/\\-._~%!$&'()*+,;=:]+$"
+	// TODO-JAKE why no @
+	// TODO-JAKE do we want to include the validation for Hexes [%][0-9a-fA-F]{2}
+	re, err := regexp.Compile("^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$")
 	if err != nil {
 		return false
 	}
-	return re.Match([]byte(s))
+	if !re.Match([]byte(s)) {
+		return false
+	}
+	for _, invalid := range invalidPathSequences {
+		if strings.Contains(s, invalid) {
+			return false
+		}
+	}
+	for _, invalid := range invalidPathSuffixes {
+		if strings.HasSuffix(s, invalid) {
+			return false
+		}
+	}
+	return true
 }

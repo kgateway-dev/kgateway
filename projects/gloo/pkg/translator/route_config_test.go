@@ -24,6 +24,14 @@ var _ = Describe("Route Configs", func() {
 		Entry("Hex single", "%0", false),
 		Entry("unicode chars", "ƒ©", false),
 		Entry("unicode chars", "¥¨˚∫", false),
+		Entry("//", "hello/something//", false),
+		Entry("/./", "hello/something/./", false),
+		Entry("/../", "hello/something/../", false),
+		Entry("hex slash upper", "hello/something%2F", false),
+		Entry("hex slash lower", "hello/something%2f", false),
+		Entry("hash", "hello/something#", false),
+		Entry("/..", "hello/../something", false),
+		Entry("/.", "hello/./something", false),
 	)
 
 	It("Should validate all seperate characters", func() {
