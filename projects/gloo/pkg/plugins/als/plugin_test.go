@@ -1,8 +1,6 @@
 package als_test
 
 import (
-	"fmt"
-
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -228,6 +226,8 @@ var _ = Describe("Plugin", func() {
 				Expect(envoyGrpc).NotTo(BeNil())
 				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
 			})
+
+		})
 
 		Context("Access log with single filter", func() {
 
