@@ -18,7 +18,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
-
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -46,7 +45,7 @@ var _ = Describe("", func() {
 		secret = &v1.Secret{
 			Metadata: &core.Metadata{
 				Namespace: "default",
-				Name:      region,
+				Name:      "secret",
 			},
 			Kind: &v1.Secret_Aws{
 				Aws: &v1.AwsSecret{
@@ -67,7 +66,6 @@ var _ = Describe("", func() {
 
 	AfterEach(func() {
 		// The secret we created is stored in memory, so it will be cleaned up between test runs
-
 		cancel()
 	})
 
@@ -96,7 +94,7 @@ var _ = Describe("", func() {
 					Port:     80,
 				},
 			},
-			Metadata: &core.Metadata{Name: "with-role", Namespace: "default"},
+			Metadata: &core.Metadata{Name: "with-role-without-secret", Namespace: "default"},
 		}
 		withOutRole := &v1.Upstream{
 			UpstreamType: &v1.Upstream_AwsEc2{
