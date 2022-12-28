@@ -34,14 +34,13 @@ var _ = Describe("Plugin", func() {
 	// to make sure we copied/pasted correctly and that no changes made to the Envoy definitions broke anything
 	Describe("Test each Filter", func() {
 		var (
-			filter_runtime_key                         = "10"
+			FILTER_RUNTIME_KEY                         = "FILTER RUNTIME KEY"
 			STATUS_CODE_VALUE                   uint32 = 400
 			DURATION_FILTER_VALUE               uint32 = 20
 			FRACTIONAL_PERCENT_NUMERATOR        uint32 = 25
 			FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 40
 			HEADER_MATCHER_NAME_STRING                 = "HEADER MATCHER NAME STRING"
-			RESPONSE_FLAGS                             = []string{"string1", "string2", "string3"}
-			//GRPC_STATUSES              = []int{400, 404}
+			RESPONSE_FLAGS                             = []string{"LH", "UH", "UT"}
 		)
 
 		DescribeTable("Test each filter is translated properly",
@@ -169,7 +168,7 @@ var _ = Describe("Plugin", func() {
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 						RuntimeFilter: &accessLogService.RuntimeFilter{
-							RuntimeKey: filter_runtime_key,
+							RuntimeKey: FILTER_RUNTIME_KEY,
 							PercentSampled: &v3.FractionalPercent{
 								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
 								Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
@@ -181,7 +180,7 @@ var _ = Describe("Plugin", func() {
 				&envoyal.AccessLogFilter{
 					FilterSpecifier: &envoyal.AccessLogFilter_RuntimeFilter{
 						RuntimeFilter: &envoyal.RuntimeFilter{
-							RuntimeKey: filter_runtime_key,
+							RuntimeKey: FILTER_RUNTIME_KEY,
 							PercentSampled: &envoy_v31.FractionalPercent{
 								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
 								Denominator: envoy_v31.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
