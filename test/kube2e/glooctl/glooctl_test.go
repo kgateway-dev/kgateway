@@ -509,20 +509,19 @@ var _ = Describe("Kube2e: glooctl", func() {
 	})
 	Context("check-crds", func() {
 		It("validates correct CRDs", func() {
-			chartUri := filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-			_, err := runGlooctlCommand("check-crds", "--local-chart", chartUri)
-			Expect(err).ToNot(HaveOccurred())
+			if testHelper.ReleasedVersion != "" {
+				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ReleasedVersion)
+				Expect(err).ToNot(HaveOccurred())
+			} else {
+				chartUri := filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+				_, err := runGlooctlCommand("check-crds", "--local-chart", chartUri)
+				Expect(err).ToNot(HaveOccurred())
+			}
 		})
 		It("fails with CRD mismatch", func() {
 			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Diffs detected on the following CRDs:"))
-		})
-		It("validates nightly builds", func() {
-			if testHelper.ReleasedVersion != "" {
-				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ReleasedVersion)
-				Expect(err).ToNot(HaveOccurred())
-			}
 		})
 	})
 })
