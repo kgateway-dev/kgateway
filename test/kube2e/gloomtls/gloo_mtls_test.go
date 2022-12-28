@@ -47,7 +47,7 @@ var _ = Describe("Kube2e: mTLS", func() {
 			WithNamespace(testHelper.InstallNamespace).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
-			WithRouteActionToDestination(helper.TestrunnerName, testRunnerDestination).
+			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
 			Build()
 
 		// The set of resources that these tests will generate

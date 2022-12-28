@@ -1,14 +1,17 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
+
+	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/matchers"
+
 	"net/http"
 	"time"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 
@@ -18,159 +21,149 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 var _ = Describe("dynamic forward proxy", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
-		writeNamespace = defaults.GlooSystem
-		testVs         *gatewayv1.VirtualService
+		testContext *e2e.TestContext
 	)
 
-	checkProxy := func() {
-		// ensure the proxy is created
-		Eventually(func() (*gloov1.Proxy, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
-
-	checkVirtualService := func(testVs *gatewayv1.VirtualService) {
-		Eventually(func() (*gatewayv1.VirtualService, error) {
-			return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
-
 	BeforeEach(func() {
-		var err error
-		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
+		testContext = testContextFactory.NewTestContext(
+			helpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
+		)
 
-		// run gloo
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-			Settings: &gloov1.Settings{
-				Gateway: &gloov1.GatewayOptions{
-					Validation: &gloov1.GatewayOptions_ValidationOptions{
-						DisableTransformationValidation: &wrappers.BoolValue{Value: true},
-					},
+		testContext.BeforeEach()
+		testContext.SetRunSettings(&gloov1.Settings{
+			Gloo: &gloov1.GlooOptions{
+				InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
+					// These tests fail when ReplaceInvalidRoutes is true
+					// https://github.com/solo-io/gloo/issues/7577
+					ReplaceInvalidRoutes:     false,
+					InvalidRouteResponseBody: "Dynamic Forward Proxy Response Body",
 				},
 			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// Write Gateway
-		gateway := gatewaydefaults.DefaultGateway(writeNamespace)
-		gateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-			DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
-		}
-		_, err = testClients.GatewayClient.Write(gateway, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		// run envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// write a virtual service so we have a proxy to our test upstream
-		testVs = getTrivialVirtualService(writeNamespace)
-		testVs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{}
-		testVs.VirtualHost.Routes[0].GetRouteAction().Destination = &gloov1.RouteAction_DynamicForwardProxy{
-			DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
-				HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
-			},
-		}
-	})
-
-	JustBeforeEach(func() {
-		// write a virtual service so we have a proxy to our test upstream
-		_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		checkProxy()
-		checkVirtualService(testVs)
+		})
 	})
 
 	AfterEach(func() {
-		envoyInstance.Clean()
-		cancel()
+		testContext.AfterEach()
 	})
 
-	testRequest := func(dest string, updateReq func(r *http.Request)) string {
+	JustBeforeEach(func() {
+		testContext.JustBeforeEach()
+	})
+
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
+	})
+
+	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedBody interface{}) {
 		By("Make request")
-		responseBody := ""
-		EventuallyWithOffset(1, func() error {
-			var client http.Client
-			scheme := "http"
+		EventuallyWithOffset(1, func(g Gomega) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s://%s:%d/get", scheme, "localhost", defaults.HttpPort), nil)
-			if err != nil {
-				return err
-			}
-			if updateReq != nil {
-				updateReq(req)
-			}
-			res, err := client.Do(req)
-			if err != nil {
-				return err
-			}
-			if res.StatusCode != http.StatusOK {
-				return fmt.Errorf("not ok")
-			}
-			p := new(bytes.Buffer)
-			if _, err := io.Copy(p, res.Body); err != nil {
-				return err
-			}
-			defer res.Body.Close()
-			responseBody = p.String()
-			return nil
-		}, "10s", ".1s").Should(BeNil())
-		return responseBody
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
+			g.Expect(err).NotTo(HaveOccurred())
+
+			updateReq(req)
+			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body:       expectedBody,
+			}))
+		}, "10s", ".1s").Should(Succeed())
 	}
 
-	// simpler e2e test without transformation to validate basic behavior
-	It("should proxy http if dynamic forward proxy header provided on request", func() {
-		destEcho := `postman-echo.com`
-		expectedSubstr := `"host":"postman-echo.com"`
-		testReq := testRequest(destEcho, func(r *http.Request) {
-			r.Header.Set("x-rewrite-me", destEcho)
+	Context("without transformation", func() {
+
+		BeforeEach(func() {
+			gw := defaults2.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
+			}
+
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteAction("test", &gloov1.RouteAction{
+					Destination: &gloov1.RouteAction_DynamicForwardProxy{
+						DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
+							HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
+						},
+					},
+				}).
+				Build()
+
+			resourceToCreate := testContext.ResourcesToCreate()
+			resourceToCreate.Gateways = gatewayv1.GatewayList{
+				gw,
+			}
+			resourceToCreate.VirtualServices = gatewayv1.VirtualServiceList{
+				vs,
+			}
 		})
-		Expect(testReq).Should(ContainSubstring(expectedSubstr))
+
+		// simpler e2e test without transformation to validate basic behavior
+		It("should proxy http if dynamic forward proxy header provided on request", func() {
+			destEcho := `postman-echo.com`
+			expectedSubstr := `"host":"postman-echo.com"`
+			eventuallyRequestMatches(destEcho, func(r *http.Request) {
+				r.Host = e2e.DefaultHost
+				r.Header.Set("x-rewrite-me", destEcho)
+			}, ContainSubstring(expectedSubstr))
+		})
 	})
 
 	Context("with transformation can set dynamic forward proxy header to rewrite authority", func() {
 
 		BeforeEach(func() {
-			testVs.VirtualHost.Routes[0].Options.StagedTransformations = &transformation.TransformationStages{
-				Early: &transformation.RequestResponseTransformations{
-					RequestTransforms: []*transformation.RequestMatch{{
-						RequestTransformation: &transformation.Transformation{
-							TransformationType: &transformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &envoytransformation.TransformationTemplate{
-									ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-									Headers: map[string]*envoytransformation.InjaTemplate{
-										"x-rewrite-me": {Text: "postman-echo.com"},
+			gw := defaults2.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
+			}
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteAction("test", &gloov1.RouteAction{
+					Destination: &gloov1.RouteAction_DynamicForwardProxy{
+						DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
+							HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
+						},
+					},
+				}).
+				WithRouteOptions("test", &gloov1.RouteOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Early: &transformation.RequestResponseTransformations{
+							RequestTransforms: []*transformation.RequestMatch{{
+								RequestTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &envoytransformation.TransformationTemplate{
+											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+											Headers: map[string]*envoytransformation.InjaTemplate{
+												"x-rewrite-me": {Text: "postman-echo.com"},
+											},
+										},
 									},
 								},
-							},
+							}},
 						},
-					}},
-				},
+					},
+				}).
+				Build()
+
+			resourceToCreate := testContext.ResourcesToCreate()
+			resourceToCreate.Gateways = gatewayv1.GatewayList{
+				gw,
+			}
+			resourceToCreate.VirtualServices = gatewayv1.VirtualServiceList{
+				vs,
 			}
 		})
 
@@ -179,8 +172,9 @@ var _ = Describe("dynamic forward proxy", func() {
 		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
 			expectedSubstr := `"host":"postman-echo.com"`
-			testReq := testRequest(destEcho, nil)
-			Expect(testReq).Should(ContainSubstring(expectedSubstr))
+			eventuallyRequestMatches(destEcho, func(r *http.Request) {
+				r.Host = e2e.DefaultHost
+			}, ContainSubstring(expectedSubstr))
 		})
 	})
 

@@ -1,13 +1,13 @@
 package e2e_test
 
 import (
-	"bytes"
-	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -22,13 +22,8 @@ import (
 	gloo_type_matcher "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	glootype "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 const (
@@ -39,90 +34,34 @@ const (
 var _ = Describe("CSRF", func() {
 
 	var (
-		err           error
-		ctx           context.Context
-		cancel        context.CancelFunc
-		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
-		up            *gloov1.Upstream
-
-		writeNamespace = defaults.GlooSystem
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-
-		// run gloo
-		writeNamespace = defaults.GlooSystem
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// write gateways and wait for them to be created
-		err = gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-		Eventually(func() (gatewayv1.GatewayList, error) {
-			return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
-		}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
-
-		// run envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// write a test upstream
-		// this is the upstream that will handle requests
-		testUs := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		up = testUs.Upstream
-		_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		envoyInstance.Clean()
-		cancel()
+		testContext.AfterEach()
 	})
 
-	checkProxy := func() {
-		// ensure the proxy and virtual service are created
-		Eventually(func() (*gloov1.Proxy, error) {
-			p, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			return p, err
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
+	JustBeforeEach(func() {
+		testContext.JustBeforeEach()
+	})
 
-	checkVirtualService := func(testVs *gatewayv1.VirtualService) {
-		Eventually(func() (*gatewayv1.VirtualService, error) {
-			return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
+	})
 
 	Context("no filter defined", func() {
 
-		JustBeforeEach(func() {
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
-		})
-
 		It("should succeed with allowed origin", func() {
-			EventuallyAllowedOriginResponse(envoyInstance, false)
+			EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), false)
 		})
 
 		It("should succeed with un-allowed origin", func() {
-			EventuallyInvalidOriginResponse(envoyInstance, false)
+			EventuallyAllowedOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), false)
 		})
 
 	})
@@ -131,108 +70,67 @@ var _ = Describe("CSRF", func() {
 
 		Context("only on listener", func() {
 
-			JustBeforeEach(func() {
-				gatewayClient := testClients.GatewayClient
-				gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				// build a csrf policy
-				csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
-
-				// update the listener to include the csrf policy
-				httpGateway := gw.GetHttpGateway()
-				httpGateway.Options = &gloov1.HttpListenerOptions{
-					Csrf: csrfPolicy,
+			BeforeEach(func() {
+				gw := gatewaydefaults.DefaultGateway(writeNamespace)
+				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+					Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
 				}
-				_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
 
-				// write a virtual service so we have a proxy to our test upstream
-				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				checkProxy()
-				checkVirtualService(testVs)
+				testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
+					gw,
+				}
 			})
 
 			It("should succeed with allowed origin", func() {
-				EventuallyAllowedOriginResponse(envoyInstance, true)
+				EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), true)
 			})
 
 			It("should fail with un-allowed origin", func() {
-				EventuallyInvalidOriginResponse(envoyInstance, true)
+				EventuallyInvalidOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), true)
 			})
 		})
 
 		Context("defined on listener with shadow mode config", func() {
 
-			JustBeforeEach(func() {
-				gatewayClient := testClients.GatewayClient
-				gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				// build a csrf policy
-				csrfPolicy := getCsrfPolicyWithShadowEnabled(allowedOrigin)
-
-				// update the listener to include the csrf policy
-				httpGateway := gw.GetHttpGateway()
-				httpGateway.Options = &gloov1.HttpListenerOptions{
-					Csrf: csrfPolicy,
+			BeforeEach(func() {
+				gw := gatewaydefaults.DefaultGateway(writeNamespace)
+				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+					Csrf: getCsrfPolicyWithShadowEnabled(allowedOrigin),
 				}
-				_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
 
-				// write a virtual service so we have a proxy to our test upstream
-				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				checkProxy()
-				checkVirtualService(testVs)
+				testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
+					gw,
+				}
 			})
 
 			It("should succeed with allowed origin, unsafe request", func() {
-				EventuallyAllowedOriginResponse(envoyInstance, true)
+				EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), false)
 			})
 
 			It("should succeed with un-allowed origin and update invalid count", func() {
-				EventuallyInvalidOriginResponse(envoyInstance, true)
+				EventuallyAllowedOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), false)
 			})
 		})
 
 		Context("defined on listener with filter enabled and shadow mode config", func() {
-			JustBeforeEach(func() {
-				gatewayClient := testClients.GatewayClient
-				gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
 
-				// build a csrf policy
-				csrfPolicy := getCsrfPolicyWithFilterEnabledAndShadow(allowedOrigin)
-
-				// update the listener to include the csrf policy
-				httpGateway := gw.GetHttpGateway()
-				httpGateway.Options = &gloov1.HttpListenerOptions{
-					Csrf: csrfPolicy,
+			BeforeEach(func() {
+				gw := gatewaydefaults.DefaultGateway(writeNamespace)
+				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+					Csrf: getCsrfPolicyWithFilterEnabledAndShadow(allowedOrigin),
 				}
-				_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
 
-				// write a virtual service so we have a proxy to our test upstream
-				testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-				_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				checkProxy()
-				checkVirtualService(testVs)
+				testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
+					gw,
+				}
 			})
 
 			It("should succeed with allowed origin, unsafe request", func() {
-				EventuallyAllowedOriginResponse(envoyInstance, true)
+				EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), true)
 			})
 
 			It("should fail with un-allowed origin and update invalid count", func() {
-				EventuallyInvalidOriginResponse(envoyInstance, true)
+				EventuallyInvalidOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), true)
 			})
 		})
 
@@ -240,135 +138,134 @@ var _ = Describe("CSRF", func() {
 
 	Context("enabled on route", func() {
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
+				WithRouteOptions("test", &gloov1.RouteOptions{
+					Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
+				}).
+				Build()
 
-			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
-
-			// write a virtual service so we have a proxy to our test upstream
-			vhClient := testClients.VirtualServiceClient
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			// apply to route
-			route := testVs.VirtualHost.Routes[0]
-			route.Options = &gloov1.RouteOptions{
-				Csrf: csrfPolicy,
+			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+				vs,
 			}
-			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			EventuallyAllowedOriginResponse(envoyInstance, true)
+			EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			EventuallyInvalidOriginResponse(envoyInstance, true)
+			EventuallyInvalidOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 	})
 
 	Context("enabled defined on vhost", func() {
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
+				}).
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
+				Build()
 
-			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
-
-			// write a virtual service so we have a proxy to our test upstream
-			vhClient := testClients.VirtualServiceClient
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
-				Csrf: csrfPolicy,
+			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+				vs,
 			}
-			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			EventuallyAllowedOriginResponse(envoyInstance, true)
+			EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			EventuallyInvalidOriginResponse(envoyInstance, true)
+			EventuallyInvalidOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 	})
 
 	Context("defined on weighted dest", func() {
 
-		JustBeforeEach(func() {
+		BeforeEach(func() {
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteActionToMultiDestination("test", &gloov1.MultiDestination{
+					Destinations: []*gloov1.WeightedDestination{{
+						Weight: &wrappers.UInt32Value{Value: 1},
+						Destination: &gloov1.Destination{
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: testContext.TestUpstream().Upstream.Metadata.Ref(),
+							},
+						},
+						Options: &gloov1.WeightedDestinationOptions{
+							Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
+						},
+					}},
+				}).
+				Build()
 
-			// build a csrf policy
-			csrfPolicy := getCsrfPolicyWithFilterEnabled(allowedOrigin)
-
-			// write a virtual service so we have a proxy to our test upstream
-			vhClient := testClients.VirtualServiceClient
-			testVs := getTrivialVirtualServiceForUpstreamDest(writeNamespace, up)
-			// apply to weighted destination
-			route := testVs.VirtualHost.Routes[0]
-
-			dest := route.GetRouteAction().GetMulti().GetDestinations()[0]
-			dest.Options = &gloov1.WeightedDestinationOptions{
-				Csrf: csrfPolicy,
+			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+				vs,
 			}
-
-			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			EventuallyAllowedOriginResponse(envoyInstance, true)
+			EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			EventuallyInvalidOriginResponse(envoyInstance, true)
+			EventuallyInvalidOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 	})
 
 	Context("defined on listener and vhost, should use vhost definition", func() {
 
-		JustBeforeEach(func() {
-			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// update the listener to include the csrf policy
-			httpGateway := gw.GetHttpGateway()
-			httpGateway.Options = &gloov1.HttpListenerOptions{
+		BeforeEach(func() {
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				Csrf: getCsrfPolicyWithFilterEnabled(unAllowedOrigin),
 			}
-			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
 
-			// write a virtual service so we have a proxy to our test upstream
-			vhClient := testClients.VirtualServiceClient
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			testVs.VirtualHost.Options = &gloov1.VirtualHostOptions{
-				Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
+			vs := helpers.NewVirtualServiceBuilder().
+				WithName("vs-test").
+				WithNamespace(writeNamespace).
+				WithDomain("test.com").
+				WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					Csrf: getCsrfPolicyWithFilterEnabled(allowedOrigin),
+				}).
+				WithRoutePrefixMatcher("test", "/").
+				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
+				Build()
+
+			testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
+				gw,
 			}
-			_, err = vhClient.Write(testVs, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
+			testContext.ResourcesToCreate().VirtualServices = gatewayv1.VirtualServiceList{
+				vs,
+			}
 
-			checkProxy()
-			checkVirtualService(testVs)
 		})
 
 		It("should succeed with allowed origin, unsafe request", func() {
-			EventuallyAllowedOriginResponse(envoyInstance, true)
+			EventuallyAllowedOriginResponse(buildRequestFromOrigin(allowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 		It("should fail with un-allowed origin", func() {
-			EventuallyInvalidOriginResponse(envoyInstance, true)
+			EventuallyInvalidOriginResponse(buildRequestFromOrigin(unAllowedOrigin), testContext.EnvoyInstance(), true)
 		})
 
 	})
@@ -378,73 +275,49 @@ var _ = Describe("CSRF", func() {
 // A safe http method is one that doesn't alter the state of the server (ie read only)
 // A CSRF attack targets state changing requests, so the filter only acts on unsafe methods (ones that change state)
 // This is used to spoof requests from various origins
-func buildRequestFromOrigin(origin string) func() (string, error) {
-	return func() (string, error) {
-		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
+func buildRequestFromOrigin(origin string) func() (*http.Response, error) {
+	return func() (*http.Response, error) {
+		req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		req.Host = e2e.DefaultHost
 		req.Header.Set("Origin", origin)
 
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return "", err
-		}
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		return string(body), err
+		return http.DefaultClient.Do(req)
 	}
 }
 
-func getEnvoyStats(envoyInstance *services.EnvoyInstance) string {
-	By("Get stats")
-	envoyStats := ""
-	EventuallyWithOffset(1, func() error {
-		statsUrl := fmt.Sprintf("http://%s:%d/stats",
-			envoyInstance.LocalAddr(),
-			envoyInstance.AdminPort)
-		r, err := http.Get(statsUrl)
-		if err != nil {
-			return err
-		}
-		p := new(bytes.Buffer)
-		if _, err := io.Copy(p, r.Body); err != nil {
-			return err
-		}
-		defer r.Body.Close()
-		envoyStats = p.String()
-		return nil
-	}, "10s", ".1s").Should(BeNil())
-	return envoyStats
-}
-
-func EventuallyAllowedOriginResponse(envoyInstance *services.EnvoyInstance, validateStatistics bool) {
-	request := buildRequestFromOrigin(allowedOrigin)
-
+func EventuallyAllowedOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(request).Should(BeEmpty())
+		g.Expect(request()).Should(matchers.HaveOkResponse())
+
 		if validateStatistics {
-			statistics := getEnvoyStats(envoyInstance)
+			statistics, err := envoyInstance.Statistics()
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(statistics).To(matchInvalidRequestEqualTo(0))
 			g.Expect(statistics).To(matchValidRequestEqualTo(1))
 		}
-	}, time.Second*30)
+	}, time.Second*30).Should(Succeed())
 }
 
-func EventuallyInvalidOriginResponse(envoyInstance *services.EnvoyInstance, validateStatistics bool) {
-	request := buildRequestFromOrigin(unAllowedOrigin)
-
+func EventuallyInvalidOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
-		g.Expect(request).Should(Equal("Invalid origin"))
+		g.Expect(request()).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+			StatusCode: http.StatusForbidden,
+			Body:       "Invalid origin",
+		}))
 
 		if validateStatistics {
-			statistics := getEnvoyStats(envoyInstance)
+			statistics, err := envoyInstance.Statistics()
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(statistics).To(matchInvalidRequestEqualTo(1))
 			g.Expect(statistics).To(matchValidRequestEqualTo(0))
 		}
-	}, time.Second*30)
+	}, time.Second*30).Should(Succeed())
 }
 
+// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/csrf_filter#statistics
 func matchValidRequestEqualTo(count int) types.GomegaMatcher {
 	return MatchRegexp("http.http.csrf.request_valid: %d", count)
 }
@@ -519,59 +392,5 @@ func getCsrfPolicyWithFilterEnabledAndShadow(origin string) *csrf.CsrfPolicy {
 				},
 			},
 		}},
-	}
-}
-
-func getTrivialVirtualServiceForUpstreamDest(ns string, up *gloov1.Upstream) *gatewayv1.VirtualService {
-	vs := getVirtualServiceMultiDest(ns, up)
-	vs.VirtualHost.Routes[0].GetRouteAction().GetMulti().GetDestinations()[0].GetDestination().DestinationType = &gloov1.Destination_Upstream{
-		Upstream: up.Metadata.Ref(),
-	}
-	return vs
-}
-
-func getVirtualServiceMultiDest(ns string, up *gloov1.Upstream) *gatewayv1.VirtualService {
-	return &gatewayv1.VirtualService{
-		Metadata: &core.Metadata{
-			Name:      "vs",
-			Namespace: ns,
-		},
-		VirtualHost: &gatewayv1.VirtualHost{
-			Domains: []string{"*"},
-			Routes: []*gatewayv1.Route{{
-				Action: &gatewayv1.Route_RouteAction{
-					RouteAction: &gloov1.RouteAction{
-						Destination: &gloov1.RouteAction_Multi{
-							Multi: &gloov1.MultiDestination{
-								Destinations: []*gloov1.WeightedDestination{
-									{
-										Weight: &wrappers.UInt32Value{Value: 1},
-										Destination: &gloov1.Destination{
-
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: up.Metadata.Ref(),
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				Matchers: []*matchers.Matcher{
-					{
-						PathSpecifier: &matchers.Matcher_Prefix{
-							Prefix: "/",
-						},
-						Headers: []*matchers.HeaderMatcher{
-							{
-								Name:        "this-header-must-not-be-present",
-								InvertMatch: true,
-							},
-						},
-					},
-				},
-			}},
-		},
 	}
 }

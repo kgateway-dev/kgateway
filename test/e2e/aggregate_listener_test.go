@@ -1,9 +1,9 @@
 package e2e_test
 
 import (
-	"context"
-	"fmt"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
@@ -14,13 +14,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -36,91 +33,34 @@ var _ = Describe("Aggregate Listener", func() {
 	//	4. Confirm the routing behavior
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		envoyInstance *services.EnvoyInstance
-		testClients   services.TestClients
-		testUpstream  *v1helpers.TestUpstream
-
 		isolateVirtualHostsBySslConfig bool
 
-		resourcesToCreate *gloosnapshot.ApiSnapshot
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
-		defaults.TcpPort = services.NextBindPort()
-		defaults.HybridPort = services.NextBindPort()
-
-		// Initialize Envoy instance
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-
-		testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-
-		// The set of resources that these tests will generate
-		resourcesToCreate = &gloosnapshot.ApiSnapshot{
-			Gateways:        v1.GatewayList{},
-			VirtualServices: v1.VirtualServiceList{},
-			Upstreams: gloov1.UpstreamList{
-				testUpstream.Upstream,
-			},
-			Secrets: gloov1.SecretList{},
-		}
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		cancel()
+		testContext.AfterEach()
 	})
 
 	JustBeforeEach(func() {
-		// Run Gloo
-		testClients = services.RunGlooGatewayUdsFds(ctx, &services.RunOptions{
-			NsToWrite: defaults.GlooSystem,
-			NsToWatch: []string{"default", defaults.GlooSystem},
-			WhatToRun: services.What{
-				DisableGateway: false,
-				DisableFds:     true,
-				DisableUds:     true,
-			},
-			Settings: &gloov1.Settings{
-				Gateway: &gloov1.GatewayOptions{
-					IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
-						Value: isolateVirtualHostsBySslConfig,
-					},
+		testContext.SetRunSettings(&gloov1.Settings{
+			Gateway: &gloov1.GatewayOptions{
+				IsolateVirtualHostsBySslConfig: &wrappers.BoolValue{
+					Value: isolateVirtualHostsBySslConfig,
 				},
 			},
 		})
 
-		// Run envoy
-		role := fmt.Sprintf("%s~%s", defaults.GlooSystem, gatewaydefaults.GatewayProxyName)
-		err := envoyInstance.RunWithRole(role, testClients.GlooPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Create Resources
-		err = testClients.WriteSnapshot(ctx, resourcesToCreate)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Wait for a proxy to be accepted
-		gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-		})
+		testContext.JustBeforeEach()
 	})
 
 	JustAfterEach(func() {
-		// Cleanup Resources
-		err := testClients.DeleteSnapshot(ctx, resourcesToCreate)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Cleanup the Proxy
-		deleteErr := testClients.ProxyClient.Delete(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-		Expect(deleteErr).NotTo(HaveOccurred())
-
-		// Stop Envoy
-		envoyInstance.Clean()
+		testContext.JustAfterEach()
 	})
 
 	Context("Insecure HttpGateway", func() {
@@ -137,32 +77,29 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  http.StatusOK,
-					Message: "",
+					Message: "solo.io test",
 				})
 		}
 
 		BeforeEach(func() {
 			simpleRouteName := "simple-route"
-			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			vsEast := vsBuilder.
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				Build()
 
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				Build()
 
-			resourcesToCreate.Gateways = v1.GatewayList{
-				gatewaydefaults.DefaultGateway(defaults.GlooSystem),
-			}
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsEast, vsWest,
 			}
 		})
@@ -174,7 +111,9 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HttpListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+					Ctx: testContext.Ctx(),
+				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -195,7 +134,9 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+					Ctx: testContext.Ctx(),
+				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -222,6 +163,11 @@ var _ = Describe("Aggregate Listener", func() {
 		)
 
 		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
+			expectedResponseBody := ""
+			if responseStatus == http.StatusOK {
+				expectedResponseBody = "solo.io test"
+			}
+
 			v1helpers.ExpectCurlWithOffset(
 				1,
 				v1helpers.CurlRequest{
@@ -233,18 +179,18 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  responseStatus,
-					Message: "",
+					Message: expectedResponseBody,
 				})
 		}
 
 		BeforeEach(func() {
 			simpleRouteName := "simple-route"
-			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			eastTLSSecret := &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Name:      "east-tls-secret",
-					Namespace: defaults.GlooSystem,
+					Namespace: writeNamespace,
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
@@ -256,7 +202,7 @@ var _ = Describe("Aggregate Listener", func() {
 			westTLSSecret := &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Name:      "west-tls-secret",
-					Namespace: defaults.GlooSystem,
+					Namespace: writeNamespace,
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
@@ -269,7 +215,7 @@ var _ = Describe("Aggregate Listener", func() {
 			vsEast := vsBuilder.
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				WithSslConfig(&gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -281,7 +227,7 @@ var _ = Describe("Aggregate Listener", func() {
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				WithSslConfig(&gloov1.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
@@ -294,13 +240,13 @@ var _ = Describe("Aggregate Listener", func() {
 				}).
 				Build()
 
-			resourcesToCreate.Gateways = v1.GatewayList{
-				gatewaydefaults.DefaultSslGateway(defaults.GlooSystem),
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gatewaydefaults.DefaultSslGateway(writeNamespace),
 			}
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsEast, vsWest,
 			}
-			resourcesToCreate.Secrets = gloov1.SecretList{
+			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
 				eastTLSSecret, westTLSSecret,
 			}
 		})
@@ -312,11 +258,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HttpListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHttpListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHttpListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -340,11 +290,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -372,32 +326,32 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  http.StatusOK,
-					Message: "",
+					Message: "solo.io test",
 				})
 		}
 
 		BeforeEach(func() {
 			simpleRouteName := "simple-route"
-			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			vsEast := vsBuilder.
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				Build()
 
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				Build()
 
-			resourcesToCreate.Gateways = v1.GatewayList{
-				gatewaydefaults.DefaultHybridGateway(defaults.GlooSystem),
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gatewaydefaults.DefaultHybridGateway(writeNamespace),
 			}
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsEast, vsWest,
 			}
 		})
@@ -409,11 +363,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -430,7 +388,9 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+					Ctx: testContext.Ctx(),
+				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -457,6 +417,11 @@ var _ = Describe("Aggregate Listener", func() {
 		)
 
 		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
+			expectedResponseBody := ""
+			if responseStatus == http.StatusOK {
+				expectedResponseBody = "solo.io test"
+			}
+
 			v1helpers.ExpectCurlWithOffset(
 				1,
 				v1helpers.CurlRequest{
@@ -468,18 +433,18 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  responseStatus,
-					Message: "",
+					Message: expectedResponseBody,
 				})
 		}
 
 		BeforeEach(func() {
 			simpleRouteName := "simple-route"
-			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			eastTLSSecret := &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Name:      "east-tls-secret",
-					Namespace: defaults.GlooSystem,
+					Namespace: writeNamespace,
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
@@ -491,7 +456,7 @@ var _ = Describe("Aggregate Listener", func() {
 			westTLSSecret := &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Name:      "west-tls-secret",
-					Namespace: defaults.GlooSystem,
+					Namespace: writeNamespace,
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
@@ -504,7 +469,7 @@ var _ = Describe("Aggregate Listener", func() {
 			vsEast := vsBuilder.
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				WithSslConfig(&gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -516,7 +481,7 @@ var _ = Describe("Aggregate Listener", func() {
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				WithSslConfig(&gloov1.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
@@ -529,13 +494,13 @@ var _ = Describe("Aggregate Listener", func() {
 				}).
 				Build()
 
-			resourcesToCreate.Gateways = v1.GatewayList{
-				gatewaydefaults.DefaultHybridSslGateway(defaults.GlooSystem),
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gatewaydefaults.DefaultHybridSslGateway(writeNamespace),
 			}
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsEast, vsWest,
 			}
-			resourcesToCreate.Secrets = gloov1.SecretList{
+			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
 				eastTLSSecret, westTLSSecret,
 			}
 		})
@@ -547,11 +512,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -575,11 +544,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -607,35 +580,35 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  http.StatusOK,
-					Message: "",
+					Message: "solo.io test",
 				})
 		}
 
 		BeforeEach(func() {
 			simpleRouteName := "simple-route"
-			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			vsEast := vsBuilder.
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				Build()
 
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				Build()
 
-			resourcesToCreate.Gateways = v1.GatewayList{
-				buildInsecureHybridGatewayWithDelegation(defaults.GlooSystem),
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				buildInsecureHybridGatewayWithDelegation(writeNamespace),
 			}
-			resourcesToCreate.HttpGateways = v1.MatchableHttpGatewayList{
-				gatewaydefaults.DefaultMatchableHttpGateway(defaults.GlooSystem, nil),
+			testContext.ResourcesToCreate().HttpGateways = v1.MatchableHttpGatewayList{
+				gatewaydefaults.DefaultMatchableHttpGateway(writeNamespace, nil),
 			}
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsEast, vsWest,
 			}
 		})
@@ -647,7 +620,9 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+					Ctx: testContext.Ctx(),
+				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -668,7 +643,9 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
+				proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+					Ctx: testContext.Ctx(),
+				})
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(proxy.GetListeners()).To(HaveLen(1))
@@ -695,6 +672,11 @@ var _ = Describe("Aggregate Listener", func() {
 		)
 
 		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
+			expectedResponseBody := ""
+			if responseStatus == http.StatusOK {
+				expectedResponseBody = "solo.io test"
+			}
+
 			v1helpers.ExpectCurlWithOffset(
 				1,
 				v1helpers.CurlRequest{
@@ -706,18 +688,18 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  responseStatus,
-					Message: "",
+					Message: expectedResponseBody,
 				})
 		}
 
 		BeforeEach(func() {
 			simpleRouteName := "simple-route"
-			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(defaults.GlooSystem)
+			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			eastTLSSecret := &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Name:      "east-tls-secret",
-					Namespace: defaults.GlooSystem,
+					Namespace: writeNamespace,
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
@@ -729,7 +711,7 @@ var _ = Describe("Aggregate Listener", func() {
 			westTLSSecret := &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Name:      "west-tls-secret",
-					Namespace: defaults.GlooSystem,
+					Namespace: writeNamespace,
 				},
 				Kind: &gloov1.Secret_Tls{
 					Tls: &gloov1.TlsSecret{
@@ -742,7 +724,7 @@ var _ = Describe("Aggregate Listener", func() {
 			vsEast := vsBuilder.
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
 				WithSslConfig(&gloov1.SslConfig{
 					SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -754,7 +736,7 @@ var _ = Describe("Aggregate Listener", func() {
 			vsWest := vsBuilder.
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
+				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
 				WithSslConfig(&gloov1.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
@@ -773,20 +755,16 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 			}
 
-			resourcesToCreate.Gateways = v1.GatewayList{
-				gatewaydefaults.DefaultHybridSslGateway(defaults.GlooSystem),
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				buildHybridGatewayWithDelegation(writeNamespace, nonEmptySslConfig),
 			}
-
-			resourcesToCreate.Gateways = v1.GatewayList{
-				buildHybridGatewayWithDelegation(defaults.GlooSystem, nonEmptySslConfig),
+			testContext.ResourcesToCreate().HttpGateways = v1.MatchableHttpGatewayList{
+				gatewaydefaults.DefaultMatchableHttpGateway(writeNamespace, nonEmptySslConfig),
 			}
-			resourcesToCreate.HttpGateways = v1.MatchableHttpGatewayList{
-				gatewaydefaults.DefaultMatchableHttpGateway(defaults.GlooSystem, nonEmptySslConfig),
-			}
-			resourcesToCreate.VirtualServices = v1.VirtualServiceList{
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				vsEast, vsWest,
 			}
-			resourcesToCreate.Secrets = gloov1.SecretList{
+			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
 				eastTLSSecret, westTLSSecret,
 			}
 		})
@@ -798,11 +776,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single HybridListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
@@ -826,11 +808,15 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			It("produces a Proxy with a single AggregateListener", func() {
-				proxy, err := testClients.ProxyClient.Read(defaults.GlooSystem, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func(g Gomega) {
+					proxy, err := testContext.TestClients().ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: testContext.Ctx(),
+					})
+					g.Expect(err).NotTo(HaveOccurred())
 
-				Expect(proxy.GetListeners()).To(HaveLen(1))
-				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+					g.Expect(proxy.GetListeners()).To(HaveLen(1))
+					g.Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
+				}).Should(Succeed())
 			})
 
 			It("routes requests to all routes on gateway", func() {
