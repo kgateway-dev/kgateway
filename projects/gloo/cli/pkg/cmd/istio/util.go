@@ -109,9 +109,9 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 	return "third-party-jwt"
 }
 
-// getGlooVersion gets the version of gloo currently running
+// GetGlooVersion gets the version of gloo currently running
 // in the given namespace, by checking the gloo deployment.
-func getGlooVersion(ctx context.Context, namespace string) (string, error) {
+func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
 	sv := versioncmd.NewKube(namespace, "")
 	server, err := sv.Get(ctx)
 	if err != nil {
@@ -129,6 +129,15 @@ func getGlooVersion(ctx context.Context, namespace string) (string, error) {
 		fmt.Printf("Found multiple gloo versions, picking %s", openSourceVersions[0].String())
 	}
 	return openSourceVersions[0].String(), nil
+}
+
+// GetGlooVersionWithoutV mirrors the above function but returns the version without the leading 'v'
+func GetGlooVersionWithoutV(ctx context.Context, namespace string) (string, error) {
+	version, err := GetGlooVersion(ctx, namespace)
+	if err == nil {
+		return version[1:], nil
+	}
+	return version, err
 }
 
 // unmarshalYAMLConfig converts from an envoy

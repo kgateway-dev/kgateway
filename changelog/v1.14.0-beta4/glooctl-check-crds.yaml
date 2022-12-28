@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/4193
+    description: >
+      Added `glooctl check-crds --version <string> --local-chart <string> --show-yaml <bool>` to check if diffs exist between deployed CRDs and a given helm charts CRDs exist.
+
