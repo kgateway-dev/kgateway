@@ -33,7 +33,16 @@ var _ = Describe("Plugin", func() {
 	// Because we are just translatating the filters using marshaling/unmarshaling, we should test each filter type
 	// to make sure we copied/pasted correctly and that no changes made to the Envoy definitions broke anything
 	Describe("Test each Filter", func() {
-		filter_runtime_key := "10"
+		var (
+			filter_runtime_key                         = "10"
+			STATUS_CODE_VALUE                   uint32 = 400
+			DURATION_FILTER_VALUE               uint32 = 20
+			FRACTIONAL_PERCENT_NUMERATOR        uint32 = 25
+			FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 40
+			HEADER_MATCHER_NAME_STRING                 = "HEADER MATCHER NAME STRING"
+			RESPONSE_FLAGS                             = []string{"string1", "string2", "string3"}
+			//GRPC_STATUSES              = []int{400, 404}
+		)
 
 		DescribeTable("Test each filter is translated properly",
 			func(glooInputFilter *accessLogService.AccessLogFilter, expectedEnvoyFilter *envoyal.AccessLogFilter) {
@@ -94,7 +103,7 @@ var _ = Describe("Plugin", func() {
 						StatusCodeFilter: &accessLogService.StatusCodeFilter{
 							Comparison: &accessLogService.ComparisonFilter{
 								Op:    accessLogService.ComparisonFilter_EQ,
-								Value: &v31.RuntimeUInt32{DefaultValue: 10},
+								Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
 							},
 						},
 					},
@@ -104,7 +113,7 @@ var _ = Describe("Plugin", func() {
 						StatusCodeFilter: &envoyal.StatusCodeFilter{
 							Comparison: &envoyal.ComparisonFilter{
 								Op:    envoyal.ComparisonFilter_EQ,
-								Value: &envoy_v3.RuntimeUInt32{DefaultValue: 10},
+								Value: &envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
 							},
 						},
 					},
@@ -116,7 +125,7 @@ var _ = Describe("Plugin", func() {
 						DurationFilter: &accessLogService.DurationFilter{
 							Comparison: &accessLogService.ComparisonFilter{
 								Op:    accessLogService.ComparisonFilter_EQ,
-								Value: &v31.RuntimeUInt32{DefaultValue: 10},
+								Value: &v31.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
 							},
 						},
 					},
@@ -126,7 +135,7 @@ var _ = Describe("Plugin", func() {
 						DurationFilter: &envoyal.DurationFilter{
 							Comparison: &envoyal.ComparisonFilter{
 								Op:    envoyal.ComparisonFilter_EQ,
-								Value: &envoy_v3.RuntimeUInt32{DefaultValue: 10},
+								Value: &envoy_v3.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
 							},
 						},
 					},
@@ -162,8 +171,8 @@ var _ = Describe("Plugin", func() {
 						RuntimeFilter: &accessLogService.RuntimeFilter{
 							RuntimeKey: filter_runtime_key,
 							PercentSampled: &v3.FractionalPercent{
-								Numerator:   50,
-								Denominator: v3.FractionalPercent_DenominatorType(40),
+								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+								Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 							},
 							UseIndependentRandomness: true,
 						},
@@ -174,8 +183,8 @@ var _ = Describe("Plugin", func() {
 						RuntimeFilter: &envoyal.RuntimeFilter{
 							RuntimeKey: filter_runtime_key,
 							PercentSampled: &envoy_v31.FractionalPercent{
-								Numerator:   50,
-								Denominator: envoy_v31.FractionalPercent_DenominatorType(40),
+								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+								Denominator: envoy_v31.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 							},
 							UseIndependentRandomness: true,
 						},
@@ -259,7 +268,7 @@ var _ = Describe("Plugin", func() {
 					FilterSpecifier: &accessLogService.AccessLogFilter_HeaderFilter{
 						HeaderFilter: &accessLogService.HeaderFilter{
 							Header: &v32.HeaderMatcher{
-								Name:        "NAME STRING",
+								Name:        HEADER_MATCHER_NAME_STRING,
 								InvertMatch: true,
 							},
 						},
@@ -269,7 +278,7 @@ var _ = Describe("Plugin", func() {
 					FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{
 						HeaderFilter: &envoyal.HeaderFilter{
 							Header: &envoy_v32.HeaderMatcher{
-								Name:        "NAME STRING",
+								Name:        HEADER_MATCHER_NAME_STRING,
 								InvertMatch: true,
 							},
 						},
@@ -280,14 +289,14 @@ var _ = Describe("Plugin", func() {
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{
 						ResponseFlagFilter: &accessLogService.ResponseFlagFilter{
-							Flags: []string{"string1", "string2", "string3"},
+							Flags: RESPONSE_FLAGS,
 						},
 					},
 				},
 				&envoyal.AccessLogFilter{
 					FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{
 						ResponseFlagFilter: &envoyal.ResponseFlagFilter{
-							Flags: []string{"string1", "string2", "string3"},
+							Flags: RESPONSE_FLAGS,
 						},
 					},
 				}),
