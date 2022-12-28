@@ -16,6 +16,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
+	check_crds "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check-crds"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
@@ -115,6 +116,7 @@ func GlooCli() *cobra.Command {
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
 			check.RootCmd(opts),
+			check_crds.RootCmd(opts),
 			debug.RootCmd(opts),
 			versioncmd.RootCmd(opts),
 			dashboard.RootCmd(opts),
