@@ -518,6 +518,12 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Diffs detected on the following CRDs:"))
 		})
+		It("validates nightly builds", func() {
+			if testHelper.ReleasedVersion != "" {
+				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ReleasedVersion)
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
 	})
 })
 

@@ -59,7 +59,7 @@ func CheckCRDS(opts *options.Options) error {
 	if opts.CheckCRD.LocalChart != "" {
 		chartPath = opts.CheckCRD.LocalChart
 	}
-	acceptedCRDs, err := getCRDsFromHelm(chartPath)
+	expectedCRDs, err := getCRDsFromHelm(chartPath)
 	if err != nil {
 		return eris.Wrapf(err, "Error getting CRDs from %s", chartPath)
 	}
@@ -68,25 +68,27 @@ func CheckCRDS(opts *options.Options) error {
 		return eris.Wrapf(err, "Error getting CRDs in current cluster")
 	}
 
-	lookupTable := map[string]apiextv1.CustomResourceDefinition{}
-	for _, crd := range acceptedCRDs {
-		lookupTable[crd.Name] = crd
+	crdsInClusterMap := map[string]apiextv1.CustomResourceDefinition{}
+	for _, crd := range clusterCRDs {
+		crdsInClusterMap[crd.Name] = crd
 	}
 
 	diffs := []string{}
-	for _, crd := range clusterCRDs {
-		clusterCrdBytes, _ := yaml.Marshal(crd.Spec)
-		if acceptedCrd, ok := lookupTable[crd.Name]; !ok {
+	for _, crd := range expectedCRDs {
+		expectedCrdBytes, _ := yaml.Marshal(crd.Spec)
+		if clusterCrd, ok := crdsInClusterMap[crd.Name]; !ok {
 			diffs = append(diffs, crd.Name)
 		} else {
-			acceptedCrdBytes, _ := yaml.Marshal(acceptedCrd.Spec)
-			if string(clusterCrdBytes) != string(acceptedCrdBytes) {
+			clusterCrdBytes, _ := yaml.Marshal(clusterCrd.Spec)
+			if string(expectedCrdBytes) != string(clusterCrdBytes) {
 				diffs = append(diffs, crd.Name)
 			}
 		}
 	}
 	if len(diffs) != 0 {
-		return eris.New("Diffs detected on the following CRDs:\n\t" + strings.Join(diffs, "\n\t"))
+		crdsWithDiffs := strings.Join(diffs, "\n")
+		errString := strings.Join([]string{"Diffs detected on the following CRDs:", crdsWithDiffs, "See https://docs.solo.io/gloo-edge/latest/operations/upgrading/upgrade_steps/#step-3-apply-minor-version-specific-changes for more details"}, "\n\n")
+		return eris.New(errString)
 	}
 	printer.AppendMessage("All CRDs are up to date")
 	return nil
@@ -155,7 +157,7 @@ func getCRDsFromHelm(uri string) ([]apiextv1.CustomResourceDefinition, error) {
 
 		err = yaml.Unmarshal(bytes.TrimSpace(crdObject.File.Data), &crd)
 		if err != nil {
-			return nil, eris.Wrapf(err, "Error unmarshalling accepted CRD:")
+			return nil, eris.Wrapf(err, "Error unmarshalling expected CRD:")
 		}
 		preprocessCRD(&crd)
 		crds = append(crds, crd)
