@@ -6,8 +6,6 @@ import (
 	"runtime"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo"
 
@@ -78,11 +76,6 @@ type RequiredConfiguration struct {
 
 	// User defined reasons for why particular environmental conditions are required
 	reasons map[string]string
-
-	// nil: no credentials required
-	// false: credentials not defined
-	// true: credentials defined
-	awsCredentials *wrappers.BoolValue
 }
 
 // Validate returns an error is the RequiredConfiguration is not met
@@ -94,8 +87,7 @@ func (r RequiredConfiguration) Validate() error {
 		r.validateOS(),
 		r.validateArch(),
 		r.validateDefinedEnv(),
-		r.validateTruthyEnv(),
-		r.validateAwsCredentials())
+		r.validateTruthyEnv())
 
 	// If there are no errors, return
 	if errs.ErrorOrNil() == nil {
@@ -156,23 +148,10 @@ func (r RequiredConfiguration) validateTruthyEnv() error {
 	return nil
 }
 
-func (r RequiredConfiguration) validateAwsCredentials() error {
-	if r.awsCredentials == nil {
-		// credentials not required
-		return nil
-	}
-
-	if r.awsCredentials.GetValue() == true {
-		// credentials required, but defined
-		return nil
-	}
-
-	return fmt.Errorf("aws credentials needs to be set, but are not")
-}
-
 // Requirement represents a required property for tests.
 type Requirement func(configuration *RequiredConfiguration)
 
+// LinuxOnly returns a Requirement that expects tests to only run on Linux
 func LinuxOnly(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.supportedOS = sets.NewString("linux")
@@ -180,18 +159,21 @@ func LinuxOnly(reason string) Requirement {
 	}
 }
 
+// DefinedEnv returns a Requirement that expects tests to have the injected environment variable defined
 func DefinedEnv(env string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.definedEnvVar = append(configuration.definedEnvVar, env)
 	}
 }
 
+// TruthyEnv returns a Requirement that expects tests to have the injected environment variable set to a truthy value
 func TruthyEnv(env string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.truthyEnvVar = append(configuration.truthyEnvVar, env)
 	}
 }
 
+// Kubernetes returns a Requirement that expects tests to require Kubernetes configuration
 func Kubernetes(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.reasons["kubernetes"] = reason
@@ -199,25 +181,26 @@ func Kubernetes(reason string) Requirement {
 	}
 }
 
+// Consul returns a Requirement that expects tests to require a Consul instance
 func Consul() Requirement {
 	return func(configuration *RequiredConfiguration) {
 		TruthyEnv("RUN_CONSUL_TESTS")(configuration)
 	}
 }
 
+// Vault returns a Requirement that expects tests to require a Vault instance
 func Vault() Requirement {
 	return func(configuration *RequiredConfiguration) {
 		TruthyEnv("RUN_VAULT_TESTS")(configuration)
 	}
 }
 
-func Aws() Requirement {
+// AwsCredentials returns a Requirement that expects tests to require Aws credentials
+func AwsCredentials() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		_, err := credentials.NewSharedCredentials("", "").Get()
-		configuration.awsCredentials = &wrappers.BoolValue{
-			Value: err == nil,
-		}
-
+		DefinedEnv("AWS_SHARED_CREDENTIALS_FILE")(configuration)
 		DefinedEnv("AWS_ARN_ROLE_1")(configuration)
+
+		configuration.reasons["aws"] = "AWS_SHARED_CREDENTIALS_FILE defines the file location where AWS credentials are stored"
 	}
 }

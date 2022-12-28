@@ -15,7 +15,6 @@ const (
 	roleArnEnvVar = "AWS_ARN_ROLE_1"
 )
 
-// These tests are isolated from the other e2e tests because they do not need envoy to be running
 func TestAwsCredentials(t *testing.T) {
 	helpers.RegisterCommonFailHandlers()
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
@@ -23,5 +22,5 @@ func TestAwsCredentials(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	testhelpers.ValidateRequirementsAndNotifyGinkgo(testhelpers.Aws())
+	testhelpers.ValidateRequirementsAndNotifyGinkgo(testhelpers.AwsCredentials())
 })
