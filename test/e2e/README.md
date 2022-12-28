@@ -57,9 +57,6 @@ Certain test require environmental conditions to be true for them to succeed. Fo
 By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.
 
 ## Additional Notes
-### Tests that require AWS resources
-Some tests require AWS resources and thus to run the tests, you need to have the necessary credentials set up.
-
 ### Notes on EC2 tests
 *Note: these instructions are out of date, and require updating*
 
