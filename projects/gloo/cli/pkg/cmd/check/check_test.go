@@ -37,7 +37,7 @@ var _ = Describe("Check", func() {
 	})
 
 	Context("glooctl check", func() {
-		FIt("should error if resource has no status", func() {
+		It("should error if resource has no status", func() {
 
 			client := helpers.MustKubeClient()
 			client.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
