@@ -311,8 +311,6 @@ require (
 )
 
 replace (
-	// TODO-JAKE need to change replace
-	k8s.io/client-go => ../solo-kit
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/apache/thrift => github.com/apache/thrift v0.14.0
 	github.com/census-instrumentation/opencensus-proto => github.com/census-instrumentation/opencensus-proto v0.2.0 // indirect
@@ -332,6 +330,8 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+	// TODO-JAKE need to change replace
+	github.com/solo-io/solo-kit => ../solo-kit
 
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
