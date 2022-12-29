@@ -18,7 +18,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -62,7 +61,6 @@ var _ = Describe("Gateway", func() {
 	Describe("in memory", func() {
 
 		BeforeEach(func() {
-			validationPort := services.AllocateGlooPort()
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
@@ -70,15 +68,7 @@ var _ = Describe("Gateway", func() {
 					DisableFds: true,
 					DisableUds: true,
 				},
-				ValidationPort: validationPort,
 				Settings: &gloov1.Settings{
-					Gateway: &gloov1.GatewayOptions{
-						Validation: &gloov1.GatewayOptions_ValidationOptions{
-							// Enable strict validation,
-							AlwaysAccept:              &wrappers.BoolValue{Value: false},
-							ProxyValidationServerAddr: fmt.Sprintf("127.0.0.1:%v", validationPort),
-						},
-					},
 					// Record the config status for virtual services. Use the resource name as a
 					// label on the metric so that a unique time series is tracked for each VS
 					ObservabilityOptions: &gloov1.Settings_ObservabilityOptions{
@@ -127,60 +117,6 @@ var _ = Describe("Gateway", func() {
 					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 				}
-			})
-
-			It("should disable grpc web filter", func() {
-				gatewayClient := testClients.GatewayClient
-				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred())
-
-				for _, g := range gw {
-					httpGateway := g.GetHttpGateway()
-					if httpGateway != nil {
-						httpGateway.Options = &gloov1.HttpListenerOptions{
-							GrpcWeb: &grpc_web.GrpcWeb{
-								Disable: true,
-							},
-						}
-					}
-					Eventually(func() error {
-						current, err := gatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-						if err != nil {
-							return err
-						}
-						g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
-						_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-						return err
-					}, "5s", "0.3s").ShouldNot(HaveOccurred())
-				}
-
-				// write a virtual service so we have a proxy
-				vs := getTrivialVirtualServiceForUpstream(writeNamespace, &core.ResourceRef{Name: "test", Namespace: "test"})
-				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				// make sure it propagates to proxy
-				Eventually(
-					func() (int, error) {
-						numdisable := 0
-						proxy, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-						if err != nil {
-							return 0, err
-						}
-						for _, l := range proxy.Listeners {
-							if h := l.GetHttpListener(); h != nil {
-								if p := h.GetOptions(); p != nil {
-									if grpcweb := p.GetGrpcWeb(); grpcweb != nil {
-										if grpcweb.Disable {
-											numdisable++
-										}
-									}
-								}
-							}
-						}
-						return numdisable, nil
-					}, "5s", "0.1s").Should(Equal(2))
-
 			})
 
 			It("should create 2 gateways (1 ssl)", func() {
@@ -730,9 +666,10 @@ var _ = Describe("Gateway", func() {
 					err := gloohelpers.PatchResource(
 						ctx,
 						tcpGatewayRef,
-						func(resource resources.Resource) {
+						func(resource resources.Resource) resources.Resource {
 							gw := resource.(*gatewayv1.Gateway)
 							gw.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{host}
+							return gw
 						},
 						testClients.GatewayClient.BaseClient(),
 					)
