@@ -324,7 +324,7 @@ type CurlResponse struct {
 
 func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse CurlResponse) {
 
-	EventuallyWithOffset(offset+1, func(g Gomega) (*http.Response, error) {
+	EventuallyWithOffset(offset+1, func(g Gomega) {
 		// send a request with a body
 		var buf bytes.Buffer
 		buf.Write(request.Body)
@@ -336,9 +336,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 			scheme = "https"
 			caCertPool := x509.NewCertPool()
 			ok := caCertPool.AppendCertsFromPEM([]byte(*request.RootCA))
-			if !ok {
-				return nil, fmt.Errorf("ca cert is not OK")
-			}
+			g.Expect(ok).To(BeTrue())
 
 			tlsConfig := &tls.Config{
 				RootCAs:            caCertPool,
@@ -350,7 +348,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 		}
 
 		requestUrl := fmt.Sprintf("%s://%s:%d%s", scheme, "localhost", request.Port, request.Path)
-		req, err := http.NewRequest("POST", requestUrl, &buf)
+		req, err := http.NewRequest(http.MethodPost, requestUrl, &buf)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		if request.Host != "" {
@@ -361,11 +359,11 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 			req.Header.Set(headerName, headerValue)
 		}
 
-		return client.Do(req)
-	}, "30s", "1s").Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-		StatusCode: expectedResponse.Status,
-		Body:       expectedResponse.Message,
-	}))
+		g.Expect(client.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+			StatusCode: expectedResponse.Status,
+			Body:       expectedResponse.Message,
+		}))
+	}, "30s", "1s").Should(Succeed())
 }
 
 func ExpectGrpcHealthOK(rootca *string, envoyPort uint32, service string) {

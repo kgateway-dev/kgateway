@@ -8,8 +8,8 @@ import (
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
-// Same as BeEquivalentTo, but prints a nice diff on failure
-// best effect use ginkgo with -noColor
+// BeEquivalentToDiff is the same as BeEquivalentTo
+// but prints a nice diff on failure best effect use ginkgo with -noColor
 func BeEquivalentToDiff(expected interface{}) *BeEquivalentToDiffMatcher {
 	return &BeEquivalentToDiffMatcher{
 		BeEquivalentToMatcher: matchers.BeEquivalentToMatcher{

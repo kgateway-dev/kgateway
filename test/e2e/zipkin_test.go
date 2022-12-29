@@ -214,7 +214,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -232,6 +232,7 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
@@ -254,7 +255,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -272,6 +273,7 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
@@ -294,13 +296,14 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
 							Tracing: nil,
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
@@ -323,7 +326,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -343,6 +346,7 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
@@ -365,7 +369,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -385,6 +389,7 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
@@ -407,7 +412,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -424,6 +429,7 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
