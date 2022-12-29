@@ -655,6 +655,20 @@ var _ = Describe("Translator", func() {
 			Expect(actualRegexRedirect.Substitution).To(Equal(expectedRedirectAction.Redirect.GetRegexRewrite().Substitution))
 			Expect(envoyRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: false}))
 		})
+		It("should report an invalid route action", func() {
+			glooRoute := &v1.Route{
+				Action: &v1.Route_RedirectAction{
+					RedirectAction: &v1.RedirectAction{
+						PathRewriteSpecifier: &v1.RedirectAction_PathRedirect{
+							// invalid sequence
+							PathRedirect: "/../../home/secretdata",
+						},
+					},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithError()
+		})
 	})
 
 	Context("route header match", func() {
