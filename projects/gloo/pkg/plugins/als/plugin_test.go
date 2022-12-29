@@ -38,58 +38,75 @@ var _ = Describe("Plugin", func() {
 			STATUS_CODE_VALUE                   uint32 = 400
 			DURATION_FILTER_VALUE               uint32 = 20
 			FRACTIONAL_PERCENT_NUMERATOR        uint32 = 25
-			FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 40
+			FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 1
 			HEADER_MATCHER_NAME_STRING                 = "HEADER MATCHER NAME STRING"
 			RESPONSE_FLAGS                             = []string{"LH", "UH", "UT"}
+			alsSettings                         *accessLogService.AccessLoggingService
+			logName                             string
+			extraHeaders                        []string
+			usRef                               *core.ResourceRef
+			accessLogConfigs                    []*envoyal.AccessLog
+			err                                 error
 		)
+
+		BeforeEach(func() {
+			logName = "test"
+			extraHeaders = []string{"test"}
+			usRef = &core.ResourceRef{
+				Name:      "default",
+				Namespace: "default",
+			}
+
+			alsSettings = &accessLogService.AccessLoggingService{
+				AccessLog: []*accessLogService.AccessLog{
+					{
+						OutputDestination: &accessLogService.AccessLog_GrpcService{
+							GrpcService: &accessLogService.GrpcService{
+								LogName: logName,
+								ServiceRef: &accessLogService.GrpcService_StaticClusterName{
+									StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
+								},
+								AdditionalRequestHeadersToLog:   extraHeaders,
+								AdditionalResponseHeadersToLog:  extraHeaders,
+								AdditionalResponseTrailersToLog: extraHeaders,
+							},
+						},
+					},
+				},
+			}
+		})
+
+		AfterEach(func() {
+			accessLogConfig := accessLogConfigs[0]
+
+			Expect(accessLogConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+			var falCfg envoygrpc.HttpGrpcAccessLogConfig
+			err = translatorutil.ParseTypedConfig(accessLogConfig, &falCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(falCfg.AdditionalRequestHeadersToLog).To(Equal(extraHeaders))
+			Expect(falCfg.AdditionalResponseHeadersToLog).To(Equal(extraHeaders))
+			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+			Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
+			envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
+			Expect(envoyGrpc).NotTo(BeNil())
+			Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+		})
 
 		DescribeTable("Test each filter is translated properly",
 			func(glooInputFilter *accessLogService.AccessLogFilter, expectedEnvoyFilter *envoyal.AccessLogFilter) {
-				logName := "test"
-				extraHeaders := []string{"test"}
-				usRef := &core.ResourceRef{
-					Name:      "default",
-					Namespace: "default",
-				}
-				alsSettings := &accessLogService.AccessLoggingService{
-					AccessLog: []*accessLogService.AccessLog{
-						{
-							OutputDestination: &accessLogService.AccessLog_GrpcService{
-								GrpcService: &accessLogService.GrpcService{
-									LogName: logName,
-									ServiceRef: &accessLogService.GrpcService_StaticClusterName{
-										StaticClusterName: translatorutil.UpstreamToClusterName(usRef),
-									},
-									AdditionalRequestHeadersToLog:   extraHeaders,
-									AdditionalResponseHeadersToLog:  extraHeaders,
-									AdditionalResponseTrailersToLog: extraHeaders,
-								},
-							},
-							Filter: glooInputFilter,
-						},
-					},
-				}
 
-				accessLogConfigs, err := ProcessAccessLogPlugins(alsSettings, nil)
+				accessLog := alsSettings.GetAccessLog()[0]
+				accessLog.Filter = glooInputFilter
+
+				accessLogConfigs, err = ProcessAccessLogPlugins(alsSettings, nil)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(accessLogConfigs).To(HaveLen(1))
 				accessLogConfig := accessLogConfigs[0]
 
-				Expect(accessLogConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
-				var falCfg envoygrpc.HttpGrpcAccessLogConfig
-				err = translatorutil.ParseTypedConfig(accessLogConfig, &falCfg)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(falCfg.AdditionalRequestHeadersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.AdditionalResponseHeadersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
-				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
-				Expect(envoyGrpc).NotTo(BeNil())
-				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
-
 				accessLogFilter := accessLogConfig.GetFilter()
 				Expect(accessLogFilter).To(matchers.MatchProto(expectedEnvoyFilter))
+
 			},
 			Entry(
 				"nil filter",
@@ -577,13 +594,14 @@ var _ = Describe("Plugin", func() {
 										AdditionalResponseTrailersToLog: extraHeaders,
 									},
 								},
+								// TODO - hardcoded values
 								Filter: &accessLogService.AccessLogFilter{
 									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 										RuntimeFilter: &accessLogService.RuntimeFilter{
 											RuntimeKey: filter_runtime_key,
 											PercentSampled: &v3.FractionalPercent{
 												Numerator:   50,
-												Denominator: v3.FractionalPercent_DenominatorType(40),
+												Denominator: v3.FractionalPercent_DenominatorType(1),
 											},
 											UseIndependentRandomness: true,
 										},

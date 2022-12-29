@@ -22,8 +22,8 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	// v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
+	//v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
@@ -32,7 +32,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-var _ = Describe("Access Log", func() {
+var _ = FDescribe("Access Log", func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -204,22 +204,19 @@ var _ = Describe("Access Log", func() {
 				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
 
-			It("can create json access logs with multiple filters", func() {
-				//gw, err := testClients.GatewayClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-				//Expect(err).NotTo(HaveOccurred())
+			FIt("can create json access logs with multiple filters", func() {
 				gw := gwdefaults.DefaultGateway(writeNamespace)
 				alsOrFilter := &als.OrFilter{
 					Filters: []*als.AccessLogFilter{
 						{
-							FilterSpecifier: &als.AccessLogFilter_DurationFilter{
-								DurationFilter: &als.DurationFilter{
-									Comparison: &als.ComparisonFilter{
-										Op: als.ComparisonFilter_EQ,
-										Value: &v31.RuntimeUInt32{
-											DefaultValue: 2000,
-											RuntimeKey:   "access_log.access_error.duration",
-										},
+							FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
+								RuntimeFilter: &als.RuntimeFilter{
+									RuntimeKey: "runtime.key",
+									PercentSampled: &v3.FractionalPercent{
+										Numerator:   10,
+										Denominator: v3.FractionalPercent_DenominatorType(5),
 									},
+									UseIndependentRandomness: true,
 								},
 							},
 						},
