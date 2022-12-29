@@ -355,12 +355,14 @@ func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {
 	var routesProto []envoycache.Resource
+
 	for _, routeCfg := range routeConfigs {
 		// don't add empty route configs, envoy will complain
 		if len(routeCfg.GetVirtualHosts()) < 1 {
 			continue
 		}
 		routesProto = append(routesProto, resource.NewEnvoyResource(routeCfg))
+
 	}
 
 	routesVersion, err := EnvoyCacheResourcesListToFnvHash(routesProto)

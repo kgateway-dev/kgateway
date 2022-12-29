@@ -204,8 +204,6 @@ func initRoutes(
 				generatedName,
 			)
 		}
-		// TODO-JAKE may need to change and validate the route here instead.... after the case, so that we keep
-		// the Exported Method in Sync with the current versioning
 		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
 		out[i] = &envoy_config_route_v3.Route{
 			Match: &match,
