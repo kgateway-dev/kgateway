@@ -35,6 +35,7 @@ var (
 	// invalidPathSuffixes are path suffixes that should not be at the end of a path
 	invalidPathSuffixes = []string{"/..", "/."}
 	// validCharacterRegex pattern based off RFC 3986 similar to kubernetes-sigs/gateway-api implementation
+	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 	validCharacterRegex = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
 	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
