@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	gatewaysoloiov1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -68,8 +71,78 @@ var _ = Describe("Check", func() {
 			_, usErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(noStatusUpstream, clients.WriteOpts{})
 			Expect(usErr).NotTo(HaveOccurred())
 
-			_, err := testutils.GlooctlOut("check -x xds-metrics,proxies")
+			noStatusUpstreamGroup := &v1.UpstreamGroup{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-upstream-group",
+					Namespace: "gloo-system",
+				},
+			}
+			_, usgErr := helpers.MustNamespacedUpstreamGroupClient(ctx, "gloo-system").Write(noStatusUpstreamGroup, clients.WriteOpts{})
+			Expect(usgErr).NotTo(HaveOccurred())
+
+			noStatusAuthConfig := &extauthv1.AuthConfig{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-auth-config",
+					Namespace: "gloo-system",
+				},
+			}
+			_, acErr := helpers.MustNamespacedAuthConfigClient(ctx, "gloo-system").Write(noStatusAuthConfig, clients.WriteOpts{})
+			Expect(acErr).NotTo(HaveOccurred())
+
+			noStatusVHO := &gatewaysoloiov1.VirtualHostOption{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-virtual-host-option",
+					Namespace: "gloo-system",
+				},
+			}
+			_, vhoErr := helpers.MustNamespacedVirtualHostOptionClient(ctx, "gloo-system").Write(noStatusVHO, clients.WriteOpts{})
+			Expect(vhoErr).NotTo(HaveOccurred())
+
+			noStatusRouteOption := &gatewaysoloiov1.RouteOption{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-route-option",
+					Namespace: "gloo-system",
+				},
+			}
+			_, roErr := helpers.MustNamespacedRouteOptionClient(ctx, "gloo-system").Write(noStatusRouteOption, clients.WriteOpts{})
+			Expect(roErr).NotTo(HaveOccurred())
+
+			noStatusVS := &gatewaysoloiov1.VirtualService{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-virtual-service",
+					Namespace: "gloo-system",
+				},
+			}
+			_, vsErr := helpers.MustNamespacedVirtualServiceClient(ctx, "gloo-system").Write(noStatusVS, clients.WriteOpts{})
+			Expect(vsErr).NotTo(HaveOccurred())
+
+			noStatusGateway := &gatewaysoloiov1.Gateway{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-gateway",
+					Namespace: "gloo-system",
+				},
+			}
+			_, gwErr := helpers.MustNamespacedGatewayClient(ctx, "gloo-system").Write(noStatusGateway, clients.WriteOpts{})
+			Expect(gwErr).NotTo(HaveOccurred())
+
+			noStatusProxy := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "some-warning-proxy",
+					Namespace: "gloo-system",
+				},
+			}
+			_, proxyErr := helpers.MustNamespacedProxyClient(ctx, "gloo-system").Write(noStatusProxy, clients.WriteOpts{})
+			Expect(proxyErr).NotTo(HaveOccurred())
+
+			_, err := testutils.GlooctlOut("check -x xds-metrics")
 			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found upstream with no status: %s %s", noStatusUpstream.GetMetadata().GetNamespace(), noStatusUpstream.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found upstream group with no status: %s %s", noStatusUpstreamGroup.GetMetadata().GetNamespace(), noStatusUpstreamGroup.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found auth config with no status: %s %s", noStatusAuthConfig.GetMetadata().GetNamespace(), noStatusAuthConfig.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found VirtualHostOption with no status: %s %s", noStatusVHO.GetMetadata().GetNamespace(), noStatusVHO.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found RouteOption with no status: %s %s", noStatusRouteOption.GetMetadata().GetNamespace(), noStatusRouteOption.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found gateway with no status: %s %s", noStatusGateway.GetMetadata().GetNamespace(), noStatusGateway.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found virtual service with no status: %s %s", noStatusVS.GetMetadata().GetNamespace(), noStatusVS.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found proxy with no status: %s %s", noStatusProxy.GetMetadata().GetNamespace(), noStatusProxy.GetMetadata().GetName())))
 		})
 	})
 })
