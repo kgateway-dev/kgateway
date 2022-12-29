@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7153
+    description: >
+    	Glooctls `checkResourceX` functions now report all resources regardless if resource.GetNamespacedStatuses() != nil. Added error messages for resources with no statuses.
+
