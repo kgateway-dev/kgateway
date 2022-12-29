@@ -32,7 +32,7 @@ import (
 var (
 	// invalidPathSequences are path sequences that should not be contained in a path
 	invalidPathSequences = []string{"//", "/./", "/../", "%2f", "%2F", "#"}
-	// invalidPathSuffixes are path suffixes that should be at the end of a path
+	// invalidPathSuffixes are path suffixes that should not be at the end of a path
 	invalidPathSuffixes = []string{"/..", "/."}
 	// TODO-JAKE why no @
 	// validPathCharacters = "^[A-Za-z0-9\\/\\-._~%!$&'()*+,;=:]+$"
