@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
+
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 
@@ -48,6 +50,33 @@ var _ = Describe("Grpc Web", func() {
 
 	JustAfterEach(func() {
 		testContext.JustAfterEach()
+	})
+
+	Context("Disable", func() {
+
+		BeforeEach(func() {
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				GrpcWeb: &grpc_web.GrpcWeb{
+					Disable: true,
+				},
+			}
+
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
+			}
+		})
+
+		It("can disable grpc web filter", func() {
+			Eventually(func(g Gomega) {
+				proxy, err := testContext.ReadDefaultProxy()
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(proxy.GetListeners()).To(HaveLen(1))
+				g.Expect(proxy.GetListeners()[0].GetHttpListener().GetOptions().GetGrpcWeb()).To(proto_matchers.MatchProto(&grpc_web.GrpcWeb{
+					Disable: true,
+				}))
+			}, "5s", ".5s").Should(Succeed())
+		})
 	})
 
 	Context("Grpc", func() {
