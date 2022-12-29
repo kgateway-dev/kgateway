@@ -428,8 +428,11 @@ func checkUpstreams(ctx context.Context, opts *options.Options, namespaces []str
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownUpstreams = append(knownUpstreams, renderMetadata(upstream.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found upstream with no status: %s\n", renderMetadata(upstream.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownUpstreams = append(knownUpstreams, renderMetadata(upstream.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -472,6 +475,9 @@ func checkUpstreamGroups(ctx context.Context, opts *options.Options, namespaces 
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found upstream group with no status: %s\n", renderMetadata(upstreamGroup.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 		}
 	}
@@ -513,8 +519,11 @@ func checkAuthConfigs(ctx context.Context, opts *options.Options, namespaces []s
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownAuthConfigs = append(knownAuthConfigs, renderMetadata(authConfig.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found auth config with no status: %s\n", renderMetadata(authConfig.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownAuthConfigs = append(knownAuthConfigs, renderMetadata(authConfig.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -549,7 +558,7 @@ func checkRateLimitConfigs(ctx context.Context, opts *options.Options, namespace
 			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
 				errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
 				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.GetMessage())
-				multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 
 			knownConfigs = append(knownConfigs, renderMetadata(config.GetMetadata()))
@@ -598,8 +607,11 @@ func checkVirtualHostOptions(ctx context.Context, opts *options.Options, namespa
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownVhOpts = append(knownVhOpts, renderMetadata(vhOpt.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found VirtualHostOption with no status: %s\n", renderMetadata(vhOpt.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownVhOpts = append(knownVhOpts, renderMetadata(vhOpt.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -643,8 +655,11 @@ func checkRouteOptions(ctx context.Context, opts *options.Options, namespaces []
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownRouteOpts = append(knownRouteOpts, renderMetadata(routeOpt.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found RouteOption with no status: %s\n", renderMetadata(routeOpt.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownRouteOpts = append(knownRouteOpts, renderMetadata(routeOpt.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -685,6 +700,9 @@ func checkVirtualServices(ctx context.Context, opts *options.Options, namespaces
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found virtual service with no status: %s\n", renderMetadata(virtualService.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 
 			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
@@ -822,6 +840,9 @@ func checkGateways(ctx context.Context, opts *options.Options, namespaces []stri
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found gateway with no status: %s\n", renderMetadata(gateway.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 		}
 	}
@@ -872,6 +893,9 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found proxy with no status: %s\n", renderMetadata(proxy.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 		}
 	}
