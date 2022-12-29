@@ -238,11 +238,12 @@ var _ = Describe("Kube2e: gateway", func() {
 					Namespace: testHelper.InstallNamespace,
 					Name:      defaults.GatewayProxyName,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					proxy := resource.(*gloov1.Proxy)
 					proxy.Metadata.Labels = map[string]string{
 						"created_by": "gateway",
 					}
+					return proxy
 				},
 				resourceClientset.ProxyClient().BaseClient())
 			Expect(err).NotTo(HaveOccurred())
@@ -255,9 +256,10 @@ var _ = Describe("Kube2e: gateway", func() {
 					Namespace: testHelper.InstallNamespace,
 					Name:      helper.TestrunnerName,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					vs := resource.(*gatewayv1.VirtualService)
 					vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
+					return vs
 				},
 				resourceClientset.VirtualServiceClient().BaseClient())
 			Expect(err).NotTo(HaveOccurred())
@@ -630,9 +632,10 @@ var _ = Describe("Kube2e: gateway", func() {
 							Namespace: testHelper.InstallNamespace,
 							Name:      petstoreUpstreamName,
 						},
-						func(resource resources.Resource) {
+						func(resource resources.Resource) resources.Resource {
 							us := resource.(*gloov1.Upstream)
 							us.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
+							return us
 						},
 						resourceClientset.UpstreamClient().BaseClient(),
 					)
@@ -795,7 +798,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							Namespace: testHelper.InstallNamespace,
 							Name:      "good-rt",
 						},
-						func(resource resources.Resource) {
+						func(resource resources.Resource) resources.Resource {
 							rt := resource.(*gatewayv1.RouteTable)
 							rt.Routes[0].Action = &gatewayv1.Route_DirectResponseAction{
 								DirectResponseAction: &gloov1.DirectResponseAction{
@@ -803,6 +806,7 @@ var _ = Describe("Kube2e: gateway", func() {
 									Body:   "Updated good response",
 								},
 							}
+							return rt
 						},
 						resourceClientset.RouteTableClient().BaseClient(),
 					)
@@ -881,7 +885,7 @@ var _ = Describe("Kube2e: gateway", func() {
 							Namespace: testHelper.InstallNamespace,
 							Name:      "good-rt",
 						},
-						func(resource resources.Resource) {
+						func(resource resources.Resource) resources.Resource {
 							rt := resource.(*gatewayv1.RouteTable)
 							rt.Routes[0].Action = &gatewayv1.Route_DirectResponseAction{
 								DirectResponseAction: &gloov1.DirectResponseAction{
@@ -889,6 +893,7 @@ var _ = Describe("Kube2e: gateway", func() {
 									Body:   "Updated good response",
 								},
 							}
+							return rt
 						},
 						resourceClientset.RouteTableClient().BaseClient(),
 					)
@@ -1446,13 +1451,14 @@ var _ = Describe("Kube2e: gateway", func() {
 						Namespace: testHelper.InstallNamespace,
 						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svc, helper.TestRunnerPort),
 					},
-					func(resource resources.Resource) {
+					func(resource resources.Resource) resources.Resource {
 						upstream := resource.(*gloov1.Upstream)
 						upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
 							PluginType: &gloov1plugins.ServiceSpec_Grpc{
 								Grpc: &grpcv1.ServiceSpec{},
 							},
 						}
+						return upstream
 					},
 					resourceClientset.UpstreamClient().BaseClient())
 				Expect(err).NotTo(HaveOccurred())
@@ -1880,13 +1886,14 @@ var _ = Describe("Kube2e: gateway", func() {
 					Namespace: testHelper.InstallNamespace,
 					Name:      upstreamName,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					us := resource.(*gloov1.Upstream)
 					us.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
 						Selectors: []*gloov1plugins.Selector{{
 							Keys: []string{"text"},
 						}},
 					}
+					return us
 				},
 				resourceClientset.UpstreamClient().BaseClient(),
 			)
@@ -2153,9 +2160,10 @@ spec:
 					Namespace: testRunnerVs.GetMetadata().GetNamespace(),
 					Name:      testRunnerVs.GetMetadata().GetName(),
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					vs := resource.(*gatewayv1.VirtualService)
 					vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+					return vs
 				},
 				resourceClientset.VirtualServiceClient().BaseClient(),
 			)
@@ -2195,9 +2203,10 @@ spec:
 						Namespace: testRunnerVs.GetMetadata().GetNamespace(),
 						Name:      testRunnerVs.GetMetadata().GetName(),
 					},
-					func(resource resources.Resource) {
+					func(resource resources.Resource) resources.Resource {
 						vs := resource.(*gatewayv1.VirtualService)
 						vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: invalidTransform}
+						return vs
 					},
 					resourceClientset.VirtualServiceClient().BaseClient(),
 				)

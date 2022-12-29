@@ -8,12 +8,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	matchers2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/matchers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
 var _ = Describe("Example E2E Test For Developers", func() {
@@ -159,18 +157,11 @@ var _ = Describe("Example E2E Test For Developers", func() {
 			}, "5s", ".5s").Should(Succeed())
 
 			By("Patch the VS to only handle traffic prefixed with /new")
-			err := helpers.PatchResource(
-				testContext.Ctx(),
-				testContext.ResourcesToCreate().VirtualServices[0].GetMetadata().Ref(),
-				func(resource resources.Resource) {
-					vs := resource.(*v1.VirtualService)
-					vs.VirtualHost.Routes[0].Matchers[0].PathSpecifier = &matchers2.Matcher_Prefix{
-						Prefix: "/new",
-					}
-				},
-				testContext.TestClients().VirtualServiceClient.BaseClient(),
-			)
-			Expect(err).NotTo(HaveOccurred())
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vsBuilder := helpers.BuilderFromVirtualService(vs)
+				vsBuilder.WithRoutePrefixMatcher("test", "/new")
+				return vsBuilder.Build()
+			})
 
 			By("Route traffic to /test returns a 404")
 			Eventually(func(g Gomega) {
