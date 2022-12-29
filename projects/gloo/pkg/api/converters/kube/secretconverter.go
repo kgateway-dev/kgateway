@@ -132,9 +132,9 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 	if hasAccessKey && hasSecretKey {
 		skSecret := &v1.Secret{
 			Metadata: &skcore.Metadata{
-				Name:        secret.Name,
-				Namespace:   secret.Namespace,
-				Cluster:     secret.ClusterName,
+				Name:      secret.Name,
+				Namespace: secret.Namespace,
+				// Cluster:     secret.ClusterName,
 				Labels:      secret.Labels,
 				Annotations: secret.Annotations,
 			},
