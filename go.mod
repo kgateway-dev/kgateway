@@ -54,7 +54,7 @@ require (
 
 	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20220923183548-9746539fc625
-	github.com/solo-io/solo-kit v0.30.8
+	github.com/solo-io/solo-kit v0.30.9-0.20221229202453-3ee3d3c06a2a
 	github.com/spf13/afero v1.6.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
@@ -329,9 +329,6 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
-	// TODO-JAKE need to change replace
-	github.com/solo-io/solo-kit => ../solo-kit
-
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
