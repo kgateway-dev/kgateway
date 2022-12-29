@@ -36,18 +36,22 @@ var (
 	invalidPathSuffixes = []string{"/..", "/."}
 	// validCharacterRegex pattern based off RFC 3986 similar to kubernetes-sigs/gateway-api implementation
 	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
-	validCharacterRegex = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
+	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
 	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
 	SubsetsMisconfiguredErr           = errors.New("route has a subset config, but the upstream does not")
-	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validCharacterRegex)
-	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validCharacterRegex)
+	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
+	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
 	PathContainsInvalidCharacterError = func(s, invalid string) error {
 		return errors.Errorf("path [%s] cannot contain [%s]", s, invalid)
 	}
 	PathEndsWithInvalidCharactersError = func(s, invalid string) error {
 		return errors.Errorf("path [%s] cannot end with [%s]", s, invalid)
 	}
+)
+
+var (
+	validPathRegex *regexp.Regexp
 )
 
 type RouteConfigurationTranslator interface {
@@ -845,11 +849,15 @@ func ValidateRoutePath(s string) error {
 	if s == "" {
 		return nil
 	}
-	re, err := regexp.Compile(validCharacterRegex)
-	if err != nil {
-		return CompilingRoutePathRegexError
+	if validPathRegex == nil {
+		re, err := regexp.Compile(validPathRegexCharacters)
+		if err != nil {
+			validPathRegex = nil
+			return CompilingRoutePathRegexError
+		}
+		validPathRegex = re
 	}
-	if !re.Match([]byte(s)) {
+	if !validPathRegex.Match([]byte(s)) {
 		return ValidRoutePatternError
 	}
 	for _, invalid := range invalidPathSequences {
