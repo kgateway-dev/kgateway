@@ -138,6 +138,7 @@ var _ = FDescribe("Access Log", func() {
 				// 	g.Expect(err).NotTo(HaveOccurred())
 				// 	g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
 				// }, time.Second*30, time.Second/2).Should(Succeed())
+
 				testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 					gw,
 				}

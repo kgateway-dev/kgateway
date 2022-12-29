@@ -150,7 +150,7 @@ message RuntimeFilter {
   
     // The default sampling percentage. If not specified, defaults to 0% with
     // denominator of 100.
-    solo.io.envoy.type.v3.FractionalPercent percent_sampled = 2;
+    .solo.io.envoy.type.v3.FractionalPercent percent_sampled = 2;
 
     // By default, sampling pivots on the header
     // :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` being
