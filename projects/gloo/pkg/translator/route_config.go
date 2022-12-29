@@ -173,6 +173,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 		h.setAction(params, routeReport, in, out[i])
 	}
 
+	validateEnvoyRoute(out, routeReport)
 	return out
 }
 
@@ -205,7 +206,7 @@ func initRoutes(
 		}
 		// TODO-JAKE may need to change and validate the route here instead.... after the case, so that we keep
 		// the Exported Method in Sync with the current versioning
-		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, routeReport, matcher, generatedName)
+		match := GlooMatcherToEnvoyMatcher(params.Params.Ctx, matcher)
 		out[i] = &envoy_config_route_v3.Route{
 			Match: &match,
 		}
@@ -219,8 +220,27 @@ func initRoutes(
 	return out
 }
 
+// validateEnvoyRoute will validate the paths on all routes. Any path, or rewrite of the path
+// can be used here.
+func validateEnvoyRoute(routes []*envoy_config_route_v3.Route, routeReport *validationapi.RouteReport) {
+	for _, r := range routes {
+		match := r.GetMatch()
+		route := r.GetRoute()
+		re := r.GetRedirect()
+		name := r.Name
+		validatePath(match.GetPath(), name, routeReport)
+		validatePath(match.GetPrefix(), name, routeReport)
+		validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
+		validatePath(route.GetPrefixRewrite(), name, routeReport)
+		validatePath(re.GetPrefixRewrite(), name, routeReport)
+		validatePath(re.GetPathRedirect(), name, routeReport)
+		validatePath(re.GetHostRedirect(), name, routeReport)
+		validatePath(re.GetSchemeRedirect(), name, routeReport)
+	}
+}
+
 // utility function to transform gloo matcher to envoy route matcher
-func GlooMatcherToEnvoyMatcher(ctx context.Context, routeReport *validationapi.RouteReport, matcher *matchers.Matcher, name string) envoy_config_route_v3.RouteMatch {
+func GlooMatcherToEnvoyMatcher(ctx context.Context, matcher *matchers.Matcher) envoy_config_route_v3.RouteMatch {
 	match := envoy_config_route_v3.RouteMatch{
 		Headers:         envoyHeaderMatcher(ctx, matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
@@ -235,7 +255,7 @@ func GlooMatcherToEnvoyMatcher(ctx context.Context, routeReport *validationapi.R
 	}
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
-	setEnvoyPathMatcher(ctx, routeReport, matcher, &match, name)
+	setEnvoyPathMatcher(ctx, matcher, &match)
 	match.CaseSensitive = matcher.GetCaseSensitive()
 	return match
 }
@@ -298,11 +318,9 @@ func (h *httpRouteConfigurationTranslator) setAction(
 		h.runRouteActionPlugins(params, routeReport, in, out)
 
 	case *v1.Route_RedirectAction:
-		hostRedirect := action.RedirectAction.GetHostRedirect()
-		validatePath(hostRedirect, out.Name, routeReport)
 		out.Action = &envoy_config_route_v3.Route_Redirect{
 			Redirect: &envoy_config_route_v3.RedirectAction{
-				HostRedirect:           hostRedirect,
+				HostRedirect:           action.RedirectAction.GetHostRedirect(),
 				ResponseCode:           envoy_config_route_v3.RedirectAction_RedirectResponseCode(action.RedirectAction.GetResponseCode()),
 				SchemeRewriteSpecifier: &envoy_config_route_v3.RedirectAction_HttpsRedirect{HttpsRedirect: action.RedirectAction.GetHttpsRedirect()},
 				StripQuery:             action.RedirectAction.GetStripQuery(),
@@ -311,16 +329,12 @@ func (h *httpRouteConfigurationTranslator) setAction(
 
 		switch pathRewrite := action.RedirectAction.GetPathRewriteSpecifier().(type) {
 		case *v1.RedirectAction_PathRedirect:
-			pathRedirect := pathRewrite.PathRedirect
-			validatePath(pathRedirect, out.Name, routeReport)
 			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PathRedirect{
-				PathRedirect: pathRedirect,
+				PathRedirect: pathRewrite.PathRedirect,
 			}
 		case *v1.RedirectAction_PrefixRewrite:
-			prefixRewrite := pathRewrite.PrefixRewrite
-			validatePath(prefixRewrite, out.Name, routeReport)
 			out.GetAction().(*envoy_config_route_v3.Route_Redirect).Redirect.PathRewriteSpecifier = &envoy_config_route_v3.RedirectAction_PrefixRewrite{
-				PrefixRewrite: prefixRewrite,
+				PrefixRewrite: pathRewrite.PrefixRewrite,
 			}
 		case *v1.RedirectAction_RegexRewrite:
 			regex, err := regexutils.ConvertRegexMatchAndSubstitute(params.Ctx, pathRewrite.RegexRewrite)
@@ -594,21 +608,17 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(ctx context.Context, routeReport *validationapi.RouteReport, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch, name string) {
+func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_config_route_v3.RouteMatch) {
 	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
-		exact := path.Exact
-		validatePath(exact, name, routeReport)
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Path{
-			Path: exact,
+			Path: path.Exact,
 		}
 	case *matchers.Matcher_Regex:
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_SafeRegex{
 			SafeRegex: regexutils.NewRegex(ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
-		prefix := path.Prefix
-		validatePath(prefix, name, routeReport)
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
 			Prefix: path.Prefix,
 		}
