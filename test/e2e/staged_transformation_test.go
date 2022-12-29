@@ -444,7 +444,10 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("test")
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			req.Host = e2e.DefaultHost
+
 			// send a request and expect it transformed!
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
