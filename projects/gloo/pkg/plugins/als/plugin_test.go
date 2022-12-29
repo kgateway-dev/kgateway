@@ -34,19 +34,22 @@ var _ = Describe("Plugin", func() {
 	// to make sure we copied/pasted correctly and that no changes made to the Envoy definitions broke anything
 	Describe("Test each Filter", func() {
 		var (
-			FILTER_RUNTIME_KEY                         = "FILTER RUNTIME KEY"
-			STATUS_CODE_VALUE                   uint32 = 400
-			DURATION_FILTER_VALUE               uint32 = 20
-			FRACTIONAL_PERCENT_NUMERATOR        uint32 = 25
-			FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 1
-			HEADER_MATCHER_NAME_STRING                 = "HEADER MATCHER NAME STRING"
-			RESPONSE_FLAGS                             = []string{"LH", "UH", "UT"}
-			alsSettings                         *accessLogService.AccessLoggingService
-			logName                             string
-			extraHeaders                        []string
-			usRef                               *core.ResourceRef
-			accessLogConfigs                    []*envoyal.AccessLog
-			err                                 error
+			FILTER_RUNTIME_KEY                                 = "FILTER RUNTIME KEY"
+			STATUS_CODE_VALUE                           uint32 = 400
+			DURATION_FILTER_VALUE                       uint32 = 20
+			FRACTIONAL_PERCENT_NUMERATOR                uint32 = 25
+			FRACTIONAL_PERCENT_DENOMINATOR_TYPE         uint32 = 1
+			INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 10
+			INVALID_OP                                         = 10
+			HEADER_MATCHER_NAME_STRING                         = "HEADER MATCHER NAME STRING"
+			RESPONSE_FLAGS                                     = []string{"LH", "UH", "UT"}
+
+			alsSettings      *accessLogService.AccessLoggingService
+			logName          string
+			extraHeaders     []string
+			usRef            *core.ResourceRef
+			accessLogConfigs []*envoyal.AccessLog
+			err              error
 		)
 
 		BeforeEach(func() {
@@ -76,138 +79,327 @@ var _ = Describe("Plugin", func() {
 			}
 		})
 
-		AfterEach(func() {
-			accessLogConfig := accessLogConfigs[0]
+		Describe("Test each Filter", func() {
+			AfterEach(func() {
+				accessLogConfig := accessLogConfigs[0]
 
-			Expect(accessLogConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
-			var falCfg envoygrpc.HttpGrpcAccessLogConfig
-			err = translatorutil.ParseTypedConfig(accessLogConfig, &falCfg)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(falCfg.AdditionalRequestHeadersToLog).To(Equal(extraHeaders))
-			Expect(falCfg.AdditionalResponseHeadersToLog).To(Equal(extraHeaders))
-			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
-			Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
-			envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
-			Expect(envoyGrpc).NotTo(BeNil())
-			Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+				Expect(accessLogConfig.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+				var falCfg envoygrpc.HttpGrpcAccessLogConfig
+				err = translatorutil.ParseTypedConfig(accessLogConfig, &falCfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(falCfg.AdditionalRequestHeadersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseHeadersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+				Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
+				envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
+				Expect(envoyGrpc).NotTo(BeNil())
+				Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+			})
+
+			DescribeTable("Test each filter is translated properly",
+				func(glooInputFilter *accessLogService.AccessLogFilter, expectedEnvoyFilter *envoyal.AccessLogFilter) {
+
+					accessLog := alsSettings.GetAccessLog()[0]
+					accessLog.Filter = glooInputFilter
+
+					accessLogConfigs, err = ProcessAccessLogPlugins(alsSettings, nil)
+					Expect(err).NotTo(HaveOccurred())
+
+					Expect(accessLogConfigs).To(HaveLen(1))
+					accessLogConfig := accessLogConfigs[0]
+
+					accessLogFilter := accessLogConfig.GetFilter()
+					Expect(accessLogFilter).To(matchers.MatchProto(expectedEnvoyFilter))
+
+				},
+				Entry(
+					"nil filter",
+					&accessLogService.AccessLogFilter{},
+					&envoyal.AccessLogFilter{}),
+				Entry(
+					"StatusCodeFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
+							StatusCodeFilter: &accessLogService.StatusCodeFilter{
+								Comparison: &accessLogService.ComparisonFilter{
+									Op:    accessLogService.ComparisonFilter_EQ,
+									Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+								},
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_StatusCodeFilter{
+							StatusCodeFilter: &envoyal.StatusCodeFilter{
+								Comparison: &envoyal.ComparisonFilter{
+									Op:    envoyal.ComparisonFilter_EQ,
+									Value: &envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+								},
+							},
+						},
+					}),
+				Entry(
+					"DurationFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
+							DurationFilter: &accessLogService.DurationFilter{
+								Comparison: &accessLogService.ComparisonFilter{
+									Op:    accessLogService.ComparisonFilter_EQ,
+									Value: &v31.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
+								},
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_DurationFilter{
+							DurationFilter: &envoyal.DurationFilter{
+								Comparison: &envoyal.ComparisonFilter{
+									Op:    envoyal.ComparisonFilter_EQ,
+									Value: &envoy_v3.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
+								},
+							},
+						},
+					}),
+				Entry(
+					"NotHealthCheckFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_NotHealthCheckFilter{
+							NotHealthCheckFilter: &accessLogService.NotHealthCheckFilter{},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_NotHealthCheckFilter{
+							NotHealthCheckFilter: &envoyal.NotHealthCheckFilter{},
+						},
+					}),
+				Entry(
+					"TraceableFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_TraceableFilter{
+							TraceableFilter: &accessLogService.TraceableFilter{},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_TraceableFilter{
+							TraceableFilter: &envoyal.TraceableFilter{},
+						},
+					}),
+				Entry(
+					"RuntimeFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+							RuntimeFilter: &accessLogService.RuntimeFilter{
+								RuntimeKey: FILTER_RUNTIME_KEY,
+								PercentSampled: &v3.FractionalPercent{
+									Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+									Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+								},
+								UseIndependentRandomness: true,
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_RuntimeFilter{
+							RuntimeFilter: &envoyal.RuntimeFilter{
+								RuntimeKey: FILTER_RUNTIME_KEY,
+								PercentSampled: &envoy_v31.FractionalPercent{
+									Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+									Denominator: envoy_v31.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+								},
+								UseIndependentRandomness: true,
+							},
+						},
+					}),
+				Entry(
+					"AndFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_AndFilter{
+							AndFilter: &accessLogService.AndFilter{
+								Filters: []*accessLogService.AccessLogFilter{
+									{
+										FilterSpecifier: &accessLogService.AccessLogFilter_HeaderFilter{},
+									},
+									{
+										FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{},
+									},
+									{
+										FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{},
+									},
+								},
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_AndFilter{
+							AndFilter: &envoyal.AndFilter{
+								Filters: []*envoyal.AccessLogFilter{
+									{
+										FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{},
+									},
+									{
+										FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{},
+									},
+									{
+										FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{},
+									},
+								},
+							},
+						},
+					}),
+				Entry(
+					"OrFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_OrFilter{
+							OrFilter: &accessLogService.OrFilter{
+								Filters: []*accessLogService.AccessLogFilter{
+									{
+										FilterSpecifier: &accessLogService.AccessLogFilter_HeaderFilter{},
+									},
+									{
+										FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{},
+									},
+									{
+										FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{},
+									},
+								},
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_OrFilter{
+							OrFilter: &envoyal.OrFilter{
+								Filters: []*envoyal.AccessLogFilter{
+									{
+										FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{},
+									},
+									{
+										FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{},
+									},
+									{
+										FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{},
+									},
+								},
+							},
+						},
+					}),
+				Entry(
+					"HeaderFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_HeaderFilter{
+							HeaderFilter: &accessLogService.HeaderFilter{
+								Header: &v32.HeaderMatcher{
+									Name:        HEADER_MATCHER_NAME_STRING,
+									InvertMatch: true,
+								},
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{
+							HeaderFilter: &envoyal.HeaderFilter{
+								Header: &envoy_v32.HeaderMatcher{
+									Name:        HEADER_MATCHER_NAME_STRING,
+									InvertMatch: true,
+								},
+							},
+						},
+					}),
+				Entry(
+					"ResponseFlagFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{
+							ResponseFlagFilter: &accessLogService.ResponseFlagFilter{
+								Flags: RESPONSE_FLAGS,
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{
+							ResponseFlagFilter: &envoyal.ResponseFlagFilter{
+								Flags: RESPONSE_FLAGS,
+							},
+						},
+					}),
+				Entry(
+					"GrpcStatusFilter",
+					&accessLogService.AccessLogFilter{
+						FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{
+							GrpcStatusFilter: &accessLogService.GrpcStatusFilter{
+								Statuses: []accessLogService.GrpcStatusFilter_Status{400, 404},
+								Exclude:  false,
+							},
+						},
+					},
+					&envoyal.AccessLogFilter{
+						FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{
+							GrpcStatusFilter: &envoyal.GrpcStatusFilter{
+								Statuses: []envoyal.GrpcStatusFilter_Status{400, 404},
+								Exclude:  false,
+							},
+						},
+					}),
+			)
+
 		})
 
-		DescribeTable("Test each filter is translated properly",
-			func(glooInputFilter *accessLogService.AccessLogFilter, expectedEnvoyFilter *envoyal.AccessLogFilter) {
+		DescribeTable("Test We Correctly Handle Bad ENUM",
+			func(glooInputFilter *accessLogService.AccessLogFilter, searchStr string) {
 
 				accessLog := alsSettings.GetAccessLog()[0]
 				accessLog.Filter = glooInputFilter
 
 				accessLogConfigs, err = ProcessAccessLogPlugins(alsSettings, nil)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(searchStr))
 
-				Expect(accessLogConfigs).To(HaveLen(1))
-				accessLogConfig := accessLogConfigs[0]
-
-				accessLogFilter := accessLogConfig.GetFilter()
-				Expect(accessLogFilter).To(matchers.MatchProto(expectedEnvoyFilter))
-
+				Expect(accessLogConfigs).To(HaveLen(0))
 			},
 			Entry(
-				"nil filter",
-				&accessLogService.AccessLogFilter{},
-				&envoyal.AccessLogFilter{}),
-			Entry(
-				"StatusCodeFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
-						StatusCodeFilter: &accessLogService.StatusCodeFilter{
-							Comparison: &accessLogService.ComparisonFilter{
-								Op:    accessLogService.ComparisonFilter_EQ,
-								Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
-							},
-						},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_StatusCodeFilter{
-						StatusCodeFilter: &envoyal.StatusCodeFilter{
-							Comparison: &envoyal.ComparisonFilter{
-								Op:    envoyal.ComparisonFilter_EQ,
-								Value: &envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
-							},
-						},
-					},
-				}),
-			Entry(
-				"DurationFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
-						DurationFilter: &accessLogService.DurationFilter{
-							Comparison: &accessLogService.ComparisonFilter{
-								Op:    accessLogService.ComparisonFilter_EQ,
-								Value: &v31.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
-							},
-						},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_DurationFilter{
-						DurationFilter: &envoyal.DurationFilter{
-							Comparison: &envoyal.ComparisonFilter{
-								Op:    envoyal.ComparisonFilter_EQ,
-								Value: &envoy_v3.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
-							},
-						},
-					},
-				}),
-			Entry(
-				"NotHealthCheckFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_NotHealthCheckFilter{
-						NotHealthCheckFilter: &accessLogService.NotHealthCheckFilter{},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_NotHealthCheckFilter{
-						NotHealthCheckFilter: &envoyal.NotHealthCheckFilter{},
-					},
-				}),
-			Entry(
-				"TraceableFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_TraceableFilter{
-						TraceableFilter: &accessLogService.TraceableFilter{},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_TraceableFilter{
-						TraceableFilter: &envoyal.TraceableFilter{},
-					},
-				}),
-			Entry(
-				"RuntimeFilter",
+				"Bad Denominator in RuntimeFilter",
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 						RuntimeFilter: &accessLogService.RuntimeFilter{
 							RuntimeKey: FILTER_RUNTIME_KEY,
 							PercentSampled: &v3.FractionalPercent{
 								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-								Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+								Denominator: v3.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 							},
 							UseIndependentRandomness: true,
 						},
 					},
 				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_RuntimeFilter{
-						RuntimeFilter: &envoyal.RuntimeFilter{
-							RuntimeKey: FILTER_RUNTIME_KEY,
-							PercentSampled: &envoy_v31.FractionalPercent{
-								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-								Denominator: envoy_v31.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+				"field FractionalPercent.Denominator of RuntimeFilter",
+			),
+			Entry(
+				"Bad OP in StatusCodeFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
+						StatusCodeFilter: &accessLogService.StatusCodeFilter{
+							Comparison: &accessLogService.ComparisonFilter{
+								Op:    accessLogService.ComparisonFilter_Op(INVALID_OP),
+								Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
 							},
-							UseIndependentRandomness: true,
 						},
 					},
-				}),
+				},
+				"field ComparisonFilter.Op of StatusCodeFilter",
+			),
 			Entry(
-				"AndFilter",
+				"Bad OP in DurationFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
+						DurationFilter: &accessLogService.DurationFilter{
+							Comparison: &accessLogService.ComparisonFilter{
+								Op:    accessLogService.ComparisonFilter_Op(INVALID_OP),
+								Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+							},
+						},
+					},
+				},
+				"field ComparisonFilter.Op of DurationFilter",
+			),
+			Entry(
+				"Bad Subfilter in AndFilter",
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_AndFilter{
 						AndFilter: &accessLogService.AndFilter{
@@ -219,31 +411,25 @@ var _ = Describe("Plugin", func() {
 									FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{},
 								},
 								{
-									FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{},
+									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+										RuntimeFilter: &accessLogService.RuntimeFilter{
+											RuntimeKey: FILTER_RUNTIME_KEY,
+											PercentSampled: &v3.FractionalPercent{
+												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+												Denominator: v3.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+											},
+											UseIndependentRandomness: true,
+										},
+									},
 								},
 							},
 						},
 					},
 				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_AndFilter{
-						AndFilter: &envoyal.AndFilter{
-							Filters: []*envoyal.AccessLogFilter{
-								{
-									FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{},
-								},
-								{
-									FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{},
-								},
-								{
-									FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{},
-								},
-							},
-						},
-					},
-				}),
+				"field FractionalPercent.Denominator of RuntimeFilter, inside an AndFilter",
+			),
 			Entry(
-				"OrFilter",
+				"Bad Subfilter in OrFilter",
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_OrFilter{
 						OrFilter: &accessLogService.OrFilter{
@@ -255,86 +441,25 @@ var _ = Describe("Plugin", func() {
 									FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{},
 								},
 								{
-									FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{},
+									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+										RuntimeFilter: &accessLogService.RuntimeFilter{
+											RuntimeKey: FILTER_RUNTIME_KEY,
+											PercentSampled: &v3.FractionalPercent{
+												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+												Denominator: v3.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+											},
+											UseIndependentRandomness: true,
+										},
+									},
 								},
 							},
 						},
 					},
 				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_OrFilter{
-						OrFilter: &envoyal.OrFilter{
-							Filters: []*envoyal.AccessLogFilter{
-								{
-									FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{},
-								},
-								{
-									FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{},
-								},
-								{
-									FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{},
-								},
-							},
-						},
-					},
-				}),
-			Entry(
-				"HeaderFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_HeaderFilter{
-						HeaderFilter: &accessLogService.HeaderFilter{
-							Header: &v32.HeaderMatcher{
-								Name:        HEADER_MATCHER_NAME_STRING,
-								InvertMatch: true,
-							},
-						},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{
-						HeaderFilter: &envoyal.HeaderFilter{
-							Header: &envoy_v32.HeaderMatcher{
-								Name:        HEADER_MATCHER_NAME_STRING,
-								InvertMatch: true,
-							},
-						},
-					},
-				}),
-			Entry(
-				"ResponseFlagFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{
-						ResponseFlagFilter: &accessLogService.ResponseFlagFilter{
-							Flags: RESPONSE_FLAGS,
-						},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{
-						ResponseFlagFilter: &envoyal.ResponseFlagFilter{
-							Flags: RESPONSE_FLAGS,
-						},
-					},
-				}),
-			Entry(
-				"GrpcStatusFilter",
-				&accessLogService.AccessLogFilter{
-					FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{
-						GrpcStatusFilter: &accessLogService.GrpcStatusFilter{
-							Statuses: []accessLogService.GrpcStatusFilter_Status{400, 404},
-							Exclude:  false,
-						},
-					},
-				},
-				&envoyal.AccessLogFilter{
-					FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{
-						GrpcStatusFilter: &envoyal.GrpcStatusFilter{
-							Statuses: []envoyal.GrpcStatusFilter_Status{400, 404},
-							Exclude:  false,
-						},
-					},
-				}),
+				"field FractionalPercent.Denominator of RuntimeFilter, inside an OrFilter",
+			),
 		)
+
 	})
 
 	Context("ProcessAccessLogPlugins", func() {

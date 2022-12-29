@@ -1,8 +1,9 @@
 package als
 
 import (
-	"errors"
 	"fmt"
+
+	errors "github.com/rotisserie/eris"
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -138,8 +139,11 @@ func translateFilter(inFilter *als.AccessLogFilter) (*envoyal.AccessLogFilter, e
 }
 
 var (
-	InvalidEnumValueError = func(e error) error {
-		return eris.Wrapf(e, "cannot use lbhash plugin on non-Route_Route route actions")
+	InvalidEnumValueError = func(filterName string, fieldName string, value string) error {
+		return errors.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
+	}
+	NestedError = func(filterName string, err error) error {
+		return errors.Errorf("%s, inside an %s", err, filterName)
 	}
 )
 
@@ -149,26 +153,26 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		denominator := filter.RuntimeFilter.GetPercentSampled().GetDenominator()
 		name := v3.FractionalPercent_DenominatorType_name[int32(denominator.Number())]
 		if name == "" {
-			return errors.New("invalid FractionalPercent.Denominator")
+			return InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", denominator.String())
 		}
 	case *als.AccessLogFilter_StatusCodeFilter:
 		op := filter.StatusCodeFilter.GetComparison().GetOp()
 		name := als.ComparisonFilter_Op_name[int32(op.Number())]
 		if name == "" {
-			return errors.New("invalid ComparisonFilter.Op")
+			return InvalidEnumValueError("StatusCodeFilter", "ComparisonFilter.Op", op.String())
 		}
 	case *als.AccessLogFilter_DurationFilter:
 		op := filter.DurationFilter.GetComparison().GetOp()
 		name := als.ComparisonFilter_Op_name[int32(op.Number())]
 		if name == "" {
-			return errors.New("invalid ComparisonFilter.Op")
+			return InvalidEnumValueError("DurationFilter", "ComparisonFilter.Op", op.String())
 		}
 	case *als.AccessLogFilter_AndFilter:
 		subfilters := filter.AndFilter.GetFilters()
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return err
+				return NestedError("AndFilter", err)
 			}
 		}
 	case *als.AccessLogFilter_OrFilter:
@@ -176,7 +180,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return err
+				return NestedError("OrFilter", err)
 			}
 		}
 
