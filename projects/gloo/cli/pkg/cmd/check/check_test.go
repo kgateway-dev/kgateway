@@ -58,17 +58,17 @@ var _ = Describe("Check", func() {
 				},
 			}, clients.WriteOpts{})
 
-			warningUpstream := &v1.Upstream{
+			noStatusUpstream := &v1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "some-warning-upstream",
 					Namespace: "gloo-system",
 				},
 			}
-			_, usErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(warningUpstream, clients.WriteOpts{})
+			_, usErr := helpers.MustNamespacedUpstreamClient(ctx, "gloo-system").Write(noStatusUpstream, clients.WriteOpts{})
 			Expect(usErr).NotTo(HaveOccurred())
 
 			_, err := testutils.GlooctlOut("check -x xds-metrics,proxies")
-			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found upstream with no status: %s %s", warningUpstream.GetMetadata().GetNamespace(), warningUpstream.GetMetadata().GetName())))
+			Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Found upstream with no status: %s %s", noStatusUpstream.GetMetadata().GetNamespace(), noStatusUpstream.GetMetadata().GetName())))
 		})
 	})
 })
