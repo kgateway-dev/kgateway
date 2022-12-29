@@ -382,6 +382,7 @@ type CertGenCron struct {
 }
 
 type GatewayProxy struct {
+	Kind                           *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
 	Namespace                      *string                      `json:"namespace,omitempty" desc:"Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace"`
 	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                      *ConfigMap                   `json:"configMap,omitempty"`
