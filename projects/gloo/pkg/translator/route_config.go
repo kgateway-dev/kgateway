@@ -171,9 +171,9 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	for i := range out {
 		h.setAction(params, routeReport, in, out[i])
+		validateEnvoyRoute(out[i], routeReport)
 	}
 
-	validateEnvoyRoute(out, routeReport)
 	return out
 }
 
@@ -218,23 +218,21 @@ func initRoutes(
 	return out
 }
 
-// validateEnvoyRoute will validate the paths on all routes. Any path, or rewrite of the path
-// can be used here.
-func validateEnvoyRoute(routes []*envoy_config_route_v3.Route, routeReport *validationapi.RouteReport) {
-	for _, r := range routes {
-		match := r.GetMatch()
-		route := r.GetRoute()
-		re := r.GetRedirect()
-		name := r.Name
-		validatePath(match.GetPath(), name, routeReport)
-		validatePath(match.GetPrefix(), name, routeReport)
-		validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
-		validatePath(route.GetPrefixRewrite(), name, routeReport)
-		validatePath(re.GetPrefixRewrite(), name, routeReport)
-		validatePath(re.GetPathRedirect(), name, routeReport)
-		validatePath(re.GetHostRedirect(), name, routeReport)
-		validatePath(re.GetSchemeRedirect(), name, routeReport)
-	}
+// validateEnvoyRoute will validate all paths on a route. Any path, rewrite, or redirect of the path
+// will be validated.
+func validateEnvoyRoute(r *envoy_config_route_v3.Route, routeReport *validationapi.RouteReport) {
+	match := r.GetMatch()
+	route := r.GetRoute()
+	re := r.GetRedirect()
+	name := r.GetName()
+	validatePath(match.GetPath(), name, routeReport)
+	validatePath(match.GetPrefix(), name, routeReport)
+	validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
+	validatePath(route.GetPrefixRewrite(), name, routeReport)
+	validatePath(re.GetPrefixRewrite(), name, routeReport)
+	validatePath(re.GetPathRedirect(), name, routeReport)
+	validatePath(re.GetHostRedirect(), name, routeReport)
+	validatePath(re.GetSchemeRedirect(), name, routeReport)
 }
 
 // utility function to transform gloo matcher to envoy route matcher
