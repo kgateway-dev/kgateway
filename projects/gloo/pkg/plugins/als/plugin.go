@@ -1,6 +1,8 @@
 package als
 
 import (
+	"fmt"
+
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
@@ -101,7 +103,6 @@ func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoya
 			return nil, err
 		}
 		newAlsCfg.Filter = envoyFilter
-
 		results = append(results, &newAlsCfg)
 
 	}
@@ -116,6 +117,10 @@ func translateFilter(inFilter *als.AccessLogFilter) (*envoyal.AccessLogFilter, e
 		return nil, nil
 	}
 
+	if err := validateFilterEnums(inFilter); err != nil {
+		return nil, err
+	}
+
 	bytes, err := proto.Marshal(inFilter)
 	if err != nil {
 		return nil, err
@@ -125,7 +130,23 @@ func translateFilter(inFilter *als.AccessLogFilter) (*envoyal.AccessLogFilter, e
 	if err := proto.Unmarshal(bytes, outFilter); err != nil {
 		return nil, err
 	}
+
+	// Validate?? Bad Enum values?
 	return outFilter, nil
+}
+
+func validateFilterEnums(filter *als.AccessLogFilter) error {
+	switch filterType := filter.GetFilterSpecifier().(type) {
+	case *als.AccessLogFilter_RuntimeFilter:
+		denominator := filterType.RuntimeFilter.PercentSampled.Denominator
+		fmt.Printf("Denominator %s", denominator)
+
+	default:
+		fmt.Printf("No Denominator %s", filterType)
+
+	}
+
+	return nil
 }
 
 func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.AccessLog_GrpcService) error {
