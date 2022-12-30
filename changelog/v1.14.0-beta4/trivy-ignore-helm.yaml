@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7598
+    resolvesIssue: false
+    description: >
+      Choosing to ignore helm upgrade, as it does not impact the data and control planes of Gloo Edge.
+      This only impacts GlooCtl and since it is not a long running service, panics will not affect future uses of Glooclt client.
+      It is therefore deemed to have little to no impact.
