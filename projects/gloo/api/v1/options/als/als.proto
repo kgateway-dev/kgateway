@@ -31,7 +31,6 @@ message AccessLog {
         GrpcService grpc_service = 3;
     }
     // Filter which is used to determine if the access log needs to be written.
-    //.solo.io.envoy.config.core.v3.AccessLogFilter filter = 4;
     AccessLogFilter filter = 4;
 }
 
