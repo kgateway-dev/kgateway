@@ -134,6 +134,10 @@ spec:
 {{- if $spec.affinity }}
       {{ toYaml $spec.affinity | nindent 8 }}
 {{- end }}
+{{- with $spec.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{- toYaml $spec.topologySpreadConstraints | nindent 6 }}
+{{- end }}
 {{- end}}
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gateway-proxy
