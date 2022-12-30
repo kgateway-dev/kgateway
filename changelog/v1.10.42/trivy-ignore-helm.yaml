@@ -1,6 +1,6 @@
 changelog:
   - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/7598
+    issueLink: https://github.com/solo-io/gloo/issues/7601
     resolvesIssue: false
     description: >
       Choosing to ignore helm upgrade, as it does not impact the data and control planes of Gloo Edge.
