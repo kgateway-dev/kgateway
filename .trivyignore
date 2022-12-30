@@ -12,3 +12,5 @@ CVE-2022-37315
 # This CVE only impacts install of Gloo-Edge from the CLI. Also Helm module is used in testing, which should have no impact on exploitation.
 # https://github.com/solo-io/gloo/issues/7598
 CVE-2022-23524
+CVE-2022-23525
+CVE-2022-23526
