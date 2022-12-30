@@ -352,6 +352,15 @@ var _ = Describe("Translator", func() {
 		return report
 	}
 
+	translateWithInvalidRoutePath := func() *validation.ProxyReport {
+		_, errs, report := translator.Translate(params, proxy)
+		err := errs.Validate()
+		ExpectWithOffset(1, err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("cannot contain [/../]"))
+		return report
+
+	}
+
 	// returns md5 Sum of current snapshot
 	translate := func() {
 		snap, errs, report, err := translator.Translate(params, proxy)
@@ -598,6 +607,100 @@ var _ = Describe("Translator", func() {
 			fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
 			Expect(fooRoute.Match.GetPrefix()).To(Equal("/foo"))
 			Expect(fooRoute.Match.CaseSensitive).To(Equal(&wrappers.BoolValue{Value: false}))
+		})
+	})
+
+	Context("invalid route paths", func() {
+		It("should report an invalid path redirect", func() {
+			glooRoute := &v1.Route{
+				Action: &v1.Route_RedirectAction{
+					RedirectAction: &v1.RedirectAction{
+						PathRewriteSpecifier: &v1.RedirectAction_PathRedirect{
+							// invalid sequence
+							PathRedirect: "/../../home/secretdata",
+						},
+					},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithInvalidRoutePath()
+		})
+		It("should report an invalid prefix rewrite", func() {
+			glooRoute := &v1.Route{
+				Action: &v1.Route_RedirectAction{
+					RedirectAction: &v1.RedirectAction{
+						PathRewriteSpecifier: &v1.RedirectAction_PrefixRewrite{
+							PrefixRewrite: "home/../secret",
+						},
+					},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithInvalidRoutePath()
+		})
+
+		It("should report an invalid host redirect", func() {
+			glooRoute := &v1.Route{
+				Action: &v1.Route_RedirectAction{
+					RedirectAction: &v1.RedirectAction{
+						HostRedirect: "otherhost/../secret",
+					},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithInvalidRoutePath()
+		})
+
+		It("should report an invalid prefix rewrite", func() {
+			glooRoute := &v1.Route{
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Name:      "somename",
+										Namespace: "someNamespace",
+									},
+								},
+							},
+						},
+					},
+				},
+				Options: &v1.RouteOptions{
+					PrefixRewrite: &wrapperspb.StringValue{Value: "/home/../secret"},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithInvalidRoutePath()
+		})
+
+		It("should report an invalid prefix", func() {
+			glooRoute := &v1.Route{
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "home/../secret",
+						},
+					},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithInvalidRoutePath()
+		})
+
+		It("should report an invalid prefix", func() {
+			glooRoute := &v1.Route{
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Exact{
+							Exact: "home/../secret",
+						},
+					},
+				},
+			}
+			routes[0] = glooRoute
+			translateWithInvalidRoutePath()
 		})
 	})
 
