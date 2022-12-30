@@ -355,8 +355,9 @@ var _ = Describe("Translator", func() {
 	}
 
 	translateWithInvalidRoutePath := func() *validation.ProxyReport {
-		_, errs, report := translator.Translate(params, proxy)
-		err := errs.Validate()
+		_, errs, report, err := translator.Translate(params, proxy)
+		Expect(err).NotTo(HaveOccurred())
+		err = errs.Validate()
 		ExpectWithOffset(1, err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("cannot contain [/../]"))
 		return report

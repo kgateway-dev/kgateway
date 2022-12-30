@@ -229,7 +229,6 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route, routeReport *validationa
 	name := r.GetName()
 	validatePath(match.GetPath(), name, routeReport)
 	validatePath(match.GetPrefix(), name, routeReport)
-	validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
 	validatePath(route.GetPrefixRewrite(), name, routeReport)
 	validatePath(re.GetPrefixRewrite(), name, routeReport)
 	validatePath(re.GetPathRedirect(), name, routeReport)
