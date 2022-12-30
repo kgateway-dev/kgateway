@@ -194,7 +194,7 @@ message HttpConnectionManagerSettings {
     // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
     google.protobuf.BoolValue merge_slashes = 29;
 
-    // Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing?
+    // Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing? Defaults to True.
     // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
     google.protobuf.BoolValue normalize_path = 30;
 
