@@ -1,8 +1,6 @@
 package als
 
 import (
-	"fmt"
-
 	errors "github.com/rotisserie/eris"
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -134,7 +132,6 @@ func translateFilter(inFilter *als.AccessLogFilter) (*envoyal.AccessLogFilter, e
 		return nil, err
 	}
 
-	// Validate?? Bad Enum values?
 	return outFilter, nil
 }
 
@@ -183,9 +180,14 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 				return NestedError("OrFilter", err)
 			}
 		}
-
-	default:
-		fmt.Printf("No Denominator %s\n", filter)
+	case *als.AccessLogFilter_GrpcStatusFilter:
+		statuses := filter.GrpcStatusFilter.GetStatuses()
+		for _, status := range statuses {
+			name := als.GrpcStatusFilter_Status_name[int32(status.Number())]
+			if name == "" {
+				return InvalidEnumValueError("GrpcStatusFilter", "Status", status.String())
+			}
+		}
 
 	}
 

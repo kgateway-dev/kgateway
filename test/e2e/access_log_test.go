@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	//v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -32,7 +32,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-var _ = FDescribe("Access Log", func() {
+var _ = Describe("Access Log", func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -79,11 +79,6 @@ var _ = FDescribe("Access Log", func() {
 									},
 								},
 							},
-							Filter: &als.AccessLogFilter{
-								FilterSpecifier: &als.AccessLogFilter_NotHealthCheckFilter{
-									NotHealthCheckFilter: &als.NotHealthCheckFilter{},
-								},
-							},
 						},
 					},
 				},
@@ -106,12 +101,12 @@ var _ = FDescribe("Access Log", func() {
 				g.Expect(entry.CommonProperties.UpstreamCluster).To(Equal(translator.UpstreamToClusterName(testContext.TestUpstream().Upstream.Metadata.Ref())))
 			}, time.Second*21, time.Second*2).Should(Succeed())
 		})
+
 	})
 
 	Context("File", func() {
 
 		Context("String Format", func() {
-
 			BeforeEach(func() {
 				gw := gwdefaults.DefaultGateway(writeNamespace)
 				gw.Options = &gloov1.ListenerOptions{
@@ -148,7 +143,6 @@ var _ = FDescribe("Access Log", func() {
 					g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
 				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
-
 		})
 
 		Context("Json Format", func() {
@@ -204,7 +198,7 @@ var _ = FDescribe("Access Log", func() {
 				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
 
-			FIt("can create json access logs with multiple filters", func() {
+			It("can create json access logs with multiple filters", func() {
 				gw := gwdefaults.DefaultGateway(writeNamespace)
 				alsOrFilter := &als.OrFilter{
 					Filters: []*als.AccessLogFilter{
@@ -214,7 +208,7 @@ var _ = FDescribe("Access Log", func() {
 									RuntimeKey: "runtime.key",
 									PercentSampled: &v3.FractionalPercent{
 										Numerator:   10,
-										Denominator: v3.FractionalPercent_DenominatorType(5),
+										Denominator: v3.FractionalPercent_DenominatorType(1),
 									},
 									UseIndependentRandomness: true,
 								},
@@ -304,7 +298,90 @@ var _ = FDescribe("Access Log", func() {
 
 	})
 
+	Context("Test Filters (use string format)", func() {
+		BeforeEach(func() {
+			gw := gwdefaults.DefaultGateway(writeNamespace)
+			gw.Options = createStringListenerOptionsWithFilter(nil)
+			gw.Options = createStringListenerOptionsWithFilter(
+				&als.AccessLogFilter{
+					FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{
+						StatusCodeFilter: &als.StatusCodeFilter{
+							Comparison: &als.ComparisonFilter{
+								Op: als.ComparisonFilter_GE,
+								Value: &v31.RuntimeUInt32{
+									DefaultValue: 100,
+									RuntimeKey:   "600",
+								},
+							},
+						},
+					},
+				},
+			)
+			// gw.Options = createStringListenerOptionsWithFilter(
+			// 	&als.AccessLogFilter{
+			// 		FilterSpecifier: &als.AccessLogFilter_NotHealthCheckFilter{
+			// 			NotHealthCheckFilter: &als.NotHealthCheckFilter{},
+			// 		},
+			// 	},
+			// )
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
+			}
+		})
+
+		It("can create string access logs", func() {
+			// gw := gwdefaults.DefaultGateway(writeNamespace)
+			// gw.Options = createStringListenerOptionsWithFilter(
+			// 	&als.AccessLogFilter{
+			// 		FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{
+			// 			StatusCodeFilter: &als.StatusCodeFilter{
+			// 				Comparison: &als.ComparisonFilter{
+			// 					Op:    als.ComparisonFilter_GE,
+			// 					Value: &v31.RuntimeUInt32{DefaultValue: 600},
+			// 				},
+			// 			},
+			// 		},
+			// 	},
+			// )
+			// testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+			// 	gw,
+			// }
+
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Host = e2e.DefaultHost
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+
+				logs, err := testContext.EnvoyInstance().Logs()
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
+				//g.Expect(1).To(Equal(2))
+			}, time.Second*10, time.Second/2).Should(Succeed()) // Todo, restore to 30
+		})
+	})
+
 })
+
+func createStringListenerOptionsWithFilter(filter *als.AccessLogFilter) *gloov1.ListenerOptions {
+	return &gloov1.ListenerOptions{
+		AccessLoggingService: &als.AccessLoggingService{
+			AccessLog: []*als.AccessLog{
+				{
+					OutputDestination: &als.AccessLog_FileSink{
+						FileSink: &als.FileSink{
+							Path: "/dev/stdout",
+							OutputFormat: &als.FileSink_StringFormat{
+								StringFormat: "",
+							},
+						},
+					},
+					Filter: filter,
+				},
+			},
+		},
+	}
+}
 
 func runAccessLog(ctx context.Context, accessLogPort uint32) <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry {
 	msgChan := make(chan *envoy_data_accesslog_v3.HTTPAccessLogEntry, 10)

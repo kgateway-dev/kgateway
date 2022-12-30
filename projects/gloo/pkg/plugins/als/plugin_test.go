@@ -325,7 +325,9 @@ var _ = Describe("Plugin", func() {
 					&accessLogService.AccessLogFilter{
 						FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{
 							GrpcStatusFilter: &accessLogService.GrpcStatusFilter{
-								Statuses: []accessLogService.GrpcStatusFilter_Status{400, 404},
+								// We're using FAKE_CONSTANTS elsewhere, but its easier to just
+								// put the values directly into the literal slice
+								Statuses: []accessLogService.GrpcStatusFilter_Status{1, 2},
 								Exclude:  false,
 							},
 						},
@@ -333,7 +335,7 @@ var _ = Describe("Plugin", func() {
 					&envoyal.AccessLogFilter{
 						FilterSpecifier: &envoyal.AccessLogFilter_GrpcStatusFilter{
 							GrpcStatusFilter: &envoyal.GrpcStatusFilter{
-								Statuses: []envoyal.GrpcStatusFilter_Status{400, 404},
+								Statuses: []envoyal.GrpcStatusFilter_Status{1, 2},
 								Exclude:  false,
 							},
 						},
@@ -457,6 +459,18 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 				"field FractionalPercent.Denominator of RuntimeFilter, inside an OrFilter",
+			),
+			Entry(
+				"Bad status in GrpcStatusFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{
+						GrpcStatusFilter: &accessLogService.GrpcStatusFilter{
+							Statuses: []accessLogService.GrpcStatusFilter_Status{100},
+							Exclude:  false,
+						},
+					},
+				},
+				"field Status of GrpcStatusFilter",
 			),
 		)
 
