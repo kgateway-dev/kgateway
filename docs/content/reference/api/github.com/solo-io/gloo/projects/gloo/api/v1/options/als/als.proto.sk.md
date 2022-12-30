@@ -74,7 +74,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | ----- | ---- | ----------- | 
 | `fileSink` | [.als.options.gloo.solo.io.FileSink](../als.proto.sk/#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |
 | `grpcService` | [.als.options.gloo.solo.io.GrpcService](../als.proto.sk/#grpcservice) | Send access logs to gRPC service. Only one of `grpcService` or `fileSink` can be set. |
-| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) | Filter which is used to determine if the access log needs to be written. .solo.io.envoy.config.core.v3.AccessLogFilter filter = 4;. |
+| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) |  |
 
 
 

@@ -231,9 +231,7 @@ type AccessLog struct {
 	//	*AccessLog_FileSink
 	//	*AccessLog_GrpcService
 	OutputDestination isAccessLog_OutputDestination `protobuf_oneof:"OutputDestination"`
-	// Filter which is used to determine if the access log needs to be written.
-	//.solo.io.envoy.config.core.v3.AccessLogFilter filter = 4;
-	Filter *AccessLogFilter `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
+	Filter            *AccessLogFilter              `protobuf:"bytes,4,opt,name=filter,proto3" json:"filter,omitempty"`
 }
 
 func (x *AccessLog) Reset() {
