@@ -519,6 +519,7 @@
 |gatewayProxies.NAME.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.affinity.NAME|interface|||
+|gatewayProxies.NAME.topologySpreadConstraints[]|interface||configure topologySpreadConstraints for gateway proxy pods|
 |gatewayProxies.NAME.tracing.provider.NAME|interface|||
 |gatewayProxies.NAME.tracing.cluster[].NAME|interface|||
 |gatewayProxies.NAME.gatewaySettings.enabled|bool||enable/disable default gateways|
@@ -717,6 +718,7 @@
 |gatewayProxies.gatewayProxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.affinity.NAME|interface|||
+|gatewayProxies.gatewayProxy.topologySpreadConstraints[]|interface||configure topologySpreadConstraints for gateway proxy pods|
 |gatewayProxies.gatewayProxy.tracing.provider.NAME|interface|||
 |gatewayProxies.gatewayProxy.tracing.cluster[].NAME|interface|||
 |gatewayProxies.gatewayProxy.gatewaySettings.enabled|bool|true|enable/disable default gateways|
