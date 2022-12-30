@@ -301,87 +301,64 @@ var _ = Describe("Access Log", func() {
 	Context("Test Filters (use string format)", func() {
 		BeforeEach(func() {
 			gw := gwdefaults.DefaultGateway(writeNamespace)
-			gw.Options = createStringListenerOptionsWithFilter(nil)
-			gw.Options = createStringListenerOptionsWithFilter(
-				&als.AccessLogFilter{
-					FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{
-						StatusCodeFilter: &als.StatusCodeFilter{
-							Comparison: &als.ComparisonFilter{
-								Op: als.ComparisonFilter_GE,
-								Value: &v31.RuntimeUInt32{
-									DefaultValue: 100,
-									RuntimeKey:   "600",
-								},
+			filter := &als.AccessLogFilter{
+				FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{
+					StatusCodeFilter: &als.StatusCodeFilter{
+						Comparison: &als.ComparisonFilter{
+							Op: als.ComparisonFilter_EQ,
+							Value: &v31.RuntimeUInt32{
+								DefaultValue: 404,
+								RuntimeKey:   "404",
 							},
 						},
 					},
 				},
-			)
-			// gw.Options = createStringListenerOptionsWithFilter(
-			// 	&als.AccessLogFilter{
-			// 		FilterSpecifier: &als.AccessLogFilter_NotHealthCheckFilter{
-			// 			NotHealthCheckFilter: &als.NotHealthCheckFilter{},
-			// 		},
-			// 	},
-			// )
+			}
+
+			gw.Options = &gloov1.ListenerOptions{
+				AccessLoggingService: &als.AccessLoggingService{
+					AccessLog: []*als.AccessLog{
+						{
+							OutputDestination: &als.AccessLog_FileSink{
+								FileSink: &als.FileSink{
+									Path: "/dev/stdout",
+									OutputFormat: &als.FileSink_StringFormat{
+										StringFormat: "",
+									},
+								},
+							},
+							Filter: filter,
+						},
+					},
+				},
+			}
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
 			}
 		})
 
 		It("can create string access logs", func() {
-			// gw := gwdefaults.DefaultGateway(writeNamespace)
-			// gw.Options = createStringListenerOptionsWithFilter(
-			// 	&als.AccessLogFilter{
-			// 		FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{
-			// 			StatusCodeFilter: &als.StatusCodeFilter{
-			// 				Comparison: &als.ComparisonFilter{
-			// 					Op:    als.ComparisonFilter_GE,
-			// 					Value: &v31.RuntimeUInt32{DefaultValue: 600},
-			// 				},
-			// 			},
-			// 		},
-			// 	},
-			// )
-			// testContext.ResourcesToCreate().Gateways = v1.GatewayList{
-			// 	gw,
-			// }
-
 			Eventually(func(g Gomega) {
 				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 				g.Expect(err).NotTo(HaveOccurred())
 				req.Host = e2e.DefaultHost
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 
-				logs, err := testContext.EnvoyInstance().Logs()
+				// We can get a 404 by not setting the Host header.
+				req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/BAD/HOST", "localhost", defaults.HttpPort), nil)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(logs).To(ContainSubstring(`"POST /1 HTTP/1.1" 200`))
-				//g.Expect(1).To(Equal(2))
+				g.Expect(http.DefaultClient.Do(req)).ShouldNot(matchers.HaveOkResponse())
+
+				logs, err := testContext.EnvoyInstance().Logs()
+				g.Expect(err).To(Not(HaveOccurred()))
+				g.Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
+				g.Expect(logs).To(ContainSubstring(`"POST /BAD/HOST HTTP/1.1" 404`))
+
 			}, time.Second*10, time.Second/2).Should(Succeed()) // Todo, restore to 30
 		})
 	})
 
 })
-
-func createStringListenerOptionsWithFilter(filter *als.AccessLogFilter) *gloov1.ListenerOptions {
-	return &gloov1.ListenerOptions{
-		AccessLoggingService: &als.AccessLoggingService{
-			AccessLog: []*als.AccessLog{
-				{
-					OutputDestination: &als.AccessLog_FileSink{
-						FileSink: &als.FileSink{
-							Path: "/dev/stdout",
-							OutputFormat: &als.FileSink_StringFormat{
-								StringFormat: "",
-							},
-						},
-					},
-					Filter: filter,
-				},
-			},
-		},
-	}
-}
 
 func runAccessLog(ctx context.Context, accessLogPort uint32) <-chan *envoy_data_accesslog_v3.HTTPAccessLogEntry {
 	msgChan := make(chan *envoy_data_accesslog_v3.HTTPAccessLogEntry, 10)
