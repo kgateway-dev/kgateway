@@ -146,7 +146,6 @@ func (i *installer) installFromConfig(installerConfig *InstallerConfig) error {
 
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
-	// TODO-JAKE installing from the config can cause issue.
 	completeValues := chartutil.CoalesceTables(installerConfig.ExtraValues, cliValues)
 	if installerConfig.Verbose {
 		b, err := json.Marshal(completeValues)
