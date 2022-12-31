@@ -338,12 +338,15 @@ var _ = Describe("Access Log", func() {
 		})
 
 		It("Can filter string logs by status code", func() {
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Host = e2e.DefaultHost
+			Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+			logs, err := testContext.EnvoyInstance().Logs()
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
 
+			Eventually(func(g Gomega) {
 				// We can get a 404 by not setting the Host header.
 				req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/BAD/HOST", "localhost", defaults.HttpPort), nil)
 				g.Expect(err).NotTo(HaveOccurred())
