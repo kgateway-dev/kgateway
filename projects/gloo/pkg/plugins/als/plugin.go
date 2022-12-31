@@ -119,7 +119,8 @@ func translateFilter(inFilter *als.AccessLogFilter) (*envoyal.AccessLogFilter, e
 	}
 
 	// We need to validate the enums in the filter manually because the protobuf libraries
-	// do not validate them, for "compatibilty reasons"
+	// do not validate them, for "compatibilty reasons". It's nicer to catch them here instead
+	// of sending bad configs to Envoy.
 	if err := validateFilterEnums(inFilter); err != nil {
 		return nil, err
 	}
