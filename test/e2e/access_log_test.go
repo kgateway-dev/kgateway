@@ -32,7 +32,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-var _ = Describe("Access Log", func() {
+var _ = FDescribe("Access Log", func() {
 
 	var (
 		testContext *e2e.TestContext

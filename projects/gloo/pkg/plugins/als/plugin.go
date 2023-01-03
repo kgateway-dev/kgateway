@@ -142,9 +142,6 @@ var (
 	InvalidEnumValueError = func(filterName string, fieldName string, value string) error {
 		return errors.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
 	}
-	NestedError = func(filterName string, err error) error {
-		return errors.Errorf("%s, inside an %s", err, filterName)
-	}
 )
 
 func validateFilterEnums(filter *als.AccessLogFilter) error {
@@ -172,7 +169,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return NestedError("AndFilter", err)
+				return errors.Wrap(err, "OrFilter").
 			}
 		}
 	case *als.AccessLogFilter_OrFilter:
@@ -180,7 +177,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return NestedError("OrFilter", err)
+				return errors.Wrap(err, "OrFilter").
 			}
 		}
 	case *als.AccessLogFilter_GrpcStatusFilter:
