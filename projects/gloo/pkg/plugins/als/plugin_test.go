@@ -428,7 +428,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"field FractionalPercent.Denominator of RuntimeFilter, inside an AndFilter",
+				"AndFilter: Invalid value of 10 in Enum field FractionalPercent.Denominator of RuntimeFilter",
 			),
 			Entry(
 				"Bad Subfilter in OrFilter",
@@ -458,7 +458,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"field FractionalPercent.Denominator of RuntimeFilter, inside an OrFilter",
+				"OrFilter: Invalid value of 10 in Enum field FractionalPercent.Denominator of RuntimeFilter",
 			),
 			Entry(
 				"Bad status in GrpcStatusFilter",

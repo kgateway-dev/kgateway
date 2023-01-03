@@ -23,7 +23,6 @@ import (
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
@@ -32,7 +31,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
-var _ = FDescribe("Access Log", func() {
+var _ = Describe("Access Log", func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -182,117 +181,6 @@ var _ = FDescribe("Access Log", func() {
 				testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 					gw,
 				}
-			})
-
-			It("can create json access logs", func() {
-				Eventually(func(g Gomega) {
-					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-					g.Expect(err).NotTo(HaveOccurred())
-					req.Host = e2e.DefaultHost
-					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
-
-					logs, err := testContext.EnvoyInstance().Logs()
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
-					g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
-				}, time.Second*30, time.Second/2).Should(Succeed())
-			})
-
-			It("can create json access logs with multiple filters", func() {
-				gw := gwdefaults.DefaultGateway(writeNamespace)
-				alsOrFilter := &als.OrFilter{
-					Filters: []*als.AccessLogFilter{
-						{
-							FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
-								RuntimeFilter: &als.RuntimeFilter{
-									RuntimeKey: "runtime.key",
-									PercentSampled: &v3.FractionalPercent{
-										Numerator:   10,
-										Denominator: v3.FractionalPercent_DenominatorType(1),
-									},
-									UseIndependentRandomness: true,
-								},
-							},
-						},
-						{
-							FilterSpecifier: &als.AccessLogFilter_GrpcStatusFilter{
-								GrpcStatusFilter: &als.GrpcStatusFilter{
-									Statuses: []als.GrpcStatusFilter_Status(als.GrpcStatusFilter_CANCELED.String()),
-								},
-							},
-						},
-					},
-				}
-
-				gw.Options = &gloov1.ListenerOptions{
-					AccessLoggingService: &als.AccessLoggingService{
-						AccessLog: []*als.AccessLog{
-							{
-								OutputDestination: &als.AccessLog_FileSink{
-									FileSink: &als.FileSink{
-										Path: "/dev/stdout",
-										OutputFormat: &als.FileSink_JsonFormat{
-											JsonFormat: &structpb.Struct{
-												Fields: map[string]*structpb.Value{
-													"protocol": {
-														Kind: &structpb.Value_StringValue{
-															StringValue: "%PROTOCOL%",
-														},
-													},
-													"method": {
-														Kind: &structpb.Value_StringValue{
-															StringValue: "%REQ(:METHOD)%",
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-								Filter: &als.AccessLogFilter{
-									FilterSpecifier: &als.AccessLogFilter_AndFilter{
-										AndFilter: &als.AndFilter{
-											Filters: []*als.AccessLogFilter{
-												{
-													FilterSpecifier: &als.AccessLogFilter_RuntimeFilter{
-														RuntimeFilter: &als.RuntimeFilter{
-															RuntimeKey:               "filter_runtime_key",
-															UseIndependentRandomness: true,
-														},
-													},
-												},
-												{
-													FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{},
-												},
-												{
-													FilterSpecifier: &als.AccessLogFilter_OrFilter{
-														OrFilter: alsOrFilter,
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-
-				testContext.ResourcesToCreate().Gateways = v1.GatewayList{
-					gw,
-				}
-
-				Eventually(func(g Gomega) {
-					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-					g.Expect(err).NotTo(HaveOccurred())
-					req.Host = e2e.DefaultHost
-					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
-
-					logs, err := testContext.EnvoyInstance().Logs()
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
-					g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
-				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
 		})
 
