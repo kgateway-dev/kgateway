@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -58,7 +59,7 @@ var _ = Describe("CORS", func() {
 		BeforeEach(func() {
 			vsWithCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
 				WithName("vs-cors").
-				WithDomain(allowedOrigin).
+				WithDomain(e2e.DefaultHost).
 				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
 				WithRoutePrefixMatcher("route", "/cors").
 				WithRouteOptions("route", &gloov1.RouteOptions{
@@ -86,29 +87,38 @@ var _ = Describe("CORS", func() {
 				g.Expect(cfg).To(MatchRegexp(allowedOrigin))
 			}, "10s", ".1s").ShouldNot(HaveOccurred())
 
-			preFlightRequest, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			preFlightRequest.Host = allowedOrigin
-
 			By("Request with allowed origin")
-			Eventually(func(g Gomega) {
-				headers := executeRequestWithAccessControlHeaders(preFlightRequest, allowedOrigins[0], "GET")
-				v, ok := headers[requestACHMethods]
-				g.Expect(ok).To(BeTrue())
-				g.Expect(strings.Split(v[0], ",")).Should(ConsistOf(allowedMethods))
+			reqWithAllowedOrigin, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			reqWithAllowedOrigin.Host = e2e.DefaultHost
+			reqWithAllowedOrigin.Header.Set("Origin", allowedOrigins[0])
+			reqWithAllowedOrigin.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			reqWithAllowedOrigin.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
 
-				v, ok = headers[requestACHOrigin]
-				g.Expect(ok).To(BeTrue())
-				g.Expect(len(v)).To(Equal(1))
-				g.Expect(v[0]).To(Equal(allowedOrigins[0]))
-			}).ShouldNot(HaveOccurred())
+			Eventually(func(g Gomega) {
+				resp, err := http.DefaultClient.Do(reqWithAllowedOrigin)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
+					requestACHOrigin:  Equal(allowedOrigins[0]),
+				}))
+			}).Should(Succeed())
 
 			By("Request with disallowed origin")
+			reqWithDisallowedOrigin, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			reqWithDisallowedOrigin.Host = e2e.DefaultHost
+			reqWithDisallowedOrigin.Header.Set("Origin", unAllowedOrigin)
+			reqWithDisallowedOrigin.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			reqWithDisallowedOrigin.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
+
 			Eventually(func(g Gomega) {
-				headers := executeRequestWithAccessControlHeaders(preFlightRequest, unAllowedOrigin, "GET")
-				_, ok := headers[requestACHMethods]
-				g.Expect(ok).To(BeFalse())
-			}).ShouldNot(HaveOccurred())
+				resp, err := http.DefaultClient.Do(reqWithDisallowedOrigin)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+					requestACHMethods: BeEmpty(),
+				}))
+			}).Should(Succeed())
 		})
 
 	})
@@ -136,24 +146,8 @@ var _ = Describe("CORS", func() {
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
 				g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
-			}).ShouldNot(HaveOccurred())
+			}).Should(Succeed())
 		})
 	})
 
 })
-
-func executeRequestWithAccessControlHeaders(req *http.Request, origin, method string) http.Header {
-	h := http.Header{}
-	Eventually(func(g Gomega) {
-		req.Header.Set("Origin", origin)
-		req.Header.Set("Access-Control-Request-Method", method)
-		req.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
-
-		resp, err := http.DefaultClient.Do(req)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		defer resp.Body.Close()
-		h = resp.Header
-	}).ShouldNot(HaveOccurred())
-	return h
-}

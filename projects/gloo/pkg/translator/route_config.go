@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -29,9 +30,28 @@ import (
 )
 
 var (
-	NoDestinationSpecifiedError = errors.New("must specify at least one weighted destination for multi destination routes")
+	// invalidPathSequences are path sequences that should not be contained in a path
+	invalidPathSequences = []string{"//", "/./", "/../", "%2f", "%2F", "#"}
+	// invalidPathSuffixes are path suffixes that should not be at the end of a path
+	invalidPathSuffixes = []string{"/..", "/."}
+	// validCharacterRegex pattern based off RFC 3986 similar to kubernetes-sigs/gateway-api implementation
+	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
+	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
-	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not")
+	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
+	SubsetsMisconfiguredErr           = errors.New("route has a subset config, but the upstream does not")
+	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
+	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	PathContainsInvalidCharacterError = func(s, invalid string) error {
+		return errors.Errorf("path [%s] cannot contain [%s]", s, invalid)
+	}
+	PathEndsWithInvalidCharactersError = func(s, invalid string) error {
+		return errors.Errorf("path [%s] cannot end with [%s]", s, invalid)
+	}
+)
+
+var (
+	validPathRegex *regexp.Regexp
 )
 
 type RouteConfigurationTranslator interface {
@@ -153,6 +173,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	for i := range out {
 		h.setAction(params, routeReport, in, out[i])
+		validateEnvoyRoute(out[i], routeReport)
 	}
 
 	return out
@@ -197,6 +218,23 @@ func initRoutes(
 	}
 
 	return out
+}
+
+// validateEnvoyRoute will validate all paths on a route. Any path, rewrite, or redirect of the path
+// will be validated.
+func validateEnvoyRoute(r *envoy_config_route_v3.Route, routeReport *validationapi.RouteReport) {
+	match := r.GetMatch()
+	route := r.GetRoute()
+	re := r.GetRedirect()
+	name := r.GetName()
+	validatePath(match.GetPath(), name, routeReport)
+	validatePath(match.GetPrefix(), name, routeReport)
+	validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
+	validatePath(route.GetPrefixRewrite(), name, routeReport)
+	validatePath(re.GetPrefixRewrite(), name, routeReport)
+	validatePath(re.GetPathRedirect(), name, routeReport)
+	validatePath(re.GetHostRedirect(), name, routeReport)
+	validatePath(re.GetSchemeRedirect(), name, routeReport)
 }
 
 // utility function to transform gloo matcher to envoy route matcher
@@ -796,4 +834,41 @@ func isWarningErr(err error) bool {
 	default:
 		return false
 	}
+}
+
+func validatePath(path, name string, routeReport *validationapi.RouteReport) {
+	if err := ValidateRoutePath(path); err != nil {
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, err.Error(), name)
+	}
+}
+
+// ValidateRoutePath will validate a string for all characters according to RFC 3986
+// "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
+// https://www.rfc-editor.org/rfc/rfc3986/
+func ValidateRoutePath(s string) error {
+	if s == "" {
+		return nil
+	}
+	if validPathRegex == nil {
+		re, err := regexp.Compile(validPathRegexCharacters)
+		if err != nil {
+			validPathRegex = nil
+			return CompilingRoutePathRegexError
+		}
+		validPathRegex = re
+	}
+	if !validPathRegex.Match([]byte(s)) {
+		return ValidRoutePatternError
+	}
+	for _, invalid := range invalidPathSequences {
+		if strings.Contains(s, invalid) {
+			return PathContainsInvalidCharacterError(s, invalid)
+		}
+	}
+	for _, invalid := range invalidPathSuffixes {
+		if strings.HasSuffix(s, invalid) {
+			return PathEndsWithInvalidCharactersError(s, invalid)
+		}
+	}
+	return nil
 }

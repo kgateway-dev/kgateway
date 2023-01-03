@@ -10,6 +10,7 @@ import (
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -77,6 +78,7 @@ var _ = Describe("Plugin", func() {
 			DrainTimeout:          prototime.DurationToProto(time.Hour),
 			DelayedCloseTimeout:   prototime.DurationToProto(time.Hour),
 			ServerName:            &wrappers.StringValue{Value: "ServerName"},
+			NormalizePath:         &wrapperspb.BoolValue{Value: false},
 
 			AcceptHttp_10: &wrappers.BoolValue{Value: true},
 			HeaderFormat: &hcm.HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
@@ -260,6 +262,17 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
+	})
+
+	Context("Default Values", func() {
+		It("should contain the default value for NormalizePath", func() {
+			T := &wrapperspb.BoolValue{Value: true}
+			settings = &hcm.HttpConnectionManagerSettings{}
+			cfg := &envoyhttp.HttpConnectionManager{}
+			err := processHcmNetworkFilter(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.NormalizePath).To(Equal(T))
+		})
 	})
 
 	Context("Http2 passed", func() {

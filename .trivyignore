@@ -7,3 +7,15 @@ CVE-2022-1996
 # This CVE is not exploitable in Gloo Edge, and a fix is not yet available in the library
 # https://github.com/solo-io/solo-projects/issues/4016
 CVE-2022-37315
+
+# These CVEs only impacts install of Gloo-Edge from Glooctl CLI.
+# Also Helm module is used in testing, which has no impact on exploitation.
+# Gloo-Edge data and control planes are not impacted at all by the helm module.
+# Glooctl is not a long running program, and does not affect future uses of Glooctl.
+# https://github.com/solo-io/gloo/issues/7598
+# https://github.com/helm/helm/security/advisories/GHSA-6rx9-889q-vv2r
+CVE-2022-23524
+# https://github.com/helm/helm/security/advisories/GHSA-53c4-hhmh-vw5q
+CVE-2022-23525
+# https://github.com/helm/helm/security/advisories/GHSA-67fx-wx78-jx33
+CVE-2022-23526

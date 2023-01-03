@@ -1,0 +1,11 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: |
+      Set the normalized_path attribute for the [Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html?highlight=hcm) to true as the default value.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4336
+    resolvesIssue: false
+  - type: FIX
+    description: |
+      Add route validation to reject and sanitize invalid paths.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4336
+    resolvesIssue: false
