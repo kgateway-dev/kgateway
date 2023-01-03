@@ -151,6 +151,7 @@ func (r RequiredConfiguration) validateTruthyEnv() error {
 // Requirement represents a required property for tests.
 type Requirement func(configuration *RequiredConfiguration)
 
+// LinuxOnly returns a Requirement that expects tests to only run on Linux
 func LinuxOnly(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.supportedOS = sets.NewString("linux")
@@ -158,18 +159,21 @@ func LinuxOnly(reason string) Requirement {
 	}
 }
 
+// DefinedEnv returns a Requirement that expects tests to have the injected environment variable defined
 func DefinedEnv(env string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.definedEnvVar = append(configuration.definedEnvVar, env)
 	}
 }
 
+// TruthyEnv returns a Requirement that expects tests to have the injected environment variable set to a truthy value
 func TruthyEnv(env string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.truthyEnvVar = append(configuration.truthyEnvVar, env)
 	}
 }
 
+// Kubernetes returns a Requirement that expects tests to require Kubernetes configuration
 func Kubernetes(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.reasons["kubernetes"] = reason
@@ -177,14 +181,26 @@ func Kubernetes(reason string) Requirement {
 	}
 }
 
+// Consul returns a Requirement that expects tests to require a Consul instance
 func Consul() Requirement {
 	return func(configuration *RequiredConfiguration) {
 		TruthyEnv("RUN_CONSUL_TESTS")(configuration)
 	}
 }
 
+// Vault returns a Requirement that expects tests to require a Vault instance
 func Vault() Requirement {
 	return func(configuration *RequiredConfiguration) {
 		TruthyEnv("RUN_VAULT_TESTS")(configuration)
+	}
+}
+
+// AwsCredentials returns a Requirement that expects tests to require Aws credentials
+func AwsCredentials() Requirement {
+	return func(configuration *RequiredConfiguration) {
+		DefinedEnv("AWS_SHARED_CREDENTIALS_FILE")(configuration)
+		DefinedEnv("AWS_ARN_ROLE_1")(configuration)
+
+		configuration.reasons["aws"] = "AWS_SHARED_CREDENTIALS_FILE defines the file location where AWS credentials are stored"
 	}
 }

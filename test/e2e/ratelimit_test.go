@@ -300,24 +300,24 @@ func EventuallyOk(hostname string, port uint32) {
 	// it's possible gloo upstreams hit after the proxy does
 	// (gloo resyncs once per second)
 	time.Sleep(3 * time.Second)
-	EventuallyWithOffset(1, func() (*http.Response, error) {
-		return get(hostname, port)
-	}, "5s", ".1s").Should(matchers.HaveOkResponse())
+	EventuallyWithOffset(1, func(g Gomega) {
+		g.Expect(get(hostname, port)).To(matchers.HaveOkResponse())
+	}, "5s", ".1s").Should(Succeed())
 }
 
 func ConsistentlyNotRateLimited(hostname string, port uint32) {
 	// waiting for envoy to start, so that consistently works
 	EventuallyOk(hostname, port)
 
-	ConsistentlyWithOffset(1, func() (*http.Response, error) {
-		return get(hostname, port)
-	}, "5s", ".1s").Should(matchers.HaveOkResponse())
+	ConsistentlyWithOffset(1, func(g Gomega) {
+		g.Expect(get(hostname, port)).To(matchers.HaveOkResponse())
+	}, "5s", ".1s").Should(Succeed())
 }
 
 func EventuallyRateLimited(hostname string, port uint32) {
-	EventuallyWithOffset(1, func() (*http.Response, error) {
-		return get(hostname, port)
-	}, "5s", ".1s").Should(matchers.HaveStatusCode(http.StatusTooManyRequests))
+	EventuallyWithOffset(1, func(g Gomega) {
+		g.Expect(get(hostname, port)).To(matchers.HaveStatusCode(http.StatusTooManyRequests))
+	}, "5s", ".1s").Should(Succeed())
 }
 
 func get(hostname string, port uint32) (*http.Response, error) {

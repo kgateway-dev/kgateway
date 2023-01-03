@@ -2,11 +2,11 @@ package e2e_test
 
 import (
 	"bytes"
-	"compress/gzip"
+
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/matchers"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -61,8 +61,17 @@ var _ = Describe("gzip", func() {
 		It("should return uncompressed json", func() {
 			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReq := executePostRequest("test.com", jsonStr)
-			Expect(testReq).Should(Equal(jsonStr))
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(jsonStr))
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Host = e2e.DefaultHost
+				req.Header.Set("Accept-Encoding", "gzip")
+				req.Header.Set("Content-Type", "application/json")
+
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(matchers.HaveExactResponseBody(jsonStr))
+			}, "5s", ".1s").Should(Succeed())
 		})
 	})
 
@@ -92,46 +101,34 @@ var _ = Describe("gzip", func() {
 			// json needs to be longer than default content length to trigger
 			// len(short json) < 30
 			shortJsonStr := `{"value":"Hello, world!"}`
-			testShortReq := executePostRequest("test.com", shortJsonStr)
-			Expect(testShortReq).Should(Equal(shortJsonStr))
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(shortJsonStr))
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Host = e2e.DefaultHost
+				req.Header.Set("Accept-Encoding", "gzip")
+				req.Header.Set("Content-Type", "application/json")
+
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(matchers.HaveExactResponseBody(shortJsonStr))
+			}).Should(Succeed())
 
 			// raw json should be compressed
-			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReqBody := executePostRequest("test.com", jsonStr)
-			Expect(testReqBody).ShouldNot(Equal(jsonStr))
+			longJsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(longJsonStr))
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Host = e2e.DefaultHost
+				req.Header.Set("Accept-Encoding", "gzip")
+				req.Header.Set("Content-Type", "application/json")
 
-			// decompressed json from response should equal original
-			reader, err := gzip.NewReader(bytes.NewBuffer([]byte(testReqBody)))
-			defer reader.Close()
-			Expect(err).NotTo(HaveOccurred())
-			body, err := ioutil.ReadAll(reader)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(body)).To(Equal(jsonStr))
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       WithTransform(matchers.WithDecompressorTransform(), Equal(longJsonStr)),
+				}))
+			}).Should(Succeed())
 		})
 	})
 })
-
-func executePostRequest(host, jsonStr string) string {
-	By("Make request")
-	responseBody := ""
-	EventuallyWithOffset(1, func(g Gomega) error {
-		var json = []byte(jsonStr)
-		req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-		g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		req.Host = host
-		req.Header.Set("Accept-Encoding", "gzip")
-		req.Header.Set("Content-Type", "application/json")
-
-		res, err := http.DefaultClient.Do(req)
-		g.ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		g.ExpectWithOffset(1, res.StatusCode).Should(Equal(http.StatusOK))
-
-		p := new(bytes.Buffer)
-		_, err = io.Copy(p, res.Body)
-		g.ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
-		defer res.Body.Close()
-		responseBody = p.String()
-		return nil
-	}, "10s", ".1s").Should(Succeed())
-	return responseBody
-}
