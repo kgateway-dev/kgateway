@@ -510,6 +510,12 @@ var _ = Describe("Kube2e: glooctl", func() {
 		It("fails when scanning with invalid kubecontext", func() {
 			_, err := runGlooctlCommand("check", "check", "--context", "not-gloo-context")
 			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"not-gloo-context\" does not exist"))
+		})
+
+		It("succeeds with correct kubecontext", func() {
+			_, err := runGlooctlCommand("check", "check", "--context", "kind-kind")
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 	Context("check-crds", func() {
