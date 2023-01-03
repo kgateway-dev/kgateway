@@ -200,7 +200,9 @@ var _ = Describe("Access Log", func() {
 
 	})
 
-	Context("Test Filters (use string format)", func() {
+	Context("Test Filters", func() {
+		// The output format doesn't (or at least shouldn't) matter for the filter tests, except in how we examine the access logs
+		// We'll use the string output because it's easiest to match against
 		BeforeEach(func() {
 			gw := gwdefaults.DefaultGateway(writeNamespace)
 			filter := &als.AccessLogFilter{
@@ -239,7 +241,7 @@ var _ = Describe("Access Log", func() {
 			}
 		})
 
-		It("Can filter string logs by status code", func() {
+		It("Can filter by status code", func() {
 			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
