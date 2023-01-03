@@ -50,6 +50,7 @@ type Top struct {
 	PodSelector        string   // label selector for pod scanning
 	ResourceNamespaces []string // namespaces in which to check custom resources
 	ReadOnly           bool     // Makes check read only by skipping any checks that create resources in the cluster
+	KubeContext        string   // K8s Context to run glooctl on
 }
 
 type HelmInstall struct {

@@ -85,7 +85,7 @@ func EnsureResourceByName(message string, static bool, source string, target *re
 var PromptInteractiveNamespace = "Please choose a namespace"
 
 func InteractiveNamespace(ctx context.Context, namespace *string) error {
-	nsList, err := helpers.GetNamespaces(ctx)
+	nsList, err := helpers.GetNamespaces(ctx, "")
 	if err != nil {
 		// user may not have permission to list namespaces, let them type the name by hand
 		return cliutil.GetStringInput(PromptInteractiveNamespace, namespace)

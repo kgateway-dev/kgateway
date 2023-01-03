@@ -17,6 +17,7 @@ glooctl check [flags]
 ### Options
 
 ```
+      --context string                    kube context to use when interacting with kubernetes
   -x, --exclude strings                   check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)
   -h, --help                              help for check
   -n, --namespace string                  namespace for reading or writing resources (default "gloo-system")

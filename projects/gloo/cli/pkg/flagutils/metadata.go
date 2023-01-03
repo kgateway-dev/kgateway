@@ -38,3 +38,8 @@ func AddExcludeCheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
 func AddReadOnlyFlag(set *pflag.FlagSet, readOnly *bool) {
 	set.BoolVarP(readOnly, "read-only", "", false, "only do checks that dont require creating resources (i.e. port forwards)")
 }
+
+// AddReadOnlyFlag adds a flag to our flag set that indicates we shouldn't do anything that requires RBAC create permissions
+func AddKubeContextFlag(set *pflag.FlagSet, KubeContext *string) {
+	set.StringVarP(KubeContext, "context", "", "", "kube context to use when interacting with kubernetes")
+}
