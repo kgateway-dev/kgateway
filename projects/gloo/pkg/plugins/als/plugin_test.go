@@ -434,7 +434,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				NestedFilterError(
+				WrapInvalidEnumValueError(
 					"AndFilter",
 					InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", strconv.FormatUint(uint64(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE), 10)),
 				),
@@ -467,7 +467,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				NestedFilterError(
+				WrapInvalidEnumValueError(
 					"OrFilter",
 					InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", strconv.FormatUint(uint64(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE), 10)),
 				),

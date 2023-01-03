@@ -1,6 +1,8 @@
 package als
 
 import (
+	"fmt"
+
 	errors "github.com/rotisserie/eris"
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -142,8 +144,8 @@ var (
 	InvalidEnumValueError = func(filterName string, fieldName string, value string) error {
 		return errors.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
 	}
-	NestedFilterError = func(filterName string, err error) error {
-		return errors.Wrap(err, filterName)
+	WrapInvalidEnumValueError = func(filterName string, err error) error {
+		return errors.Wrap(err, fmt.Sprintf("Invalid subfilter in %s", filterName))
 	}
 )
 
@@ -172,7 +174,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return NestedFilterError("AndFilter", err)
+				return WrapInvalidEnumValueError("AndFilter", err)
 			}
 		}
 	case *als.AccessLogFilter_OrFilter:
@@ -180,7 +182,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return NestedFilterError("OrFilter", err)
+				return WrapInvalidEnumValueError("OrFilter", err)
 			}
 		}
 	case *als.AccessLogFilter_GrpcStatusFilter:
