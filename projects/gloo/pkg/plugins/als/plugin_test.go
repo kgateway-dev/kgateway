@@ -1,6 +1,8 @@
 package als_test
 
 import (
+	"strconv"
+
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_v32 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -30,7 +32,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 
-	var (
+	const (
 		FILTER_RUNTIME_KEY                                 = "FILTER RUNTIME KEY"
 		STATUS_CODE_VALUE                           uint32 = 400
 		DURATION_FILTER_VALUE                       uint32 = 20
@@ -39,19 +41,23 @@ var _ = Describe("Plugin", func() {
 		INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 10
 		INVALID_OP                                         = 10
 		HEADER_MATCHER_NAME_STRING                         = "HEADER MATCHER NAME STRING"
-		RESPONSE_FLAGS                                     = []string{"LH", "UH", "UT"}
-
-		alsSettings      *accessLogService.AccessLoggingService
-		logName          string
-		extraHeaders     []string
-		usRef            *core.ResourceRef
-		accessLogConfigs []*envoyal.AccessLog
-		err              error
 	)
+
+	// Fake constant for the slice
+	var response_flags_test_constant = []string{"LH", "UH", "UT"}
 
 	// Because we are just translatating the filters using marshaling/unmarshaling, we should test each filter type
 	// to make sure we copied/pasted correctly and that no changes made to the Envoy definitions broke anything
 	Describe("Test each Filter", func() {
+		var (
+			alsSettings      *accessLogService.AccessLoggingService
+			logName          string
+			extraHeaders     []string
+			usRef            *core.ResourceRef
+			accessLogConfigs []*envoyal.AccessLog
+			err              error
+		)
+
 		BeforeEach(func() {
 			logName = "test"
 			extraHeaders = []string{"test"}
@@ -309,14 +315,14 @@ var _ = Describe("Plugin", func() {
 					&accessLogService.AccessLogFilter{
 						FilterSpecifier: &accessLogService.AccessLogFilter_ResponseFlagFilter{
 							ResponseFlagFilter: &accessLogService.ResponseFlagFilter{
-								Flags: RESPONSE_FLAGS,
+								Flags: response_flags_test_constant,
 							},
 						},
 					},
 					&envoyal.AccessLogFilter{
 						FilterSpecifier: &envoyal.AccessLogFilter_ResponseFlagFilter{
 							ResponseFlagFilter: &envoyal.ResponseFlagFilter{
-								Flags: RESPONSE_FLAGS,
+								Flags: response_flags_test_constant,
 							},
 						},
 					}),
@@ -325,8 +331,8 @@ var _ = Describe("Plugin", func() {
 					&accessLogService.AccessLogFilter{
 						FilterSpecifier: &accessLogService.AccessLogFilter_GrpcStatusFilter{
 							GrpcStatusFilter: &accessLogService.GrpcStatusFilter{
-								// We're using FAKE_CONSTANTS elsewhere, but its easier to just
-								// put the values directly into the literal slice
+								// We're using CONSTANTS elsewhere, but its easier to just put the values directly
+								// into the literal slice, especially since the gloo/envoy types are technically different
 								Statuses: []accessLogService.GrpcStatusFilter_Status{1, 2},
 								Exclude:  false,
 							},
@@ -345,14 +351,14 @@ var _ = Describe("Plugin", func() {
 		})
 
 		DescribeTable("Test We Correctly Handle Bad Enum",
-			func(glooInputFilter *accessLogService.AccessLogFilter, searchStr string) {
+			func(glooInputFilter *accessLogService.AccessLogFilter, expectedError error) {
 
 				accessLog := alsSettings.GetAccessLog()[0]
 				accessLog.Filter = glooInputFilter
 
 				accessLogConfigs, err = ProcessAccessLogPlugins(alsSettings, nil)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring(searchStr))
+				Expect(err).Should(MatchError(expectedError))
 
 				Expect(accessLogConfigs).To(HaveLen(0))
 			},
@@ -370,7 +376,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"field FractionalPercent.Denominator of RuntimeFilter",
+				InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", strconv.FormatUint(uint64(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE), 10)),
 			),
 			Entry(
 				"Bad OP in StatusCodeFilter",
@@ -384,7 +390,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"field ComparisonFilter.Op of StatusCodeFilter",
+				InvalidEnumValueError("StatusCodeFilter", "ComparisonFilter.Op", strconv.Itoa(INVALID_OP)),
 			),
 			Entry(
 				"Bad OP in DurationFilter",
@@ -398,7 +404,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"field ComparisonFilter.Op of DurationFilter",
+				InvalidEnumValueError("DurationFilter", "ComparisonFilter.Op", strconv.Itoa(INVALID_OP)),
 			),
 			Entry(
 				"Bad Subfilter in AndFilter",
@@ -428,7 +434,10 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"AndFilter: Invalid value of 10 in Enum field FractionalPercent.Denominator of RuntimeFilter",
+				NestedFilterError(
+					"AndFilter",
+					InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", strconv.FormatUint(uint64(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE), 10)),
+				),
 			),
 			Entry(
 				"Bad Subfilter in OrFilter",
@@ -458,7 +467,10 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"OrFilter: Invalid value of 10 in Enum field FractionalPercent.Denominator of RuntimeFilter",
+				NestedFilterError(
+					"OrFilter",
+					InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", strconv.FormatUint(uint64(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE), 10)),
+				),
 			),
 			Entry(
 				"Bad status in GrpcStatusFilter",
@@ -470,7 +482,7 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				"field Status of GrpcStatusFilter",
+				InvalidEnumValueError("GrpcStatusFilter", "Status", "100"),
 			),
 		)
 
