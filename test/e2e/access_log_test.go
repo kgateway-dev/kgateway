@@ -184,6 +184,20 @@ var _ = Describe("Access Log", func() {
 			})
 		})
 
+		It("can create json access logs", func() {
+			Eventually(func(g Gomega) {
+				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Host = e2e.DefaultHost
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+
+				logs, err := testContext.EnvoyInstance().Logs()
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
+				g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
+			}, time.Second*30, time.Second/2).Should(Succeed())
+		})
+
 	})
 
 	Context("Test Filters (use string format)", func() {
