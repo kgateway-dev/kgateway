@@ -30,28 +30,28 @@ import (
 
 var _ = Describe("Plugin", func() {
 
+	var (
+		FILTER_RUNTIME_KEY                                 = "FILTER RUNTIME KEY"
+		STATUS_CODE_VALUE                           uint32 = 400
+		DURATION_FILTER_VALUE                       uint32 = 20
+		FRACTIONAL_PERCENT_NUMERATOR                uint32 = 25
+		FRACTIONAL_PERCENT_DENOMINATOR_TYPE         uint32 = 1
+		INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 10
+		INVALID_OP                                         = 10
+		HEADER_MATCHER_NAME_STRING                         = "HEADER MATCHER NAME STRING"
+		RESPONSE_FLAGS                                     = []string{"LH", "UH", "UT"}
+
+		alsSettings      *accessLogService.AccessLoggingService
+		logName          string
+		extraHeaders     []string
+		usRef            *core.ResourceRef
+		accessLogConfigs []*envoyal.AccessLog
+		err              error
+	)
+
 	// Because we are just translatating the filters using marshaling/unmarshaling, we should test each filter type
 	// to make sure we copied/pasted correctly and that no changes made to the Envoy definitions broke anything
 	Describe("Test each Filter", func() {
-		var (
-			FILTER_RUNTIME_KEY                                 = "FILTER RUNTIME KEY"
-			STATUS_CODE_VALUE                           uint32 = 400
-			DURATION_FILTER_VALUE                       uint32 = 20
-			FRACTIONAL_PERCENT_NUMERATOR                uint32 = 25
-			FRACTIONAL_PERCENT_DENOMINATOR_TYPE         uint32 = 1
-			INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE uint32 = 10
-			INVALID_OP                                         = 10
-			HEADER_MATCHER_NAME_STRING                         = "HEADER MATCHER NAME STRING"
-			RESPONSE_FLAGS                                     = []string{"LH", "UH", "UT"}
-
-			alsSettings      *accessLogService.AccessLoggingService
-			logName          string
-			extraHeaders     []string
-			usRef            *core.ResourceRef
-			accessLogConfigs []*envoyal.AccessLog
-			err              error
-		)
-
 		BeforeEach(func() {
 			logName = "test"
 			extraHeaders = []string{"test"}
@@ -733,14 +733,14 @@ var _ = Describe("Plugin", func() {
 										AdditionalResponseTrailersToLog: extraHeaders,
 									},
 								},
-								// TODO - hardcoded values
+
 								Filter: &accessLogService.AccessLogFilter{
 									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 										RuntimeFilter: &accessLogService.RuntimeFilter{
 											RuntimeKey: filter_runtime_key,
 											PercentSampled: &v3.FractionalPercent{
-												Numerator:   50,
-												Denominator: v3.FractionalPercent_DenominatorType(1),
+												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+												Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 											},
 											UseIndependentRandomness: true,
 										},
