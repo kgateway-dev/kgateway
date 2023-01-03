@@ -344,7 +344,7 @@ var _ = Describe("Plugin", func() {
 								Statuses: []envoyal.GrpcStatusFilter_Status{1, 2},
 								Exclude:  false,
 							},
-		DescribeTable("Test We Correctly Handle Bad Enum",
+						},
 					}),
 			)
 
@@ -490,9 +490,7 @@ var _ = Describe("Plugin", func() {
 
 	Context("ProcessAccessLogPlugins", func() {
 
-		var (
-			alsSettings *accessLogService.AccessLoggingService
-		)
+		var alsSettings *accessLogService.AccessLoggingService
 
 		Context("grpc", func() {
 

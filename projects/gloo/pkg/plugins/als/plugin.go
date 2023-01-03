@@ -3,8 +3,6 @@ package als
 import (
 	"fmt"
 
-	errors "github.com/rotisserie/eris"
-
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
@@ -142,10 +140,10 @@ func translateFilter(accessLog *envoyal.AccessLog, inFilter *als.AccessLogFilter
 
 var (
 	InvalidEnumValueError = func(filterName string, fieldName string, value string) error {
-		return errors.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
+		return eris.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
 	}
 	WrapInvalidEnumValueError = func(filterName string, err error) error {
-		return errors.Wrap(err, fmt.Sprintf("Invalid subfilter in %s", filterName))
+		return eris.Wrap(err, fmt.Sprintf("Invalid subfilter in %s", filterName))
 	}
 )
 
