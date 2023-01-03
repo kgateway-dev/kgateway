@@ -510,7 +510,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 	Context("check-crds", func() {
 		It("validates correct CRDs", func() {
 			if testHelper.ReleasedVersion != "" {
-				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ReleasedVersion)
+				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ChartVersion())
 				Expect(err).ToNot(HaveOccurred())
 			} else {
 				chartUri := filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
