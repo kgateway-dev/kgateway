@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+
+  gateway-proxy:
+    image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.14.0-beta1}
+    entrypoint: ["envoy"]
+    command: [
+      "-c /config/envoy.yaml",
+      "-l trace",
+      "--disable-hot-restart",
+      # This is an example of a custom Envoy command line option (https://www.envoyproxy.io/docs/envoy/latest/operations/cli)
+      "--component-log-level upstream:debug,connection:trace",
+    ]
+    volumes:
+      - ./data/bootstrap.yaml:/config/envoy.yaml:ro
+    ports:
+      - "8000:8000" # Matches the listener port defined in the bootstrap.yaml
+      - "19000:19000" # Matches the admin port defined in the bootstrap.yaml
+    restart: always
