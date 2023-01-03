@@ -110,13 +110,45 @@ In the canary upgrade model, you start with an older version of Gloo Edge Federa
    kubectl get all -n gloo-system-$TARGET_VERSION
    ```
 5. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on one of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the version of Gloo Edge Federation that you installed earlier.
-6. In your management cluster, modify any federated custom resources for any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
-7. Check that the updated, federated custom resources from the management cluster are propagated to the remote test cluster. To find the clusters and names of the propagated resources, review the federated resource configuration.
+6. In your management cluster, [create any federated custom resources]({{< versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" >}}) for the target version in your `gloo-system-$TARGET_VERSION` namespace. You might use the existing federated resources in the `gloo-system-$OLD_VERSION` namespace as a starting point. Include with any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
+7. Check that the updated, federated custom resources from the management cluster are propagated to the remote test cluster.
+   1. To find the clusters and names of the propagated resources, review the federated resource configuration. In the following example, a `fed-upstream` upstream is federated in `remote1` and `remote2` clusters in the `gloo-system-new` namespace. The `PLACED` state in the status section confirms that the resource is federated.
+      ```sh
+      kubectl get federatedupstream -n gloo-system-$TARGET_VERSION -o yaml
+      ```
+      Example truncated output:
+      ```yaml
+      ...
+      spec:
+        placement:
+          clusters:
+            - remote1
+            - remote2
+          namespaces:
+            - gloo-system-new
+        template:
+          metadata:
+            name: fed-upstream
+      ...
+      status:
+        placementStatus:
+          clusters:
+            local:
+              namespaces:
+                gloo-system:
+                  state: PLACED
+      ```
+   2. In the remote cluster, confirm that the federated resources are created. The following command is based on the previous step's example.
+      ```sh
+      kubectl get upstreams -n gloo-system-new --context remote1
+      kubectl get upstreams -n gloo-system-new --context remote2
+      ```
+   3. Repeat the previous steps for each federated resource that you want to check.
 8. Test your routes and monitor the metrics of the target version in your remote test cluster.
     ```shell
     glooctl check
     ```
-9. Shift traffic to the target version of Gloo Edge Federation.
+9.  Shift traffic to the target version of Gloo Edge Federation.
    1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your other remote clusters that still use the old version of Gloo Edge Federation.
    2. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on each of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the version of Gloo Edge Federation that you installed earlier.
    3. Optionally delete the old version namespace from each remote cluster. The deregister command does not clean up the namespace and custom resources in the old version.
