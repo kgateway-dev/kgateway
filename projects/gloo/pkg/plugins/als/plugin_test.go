@@ -344,7 +344,7 @@ var _ = Describe("Plugin", func() {
 
 		})
 
-		DescribeTable("Test We Correctly Handle Bad ENUM",
+		DescribeTable("Test We Correctly Handle Bad Enum",
 			func(glooInputFilter *accessLogService.AccessLogFilter, searchStr string) {
 
 				accessLog := alsSettings.GetAccessLog()[0]
