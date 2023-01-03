@@ -161,8 +161,10 @@ spec:
     serviceNamespace: default
     servicePort: 8080
 status:
-  reportedBy: gloo
-  state: 1
+  statuses:
+    gloo-system:
+      reportedBy: gloo
+      state: 1
 ```
 
 By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore application is a swagger service. Gloo Edge can discover this swagger spec, but by default Gloo Edge's function discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
@@ -263,11 +265,13 @@ spec:
               content-type: {}
               transfer-encoding: {}
 status:
-  reportedBy: gloo
-  state: 1
+  statuses:
+    gloo-system:
+      reportedBy: gloo
+      state: 1
 ```
 
-The application endpoints were discovered by Gloo Edge's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).
+The application endpoints were discovered by Gloo Edge's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore/swagger.json`).
 
 ---
 
@@ -340,12 +344,14 @@ metadata:
   namespace: gloo-system
   ownerReferences: []
 status:
-  reportedBy: gateway
-  state: Accepted
-  subresourceStatuses:
-    '*v1.Proxy.gloo-system.gateway-proxy':
+  statuses:
+    gloo-system:
       reportedBy: gloo
       state: Accepted
+      subresourceStatuses:
+        '*v1.Proxy.gateway-proxy_gloo-system':
+          reportedBy: gloo
+          state: Accepted
 spec:
   virtualHost:
     domains:
