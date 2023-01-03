@@ -1,3 +1,5 @@
+// Mostly taken from https://github.com/envoyproxy/envoy/blob/317efa53c6add02fa9533fc8f93f10f590077dca/api/envoy/config/accesslog/v3/accesslog.proto
+// because we are passing through the filter settings and therefore using the same message definitions
 syntax = "proto3";
 package als.options.gloo.solo.io;
 
