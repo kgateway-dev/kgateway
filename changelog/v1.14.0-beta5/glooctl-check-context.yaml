@@ -1,5 +1,5 @@
 changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/7565
-    description: Added `glooctl check-crds --contex <string>` to allow selection of the kubecontext we perform our check with
+    description: Added `glooctl check-crds --contex <string>` to allow selection of the kubecontext we perform our check with.
 
