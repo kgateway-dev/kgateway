@@ -69,18 +69,17 @@ func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoya
 	for _, al := range service.GetAccessLog() {
 
 		var newAlsCfg envoyal.AccessLog
+		var err error
 
 		// Make the "base" config with output destination
 		switch cfgType := al.GetOutputDestination().(type) {
 		case *als.AccessLog_FileSink:
 			var cfg envoyalfile.FileAccessLog
-			err := copyFileSettings(&cfg, cfgType)
-			if err != nil {
+			if err = copyFileSettings(&cfg, cfgType); err != nil {
 				return nil, err
 			}
 
-			newAlsCfg, err = translatorutil.NewAccessLogWithConfig(wellknown.FileAccessLog, &cfg)
-			if err != nil {
+			if newAlsCfg, err = translatorutil.NewAccessLogWithConfig(wellknown.FileAccessLog, &cfg); err != nil {
 				return nil, err
 			}
 
@@ -99,11 +98,11 @@ func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoya
 
 		// Create and add the filter
 		filter := al.GetFilter()
-		envoyFilter, err := translateFilter(filter)
+		err = translateFilter(&newAlsCfg, filter)
 		if err != nil {
 			return nil, err
 		}
-		newAlsCfg.Filter = envoyFilter
+
 		results = append(results, &newAlsCfg)
 
 	}
@@ -113,29 +112,30 @@ func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoya
 }
 
 // Since we are using the same proto def, marshal out of gloo format and unmarshal into envoy format
-func translateFilter(inFilter *als.AccessLogFilter) (*envoyal.AccessLogFilter, error) {
+func translateFilter(accessLog *envoyal.AccessLog, inFilter *als.AccessLogFilter) error {
 	if inFilter == nil {
-		return nil, nil
+		return nil
 	}
 
 	// We need to validate the enums in the filter manually because the protobuf libraries
 	// do not validate them, for "compatibilty reasons". It's nicer to catch them here instead
 	// of sending bad configs to Envoy.
 	if err := validateFilterEnums(inFilter); err != nil {
-		return nil, err
+		return err
 	}
 
 	bytes, err := proto.Marshal(inFilter)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	outFilter := &envoyal.AccessLogFilter{}
 	if err := proto.Unmarshal(bytes, outFilter); err != nil {
-		return nil, err
+		return err
 	}
 
-	return outFilter, nil
+	accessLog.Filter = outFilter
+	return nil
 }
 
 var (
