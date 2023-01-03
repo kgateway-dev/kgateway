@@ -169,7 +169,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return errors.Wrap(err, "OrFilter").
+				return errors.Wrap(err, "AndFilter")
 			}
 		}
 	case *als.AccessLogFilter_OrFilter:
@@ -177,7 +177,7 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		for _, f := range subfilters {
 			err := validateFilterEnums(f)
 			if err != nil {
-				return errors.Wrap(err, "OrFilter").
+				return errors.Wrap(err, "OrFilter")
 			}
 		}
 	case *als.AccessLogFilter_GrpcStatusFilter:
