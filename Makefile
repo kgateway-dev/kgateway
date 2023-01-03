@@ -821,11 +821,12 @@ build-test-chart:
 
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
+MIN_SCANNED_VERSION ?= v1.10.0	# automation via .github/workflows/trivy-analysis-scheduled.yaml overrides this
 
 .PHONY: run-security-scans
 run-security-scan:
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
+	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
+	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
 
 .PHONY: publish-security-scan
 publish-security-scan:
