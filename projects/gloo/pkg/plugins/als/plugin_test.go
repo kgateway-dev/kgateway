@@ -5,17 +5,17 @@ import (
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_v32 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_v31 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_types "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
-	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
+	gloo_envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	gloo_envoy_route "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
+	gloo_envoy_types "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -129,7 +129,7 @@ var _ = Describe("Plugin", func() {
 							StatusCodeFilter: &accessLogService.StatusCodeFilter{
 								Comparison: &accessLogService.ComparisonFilter{
 									Op:    accessLogService.ComparisonFilter_EQ,
-									Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+									Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
 								},
 							},
 						},
@@ -151,7 +151,7 @@ var _ = Describe("Plugin", func() {
 							DurationFilter: &accessLogService.DurationFilter{
 								Comparison: &accessLogService.ComparisonFilter{
 									Op:    accessLogService.ComparisonFilter_EQ,
-									Value: &v31.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
+									Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
 								},
 							},
 						},
@@ -196,9 +196,9 @@ var _ = Describe("Plugin", func() {
 						FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 							RuntimeFilter: &accessLogService.RuntimeFilter{
 								RuntimeKey: FILTER_RUNTIME_KEY,
-								PercentSampled: &v3.FractionalPercent{
+								PercentSampled: &gloo_envoy_types.FractionalPercent{
 									Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-									Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+									Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 								},
 								UseIndependentRandomness: true,
 							},
@@ -208,9 +208,9 @@ var _ = Describe("Plugin", func() {
 						FilterSpecifier: &envoyal.AccessLogFilter_RuntimeFilter{
 							RuntimeFilter: &envoyal.RuntimeFilter{
 								RuntimeKey: FILTER_RUNTIME_KEY,
-								PercentSampled: &envoy_v31.FractionalPercent{
+								PercentSampled: &envoy_types.FractionalPercent{
 									Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-									Denominator: envoy_v31.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+									Denominator: envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 								},
 								UseIndependentRandomness: true,
 							},
@@ -293,7 +293,7 @@ var _ = Describe("Plugin", func() {
 					&accessLogService.AccessLogFilter{
 						FilterSpecifier: &accessLogService.AccessLogFilter_HeaderFilter{
 							HeaderFilter: &accessLogService.HeaderFilter{
-								Header: &v32.HeaderMatcher{
+								Header: &gloo_envoy_route.HeaderMatcher{
 									Name:        HEADER_MATCHER_NAME_STRING,
 									InvertMatch: true,
 								},
@@ -303,7 +303,7 @@ var _ = Describe("Plugin", func() {
 					&envoyal.AccessLogFilter{
 						FilterSpecifier: &envoyal.AccessLogFilter_HeaderFilter{
 							HeaderFilter: &envoyal.HeaderFilter{
-								Header: &envoy_v32.HeaderMatcher{
+								Header: &envoy_route.HeaderMatcher{
 									Name:        HEADER_MATCHER_NAME_STRING,
 									InvertMatch: true,
 								},
@@ -368,9 +368,9 @@ var _ = Describe("Plugin", func() {
 					FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 						RuntimeFilter: &accessLogService.RuntimeFilter{
 							RuntimeKey: FILTER_RUNTIME_KEY,
-							PercentSampled: &v3.FractionalPercent{
+							PercentSampled: &gloo_envoy_types.FractionalPercent{
 								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-								Denominator: v3.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+								Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 							},
 							UseIndependentRandomness: true,
 						},
@@ -385,7 +385,7 @@ var _ = Describe("Plugin", func() {
 						StatusCodeFilter: &accessLogService.StatusCodeFilter{
 							Comparison: &accessLogService.ComparisonFilter{
 								Op:    accessLogService.ComparisonFilter_Op(INVALID_OP),
-								Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+								Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
 							},
 						},
 					},
@@ -399,7 +399,7 @@ var _ = Describe("Plugin", func() {
 						DurationFilter: &accessLogService.DurationFilter{
 							Comparison: &accessLogService.ComparisonFilter{
 								Op:    accessLogService.ComparisonFilter_Op(INVALID_OP),
-								Value: &v31.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+								Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
 							},
 						},
 					},
@@ -422,9 +422,9 @@ var _ = Describe("Plugin", func() {
 									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 										RuntimeFilter: &accessLogService.RuntimeFilter{
 											RuntimeKey: FILTER_RUNTIME_KEY,
-											PercentSampled: &v3.FractionalPercent{
+											PercentSampled: &gloo_envoy_types.FractionalPercent{
 												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-												Denominator: v3.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+												Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 											},
 											UseIndependentRandomness: true,
 										},
@@ -455,9 +455,9 @@ var _ = Describe("Plugin", func() {
 									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 										RuntimeFilter: &accessLogService.RuntimeFilter{
 											RuntimeKey: FILTER_RUNTIME_KEY,
-											PercentSampled: &v3.FractionalPercent{
+											PercentSampled: &gloo_envoy_types.FractionalPercent{
 												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-												Denominator: v3.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+												Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 											},
 											UseIndependentRandomness: true,
 										},
@@ -748,9 +748,9 @@ var _ = Describe("Plugin", func() {
 									FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
 										RuntimeFilter: &accessLogService.RuntimeFilter{
 											RuntimeKey: filter_runtime_key,
-											PercentSampled: &v3.FractionalPercent{
+											PercentSampled: &gloo_envoy_types.FractionalPercent{
 												Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
-												Denominator: v3.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+												Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
 											},
 											UseIndependentRandomness: true,
 										},

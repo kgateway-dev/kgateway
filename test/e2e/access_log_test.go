@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	gloo_envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
@@ -210,7 +210,7 @@ var _ = Describe("Access Log", func() {
 					StatusCodeFilter: &als.StatusCodeFilter{
 						Comparison: &als.ComparisonFilter{
 							Op: als.ComparisonFilter_EQ,
-							Value: &v31.RuntimeUInt32{
+							Value: &gloo_envoy_v3.RuntimeUInt32{
 								DefaultValue: 404,
 								RuntimeKey:   "404",
 							},
