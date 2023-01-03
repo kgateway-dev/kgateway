@@ -21,18 +21,21 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-var (
+const (
 	writeNamespace            = defaults.GlooSystem
-	proxyName                 = gatewaydefaults.GatewayProxyName
-	envoyRole                 = fmt.Sprintf("%v~%v", writeNamespace, proxyName)
 	defaultVirtualServiceName = "vs-test"
 	defaultGatewayName        = gatewaydefaults.GatewayProxyName
+	proxyName                 = gatewaydefaults.GatewayProxyName
 	// DefaultHost defines the Host header that should be used to route traffic to the
 	// default VirtualService that the TestContext creates
 	// To make our tests more explicit we define VirtualServices with an explicit set
 	// of domains (which match the `Host` header of a request), and DefaultHost
 	// is the domain we use by default
 	DefaultHost = "test.com"
+)
+
+var (
+	envoyRole = fmt.Sprintf("%v~%v", writeNamespace, proxyName)
 )
 
 type TestContextFactory struct {
