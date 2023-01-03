@@ -821,7 +821,8 @@ build-test-chart:
 
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
-MIN_SCANNED_VERSION ?= v1.10.0	# automation via .github/workflows/trivy-analysis-scheduled.yaml overrides this
+# The minimum version to scan with trivy
+MIN_SCANNED_VERSION ?= v1.10.0
 
 .PHONY: run-security-scans
 run-security-scan:
