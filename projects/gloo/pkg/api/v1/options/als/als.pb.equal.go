@@ -87,6 +87,16 @@ func (m *AccessLog) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetFilter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFilter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFilter(), target.GetFilter()) {
+			return false
+		}
+	}
+
 	switch m.OutputDestination.(type) {
 
 	case *AccessLog_FileSink:
@@ -264,6 +274,575 @@ func (m *GrpcService) Equal(that interface{}) bool {
 		if m.ServiceRef != target.ServiceRef {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AccessLogFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AccessLogFilter)
+	if !ok {
+		that2, ok := that.(AccessLogFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.FilterSpecifier.(type) {
+
+	case *AccessLogFilter_StatusCodeFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_StatusCodeFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetStatusCodeFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetStatusCodeFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetStatusCodeFilter(), target.GetStatusCodeFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_DurationFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_DurationFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDurationFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDurationFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDurationFilter(), target.GetDurationFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_NotHealthCheckFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_NotHealthCheckFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetNotHealthCheckFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetNotHealthCheckFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetNotHealthCheckFilter(), target.GetNotHealthCheckFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_TraceableFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_TraceableFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetTraceableFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTraceableFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetTraceableFilter(), target.GetTraceableFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_RuntimeFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_RuntimeFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRuntimeFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRuntimeFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRuntimeFilter(), target.GetRuntimeFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_AndFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_AndFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAndFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAndFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAndFilter(), target.GetAndFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_OrFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_OrFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOrFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOrFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOrFilter(), target.GetOrFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_HeaderFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_HeaderFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHeaderFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeaderFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHeaderFilter(), target.GetHeaderFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_ResponseFlagFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_ResponseFlagFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetResponseFlagFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetResponseFlagFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetResponseFlagFilter(), target.GetResponseFlagFilter()) {
+				return false
+			}
+		}
+
+	case *AccessLogFilter_GrpcStatusFilter:
+		if _, ok := target.FilterSpecifier.(*AccessLogFilter_GrpcStatusFilter); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGrpcStatusFilter()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcStatusFilter()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcStatusFilter(), target.GetGrpcStatusFilter()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.FilterSpecifier != target.FilterSpecifier {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ComparisonFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ComparisonFilter)
+	if !ok {
+		that2, ok := that.(ComparisonFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetOp() != target.GetOp() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetValue()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetValue()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetValue(), target.GetValue()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *StatusCodeFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*StatusCodeFilter)
+	if !ok {
+		that2, ok := that.(StatusCodeFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetComparison()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetComparison()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetComparison(), target.GetComparison()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *DurationFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DurationFilter)
+	if !ok {
+		that2, ok := that.(DurationFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetComparison()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetComparison()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetComparison(), target.GetComparison()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *NotHealthCheckFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*NotHealthCheckFilter)
+	if !ok {
+		that2, ok := that.(NotHealthCheckFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *TraceableFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*TraceableFilter)
+	if !ok {
+		that2, ok := that.(TraceableFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RuntimeFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RuntimeFilter)
+	if !ok {
+		that2, ok := that.(RuntimeFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetRuntimeKey(), target.GetRuntimeKey()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPercentSampled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPercentSampled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPercentSampled(), target.GetPercentSampled()) {
+			return false
+		}
+	}
+
+	if m.GetUseIndependentRandomness() != target.GetUseIndependentRandomness() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AndFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AndFilter)
+	if !ok {
+		that2, ok := that.(AndFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetFilters()) != len(target.GetFilters()) {
+		return false
+	}
+	for idx, v := range m.GetFilters() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetFilters()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetFilters()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *OrFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OrFilter)
+	if !ok {
+		that2, ok := that.(OrFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetFilters()) != len(target.GetFilters()) {
+		return false
+	}
+	for idx, v := range m.GetFilters() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetFilters()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetFilters()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HeaderFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HeaderFilter)
+	if !ok {
+		that2, ok := that.(HeaderFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeader()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeader(), target.GetHeader()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ResponseFlagFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ResponseFlagFilter)
+	if !ok {
+		that2, ok := that.(ResponseFlagFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetFlags()) != len(target.GetFlags()) {
+		return false
+	}
+	for idx, v := range m.GetFlags() {
+
+		if strings.Compare(v, target.GetFlags()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcStatusFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcStatusFilter)
+	if !ok {
+		that2, ok := that.(GrpcStatusFilter)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetStatuses()) != len(target.GetStatuses()) {
+		return false
+	}
+	for idx, v := range m.GetStatuses() {
+
+		if v != target.GetStatuses()[idx] {
+			return false
+		}
+
+	}
+
+	if m.GetExclude() != target.GetExclude() {
+		return false
 	}
 
 	return true

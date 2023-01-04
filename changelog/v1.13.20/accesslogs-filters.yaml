@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2340
+    resolvesIssue: yes
+    description: >
+      This features exposes envoy's access log filters in gloo.  The Envoy definitions are documented here: 
+      https://www.envoyproxy.io/docs/envoy/v1.24.1/api-v3/config/accesslog/v3/accesslog.proto#config-accesslog-v3-accesslogfilter
+      and the Gloo interface uses the same definitions. These filters are used to only send certain entries to the access logs,
+      for example based on status codes or a random sampling.

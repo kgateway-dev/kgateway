@@ -1,6 +1,8 @@
 package als
 
 import (
+	"fmt"
+
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
@@ -9,7 +11,9 @@ import (
 	envoy_req_without_query "github.com/envoyproxy/go-control-plane/envoy/extensions/formatter/req_without_query/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -63,31 +67,134 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, parentListener *
 func ProcessAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal.AccessLog) ([]*envoyal.AccessLog, error) {
 	results := make([]*envoyal.AccessLog, 0, len(service.GetAccessLog()))
 	for _, al := range service.GetAccessLog() {
+
+		var newAlsCfg envoyal.AccessLog
+		var err error
+
+		// Make the "base" config with output destination
 		switch cfgType := al.GetOutputDestination().(type) {
 		case *als.AccessLog_FileSink:
 			var cfg envoyalfile.FileAccessLog
-			if err := copyFileSettings(&cfg, cfgType); err != nil {
+			if err = copyFileSettings(&cfg, cfgType); err != nil {
 				return nil, err
 			}
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.FileAccessLog, &cfg)
-			if err != nil {
+
+			if newAlsCfg, err = translatorutil.NewAccessLogWithConfig(wellknown.FileAccessLog, &cfg); err != nil {
 				return nil, err
 			}
-			results = append(results, &newAlsCfg)
+
 		case *als.AccessLog_GrpcService:
 			var cfg envoygrpc.HttpGrpcAccessLogConfig
-			if err := copyGrpcSettings(&cfg, cfgType); err != nil {
-				return nil, err
-			}
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
+			err := copyGrpcSettings(&cfg, cfgType)
 			if err != nil {
 				return nil, err
 			}
-			results = append(results, &newAlsCfg)
+
+			newAlsCfg, err = translatorutil.NewAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
+			if err != nil {
+				return nil, err
+			}
 		}
+
+		// Create and add the filter
+		filter := al.GetFilter()
+		err = translateFilter(&newAlsCfg, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, &newAlsCfg)
+
 	}
+
 	logCfg = append(logCfg, results...)
 	return logCfg, nil
+}
+
+// Since we are using the same proto def, marshal out of gloo format and unmarshal into envoy format
+func translateFilter(accessLog *envoyal.AccessLog, inFilter *als.AccessLogFilter) error {
+	if inFilter == nil {
+		return nil
+	}
+
+	// We need to validate the enums in the filter manually because the protobuf libraries
+	// do not validate them, for "compatibilty reasons". It's nicer to catch them here instead
+	// of sending bad configs to Envoy.
+	if err := validateFilterEnums(inFilter); err != nil {
+		return err
+	}
+
+	bytes, err := proto.Marshal(inFilter)
+	if err != nil {
+		return err
+	}
+
+	outFilter := &envoyal.AccessLogFilter{}
+	if err := proto.Unmarshal(bytes, outFilter); err != nil {
+		return err
+	}
+
+	accessLog.Filter = outFilter
+	return nil
+}
+
+var (
+	InvalidEnumValueError = func(filterName string, fieldName string, value string) error {
+		return eris.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
+	}
+	WrapInvalidEnumValueError = func(filterName string, err error) error {
+		return eris.Wrap(err, fmt.Sprintf("Invalid subfilter in %s", filterName))
+	}
+)
+
+func validateFilterEnums(filter *als.AccessLogFilter) error {
+	switch filter := filter.GetFilterSpecifier().(type) {
+	case *als.AccessLogFilter_RuntimeFilter:
+		denominator := filter.RuntimeFilter.GetPercentSampled().GetDenominator()
+		name := v3.FractionalPercent_DenominatorType_name[int32(denominator.Number())]
+		if name == "" {
+			return InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", denominator.String())
+		}
+	case *als.AccessLogFilter_StatusCodeFilter:
+		op := filter.StatusCodeFilter.GetComparison().GetOp()
+		name := als.ComparisonFilter_Op_name[int32(op.Number())]
+		if name == "" {
+			return InvalidEnumValueError("StatusCodeFilter", "ComparisonFilter.Op", op.String())
+		}
+	case *als.AccessLogFilter_DurationFilter:
+		op := filter.DurationFilter.GetComparison().GetOp()
+		name := als.ComparisonFilter_Op_name[int32(op.Number())]
+		if name == "" {
+			return InvalidEnumValueError("DurationFilter", "ComparisonFilter.Op", op.String())
+		}
+	case *als.AccessLogFilter_AndFilter:
+		subfilters := filter.AndFilter.GetFilters()
+		for _, f := range subfilters {
+			err := validateFilterEnums(f)
+			if err != nil {
+				return WrapInvalidEnumValueError("AndFilter", err)
+			}
+		}
+	case *als.AccessLogFilter_OrFilter:
+		subfilters := filter.OrFilter.GetFilters()
+		for _, f := range subfilters {
+			err := validateFilterEnums(f)
+			if err != nil {
+				return WrapInvalidEnumValueError("OrFilter", err)
+			}
+		}
+	case *als.AccessLogFilter_GrpcStatusFilter:
+		statuses := filter.GrpcStatusFilter.GetStatuses()
+		for _, status := range statuses {
+			name := als.GrpcStatusFilter_Status_name[int32(status.Number())]
+			if name == "" {
+				return InvalidEnumValueError("GrpcStatusFilter", "Status", status.String())
+			}
+		}
+
+	}
+
+	return nil
 }
 
 func copyGrpcSettings(cfg *envoygrpc.HttpGrpcAccessLogConfig, alsSettings *als.AccessLog_GrpcService) error {
