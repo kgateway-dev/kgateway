@@ -241,7 +241,7 @@ It will now return results.
 ]
 ```
 
-You can try any number of different combination to see how the exact match option works. When you're done, let's clean up the exact match Virtual Server and check out the regex matcher.
+You can try any number of different combinations to see how the exact match option works. When you're done, let's clean up the exact match Virtual Service and check out the regex matcher.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exactdelete_2.mp4"  type="video/mp4">

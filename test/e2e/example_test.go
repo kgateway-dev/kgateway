@@ -102,14 +102,14 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 		It("can access statistics", func() {
 			Eventually(func(g Gomega) {
-				cfg, err := testContext.EnvoyInstance().Statistics()
+				stats, err := testContext.EnvoyInstance().Statistics()
 				g.Expect(err).NotTo(HaveOccurred())
 
 				// The TestContext creates a default Gateway
 				gw := testContext.ResourcesToCreate().Gateways[0]
 
 				// We expect the Envoy statistics to contain details about the listener generated from that Gateway object
-				g.Expect(cfg).To(MatchRegexp(fmt.Sprintf("http.http.rds.listener-__-%d-routes.version_text", gw.GetBindPort())))
+				g.Expect(stats).To(MatchRegexp(fmt.Sprintf("http.http.rds.listener-__-%d-routes.version_text", gw.GetBindPort())))
 			}, "5s", ".5s").Should(Succeed())
 		})
 	})
@@ -126,19 +126,24 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
 				Build()
 
+			// By including the new resource in the ResourcesToCreate variable, the TestContext
+			// persists this resource for us during the JustBeforeEach
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 				customVS,
 			}
 		})
 
 		It("can route traffic", func() {
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/endpoint", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/endpoint", "localhost", defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Host = "custom-domain.com" // to match the customVS.domains definition
 
-				req.Host = "custom-domain.com" // to match the customVS.domains definition
+			Eventually(func(g Gomega) {
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
+			Consistently(func(g Gomega) {
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+			}, "2s", ".5s").Should(Succeed())
 
 		})
 	})
@@ -146,15 +151,17 @@ var _ = Describe("Example E2E Test For Developers", func() {
 	Context("Modifying resources directly in a test", func() {
 
 		It("can route traffic", func() {
+			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Host = e2e.DefaultHost
 
 			By("Route traffic to /test returns a 200")
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				req.Host = e2e.DefaultHost
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
+			Consistently(func(g Gomega) {
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+			}, "2s", ".5s").Should(Succeed())
 
 			By("Patch the VS to only handle traffic prefixed with /new")
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
@@ -165,12 +172,11 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 			By("Route traffic to /test returns a 404")
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				req.Host = e2e.DefaultHost
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed())
+			Consistently(func(g Gomega) {
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
+			}, "2s", ".5s").Should(Succeed())
 		})
 
 	})
