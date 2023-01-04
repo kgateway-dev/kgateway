@@ -14,7 +14,7 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 HUGO_VERSION := 0.69.2
 
-SOLO_HUGO_THEME_REVISION := $(shell curl --silent --show-error --retry 5 "https://api.github.com/repos/solo-io/hugo-theme-soloio/releases/latest" | jq -esr 'if . == [] then null else .[] | .tag_name end')
+SOLO_HUGO_THEME_REVISION := 36c858bca114f5b732ef9b4858eddbd2727b60b7
 
 # The minimum version to maintain in our public docs
 MIN_SCANNED_VERSION ?= v1.10.0
