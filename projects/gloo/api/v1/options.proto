@@ -54,6 +54,13 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
+// Router is an extension of the envoy http filters
+// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
+message Router{ 
+    // Do not add any additional x-envoy- headers to requests or responses. This only affects the router filter generated x-envoy- headers, other Envoy filters and the HTTP connection manager may continue to set x-envoy- headers.
+    google.protobuf.BoolValue suppress_envoy_headers = 1;
+}
+
 // Optional, feature-specific configuration that lives on gateways.
 // Each ListenerOption object contains configuration for a specific feature.
 // Note to developers: new Listener plugins must be added to this struct
@@ -160,6 +167,8 @@ message HttpListenerOptions {
     google.protobuf.BoolValue leftmost_xff_address = 16;
 
     dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
+
+    Router router = 18;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

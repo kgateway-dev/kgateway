@@ -209,6 +209,22 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in Gloo Edge.
+
+	//options := h.listener.GetOptions().Gzip.
+
+	if router := h.listener.Options.GetRouter(); router != nil {
+		// TODO
+		envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{
+			Name: wellknown.Router,
+			ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+				TypedConfig: &any.Any{
+					TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
+				},
+			},
+		})
+		return envoyHttpFilters
+	}
+
 	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{
 		Name: wellknown.Router,
 		ConfigType: &envoyhcm.HttpFilter_TypedConfig{

@@ -11,6 +11,7 @@ weight: 5
 #### Types:
 
 
+- [Router](#router)
 - [ListenerOptions](#listeneroptions)
 - [RouteConfigurationOptions](#routeconfigurationoptions)
 - [HttpListenerOptions](#httplisteneroptions)
@@ -26,6 +27,25 @@ weight: 5
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/options.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/options.proto)
 
+
+
+
+
+---
+### Router
+
+ 
+Router is an extension of the envoy http filters
+Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
+
+```yaml
+"suppressEnvoyHeaders": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `suppressEnvoyHeaders` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Do not add any additional x-envoy- headers to requests or responses. This only affects the router filter generated x-envoy- headers, other Envoy filters and the HTTP connection manager may continue to set x-envoy- headers. |
 
 
 
@@ -101,6 +121,7 @@ Optional, feature-specific configuration that lives on http listeners
 "sanitizeClusterHeader": .google.protobuf.BoolValue
 "leftmostXffAddress": .google.protobuf.BoolValue
 "dynamicForwardProxy": .dfp.options.gloo.solo.io.FilterConfig
+"router": .gloo.solo.io.Router
 
 ```
 
@@ -124,6 +145,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `sanitizeClusterHeader` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster, this option will sanitize that header from downstream traffic. Defaults to false. |
 | `leftmostXffAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: Setting this value to true will grab the leftmost IP address from the x-forwarded-for header and set it as the downstream address. It is worth noting that the x-forwarded-for header can be tampered with by clients and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used. |
 | `dynamicForwardProxy` | [.dfp.options.gloo.solo.io.FilterConfig](../options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#filterconfig) |  |
+| `router` | [.gloo.solo.io.Router](../options.proto.sk/#router) |  |
 
 
 

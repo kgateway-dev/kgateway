@@ -104,6 +104,23 @@ var (
 )
 
 // Clone function
+func (m *Router) Clone() proto.Message {
+	var target *Router
+	if m == nil {
+		return target
+	}
+	target = &Router{}
+
+	if h, ok := interface{}(m.GetSuppressEnvoyHeaders()).(clone.Cloner); ok {
+		target.SuppressEnvoyHeaders = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.SuppressEnvoyHeaders = proto.Clone(m.GetSuppressEnvoyHeaders()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ListenerOptions) Clone() proto.Message {
 	var target *ListenerOptions
 	if m == nil {
@@ -282,6 +299,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.DynamicForwardProxy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
 	} else {
 		target.DynamicForwardProxy = proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
+	}
+
+	if h, ok := interface{}(m.GetRouter()).(clone.Cloner); ok {
+		target.Router = h.Clone().(*Router)
+	} else {
+		target.Router = proto.Clone(m.GetRouter()).(*Router)
 	}
 
 	return target

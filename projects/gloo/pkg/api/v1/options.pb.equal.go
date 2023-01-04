@@ -26,6 +26,40 @@ var (
 )
 
 // Equal function
+func (m *Router) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Router)
+	if !ok {
+		that2, ok := that.(Router)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetSuppressEnvoyHeaders()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSuppressEnvoyHeaders()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSuppressEnvoyHeaders(), target.GetSuppressEnvoyHeaders()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ListenerOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -337,6 +371,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetDynamicForwardProxy(), target.GetDynamicForwardProxy()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetRouter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRouter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRouter(), target.GetRouter()) {
 			return false
 		}
 	}
