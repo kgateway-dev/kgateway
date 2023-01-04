@@ -52,6 +52,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 func CheckCRDS(opts *options.Options) error {
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
+	ctx = context.WithValue(ctx, "top", opts.Top)
 	defer cancel()
 
 	version, err := getDeployedVersion(ctx, opts)

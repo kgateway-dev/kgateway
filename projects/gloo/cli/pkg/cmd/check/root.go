@@ -88,7 +88,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddResourceNamespaceFlag(pflags, &opts.Top.ResourceNamespaces)
 	flagutils.AddExcludeCheckFlag(pflags, &opts.Top.CheckName)
 	flagutils.AddReadOnlyFlag(pflags, &opts.Top.ReadOnly)
-	flagutils.AddKubeContextFlag(pflags, &opts.Top.KubeContext)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
