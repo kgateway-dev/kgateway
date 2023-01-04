@@ -3,6 +3,8 @@ package kube2e
 import (
 	"context"
 
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,6 +32,7 @@ type KubeResourceClientSet struct {
 	upstreamClient          gloov1.UpstreamClient
 	proxyClient             gloov1.ProxyClient
 	rateLimitConfigClient   externalrl.RateLimitConfigClient
+	authConfigClient        extauthv1.AuthConfigClient
 	serviceClient           skkube.ServiceClient
 	settingsClient          gloov1.SettingsClient
 
@@ -171,6 +174,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	}
 	resourceClientSet.rateLimitConfigClient = rateLimitConfigClient
 
+	// AuthConfig
+	authConfigClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         extauthv1.AuthConfigCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	}
+	authConfigClient, err := extauthv1.NewAuthConfigClient(ctx, authConfigClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = authConfigClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.authConfigClient = authConfigClient
+
 	// VirtualHostOption
 	virtualHostOptionClientFactory := &factory.KubeResourceClientFactory{
 		Crd:         gatewayv1.VirtualHostOptionCrd,
@@ -260,6 +278,10 @@ func (k KubeResourceClientSet) ProxyClient() gloov1.ProxyClient {
 
 func (k KubeResourceClientSet) RateLimitConfigClient() externalrl.RateLimitConfigClient {
 	return k.rateLimitConfigClient
+}
+
+func (k KubeResourceClientSet) AuthConfigClient() extauthv1.AuthConfigClient {
+	return k.authConfigClient
 }
 
 func (k KubeResourceClientSet) SettingsClient() gloov1.SettingsClient {
