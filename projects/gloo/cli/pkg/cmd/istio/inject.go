@@ -82,8 +82,7 @@ func istioInject(args []string, opts *options.Options) error {
 	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
 	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
 	istioDiscoveryAddress := getIstioDiscoveryAddress(opts.Istio.IstioDiscoveryAddress)
-
-	client := helpers.MustKubeClient()
+	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err

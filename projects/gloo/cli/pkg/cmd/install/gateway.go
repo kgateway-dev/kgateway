@@ -17,7 +17,7 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			helmClient := DefaultHelmClient()
-			installer := NewInstaller(helmClient)
+			installer := NewInstaller(opts, helmClient)
 			mode := Gloo
 			if err := installer.Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,

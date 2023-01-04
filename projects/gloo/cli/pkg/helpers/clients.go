@@ -119,7 +119,7 @@ func MustKubeClient() kubernetes.Interface {
 }
 
 func MustKubeClientWithKubecontext(kubecontext string) kubernetes.Interface {
-	client, err := KubeClientWithKubecontext("")
+	client, err := KubeClientWithKubecontext(kubecontext)
 	if err != nil {
 		log.Fatalf("failed to create kube client: %v", err)
 	}
