@@ -95,7 +95,6 @@ func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
-	ctx = context.WithValue(ctx, "top", opts.Top)
 
 	if opts.Check.CheckTimeout != 0 {
 		ctx, cancel = context.WithTimeout(opts.Top.Ctx, opts.Check.CheckTimeout)
@@ -129,7 +128,7 @@ func CheckResources(opts *options.Options) error {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	namespaces, err := getNamespaces(ctx, opts, settings)
+	namespaces, err := getNamespaces(ctx, settings)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
@@ -382,14 +381,14 @@ func checkPods(ctx context.Context, opts *options.Options) error {
 }
 
 func getSettings(ctx context.Context, opts *options.Options) (*v1.Settings, error) {
-	client, err := helpers.SettingsClient(ctx, []string{opts.Metadata.GetNamespace()}, opts.Top.KubeContext)
+	client, err := helpers.SettingsClient(ctx, []string{opts.Metadata.GetNamespace()})
 	if err != nil {
 		return nil, err
 	}
 	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{})
 }
 
-func getNamespaces(ctx context.Context, opts *options.Options, settings *v1.Settings) ([]string, error) {
+func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error) {
 	if settings.GetWatchNamespaces() != nil {
 		return settings.GetWatchNamespaces(), nil
 	}

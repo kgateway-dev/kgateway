@@ -115,7 +115,11 @@ func UseVaultClients(client *vaultapi.Client, pathPrefix, rootKey string) {
 }
 
 func MustKubeClient() kubernetes.Interface {
-	client, err := KubeClient()
+	return MustKubeClientWithKubecontext("")
+}
+
+func MustKubeClientWithKubecontext(kubecontext string) kubernetes.Interface {
+	client, err := KubeClientWithKubecontext("")
 	if err != nil {
 		log.Fatalf("failed to create kube client: %v", err)
 	}
@@ -123,11 +127,15 @@ func MustKubeClient() kubernetes.Interface {
 }
 
 func KubeClient() (kubernetes.Interface, error) {
+	return KubeClientWithKubecontext("")
+}
+
+func KubeClientWithKubecontext(kubecontext string) (kubernetes.Interface, error) {
 	if fakeKubeClientset != nil {
 		return fakeKubeClientset, nil
 	}
 	if clientset == nil {
-		cfg, err := kubeutils.GetConfig("", os.Getenv("KUBECONFIG"))
+		cfg, err := kubeutils.GetConfigWithContext("", os.Getenv("KUBECONFIG"), kubecontext)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting kube config")
 		}
@@ -457,8 +465,12 @@ func RouteTableClient(ctx context.Context, namespaces []string) (gatewayv1.Route
 	if customFactory != nil {
 		return gatewayv1.NewRouteTableClient(ctx, customFactory)
 	}
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	cfg, err := kubeutils.GetConfig("", "")
+	cfg, err := kubeutils.GetConfigWithContext("", "", kubecontext)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
@@ -487,7 +499,7 @@ func MustNamespacedSettingsClient(ctx context.Context, ns string) v1.SettingsCli
 }
 
 func MustMultiNamespacedSettingsClient(ctx context.Context, namespaces []string) v1.SettingsClient {
-	client, err := SettingsClient(ctx, namespaces, "")
+	client, err := SettingsClient(ctx, namespaces)
 	if err != nil {
 		log.Fatalf("failed to create settings client: %v", err)
 	}
@@ -495,12 +507,15 @@ func MustMultiNamespacedSettingsClient(ctx context.Context, namespaces []string)
 }
 
 // provide "" (metav1.NamespaceAll) to get a cluster-scoped settings client
-func SettingsClient(ctx context.Context, namespaces []string, kubecontext string) (v1.SettingsClient, error) {
+func SettingsClient(ctx context.Context, namespaces []string) (v1.SettingsClient, error) {
 	customFactory := getConfigClientFactory()
 	if customFactory != nil {
 		return v1.NewSettingsClient(ctx, customFactory)
 	}
-
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
+	if err != nil {
+		log.Fatalf("failed to create settings client: %v", err)
+	}
 	cfg, err := kubeutils.GetConfigWithContext("", "", kubecontext)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")

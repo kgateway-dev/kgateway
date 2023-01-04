@@ -26,7 +26,7 @@ type Consul struct {
 	Client          func() (*api.Client, error)
 }
 
-func OptsTopFrom(ctx context.Context) (ContextAccessible, error) {
+func ContextAccessibleFrom(ctx context.Context) (ContextAccessible, error) {
 	if ctx != nil {
 		if logger, ok := ctx.Value("top").(ContextAccessible); ok {
 			return logger, nil
@@ -36,7 +36,7 @@ func OptsTopFrom(ctx context.Context) (ContextAccessible, error) {
 }
 
 func KubecontextFrom(ctx context.Context) (string, error) {
-	opts, err := OptsTopFrom(ctx)
+	opts, err := ContextAccessibleFrom(ctx)
 	if err != nil {
 		return opts.KubeContext, nil
 	}

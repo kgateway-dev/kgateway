@@ -160,7 +160,7 @@ func getSingleVirtualServiceStatus(status *core.Status, ctx context.Context, nam
 	// If the virtual service was accepted, don't include confusing errors on subresources but note if there's another resource potentially blocking config updates.
 	if resourceStatus == core.Status_Accepted {
 		// if route replacement is turned on, don't say that updates to this resource may be blocked
-		settingsClient, err := helpers.SettingsClient(ctx, []string{namespace}, "")
+		settingsClient, err := helpers.SettingsClient(ctx, []string{namespace})
 		// if we get any errors, ignore and default to more verbose error message
 		if err == nil {
 			settings, err := settingsClient.Read(namespace, defaults.SettingsName, clients.ReadOpts{})

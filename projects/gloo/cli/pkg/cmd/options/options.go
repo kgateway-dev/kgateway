@@ -38,8 +38,8 @@ type Options struct {
 type Top struct {
 	contextoptions.ContextAccessible
 	CheckName          []string
-	Ctx                context.Context
 	Output             printTypes.OutputType
+	Ctx                context.Context
 	Zip                bool
 	PodSelector        string   // label selector for pod scanning
 	ResourceNamespaces []string // namespaces in which to check custom resources
