@@ -15,6 +15,20 @@ weight: 5
 - [AccessLog](#accesslog)
 - [FileSink](#filesink)
 - [GrpcService](#grpcservice)
+- [AccessLogFilter](#accesslogfilter)
+- [ComparisonFilter](#comparisonfilter)
+- [Op](#op)
+- [StatusCodeFilter](#statuscodefilter)
+- [DurationFilter](#durationfilter)
+- [NotHealthCheckFilter](#nothealthcheckfilter)
+- [TraceableFilter](#traceablefilter)
+- [RuntimeFilter](#runtimefilter)
+- [AndFilter](#andfilter)
+- [OrFilter](#orfilter)
+- [HeaderFilter](#headerfilter)
+- [ResponseFlagFilter](#responseflagfilter)
+- [GrpcStatusFilter](#grpcstatusfilter)
+- [Status](#status)
   
 
 
@@ -52,6 +66,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 ```yaml
 "fileSink": .als.options.gloo.solo.io.FileSink
 "grpcService": .als.options.gloo.solo.io.GrpcService
+"filter": .als.options.gloo.solo.io.AccessLogFilter
 
 ```
 
@@ -59,6 +74,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | ----- | ---- | ----------- | 
 | `fileSink` | [.als.options.gloo.solo.io.FileSink](../als.proto.sk/#filesink) | Output access logs to local file. Only one of `fileSink` or `grpcService` can be set. |
 | `grpcService` | [.als.options.gloo.solo.io.GrpcService](../als.proto.sk/#grpcservice) | Send access logs to gRPC service. Only one of `grpcService` or `fileSink` can be set. |
+| `filter` | [.als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) |  |
 
 
 
@@ -105,6 +121,295 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v
 | `additionalRequestHeadersToLog` | `[]string` |  |
 | `additionalResponseHeadersToLog` | `[]string` |  |
 | `additionalResponseTrailersToLog` | `[]string` |  |
+
+
+
+
+---
+### AccessLogFilter
+
+
+
+```yaml
+"statusCodeFilter": .als.options.gloo.solo.io.StatusCodeFilter
+"durationFilter": .als.options.gloo.solo.io.DurationFilter
+"notHealthCheckFilter": .als.options.gloo.solo.io.NotHealthCheckFilter
+"traceableFilter": .als.options.gloo.solo.io.TraceableFilter
+"runtimeFilter": .als.options.gloo.solo.io.RuntimeFilter
+"andFilter": .als.options.gloo.solo.io.AndFilter
+"orFilter": .als.options.gloo.solo.io.OrFilter
+"headerFilter": .als.options.gloo.solo.io.HeaderFilter
+"responseFlagFilter": .als.options.gloo.solo.io.ResponseFlagFilter
+"grpcStatusFilter": .als.options.gloo.solo.io.GrpcStatusFilter
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `statusCodeFilter` | [.als.options.gloo.solo.io.StatusCodeFilter](../als.proto.sk/#statuscodefilter) | Status code filter. Only one of `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `durationFilter` | [.als.options.gloo.solo.io.DurationFilter](../als.proto.sk/#durationfilter) | Duration filter. Only one of `durationFilter`, `statusCodeFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `notHealthCheckFilter` | [.als.options.gloo.solo.io.NotHealthCheckFilter](../als.proto.sk/#nothealthcheckfilter) | Not health check filter. Only one of `notHealthCheckFilter`, `statusCodeFilter`, `durationFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `traceableFilter` | [.als.options.gloo.solo.io.TraceableFilter](../als.proto.sk/#traceablefilter) | Traceable filter. Only one of `traceableFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `runtimeFilter` | [.als.options.gloo.solo.io.RuntimeFilter](../als.proto.sk/#runtimefilter) | Runtime filter. Only one of `runtimeFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `andFilter`, `orFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `andFilter` | [.als.options.gloo.solo.io.AndFilter](../als.proto.sk/#andfilter) | And filter. Only one of `andFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `orFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `orFilter` | [.als.options.gloo.solo.io.OrFilter](../als.proto.sk/#orfilter) | Or filter. Only one of `orFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `headerFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `headerFilter` | [.als.options.gloo.solo.io.HeaderFilter](../als.proto.sk/#headerfilter) | Header filter. Only one of `headerFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `responseFlagFilter`, or `grpcStatusFilter` can be set. |
+| `responseFlagFilter` | [.als.options.gloo.solo.io.ResponseFlagFilter](../als.proto.sk/#responseflagfilter) | Response flag filter. Only one of `responseFlagFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `headerFilter`, or `grpcStatusFilter` can be set. |
+| `grpcStatusFilter` | [.als.options.gloo.solo.io.GrpcStatusFilter](../als.proto.sk/#grpcstatusfilter) | gRPC status filter. Only one of `grpcStatusFilter`, `statusCodeFilter`, `durationFilter`, `notHealthCheckFilter`, `traceableFilter`, `runtimeFilter`, `andFilter`, `orFilter`, `headerFilter`, or `responseFlagFilter` can be set. |
+
+
+
+
+---
+### ComparisonFilter
+
+ 
+Filter on an integer comparison.
+
+```yaml
+"op": .als.options.gloo.solo.io.ComparisonFilter.Op
+"value": .solo.io.envoy.config.core.v3.RuntimeUInt32
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `op` | [.als.options.gloo.solo.io.ComparisonFilter.Op](../als.proto.sk/#op) | Comparison operator. |
+| `value` | [.solo.io.envoy.config.core.v3.RuntimeUInt32](../../../../external/envoy/config/core/v3/base.proto.sk/#runtimeuint32) | Value to compare against. |
+
+
+
+
+---
+### Op
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `EQ` | = |
+| `GE` | >= |
+| `LE` | <= |
+
+
+
+
+---
+### StatusCodeFilter
+
+ 
+Filters on HTTP response/status code.
+
+```yaml
+"comparison": .als.options.gloo.solo.io.ComparisonFilter
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `comparison` | [.als.options.gloo.solo.io.ComparisonFilter](../als.proto.sk/#comparisonfilter) | Comparison. |
+
+
+
+
+---
+### DurationFilter
+
+ 
+Filters on total request duration in milliseconds.
+
+```yaml
+"comparison": .als.options.gloo.solo.io.ComparisonFilter
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `comparison` | [.als.options.gloo.solo.io.ComparisonFilter](../als.proto.sk/#comparisonfilter) | Comparison. |
+
+
+
+
+---
+### NotHealthCheckFilter
+
+ 
+Filters for requests that are not health check requests. A health check
+request is marked by the health check filter.
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### TraceableFilter
+
+ 
+Filters for requests that are traceable. See the tracing overview for more
+information on how a request becomes traceable.
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### RuntimeFilter
+
+ 
+Filters for random sampling of requests.
+
+```yaml
+"runtimeKey": string
+"percentSampled": .solo.io.envoy.type.v3.FractionalPercent
+"useIndependentRandomness": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `runtimeKey` | `string` | Runtime key to get an optional overridden numerator for use in the ``percent_sampled`` field. If found in runtime, this value will replace the default numerator. |
+| `percentSampled` | [.solo.io.envoy.type.v3.FractionalPercent](../../../../external/envoy/type/v3/percent.proto.sk/#fractionalpercent) | The default sampling percentage. If not specified, defaults to 0% with denominator of 100. |
+| `useIndependentRandomness` | `bool` | By default, sampling pivots on the header :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` being present. If :ref:`x-request-id<config_http_conn_man_headers_x-request-id>` is present, the filter will consistently sample across multiple hosts based on the runtime key value and the value extracted from :ref:`x-request-id<config_http_conn_man_headers_x-request-id>`. If it is missing, or ``use_independent_randomness`` is set to true, the filter will randomly sample based on the runtime key value alone. ``use_independent_randomness`` can be used for logging kill switches within complex nested :ref:`AndFilter <envoy_v3_api_msg_config.accesslog.v3.AndFilter>` and :ref:`OrFilter <envoy_v3_api_msg_config.accesslog.v3.OrFilter>` blocks that are easier to reason about from a probability perspective (i.e., setting to true will cause the filter to behave like an independent random variable when composed within logical operator filters). |
+
+
+
+
+---
+### AndFilter
+
+ 
+Performs a logical “and” operation on the result of each filter in filters.
+Filters are evaluated sequentially and if one of them returns false, the
+filter returns false immediately.
+
+```yaml
+"filters": []als.options.gloo.solo.io.AccessLogFilter
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `filters` | [[]als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) |  |
+
+
+
+
+---
+### OrFilter
+
+ 
+Performs a logical “or” operation on the result of each individual filter.
+Filters are evaluated sequentially and if one of them returns true, the
+filter returns true immediately.
+
+```yaml
+"filters": []als.options.gloo.solo.io.AccessLogFilter
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `filters` | [[]als.options.gloo.solo.io.AccessLogFilter](../als.proto.sk/#accesslogfilter) |  |
+
+
+
+
+---
+### HeaderFilter
+
+ 
+Filters requests based on the presence or value of a request header.
+
+```yaml
+"header": .solo.io.envoy.config.route.v3.HeaderMatcher
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `header` | [.solo.io.envoy.config.route.v3.HeaderMatcher](../../../../external/envoy/config/route/v3/route_components.proto.sk/#headermatcher) | Only requests with a header which matches the specified HeaderMatcher will pass the filter check. |
+
+
+
+
+---
+### ResponseFlagFilter
+
+ 
+Filters requests that received responses with an Envoy response flag set.
+A list of the response flags can be found
+in the access log formatter
+:ref:`documentation<config_access_log_format_response_flags>`.
+
+```yaml
+"flags": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `flags` | `[]string` | Only responses with the any of the flags listed in this field will be logged. This field is optional. If it is not specified, then any response flag will pass the filter check. |
+
+
+
+
+---
+### GrpcStatusFilter
+
+ 
+Filters gRPC requests based on their response status. If a gRPC status is not
+provided, the filter will infer the status from the HTTP status code.
+
+```yaml
+"statuses": []als.options.gloo.solo.io.GrpcStatusFilter.Status
+"exclude": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `statuses` | [[]als.options.gloo.solo.io.GrpcStatusFilter.Status](../als.proto.sk/#status) | Logs only responses that have any one of the gRPC statuses in this field. |
+| `exclude` | `bool` | If included and set to true, the filter will instead block all responses with a gRPC status or inferred gRPC status enumerated in statuses, and allow all other responses. |
+
+
+
+
+---
+### Status
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `OK` |  |
+| `CANCELED` |  |
+| `UNKNOWN` |  |
+| `INVALID_ARGUMENT` |  |
+| `DEADLINE_EXCEEDED` |  |
+| `NOT_FOUND` |  |
+| `ALREADY_EXISTS` |  |
+| `PERMISSION_DENIED` |  |
+| `RESOURCE_EXHAUSTED` |  |
+| `FAILED_PRECONDITION` |  |
+| `ABORTED` |  |
+| `OUT_OF_RANGE` |  |
+| `UNIMPLEMENTED` |  |
+| `INTERNAL` |  |
+| `UNAVAILABLE` |  |
+| `DATA_LOSS` |  |
+| `UNAUTHENTICATED` |  |
 
 
 
