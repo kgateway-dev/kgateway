@@ -48,7 +48,14 @@ message GrpcJsonTranscoder {
         // The Kubernetes configmap that has the data in some format.
         core.solo.io.ResourceRef config_map_ref = 1;
         
-        bool is_base64_encoded = 2;
+        string key = 2;
+
+        enum ENCODING {
+            UNKNOWN = 0;
+            UNENCODED = 1;
+            BASE64 = 2;
+        }
+        ENCODING encoding = 3;
     }
 
     oneof descriptor_set {

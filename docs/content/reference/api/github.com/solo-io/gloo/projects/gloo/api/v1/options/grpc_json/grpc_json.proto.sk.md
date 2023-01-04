@@ -14,6 +14,7 @@ weight: 5
 - [GrpcJsonTranscoder](#grpcjsontranscoder)
 - [PrintOptions](#printoptions)
 - [DescriptorConfigMap](#descriptorconfigmap)
+- [ENCODING](#encoding)
   
 
 
@@ -90,14 +91,30 @@ weight: 5
 
 ```yaml
 "configMapRef": .core.solo.io.ResourceRef
-"isBase64Encoded": bool
+"key": string
+"encoding": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.DescriptorConfigMap.ENCODING
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `configMapRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the data in some format. |
-| `isBase64Encoded` | `bool` |  |
+| `key` | `string` |  |
+| `encoding` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.DescriptorConfigMap.ENCODING](../grpc_json.proto.sk/#encoding) |  |
+
+
+
+
+---
+### ENCODING
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `UNKNOWN` |  |
+| `UNENCODED` |  |
+| `BASE64` |  |
 
 
 

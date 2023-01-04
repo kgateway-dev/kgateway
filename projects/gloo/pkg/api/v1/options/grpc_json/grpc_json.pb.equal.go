@@ -210,7 +210,11 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Equal(that interface{}) bool {
 		}
 	}
 
-	if m.GetIsBase64Encoded() != target.GetIsBase64Encoded() {
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if m.GetEncoding() != target.GetEncoding() {
 		return false
 	}
 

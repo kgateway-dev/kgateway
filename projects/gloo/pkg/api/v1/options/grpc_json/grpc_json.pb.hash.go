@@ -204,7 +204,11 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Hash(hasher hash.Hash64) (uint6
 		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetIsBase64Encoded())
+	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetEncoding())
 	if err != nil {
 		return 0, err
 	}

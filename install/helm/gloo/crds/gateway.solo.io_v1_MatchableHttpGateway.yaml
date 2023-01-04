@@ -459,8 +459,11 @@ spec:
                                   namespace:
                                     type: string
                                 type: object
-                              isBase64Encoded:
-                                type: boolean
+                              encoding:
+                                type: string
+                                x-kubernetes-int-or-string: true
+                              key:
+                                type: string
                             type: object
                           services:
                             items:

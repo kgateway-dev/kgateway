@@ -139,7 +139,9 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Clone() proto.Message {
 		target.ConfigMapRef = proto.Clone(m.GetConfigMapRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
-	target.IsBase64Encoded = m.GetIsBase64Encoded()
+	target.Key = m.GetKey()
+
+	target.Encoding = m.GetEncoding()
 
 	return target
 }
