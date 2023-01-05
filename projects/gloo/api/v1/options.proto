@@ -31,6 +31,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
@@ -53,13 +54,6 @@ import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
-
-// Router is an extension of the envoy http filters
-// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
-message Router{ 
-    // Do not add any additional x-envoy- headers to requests or responses. This only affects the router filter generated x-envoy- headers, other Envoy filters and the HTTP connection manager may continue to set x-envoy- headers.
-    google.protobuf.BoolValue suppress_envoy_headers = 1;
-}
 
 // Optional, feature-specific configuration that lives on gateways.
 // Each ListenerOption object contains configuration for a specific feature.
@@ -168,6 +162,8 @@ message HttpListenerOptions {
 
     dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
 
+    // Router is an extension of the envoy http filters
+    // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
     Router router = 18;
 }
 

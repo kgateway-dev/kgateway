@@ -172,6 +172,9 @@ func getGrpcJsonGateway(matchIncomingRequestRoute bool) *gatewayv1.Gateway {
 		GatewayType: &gatewayv1.Gateway_HttpGateway{
 			HttpGateway: &gatewayv1.HttpGateway{
 				Options: &gloov1.HttpListenerOptions{
+					//Router: &gloov1.Router{
+					//	SuppressEnvoyHeaders: wrapperspb.Bool(true),
+					//},
 					GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
 						DescriptorSet:             &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
 						Services:                  []string{"glootest.TestService"},
