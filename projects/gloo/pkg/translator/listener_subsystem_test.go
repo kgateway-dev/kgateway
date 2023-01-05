@@ -5,7 +5,7 @@ import (
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -164,6 +164,71 @@ var _ = Describe("Listener Subsystem", func() {
 				hcmFilter := filterChain.GetFilters()[0]
 				typedConfig, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				hcm := typedConfig.(*envoy_http_connection_manager_v3.HttpConnectionManager)
+				hcmRouteConfigName := hcm.GetRds().GetRouteConfigName()
+
+				By("1 route configuration, with name matching HCM")
+				ExpectWithOffset(1, routeConfigs).To(HaveLen(1))
+				routeConfig := routeConfigs[0]
+				ExpectWithOffset(1, routeConfig.GetName()).To(Equal(hcmRouteConfigName))
+			},
+		),
+		Entry(
+			"Add suppress envoy headers to the router",
+			&v1.AggregateListener{
+				HttpResources: &v1.AggregateListener_HttpResources{
+					HttpOptions: map[string]*v1.HttpListenerOptions{
+						"http-options-ref": {
+							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+							Router: &v1.Router{
+								SuppressEnvoyHeaders: &wrappers.BoolValue{
+									Value: true,
+								},
+							},
+						},
+					},
+					VirtualHosts: map[string]*v1.VirtualHost{
+						"vhost-ref": {
+							Name: "virtual-host",
+						},
+					},
+				},
+				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+					Matcher:         nil,
+					HttpOptionsRef:  "http-options-ref",
+					VirtualHostRefs: []string{"vhost-ref"},
+				}},
+			},
+			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
+				By("Should be able to add and translate the router to an envoy config")
+				ExpectWithOffset(1, listener.GetFilterChains()).To(HaveLen(1))
+				lf := listener.GetFilterChains()
+				_ = lf
+				filterChain := listener.GetFilterChains()[0]
+				ExpectWithOffset(1, filterChain.GetFilterChainMatch()).To(BeNil())
+
+				hcmFilter := filterChain.GetFilters()[0]
+				typedConfig, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
+				_ = typedConfig
+
+				hcm := typedConfig.(*envoy_http_connection_manager_v3.HttpConnectionManager)
+				Expect(hcm.HttpFilters).To(HaveLen(2))
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+				routeFilter := hcm.GetHttpFilters()[1]
+				_ = routeFilter
+				Expect(routeFilter.GetName()).To(Equal("envoy.filters.http.router"))
+
+				/**
+				By("Should be able to add and translate the router to an envoy config")
+				ExpectWithOffset(1, listener.GetFilterChains()).To(HaveLen(1))
+				filterChain := listener.GetFilterChains()[0]
+				ExpectWithOffset(1, filterChain.GetFilterChainMatch()).To(BeNil())
+
+				By("with hcm network filter")
+				hcmFilter := filterChain.GetFilters()[0]
+				typedConfig, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				hcm := typedConfig.(*envoyhttp.HttpConnectionManager)
 				hcmRouteConfigName := hcm.GetRds().GetRouteConfigName()
 
@@ -171,6 +236,7 @@ var _ = Describe("Listener Subsystem", func() {
 				ExpectWithOffset(1, routeConfigs).To(HaveLen(1))
 				routeConfig := routeConfigs[0]
 				ExpectWithOffset(1, routeConfig.GetName()).To(Equal(hcmRouteConfigName))
+				**/
 			},
 		),
 		Entry(
@@ -214,7 +280,7 @@ var _ = Describe("Listener Subsystem", func() {
 				hcmFilter := filterChain.GetFilters()[0]
 				typedConfig, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
-				hcm := typedConfig.(*envoyhttp.HttpConnectionManager)
+				hcm := typedConfig.(*envoy_http_connection_manager_v3.HttpConnectionManager)
 				hcmRouteConfigName := hcm.GetRds().GetRouteConfigName()
 
 				By("1 route configuration, with name matching HCM")
@@ -281,7 +347,7 @@ var _ = Describe("Listener Subsystem", func() {
 				hcmFilter := filterChain.GetFilters()[0]
 				typedConfig, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
-				hcm := typedConfig.(*envoyhttp.HttpConnectionManager)
+				hcm := typedConfig.(*envoy_http_connection_manager_v3.HttpConnectionManager)
 				hcmRouteConfigName := hcm.GetRds().GetRouteConfigName()
 
 				By("route config name matches HCM")
@@ -298,7 +364,7 @@ var _ = Describe("Listener Subsystem", func() {
 				hcmFilter = filterChain.GetFilters()[0]
 				typedConfig, err = sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
-				hcm = typedConfig.(*envoyhttp.HttpConnectionManager)
+				hcm = typedConfig.(*envoy_http_connection_manager_v3.HttpConnectionManager)
 				hcmRouteConfigName = hcm.GetRds().GetRouteConfigName()
 
 				By("route config name matches HCM")
