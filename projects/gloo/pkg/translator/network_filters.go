@@ -4,14 +4,13 @@ import (
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -210,26 +209,20 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in Gloo Edge.
 
-	if router := h.listener.Options.GetRouter(); router != nil {
-		routerFilter := plugins.MustNewStagedFilter(
-			wellknown.Router,
-			router,
-			plugins.AfterStage(plugins.RouteStage),
-		)
+	terminalFilter := v1.Router{}
 
-		envoyHttpFilters = append(envoyHttpFilters, routerFilter.HttpFilter)
-
-		return envoyHttpFilters
+	routerFilter := h.listener.GetOptions().GetRouter()
+	if routerFilter != nil {
+		if routerFilter.SuppressEnvoyHeaders.GetValue() {
+			terminalFilter.SuppressEnvoyHeaders = wrapperspb.Bool(true)
+		}
 	}
 
-	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{
-		Name: wellknown.Router,
-		ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-			TypedConfig: &any.Any{
-				TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
-			},
-		},
-	})
+	envoyHttpFilters = append(envoyHttpFilters, plugins.MustNewStagedFilter(
+		wellknown.Router,
+		routerFilter,
+		plugins.AfterStage(plugins.RouteStage),
+	).HttpFilter)
 
 	return envoyHttpFilters
 }
