@@ -28,8 +28,8 @@ type Consul struct {
 
 func ContextAccessibleFrom(ctx context.Context) (ContextAccessible, error) {
 	if ctx != nil {
-		if logger, ok := ctx.Value("top").(ContextAccessible); ok {
-			return logger, nil
+		if contextAccessible, ok := ctx.Value("top").(ContextAccessible); ok {
+			return contextAccessible, nil
 		}
 	}
 	return ContextAccessible{}, eris.New("No options set on current context")
