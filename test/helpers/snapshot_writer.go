@@ -175,7 +175,7 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	}
 	for _, ac := range snapshot.AuthConfigs {
 		acNamespace, acName := ac.GetMetadata().Ref().Strings()
-		if deleteErr := s.RateLimitConfigClient().Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.AuthConfigClient().Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
