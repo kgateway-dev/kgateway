@@ -33,9 +33,9 @@ glooctl create upstream aws [flags]
       --consul-root-key string     key prefix for for Consul key-value storage. (default "gloo")
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
-      --context string             kube context to use when interacting with kubernetes
       --dry-run                    print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")

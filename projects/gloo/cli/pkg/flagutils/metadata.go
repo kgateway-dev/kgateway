@@ -41,5 +41,5 @@ func AddReadOnlyFlag(set *pflag.FlagSet, readOnly *bool) {
 
 // AddKubeContextFlag adds a flag to our flag set that sets the kube context we use when interacting with kubernetes
 func AddKubeContextFlag(set *pflag.FlagSet, KubeContext *string) {
-	set.StringVarP(KubeContext, "context", "", "", "kube context to use when interacting with kubernetes")
+	set.StringVarP(KubeContext, "kube-context", "", "", "kube context to use when interacting with kubernetes")
 }
