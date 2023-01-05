@@ -220,7 +220,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 
 	envoyHttpFilters = append(envoyHttpFilters, plugins.MustNewStagedFilter(
 		wellknown.Router,
-		routerFilter,
+		&terminalFilter,
 		plugins.AfterStage(plugins.RouteStage),
 	).HttpFilter)
 
