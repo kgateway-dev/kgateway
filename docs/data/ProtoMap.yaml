@@ -14,14 +14,50 @@ apis:
   als.options.gloo.solo.io.AccessLog:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLog
     package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.AccessLogFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLogFilter
+    package: als.options.gloo.solo.io
   als.options.gloo.solo.io.AccessLoggingService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLoggingService
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.AndFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AndFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.ComparisonFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#ComparisonFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.DurationFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#DurationFilter
     package: als.options.gloo.solo.io
   als.options.gloo.solo.io.FileSink:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#FileSink
     package: als.options.gloo.solo.io
   als.options.gloo.solo.io.GrpcService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#GrpcService
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.GrpcStatusFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#GrpcStatusFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.HeaderFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#HeaderFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.NotHealthCheckFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#NotHealthCheckFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.OrFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#OrFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.ResponseFlagFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#ResponseFlagFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.RuntimeFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#RuntimeFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.StatusCodeFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#StatusCodeFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.TraceableFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#TraceableFilter
     package: als.options.gloo.solo.io
   aws.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/#DestinationSpec
