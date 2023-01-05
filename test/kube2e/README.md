@@ -17,6 +17,13 @@ These tests are run by a [GitHub action](https://github.com/solo-io/gloo/blob/ma
 
 If a test fails, you can retry it from a [browser window](https://docs.github.com/en/actions/managing-workflow-runs/re-running-workflows-and-jobs#reviewing-previous-workflow-runs). If you do this, please make sure to comment on the Pull Request with a link to the failed logs for debugging purposes.
 
+## Nightly runs
+Tests are also run on a schedule via another [GitHub action](https://github.com/solo-io/gloo/blob/master/.github/workflows/nightly-tests.yaml). The nightly tests use the latest release - specified with the RELEASED_VERSION environment variable. 
+### Extra considerations for running from released builds
+The `GetTestHelper` util method handles installing gloo from either a local or released build. When testing released builds, tests that interact directly with the helm chart need to download the chart using the version stored in `testHelper.GetChartVersion()`
+
+## Adding new tests
+The list of tests to run during CI and nightly builds is provided in `kube-e2e-test-type` matrices in the github workflows. A new test can be added to one or both lists of tests.  
 ## Local Development
 
 ### Setup
@@ -70,13 +77,13 @@ KUBE2E_TESTS=<test-to-run> make run-ci-regression-tests
 #### Test Environment Variables
 The below table contains the environment variables that can be used to configure the test execution.
 
-| Name         | Default | Description                                                                                                                                                                                                                                        |
-|--------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| KUBE2E_TESTS | gateway | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade'`                                                                                                                                |
-| DEBUG        | 0       | Set to 1 for debug log output                                                                                                                                                                                                                      |
-| WAIT_ON_FAIL | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
-| TEAR_DOWN    | false   | Set to true to uninstall Gloo after the test suite completes                                                                                                                                                                                       |
-
+| Name             | Default | Description                                                                                                                                                                                                                                        |
+|------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| KUBE2E_TESTS     | gateway | Name of the test suite to be run. Options: `'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade'`                                                                                                                                |
+| DEBUG            | 0       | Set to 1 for debug log output                                                                                                                                                                                                                      |
+| WAIT_ON_FAIL     | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
+| TEAR_DOWN        | false   | Set to true to uninstall Gloo after the test suite completes                                                                                                                                                                                       |
+| RELEASED_VERSION | ''      | Used by nightlies to tests a specific released version. 'LATEST' will find the latest release                                                                                                                                                      |
 #### Common Test Errors
 `getting Helm chart version: expected a single entry with name [gloo], found: 5`\
 The test helm charts are written to the `_test` directory, with the `index.yaml` file containing references to all available charts. The tests require that this file contain only 1 entry. Delete the other entries manually, or run `make clean` to delete this folder entirely, and then re-build the test helm chart.
