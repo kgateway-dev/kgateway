@@ -16,7 +16,7 @@ type ContextAccessible struct {
 	ConfigFilePath string
 	Consul         Consul // use consul as config backend
 	ReadOnly       bool   // Makes check read only by skipping any checks that create resources in the cluster
-	KubeContext    string // K8s Context to run glooctl check with
+	KubeContext    string // kube context to use when interacting with kubernetes
 }
 
 type Consul struct {
