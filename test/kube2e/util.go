@@ -127,7 +127,10 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
 
 	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
-	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", 4)
+	// We choose 4 here as a bit of a magic number, but we feel comfortable that if 4 consecutive polls of the metrics
+	// endpoint returns that same value, then we have stabilized
+	identicalResultInARow := 4
+	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", identicalResultInARow)
 
 	ginkgo.By("Gloo eventually reaches a consistent state")
 	offset := 1 // This method is called directly from a TestSuite

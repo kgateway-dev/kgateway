@@ -35,6 +35,8 @@ type KubeResourceClientSet struct {
 	authConfigClient        extauthv1.AuthConfigClient
 	serviceClient           skkube.ServiceClient
 	settingsClient          gloov1.SettingsClient
+	artifactClient          gloov1.ArtifactClient
+	secretClient            gloov1.SecretClient
 
 	kubeClient *kubernetes.Clientset
 }
@@ -234,6 +236,36 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	}
 	resourceClientSet.settingsClient = settingsClient
 
+	// Artifact
+	artifactClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gloov1.ArtifactCrd,
+		Cfg:         cfg,
+		SharedCache: kube.NewKubeCache(ctx),
+	}
+	artifactClient, err := gloov1.NewArtifactClient(ctx, artifactClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = artifactClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.artifactClient = artifactClient
+
+	// Secret
+	secretClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gloov1.SecretCrd,
+		Cfg:         cfg,
+		SharedCache: kube.NewKubeCache(ctx),
+	}
+	secretClient, err := gloov1.NewSecretClient(ctx, secretClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = secretClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.secretClient = secretClient
+
 	// Kube Service
 	resourceClientSet.serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
@@ -289,11 +321,11 @@ func (k KubeResourceClientSet) SettingsClient() gloov1.SettingsClient {
 }
 
 func (k KubeResourceClientSet) SecretClient() gloov1.SecretClient {
-	panic("unsupported")
+	return k.secretClient
 }
 
 func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
-	panic("unsupported")
+	return k.artifactClient
 }
 
 func (k KubeResourceClientSet) KubeClients() *kubernetes.Clientset {
