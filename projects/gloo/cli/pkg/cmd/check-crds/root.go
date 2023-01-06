@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+
 	"github.com/ghodss/yaml"
 	"github.com/rotisserie/eris"
 	cliutil "github.com/solo-io/gloo/pkg/cliutil/install"
@@ -66,7 +68,7 @@ func CheckCRDS(opts *options.Options) error {
 	if err != nil {
 		return eris.Wrapf(err, "Error getting CRDs from %s", chartPath)
 	}
-	clusterCRDs, err := getCRDsInCluster()
+	clusterCRDs, err := getCRDsInCluster(ctx)
 	if err != nil {
 		return eris.Wrapf(err, "Error getting CRDs in current cluster")
 	}
@@ -131,9 +133,10 @@ func preprocessCRD(crd *apiextv1.CustomResourceDefinition) {
 }
 
 // getCRDsInCluster gets all custom resources currently in the local cluster
-func getCRDsInCluster() ([]apiextv1.CustomResourceDefinition, error) {
+func getCRDsInCluster(ctx context.Context) ([]apiextv1.CustomResourceDefinition, error) {
 	crds := []apiextv1.CustomResourceDefinition{}
-	out, err := cliutil.KubectlOut(nil, "get", "crd")
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
+	out, err := cliutil.KubectlOut(nil, "get", "crd", "--context", kubecontext)
 	if err != nil {
 		return nil, err
 	}
