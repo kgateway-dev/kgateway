@@ -119,6 +119,9 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		istioPlugin := istio_integration.NewPlugin(opts.WatchOpts.Ctx, opts.Upstreams)
 		if istioPlugin != nil {
 			glooPlugins = append(glooPlugins, istioPlugin)
+			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Debug("added istio plugin")
+		} else {
+			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Debug("istio plugin is nil and not added")
 		}
 	}
 	return glooPlugins

@@ -56,6 +56,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if !ok {
 		// With current use cases it only makes sense to handle k8s single destinations
 		// If this use case expands we would need to figure out Istio's expected hostname format for each type of destination.
+		contextutils.LoggerFrom(context.TODO()).Warnf("[fabian log]: tried processing route '%s' with istio integration, but skipped. we only handle single destination.\n", in.GetName())
 		return nil
 	}
 	hostInMesh, err := GetHostFromDestination(dest, p.usClient)

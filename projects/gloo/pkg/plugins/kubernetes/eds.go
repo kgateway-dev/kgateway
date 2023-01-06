@@ -324,10 +324,15 @@ func filterEndpoints(
 				}
 
 				if istioIntegrationEnabled {
-					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
 					copyRef := *usRef
+					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+					// IF this was still just usRef...
+					//   THEN "endpointsMap[key] = append(endpointsMap[key], &copyRef)", the key with a reused address (or pointer), COULD end up pointing to a different upstream..?
+					//   BUT... could that cause the issue NYT & PM are seeing?
+					// to see this with PM/NYT look at their upstreams & endpoints maybe to see what/if they point to valid stuff?
+					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), &copyRef}
 					endpointsMap[key] = append(endpointsMap[key], &copyRef)
+					warnsToLog = append(warnsToLog, fmt.Sprintf("[fabian log]: (istioIntegration) endpoint map at key: %v = to %v. With an upstream of %v\n", key, endpointsMap[key], &copyRef))
 				} else {
 					warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
 					warnsToLog = append(warnsToLog, warnings...)
@@ -337,10 +342,12 @@ func filterEndpoints(
 	}
 
 	endpoints = generateFilteredEndpointList(endpointsMap, services, podMap, writeNamespace, endpoints, istioIntegrationEnabled)
+	warnsToLog = append(warnsToLog, fmt.Sprintf("[fabian log]: endpoints: %v\n", endpoints))
 
 	return endpoints, warnsToLog, errorsToLog
 }
 
+// could (something like) this needed for istio as well? or no?
 func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods *podMap, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef) []string {
 	var warnings []string
 	for _, addr := range subset.Addresses {
@@ -371,6 +378,7 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 		key := Epkey{addr.IP, port, podName, podNamespace, usRef}
 		copyRef := *usRef
 		endpointsMap[key] = append(endpointsMap[key], &copyRef)
+		warnings = append(warnings, fmt.Sprintf("[fabian log]: (processSubsetAddresses) endpoint map at key: %v = to %v. With an upstream of %v\n", key, endpointsMap[key], &copyRef))
 	}
 	return warnings
 }
