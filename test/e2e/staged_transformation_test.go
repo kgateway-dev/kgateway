@@ -5,6 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -14,11 +17,9 @@ import (
 
 	"net/http"
 
-	"github.com/solo-io/gloo/test/e2e"
-	testmatchers "github.com/solo-io/gloo/test/matchers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/e2e"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -120,7 +121,7 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(res).Should(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       "early-transformed",
 				}))
@@ -165,11 +166,11 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(res).Should(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       BeEmpty(),
 					// The default Header matcher only works with single headers, so we supply a custom matcher in this case
-					Custom: WithTransform(testmatchers.WithHeaderValues("X-Custom-Header"), ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2")),
+					Custom: WithTransform(transforms.WithHeaderValues("X-Custom-Header"), ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2")),
 				}))
 			}, "15s", ".5s").Should(Succeed())
 		})
@@ -205,7 +206,7 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(res).Should(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       base64.StdEncoding.EncodeToString([]byte("test")),
 				}))
@@ -245,7 +246,7 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(res).Should(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       body,
 				}))
@@ -283,7 +284,7 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(res).Should(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       "1234",
 				}))
@@ -321,7 +322,7 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(res).To(matchers2.HaveOkResponseWithHeaders(map[string]interface{}{
 					"X-New-Custom-Header": ContainSubstring("test2"),
 				}))
 			}, "15s", ".5s").Should(Succeed())
@@ -377,7 +378,7 @@ var _ = Describe("Staged Transformation", func() {
 				// the most specific config (weighted cluster > route > vhost)
 				// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
 				// transformations down to the route level.
-				g.Expect(response).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(response).To(matchers2.HaveOkResponseWithHeaders(map[string]interface{}{
 					"x-solo-2": Equal("route header"),
 					"x-solo-1": BeEmpty(),
 				}))
@@ -452,7 +453,7 @@ var _ = Describe("Staged Transformation", func() {
 			Eventually(func(g Gomega) {
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(res).To(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
 					StatusCode: http.StatusForbidden,
 					Body:       "early-transformed",
 				}))

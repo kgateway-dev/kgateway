@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
