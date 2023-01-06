@@ -489,9 +489,9 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("connection fails on incorrect namespace check", func() {
-			_, err := runGlooctlCommand("check", "check", "-n", "not-gloo-sysyem")
+			_, err := runGlooctlCommand("check", "check", "-n", "not-gloo-system")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Could not communicate with kubernetes cluster: namespaces \"not-gloo-sysyem\" not found"))
+			Expect(err.Error()).To(ContainSubstring("Could not communicate with kubernetes cluster: namespaces \"not-gloo-system\" not found"))
 
 			_, err = runGlooctlCommand("check", "-n", "default")
 			Expect(err).To(HaveOccurred())
@@ -505,6 +505,17 @@ var _ = Describe("Kube2e: glooctl", func() {
 			_, err = runGlooctlCommand("check", "-r", "not-gloo-system")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
+		})
+
+		It("fails when scanning with invalid kubecontext", func() {
+			_, err := runGlooctlCommand("check", "check", "--kube-context", "not-gloo-context")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"not-gloo-context\" does not exist"))
+		})
+
+		It("succeeds with correct kubecontext", func() {
+			_, err := runGlooctlCommand("check", "check", "--kube-context", "kind-kind")
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 	Context("check-crds", func() {

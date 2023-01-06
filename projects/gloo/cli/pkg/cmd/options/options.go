@@ -5,12 +5,13 @@ import (
 	"sort"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
-	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/rotisserie/eris"
-	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -34,22 +35,14 @@ type Options struct {
 	Check     Check
 	CheckCRD  CheckCRD
 }
-
 type Top struct {
-	Interactive        bool
-	File               string
+	contextoptions.ContextAccessible
 	CheckName          []string
 	Output             printTypes.OutputType
 	Ctx                context.Context
-	Verbose            bool   // currently only used by install and uninstall, sends kubectl command output to terminal
-	KubeConfig         string // file to use for kube config, if not standard one.
 	Zip                bool
-	ErrorsOnly         bool
-	ConfigFilePath     string
-	Consul             Consul   // use consul as config backend
 	PodSelector        string   // label selector for pod scanning
 	ResourceNamespaces []string // namespaces in which to check custom resources
-	ReadOnly           bool     // Makes check read only by skipping any checks that create resources in the cluster
 }
 
 type HelmInstall struct {
@@ -118,13 +111,6 @@ type Edit struct {
 }
 
 type Route struct {
-}
-
-type Consul struct {
-	UseConsul       bool // enable consul config clients
-	RootKey         string
-	AllowStaleReads bool
-	Client          func() (*api.Client, error)
 }
 
 type Vault struct {

@@ -5,6 +5,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/spf13/pflag"
@@ -59,7 +60,7 @@ func AddKubeConfigFlag(set *pflag.FlagSet, kubeConfig *string) {
 	set.StringVarP(kubeConfig, clientcmd.RecommendedConfigPathFlag, "", "", "kubeconfig to use, if not standard one")
 }
 
-func AddConsulConfigFlags(set *pflag.FlagSet, consul *options.Consul) {
+func AddConsulConfigFlags(set *pflag.FlagSet, consul *contextoptions.Consul) {
 	config := api.DefaultConfig()
 	set.BoolVar(&consul.UseConsul, "use-consul", false, "use Consul Key-Value storage as the "+
 		"backend for reading and writing config (VirtualServices, Upstreams, and Proxies)")

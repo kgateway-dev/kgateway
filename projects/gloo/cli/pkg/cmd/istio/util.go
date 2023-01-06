@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
@@ -28,8 +30,12 @@ func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, err
 
 func getIstiodContainer(ctx context.Context, namespace string) (corev1.Container, error) {
 	var c corev1.Container
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
+	if err != nil {
+		return c, err
+	}
+	client := helpers.MustKubeClientWithKubecontext(kubecontext)
+	_, err = client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return c, err
 	}
@@ -112,7 +118,11 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 // GetGlooVersion gets the version of gloo currently running
 // in the given namespace, by checking the gloo deployment.
 func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
-	sv := versioncmd.NewKube(namespace, "")
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
+	if err != nil {
+		return "", err
+	}
+	sv := versioncmd.NewKube(namespace, kubecontext)
 	server, err := sv.Get(ctx)
 	if err != nil {
 		return "", err
