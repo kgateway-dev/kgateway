@@ -8,6 +8,9 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/onsi/ginkgo"
+	"github.com/solo-io/go-utils/stats"
+
 	"github.com/solo-io/gloo/test/gomega/assertions"
 
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
@@ -113,18 +116,24 @@ gatewayProxies:
 
 func EventuallyReachesConsistentState(installNamespace string) {
 	// We port-forward the Gloo deployment stats port to inspect the metrics and log settings
-	glooStatsForwardConfig := assertions.DefaultStatsPortFwd
-	glooStatsForwardConfig.ResourceNamespace = installNamespace
+	glooStatsForwardConfig := assertions.StatsPortFwd{
+		ResourceName:      "deployment/gloo",
+		ResourceNamespace: installNamespace,
+		LocalPort:         stats.DefaultPort,
+		TargetPort:        stats.DefaultPort,
+	}
 
 	// Gloo components are configured to log to the Info level by default
-	logLevelAssertion := assertions.EventuallyLogLevel(zapcore.InfoLevel)
+	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
 
 	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
 	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", 4)
 
-	assertions.EventuallyWithOffsetStatisticsMatchAssertions(1, glooStatsForwardConfig,
-		logLevelAssertion.WithOffset(1),
-		emitterMetricAssertion.WithOffset(1),
+	ginkgo.By("Gloo eventually reaches a consistent state")
+	offset := 1 // This method is called directly from a TestSuite
+	assertions.EventuallyWithOffsetStatisticsMatchAssertions(offset, glooStatsForwardConfig,
+		logLevelAssertion.WithOffset(offset),
+		emitterMetricAssertion.WithOffset(offset),
 	)
 }
 

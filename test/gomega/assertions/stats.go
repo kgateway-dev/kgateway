@@ -53,14 +53,14 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 		fmt.Sprintf("%d", statsPortFwd.LocalPort),
 		fmt.Sprintf("%d", statsPortFwd.TargetPort),
 		false)
+	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 
 	defer func() {
 		if portForward.Process != nil {
-			portForward.Process.Kill()
-			portForward.Process.Release()
+			_ = portForward.Process.Kill()
+			_ = portForward.Process.Release()
 		}
 	}()
-	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 
 	By("Ensure port-forward is open before performing assertions")
 	statsRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/", statsPortFwd.LocalPort), nil)
@@ -80,6 +80,11 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 
 // IntStatisticReachesConsistentValueAssertion returns an assertion that a prometheus stats has reached a consistent value
 // It optionally returns the value of that statistic as well
+// Arguments:
+//	prometheusStat (string) - The name of the statistic we will be evaluating
+//	inARow (int) - We periodically poll the statistic value from a metrics endpoint. InARow represents
+//				   the number of consecutive times the statistic must be the same for it to be considered "consistent"
+//				   For example, if InARow=4, we must poll the endpoint 4 times consecutively and return the same value
 func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow int) (types.AsyncAssertion, *int) {
 	statRegex, err := regexp.Compile(fmt.Sprintf("%s ([\\d]+)", prometheusStat))
 	Expect(err).NotTo(HaveOccurred())

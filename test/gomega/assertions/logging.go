@@ -11,8 +11,8 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// EventuallyLogLevel returns an Assertion to verify that the dynamic log level matches the provided value
-func EventuallyLogLevel(logLevel zapcore.Level) types.AsyncAssertion {
+// LogLevelAssertion returns an Assertion to verify that the dynamic log level matches the provided value
+func LogLevelAssertion(logLevel zapcore.Level) types.AsyncAssertion {
 	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/logging", stats.DefaultPort), nil)
 	Expect(err).NotTo(HaveOccurred())
 
