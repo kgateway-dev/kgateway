@@ -4,13 +4,13 @@ import (
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -208,19 +208,17 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in Gloo Edge.
+	routerV3 := routerv3.Router{}
 
-	terminalFilter := v1.Router{}
-
-	routerFilter := h.listener.GetOptions().GetRouter()
-	if routerFilter != nil {
-		if routerFilter.SuppressEnvoyHeaders.GetValue() {
-			terminalFilter.SuppressEnvoyHeaders = wrapperspb.Bool(true)
+	if routerFilter := h.listener.GetOptions().GetRouter(); routerFilter != nil {
+		if routerFilter.GetSuppressEnvoyHeaders().GetValue() {
+			routerV3.SuppressEnvoyHeaders = true
 		}
 	}
 
 	envoyHttpFilters = append(envoyHttpFilters, plugins.MustNewStagedFilter(
 		wellknown.Router,
-		&terminalFilter,
+		&routerV3,
 		plugins.AfterStage(plugins.RouteStage),
 	).HttpFilter)
 
