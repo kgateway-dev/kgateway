@@ -9,7 +9,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
 
 	. "github.com/onsi/ginkgo"
@@ -19,11 +19,21 @@ import (
 	"github.com/solo-io/go-utils/stats"
 )
 
+// Gloo Edge exports statistics to provide details about how the system is behaving
+// Most stats utilities are defined in: https://github.com/solo-io/go-utils/tree/master/stats
+// This file contains a set of assertions that can be performed by tests to ensure that recorded stats
+// match what we would expect
+
 const (
-	TimeToSyncStats     = time.Second * 5 // Metrics reporting occurs at 5s intervals
-	SafeTimeToSyncStats = TimeToSyncStats + time.Second*2
+	// timeToSyncStats represents the interval at which metrics reporting occurs
+	timeToSyncStats = time.Second * 5
+	// SafeTimeToSyncStats represents a safe estimate for metrics reporting interval. We provide a buffer beyond
+	// the time that metrics reporting occurs, to account for latencies. Tests should use the SafeTimeToSyncStats
+	// to ensure that we are polling the stats endpoints infrequently enough that they will have updated each time
+	SafeTimeToSyncStats = timeToSyncStats + time.Second*3
 )
 
+// StatsPortFwd represents the set of configuration required to generated port-forward to access statistics locally
 type StatsPortFwd struct {
 	ResourceName      string
 	ResourceNamespace string
@@ -31,6 +41,8 @@ type StatsPortFwd struct {
 	TargetPort        int
 }
 
+// DefaultStatsPortFwd is a commonly used port-forward configuration, since Gloo Deployment stats are the most valuable
+// This is used in Gloo Enterprise
 var DefaultStatsPortFwd = StatsPortFwd{
 	ResourceName:      "deployment/gloo",
 	ResourceNamespace: defaults.GlooSystem,
@@ -66,7 +78,7 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 	statsRequest, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/", statsPortFwd.LocalPort), nil)
 	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
 	EventuallyWithOffset(offset+1, func(g Gomega) {
-		g.Expect(http.DefaultClient.Do(statsRequest)).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+		g.Expect(http.DefaultClient.Do(statsRequest)).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       Not(BeEmpty()),
 		}))
@@ -102,7 +114,7 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 	)
 
 	return Eventually(func(g Gomega) {
-		g.Expect(http.DefaultClient.Do(metricsRequest)).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+		g.Expect(http.DefaultClient.Do(metricsRequest)).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: WithTransform(func(body []byte) error {
 				statValue, transformErr := statTransform(body)
