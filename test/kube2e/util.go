@@ -120,11 +120,11 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	logLevelAssertion := assertions.EventuallyLogLevel(zapcore.InfoLevel)
 
 	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
-	emitterMetricAssertion, _ := assertions.EventuallyIntStatisticReachesConsistentValue(1, "api_gloosnapshot_gloo_solo_io_emitter_snap_out", 4)
+	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", 4)
 
 	assertions.EventuallyWithOffsetStatisticsMatchAssertions(1, glooStatsForwardConfig,
-		logLevelAssertion,
-		emitterMetricAssertion,
+		logLevelAssertion.WithOffset(1),
+		emitterMetricAssertion.WithOffset(1),
 	)
 }
 

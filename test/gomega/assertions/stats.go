@@ -6,11 +6,11 @@ import (
 	"regexp"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2/dsl/core"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -76,17 +76,17 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 	}
 }
 
-// EventuallyIntStatisticReachesConsistentValue returns an assertion that a prometheus stats has reached a consistent value
+// IntStatisticReachesConsistentValueAssertion returns an assertion that a prometheus stats has reached a consistent value
 // It optionally returns the value of that statistic as well
-func EventuallyIntStatisticReachesConsistentValue(offset int, prometheusStat string, inARow int) (types.AsyncAssertion, int) {
+func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow int) (types.AsyncAssertion, int) {
 	statRegex, err := regexp.Compile(fmt.Sprintf("%s ([\\d]+)", prometheusStat))
-	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	statTransform := transforms.IntRegexTransform(statRegex)
 
 	// Assumes that the metrics are exposed via the default port
 	metricsRequest, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:%d/metrics", stats.DefaultPort), nil)
-	ExpectWithOffset(offset+1, err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	var (
 		currentlyInARow   = 0
@@ -94,7 +94,7 @@ func EventuallyIntStatisticReachesConsistentValue(offset int, prometheusStat str
 		currentStatValue  = 0
 	)
 
-	return EventuallyWithOffset(offset+1, func(g Gomega) {
+	return Eventually(func(g Gomega) {
 		g.Expect(http.DefaultClient.Do(metricsRequest)).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body: WithTransform(func(body []byte) error {
