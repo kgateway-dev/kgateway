@@ -66,7 +66,7 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 	EventuallyWithOffset(offset+1, func(g Gomega) {
 		g.Expect(http.DefaultClient.Do(statsRequest)).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 			StatusCode: http.StatusOK,
-			Body:       Succeed(),
+			Body:       Not(BeEmpty()),
 		}))
 	}).Should(Succeed())
 
@@ -109,6 +109,6 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 		} else {
 			currentlyInARow += 1
 		}
-		g.Expect(currentlyInARow).Should(Equal(inARow))
+		g.Expect(currentlyInARow).To(Equal(inARow))
 	}, "2m", SafeTimeToSyncStats), currentlyInARow
 }
