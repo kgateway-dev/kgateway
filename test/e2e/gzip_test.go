@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"bytes"
 
-	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
 
 	"fmt"
@@ -71,7 +71,7 @@ var _ = Describe("gzip", func() {
 
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(matchers2.HaveExactResponseBody(jsonStr))
+				g.Expect(res).Should(matchers.HaveExactResponseBody(jsonStr))
 			}, "5s", ".1s").Should(Succeed())
 		})
 	})
@@ -111,7 +111,7 @@ var _ = Describe("gzip", func() {
 
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(matchers2.HaveExactResponseBody(shortJsonStr))
+				g.Expect(res).Should(matchers.HaveExactResponseBody(shortJsonStr))
 			}).Should(Succeed())
 
 			// raw json should be compressed
@@ -125,7 +125,7 @@ var _ = Describe("gzip", func() {
 
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(matchers2.HaveHttpResponse(&matchers2.HttpResponse{
+				g.Expect(res).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       WithTransform(transforms.WithDecompressorTransform(), Equal(longJsonStr)),
 				}))
