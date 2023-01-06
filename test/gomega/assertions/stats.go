@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"time"
 
+	"k8s.io/utils/pointer"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
@@ -78,7 +80,7 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 
 // IntStatisticReachesConsistentValueAssertion returns an assertion that a prometheus stats has reached a consistent value
 // It optionally returns the value of that statistic as well
-func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow int) (types.AsyncAssertion, int) {
+func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow int) (types.AsyncAssertion, *int) {
 	statRegex, err := regexp.Compile(fmt.Sprintf("%s ([\\d]+)", prometheusStat))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -91,7 +93,7 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 	var (
 		currentlyInARow   = 0
 		previousStatValue = 0
-		currentStatValue  = 0
+		currentStatValue  = pointer.Int(0)
 	)
 
 	return Eventually(func(g Gomega) {
@@ -99,17 +101,17 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 			StatusCode: http.StatusOK,
 			Body: WithTransform(func(body []byte) error {
 				statValue, transformErr := statTransform(body)
-				currentStatValue = statValue
+				*currentStatValue = statValue
 				return transformErr
 			}, Not(HaveOccurred())),
 		}))
 
-		if currentStatValue == 0 || currentStatValue != previousStatValue {
+		if *currentStatValue == 0 || *currentStatValue != previousStatValue {
 			currentlyInARow = 0
 		} else {
 			currentlyInARow += 1
 		}
-		previousStatValue = currentStatValue
+		previousStatValue = *currentStatValue
 		g.Expect(currentlyInARow).To(Equal(inARow))
 	}, "2m", SafeTimeToSyncStats), currentStatValue
 }
