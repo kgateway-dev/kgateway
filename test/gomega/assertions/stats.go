@@ -70,7 +70,7 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 		}))
 	}).Should(Succeed())
 
-	// Perform the assertions while the port forward is open
+	By("Perform the assertions while the port forward is open")
 	for _, assertion := range assertions {
 		assertion.WithOffset(offset + 1).ShouldNot(HaveOccurred())
 	}
@@ -109,6 +109,7 @@ func IntStatisticReachesConsistentValueAssertion(prometheusStat string, inARow i
 		} else {
 			currentlyInARow += 1
 		}
+		previousStatValue = currentStatValue
 		g.Expect(currentlyInARow).To(Equal(inARow))
-	}, "2m", SafeTimeToSyncStats), currentlyInARow
+	}, "2m", SafeTimeToSyncStats), currentStatValue
 }
