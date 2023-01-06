@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -182,6 +183,48 @@ var _ = Describe("Happy path", func() {
 
 					// Verify that stats for the above virtual cluster are present
 					Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
+				})
+
+				It("it correctly passes the suppress envoy headers config", func() {
+					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+					// Set a virtual cluster matching everything
+					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
+						Router: &gloov1.Router{
+							SuppressEnvoyHeaders: wrapperspb.Bool(true),
+						},
+					}
+
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					// This will hit the virtual host with the above virtual cluster config
+					TestUpstreamReachable()
+
+					cfg, err := envoyInstance.ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+
+					// We expect the envoy configuration to contain these properties in the configuration dump
+					Expect(cfg).To(MatchRegexp("\"suppress_envoy_headers\": true"))
+				})
+
+				It("it correctly DID NOT pass the suppress envoy headers config", func() {
+					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+					// Set a virtual cluster matching everything
+					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{}
+
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+					Expect(err).NotTo(HaveOccurred())
+
+					// This will hit the virtual host with the above virtual cluster config
+					TestUpstreamReachable()
+
+					cfg, err := envoyInstance.ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+
+					// We expect the envoy configuration to contain these properties in the configuration dump
+					Expect(cfg).To(Not(MatchRegexp("\"suppress_envoy_headers\": true")))
 				})
 
 				It("passes a health check", func() {
