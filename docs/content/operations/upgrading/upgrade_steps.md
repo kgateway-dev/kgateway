@@ -36,7 +36,6 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
-   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
 5. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Enterprise-only: Understand the open source dependencies.
@@ -63,7 +62,7 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
 
 {{% notice tip %}}
-If upgrading from version 1.9.0 or later, use a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/canary" >}}) to make sure that the newer version works as you expect before upgrading.
+Try a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/canary" >}}) to make sure that the newer version works as you expect before upgrading.
 {{% /notice %}}
 
 ## Step 2: Upgrade glooctl
@@ -143,7 +142,6 @@ Each minor version might add custom resource definitions (CRDs) that Helm upgrad
 * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
 * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
 * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
-* [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
 
 ## Step 4: Upgrade Gloo Edge
 
