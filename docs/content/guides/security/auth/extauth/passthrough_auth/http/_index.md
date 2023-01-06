@@ -4,10 +4,6 @@ weight: 10
 description: Authenticating using an external Http service. 
 ---
 
-{{% notice note %}}
-The Http Passthrough feature was introduced with **Gloo Edge Enterprise**, release 1.9.0-beta4. If you are using an earlier version, this tutorial will not work.
-{{% /notice %}}
-
 When using Gloo Edge's external authentication server, it may be convenient to authenticate requests with your own HTTP server.
 By creating requests from the external authentication server to your own authentication component, Gloo Edge can use your authentication server
 to authenticate requests.
