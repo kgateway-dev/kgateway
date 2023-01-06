@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+
 	"github.com/avast/retry-go"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -114,7 +116,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 					return eris.Wrapf(err, "parsing override values for knative mode")
 				}
 
-				if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
+				if err := NewInstaller(opts, DefaultHelmClient()).Install(&InstallerConfig{
 					InstallCliArgs: &opts.Install,
 					ExtraValues:    knativeOverrides,
 					Verbose:        opts.Top.Verbose,
@@ -194,7 +196,11 @@ func checkKnativeInstallation(ctx context.Context, kubeclient ...kubernetes.Inte
 	if len(kubeclient) > 0 {
 		kc = kubeclient[0]
 	} else {
-		kc = helpers.MustKubeClient()
+		kubecontext, err := contextoptions.KubecontextFrom(ctx)
+		if err != nil {
+			return false, nil, err
+		}
+		kc = helpers.MustKubeClientWithKubecontext(kubecontext)
 	}
 	namespaces, err := kc.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
 	if err != nil {

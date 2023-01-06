@@ -6,12 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
-
 	"github.com/hashicorp/go-multierror"
-
 	"github.com/rotisserie/eris"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -24,6 +21,7 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -93,11 +91,11 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
-
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
+
 	if opts.Check.CheckTimeout != 0 {
 		ctx, cancel = context.WithTimeout(opts.Top.Ctx, opts.Check.CheckTimeout)
 	}
@@ -239,7 +237,7 @@ func CheckResources(opts *options.Options) error {
 
 func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1.DeploymentList, error) {
 	printer.AppendCheck("Checking deployments... ")
-	client, err := helpers.GetKubernetesClient()
+	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
 	if err != nil {
 		errMessage := "error getting KubeClient"
 		fmt.Println(errMessage)
@@ -316,7 +314,7 @@ func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1
 
 func checkPods(ctx context.Context, opts *options.Options) error {
 	printer.AppendCheck("Checking pods... ")
-	client, err := helpers.GetKubernetesClient()
+	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
 	if err != nil {
 		return err
 	}
@@ -394,7 +392,6 @@ func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error)
 	if settings.GetWatchNamespaces() != nil {
 		return settings.GetWatchNamespaces(), nil
 	}
-
 	return helpers.GetNamespaces(ctx)
 }
 
@@ -957,7 +954,7 @@ func renderNamespaceName(namespace, name string) string {
 // Checks whether the cluster that the kubeconfig points at is available
 // The timeout for the kubernetes client is set to a low value to notify the user of the failure
 func checkConnection(ctx context.Context, opts *options.Options) error {
-	client, err := helpers.GetKubernetesClient()
+	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
 	if err != nil {
 		return eris.Wrapf(err, "Could not get kubernetes client")
 	}
