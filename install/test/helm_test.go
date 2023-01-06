@@ -9,6 +9,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/solo-io/gloo/test/gomega/matchers"
+
 	"github.com/ghodss/yaml"
 	"github.com/onsi/gomega/format"
 
@@ -18,7 +20,6 @@ import (
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"

@@ -3,8 +3,6 @@ package helpers
 import (
 	"time"
 
-	errorsBuiltIn "errors"
-
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -58,20 +56,12 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 	// the parent resource
 
 	for _, secret := range snapshot.Secrets {
-		secretClient := s.SecretClient()
-		if secretClient == nil {
-			return errorsBuiltIn.New("SecretClient on current snapshotWriterImpl is nil")
-		}
-		if _, writeErr := secretClient.Write(secret, writeOptions); !s.isContinuableWriteError(writeErr) {
+		if _, writeErr := s.SecretClient().Write(secret, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
 	for _, artifact := range snapshot.Artifacts {
-		artifactClient := s.ArtifactClient()
-		if artifactClient == nil {
-			return errorsBuiltIn.New("ArtifactClient on current snapshotWriterImpl is nil")
-		}
-		if _, writeErr := artifactClient.Write(artifact, writeOptions); !s.isContinuableWriteError(writeErr) {
+		if _, writeErr := s.ArtifactClient().Write(artifact, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
@@ -97,6 +87,11 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 	}
 	for _, rlc := range snapshot.Ratelimitconfigs {
 		if _, writeErr := s.RateLimitConfigClient().Write(rlc, writeOptions); !s.isContinuableWriteError(writeErr) {
+			return writeErr
+		}
+	}
+	for _, ac := range snapshot.AuthConfigs {
+		if _, writeErr := s.AuthConfigClient().Write(ac, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
 		}
 	}
@@ -168,6 +163,12 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 			return deleteErr
 		}
 	}
+	for _, ac := range snapshot.AuthConfigs {
+		acNamespace, acName := ac.GetMetadata().Ref().Strings()
+		if deleteErr := s.AuthConfigClient().Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
 	for _, rlc := range snapshot.Ratelimitconfigs {
 		rlcNamespace, rlcName := rlc.GetMetadata().Ref().Strings()
 		if deleteErr := s.RateLimitConfigClient().Delete(rlcNamespace, rlcName, deleteOptions); deleteErr != nil {
@@ -200,21 +201,13 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	}
 	for _, secret := range snapshot.Secrets {
 		secretNamespace, secretName := secret.GetMetadata().Ref().Strings()
-		secretClient := s.SecretClient()
-		if secretClient == nil {
-			return errorsBuiltIn.New("SecretClient on current snapshotWriterImpl is nil")
-		}
-		if deleteErr := secretClient.Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.SecretClient().Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
 	for _, artifact := range snapshot.Artifacts {
 		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
-		secretClient := s.SecretClient()
-		if secretClient == nil {
-			return errorsBuiltIn.New("SecretClient on current snapshotWriterImpl is nil")
-		}
-		if deleteErr := secretClient.Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.ArtifactClient().Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}

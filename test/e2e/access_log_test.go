@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/gomega/matchers"
+
 	"github.com/solo-io/gloo/test/services"
 
+	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/matchers"
-
-	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"

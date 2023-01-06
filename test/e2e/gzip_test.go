@@ -3,10 +3,11 @@ package e2e_test
 import (
 	"bytes"
 
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
+
 	"fmt"
 	"net/http"
-
-	"github.com/solo-io/gloo/test/matchers"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -126,7 +127,7 @@ var _ = Describe("gzip", func() {
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
-					Body:       WithTransform(matchers.WithDecompressorTransform(), Equal(longJsonStr)),
+					Body:       WithTransform(transforms.WithDecompressorTransform(), Equal(longJsonStr)),
 				}))
 			}).Should(Succeed())
 		})

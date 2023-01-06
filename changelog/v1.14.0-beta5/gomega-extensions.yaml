@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Build out gomega utilities (matchers, assertions, transforms) to be shared with Gloo and Gloo Enterprise.
+  - type: NON_USER_FACING
+    description: >-
+      Update the SnapshotWriter to include AuthConfigs, which is required for Gloo Enterprise.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: gomega
+    dependencyTag: v1.20.0
