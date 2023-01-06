@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/test/e2e"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"

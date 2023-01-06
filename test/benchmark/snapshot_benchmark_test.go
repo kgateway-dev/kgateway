@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -19,7 +21,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-	matchers2 "github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
