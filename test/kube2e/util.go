@@ -1,22 +1,20 @@
 package kube2e
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
-	"strconv"
 	"time"
+
+	"github.com/onsi/ginkgo"
+	"github.com/solo-io/go-utils/stats"
+
+	"github.com/solo-io/gloo/test/gomega/assertions"
 
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
 
-	"github.com/solo-io/go-utils/testutils/goimpl"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/proto"
@@ -117,30 +115,29 @@ gatewayProxies:
 }
 
 func EventuallyReachesConsistentState(installNamespace string) {
-	metricsPort := 9091
-	metricsPortString := strconv.Itoa(metricsPort)
-	portFwd := exec.Command(
-		"kubectl",
-		"port-forward",
-		"-n",
-		installNamespace,
-		"deployment/gloo",
-		metricsPortString)
-	portFwd.Stdout = os.Stderr
-	portFwd.Stderr = os.Stderr
-	err := portFwd.Start()
-	Expect(err).ToNot(HaveOccurred())
-
-	defer func() {
-		if portFwd.Process != nil {
-			portFwd.Process.Kill()
-		}
-	}()
+	// We port-forward the Gloo deployment stats port to inspect the metrics and log settings
+	glooStatsForwardConfig := assertions.StatsPortFwd{
+		ResourceName:      "deployment/gloo",
+		ResourceNamespace: installNamespace,
+		LocalPort:         stats.DefaultPort,
+		TargetPort:        stats.DefaultPort,
+	}
 
 	// Gloo components are configured to log to the Info level by default
-	EventuallyLogLevel(metricsPort, zapcore.InfoLevel)
+	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
 
-	EventuallyMetricsBecomeConsistent(1, metricsPort)
+	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
+	// We choose 4 here as a bit of a magic number, but we feel comfortable that if 4 consecutive polls of the metrics
+	// endpoint returns that same value, then we have stabilized
+	identicalResultInARow := 4
+	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", identicalResultInARow)
+
+	ginkgo.By("Gloo eventually reaches a consistent state")
+	offset := 1 // This method is called directly from a TestSuite
+	assertions.EventuallyWithOffsetStatisticsMatchAssertions(offset, glooStatsForwardConfig,
+		logLevelAssertion.WithOffset(offset),
+		emitterMetricAssertion.WithOffset(offset),
+	)
 }
 
 // Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
@@ -150,78 +147,6 @@ func ExpectEqualProtoMessages(g Gomega, a, b proto.Message, optionalDescription 
 	}
 
 	g.Expect(a.String()).To(Equal(b.String()), optionalDescription...)
-}
-
-func EventuallyMetricsBecomeConsistent(offset int, metricsPort int) {
-	// make sure we eventually reach an eventually consistent state
-	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
-
-	// wait for the initial snapOut reading to be present
-	var lastSnapOut = 0
-	EventuallyWithOffset(offset+1, func() int {
-		lastSnapOut = getSnapOut(metricsPort)
-		return lastSnapOut
-	}, "30s", eventuallyConsistentPollingInterval).Should(BeNumerically(">", 0),
-		"expected metrics to be found")
-
-	// wait for that snapOut reading to become consistent
-	consistentlyInARow := 0
-	EventuallyWithOffset(offset+1, func() int {
-		currentSnapOut := getSnapOut(metricsPort)
-		consistent := lastSnapOut == currentSnapOut
-		lastSnapOut = currentSnapOut
-		if consistent {
-			consistentlyInARow += 1
-		} else {
-			consistentlyInARow = 0
-		}
-		return consistentlyInARow
-	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(4),
-		"expected metrics to be consistent")
-}
-
-// needs a port-forward of the metrics port before a call to this will work
-func getSnapOut(metricsPort int) int {
-	metricsPortString := strconv.Itoa(metricsPort)
-	var bodyResp string
-	Eventually(func() string {
-		res, err := http.Post("http://localhost:"+metricsPortString+"/metrics", "", nil)
-		if err != nil || res.StatusCode != 200 {
-			return ""
-		}
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		Expect(err).ToNot(HaveOccurred())
-		bodyResp = string(body)
-		return bodyResp
-	}, "5s", "1s").ShouldNot(BeEmpty())
-
-	findSnapOut, err := regexp.Compile("api_gloosnapshot_gloo_solo_io_emitter_snap_out ([\\d]+)")
-	if err != nil {
-		// No snapOut metrics were found, still starting up
-		return 0
-	}
-
-	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
-	Expect(matches).To(HaveLen(1))
-	snapOut, err := strconv.Atoi(matches[0][1])
-	Expect(err).NotTo(HaveOccurred())
-	return snapOut
-}
-
-// EventuallyLogLevel ensures that we can query the endpoint responsible for getting the current
-// log level of a gloo component, and updating the log level dynamically
-func EventuallyLogLevel(port int, logLevel zapcore.Level) {
-	url := fmt.Sprintf("http://localhost:%d/logging", port)
-	body := bytes.NewReader([]byte(url))
-
-	request, err := http.NewRequest(http.MethodGet, url, body)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-	expectedResponse := fmt.Sprintf("{\"level\":\"%s\"}\n", logLevel.String())
-	EventuallyWithOffset(1, func() (string, error) {
-		return goimpl.ExecuteRequest(request)
-	}, time.Second*5, time.Millisecond*100).Should(Equal(expectedResponse))
 }
 
 func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {

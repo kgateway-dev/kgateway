@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/matchers"
+	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 

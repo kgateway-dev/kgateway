@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/gomega/matchers"
+
 	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -24,7 +26,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

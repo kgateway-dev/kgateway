@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	"time"
 
@@ -127,7 +127,7 @@ var _ = Describe("GlooResourcesTest", func() {
 				testRunnerUs, err := resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, usName, clients.ReadOpts{Ctx: ctx})
 				g.Expect(err).NotTo(HaveOccurred())
 
-				g.Expect(testRunnerUs.GetSslConfig()).To(matchers2.MatchProto(upstreamSslConfig))
+				g.Expect(testRunnerUs.GetSslConfig()).To(matchers.MatchProto(upstreamSslConfig))
 			})
 
 		})

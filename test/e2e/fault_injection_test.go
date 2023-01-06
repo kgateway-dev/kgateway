@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/e2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/helpers"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
