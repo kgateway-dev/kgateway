@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Repaired docs to indicate that setting preserve_case_header_key_format on a **gateway** affects **request** headers.  (As opposed to prior indicated as **response**)
