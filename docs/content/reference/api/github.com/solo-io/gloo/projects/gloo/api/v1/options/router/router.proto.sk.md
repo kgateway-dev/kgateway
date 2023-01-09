@@ -26,7 +26,7 @@ weight: 5
 ### Router
 
  
-Router is an extension of the envoy http filters
+Router is an envoy http filter
 Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
 
 ```yaml

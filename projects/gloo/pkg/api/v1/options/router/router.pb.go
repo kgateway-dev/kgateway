@@ -22,7 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Router is an extension of the envoy http filters
+// Router is an envoy http filter
 // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
 type Router struct {
 	state         protoimpl.MessageState
