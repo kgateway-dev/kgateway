@@ -25,11 +25,11 @@ spec:
   {{- if (eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v1") }}
   targetCPUUtilizationPercentage: {{ $spec.horizontalPodAutoscaler.targetCPUUtilizationPercentage }}
   {{- end }}
-  {{- if eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
+  {{- if or (eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2") ( eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2") }}
   metrics:
   {{ toYaml $spec.horizontalPodAutoscaler.metrics | nindent 4 }}
   {{- end }}
-  {{- if eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2" }}
+  {{- if or (eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2beta2") ( eq $spec.horizontalPodAutoscaler.apiVersion "autoscaling/v2") }}
   behavior:
   {{ toYaml $spec.horizontalPodAutoscaler.behavior | nindent 4 }}
   {{- end }}
