@@ -131,7 +131,11 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	httpConnectionManager := h.initializeHCM()
 
 	// 2. Apply HttpFilters
-	httpConnectionManager.HttpFilters = h.computeHttpFilters(params)
+	var err error
+	httpConnectionManager.HttpFilters, err = h.computeHttpFilters(params)
+	if err != nil {
+		return &envoy_config_listener_v3.Filter{}, err
+	}
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	for _, hcmPlugin := range h.hcmPlugins {
@@ -178,7 +182,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	}
 }
 
-func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) []*envoyhttp.HttpFilter {
+func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) ([]*envoyhttp.HttpFilter, error) {
 	var httpFilters []plugins.StagedHttpFilter
 
 	// run the HttpFilter Plugins
@@ -210,19 +214,23 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// as the terminal filter in Gloo Edge.
 	routerV3 := routerv3.Router{}
 
-	if routerFilter := h.listener.GetOptions().GetRouter(); routerFilter != nil {
-		if routerFilter.GetSuppressEnvoyHeaders().GetValue() {
-			routerV3.SuppressEnvoyHeaders = true
-		}
+	if h.listener.GetOptions().GetRouter().GetSuppressEnvoyHeaders().GetValue() {
+		routerV3.SuppressEnvoyHeaders = true
 	}
 
-	envoyHttpFilters = append(envoyHttpFilters, plugins.MustNewStagedFilter(
+	newStagedFilter, err := plugins.NewStagedFilter(
 		wellknown.Router,
 		&routerV3,
 		plugins.AfterStage(plugins.RouteStage),
-	).HttpFilter)
+	)
+	if err != nil {
+		return envoyHttpFilters, err
 
-	return envoyHttpFilters
+	}
+
+	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.HttpFilter)
+
+	return envoyHttpFilters, nil
 }
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {

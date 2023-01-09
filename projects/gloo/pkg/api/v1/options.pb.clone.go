@@ -77,6 +77,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_retries "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_shadowing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
@@ -285,9 +287,9 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetRouter()).(clone.Cloner); ok {
-		target.Router = h.Clone().(*Router)
+		target.Router = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
 	} else {
-		target.Router = proto.Clone(m.GetRouter()).(*Router)
+		target.Router = proto.Clone(m.GetRouter()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
 	}
 
 	return target

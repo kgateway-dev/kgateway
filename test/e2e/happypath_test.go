@@ -22,6 +22,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
+	routerV1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -188,14 +189,17 @@ var _ = Describe("Happy path", func() {
 				It("it correctly passes the suppress envoy headers config", func() {
 					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
-					// Set a virtual cluster matching everything
+					// configuring an http listener option to set suppressEnvoyHeaders to true
+					//projects/gloo/api/v1/options/router/router.proto
 					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
-						Router: &gloov1.Router{
+						Router: &routerV1.Router{
 							SuppressEnvoyHeaders: wrapperspb.Bool(true),
 						},
 					}
 
-					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{
+						Ctx: ctx,
+					})
 					Expect(err).NotTo(HaveOccurred())
 
 					// This will hit the virtual host with the above virtual cluster config
@@ -211,10 +215,12 @@ var _ = Describe("Happy path", func() {
 				It("it correctly DID NOT pass the suppress envoy headers config", func() {
 					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
-					// Set a virtual cluster matching everything
+					// Set a virtual cluster listener that is blank and has no options
 					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{}
 
-					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{
+						Ctx: ctx,
+					})
 					Expect(err).NotTo(HaveOccurred())
 
 					// This will hit the virtual host with the above virtual cluster config
@@ -223,7 +229,7 @@ var _ = Describe("Happy path", func() {
 					cfg, err := envoyInstance.ConfigDump()
 					Expect(err).NotTo(HaveOccurred())
 
-					// We expect the envoy configuration to contain these properties in the configuration dump
+					// We expect the envoy configuration to NOT contain these properties in the configuration dump
 					Expect(cfg).To(Not(MatchRegexp("\"suppress_envoy_headers\": true")))
 				})
 

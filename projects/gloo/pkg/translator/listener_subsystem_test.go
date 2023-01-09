@@ -180,11 +180,6 @@ var _ = Describe("Listener Subsystem", func() {
 					HttpOptions: map[string]*v1.HttpListenerOptions{
 						"http-options-ref": {
 							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
-							Router: &v1.Router{
-								SuppressEnvoyHeaders: &wrappers.BoolValue{
-									Value: true,
-								},
-							},
 						},
 					},
 					VirtualHosts: map[string]*v1.VirtualHost{

@@ -42,6 +42,7 @@ import (
 	proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	rest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	retries "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
+	router "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
 	shadowing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	tcp "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
@@ -275,7 +276,7 @@ type HttpListenerOptions struct {
 	DynamicForwardProxy *dynamic_forward_proxy.FilterConfig `protobuf:"bytes,28,opt,name=dynamic_forward_proxy,json=dynamicForwardProxy,proto3" json:"dynamic_forward_proxy,omitempty"`
 	// Router is an extension of the envoy http filters
 	// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
-	Router *Router `protobuf:"bytes,18,opt,name=router,proto3" json:"router,omitempty"`
+	Router *router.Router `protobuf:"bytes,18,opt,name=router,proto3" json:"router,omitempty"`
 }
 
 func (x *HttpListenerOptions) Reset() {
@@ -436,7 +437,7 @@ func (x *HttpListenerOptions) GetDynamicForwardProxy() *dynamic_forward_proxy.Fi
 	return nil
 }
 
-func (x *HttpListenerOptions) GetRouter() *Router {
+func (x *HttpListenerOptions) GetRouter() *router.Router {
 	if x != nil {
 		return x.Router
 	}
@@ -2587,7 +2588,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_goTypes = []
 	(*grpc_json.GrpcJsonTranscoder)(nil),           // 28: grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
 	(*wrappers.BoolValue)(nil),                     // 29: google.protobuf.BoolValue
 	(*dynamic_forward_proxy.FilterConfig)(nil),     // 30: dfp.options.gloo.solo.io.FilterConfig
-	(*Router)(nil),                                 // 31: gloo.solo.io.Router
+	(*router.Router)(nil),                          // 31: gloo.solo.io.Router
 	(*tcp.TcpProxySettings)(nil),                   // 32: tcp.options.gloo.solo.io.TcpProxySettings
 	(*retries.RetryPolicy)(nil),                    // 33: retries.options.gloo.solo.io.RetryPolicy
 	(*stats.Stats)(nil),                            // 34: stats.options.gloo.solo.io.Stats
@@ -2734,7 +2735,6 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_init() {
 		return
 	}
 	file_github_com_solo_io_gloo_projects_gloo_api_v1_extensions_proto_init()
-	file_github_com_solo_io_gloo_projects_gloo_api_v1_options_router_router_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_github_com_solo_io_gloo_projects_gloo_api_v1_options_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ListenerOptions); i {
