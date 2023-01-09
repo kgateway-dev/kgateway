@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Fix issue with wrong port being used with Istio integration and setting a different `TargetPort` than the `Port`.
+    issueLink: https://github.com/solo-io/gloo/issues/7298
+    resolvesIssue: false
+  - type: NON_USER_FACING
+    description: Add regression tests for istio integration.
