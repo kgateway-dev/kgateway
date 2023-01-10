@@ -464,9 +464,6 @@ spec:
                                   namespace:
                                     type: string
                                 type: object
-                              encoding:
-                                type: string
-                                x-kubernetes-int-or-string: true
                               key:
                                 type: string
                             type: object
@@ -1917,9 +1914,6 @@ spec:
                                             namespace:
                                               type: string
                                           type: object
-                                        encoding:
-                                          type: string
-                                          x-kubernetes-int-or-string: true
                                         key:
                                           type: string
                                       type: object

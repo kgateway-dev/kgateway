@@ -141,7 +141,5 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Clone() proto.Message {
 
 	target.Key = m.GetKey()
 
-	target.Encoding = m.GetEncoding()
-
 	return target
 }

@@ -208,10 +208,5 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Hash(hasher hash.Hash64) (uint6
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetEncoding())
-	if err != nil {
-		return 0, err
-	}
-
 	return hasher.Sum64(), nil
 }

@@ -214,9 +214,5 @@ func (m *GrpcJsonTranscoder_DescriptorConfigMap) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetEncoding() != target.GetEncoding() {
-		return false
-	}
-
 	return true
 }
