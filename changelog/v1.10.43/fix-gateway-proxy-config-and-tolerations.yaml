@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix issue with `istio-proxy` being set in `tolerations` by moving pod-level options (including `tolerations`) out of container configuration.
+    issueLink: https://github.com/solo-io/gloo/issues/5665
+    resolvesIssue: false
+  - type: HELM
+    description: >
+      Move pod-level options outside of istio/sds container configuration.
