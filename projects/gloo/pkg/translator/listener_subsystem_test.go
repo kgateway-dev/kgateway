@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
+	routerV1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	corsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
@@ -180,6 +181,11 @@ var _ = Describe("Listener Subsystem", func() {
 					HttpOptions: map[string]*v1.HttpListenerOptions{
 						"http-options-ref": {
 							HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{},
+							Router: &routerV1.Router{
+								SuppressEnvoyHeaders: &wrappers.BoolValue{
+									Value: true,
+								},
+							},
 						},
 					},
 					VirtualHosts: map[string]*v1.VirtualHost{
@@ -203,15 +209,16 @@ var _ = Describe("Listener Subsystem", func() {
 				ExpectWithOffset(1, filterChain.GetFilterChainMatch()).To(BeNil())
 
 				hcmFilter := filterChain.GetFilters()[0]
-				typedConfig, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
-				_ = typedConfig
+				_, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
+				Expect(err).NotTo(HaveOccurred())
 
-				hcm := typedConfig.(*envoy_http_connection_manager_v3.HttpConnectionManager)
-				Expect(hcm.HttpFilters).To(HaveLen(2))
+				hcm := &envoy_http_connection_manager_v3.HttpConnectionManager{}
+				err = translator.ParseTypedConfig(hcmFilter, hcm)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				Expect(hcm.HttpFilters).To(HaveLen(2))
 
 				routeFilter := hcm.GetHttpFilters()[1]
-				Expect(routeFilter.GetName()).To(Equal("envoy.filters.http.router"))
+				Expect(routeFilter).To(MatchRegexp("suppress_envoy_headers:true"))
 			},
 		),
 		Entry(

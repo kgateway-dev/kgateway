@@ -132,10 +132,7 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 
 	// 2. Apply HttpFilters
 	var err error
-	httpConnectionManager.HttpFilters, err = h.computeHttpFilters(params)
-	if err != nil {
-		return &envoy_config_listener_v3.Filter{}, err
-	}
+	httpConnectionManager.HttpFilters = h.computeHttpFilters(params)
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
 	for _, hcmPlugin := range h.hcmPlugins {
@@ -182,7 +179,7 @@ func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionMa
 	}
 }
 
-func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) ([]*envoyhttp.HttpFilter, error) {
+func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) []*envoyhttp.HttpFilter {
 	var httpFilters []plugins.StagedHttpFilter
 
 	// run the HttpFilter Plugins
@@ -223,14 +220,14 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) (
 		&routerV3,
 		plugins.AfterStage(plugins.RouteStage),
 	)
-	if err != nil {
-		return envoyHttpFilters, err
 
+	if err != nil {
+		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 	}
 
 	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.HttpFilter)
 
-	return envoyHttpFilters, nil
+	return envoyHttpFilters
 }
 
 func sortHttpFilters(filters plugins.StagedHttpFilterList) []*envoyhttp.HttpFilter {
