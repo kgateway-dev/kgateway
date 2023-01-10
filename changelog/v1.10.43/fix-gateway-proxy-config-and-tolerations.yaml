@@ -7,3 +7,5 @@ changelog:
   - type: HELM
     description: >
       Move pod-level options outside of istio/sds container configuration.
+    issueLink: https://github.com/solo-io/gloo/issues/5665
+    resolvesIssue: false
