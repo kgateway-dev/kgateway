@@ -124,12 +124,13 @@ func translateConfigMapToProtoBin(ctx context.Context, snap *gloosnapshot.ApiSna
 		return nil, NoConfigMapRefError()
 	}
 
-	// make sure the referenced configmap exists and has data
+	// make sure the referenced configmap exists in the gloo snapshot
 	configMap, err := snap.Artifacts.Find(configRef.GetConfigMapRef().Strings())
 	if err != nil {
 		return nil, ConfigMapNotFoundError(configRef)
 	}
 
+	// make sure the configmap has data
 	data := configMap.GetData()
 	if len(data) == 0 {
 		return nil, ConfigMapNoValuesError(configRef)
