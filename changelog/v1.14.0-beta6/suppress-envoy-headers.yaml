@@ -2,4 +2,4 @@ changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/6713
     resolvesIssue: false
-    description: Sometimes it's desirable to call another instance of Gloo and not pass any of the x-envoy headers, this allows that.
+    description: Opens the option for the router config on hcm to enable the passing of a bool to suppress the envoy headers. 

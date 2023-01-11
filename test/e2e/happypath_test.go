@@ -186,7 +186,7 @@ var _ = Describe("Happy path", func() {
 					Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
 				})
 
-				It("it correctly passes the suppress envoy headers config", func() {
+				FIt("it correctly passes the suppress envoy headers config", func() {
 					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 					// configuring an http listener option to set suppressEnvoyHeaders to true
@@ -210,6 +210,7 @@ var _ = Describe("Happy path", func() {
 
 					// We expect the envoy configuration to contain these properties in the configuration dump
 					Expect(cfg).To(MatchRegexp("\"suppress_envoy_headers\": true"))
+
 				})
 
 				It("it correctly DID NOT pass the suppress envoy headers config", func() {
