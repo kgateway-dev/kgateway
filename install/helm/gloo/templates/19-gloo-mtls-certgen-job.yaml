@@ -65,9 +65,6 @@ spec:
           args:
             - "--secret-name=gloo-mtls-certs"
             - "--svc-name=gloo"
-  {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
-  {{- end }}
 {{- end }} {{/* if .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 

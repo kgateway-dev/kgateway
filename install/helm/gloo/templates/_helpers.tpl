@@ -66,7 +66,6 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{ end -}}
 {{- end -}}
 
-{{- /* We are intentionally skipping */ -}}
 {{- define "gloo.jobSpecStandardFields" -}}
 {{- with .activeDeadlineSeconds -}}
 activeDeadlineSeconds: {{ . }}
@@ -83,6 +82,12 @@ manualSelector: {{ . }}
 {{- with .parallelism -}}
 parallelism: {{ . }}
 {{ end -}}
+{{- /* use 'ne false' to make the default (nil) true */ -}}
+{{ if ne .setTtlAfterFinished false -}}
+{{- with .ttlSecondsAfterFinished  -}}
+ttlSecondsAfterFinished: {{ . }}
+{{ end -}}
+{{- end -}}
 {{- with .extraPodLabels -}}
 extraPodLabels: {{ . }}
 {{ end -}}

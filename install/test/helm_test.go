@@ -5584,12 +5584,16 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 
-				FDescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+				DescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
 					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
 								jobValuesPrefix + ".activeDeadlineSeconds=123",
 								jobValuesPrefix + ".ttlSecondsAfterFinished=42",
+								jobValuesPrefix + ".backoffLimit=10",
+								jobValuesPrefix + ".completions=5",
+								jobValuesPrefix + ".manualSelector=true",
+								jobValuesPrefix + ".parallelism=7",
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5602,6 +5606,14 @@ metadata:
 								Expect(a).To(Equal(int64(123)))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(Equal(int64(42)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "backoffLimit")...)
+								Expect(a).To(Equal(int64(10)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "completions")...)
+								Expect(a).To(Equal(int64(5)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "parallelism")...)
+								Expect(a).To(Equal(int64(7)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "manualSelector")...)
+								Expect(a).To(Equal(true))
 								return true
 							}
 							return false
@@ -5614,6 +5626,33 @@ metadata:
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
+				)
+
+				// Positive/default values of setTtlAfterFinished are tested in the regular test
+				DescribeTable("setTtlAfterFinished=false suppresses ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=false",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=42",
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(BeNil())
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",
