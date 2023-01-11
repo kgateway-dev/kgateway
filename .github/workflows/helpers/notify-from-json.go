@@ -46,7 +46,7 @@ func main() {
 
 func send_success() {
 	message_slack(Payload{
-		Channel: SLACK_CHANNEL, // hange to SLACK_TESTING_CHANNEL to not spam standard watch channel
+		Channel: SLACK_CHANNEL, // change to SLACK_TESTING_CHANNEL to not spam standard watch channel
 		Text:    os.ExpandEnv(":large_green_circle: <$PARENT_JOB_URL|Gloo OSS nightlies> have all passed!"),
 	})
 }
@@ -58,7 +58,7 @@ func send_failure(jobs []Job) {
 	text = text[:len(text)-2] + ")"
 
 	message_slack(Payload{
-		Channel: SLACK_TESTING_CHANNEL,
+		Channel: SLACK_CHANNEL, // change to SLACK_TESTING_CHANNEL to not spam standard watch channel
 		Text:    os.ExpandEnv(text),
 	})
 }
