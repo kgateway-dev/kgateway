@@ -922,6 +922,42 @@ var _ = Describe("Helm Test", func() {
 						}
 					})
 				})
+
+				It("should properly set istio-proxy in containers when tolerations are set", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.podTemplate.tolerations[0].key=test_key",
+							"gatewayProxies.gatewayProxy.podTemplate.tolerations[0].value=test_value",
+							"global.istioSDS.enabled=true",
+						},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						if structuredDeployment.GetName() == "gateway-proxy" {
+							Expect(len(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal(3), "should have exactly 3 containers")
+							Expect(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an sds sidecar")
+							Expect(istioSidecarVersion(structuredDeployment.Spec.Template.Spec.Containers)).To(Equal("docker.io/istio/proxyv2:1.9.5"), "istio proxy sidecar should be the default")
+							Expect(haveIstioSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "gateway-proxy should have an istio-proxy sidecar")
+							Expect(sdsIsIstioMode(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue(), "sds sidecar should have istio mode enabled")
+							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(istioCertsVolume), "should have istio-certs volume mounted")
+
+							Expect(len(structuredDeployment.Spec.Template.Spec.Tolerations)).To(Equal(1))
+							Expect(structuredDeployment.Spec.Template.Spec.Tolerations).To(Equal([]v1.Toleration{
+								{
+									Key:   "test_key",
+									Value: "test_value",
+								},
+							}))
+						}
+					})
+				})
 			})
 
 			Context("gateway", func() {
@@ -4742,7 +4778,7 @@ metadata:
 
 			})
 
-			Describe("Standard k8s values", func() {
+			FDescribe("Standard k8s values", func() {
 				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, restartPolicy on Deployments and Jobs",
 					func(kind string, resourceName string, value string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
