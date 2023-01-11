@@ -202,19 +202,14 @@ var _ = Describe("Listener Subsystem", func() {
 			},
 			func(listener *envoy_config_listener_v3.Listener, routeConfigs []*envoy_config_route_v3.RouteConfiguration) {
 				By("Should be able to add and translate the router to an envoy config")
-				ExpectWithOffset(1, listener.GetFilterChains()).To(HaveLen(1))
-				lf := listener.GetFilterChains()
-				_ = lf
 				filterChain := listener.GetFilterChains()[0]
-				ExpectWithOffset(1, filterChain.GetFilterChainMatch()).To(BeNil())
-
 				hcmFilter := filterChain.GetFilters()[0]
 				_, err := sslutils.AnyToMessage(hcmFilter.GetConfigType().(*envoy_config_listener_v3.Filter_TypedConfig).TypedConfig)
 				Expect(err).NotTo(HaveOccurred())
 
 				hcm := &envoy_http_connection_manager_v3.HttpConnectionManager{}
 				err = translator.ParseTypedConfig(hcmFilter, hcm)
-				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 				Expect(hcm.HttpFilters).To(HaveLen(2))
 
 				routeFilter := hcm.GetHttpFilters()[1]

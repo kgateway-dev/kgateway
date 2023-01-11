@@ -202,8 +202,12 @@ var _ = Describe("Happy path", func() {
 					})
 					Expect(err).NotTo(HaveOccurred())
 
-					// This will hit the virtual host with the above virtual cluster config
 					TestUpstreamReachable()
+
+					// This will hit the virtual host with the above virtual cluster config
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(response.Header).NotTo(HaveKey("X-Envoy-Upstream-Service-Time"))
 
 					cfg, err := envoyInstance.ConfigDump()
 					Expect(err).NotTo(HaveOccurred())
@@ -223,9 +227,16 @@ var _ = Describe("Happy path", func() {
 						Ctx: ctx,
 					})
 					Expect(err).NotTo(HaveOccurred())
+					TestUpstreamReachable()
 
 					// This will hit the virtual host with the above virtual cluster config
-					TestUpstreamReachable()
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					Expect(err).NotTo(HaveOccurred())
+
+					headers := response.Header
+					_ = headers
+
+					Expect(response.Header).To(HaveKey("X-Envoy-Upstream-Service-Time"))
 
 					cfg, err := envoyInstance.ConfigDump()
 					Expect(err).NotTo(HaveOccurred())
