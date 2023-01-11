@@ -11,12 +11,12 @@ jobs:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
     steps:
       - name: run test
-        run: echo ${{ matrix.kube-e2e-test-type }}
+        run: exit 1
       - name: save results
         run: echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
                 "name":"${{matrix.kube-e2e-test-type}}"}' > test-out.json
       - uses: actions/upload-artifact@v3
-      # if: ${{ failure() }} TODO: uncomment
+        if: ${{ failure() }}
         with:
           name: ${{ matrix.kube-e2e-test-type }}
           path: test-out.json
