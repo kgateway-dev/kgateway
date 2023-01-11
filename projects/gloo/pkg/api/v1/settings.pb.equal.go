@@ -961,6 +961,312 @@ func (m *Settings_VaultSecrets) Equal(that interface{}) bool {
 		return false
 	}
 
+	switch m.AuthMethod.(type) {
+
+	case *Settings_VaultSecrets_AccessToken:
+		if _, ok := target.AuthMethod.(*Settings_VaultSecrets_AccessToken); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetAccessToken(), target.GetAccessToken()) != 0 {
+			return false
+		}
+
+	case *Settings_VaultSecrets_Aws:
+		if _, ok := target.AuthMethod.(*Settings_VaultSecrets_Aws); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAws()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAws()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAws(), target.GetAws()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthMethod != target.AuthMethod {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsAuth) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsAuth)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsAuth)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetRole(), target.GetRole()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRegion(), target.GetRegion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetIamServerIdHeader(), target.GetIamServerIdHeader()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMountPath(), target.GetMountPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAccessKeyId(), target.GetAccessKeyId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSecretAccessKey(), target.GetSecretAccessKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSessionToken(), target.GetSessionToken()) != 0 {
+		return false
+	}
+
+	switch m.LoginMethod.(type) {
+
+	case *Settings_VaultAwsAuth_Iam:
+		if _, ok := target.LoginMethod.(*Settings_VaultAwsAuth_Iam); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetIam()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetIam()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetIam(), target.GetIam()) {
+				return false
+			}
+		}
+
+	case *Settings_VaultAwsAuth_Ec2:
+		if _, ok := target.LoginMethod.(*Settings_VaultAwsAuth_Ec2); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetEc2()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetEc2()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetEc2(), target.GetEc2()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.LoginMethod != target.LoginMethod {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsIam) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsIam)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsIam)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsEc2) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsEc2)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsEc2)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetNonce(), target.GetNonce()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRoleArn(), target.GetRoleArn()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRoleSessionName(), target.GetRoleSessionName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetWebIdentityTokenFilePath(), target.GetWebIdentityTokenFilePath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCsmEnabled(), target.GetCsmEnabled()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCsmHost(), target.GetCsmHost()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCsmPort(), target.GetCsmPort()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCsmClientId(), target.GetCsmClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetProfile(), target.GetProfile()) != 0 {
+		return false
+	}
+
+	if m.GetEnableEndpointDiscovery() != target.GetEnableEndpointDiscovery() {
+		return false
+	}
+
+	if m.GetCustomCaBundle() != target.GetCustomCaBundle() {
+		return false
+	}
+
+	if strings.Compare(m.GetClientTlsCert(), target.GetClientTlsCert()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientTlsKey(), target.GetClientTlsKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetStsRegionalEndpoint(), target.GetStsRegionalEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetS3UsEast1RegionalEndpoint(), target.GetS3UsEast1RegionalEndpoint()) != 0 {
+		return false
+	}
+
+	if m.GetS3UseArnRegion() != target.GetS3UseArnRegion() {
+		return false
+	}
+
+	if strings.Compare(m.GetEc2ImdsEndpoint(), target.GetEc2ImdsEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetEc2ImdsEndpointMode(), target.GetEc2ImdsEndpointMode()) != 0 {
+		return false
+	}
+
+	if m.GetUseDualStackEndpoint() != target.GetUseDualStackEndpoint() {
+		return false
+	}
+
+	if m.GetUseFipsEndpoint() != target.GetUseFipsEndpoint() {
+		return false
+	}
+
+	switch m.SignatureType.(type) {
+
+	case *Settings_VaultAwsEc2_Pkcs7:
+		if _, ok := target.SignatureType.(*Settings_VaultAwsEc2_Pkcs7); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetPkcs7()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPkcs7()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetPkcs7(), target.GetPkcs7()) {
+				return false
+			}
+		}
+
+	case *Settings_VaultAwsEc2_Identity:
+		if _, ok := target.SignatureType.(*Settings_VaultAwsEc2_Identity); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetIdentity()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetIdentity()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetIdentity(), target.GetIdentity()) {
+				return false
+			}
+		}
+
+	case *Settings_VaultAwsEc2_Rsa2048:
+		if _, ok := target.SignatureType.(*Settings_VaultAwsEc2_Rsa2048); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRsa2048()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRsa2048()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRsa2048(), target.GetRsa2048()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.SignatureType != target.SignatureType {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1397,6 +1703,78 @@ func (m *Settings_ObservabilityOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsEc2_Pkcs7Type) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsEc2_Pkcs7Type)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsEc2_Pkcs7Type)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsEc2_IdentityType) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsEc2_IdentityType)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsEc2_IdentityType)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsEc2_Rsa2048Type) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsEc2_Rsa2048Type)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsEc2_Rsa2048Type)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true

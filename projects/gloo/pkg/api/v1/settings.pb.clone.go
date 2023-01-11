@@ -589,6 +589,183 @@ func (m *Settings_VaultSecrets) Clone() proto.Message {
 
 	target.PathPrefix = m.GetPathPrefix()
 
+	switch m.AuthMethod.(type) {
+
+	case *Settings_VaultSecrets_AccessToken:
+
+		target.AuthMethod = &Settings_VaultSecrets_AccessToken{
+			AccessToken: m.GetAccessToken(),
+		}
+
+	case *Settings_VaultSecrets_Aws:
+
+		if h, ok := interface{}(m.GetAws()).(clone.Cloner); ok {
+			target.AuthMethod = &Settings_VaultSecrets_Aws{
+				Aws: h.Clone().(*Settings_VaultAwsAuth),
+			}
+		} else {
+			target.AuthMethod = &Settings_VaultSecrets_Aws{
+				Aws: proto.Clone(m.GetAws()).(*Settings_VaultAwsAuth),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsAuth) Clone() proto.Message {
+	var target *Settings_VaultAwsAuth
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsAuth{}
+
+	target.Role = m.GetRole()
+
+	target.Region = m.GetRegion()
+
+	target.IamServerIdHeader = m.GetIamServerIdHeader()
+
+	target.MountPath = m.GetMountPath()
+
+	target.AccessKeyId = m.GetAccessKeyId()
+
+	target.SecretAccessKey = m.GetSecretAccessKey()
+
+	target.SessionToken = m.GetSessionToken()
+
+	switch m.LoginMethod.(type) {
+
+	case *Settings_VaultAwsAuth_Iam:
+
+		if h, ok := interface{}(m.GetIam()).(clone.Cloner); ok {
+			target.LoginMethod = &Settings_VaultAwsAuth_Iam{
+				Iam: h.Clone().(*Settings_VaultAwsIam),
+			}
+		} else {
+			target.LoginMethod = &Settings_VaultAwsAuth_Iam{
+				Iam: proto.Clone(m.GetIam()).(*Settings_VaultAwsIam),
+			}
+		}
+
+	case *Settings_VaultAwsAuth_Ec2:
+
+		if h, ok := interface{}(m.GetEc2()).(clone.Cloner); ok {
+			target.LoginMethod = &Settings_VaultAwsAuth_Ec2{
+				Ec2: h.Clone().(*Settings_VaultAwsEc2),
+			}
+		} else {
+			target.LoginMethod = &Settings_VaultAwsAuth_Ec2{
+				Ec2: proto.Clone(m.GetEc2()).(*Settings_VaultAwsEc2),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsIam) Clone() proto.Message {
+	var target *Settings_VaultAwsIam
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsIam{}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsEc2) Clone() proto.Message {
+	var target *Settings_VaultAwsEc2
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsEc2{}
+
+	target.Nonce = m.GetNonce()
+
+	target.RoleArn = m.GetRoleArn()
+
+	target.RoleSessionName = m.GetRoleSessionName()
+
+	target.WebIdentityTokenFilePath = m.GetWebIdentityTokenFilePath()
+
+	target.CsmEnabled = m.GetCsmEnabled()
+
+	target.CsmHost = m.GetCsmHost()
+
+	target.CsmPort = m.GetCsmPort()
+
+	target.CsmClientId = m.GetCsmClientId()
+
+	target.Profile = m.GetProfile()
+
+	target.EnableEndpointDiscovery = m.GetEnableEndpointDiscovery()
+
+	target.CustomCaBundle = m.GetCustomCaBundle()
+
+	target.ClientTlsCert = m.GetClientTlsCert()
+
+	target.ClientTlsKey = m.GetClientTlsKey()
+
+	target.StsRegionalEndpoint = m.GetStsRegionalEndpoint()
+
+	target.S3UsEast1RegionalEndpoint = m.GetS3UsEast1RegionalEndpoint()
+
+	target.S3UseArnRegion = m.GetS3UseArnRegion()
+
+	target.Ec2ImdsEndpoint = m.GetEc2ImdsEndpoint()
+
+	target.Ec2ImdsEndpointMode = m.GetEc2ImdsEndpointMode()
+
+	target.UseDualStackEndpoint = m.GetUseDualStackEndpoint()
+
+	target.UseFipsEndpoint = m.GetUseFipsEndpoint()
+
+	switch m.SignatureType.(type) {
+
+	case *Settings_VaultAwsEc2_Pkcs7:
+
+		if h, ok := interface{}(m.GetPkcs7()).(clone.Cloner); ok {
+			target.SignatureType = &Settings_VaultAwsEc2_Pkcs7{
+				Pkcs7: h.Clone().(*Settings_VaultAwsEc2_Pkcs7Type),
+			}
+		} else {
+			target.SignatureType = &Settings_VaultAwsEc2_Pkcs7{
+				Pkcs7: proto.Clone(m.GetPkcs7()).(*Settings_VaultAwsEc2_Pkcs7Type),
+			}
+		}
+
+	case *Settings_VaultAwsEc2_Identity:
+
+		if h, ok := interface{}(m.GetIdentity()).(clone.Cloner); ok {
+			target.SignatureType = &Settings_VaultAwsEc2_Identity{
+				Identity: h.Clone().(*Settings_VaultAwsEc2_IdentityType),
+			}
+		} else {
+			target.SignatureType = &Settings_VaultAwsEc2_Identity{
+				Identity: proto.Clone(m.GetIdentity()).(*Settings_VaultAwsEc2_IdentityType),
+			}
+		}
+
+	case *Settings_VaultAwsEc2_Rsa2048:
+
+		if h, ok := interface{}(m.GetRsa2048()).(clone.Cloner); ok {
+			target.SignatureType = &Settings_VaultAwsEc2_Rsa2048{
+				Rsa2048: h.Clone().(*Settings_VaultAwsEc2_Rsa2048Type),
+			}
+		} else {
+			target.SignatureType = &Settings_VaultAwsEc2_Rsa2048{
+				Rsa2048: proto.Clone(m.GetRsa2048()).(*Settings_VaultAwsEc2_Rsa2048Type),
+			}
+		}
+
+	}
+
 	return target
 }
 
@@ -817,6 +994,39 @@ func (m *Settings_ObservabilityOptions) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsEc2_Pkcs7Type) Clone() proto.Message {
+	var target *Settings_VaultAwsEc2_Pkcs7Type
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsEc2_Pkcs7Type{}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsEc2_IdentityType) Clone() proto.Message {
+	var target *Settings_VaultAwsEc2_IdentityType
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsEc2_IdentityType{}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsEc2_Rsa2048Type) Clone() proto.Message {
+	var target *Settings_VaultAwsEc2_Rsa2048Type
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsEc2_Rsa2048Type{}
 
 	return target
 }

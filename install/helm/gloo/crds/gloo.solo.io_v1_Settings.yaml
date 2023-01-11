@@ -662,8 +662,78 @@ spec:
                 type: object
               vaultSecretSource:
                 properties:
+                  accessToken:
+                    type: string
                   address:
                     type: string
+                  aws:
+                    properties:
+                      accessKeyId:
+                        type: string
+                      ec2:
+                        properties:
+                          clientTlsCert:
+                            type: string
+                          clientTlsKey:
+                            type: string
+                          csmClientId:
+                            type: string
+                          csmEnabled:
+                            type: string
+                          csmHost:
+                            type: string
+                          csmPort:
+                            type: string
+                          customCaBundle:
+                            type: boolean
+                          ec2ImdsEndpoint:
+                            type: string
+                          ec2ImdsEndpointMode:
+                            type: string
+                          enableEndpointDiscovery:
+                            type: boolean
+                          identity:
+                            type: object
+                          nonce:
+                            type: string
+                          pkcs7:
+                            type: object
+                          profile:
+                            type: string
+                          roleArn:
+                            type: string
+                          roleSessionName:
+                            type: string
+                          rsa2048:
+                            type: object
+                          s3UsEast1RegionalEndpoint:
+                            type: string
+                          s3UseArnRegion:
+                            type: boolean
+                          stsRegionalEndpoint:
+                            type: string
+                          useDualStackEndpoint:
+                            type: boolean
+                          useFipsEndpoint:
+                            type: boolean
+                          webIdentityTokenFilePath:
+                            type: string
+                        type: object
+                      iam:
+                        type: object
+                      iamServerIdHeader:
+                        type: string
+                      mountPath:
+                        type: string
+                      region:
+                        type: string
+                      role:
+                        type: string
+                      secretAccessKey:
+                        type: string
+                      sessionToken:
+                        type: string
+                    type: object
                   caCert:
                     type: string
                   caPath:

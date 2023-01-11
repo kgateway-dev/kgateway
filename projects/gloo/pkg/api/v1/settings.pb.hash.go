@@ -1356,6 +1356,317 @@ func (m *Settings_VaultSecrets) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	switch m.AuthMethod.(type) {
+
+	case *Settings_VaultSecrets_AccessToken:
+
+		if _, err = hasher.Write([]byte(m.GetAccessToken())); err != nil {
+			return 0, err
+		}
+
+	case *Settings_VaultSecrets_Aws:
+
+		if h, ok := interface{}(m.GetAws()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Aws")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetAws(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Aws")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_VaultAwsAuth) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultAwsAuth")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRole())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRegion())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetIamServerIdHeader())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetMountPath())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetAccessKeyId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSecretAccessKey())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSessionToken())); err != nil {
+		return 0, err
+	}
+
+	switch m.LoginMethod.(type) {
+
+	case *Settings_VaultAwsAuth_Iam:
+
+		if h, ok := interface{}(m.GetIam()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Iam")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetIam(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Iam")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Settings_VaultAwsAuth_Ec2:
+
+		if h, ok := interface{}(m.GetEc2()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Ec2")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetEc2(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Ec2")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_VaultAwsIam) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultAwsIam")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_VaultAwsEc2) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultAwsEc2")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetNonce())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRoleArn())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRoleSessionName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetWebIdentityTokenFilePath())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCsmEnabled())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCsmHost())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCsmPort())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetCsmClientId())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetProfile())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetEnableEndpointDiscovery())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetCustomCaBundle())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientTlsCert())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetClientTlsKey())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetStsRegionalEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetS3UsEast1RegionalEndpoint())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetS3UseArnRegion())
+	if err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetEc2ImdsEndpoint())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetEc2ImdsEndpointMode())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetUseDualStackEndpoint())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetUseFipsEndpoint())
+	if err != nil {
+		return 0, err
+	}
+
+	switch m.SignatureType.(type) {
+
+	case *Settings_VaultAwsEc2_Pkcs7:
+
+		if h, ok := interface{}(m.GetPkcs7()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Pkcs7")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetPkcs7(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Pkcs7")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Settings_VaultAwsEc2_Identity:
+
+		if h, ok := interface{}(m.GetIdentity()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Identity")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetIdentity(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Identity")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *Settings_VaultAwsEc2_Rsa2048:
+
+		if h, ok := interface{}(m.GetRsa2048()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Rsa2048")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetRsa2048(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Rsa2048")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -1853,6 +2164,54 @@ func (m *Settings_ObservabilityOptions) Hash(hasher hash.Hash64) (uint64, error)
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_VaultAwsEc2_Pkcs7Type) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultAwsEc2_Pkcs7Type")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_VaultAwsEc2_IdentityType) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultAwsEc2_IdentityType")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Settings_VaultAwsEc2_Rsa2048Type) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultAwsEc2_Rsa2048Type")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

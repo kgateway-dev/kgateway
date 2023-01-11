@@ -108,11 +108,11 @@ message Settings {
         // TLS.
         string tls_server_name = 7;
 
-        // Insecure enables or disables SSL verification
+        // When set to true, disables TLS verification
         google.protobuf.BoolValue insecure = 8;
 
         // all keys stored in Vault will begin with this Vault
-        // this can be used to run multiple instances of Gloo against the same Consul cluster
+        // this can be used to run multiple instances of Gloo against the same Vault cluster
         // defaults to `gloo`
         string root_key = 9;
 
@@ -120,6 +120,72 @@ message Settings {
         // For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines.
         // Defaults to 'secret'
         string path_prefix = 10;
+
+        // Support for multiple authentication methods
+        oneof auth_method {
+            string access_token = 11;
+            VaultAwsAuth aws = 12;
+        }
+    }
+
+    message VaultAwsAuth {
+        oneof login_method {
+            VaultAwsIam iam = 1;
+            VaultAwsEc2 ec2 = 2;
+        }
+        string role = 3;
+        string region = 4;
+        string iam_server_id_header = 5;
+        string mountPath = 6;
+        string access_key_id = 7;
+        // This is a secret but can't be a secret ref because we are configuring the secrets engine...
+        string secret_access_key = 8;
+        // This is a secret but can't be a secret ref because we are configuring the secrets engine...
+        string session_token = 9;
+    }
+
+    message VaultAwsIam {
+    }
+
+    message VaultAwsEc2 {
+        message Pkcs7Type {}
+        message IdentityType {}
+        message Rsa2048Type {}
+
+        // Indicates which signature type to request from the metadata service
+        oneof signature_type {
+            Pkcs7Type pkcs7 = 1;
+            IdentityType identity = 2;
+            Rsa2048Type rsa2048 = 3;
+        }
+
+        // Optional: The reauthentication value
+        string nonce = 4;
+
+        // Values expected to be in environment variables when a session is created.
+        // Session created by Vault api: https://github.com/hashicorp/vault/blob/v1.12.0/api/auth/aws/aws.go#L95
+        // Values loaded from env: https://github.com/aws/aws-sdk-go/blob/ff2ebe8a4d96fcb91638d45c8ead4bfc533bf679/aws/session/env_config.go#L292
+        string role_arn = 5;
+        string role_session_name = 6;
+        // this should not be a file path? can't be a secret ref since we're configuring the secrets engine...
+        string web_identity_token_file_path = 7;
+        string csm_enabled = 8;
+        string csm_host = 9;
+        string csm_port = 10;
+        string csm_client_id = 11;
+        // string region -- use region defined in VaultAwsAuth
+        string profile = 12;
+        bool enable_endpoint_discovery = 13;
+        bool custom_ca_bundle = 14;
+        string client_tls_cert = 15;
+        string client_tls_key = 16;
+        string sts_regional_endpoint = 17;
+        string s3_us_east1_regional_endpoint = 18;
+        bool s3_use_arn_region = 19;
+        string ec2_imds_endpoint = 20;
+        string ec2_imds_endpoint_mode = 21;
+        bool use_dual_stack_endpoint = 22;
+        bool use_fips_endpoint = 23;
     }
 
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
@@ -535,7 +601,7 @@ message GlooOptions {
         google.protobuf.Duration credential_refresh_delay = 4;
 
         // Sets the unsafe behavior where a route can specify a lambda upstream
-        // but not set the function to target. It will use the first function which 
+        // but not set the function to target. It will use the first function which
         // if discovery is enabled the first function is the first function name alphabetically
         // from the last discovery run. This means that the lambda being pointed to could change.
         // Defaults to false.

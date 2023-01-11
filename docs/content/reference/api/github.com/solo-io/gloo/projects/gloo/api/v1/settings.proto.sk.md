@@ -15,6 +15,12 @@ weight: 5
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
+- [VaultAwsAuth](#vaultawsauth)
+- [VaultAwsIam](#vaultawsiam)
+- [VaultAwsEc2](#vaultawsec2)
+- [Pkcs7Type](#pkcs7type)
+- [IdentityType](#identitytype)
+- [Rsa2048Type](#rsa2048type)
 - [ConsulKv](#consulkv)
 - [KubernetesConfigmaps](#kubernetesconfigmaps)
 - [Directory](#directory)
@@ -185,6 +191,8 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 "insecure": .google.protobuf.BoolValue
 "rootKey": string
 "pathPrefix": string
+"accessToken": string
+"aws": .gloo.solo.io.Settings.VaultAwsAuth
 
 ```
 
@@ -197,9 +205,165 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 | `clientCert` | `string` | clientCert is the path to the certificate for Vault communication. |
 | `clientKey` | `string` | clientKey is the path to the private key for Vault communication. |
 | `tlsServerName` | `string` | tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
-| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Insecure enables or disables SSL verification. |
-| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo`. |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set to true, disables TLS verification. |
+| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to `gloo`. |
 | `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
+| `accessToken` | `string` |  Only one of `accessToken` or `aws` can be set. |
+| `aws` | [.gloo.solo.io.Settings.VaultAwsAuth](../settings.proto.sk/#vaultawsauth) |  Only one of `aws` or `accessToken` can be set. |
+
+
+
+
+---
+### VaultAwsAuth
+
+
+
+```yaml
+"iam": .gloo.solo.io.Settings.VaultAwsIam
+"ec2": .gloo.solo.io.Settings.VaultAwsEc2
+"role": string
+"region": string
+"iamServerIdHeader": string
+"mountPath": string
+"accessKeyId": string
+"secretAccessKey": string
+"sessionToken": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `iam` | [.gloo.solo.io.Settings.VaultAwsIam](../settings.proto.sk/#vaultawsiam) |  Only one of `iam` or `ec2` can be set. |
+| `ec2` | [.gloo.solo.io.Settings.VaultAwsEc2](../settings.proto.sk/#vaultawsec2) |  Only one of `ec2` or `iam` can be set. |
+| `role` | `string` |  |
+| `region` | `string` |  |
+| `iamServerIdHeader` | `string` |  |
+| `mountPath` | `string` |  |
+| `accessKeyId` | `string` |  |
+| `secretAccessKey` | `string` | This is a secret but can't be a secret ref because we are configuring the secrets engine... |
+| `sessionToken` | `string` | This is a secret but can't be a secret ref because we are configuring the secrets engine... |
+
+
+
+
+---
+### VaultAwsIam
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### VaultAwsEc2
+
+
+
+```yaml
+"pkcs7": .gloo.solo.io.Settings.VaultAwsEc2.Pkcs7Type
+"identity": .gloo.solo.io.Settings.VaultAwsEc2.IdentityType
+"rsa2048": .gloo.solo.io.Settings.VaultAwsEc2.Rsa2048Type
+"nonce": string
+"roleArn": string
+"roleSessionName": string
+"webIdentityTokenFilePath": string
+"csmEnabled": string
+"csmHost": string
+"csmPort": string
+"csmClientId": string
+"profile": string
+"enableEndpointDiscovery": bool
+"customCaBundle": bool
+"clientTlsCert": string
+"clientTlsKey": string
+"stsRegionalEndpoint": string
+"s3UsEast1RegionalEndpoint": string
+"s3UseArnRegion": bool
+"ec2ImdsEndpoint": string
+"ec2ImdsEndpointMode": string
+"useDualStackEndpoint": bool
+"useFipsEndpoint": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `pkcs7` | [.gloo.solo.io.Settings.VaultAwsEc2.Pkcs7Type](../settings.proto.sk/#pkcs7type) |  Only one of `pkcs7`, `identity`, or `rsa2048` can be set. |
+| `identity` | [.gloo.solo.io.Settings.VaultAwsEc2.IdentityType](../settings.proto.sk/#identitytype) |  Only one of `identity`, `pkcs7`, or `rsa2048` can be set. |
+| `rsa2048` | [.gloo.solo.io.Settings.VaultAwsEc2.Rsa2048Type](../settings.proto.sk/#rsa2048type) |  Only one of `rsa2048`, `pkcs7`, or `identity` can be set. |
+| `nonce` | `string` | Optional: The reauthentication value. |
+| `roleArn` | `string` | Values expected to be in environment variables when a session is created. Session created by Vault api: https://github.com/hashicorp/vault/blob/v1.12.0/api/auth/aws/aws.go#L95 Values loaded from env: https://github.com/aws/aws-sdk-go/blob/ff2ebe8a4d96fcb91638d45c8ead4bfc533bf679/aws/session/env_config.go#L292. |
+| `roleSessionName` | `string` |  |
+| `webIdentityTokenFilePath` | `string` | this should not be a file path? can't be a secret ref since we're configuring the secrets engine... |
+| `csmEnabled` | `string` |  |
+| `csmHost` | `string` |  |
+| `csmPort` | `string` |  |
+| `csmClientId` | `string` |  |
+| `profile` | `string` | string region -- use region defined in VaultAwsAuth. |
+| `enableEndpointDiscovery` | `bool` |  |
+| `customCaBundle` | `bool` |  |
+| `clientTlsCert` | `string` |  |
+| `clientTlsKey` | `string` |  |
+| `stsRegionalEndpoint` | `string` |  |
+| `s3UsEast1RegionalEndpoint` | `string` |  |
+| `s3UseArnRegion` | `bool` |  |
+| `ec2ImdsEndpoint` | `string` |  |
+| `ec2ImdsEndpointMode` | `string` |  |
+| `useDualStackEndpoint` | `bool` |  |
+| `useFipsEndpoint` | `bool` |  |
+
+
+
+
+---
+### Pkcs7Type
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### IdentityType
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Rsa2048Type
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 
