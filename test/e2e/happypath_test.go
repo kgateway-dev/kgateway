@@ -186,7 +186,7 @@ var _ = Describe("Happy path", func() {
 					Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
 				})
 
-				FIt("it correctly passes the suppress envoy headers config", func() {
+				It("it correctly passes the suppress envoy headers config", func() {
 					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 					// configuring an http listener option to set suppressEnvoyHeaders to true
