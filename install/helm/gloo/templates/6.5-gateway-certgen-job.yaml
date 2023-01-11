@@ -18,9 +18,7 @@ metadata:
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
-  {{- with .Values.gateway.certGenJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.certGenJob | nindent 2 -}}
   template:
     metadata:
       labels:

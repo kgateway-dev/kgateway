@@ -16,9 +16,7 @@ spec:
   schedule: {{ .Values.gateway.certGenJob.cron.schedule | quote }}
   jobTemplate:
     spec:
-      {{- with .Values.gateway.certGenJob.activeDeadlineSeconds }}
-      activeDeadlineSeconds: {{ . }}
-      {{- end }}
+      {{- include "gloo.jobSpecStandardFields" .Values.gateway.certGenJob | nindent 6 -}}
       template:
         metadata:
           labels:

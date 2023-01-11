@@ -83,6 +83,10 @@ type PodSpec struct {
 type JobSpec struct {
 	*PodSpec
 	ActiveDeadlineSeconds   *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	BackoffLimit            *int              `json:"backoffLimit,omitempty" desc:"backoffLimit"`
+	Completions             *int              `json:"completions,omitempty" desc:"completions"`
+	ManualSelector          *bool             `json:"manualSelector,omitempty" desc:"manualSelector"`
+	Parallelism             *int              `json:"parallelism,omitempty" desc:"parallelism"`
 	TtlSecondsAfterFinished *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 	ExtraPodLabels          map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
 	ExtraPodAnnotations     map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`

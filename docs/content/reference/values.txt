@@ -293,6 +293,10 @@
 |gateway.certGenJob.hostAliases[]|interface|||
 |gateway.certGenJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
+|gateway.certGenJob.backoffLimit|int||backoffLimit|
+|gateway.certGenJob.completions|int||completions|
+|gateway.certGenJob.manualSelector|bool||manualSelector|
+|gateway.certGenJob.parallelism|int||parallelism|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.certGenJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.certGenJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
@@ -323,6 +327,10 @@
 |gateway.rolloutJob.hostAliases[]|interface|||
 |gateway.rolloutJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
+|gateway.rolloutJob.backoffLimit|int||backoffLimit|
+|gateway.rolloutJob.completions|int||completions|
+|gateway.rolloutJob.manualSelector|bool||manualSelector|
+|gateway.rolloutJob.parallelism|int||parallelism|
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.rolloutJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
@@ -355,6 +363,10 @@
 |gateway.cleanupJob.hostAliases[]|interface|||
 |gateway.cleanupJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
 |gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
+|gateway.cleanupJob.backoffLimit|int||backoffLimit|
+|gateway.cleanupJob.completions|int||completions|
+|gateway.cleanupJob.manualSelector|bool||manualSelector|
+|gateway.cleanupJob.parallelism|int||parallelism|
 |gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.cleanupJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.cleanupJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|

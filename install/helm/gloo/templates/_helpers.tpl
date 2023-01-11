@@ -65,6 +65,32 @@ priorityClassName: {{ . }}
 initContainers: {{ toYaml . | nindent 2 }}
 {{ end -}}
 {{- end -}}
+
+{{- /* We are intentionally skipping */ -}}
+{{- define "gloo.jobSpecStandardFields" -}}
+{{- with .activeDeadlineSeconds -}}
+activeDeadlineSeconds: {{ . }}
+{{ end -}}
+{{- with .backoffLimit -}}
+backoffLimit: {{ . }}
+{{ end -}}
+{{- with .completions -}}
+completions: {{ . }}
+{{ end -}}
+{{- with .manualSelector -}}
+manualSelector: {{ . }}
+{{ end -}}
+{{- with .parallelism -}}
+parallelism: {{ . }}
+{{ end -}}
+{{- with .extraPodLabels -}}
+extraPodLabels: {{ . }}
+{{ end -}}
+{{- with .extraPodAnnotations -}}
+extraPodAnnotations: {{ . }}
+{{ end -}}
+{{- end -}}
+
 {{- /*
 This takes an array of three values:
 - the top context

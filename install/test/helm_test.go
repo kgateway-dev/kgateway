@@ -5584,7 +5584,7 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 
-				DescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+				FDescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
 					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
