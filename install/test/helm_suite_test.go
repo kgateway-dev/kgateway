@@ -72,7 +72,7 @@ type renderTestCase struct {
 var renderers = []renderTestCase{
 	{"Helm 3", helm3Renderer{
 		chartDir:          chartDir,
-		manifestOutputDir: "/tmp/debugOutputDir", // set to debugOutputDir when debugging locally
+		manifestOutputDir: "", // set to debugOutputDir when debugging locally
 	}},
 }
 
