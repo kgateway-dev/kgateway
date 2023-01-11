@@ -22,11 +22,16 @@ jobs:
           path: test-out.json
           if-no-files-found: warn
 
-  check-matrix:
+  publish_results:
     runs-on:  ubuntu-22.04
     needs: [ regression_tests ]
     steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.18.2
       - uses: actions/download-artifact@v3
       - run: |
-          results="$(cat */test-out.json | jq -c --slurp .)"
-          echo $results
+          test_results="$(cat */test-out.json | jq -c --slurp .)"
+          echo $test_results
+          PARENT_JOB_URL="https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}" SLACKBOT_BEARER=${{secrets.SLACKBOT_BEARER}} go run .github/workflows/helpers/notify-from-json.go "'"$test_results"'"
