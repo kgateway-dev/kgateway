@@ -614,6 +614,8 @@ spec:
                               type: string
                             connectionTimeout:
                               type: string
+                            tlsConfig:
+                              type: object
                           type: object
                         http:
                           properties:
