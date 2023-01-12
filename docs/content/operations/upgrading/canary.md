@@ -95,15 +95,15 @@ You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later.
 
 In the canary upgrade model, you start with an older version of Gloo Edge Federation in your management cluster that manages one or more remote Gloo Edge instances. To test a newer target version, you install the target version of Gloo Edge Federation in a new namespace on the management cluster. Then, you install one or more Gloo Edge instances at the target version in remote test clusters, register the new clusters, and check your setup. Finally, you deregister the remote clusters from the older version of Gloo Edge Federation and uninstall the older Gloo Edge Federation version from the management cluster.
 
-1. Update and pull the Gloo Edge Helm chart for the target version.
+1. Update and pull the Gloo Fed Helm chart for the target version.
    ```shell
    helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
    helm repo update
    helm pull gloo-fed/gloo-fed --version $TARGET_VERSION --untar
    ```
-2. Apply the new Gloo CRDs from the target version Helm chart to your management cluster.
+2. Apply the new Gloo Fed CRDs from the target version Helm chart to your management cluster.
    ```
-   kubectl apply -f gloo-fed/charts/gloo/crds
+   kubectl apply -f gloo-fed/crds
    ```
 3. Install the target version of Gloo Edge Federation in the new namespace in your management cluster.
    ```
@@ -283,7 +283,7 @@ kubectl apply -f gloo/crds
 kubectl apply -f gloo-ee/charts/gloo/crds
 {{< /tab >}}
 {{< tab name="Federation" codelang="shell">}}
-kubectl apply -f gloo-fed/charts/gloo/crds
+kubectl apply -f gloo-fed/crds
 {{< /tab >}} 
    {{< /tabs >}}
 7. Test your routes and monitor the metrics of the rollback version.
