@@ -83,11 +83,11 @@ message Settings {
 
     // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
-        // the Token used to authenticate to Vault
+        // the access token used to authenticate to Vault
         string token = 1;
 
         // address is the address of the Vault server. This should be a complete
-        // URL such as http://solo.io
+        // URL such as http://solo.io and include port if necessary
         string address = 2;
 
         // caCert is the path to a PEM-encoded CA cert file to use to verify the
