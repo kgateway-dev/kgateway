@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/helpers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"

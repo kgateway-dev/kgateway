@@ -4,7 +4,7 @@ weight: 30
 description: Upgrading Gloo Edge in a canary model
 ---
 
-You can upgrade your Gloo Edge Open Source, Gloo Edge Enterprise, and Gloo Edge Federation deployments by following a canary model. In the canary model, you make two different `gloo` deployments in your data plane, one that runs your current version and one for the target version to upgrade to. Then, you check that the deployment at the target version handles traffic as you expect before upgrading to run the target version. This approach helps you reduce potential downtime for production upgrades.
+You can upgrade your Gloo Edge deployments by following a canary model. In the canary model, you make two different `gloo` deployments in your data plane, one that runs your current version and one for the target version to upgrade to. Then, you check that the deployment at the target version handles traffic as you expect before upgrading to run the target version. This approach helps you reduce potential downtime for production upgrades.
 
 ## Before you begin
 

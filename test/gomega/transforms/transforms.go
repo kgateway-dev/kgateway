@@ -1,4 +1,4 @@
-package matchers
+package transforms
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ const (
 
 // WithDecompressorTransform returns a Gomega Transform that decompresses
 // a slice of bytes and returns the corresponding string
-func WithDecompressorTransform() interface{} {
+func WithDecompressorTransform() func(b []byte) string {
 	return func(b []byte) string {
 		reader, err := gzip.NewReader(bytes.NewBuffer(b))
 		if err != nil {
@@ -29,7 +29,7 @@ func WithDecompressorTransform() interface{} {
 	}
 }
 
-func WithHeaderValues(header string) interface{} {
+func WithHeaderValues(header string) func(response *http.Response) []string {
 	return func(response *http.Response) []string {
 		return response.Header.Values(header)
 	}

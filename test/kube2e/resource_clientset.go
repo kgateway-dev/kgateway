@@ -3,6 +3,10 @@ package kube2e
 import (
 	"context"
 
+	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
+
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,8 +34,11 @@ type KubeResourceClientSet struct {
 	upstreamClient          gloov1.UpstreamClient
 	proxyClient             gloov1.ProxyClient
 	rateLimitConfigClient   externalrl.RateLimitConfigClient
+	authConfigClient        extauthv1.AuthConfigClient
 	serviceClient           skkube.ServiceClient
 	settingsClient          gloov1.SettingsClient
+	artifactClient          gloov1.ArtifactClient
+	secretClient            gloov1.SecretClient
 
 	kubeClient *kubernetes.Clientset
 }
@@ -171,6 +178,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	}
 	resourceClientSet.rateLimitConfigClient = rateLimitConfigClient
 
+	// AuthConfig
+	authConfigClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         extauthv1.AuthConfigCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	}
+	authConfigClient, err := extauthv1.NewAuthConfigClient(ctx, authConfigClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = authConfigClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.authConfigClient = authConfigClient
+
 	// VirtualHostOption
 	virtualHostOptionClientFactory := &factory.KubeResourceClientFactory{
 		Crd:         gatewayv1.VirtualHostOptionCrd,
@@ -215,6 +237,38 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 		return nil, err
 	}
 	resourceClientSet.settingsClient = settingsClient
+
+	// Artifact
+	// Mirror kube setup from: https://github.com/solo-io/gloo/blob/dc96c0cd0e4d93457e77a848d69a0d652488a92e/projects/gloo/pkg/bootstrap/utils.go#L216
+	artifactClientFactory := &factory.KubeConfigMapClientFactory{
+		Clientset:       kubeClient,
+		Cache:           kubeCoreCache,
+		CustomConverter: kubeconverters.NewArtifactConverter(),
+	}
+	artifactClient, err := gloov1.NewArtifactClient(ctx, artifactClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = artifactClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.artifactClient = artifactClient
+
+	// Secret
+	// Mirror kube setup from: https://github.com/solo-io/gloo/blob/dc96c0cd0e4d93457e77a848d69a0d652488a92e/projects/gloo/pkg/bootstrap/utils.go#L170
+	secretClientFactory := &factory.KubeSecretClientFactory{
+		Clientset:       kubeClient,
+		Cache:           kubeCoreCache,
+		SecretConverter: kubeconverters.GlooSecretConverterChain,
+	}
+	secretClient, err := gloov1.NewSecretClient(ctx, secretClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = secretClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.secretClient = secretClient
 
 	// Kube Service
 	resourceClientSet.serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
@@ -262,16 +316,20 @@ func (k KubeResourceClientSet) RateLimitConfigClient() externalrl.RateLimitConfi
 	return k.rateLimitConfigClient
 }
 
+func (k KubeResourceClientSet) AuthConfigClient() extauthv1.AuthConfigClient {
+	return k.authConfigClient
+}
+
 func (k KubeResourceClientSet) SettingsClient() gloov1.SettingsClient {
 	return k.settingsClient
 }
 
 func (k KubeResourceClientSet) SecretClient() gloov1.SecretClient {
-	panic("unsupported")
+	return k.secretClient
 }
 
 func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
-	panic("unsupported")
+	return k.artifactClient
 }
 
 func (k KubeResourceClientSet) KubeClients() *kubernetes.Clientset {

@@ -5,6 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -14,11 +17,9 @@ import (
 
 	"net/http"
 
-	"github.com/solo-io/gloo/test/e2e"
-	testmatchers "github.com/solo-io/gloo/test/matchers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/e2e"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -169,7 +170,7 @@ var _ = Describe("Staged Transformation", func() {
 					StatusCode: http.StatusOK,
 					Body:       BeEmpty(),
 					// The default Header matcher only works with single headers, so we supply a custom matcher in this case
-					Custom: WithTransform(testmatchers.WithHeaderValues("X-Custom-Header"), ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2")),
+					Custom: WithTransform(transforms.WithHeaderValues("X-Custom-Header"), ContainElements("original header", "APPENDED HEADER 1", "APPENDED HEADER 2")),
 				}))
 			}, "15s", ".5s").Should(Succeed())
 		})

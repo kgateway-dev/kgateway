@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/test/matchers"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

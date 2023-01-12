@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	testmatchers "github.com/solo-io/gloo/test/matchers"
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/solo-io/gloo/test/v1helpers"
 

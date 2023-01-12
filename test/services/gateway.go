@@ -64,6 +64,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// TestClients represents the set of ResourceClients available for tests
 type TestClients struct {
 	GatewayClient        gatewayv1.GatewayClient
 	HttpGatewayClient    gatewayv1.MatchableHttpGatewayClient
@@ -71,6 +72,7 @@ type TestClients struct {
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
 	SecretClient         gloov1.SecretClient
+	ArtifactClient       gloov1.ArtifactClient
 	ServiceClient        skkube.ServiceClient
 	GlooPort             int
 	RestXdsPort          int
@@ -87,6 +89,11 @@ func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.A
 	}
 	for _, secret := range snapshot.Secrets {
 		if _, writeErr := c.SecretClient.Write(secret, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, artifact := range snapshot.Artifacts {
+		if _, writeErr := c.ArtifactClient.Write(artifact, writeOptions); writeErr != nil {
 			return writeErr
 		}
 	}
@@ -150,6 +157,12 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 	for _, us := range snapshot.Upstreams {
 		usNamespace, usName := us.GetMetadata().Ref().Strings()
 		if deleteErr := c.UpstreamClient.Delete(usNamespace, usName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, artifact := range snapshot.Artifacts {
+		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
+		if deleteErr := c.ArtifactClient.Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
@@ -250,6 +263,8 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 	Expect(err).NotTo(HaveOccurred())
 	secretClient, err := gloov1.NewSecretClient(ctx, bootstrapOpts.Secrets)
 	Expect(err).NotTo(HaveOccurred())
+	artifactClient, err := gloov1.NewArtifactClient(ctx, bootstrapOpts.Artifacts)
+	Expect(err).NotTo(HaveOccurred())
 	proxyClient, err := gloov1.NewProxyClient(ctx, bootstrapOpts.Proxies)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -259,6 +274,7 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 		VirtualServiceClient: virtualServiceClient,
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,
+		ArtifactClient:       artifactClient,
 		ProxyClient:          proxyClient,
 		ServiceClient:        bootstrapOpts.KubeServiceClient,
 	}
