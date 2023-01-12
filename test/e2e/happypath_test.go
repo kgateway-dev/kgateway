@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -21,6 +22,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
+	routerV1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -182,6 +184,61 @@ var _ = Describe("Happy path", func() {
 
 					// Verify that stats for the above virtual cluster are present
 					Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
+				})
+
+				It("it correctly passes the suppress envoy headers config", func() {
+					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+					// configuring an http listener option to set suppressEnvoyHeaders to true
+					//projects/gloo/api/v1/options/router/router.proto
+					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
+						Router: &routerV1.Router{
+							SuppressEnvoyHeaders: wrapperspb.Bool(true),
+						},
+					}
+
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{
+						Ctx: ctx,
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					TestUpstreamReachable()
+
+					// This will hit the virtual host with the above virtual cluster config
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(response.Header).NotTo(HaveKey("X-Envoy-Upstream-Service-Time"))
+
+					cfg, err := envoyInstance.ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+
+					// We expect the envoy configuration to contain these properties in the configuration dump
+					Expect(cfg).To(MatchRegexp("\"suppress_envoy_headers\": true"))
+
+				})
+
+				It("it correctly DID NOT pass the suppress envoy headers config", func() {
+					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+					// Set a virtual cluster listener that is blank and has no options
+					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{}
+
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{
+						Ctx: ctx,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					TestUpstreamReachable()
+
+					// This will hit the virtual host with the above virtual cluster config
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(response.Header).To(HaveKey("X-Envoy-Upstream-Service-Time"))
+
+					cfg, err := envoyInstance.ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+
+					// We expect the envoy configuration to NOT contain these properties in the configuration dump
+					Expect(cfg).To(Not(MatchRegexp("\"suppress_envoy_headers\": true")))
 				})
 
 				It("passes a health check", func() {
