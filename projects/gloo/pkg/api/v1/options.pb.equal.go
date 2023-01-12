@@ -341,6 +341,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetRouter()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRouter()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRouter(), target.GetRouter()) {
+			return false
+		}
+	}
+
 	return true
 }
 

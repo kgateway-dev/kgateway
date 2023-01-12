@@ -876,6 +876,12 @@ spec:
                           requestTimeout:
                             type: string
                         type: object
+                      router:
+                        properties:
+                          suppressEnvoyHeaders:
+                            nullable: true
+                            type: boolean
+                        type: object
                       sanitizeClusterHeader:
                         nullable: true
                         type: boolean
