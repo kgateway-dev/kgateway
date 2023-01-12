@@ -83,7 +83,7 @@ manualSelector: {{ . }}
 parallelism: {{ . }}
 {{ end -}}
 {{- /* use 'ne false' to make the default (nil) true */ -}}
-{{- if ne .setTtlAfterFinished false -}}
+{{- if ne (or .setTtlAfterFinished true) false -}}
 {{- with .ttlSecondsAfterFinished  -}}
 ttlSecondsAfterFinished: {{ . }}
 {{ end -}}
