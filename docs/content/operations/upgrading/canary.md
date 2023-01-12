@@ -96,7 +96,7 @@ project as the "control plane" for the newer version deployment in a canary upgr
 
 You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later. In [Gloo Edge Federation]({{< versioned_link_path fromRoot="/guides/gloo_federation/" >}}), you have a management cluster that runs Gloo Edge Federation (and optionally, other Enterprise components). Then you register remote clusters with Gloo Edge Enterprise.
 
-In the canary upgrade model, you start with an older version of Gloo Edge Federation in your management cluster, managing one or more remote Gloo Edge instances. To test a newer target version, you install the target version of Gloo Edge Federation in a new namespace on the management cluster. Then, you install one or more Gloo Edge instances at the target version in remote test clusters, register the new clusters, and check your setup. Finally, you deregister the remote clusters from the older version of Gloo Edge Federation, register the remote clusters and uninstall the older Gloo Edge Federation version.
+In the canary upgrade model, you start with an older version of Gloo Edge Federation in your management cluster that manages one or more remote Gloo Edge instances. To test a newer target version, you install the target version of Gloo Edge Federation in a new namespace on the management cluster. Then, you install one or more Gloo Edge instances at the target version in remote test clusters, register the new clusters, and check your setup. Finally, you deregister the remote clusters from the older version of Gloo Edge Federation and uninstall the older Gloo Edge Federation version from the management cluster.
 
 1. Update and pull the Gloo Edge Helm chart for the target version.
    ```shell
@@ -120,7 +120,7 @@ In the canary upgrade model, you start with an older version of Gloo Edge Federa
 5. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on one of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the version of Gloo Edge Federation that you installed earlier.
 6. In your management cluster, [create any federated custom resources]({{< versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" >}}) for the target version in your `gloo-system-$TARGET_VERSION` namespace. You might use the existing federated resources in the `gloo-system-$OLD_VERSION` namespace as a starting point. Include any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version. 
 
-   {{% notice note %}}**Example**: The following configuration creates a federated virtual service with different features across versions 1.12 and 1.13{{% /notice %}}
+   {{% notice note %}}**Example**: The following configuration creates a federated virtual service with different features across versions 1.12 and 1.13.{{% /notice %}}
 
    * Creates a shared `gloo-fed` namespace to show that both the old and new Gloo Edge Federation instances can watch for changes to a resource in the same namespace.
    * Places the federated virtual service resource in both the `remote1` old version cluster (1.12) and the `remote2` new target version cluster (1.13).
