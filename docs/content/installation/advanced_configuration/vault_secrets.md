@@ -1,48 +1,70 @@
 ---
-title: Storing Gloo Edge Secrets in HashiCorp Vault
+title: Storing Gloo Edge secrets in HashiCorp Vault
 weight: 50
 description: Using HashiCorp Vault as a backing store for Gloo Edge secrets
 ---
 
-This document describes how to write Gloo Edge secrets to Vault's Key-Value store.
+Use [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html) as a backing store for Gloo Edge secrets.
 
----
+When Gloo Edge boots, it reads a {{< protobuf name="gloo.solo.io.Settings">}} resource from a preconfigured location. By default, Gloo Edge attempts to read a `gloo.solo.io/v1.Settings` Custom Resource named `default` in the `gloo-system` namespace of your Kubernetes cluster. By editing this settings file, you can configure Vault as the secret store for your Edge environment.
 
-## Configuring Gloo Edge using custom Settings
+{{% notice tip %}}
+Want to use Vault with Gloo Edge outside of Kubernetes instead? You can provide your settings file to Gloo Edge inside of a configuration directory when you [run Gloo Edge locally]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file">}}).
+{{% /notice %}}
 
-When Gloo Edge boots, it attempts to read a {{< protobuf name="gloo.solo.io.Settings">}} resource from a preconfigured location. By default, Gloo Edge will attempt to connect to a Kubernetes cluster and look up the `gloo.solo.io/v1.Settings` Custom Resource in namespace `gloo-system`, named `default`.
+## Customizing the Gloo Edge settings file
 
-When desiring to run without Kubernetes, it is possible to instead provide this file to Gloo Edge inside of a configuration directory. See the guide on [running gloo edge locally]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file") for more information on that use case.
+Edit the `default` settings resource so Gloo Edge reads and writes secrets using HashiCorp Vault.
 
-### Customizing the Gloo Edge Settings file
+1. Edit the `default` settings resource.
+   ```shell script
+   kubectl --namespace gloo-system edit settings default
+   ```
 
-The full list of options for Gloo Edge Settings, including the ability to set auth/TLS parameters for Vault can be found {{< protobuf name="gloo.solo.io.Settings" display="in the v1.Settings API reference">}}.
+2. Make the following changes to the resource.
+   * Remove the existing `kubernetesSecretSource` or `directorySecretSource` field, which is required for the Vault secret storage to be used.
+   * Add the `vaultSecretSource` section to enable secrets to be read from and written to Vault.
+   * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem for changes.
+   {{< highlight yaml "hl_lines=16-25" >}}
+   apiVersion: gloo.solo.io/v1
+   kind: Settings
+   metadata:
+     name: default
+     namespace: gloo-system
+   spec:
+     discoveryNamespace: gloo-system
+     gateway:
+       validation:
+         alwaysAccept: true
+         proxyValidationServerAddr: gloo:9988
+     gloo:
+       xdsBindAddr: 0.0.0.0:9977
+     kubernetesArtifactSource: {}
+     kubernetesConfigSource: {}
+     # Delete or comment out the existing 
+     # kubernetesSecretSource or directorySecretSource field
+     #kubernetesSecretSource: {}
+     # Enable secrets to be read from and written to HashiCorp Vault
+     vaultSecretSource:
+       address: http://vault:8200
+       token: root
+     # refresh rate for polling config backends for changes
+     # this is used for watching vault secrets and the local filesystem
+     refreshRate: 15s
+     requestTimeout: 0.5s
+   {{< /highlight >}}
 
-Here is provided an example excerpt from a Settings resource so Gloo Edge will read and write secrets using HashiCorp Vault:
+For the full list of options for Gloo Edge Settings, including the ability to set auth/TLS parameters for Vault, see the {{< protobuf name="gloo.solo.io.Settings" display="v1.Settings API reference">}}.
 
-{{< highlight yaml "hl_lines=4-6" >}}
-# enable secrets to be read from and written to HashiCorp Vault.
-# you MUST delete the entry for kubernetesSecretSource or directorySecretSource
-# in order for this to be valid.
-vaultSecretSource:
-  address: http://vault:8200
-  token: root
+## Writing secret objects to Vault
 
-# refresh rate for polling config backends for changes
-# this is used for watching vault secrets and the local filesystem
-refreshRate: 15s
-{{< /highlight >}}
+After configuring Vault as your secret store, be sure to write any Vault secrets by using Gloo Edge-style YAML. You can either use the `glooctl create secret` command or manually write secrets.
 
----
+### Using glooctl
 
-## Writing Secret Objects to Vault
+To get started writing Gloo Edge secrets for use with Vault, you can use the `glooctl create secret` command. A benefit of using `glooctl` for secret creation is that the secret is created in the path that Gloo Edge watches.
 
-Vault secrets should be written using Gloo Edge-style YAML, whose structure is described in the [`API Reference`]({{< versioned_link_path fromRoot="/reference/api" >}}).
-
-`glooctl` provides a convenience to get started writing Gloo Edge secrets for use with Vault. A benefit of using `glooctl` for secret creation is that it will place the secret in the proper path which Gloo Edge is watching.
-
-For example:
-
+For example, you might use the following command to create a secret in Vault.
 ```bash
 glooctl create secret tls \
     --certchain /path/to/cert.pem \
@@ -52,9 +74,7 @@ glooctl create secret tls \
     --vault-address http://vault:8200/ \
     --vault-token "$VAULT_TOKEN"
 ```
-
-Will create a TLS secret in Vault with value:
-
+This command creates a TLS secret with the following value:
 ```json
 {
   "metadata": {
@@ -68,20 +88,21 @@ Will create a TLS secret in Vault with value:
 }
 ```
 
-Using `glooctl create secret ... -o json` will output JSON-formatted secrets which can be manually stored as values in Vault.
+You can also include the `-o json` flag in the command for JSON-formatted secrets, which can be manually stored as values in Vault.
 
-Gloo Edge secrets must be stored in Vault with the correct Key names.
+### Manually writing secrets
 
-Vault keys adhere to the following format:
+Be sure to write any Vault secrets by using Gloo Edge-style YAML. For more information, see the {{< protobuf name="gloo.solo.io.Secret" display="v1.Secret API reference">}}.
 
-`<secret engine path prefix>/<gloo root key>/<resource group>/<group version>/Secret/<resource namespace>/<resource name>`
+If you manually write Gloo Edge secrets, you must store them in Vault with the correct Vault key names, which adhere to the following format:
 
-Where:
+`<secret_engine_path_prefix>/<gloo_root_key>/<resource_group>/<group_version>/Secret/<resource_namespace>/<resource_name>`
 
-- `secret engine path prefix`: is the `pathPrefix` configured in the Settings `vaultSecretSource`. Defaults to `secret`. Note that the default path for the kv secrets engine in Vault is `kv`.
-- `gloo root key`: is the `rootKey` configured in the Settings `vaultSecretSource`. Defaults to `gloo`
-- `resource group`: is the API group/proto package in which resources of the given type are contained. {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge Secrets">}} have the resource group `gloo.solo.io`.
-- `group version`: is the API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge Secrets">}} have the resource group version `v1`.
-- `resource namespace`: is the namespace in which the resource should live. This should match the `metadata.namespace` of the resource YAML.
-- `resource name`: is the name of the given resource. This should match the `metadata.name` of the resource YAML, and should be unique for all secrets within a given namespace.
-
+| Path | Description |
+| ---- | ----------- |
+| `<secret_engine_path_prefix>` | The `pathPrefix` configured in the Settings `vaultSecretSource`. Defaults to `secret`. Note that the default path for the kv secrets engine in Vault is `kv`. |
+| `<gloo_root_key>` | The `rootKey` configured in the Settings `vaultSecretSource`. Defaults to `gloo` |
+| `<resource_group>` | The API group/proto package in which resources of the given type are contained. {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group `gloo.solo.io`. |
+| `<group_version>` | The API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group version `v1`. |
+| `<resource_namespace>` | The namespace in which the secret exists. This must match the `metadata.namespace` of the resource YAML. |
+| `<resource_name>` | The name of the secret. This must match the `metadata.name` of the resource YAML, and should be unique for all secrets within a given namespace. |
