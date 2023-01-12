@@ -815,6 +815,9 @@ apis:
   gloo.solo.io.RouteReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#RouteReport
     package: gloo.solo.io
+  gloo.solo.io.Router:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto.sk/#Router
+    package: gloo.solo.io
   gloo.solo.io.SDSConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SDSConfig
     package: gloo.solo.io
