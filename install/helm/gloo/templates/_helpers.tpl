@@ -83,7 +83,7 @@ manualSelector: {{ . }}
 parallelism: {{ . }}
 {{ end -}}
 {{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true */ -}}
-{{- if or (eq .setTtlAfterFinished nil) (eq .setTtlAfterFinished true) -}}
+{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
 {{- with .ttlSecondsAfterFinished  -}}
 ttlSecondsAfterFinished: {{ . }}
 {{ end -}}
