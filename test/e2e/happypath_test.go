@@ -232,10 +232,6 @@ var _ = Describe("Happy path", func() {
 					// This will hit the virtual host with the above virtual cluster config
 					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
 					Expect(err).NotTo(HaveOccurred())
-
-					headers := response.Header
-					_ = headers
-
 					Expect(response.Header).To(HaveKey("X-Envoy-Upstream-Service-Time"))
 
 					cfg, err := envoyInstance.ConfigDump()
