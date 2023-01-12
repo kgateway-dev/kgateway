@@ -49,7 +49,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
        address: http://vault:8200
        token: root
      # refresh rate for polling config backends for changes
-     # this is used for watching vault secrets and the local filesystem
+     # this is used for watching vault secrets and by other resource clients
      refreshRate: 15s
      requestTimeout: 0.5s
    {{< /highlight >}}
@@ -100,7 +100,7 @@ If you manually write Gloo Edge secrets, you must store them in Vault with the c
 
 | Path | Description |
 | ---- | ----------- |
-| `<secret_engine_path_prefix>` | The `pathPrefix` configured in the Settings `vaultSecretSource`. Defaults to `secret`. Note that the default path for the kv secrets engine in Vault is `kv`. |
+| `<secret_engine_path_prefix>` | The `pathPrefix` configured in the Settings `vaultSecretSource`. Defaults to `secret`. Note that the default path for the kv secrets engine in Vault is `kv` when Vault is not run with `-dev`. |
 | `<gloo_root_key>` | The `rootKey` configured in the Settings `vaultSecretSource`. Defaults to `gloo` |
 | `<resource_group>` | The API group/proto package in which resources of the given type are contained. {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group `gloo.solo.io`. |
 | `<group_version>` | The API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group version `v1`. |
