@@ -21,9 +21,7 @@ metadata:
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
-  {{- with .Values.gateway.certGenJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.certGenJob | nindent 2 -}}
   template:
     metadata:
       labels:
@@ -67,9 +65,6 @@ spec:
           args:
             - "--secret-name=gloo-mtls-certs"
             - "--svc-name=gloo"
-  {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
-  {{- end }}
 {{- end }} {{/* if .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 
