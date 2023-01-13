@@ -27,21 +27,27 @@ func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Clien
 	if err != nil {
 		return nil, err
 	}
-	client, err = configureVaultAuth(vaultSettings, client)
-	token := vaultSettings.GetToken()
-	if token == "" {
-		return nil, errors.Errorf("token is required for connecting to vault")
-	}
-	client.SetToken(token)
-
-	return client, nil
+	return configureVaultAuth(vaultSettings, client)
 }
 
 func configureVaultAuth(vaultSettings *v1.Settings_VaultSecrets, client *api.Client) (*api.Client, error) {
-	// switch tlsCfg := vaultSettings.GetTlsConfig().(type) {
-	// default: return nil, nil
-	// }
-	return nil, nil
+	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
+	case *v1.Settings_VaultSecrets_AccessToken:
+		client.SetToken(tlsCfg.AccessToken)
+	case *v1.Settings_VaultSecrets_Aws:
+		configureAwsAuth(tlsCfg.Aws, client)
+	default:
+		token := vaultSettings.GetToken()
+		if token == "" {
+			return nil, errors.Errorf("unable to determine vault authentication method. check Settings configuration")
+		}
+		client.SetToken(token)
+	}
+	return client, nil
+}
+
+func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) {
+
 }
 
 func parseVaultSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Config, error) {
@@ -61,6 +67,8 @@ func parseVaultSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Config, e
 
 func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 	var tlsConfig *api.TLSConfig
+
+	// helper functions to avoid repeated nilchecking
 	addStringSetting := func(s string, addSettingFunc func(string)) {
 		if tlsConfig == nil {
 			tlsConfig = &api.TLSConfig{}
@@ -77,12 +85,32 @@ func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 			addSettingFunc(b.GetValue())
 		}
 	}
-	addStringSetting(vaultSettings.GetCaCert(), func(s string) { tlsConfig.CACert = s })
-	addStringSetting(vaultSettings.GetCaPath(), func(s string) { tlsConfig.CAPath = s })
-	addStringSetting(vaultSettings.GetClientCert(), func(s string) { tlsConfig.ClientCert = s })
-	addStringSetting(vaultSettings.GetClientKey(), func(s string) { tlsConfig.ClientKey = s })
-	addStringSetting(vaultSettings.GetTlsServerName(), func(s string) { tlsConfig.TLSServerName = s })
-	addBoolSetting(vaultSettings.GetInsecure(), func(b bool) { tlsConfig.Insecure = b })
+
+	// Add our settings to the vault TLS config, preferring settings set in the
+	// new TlsConfig field to those in the deprecated fields
+	setCaCert := func(s string) { tlsConfig.CACert = s }
+	addStringSetting(vaultSettings.GetCaCert(), setCaCert)
+	addStringSetting(vaultSettings.GetTlsConfig().GetCaCert(), setCaCert)
+
+	setCaPath := func(s string) { tlsConfig.CAPath = s }
+	addStringSetting(vaultSettings.GetCaPath(), setCaPath)
+	addStringSetting(vaultSettings.GetTlsConfig().GetCaPath(), setCaPath)
+
+	setClientCert := func(s string) { tlsConfig.ClientCert = s }
+	addStringSetting(vaultSettings.GetClientCert(), setClientCert)
+	addStringSetting(vaultSettings.GetTlsConfig().GetClientCert(), setClientCert)
+
+	setClientKey := func(s string) { tlsConfig.ClientKey = s }
+	addStringSetting(vaultSettings.GetClientKey(), setClientKey)
+	addStringSetting(vaultSettings.GetTlsConfig().GetClientKey(), setClientKey)
+
+	setTlsServerName := func(s string) { tlsConfig.TLSServerName = s }
+	addStringSetting(vaultSettings.GetTlsServerName(), setTlsServerName)
+	addStringSetting(vaultSettings.GetTlsConfig().GetTlsServerName(), setTlsServerName)
+
+	setInsecure := func(b bool) { tlsConfig.Insecure = b }
+	addBoolSetting(vaultSettings.GetInsecure(), setInsecure)
+	addBoolSetting(vaultSettings.GetTlsConfig().GetInsecure(), setInsecure)
 
 	return tlsConfig
 
