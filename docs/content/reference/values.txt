@@ -1036,3 +1036,6 @@
 |global.extauthCustomYaml|bool|true|Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise|
 |global.console|interface||Configuration options for the Enterprise Console (UI).|
 |global.graphql|interface||(Enterprise Only): GraphQL configuration options.|
+|global.configMaps[].name|string||Name of the ConfigMap to create (required).|
+|global.configMaps[].namespace|string||Namespace in which to create the ConfigMap. If empty, defaults to Gloo Edge install namespace.|
+|global.configMaps[].data.NAME|string||Key-value pairs of ConfigMap data.|

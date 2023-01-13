@@ -114,6 +114,21 @@ func (m *GrpcJsonTranscoder) Equal(that interface{}) bool {
 			return false
 		}
 
+	case *GrpcJsonTranscoder_ProtoDescriptorConfigMap:
+		if _, ok := target.DescriptorSet.(*GrpcJsonTranscoder_ProtoDescriptorConfigMap); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetProtoDescriptorConfigMap()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetProtoDescriptorConfigMap()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetProtoDescriptorConfigMap(), target.GetProtoDescriptorConfigMap()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.DescriptorSet != target.DescriptorSet {
@@ -158,6 +173,44 @@ func (m *GrpcJsonTranscoder_PrintOptions) Equal(that interface{}) bool {
 	}
 
 	if m.GetPreserveProtoFieldNames() != target.GetPreserveProtoFieldNames() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *GrpcJsonTranscoder_DescriptorConfigMap) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*GrpcJsonTranscoder_DescriptorConfigMap)
+	if !ok {
+		that2, ok := that.(GrpcJsonTranscoder_DescriptorConfigMap)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetConfigMapRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConfigMapRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConfigMapRef(), target.GetConfigMapRef()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
 		return false
 	}
 
