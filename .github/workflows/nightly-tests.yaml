@@ -22,14 +22,14 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [{ node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7'}]
+        kube-version: [{ node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7',  kind: 'v0.17.0'}]
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/regression-tests
 
   regression_tests_13:
     name: v1.13.x regression tests
-    # if: github.event.schedule == '6 6 * * 1'
+    if: github.event.schedule == '6 6 * * 1'
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
