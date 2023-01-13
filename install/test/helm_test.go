@@ -5077,6 +5077,23 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
+				It("can create arbitrary configmaps", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.configMaps[0].name=my-config-map",
+							"global.configMaps[0].namespace=my-ns",
+							"global.configMaps[0].data.key1=value1",
+							"global.configMaps[0].data.key2=value2"},
+					})
+					cmRb := ResourceBuilder{
+						Namespace: "my-ns",
+						Name:      "my-config-map",
+						Labels:    map[string]string{"app": "gloo", "gloo": "gloo"},
+						Data:      map[string]string{"key1": "value1", "key2": "value2"},
+					}
+					cm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(cm)
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {

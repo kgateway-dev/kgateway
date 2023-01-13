@@ -1,0 +1,13 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7495
+    resolvesIssue: false
+    description: >
+      Allow storing proto descriptors used for gRPC to JSON transcoding in a ConfigMap and referencing the
+      ConfigMap from the Gateway options.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7060
+    resolvesIssue: false
+    description: >
+      Avoid `argument list too long` errors from resource rollout job by enabling getting proto descriptors
+      from a ConfigMap instead of including the proto descriptor inline.
