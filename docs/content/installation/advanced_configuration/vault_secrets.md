@@ -108,3 +108,7 @@ For example, if you want to create a secret named `tls-secret` in the `gloo-syst
 | `<group_version>` | The API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group version `v1`. |
 | `<resource_namespace>` | The namespace in which the secret exists. This must match the `metadata.namespace` of the resource YAML. |
 | `<resource_name>` | The name of the secret. This must match the `metadata.name` of the resource YAML, and should be unique for all secrets within a given namespace. |
+
+{{% notice tip %}}
+You can also use the `--dry-run` flag in the [`glooctl secret create` command](#using-glooctl) to generate your secret in a YAML file.
+{{% /notice %}}
