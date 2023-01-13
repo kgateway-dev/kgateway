@@ -102,7 +102,7 @@ If you manually write Gloo Edge secrets, you must store them in Vault with the c
 | ---- | ----------- |
 | `<secret_engine_path_prefix>` | The `pathPrefix` configured in the Settings `vaultSecretSource`. Defaults to `secret`. Note that the default path for the kv secrets engine in Vault is `kv` when Vault is not run with `-dev`. |
 | `<gloo_root_key>` | The `rootKey` configured in the Settings `vaultSecretSource`. Defaults to `gloo` |
-| `<resource_group>` | The API group/proto package in which resources of the given type are contained. {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group `gloo.solo.io`. |
+| `<resource_group>` | The API group/proto package in which resources of the given type are contained. The {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} custom resource has the resource group `gloo.solo.io`. |
 | `<group_version>` | The API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Secret" display="Gloo Edge secrets">}} have the resource group version `v1`. |
 | `<resource_namespace>` | The namespace in which the secret exists. This must match the `metadata.namespace` of the resource YAML. |
 | `<resource_name>` | The name of the secret. This must match the `metadata.name` of the resource YAML, and should be unique for all secrets within a given namespace. |
