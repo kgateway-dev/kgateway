@@ -14,7 +14,7 @@ To get started, deploy an OTel collector and agents to your Gloo Edge cluster to
 This guide uses the Zipkin tracing platform as an example to show how to set up tracing with OTel in Gloo Edge. To set up other tracing platforms, refer to the platform-specific documentation.
 {{% /notice %}}
 
-**Before you begin**: Create or update your Gloo Edge installation to version 1.13.0 or later. <!--Is this considered alpha or beta, or is it fully supported for prod?-->
+**Before you begin**: Create or update your Gloo Edge installation to version 1.13.0 or later.
 
 1. Download the [otel-config.yaml](otel-config.yaml) file, which contains the configmaps, daemonset, deployment, and service for the OTel collector and agents. You can optionally check out the contents to see the OTel collector configuration. For example, in the `otel-collector-conf` configmap that begins on line 92, the `data.otel-agent-config.receivers` section enables gRPC and HTTP protocols for data collection. The `data.otel-agent-config.exporters` section enables logging data to Zipkin for tracing and to the Edge console and the echo server for debugging. For more information about this configuration, see the [OTel documentation](https://opentelemetry.io/docs/collector/configuration/).
    ```sh
