@@ -63,9 +63,6 @@ spec:
         {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}
         {{- end }}
-  {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
-  {{- end }}
 {{- end }} {{/* if and gateway.enabled gateway.validation.enabled gateway.certGenJob.enabled */}}
 {{- end }} {{/* define "gloo.gatewayCertGenJobSpec" */}}
 

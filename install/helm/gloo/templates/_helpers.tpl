@@ -89,12 +89,6 @@ parallelism: {{ . }}
 ttlSecondsAfterFinished: {{ . }}
 {{ end -}}
 {{- end -}}
-{{- with .extraPodLabels -}}
-extraPodLabels: {{ . }}
-{{ end -}}
-{{- with .extraPodAnnotations -}}
-extraPodAnnotations: {{ . }}
-{{ end -}}
 {{- end -}}
 
 {{- /*
