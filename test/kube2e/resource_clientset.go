@@ -4,6 +4,7 @@ import (
 	"context"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	externalrl "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
@@ -32,6 +33,7 @@ type KubeResourceClientSet struct {
 	rateLimitConfigClient   externalrl.RateLimitConfigClient
 	serviceClient           skkube.ServiceClient
 	settingsClient          gloov1.SettingsClient
+	artifactClient          gloov1.ArtifactClient
 
 	kubeClient *kubernetes.Clientset
 }
@@ -216,6 +218,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 	}
 	resourceClientSet.settingsClient = settingsClient
 
+	// Artifact
+	artifactClientFactory := &factory.KubeConfigMapClientFactory{
+		Clientset:       kubeClient,
+		Cache:           kubeCoreCache,
+		CustomConverter: kubeconverters.NewArtifactConverter(),
+	}
+	artifactClient, err := gloov1.NewArtifactClient(ctx, artifactClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = artifactClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.artifactClient = artifactClient
+
 	// Kube Service
 	resourceClientSet.serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
 
@@ -271,7 +288,7 @@ func (k KubeResourceClientSet) SecretClient() gloov1.SecretClient {
 }
 
 func (k KubeResourceClientSet) ArtifactClient() gloov1.ArtifactClient {
-	panic("unsupported")
+	return k.artifactClient
 }
 
 func (k KubeResourceClientSet) KubeClients() *kubernetes.Clientset {

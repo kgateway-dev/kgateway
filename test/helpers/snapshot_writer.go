@@ -196,7 +196,7 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	}
 	for _, artifact := range snapshot.Artifacts {
 		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
-		if deleteErr := s.SecretClient().Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.ArtifactClient().Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
