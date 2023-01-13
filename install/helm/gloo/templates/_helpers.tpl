@@ -82,7 +82,8 @@ manualSelector: {{ . }}
 {{- with .parallelism -}}
 parallelism: {{ . }}
 {{ end -}}
-{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true */ -}}
+{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
+      The 'kindIs' comparision is how we can check for undefined */ -}}
 {{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
 {{- with .ttlSecondsAfterFinished  -}}
 ttlSecondsAfterFinished: {{ . }}
