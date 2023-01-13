@@ -1,8 +1,12 @@
 package bootstrap
 
 import (
+	"context"
+	"os"
+
 	"github.com/hashicorp/vault/api"
 	_ "github.com/hashicorp/vault/api/auth/aws"
+	awsauth "github.com/hashicorp/vault/api/auth/aws"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -28,26 +32,6 @@ func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Clien
 		return nil, err
 	}
 	return configureVaultAuth(vaultSettings, client)
-}
-
-func configureVaultAuth(vaultSettings *v1.Settings_VaultSecrets, client *api.Client) (*api.Client, error) {
-	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
-	case *v1.Settings_VaultSecrets_AccessToken:
-		client.SetToken(tlsCfg.AccessToken)
-	case *v1.Settings_VaultSecrets_Aws:
-		configureAwsAuth(tlsCfg.Aws, client)
-	default:
-		token := vaultSettings.GetToken()
-		if token == "" {
-			return nil, errors.Errorf("unable to determine vault authentication method. check Settings configuration")
-		}
-		client.SetToken(token)
-	}
-	return client, nil
-}
-
-func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) {
-
 }
 
 func parseVaultSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Config, error) {
@@ -114,4 +98,84 @@ func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 
 	return tlsConfig
 
+}
+
+func configureVaultAuth(vaultSettings *v1.Settings_VaultSecrets, client *api.Client) (*api.Client, error) {
+	// each case returns
+	switch tlsCfg := vaultSettings.GetAuthMethod().(type) {
+	case *v1.Settings_VaultSecrets_AccessToken:
+		client.SetToken(tlsCfg.AccessToken)
+		return client, nil
+	case *v1.Settings_VaultSecrets_Aws:
+		return configureAwsAuth(tlsCfg.Aws, client)
+	default:
+		// We don't have one of the defined auth methods, so try to fall back to the
+		// deprecated token field before erroring
+		token := vaultSettings.GetToken()
+		if token == "" {
+			return nil, errors.Errorf("unable to determine vault authentication method. check Settings configuration")
+		}
+		client.SetToken(token)
+		return client, nil
+	}
+}
+
+func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
+	return configureAwsIamAuth(aws, client)
+}
+
+func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
+
+	if accessKeyId := aws.GetAccessKeyId(); accessKeyId == "" {
+		return nil, errors.New("access key id must be defined for AWS IAM auth")
+	} else {
+		os.Setenv("AWS_ACCESS_KEY_ID", accessKeyId)
+	}
+
+	// TODO(jbohanon) change accessor once we figure out API for this secret value
+	// this is a secret value and should not exist in the Settings in plaintext
+	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey == "" {
+		return nil, errors.New("secret access key must be defined for AWS IAM auth")
+	} else {
+		os.Setenv("AWS_SECRET_ACCESS_KEY", secretAccessKey)
+	}
+
+	loginOptions := []awsauth.LoginOption{awsauth.WithIAMAuth()}
+
+	if role := aws.GetRole(); role != "" {
+		loginOptions = append(loginOptions, awsauth.WithRole(role))
+	}
+
+	if region := aws.GetRegion(); region != "" {
+		loginOptions = append(loginOptions, awsauth.WithRegion(region))
+	}
+
+	if iamServerIdHeader := aws.GetIamServerIdHeader(); iamServerIdHeader != "" {
+		loginOptions = append(loginOptions, awsauth.WithIAMServerIDHeader(iamServerIdHeader))
+	}
+
+	if mountPath := aws.GetMountPath(); mountPath != "" {
+		loginOptions = append(loginOptions, awsauth.WithMountPath(mountPath))
+	}
+
+	// TODO(jbohanon) change accessor once we figure out API for this secret value
+	// this is a secret value and should not exist in the Settings in plaintext
+	if sessionToken := aws.GetSessionToken(); sessionToken != "" {
+		os.Setenv("AWS_SESSION_TOKEN", sessionToken)
+	}
+
+	awsAuth, err := awsauth.NewAWSAuth(loginOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	authInfo, err := client.Auth().Login(context.TODO(), awsAuth)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to login to AWS auth method")
+	}
+	if authInfo == nil {
+		return nil, errors.New("no auth info was returned after login")
+	}
+
+	return client, nil
 }
