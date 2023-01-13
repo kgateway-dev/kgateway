@@ -16,9 +16,7 @@ metadata:
     "helm.sh/hook-weight": "3" # run this job after the role/rolebinding is created, and before the validation webhook is upgraded
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
-  {{- with .Values.gateway.rolloutJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
     metadata:
       labels:
@@ -74,7 +72,6 @@ spec:
             kubectl annotate --overwrite gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- helm.sh/resource-policy=keep || exit $?
             kubectl label gateways.gateway.solo.io -n {{ . }} -l app=gloo,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1
