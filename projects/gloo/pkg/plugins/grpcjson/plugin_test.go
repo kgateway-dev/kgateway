@@ -76,7 +76,7 @@ var _ = Describe("GrpcJson", func() {
 							Namespace: "gloo-system",
 						},
 						Data: map[string]string{
-							"protoDesc": "some proto descriptor data",
+							"protoDesc": "aGVsbG8K",
 						},
 					},
 				},
@@ -96,7 +96,7 @@ var _ = Describe("GrpcJson", func() {
 
 			envoyGrpcJsonConf := &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder{
 				DescriptorSet: &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptorBin{
-					ProtoDescriptorBin: []byte("some proto descriptor data"),
+					ProtoDescriptorBin: []byte("hello\n"),
 				},
 				Services: []string{"main.Bookstore"},
 			}
@@ -153,7 +153,7 @@ var _ = Describe("GrpcJson", func() {
 		})
 
 		It("should use protodescriptor specified by key", func() {
-			snap.Artifacts[0].Data["another-key"] = "hello"
+			snap.Artifacts[0].Data["another-key"] = "another"
 			hl.Options.GrpcJsonTranscoder.DescriptorSet.(*grpc_json.GrpcJsonTranscoder_ProtoDescriptorConfigMap).ProtoDescriptorConfigMap.Key = "protoDesc"
 
 			p := grpcjson.NewPlugin()
@@ -193,7 +193,7 @@ var _ = Describe("GrpcJson", func() {
 		})
 
 		It("should return error if no key is specified and there are multiple mappings", func() {
-			snap.Artifacts[0].Data["another-key"] = "hello"
+			snap.Artifacts[0].Data["another-key"] = "another"
 
 			p := grpcjson.NewPlugin()
 			p.Init(initParams)
@@ -202,6 +202,18 @@ var _ = Describe("GrpcJson", func() {
 			}, hl)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(grpcjson.NoConfigMapKeyError(hl.GetOptions().GetGrpcJsonTranscoder().GetProtoDescriptorConfigMap(), 2).Error()))
+		})
+
+		It("should return error if data is not base64-encoded", func() {
+			snap.Artifacts[0].Data["protoDesc"] = "hello"
+
+			p := grpcjson.NewPlugin()
+			p.Init(initParams)
+			_, err := p.HttpFilters(plugins.Params{
+				Snapshot: snap,
+			}, hl)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(grpcjson.DecodingError(hl.GetOptions().GetGrpcJsonTranscoder().GetProtoDescriptorConfigMap(), "protoDesc").Error()))
 		})
 	})
 

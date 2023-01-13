@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -124,13 +125,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
 			bytes, err := ioutil.ReadFile(pathToDescriptors)
 			Expect(err).ToNot(HaveOccurred())
+			encoded := base64.StdEncoding.EncodeToString(bytes)
 			artifact := &gloov1.Artifact{
 				Metadata: &core.Metadata{
 					Name:      "my-config-map",
 					Namespace: "gloo-system",
 				},
 				Data: map[string]string{
-					"protoDesc": string(bytes),
+					"protoDesc": encoded,
 				},
 			}
 			_, err = testClients.ArtifactClient.Write(artifact, clients.WriteOpts{Ctx: ctx})

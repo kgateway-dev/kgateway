@@ -2,12 +2,11 @@ package grpcjson
 
 import (
 	"context"
-
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/rotisserie/eris"
+	"encoding/base64"
 
 	envoy_extensions_filters_http_grpc_json_transcoder_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
-
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
@@ -33,6 +32,10 @@ var (
 	}
 	NoDataError = func(configRef *grpc_json.GrpcJsonTranscoder_DescriptorConfigMap, key string) error {
 		return eris.Errorf("configmap %s:%s does not contain a value for key %s", configRef.GetConfigMapRef().GetNamespace(), configRef.GetConfigMapRef().GetName(), key)
+	}
+	DecodingError = func(configRef *grpc_json.GrpcJsonTranscoder_DescriptorConfigMap, key string) error {
+		return eris.Errorf("config map %s:%s contains a value for key %s but is not base64-encoded",
+			configRef.GetConfigMapRef().GetNamespace(), configRef.GetConfigMapRef().GetName(), key)
 	}
 )
 
@@ -140,7 +143,7 @@ func translateConfigMapToProtoBin(ctx context.Context, snap *gloosnapshot.ApiSna
 	var protoDescriptor string
 	key := configRef.GetKey()
 	if key != "" {
-		//  if there is an explicit key, use it
+		// if there is an explicit key, use it
 		protoDescriptor = data[key]
 	} else {
 		// if there is exactly one value, use it
@@ -160,5 +163,11 @@ func translateConfigMapToProtoBin(ctx context.Context, snap *gloosnapshot.ApiSna
 		return nil, NoDataError(configRef, key)
 	}
 
-	return []byte(protoDescriptor), nil
+	// decode the base64-encoded proto descriptor
+	decodedBytes, err := base64.StdEncoding.DecodeString(protoDescriptor)
+	if err != nil {
+		return nil, DecodingError(configRef, key)
+	}
+
+	return decodedBytes, nil
 }
