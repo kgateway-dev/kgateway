@@ -41,7 +41,7 @@ runs:
     with:
       # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
       skipClusterCreation: true
-      version: v0.17.0
+      version: ${{ matrix.kube-version.kind }}
   - uses: azure/setup-kubectl@v1
     id: kubectl
     with:
