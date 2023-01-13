@@ -92,17 +92,17 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 
 	testRequest := func(path string, shouldMatch bool) {
 		body := []byte(`"foo"`) // this is valid JSON because of the quotes
-		req := basicReq(body, path)
+		resp := basicReq(body, path)
+		expectedResp := `{"str":"foo"}`
+		expectedFields := Fields{
+			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+		}
 		if shouldMatch {
-			EventuallyWithOffset(1, req, 5, 1).Should(Equal(`{"str":"foo"}`))
-			EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
-			}))))
+			EventuallyWithOffset(1, resp, 5, 1).Should(Equal(expectedResp))
+			EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))))
 		} else {
-			EventuallyWithOffset(1, req, 5, 1).ShouldNot(Equal(`{"str":"foo"}`))
-			EventuallyWithOffset(1, tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
-			}))))
+			EventuallyWithOffset(1, resp, 5, 1).ShouldNot(Equal(expectedResp))
+			EventuallyWithOffset(1, tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))))
 		}
 	}
 
