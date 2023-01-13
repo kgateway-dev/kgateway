@@ -86,7 +86,7 @@ jobs:
       - name: send slack message
         env:
           PARENT_JOB_URL: ${{ env.pull_request_url }}       # parent job hyperlink
-          PREAMBLE: "Your recent Gloo PR"                   # text to hyperlink at start of slack message
+          PREAMBLE: "Your recent Gloo PR regression tests"  # text to hyperlink at start of slack message
           SLACK_CHANNEL: ${{ env.direct_message_id }}       # DM to the user who ran CI
           SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
         run: |
