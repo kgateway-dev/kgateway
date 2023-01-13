@@ -6,8 +6,6 @@ description: Using HashiCorp Vault as a backing store for Gloo Edge secrets
 
 Use [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html) as a backing store for Gloo Edge secrets.
 
-When Gloo Edge boots, it reads a {{< protobuf name="gloo.solo.io.Settings">}} resource from a preconfigured location. By default, Gloo Edge attempts to read a `gloo.solo.io/v1.Settings` Custom Resource named `default` in the `gloo-system` namespace of your Kubernetes cluster. By editing this settings file, you can configure Vault as the secret store for your Edge environment.
-
 When Gloo Edge boots, it reads the {{< protobuf name="gloo.solo.io.Settings">}} custom resource named `default` in the `gloo-system` namespace of your Kubernetes cluster to receive the proxy configuration for the gateway. By default, this configuration directs Gloo Edge to connect to and use Kubernetes as the secret store for your environment. If you want Gloo Edge to read and write secrets using a HashiCorp Vault instance instead of storing secrets directly in your Kubernetes cluster, you can edit the Settings custom resource to point the gateway proxy to Vault.
 
 {{% notice tip %}}
