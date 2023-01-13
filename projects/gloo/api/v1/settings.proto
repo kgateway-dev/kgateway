@@ -83,31 +83,38 @@ message Settings {
 
     // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
+        // DEPRECATED: use field auth_method.access_token
         // the Token used to authenticate to Vault
         string token = 1;
 
         // address is the address of the Vault server. This should be a complete
-        // URL such as http://solo.io
+        // URL such as http://solo.io and include port if necessary (vault's default port is 8200)
         string address = 2;
 
+        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
         // caCert is the path to a PEM-encoded CA cert file to use to verify the
         // Vault server SSL certificate.
         string ca_cert = 3;
 
+        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
         // caPath is the path to a directory of PEM-encoded CA cert files to verify
         // the Vault server SSL certificate.
         string ca_path = 4;
 
+        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
         // clientCert is the path to the certificate for Vault communication
         string client_cert = 5;
 
+        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
         // clientKey is the path to the private key for Vault communication
         string client_key = 6;
 
+        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
         // tlsServerName, if set, is used to set the SNI host when connecting via
         // TLS.
         string tls_server_name = 7;
 
+        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
         // When set to true, disables TLS verification
         google.protobuf.BoolValue insecure = 8;
 
@@ -121,10 +128,14 @@ message Settings {
         // Defaults to 'secret'
         string path_prefix = 10;
 
+        // Configure TLS options for client connection to Vault. This is only available when running
+        // Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad.
+        VaultTlsConfig tlsConfig = 11;
+
         // Support for multiple authentication methods
         oneof auth_method {
-            string access_token = 11;
-            VaultAwsAuth aws = 12;
+            string access_token = 12;
+            VaultAwsAuth aws = 13;
         }
     }
 
@@ -142,6 +153,29 @@ message Settings {
         string session_token = 7;
     }
 
+    // Settings to configure TLS-enabled Vault as a secret store
+    message VaultTlsConfig {
+        // caCert is the path to a PEM-encoded CA cert file to use to verify the
+        // Vault server SSL certificate.
+        string ca_cert = 1;
+
+        // caPath is the path to a directory of PEM-encoded CA cert files to verify
+        // the Vault server SSL certificate.
+        string ca_path = 2;
+
+        // clientCert is the path to the certificate for Vault communication
+        string client_cert = 3;
+
+        // clientKey is the path to the private key for Vault communication
+        string client_key = 4;
+
+        // tlsServerName, if set, is used to set the SNI host when connecting via
+        // TLS.
+        string tls_server_name = 5;
+
+        // When set to true, disables TLS verification
+        google.protobuf.BoolValue insecure = 6;
+    }
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
     // Configuration options for connecting to Consul can be configured in the Settings' root
     // `consul` field
