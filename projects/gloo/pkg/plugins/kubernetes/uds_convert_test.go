@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -500,6 +501,24 @@ var _ = Describe("UdsConvert", func() {
 						Value: true,
 					},
 				}),
+				Entry("Using RespectDnsTtl", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"respect_dns_ttl": true
+					}`,
+				}, &v1.Upstream{
+					RespectDnsTtl: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("Using DnsRefreshRate", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"dns_refresh_rate": 10s
+					}`,
+				}, &v1.Upstream{
+					DnsRefreshRate: &durationpb.Duration{
+						Seconds: 10,
+					},
+				}),
 				Entry("Using CircuitBreakers", map[string]string{
 					serviceconverter.GlooAnnotationPrefix: `{
 						"circuit_breakers": {
@@ -599,6 +618,24 @@ var _ = Describe("UdsConvert", func() {
 				}, &v1.Upstream{
 					IgnoreHealthOnHostRemoval: &wrappers.BoolValue{
 						Value: true,
+					},
+				}),
+				Entry("Using RespectDnsTtl", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"respectDnsTtl": true
+					}`,
+				}, &v1.Upstream{
+					RespectDnsTtl: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("Using DnsRefreshRate", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"dnsRefreshRate": 10s
+					}`,
+				}, &v1.Upstream{
+					DnsRefreshRate: &durationpb.Duration{
+						Seconds: 10,
 					},
 				}),
 				Entry("Using CircuitBreakers", map[string]string{

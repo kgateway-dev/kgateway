@@ -24,6 +24,7 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	duration "github.com/golang/protobuf/ptypes/duration"
 )
 
 const (
@@ -184,6 +185,12 @@ type Upstream struct {
 	// (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery.
 	// This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it.
 	IgnoreHealthOnHostRemoval *wrappers.BoolValue `protobuf:"bytes,22,opt,name=ignore_health_on_host_removal,json=ignoreHealthOnHostRemoval,proto3" json:"ignore_health_on_host_removal,omitempty"`
+	// (bool) If set to true, Service Discovery update period will be triggered once the TTL is expired.
+	// If minimum TTL of all records is 0 then dns_refresh_rate will be used.
+	RespectDnsTtl *wrappers.BoolValue `protobuf:"varint,39,opt,name=respect_dns_ttl,json=respectDnsTtl,proto3" json:"respect_dns_ttl,omitempty"`
+	// (Duration) Service Discovery DNS Refresh Rate, if unset it defaults to 5 seconds.
+	// Minimum value is 1 ms
+	DnsRefreshRate *duration.Duration `protobuf:"bytes,16,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3" json:"dns_refresh_rate,omitempty"`
 }
 
 func (x *Upstream) Reset() {
@@ -410,6 +417,20 @@ func (x *Upstream) GetHttpConnectHeaders() []*HeaderValue {
 func (x *Upstream) GetIgnoreHealthOnHostRemoval() *wrappers.BoolValue {
 	if x != nil {
 		return x.IgnoreHealthOnHostRemoval
+	}
+	return nil
+}
+
+func (x *Upstream) GetRespectDnsTtl() *wrappers.BoolValue {
+	if x != nil {
+		return x.RespectDnsTtl
+	}
+	return nil
+}
+
+func (x *Upstream) GetDnsRefreshRate() *duration.Duration {
+	if x != nil {
+		return x.DnsRefreshRate
 	}
 	return nil
 }

@@ -62,6 +62,8 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "httpConnectSslConfig": .gloo.solo.io.UpstreamSslConfig
 "httpConnectHeaders": []gloo.solo.io.HeaderValue
 "ignoreHealthOnHostRemoval": .google.protobuf.BoolValue
+"RespectDnsTtl": .google.protobuf.BoolValue
+"DnsRefreshRate": .google.protobuf.Duration
 
 ```
 
@@ -94,6 +96,8 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `httpConnectSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) | HttpConnectSslConfig contains the options necessary to configure envoy to originate TLS to an HTTP Connect proxy. If you also want to ensure the bytes proxied by the HTTP Connect proxy are encrypted, you should also specify `ssl_config`. |
 | `httpConnectHeaders` | [[]gloo.solo.io.HeaderValue](../upstream.proto.sk/#headervalue) | HttpConnectHeaders specifies the headers sent with the initial HTTP Connect request. |
 | `ignoreHealthOnHostRemoval` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
+| `RespectDnsTtl` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, cluster’s DNS refresh rate will be set to resource record’s TTL which comes from DNS resolution. If minimum TTL is 0 DnsRefreshRate will be used instead. |
+| `DnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | (Duration) if the DNS refresh rate is specified and the cluster type is either STRICT_DNS, or LOGICAL_DNS, this value is used as the cluster’s DNS refresh rate. The value configured must be at least 1ms. If this setting is not specified, the value defaults to 5000ms. |
 
 
 

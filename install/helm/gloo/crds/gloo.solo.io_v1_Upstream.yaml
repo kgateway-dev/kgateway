@@ -721,6 +721,12 @@ spec:
               ignoreHealthOnHostRemoval:
                 nullable: true
                 type: boolean
+              RespectDnsTtl:
+                nullable: true
+                type: boolean
+              DnsRefreshRate:
+                nullable: true
+                type: string
               initialConnectionWindowSize:
                 maximum: 4294967295
                 minimum: 0

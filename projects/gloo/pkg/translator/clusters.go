@@ -102,6 +102,8 @@ func (t *translatorInstance) initializeCluster(
 		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions:      getHttp2options(upstream),
 		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
+		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
+		DnsRefreshRate:            upstream.GetDnsRefreshRate(),
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
