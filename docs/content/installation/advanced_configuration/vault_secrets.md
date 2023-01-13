@@ -8,6 +8,8 @@ Use [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets
 
 When Gloo Edge boots, it reads a {{< protobuf name="gloo.solo.io.Settings">}} resource from a preconfigured location. By default, Gloo Edge attempts to read a `gloo.solo.io/v1.Settings` Custom Resource named `default` in the `gloo-system` namespace of your Kubernetes cluster. By editing this settings file, you can configure Vault as the secret store for your Edge environment.
 
+When Gloo Edge boots, it reads the {{< protobuf name="gloo.solo.io.Settings">}} custom resource named `default` in the `gloo-system` namespace of your Kubernetes cluster to receive the proxy configuration for the gateway. By default, this configuration directs Gloo Edge to connect to and use Kubernetes as the secret store for your environment. If you want Gloo Edge to read and write secrets using a HashiCorp Vault instance instead of storing secrets directly in your Kubernetes cluster, you can edit the Settings custom resource to point the gateway proxy to Vault.
+
 {{% notice tip %}}
 Want to use Vault with Gloo Edge outside of Kubernetes instead? You can provide your settings file to Gloo Edge inside of a configuration directory when you [run Gloo Edge locally]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file">}}).
 {{% /notice %}}
@@ -22,9 +24,9 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
    ```
 
 2. Make the following changes to the resource.
-   * Remove the existing `kubernetesSecretSource` or `directorySecretSource` field, which is required for the Vault secret storage to be used.
+   * Remove the existing `kubernetesSecretSource` or `directorySecretSource` field, which direct the gateway to use other secret stores than Vault.
    * Add the `vaultSecretSource` section to enable secrets to be read from and written to Vault.
-   * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem for changes.
+   * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
    {{< highlight yaml "hl_lines=16-25" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
@@ -62,7 +64,7 @@ After configuring Vault as your secret store, be sure to write any Vault secrets
 
 ### Using glooctl
 
-To get started writing Gloo Edge secrets for use with Vault, you can use the `glooctl create secret` command. A benefit of using `glooctl` for secret creation is that the secret is created in the path that Gloo Edge watches.
+To get started writing Gloo Edge secrets for use with Vault, you can use the `glooctl create secret` command. A benefit of using `glooctl` for secret creation is that the secret is created in the path that Gloo Edge watches, `secret/root/gloo.solo.io/v1/gloo-system/tls-secret`.
 
 For example, you might use the following command to create a secret in Vault.
 ```bash
@@ -92,11 +94,13 @@ You can also include the `-o json` flag in the command for JSON-formatted secret
 
 ### Manually writing secrets
 
-Be sure to write any Vault secrets by using Gloo Edge-style YAML. For more information, see the {{< protobuf name="gloo.solo.io.Secret" display="v1.Secret API reference">}}.
+Instead of using the `glooctl create secret` command to create the Vault secret and automatically store the secret key in your Vault instance, you can use your own configuration file to create the secret. Note that you must use the same YAML format for the secret so that Gloo Edge can read the secret. For more information, see the {{< protobuf name="gloo.solo.io.Secret" display="v1.Secret API reference">}}.
 
 If you manually write Gloo Edge secrets, you must store them in Vault with the correct Vault key names, which adhere to the following format:
 
 `<secret_engine_path_prefix>/<gloo_root_key>/<resource_group>/<group_version>/Secret/<resource_namespace>/<resource_name>`
+
+For example, if you want to create a secret named `tls-secret` in the `gloo-system` namespace, store the secret file in Vault on the path `secret/root/gloo.solo.io/v1/gloo-system/tls-secret`.
 
 | Path | Description |
 | ---- | ----------- |
