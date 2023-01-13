@@ -108,11 +108,11 @@ message Settings {
         // TLS.
         string tls_server_name = 7;
 
-        // Insecure enables or disables SSL verification
+        // When set to true, disables TLS verification
         google.protobuf.BoolValue insecure = 8;
 
         // all keys stored in Vault will begin with this Vault
-        // this can be used to run multiple instances of Gloo against the same Consul cluster
+        // this can be used to run multiple instances of Gloo against the same Vault cluster
         // defaults to `gloo`
         string root_key = 9;
 
@@ -120,6 +120,26 @@ message Settings {
         // For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines.
         // Defaults to 'secret'
         string path_prefix = 10;
+
+        // Support for multiple authentication methods
+        oneof auth_method {
+            string access_token = 11;
+            VaultAwsAuth aws = 12;
+        }
+    }
+
+    // Configure Vault client to authenticate to server via AWS auth (IAM only).
+    // For more info see https://developer.hashicorp.com/vault/docs/auth/aws
+    message VaultAwsAuth {
+        string role = 1;
+        string region = 2;
+        string iam_server_id_header = 3;
+        string mountPath = 4;
+        string access_key_id = 5;
+        // This is a secret but can't be a secret ref because we are configuring the secrets engine...
+        string secret_access_key = 6;
+        // This is a secret but can't be a secret ref because we are configuring the secrets engine...
+        string session_token = 7;
     }
 
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
@@ -535,7 +555,7 @@ message GlooOptions {
         google.protobuf.Duration credential_refresh_delay = 4;
 
         // Sets the unsafe behavior where a route can specify a lambda upstream
-        // but not set the function to target. It will use the first function which 
+        // but not set the function to target. It will use the first function which
         // if discovery is enabled the first function is the first function name alphabetically
         // from the last discovery run. This means that the lambda being pointed to could change.
         // Defaults to false.
