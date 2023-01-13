@@ -262,7 +262,7 @@ type GrpcJsonTranscoder_ProtoDescriptorBin struct {
 }
 
 type GrpcJsonTranscoder_ProtoDescriptorConfigMap struct {
-	// A reference to a ConfigMap containing the binary content of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set)
+	// A reference to a ConfigMap containing the base64-encoded binary content of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set)
 	// for the gRPC services.
 	ProtoDescriptorConfigMap *GrpcJsonTranscoder_DescriptorConfigMap `protobuf:"bytes,10,opt,name=proto_descriptor_config_map,json=protoDescriptorConfigMap,proto3,oneof"`
 }
@@ -362,9 +362,8 @@ type GrpcJsonTranscoder_DescriptorConfigMap struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// A reference to a ConfigMap containing the binary content of a proto descriptor set.
+	// A reference to a ConfigMap containing the base64-encoded binary content of a proto descriptor set.
 	// The ConfigMap must be in a namespace watched by Gloo Edge.
-	// Note: in yaml, the value must be provided as a base64 standard encoded string; yaml can't handle binary bytes.
 	ConfigMapRef *core.ResourceRef `protobuf:"bytes,1,opt,name=config_map_ref,json=configMapRef,proto3" json:"config_map_ref,omitempty"`
 	// The ConfigMap data key whose value contains the proto descriptor set.
 	// If the ConfigMap contains multiple key-value pairs, this field is required.
