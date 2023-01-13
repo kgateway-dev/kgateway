@@ -295,7 +295,7 @@
 |gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.certGenJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
-|gateway.certGenJob.manualSelector|bool||manualSelector controls generation of pod labels and pod selectors.|
+|gateway.certGenJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
 |gateway.certGenJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.certGenJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
@@ -329,7 +329,7 @@
 |gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.rolloutJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.rolloutJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
-|gateway.rolloutJob.manualSelector|bool||manualSelector controls generation of pod labels and pod selectors.|
+|gateway.rolloutJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
 |gateway.rolloutJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
 |gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.rolloutJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
@@ -365,7 +365,7 @@
 |gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.cleanupJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.cleanupJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
-|gateway.cleanupJob.manualSelector|bool||manualSelector controls generation of pod labels and pod selectors.|
+|gateway.cleanupJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
 |gateway.cleanupJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
 |gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.cleanupJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|

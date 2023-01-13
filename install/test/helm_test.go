@@ -5727,6 +5727,7 @@ metadata:
 						})
 						Expect(resources.NumResources()).To(Equal(1))
 					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
@@ -5753,6 +5754,7 @@ metadata:
 						})
 						Expect(resources.NumResources()).To(Equal(1))
 					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
