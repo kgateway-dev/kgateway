@@ -31,6 +31,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
@@ -160,6 +161,10 @@ message HttpListenerOptions {
     google.protobuf.BoolValue leftmost_xff_address = 16;
 
     dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
+
+    // Router is an extension of the envoy http filters
+    // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
+    Router router = 18;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
