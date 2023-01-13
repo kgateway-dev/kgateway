@@ -56,7 +56,7 @@ jobs:
         echo "::set-output name=run_value::$(echo $should_run)"
 
   regression_tests:
-    name: k8s regression tests
+    name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
     if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-22.04
