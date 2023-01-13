@@ -54,20 +54,22 @@ func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 
 	// helper functions to avoid repeated nilchecking
 	addStringSetting := func(s string, addSettingFunc func(string)) {
+		if s == "" {
+			return
+		}
 		if tlsConfig == nil {
 			tlsConfig = &api.TLSConfig{}
 		}
-		if s != "" {
-			addSettingFunc(s)
-		}
+		addSettingFunc(s)
 	}
 	addBoolSetting := func(b *wrapperspb.BoolValue, addSettingFunc func(bool)) {
+		if b == nil {
+			return
+		}
 		if tlsConfig == nil {
 			tlsConfig = &api.TLSConfig{}
 		}
-		if b != nil {
-			addSettingFunc(b.GetValue())
-		}
+		addSettingFunc(b.GetValue())
 	}
 
 	// Add our settings to the vault TLS config, preferring settings set in the
@@ -169,6 +171,7 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 		return nil, err
 	}
 
+	// TODO(jbohanon) set up auth token refreshing with client.NewLifetimeWatcher()
 	authInfo, err := client.Auth().Login(context.TODO(), awsAuth)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to login to AWS auth method")
