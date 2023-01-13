@@ -10,5 +10,4 @@ Tracing helps you obtain visibility and track requests as they pass through your
 
 To get started, choose one of the following options.
 - [OpenTelemetry tracing]({{< versioned_link_path fromRoot="/guides/observability/tracing/otel/" >}}): Configure OpenTelemetry (OTel) as the trace span collector in your Gloo Edge installation. Then, use your preferred distributed tracing platform to collect and visualize the sampled spans.
-
 - [Default Envoy tracing]({{< versioned_link_path fromRoot="/guides/observability/tracing/envoy/" >}}): Enable the default Envoy tracing capabilities in your Gloo Edge installation to trace requests. Then, use Zipkin, Jeager, or Datadog to collect and visualize the sampled spans.
