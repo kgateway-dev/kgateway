@@ -20,7 +20,28 @@ func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string)
 	}
 }
 
+type vaultConfigs struct {
+	config    *api.Config
+	tlsConfig *api.TLSConfig
+}
+
 func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Client, error) {
+	vc, err := parseVaultSettings(vaultSettings)
+	client, err := api.NewClient(vc.config)
+	if err != nil {
+		return nil, err
+	}
+	token := vaultSettings.GetToken()
+	if token == "" {
+		return nil, errors.Errorf("token is required for connecting to vault")
+	}
+	client.SetToken(token)
+
+	return client, nil
+}
+
+func parseVaultSettings(vaultSettings *v1.Settings_VaultSecrets) (vaultConfigs, error) {
+
 	cfg := api.DefaultConfig()
 
 	var tlsCfg *api.TLSConfig
@@ -62,21 +83,14 @@ func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Clien
 		}
 		tlsCfg.Insecure = insecure.GetValue()
 	}
-
-	client, err := api.NewClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-	if tlsCfg != nil {
-		if err := cfg.ConfigureTLS(tlsCfg); err != nil {
+	if vc.tlsConfig != nil {
+		if err := vc.config.ConfigureTLS(vc.tlsConfig); err != nil {
 			return nil, err
 		}
 	}
-	token := vaultSettings.GetToken()
-	if token == "" {
-		return nil, errors.Errorf("token is required for connecting to vault")
-	}
-	client.SetToken(token)
 
-	return client, nil
+	return vaultConfigs{
+		config:    cfg,
+		tlsConfig: tlsCfg,
+	}, nil
 }
