@@ -4,9 +4,9 @@ weight: 1
 description: Leverage OpenTelementry tracing capabilities in Gloo Edge.
 ---
 
-Enable OpenTelemetry (OTel) tracing capabilities to obtain visibility and track requests as they pass through your API gateway to distributed backends.
+Enable [OpenTelemetry](https://opentelemetry.io/) (OTel) tracing capabilities to obtain visibility and track requests as they pass through your API gateway to distributed backends.
 
-OTel provides a standardized protocol for reporting traces, and a standardized collector through which to collect metrics. Additionally, OTel supports exporting metrics to several types of distributed tracing platforms. For the full list of supported platforms, see the [OTel GitHub respository](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
+OTel provides a standardized protocol for reporting traces, and a standardized collector through which to recieve metrics. Additionally, OTel supports exporting metrics to several types of distributed tracing platforms. For the full list of supported platforms, see the [OTel GitHub respository](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter).
 
 To get started, deploy an OTel collector and agents to your Gloo Edge cluster to trace requests, and modify your gateway proxy with the OTel tracing configuration. Then, use a tracing provider to collect and visualize the sampled spans.
 
