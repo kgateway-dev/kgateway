@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4374
+    description: Fix failing automation job for project assignments by updating secret
+    resolvesIssue: false
