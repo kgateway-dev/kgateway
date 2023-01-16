@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Supports efforts of https://github.com/solo-io/gloo/pull/7667 by creating a local action on the v1.13.x branch.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4410
+    resolvesIssue: false
