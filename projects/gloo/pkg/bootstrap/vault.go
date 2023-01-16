@@ -4,12 +4,13 @@ import (
 	"context"
 	"os"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+
 	"github.com/hashicorp/vault/api"
 	_ "github.com/hashicorp/vault/api/auth/aws"
 	awsauth "github.com/hashicorp/vault/api/auth/aws"
 	errors "github.com/rotisserie/eris"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 

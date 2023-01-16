@@ -197,12 +197,12 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 | ----- | ---- | ----------- | 
 | `token` | `string` | DEPRECATED: use field auth_method.access_token the Token used to authenticate to Vault. |
 | `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200). |
-| `caCert` | `string` | DEPRECATED: use field tlsConfig to configure TLS connection to Vault caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
-| `caPath` | `string` | DEPRECATED: use field tlsConfig to configure TLS connection to Vault caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
-| `clientCert` | `string` | DEPRECATED: use field tlsConfig to configure TLS connection to Vault clientCert is the path to the certificate for Vault communication. |
-| `clientKey` | `string` | DEPRECATED: use field tlsConfig to configure TLS connection to Vault clientKey is the path to the private key for Vault communication. |
-| `tlsServerName` | `string` | DEPRECATED: use field tlsConfig to configure TLS connection to Vault tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
-| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | DEPRECATED: use field tlsConfig to configure TLS connection to Vault When set to true, disables TLS verification. |
+| `caCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
+| `caPath` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
+| `clientCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault clientCert is the path to the certificate for Vault communication. |
+| `clientKey` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault clientKey is the path to the private key for Vault communication. |
+| `tlsServerName` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | DEPRECATED: use field tls_config to configure TLS connection to Vault When set to true, disables TLS verification. |
 | `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to `gloo`. |
 | `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
 | `tlsConfig` | [.gloo.solo.io.Settings.VaultTlsConfig](../settings.proto.sk/#vaulttlsconfig) | Configure TLS options for client connection to Vault. This is only available when running Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad. |
