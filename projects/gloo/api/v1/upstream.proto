@@ -161,6 +161,13 @@ message Upstream {
     // (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery.
     // This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it.
     google.protobuf.BoolValue ignore_health_on_host_removal = 22;
+
+    // (bool) If set to true, Service Discovery update period will be triggered once the TTL is expired.
+	// If minimum TTL of all records is 0 then dns_refresh_rate will be used.
+	google.protobuf.BoolValue respect_dns_ttl= 39;
+	// (Duration) Service Discovery DNS Refresh Rate, if unset it defaults to 5 seconds.
+	// Minimum value is 1 ms
+	google.protobufDuration dns_refresh_rate = 16;
 }
 
 // created by discovery services
