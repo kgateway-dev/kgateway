@@ -91,30 +91,30 @@ message Settings {
         // URL such as http://solo.io and include port if necessary (vault's default port is 8200)
         string address = 2;
 
-        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // caCert is the path to a PEM-encoded CA cert file to use to verify the
         // Vault server SSL certificate.
         string ca_cert = 3;
 
-        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // caPath is the path to a directory of PEM-encoded CA cert files to verify
         // the Vault server SSL certificate.
         string ca_path = 4;
 
-        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // clientCert is the path to the certificate for Vault communication
         string client_cert = 5;
 
-        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // clientKey is the path to the private key for Vault communication
         string client_key = 6;
 
-        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // tlsServerName, if set, is used to set the SNI host when connecting via
         // TLS.
         string tls_server_name = 7;
 
-        // DEPRECATED: use field tlsConfig to configure TLS connection to Vault
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // When set to true, disables TLS verification
         google.protobuf.BoolValue insecure = 8;
 
@@ -130,7 +130,7 @@ message Settings {
 
         // Configure TLS options for client connection to Vault. This is only available when running
         // Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad.
-        VaultTlsConfig tlsConfig = 11;
+        VaultTlsConfig tls_config = 11;
 
         // Support for multiple authentication methods
         oneof auth_method {
