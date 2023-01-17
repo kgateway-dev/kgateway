@@ -5,19 +5,22 @@ env:
 
 on:
   schedule:
-    - cron: "0 5 * * 1-5" # weekdays @ 00:00 EST, run tests against latest beta
+    - cron: "0 5 * * 1-5" # weekdays @ 00:00 EST, run tests against latest dev
     - cron: "6 6 * * 1"   # monday   @ 01:06 EST, run expanded tests against v1.13.x 
     - cron: "7 7 * * 1"   # monday   @ 02:07 EST, run expanded tests against v1.12.x
     - cron: "8 8 * * 1"   # monday   @ 03:08 EST, run expanded tests against v1.11.x
     - cron: "9 9 * * 1"   # monday   @ 04:09 EST, run expanded tests against v1.10.x
   workflow_dispatch:
 jobs:
-  regression_tests_latest_beta:
-    name: latest beta regression tests
+  regression_tests_latest_dev:
+    name: latest dev regression tests
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
     runs-on: ubuntu-22.04
-    env:
-      RELEASED_VERSION: "LATEST"
+    # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
+    #       https://github.com/solo-io/gloo/blob/master/test/kube2e/util.go#L229-L241
+    # which modified our testing process to pull the latest beta release.
+    #
+    # NOW, however, running this job is the same as normal CI.  (building a local chart, then using it)
     strategy:
       fail-fast: false
       matrix:
@@ -94,7 +97,7 @@ jobs:
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_beta, regression_tests_13, regression_tests_12, regression_tests_11, regression_tests_10 ] 
+    needs: [ regression_tests_latest_dev, regression_tests_13, regression_tests_12, regression_tests_11, regression_tests_10 ] 
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
@@ -114,7 +117,7 @@ jobs:
           elif [[ ${{github.event.schedule == '6 6 * * 1'}} = true ]]; then
               preamble="Gloo OSS weeklies (v1.13.x)"
           elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
-              preamble="Gloo OSS nightlies (latest beta)"
+              preamble="Gloo OSS nightlies (dev)"
           fi
 
           echo "Setting PREAMBLE as $preamble"
