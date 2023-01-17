@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"testing"
 
+	"github.com/solo-io/gloo/test/e2e"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
@@ -19,7 +21,9 @@ var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
 
-	namespace = defaults.GlooSystem
+	testContextFactory *e2e.TestContextFactory
+
+	writeNamespace = defaults.GlooSystem
 )
 
 var _ = BeforeSuite(func() {
@@ -28,6 +32,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
+
+	testContextFactory = &e2e.TestContextFactory{
+		EnvoyFactory: envoyFactory,
+	}
 })
 
 var _ = AfterSuite(func() {
@@ -36,7 +44,6 @@ var _ = AfterSuite(func() {
 })
 
 func TestE2e(t *testing.T) {
-
 	// set default port to an unprivileged port for local testing.
 	defaults.HttpPort = 8081
 

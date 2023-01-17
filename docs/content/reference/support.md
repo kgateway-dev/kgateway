@@ -8,15 +8,15 @@ Review the following information about supported release versions for Gloo Edge 
 
 ## Supported versions
 
-Gloo Edge Enterprise offers `n-3` patching support for bug and critical security fixes. In other words, the current release and the three previous releases are supported. For example, if the latest stable Gloo Edge Enterprise release is 1.12, then Gloo Edge Enterprise 1.11.x, 1.10.x, and 1.9.x are also supported.
+Gloo Edge Enterprise offers `n-3` patching support for bug and critical security fixes. In other words, the current release and the three previous releases are supported. For example, if the latest stable Gloo Edge Enterprise release is 1.13, then Gloo Edge Enterprise 1.12.x, 1.11.x, and 1.10.x are also supported.
 
 
 | Gloo Edge | Kubernetes`*` | Envoy | Helm | Istio`†` |
 |------|----------|---------|--------|------|
+| 1.13.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
 | 1.12.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
 | 1.11.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15|
 | 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
-| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
 
 {{% notice note %}}`*` **Kubernetes versions**: Gloo Edge is tested on Kubernetes 1.21 - 1.22.{{% /notice %}}
 

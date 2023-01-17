@@ -1,5 +1,5 @@
-# Envoy End-to-End tests
-This directory contains end-to-end tests that do not require Kubernetes
+# In Memory End-to-End tests
+This directory contains end-to-end tests that do not require Kubernetes, and persist configuration in memory.
 
 *Note: All commands should be run from the root directory of the Gloo repository*
 
@@ -12,36 +12,38 @@ This is the most common type of end-to-end test, since it is the quickest to set
 1. Apply Gloo resources using [in-memory resource clients](https://github.com/solo-io/gloo/blob/1f457f4ef5f32aedabc58ef164aeea92acbf481e/test/services/gateway.go#L175)
 1. Execute requests against the Envoy proxy and confirm the expected response. This validates that the Gloo resources have been picked up by the controllers, were been translated correctly into Envoy configuration, the configuration was sent to the Envoy proxy, and the proxy behaves appropriately.
 
+### Example Test
+We have an [example test](./example_test.go) which outlines how these tests work. It also provides some examples for basic testing operations. If you are writing a new e2e test, we recommend that you review the example test first.
+
+This was introduced in a [pull request](https://github.com/solo-io/gloo/pull/7555) which includes other useful details about e2e test considerations.
+
 ## CI
 These tests are run by [build-bot](https://github.com/solo-io/build-bot) in Google Cloud as part of our CI pipeline.
 
 If a test fails, you can retry it using the build-bot [comment directives](https://github.com/solo-io/build-bot#issue-comment-directives). If you do this, please make sure to include a link to the failed logs for debugging purposes.
 
 ## Local Development
-
 ### Setup
 For these tests to run, we require Envoy be built in a docker container.
 
 Refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
 
-
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
 
-| Name            | Default | Description |
-| ---             |   ---   |    ---      |
-| ENVOY_IMAGE_TAG | ""      | The tag of the gloo-envoy-wrapper-docker image built during setup |
-| TEST_PKG        | ""      | The path to the package of the test suite you want to run  |
-| WAIT_ON_FAIL    | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output.
+| Name              | Default | Description                                                                                                                                                                                                                                        |
+|-------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ENVOY_IMAGE_TAG   | ""      | The tag of the gloo-envoy-wrapper-docker image built during setup                                                                                                                                                                                  |
+| TEST_PKG          | ""      | The path to the package of the test suite you want to run                                                                                                                                                                                          |
+| WAIT_ON_FAIL      | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
+| INVALID_TEST_REQS | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
 
 Example:
 ```bash
 ENVOY_IMAGE_TAG=solo-test-image TEST_PKG=./test/e2e/... make run-tests
 ```
 
-
 ### Debugging Tests
-
 #### Use WAIT_ON_FAIL
 When Ginkgo encounters a [test failure](https://onsi.github.io/ginkgo/#mental-model-how-ginkgo-handles-failure) it will attempt to clean up relevant resources, which includes stopping the running instance of Envoy, preventing the developer from inspecting the state of the Envoy instance for useful clues.
 
@@ -49,8 +51,12 @@ To avoid this clean up, run the test(s) with `WAIT_ON_FAIL=1`. When the test fai
 
 Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/master/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
 
-## Additional Notes
+#### Use INVALID_TEST_REQS
+Certain test require environmental conditions to be true for them to succeed. For example, certain tests will only run on a Linux machine.
 
+By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.
+
+## Additional Notes
 ### Notes on EC2 tests
 *Note: these instructions are out of date, and require updating*
 

@@ -67,6 +67,7 @@ weight: 5
 - [LdapServiceAccount](#ldapserviceaccount)
 - [PassThroughAuth](#passthroughauth)
 - [PassThroughGrpc](#passthroughgrpc)
+- [PassThroughGrpcTLSConfig](#passthroughgrpctlsconfig)
 - [PassThroughHttp](#passthroughhttp)
 - [Request](#request)
 - [Response](#response)
@@ -1440,6 +1441,7 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 ```yaml
 "address": string
 "connectionTimeout": .google.protobuf.Duration
+"tlsConfig": .enterprise.gloo.solo.io.PassThroughGrpcTLSConfig
 
 ```
 
@@ -1447,6 +1449,23 @@ https://github.com/envoyproxy/envoy/blob/ae1ed1fa74f096dabe8dd5b19fc70333621b030
 | ----- | ---- | ----------- | 
 | `address` | `string` | Address of the auth server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:389`. |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
+| `tlsConfig` | [.enterprise.gloo.solo.io.PassThroughGrpcTLSConfig](../extauth.proto.sk/#passthroughgrpctlsconfig) | TLS config for the Grpc passthrough, if not configured the connection will use insecure. |
+
+
+
+
+---
+### PassThroughGrpcTLSConfig
+
+ 
+TLS configuration for the extauth grpc passthrough connection
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

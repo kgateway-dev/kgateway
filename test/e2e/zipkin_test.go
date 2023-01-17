@@ -64,6 +64,12 @@ var _ = Describe("Tracing config loading", func() {
 
 	Context("Tracing defined on Envoy bootstrap", func() {
 
+		BeforeEach(func() {
+			gloohelpers.ValidateRequirementsAndNotifyGinkgo(
+				gloohelpers.LinuxOnly("Uses 127.0.0.1"),
+			)
+		})
+
 		It("should send trace msgs to the zipkin server", func() {
 			err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 			Expect(err).NotTo(HaveOccurred())
@@ -95,8 +101,6 @@ var _ = Describe("Tracing config loading", func() {
 			testUpstream *v1helpers.TestUpstream
 
 			resourcesToCreate *gloosnapshot.ApiSnapshot
-
-			writeNamespace = defaults.GlooSystem
 		)
 
 		BeforeEach(func() {
@@ -195,7 +199,7 @@ var _ = Describe("Tracing config loading", func() {
 				},
 				v1helpers.CurlResponse{
 					Status:  http.StatusOK,
-					Message: "",
+					Message: "solo.io test",
 				},
 			)
 		}
@@ -210,7 +214,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -228,12 +232,13 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -250,7 +255,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -268,12 +273,13 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -290,19 +296,20 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
 							Tracing: nil,
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Not(Receive()))
@@ -319,7 +326,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -339,12 +346,13 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -361,7 +369,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -381,12 +389,13 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("127.0.0.1", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
@@ -403,7 +412,7 @@ var _ = Describe("Tracing config loading", func() {
 					Name:      gatewaydefaults.GatewayProxyName,
 					Namespace: writeNamespace,
 				},
-				func(resource resources.Resource) {
+				func(resource resources.Resource) resources.Resource {
 					gw := resource.(*gatewayv1.Gateway)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpConnectionManagerSettings: &hcm.HttpConnectionManagerSettings{
@@ -420,6 +429,7 @@ var _ = Describe("Tracing config loading", func() {
 							},
 						},
 					}
+					return gw
 				},
 				testClients.GatewayClient.BaseClient(),
 			)

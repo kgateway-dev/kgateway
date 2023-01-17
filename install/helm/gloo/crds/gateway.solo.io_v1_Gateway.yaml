@@ -455,6 +455,18 @@ spec:
                           protoDescriptorBin:
                             format: byte
                             type: string
+                          protoDescriptorConfigMap:
+                            properties:
+                              configMapRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              key:
+                                type: string
+                            type: object
                           services:
                             items:
                               type: string
@@ -691,6 +703,67 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openCensusConfig:
+                                properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
+                                  incomingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  ocagentExporterEnabled:
+                                    type: boolean
+                                  outgoingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  traceConfig:
+                                    properties:
+                                      constantSampler:
+                                        properties:
+                                          decision:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                      maxNumberOfAnnotations:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfAttributes:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfLinks:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfMessageEvents:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      probabilitySampler:
+                                        properties:
+                                          samplingProbability:
+                                            type: number
+                                        type: object
+                                      rateLimitingSampler:
+                                        properties:
+                                          qps:
+                                            format: int64
+                                            type: integer
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                    type: object
+                                type: object
                               openTelemetryConfig:
                                 properties:
                                   clusterName:
@@ -819,6 +892,12 @@ spec:
                             type: object
                           requestTimeout:
                             type: string
+                        type: object
+                      router:
+                        properties:
+                          suppressEnvoyHeaders:
+                            nullable: true
+                            type: boolean
                         type: object
                       sanitizeClusterHeader:
                         nullable: true
@@ -1141,6 +1220,67 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openCensusConfig:
+                                properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
+                                  incomingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  ocagentExporterEnabled:
+                                    type: boolean
+                                  outgoingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  traceConfig:
+                                    properties:
+                                      constantSampler:
+                                        properties:
+                                          decision:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                      maxNumberOfAnnotations:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfAttributes:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfLinks:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfMessageEvents:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      probabilitySampler:
+                                        properties:
+                                          samplingProbability:
+                                            type: number
+                                        type: object
+                                      rateLimitingSampler:
+                                        properties:
+                                          qps:
+                                            format: int64
+                                            type: integer
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                    type: object
+                                type: object
                               openTelemetryConfig:
                                 properties:
                                   clusterName:
@@ -1771,6 +1911,18 @@ spec:
                                     protoDescriptorBin:
                                       format: byte
                                       type: string
+                                    protoDescriptorConfigMap:
+                                      properties:
+                                        configMapRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        key:
+                                          type: string
+                                      type: object
                                     services:
                                       items:
                                         type: string
@@ -2007,6 +2159,67 @@ spec:
                                                 type: string
                                             type: object
                                           type: array
+                                        openCensusConfig:
+                                          properties:
+                                            grpcAddress:
+                                              properties:
+                                                statPrefix:
+                                                  type: string
+                                                targetUri:
+                                                  type: string
+                                              type: object
+                                            httpAddress:
+                                              type: string
+                                            incomingTraceContext:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            ocagentExporterEnabled:
+                                              type: boolean
+                                            outgoingTraceContext:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            traceConfig:
+                                              properties:
+                                                constantSampler:
+                                                  properties:
+                                                    decision:
+                                                      type: string
+                                                      x-kubernetes-int-or-string: true
+                                                  type: object
+                                                maxNumberOfAnnotations:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfAttributes:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfLinks:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfMessageEvents:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                probabilitySampler:
+                                                  properties:
+                                                    samplingProbability:
+                                                      type: number
+                                                  type: object
+                                                rateLimitingSampler:
+                                                  properties:
+                                                    qps:
+                                                      format: int64
+                                                      type: integer
+                                                      x-kubernetes-int-or-string: true
+                                                  type: object
+                                              type: object
+                                          type: object
                                         openTelemetryConfig:
                                           properties:
                                             clusterName:
@@ -2135,6 +2348,12 @@ spec:
                                       type: object
                                     requestTimeout:
                                       type: string
+                                  type: object
+                                router:
+                                  properties:
+                                    suppressEnvoyHeaders:
+                                      nullable: true
+                                      type: boolean
                                   type: object
                                 sanitizeClusterHeader:
                                   nullable: true
@@ -3881,6 +4100,128 @@ spec:
                                   type: string
                                 stringFormat:
                                   type: string
+                              type: object
+                            filter:
+                              properties:
+                                andFilter:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                durationFilter:
+                                  properties:
+                                    comparison:
+                                      properties:
+                                        op:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        value:
+                                          properties:
+                                            defaultValue:
+                                              format: int32
+                                              type: integer
+                                            runtimeKey:
+                                              type: string
+                                          type: object
+                                      type: object
+                                  type: object
+                                grpcStatusFilter:
+                                  properties:
+                                    exclude:
+                                      type: boolean
+                                    statuses:
+                                      items:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
+                                      type: array
+                                  type: object
+                                headerFilter:
+                                  properties:
+                                    header:
+                                      properties:
+                                        exactMatch:
+                                          type: string
+                                        invertMatch:
+                                          type: boolean
+                                        name:
+                                          type: string
+                                        prefixMatch:
+                                          type: string
+                                        presentMatch:
+                                          type: boolean
+                                        rangeMatch:
+                                          properties:
+                                            end:
+                                              format: int64
+                                              type: integer
+                                              x-kubernetes-int-or-string: true
+                                            start:
+                                              format: int64
+                                              type: integer
+                                              x-kubernetes-int-or-string: true
+                                          type: object
+                                        safeRegexMatch:
+                                          properties:
+                                            googleRe2:
+                                              properties:
+                                                maxProgramSize:
+                                                  maximum: 4294967295
+                                                  minimum: 0
+                                                  nullable: true
+                                                  type: integer
+                                              type: object
+                                            regex:
+                                              type: string
+                                          type: object
+                                        suffixMatch:
+                                          type: string
+                                      type: object
+                                  type: object
+                                notHealthCheckFilter:
+                                  type: object
+                                orFilter:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                responseFlagFilter:
+                                  properties:
+                                    flags:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                                runtimeFilter:
+                                  properties:
+                                    percentSampled:
+                                      properties:
+                                        denominator:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        numerator:
+                                          format: int32
+                                          type: integer
+                                      type: object
+                                    runtimeKey:
+                                      type: string
+                                    useIndependentRandomness:
+                                      type: boolean
+                                  type: object
+                                statusCodeFilter:
+                                  properties:
+                                    comparison:
+                                      properties:
+                                        op:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        value:
+                                          properties:
+                                            defaultValue:
+                                              format: int32
+                                              type: integer
+                                            runtimeKey:
+                                              type: string
+                                          type: object
+                                      type: object
+                                  type: object
+                                traceableFilter:
+                                  type: object
                               type: object
                             grpcService:
                               properties:

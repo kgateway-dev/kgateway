@@ -163,6 +163,15 @@ The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three d
 
 Let's go ahead and describe each one of these attributes in detail.
 
+##### Body Parsing Behavior
+{{% notice warning %}}
+By default, `transformationTemplate` parses the request/response body as JSON, depending on whether you configure a `requestTransformation` or `responseTransformation`. If Gloo Edge fails to parse the request/response body as JSON, it returns a `400 Bad Request` error.
+
+If you want to skip this behavior, you can:
+* Set the [`parseBodyBehavior`](#parsebodybehavior) attribute to `DontParse`. Edge treats the body as plain text and does not parse it.
+* Set the [`ignoreErrorOnParse`](#ignoreerroronparse) attribute to `true`. Edge parses the body as JSON, but does not return an error if the body is not valid JSON.
+* Enable [`passthrough`](#passthrough). Edge does not parse the body.
+{{% /notice %}}
 ##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
 

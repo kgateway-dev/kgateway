@@ -28,6 +28,7 @@ Configure rate-limits for requests that match this route. This is a Gloo Enterpr
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
   -x, --index uint32               edit the route with this index in the virtual service route list
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")

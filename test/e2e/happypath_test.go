@@ -7,11 +7,11 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -20,12 +20,13 @@ import (
 	errors "github.com/rotisserie/eris"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
+	routerV1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
+	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -185,6 +186,61 @@ var _ = Describe("Happy path", func() {
 					Expect(statsString).To(ContainSubstring("vhost.virt1.vcluster.test-vc."))
 				})
 
+				It("it correctly passes the suppress envoy headers config", func() {
+					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+					// configuring an http listener option to set suppressEnvoyHeaders to true
+					//projects/gloo/api/v1/options/router/router.proto
+					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
+						Router: &routerV1.Router{
+							SuppressEnvoyHeaders: wrapperspb.Bool(true),
+						},
+					}
+
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{
+						Ctx: ctx,
+					})
+					Expect(err).NotTo(HaveOccurred())
+
+					TestUpstreamReachable()
+
+					// This will hit the virtual host with the above virtual cluster config
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(response.Header).NotTo(HaveKey("X-Envoy-Upstream-Service-Time"))
+
+					cfg, err := envoyInstance.ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+
+					// We expect the envoy configuration to contain these properties in the configuration dump
+					Expect(cfg).To(MatchRegexp("\"suppress_envoy_headers\": true"))
+
+				})
+
+				It("it correctly DID NOT pass the suppress envoy headers config", func() {
+					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+
+					// Set a virtual cluster listener that is blank and has no options
+					proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{}
+
+					_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{
+						Ctx: ctx,
+					})
+					Expect(err).NotTo(HaveOccurred())
+					TestUpstreamReachable()
+
+					// This will hit the virtual host with the above virtual cluster config
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(response.Header).To(HaveKey("X-Envoy-Upstream-Service-Time"))
+
+					cfg, err := envoyInstance.ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+
+					// We expect the envoy configuration to NOT contain these properties in the configuration dump
+					Expect(cfg).To(Not(MatchRegexp("\"suppress_envoy_headers\": true")))
+				})
+
 				It("passes a health check", func() {
 					proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
@@ -251,9 +307,9 @@ var _ = Describe("Happy path", func() {
 							},
 							Kind: &gloov1.Secret_Tls{
 								Tls: &gloov1.TlsSecret{
-									PrivateKey: gloohelpers.PrivateKey(),
-									CertChain:  gloohelpers.Certificate(),
-									RootCa:     gloohelpers.Certificate(),
+									PrivateKey: testhelpers.PrivateKey(),
+									CertChain:  testhelpers.Certificate(),
+									RootCa:     testhelpers.Certificate(),
 								},
 							},
 						}
@@ -362,7 +418,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						// eventually the proxy is rejected
-						gloohelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
+						testhelpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
 							return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 						})
 					})
@@ -371,9 +427,9 @@ var _ = Describe("Happy path", func() {
 
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
-					if os.Getenv("RUN_KUBE_TESTS") != "1" {
-						Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-					}
+					testhelpers.ValidateRequirementsAndNotifyGinkgo(
+						testhelpers.Kubernetes("Uses a Kubernetes cluster"),
+					)
 				})
 
 				var (
@@ -484,7 +540,7 @@ var _ = Describe("Happy path", func() {
 						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 						Expect(err).NotTo(HaveOccurred())
 
-						gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 							return getUpstream()
 						}, "20s", ".5s")
 					})
@@ -564,7 +620,7 @@ var _ = Describe("Happy path", func() {
 					})
 
 					It("watch all namespaces", func() {
-						gloohelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						testhelpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 							return getUpstream()
 						})
 

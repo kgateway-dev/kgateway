@@ -18,7 +18,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -40,10 +39,9 @@ const (
 var _ = Describe("Gateway", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		writeNamespace string
+		ctx         context.Context
+		cancel      context.CancelFunc
+		testClients services.TestClients
 
 		vsMetric = metrics.Names[gatewayv1.VirtualServiceGVK]
 	)
@@ -63,8 +61,6 @@ var _ = Describe("Gateway", func() {
 	Describe("in memory", func() {
 
 		BeforeEach(func() {
-			validationPort := services.AllocateGlooPort()
-			writeNamespace = defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: writeNamespace,
 				NsToWatch: []string{"default", writeNamespace},
@@ -72,15 +68,7 @@ var _ = Describe("Gateway", func() {
 					DisableFds: true,
 					DisableUds: true,
 				},
-				ValidationPort: validationPort,
 				Settings: &gloov1.Settings{
-					Gateway: &gloov1.GatewayOptions{
-						Validation: &gloov1.GatewayOptions_ValidationOptions{
-							// Enable strict validation,
-							AlwaysAccept:              &wrappers.BoolValue{Value: false},
-							ProxyValidationServerAddr: fmt.Sprintf("127.0.0.1:%v", validationPort),
-						},
-					},
 					// Record the config status for virtual services. Use the resource name as a
 					// label on the metric so that a unique time series is tracked for each VS
 					ObservabilityOptions: &gloov1.Settings_ObservabilityOptions{
@@ -129,60 +117,6 @@ var _ = Describe("Gateway", func() {
 					err := testClients.GatewayClient.Delete(gw.GetMetadata().GetNamespace(), gw.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
 					Expect(err).NotTo(HaveOccurred())
 				}
-			})
-
-			It("should disable grpc web filter", func() {
-				gatewayClient := testClients.GatewayClient
-				gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred())
-
-				for _, g := range gw {
-					httpGateway := g.GetHttpGateway()
-					if httpGateway != nil {
-						httpGateway.Options = &gloov1.HttpListenerOptions{
-							GrpcWeb: &grpc_web.GrpcWeb{
-								Disable: true,
-							},
-						}
-					}
-					Eventually(func() error {
-						current, err := gatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-						if err != nil {
-							return err
-						}
-						g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
-						_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-						return err
-					}, "5s", "0.3s").ShouldNot(HaveOccurred())
-				}
-
-				// write a virtual service so we have a proxy
-				vs := getTrivialVirtualServiceForUpstream(writeNamespace, &core.ResourceRef{Name: "test", Namespace: "test"})
-				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-
-				// make sure it propagates to proxy
-				Eventually(
-					func() (int, error) {
-						numdisable := 0
-						proxy, err := testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-						if err != nil {
-							return 0, err
-						}
-						for _, l := range proxy.Listeners {
-							if h := l.GetHttpListener(); h != nil {
-								if p := h.GetOptions(); p != nil {
-									if grpcweb := p.GetGrpcWeb(); grpcweb != nil {
-										if grpcweb.Disable {
-											numdisable++
-										}
-									}
-								}
-							}
-						}
-						return numdisable, nil
-					}, "5s", "0.1s").Should(Equal(2))
-
 			})
 
 			It("should create 2 gateways (1 ssl)", func() {
@@ -595,7 +529,7 @@ var _ = Describe("Gateway", func() {
 
 					It("should work with ssl", func() {
 						// Check tls inspector has not been added yet
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 						vs := getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
 						vs.SslConfig = &gloov1.SslConfig{
@@ -612,7 +546,7 @@ var _ = Describe("Gateway", func() {
 
 						TestUpstreamSslReachable()
 
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 					})
 				})
 			})
@@ -703,7 +637,7 @@ var _ = Describe("Gateway", func() {
 
 				It("should work with ssl", func() {
 					// Check tls inspector has not been added yet
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 					host := &gloov1.TcpHost{
 						Name: "one",
@@ -728,29 +662,21 @@ var _ = Describe("Gateway", func() {
 					}
 
 					// Update gateway with tcp hosts
-					gatewayClient := testClients.GatewayClient
-					gw, err := gatewayClient.List(writeNamespace, clients.ListOpts{})
+					tcpGatewayRef := gatewaydefaults.DefaultTcpSslGateway(writeNamespace).GetMetadata().Ref()
+					err := gloohelpers.PatchResource(
+						ctx,
+						tcpGatewayRef,
+						func(resource resources.Resource) resources.Resource {
+							gw := resource.(*gatewayv1.Gateway)
+							gw.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{host}
+							return gw
+						},
+						testClients.GatewayClient.BaseClient(),
+					)
 					Expect(err).NotTo(HaveOccurred())
 
-					for _, g := range gw {
-						tcpGateway := g.GetTcpGateway()
-						if tcpGateway != nil {
-							tcpGateway.TcpHosts = []*gloov1.TcpHost{host}
-						}
-						Eventually(func() error {
-							current, err := gatewayClient.Read(g.Metadata.Namespace, g.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-							if err != nil {
-								return err
-							}
-							g.Metadata.ResourceVersion = current.Metadata.ResourceVersion
-							_, err = gatewayClient.Write(g, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-							return err
-						}, "5s", "0.3s").ShouldNot(HaveOccurred())
-
-					}
-
 					// Check tls inspector is correctly configured
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 
 					TestUpstreamSslReachableTcp()
 				})
@@ -1113,7 +1039,7 @@ var _ = Describe("Gateway", func() {
 
 					It("should work with ssl if ssl config is present in matcher", func() {
 						// Check tls inspector has not been added yet
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 						sslConfig := &gloov1.SslConfig{
 							SslSecrets: &gloov1.SslConfig_SecretRef{
@@ -1156,7 +1082,7 @@ var _ = Describe("Gateway", func() {
 
 						TestUpstreamSslReachable()
 
-						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+						Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 					})
 				})
 			})
@@ -1197,7 +1123,7 @@ var _ = Describe("Gateway", func() {
 
 				It("should work with ssl", func() {
 					// Check tls inspector has not been added yet
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 					host := &gloov1.TcpHost{
 						Name: "tcp-host-one",
@@ -1268,7 +1194,7 @@ var _ = Describe("Gateway", func() {
 					}
 
 					// Check tls inspector is correctly configured
-					Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
 
 					TestUpstreamSslReachableTcp()
 				})

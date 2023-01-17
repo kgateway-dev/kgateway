@@ -66,6 +66,11 @@ var (
 		Short: "Checks Gloo resources for errors (requires Gloo running on Kubernetes)",
 	}
 
+	CHECK_CRD_COMMAND = cobra.Command{
+		Use:   "check-crds",
+		Short: "Checks Gloos CRDs for consistency against an official (or local) helm charts CRDs",
+	}
+
 	CREATE_COMMAND = cobra.Command{
 		Use:     "create",
 		Aliases: []string{"c"},

@@ -29,16 +29,20 @@ import (
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
+
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
-		tu             *v1helpers.TestUpstream
-		writeNamespace string
+		ctx           context.Context
+		cancel        context.CancelFunc
+		testClients   services.TestClients
+		envoyInstance *services.EnvoyInstance
+		tu            *v1helpers.TestUpstream
 	)
 
 	BeforeEach(func() {
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.LinuxOnly("Relies on FDS"),
+		)
+
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
@@ -47,7 +51,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
-		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
@@ -58,6 +61,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 				DisableFds: false,
 			},
 			Settings: &gloov1.Settings{
+				Gloo: &gloov1.GlooOptions{
+					// https://github.com/solo-io/gloo/issues/7577
+					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
+				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{
 					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
 				},
