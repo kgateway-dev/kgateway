@@ -455,6 +455,18 @@ spec:
                           protoDescriptorBin:
                             format: byte
                             type: string
+                          protoDescriptorConfigMap:
+                            properties:
+                              configMapRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              key:
+                                type: string
+                            type: object
                           services:
                             items:
                               type: string
@@ -880,6 +892,12 @@ spec:
                             type: object
                           requestTimeout:
                             type: string
+                        type: object
+                      router:
+                        properties:
+                          suppressEnvoyHeaders:
+                            nullable: true
+                            type: boolean
                         type: object
                       sanitizeClusterHeader:
                         nullable: true
@@ -1893,6 +1911,18 @@ spec:
                                     protoDescriptorBin:
                                       format: byte
                                       type: string
+                                    protoDescriptorConfigMap:
+                                      properties:
+                                        configMapRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        key:
+                                          type: string
+                                      type: object
                                     services:
                                       items:
                                         type: string
@@ -2318,6 +2348,12 @@ spec:
                                       type: object
                                     requestTimeout:
                                       type: string
+                                  type: object
+                                router:
+                                  properties:
+                                    suppressEnvoyHeaders:
+                                      nullable: true
+                                      type: boolean
                                   type: object
                                 sanitizeClusterHeader:
                                   nullable: true

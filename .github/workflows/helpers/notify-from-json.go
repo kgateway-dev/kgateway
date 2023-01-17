@@ -7,8 +7,12 @@
 // 	 all successes: '[]'
 //
 // Example usage:
-//   test_results="'""$(cat */test-out.json | jq -c --slurp .)""'"
-//   PARENT_JOB_URL="https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}" SLACKBOT_BEARER=${{ secrets.SLACKBOT_BEARER }} go run .github/workflows/helpers/notify-from-json.go $test_results
+// 	 export PARENT_JOB_URL=https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}
+// 	 export PREAMBLE="Gloo nightlies (dev)"
+// 	 export SLACKBOT_BEARER=${{ secrets.SLACKBOT_BEARER }}
+// 	 export SLACK_CHANNEL=C0314KESVNV
+// 	 test_results="$(cat */test-out.json | jq -c --slurp .)"
+// 	 go run .github/workflows/helpers/notify-from-json.go $test_results
 
 package main
 
@@ -18,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Job struct {
@@ -29,9 +34,6 @@ type Payload struct {
 	Channel string `json:"channel"`
 	Text    string `json:"text"`
 }
-
-const SLACK_TESTING_CHANNEL = "C0314KESVNV" // # slack-integration-testing
-const SLACK_CHANNEL = "C04CJMXAH7A"         // # edge-nightly-results
 
 func main() {
 	var jobs []Job
@@ -46,31 +48,44 @@ func main() {
 
 func send_success() {
 	message_slack(Payload{
-		Channel: SLACK_CHANNEL, // change to SLACK_TESTING_CHANNEL to not spam standard watch channel
-		Text:    os.ExpandEnv(":large_green_circle: <$PARENT_JOB_URL|Gloo OSS nightlies> have all passed!"),
+		Channel: os.ExpandEnv("$SLACK_CHANNEL"),
+		Text:    os.ExpandEnv(":large_green_circle: <$PARENT_JOB_URL|$PREAMBLE> have all passed!"),
 	})
 }
 func send_failure(jobs []Job) {
-	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|Gloo OSS nightlies> have failed in %v test suites: (", len(jobs))
+	text := fmt.Sprintf(":red_circle: <$PARENT_JOB_URL|$PREAMBLE> have failed in %v test suites: (", len(jobs))
 	for _, job := range jobs {
 		text += fmt.Sprintf("<%s|%s>, ", job.Url, job.Name)
 	}
 	text = text[:len(text)-2] + ")"
 
 	message_slack(Payload{
-		Channel: SLACK_CHANNEL, // change to SLACK_TESTING_CHANNEL to not spam standard watch channel
+		Channel: os.ExpandEnv("$SLACK_CHANNEL"),
 		Text:    os.ExpandEnv(text),
 	})
 }
 
 func message_slack(data Payload) {
-	payloadBytes, _ := json.Marshal(data)
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
 	body := bytes.NewReader(payloadBytes)
 
-	req, _ := http.NewRequest("POST", "https://slack.com/api/chat.postMessage", body)
+	req, err := http.NewRequest("POST", "https://slack.com/api/chat.postMessage", body)
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Authorization", os.ExpandEnv("Bearer $SLACKBOT_BEARER"))
 
-	resp, _ := http.DefaultClient.Do(req)
+	var netClient = &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	resp, err := netClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
 	defer resp.Body.Close()
 }
