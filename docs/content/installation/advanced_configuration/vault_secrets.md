@@ -16,9 +16,7 @@ Want to use Vault with Gloo Edge outside of Kubernetes instead? You can provide 
 
 Edit the `default` settings resource so Gloo Edge reads and writes secrets using HashiCorp Vault.
 
-**Before you begin**: 
-
-Set up a Vault instance either in your Gloo Edge cluster or externally. Your instance must be routable on an address that you provide to Gloo Edge in the following steps, such as `http://vault:8200`.
+**Before you begin**: [Set up a Vault instance](https://developer.hashicorp.com/vault/tutorials/getting-started/getting-started-install) either in your Gloo Edge cluster or externally. Your instance must be routable on an address that you provide to Gloo Edge in the following steps, such as `http://vault:8200`.
 
 1. Edit the `default` settings resource.
    ```shell script
