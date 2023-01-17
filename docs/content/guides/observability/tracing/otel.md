@@ -16,7 +16,10 @@ This guide uses the Zipkin tracing platform as an example to show how to set up 
 
 **Before you begin**: Create or update your Gloo Edge installation to version 1.13.0 or later.
 
-1. Download the [otel-config.yaml](otel-config.yaml) file, which contains the configmaps, daemonset, deployment, and service for the OTel collector and agents. You can optionally check out the contents to see the OTel collector configuration. For example, in the `otel-collector-conf` configmap that begins on line 92, the `data.otel-agent-config.receivers` section enables gRPC and HTTP protocols for data collection. The `data.otel-agent-config.exporters` section enables logging data to Zipkin for tracing and to the Edge console and the echo server for debugging. For more information about this configuration, see the [OTel documentation](https://opentelemetry.io/docs/collector/configuration/).
+1. Download the [otel-config.yaml](otel-config.yaml) file, which contains the configmaps, daemonset, deployment, and service for the OTel collector and agents. You can optionally check out the contents to see the OTel collector configuration.
+   * For example, in the `otel-collector-conf` configmap that begins on line 92, the `data.otel-agent-config.receivers` section enables gRPC and HTTP protocols for data collection. The `data.otel-agent-config.exporters` section enables logging data to Zipkin for tracing and to the Edge console for debugging.
+   * In the `otel-collector` deployment, you can comment out the ports that begin on line 194 so that only the tracing platform you want to use is enabled, such as Zipkin for this guide.
+   * For more information about this configuration, see the [OTel documentation](https://opentelemetry.io/docs/collector/configuration/).
    ```sh
    cd ~/Downloads
    open otel-config.yaml
@@ -65,12 +68,6 @@ This guide uses the Zipkin tracing platform as an example to show how to set up 
        hosts:
          - addr: "otel-collector"
            port: 4317
-     # kube:
-     #   selector:
-     #     app: otel-collector
-     #   serviceName: otel-collector
-     #   serviceNamespace: gloo-system
-     #   servicePort: 4317
    ---
    apiVersion: gateway.solo.io/v1
    kind: Gateway

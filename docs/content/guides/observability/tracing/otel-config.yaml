@@ -123,9 +123,6 @@ data:
         endpoint: "http://zipkin:9411/api/v2/spans"
         tls:
           insecure: true
-      otlphttp:
-        endpoint: http://echo-server:8080
-        compression: none
     service:
       extensions: [zpages, memory_ballast]
       pipelines:
@@ -194,7 +191,7 @@ spec:
           requests:
             cpu: 200m
             memory: 400Mi
-        ports:
+        ports: # Comment out ports for platforms as needed.
         - containerPort: 55679 # Default endpoint for ZPages.
         - containerPort: 4317 # Default endpoint for OpenTelemetry receiver.
         - containerPort: 14250 # Default endpoint for Jaeger gRPC receiver.
