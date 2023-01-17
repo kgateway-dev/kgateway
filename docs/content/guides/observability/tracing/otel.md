@@ -10,7 +10,9 @@ OTel provides a standardized protocol for reporting traces, and a standardized c
 
 To get started, deploy an OTel collector and agents to your Gloo Edge cluster to trace requests, and modify your gateway proxy with the OTel tracing configuration. Then, use a tracing provider to collect and visualize the sampled spans.
 
-{{% notice note %}} 
+{{% notice note %}}
+The OTel integration is supported as a beta feature in Gloo Edge 1.13.0 and later.
+</br></br>
 This guide uses the Zipkin tracing platform as an example to show how to set up tracing with OTel in Gloo Edge. To set up other tracing platforms, refer to the platform-specific documentation.
 {{% /notice %}}
 
