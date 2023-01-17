@@ -73,8 +73,6 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
 
-	testHelper.GlooctlExecName = "glooctl-darwin-arm64"
-
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values))
 	Expect(err).NotTo(HaveOccurred())
 
