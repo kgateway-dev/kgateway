@@ -70,6 +70,42 @@ type ResourceRequirements struct {
 	Requests *ResourceAllocation `json:"requests,omitempty" desc:"resource requests of this container"`
 }
 
+type SecuritySpec struct {
+	FsGroup             *int                           ``
+	FsGroupChangePolicy *string                        ``
+	RunAsGroup          *int                           ``
+	RunAsNonRoot        *bool                          ``
+	RunAsUser           *int                           ``
+	SupplementalGroups  []int                          ``
+	SELinuxOptions      *SELinuxOptions                ``
+	SeccompProfile      *SeccompProfile                ``
+	Sysctls             []Sysctl                       ``
+	WindowsOptions      *WindowsSecurityContextOptions ``
+}
+
+type SELinuxOptions struct {
+	Level *string ``
+	Role  *string ``
+	Type  *string ``
+	User  *string ``
+}
+
+type SeccompProfile struct {
+	LocalhostProfile *string ``
+	Type             *string ``
+}
+type Sysctl struct {
+	Name  *string ``
+	Value *string ``
+}
+
+type WindowsSecurityContextOptions struct {
+	GmsaCredentialSpec     *string ``
+	GmsaCredentialSpecName *string ``
+	HostProcess            *bool   ``
+	RunAsUserName          *string
+}
+
 type PodSpec struct {
 	RestartPolicy     *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
 	PriorityClassName *string                `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
@@ -79,6 +115,7 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
+	SecurityContext   *SecuritySpec          ``
 }
 
 type JobSpec struct {

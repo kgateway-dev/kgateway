@@ -91,6 +91,41 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 {{- end -}}
 
+
+{{- define "gloo.securityContext" -}}
+securityContext:
+{{- with .fsGroup -}}
+    {{ printf "fsGroup: %.0f" (float64 .) | nindent 4 }}
+{{ end -}}
+{{ with .fsGroupChangePolicy }}
+  fsGroupChangePolicy: {{ . | nindent 4 }}
+{{ end -}}
+{{- with .runAsGroup -}}
+  runAsGroup: {{ . | nindent 4 }}
+{{ end -}}
+{{- with .runAsNonRoot -}}
+  runAsNonRoot: {{ . | nindent 4  }}
+{{ end -}}
+{{ with .runAsUser -}}
+  runAsUser: {{ printf "%.0f" (float64 .) | nindent 4 }}
+{{ end -}}
+{{- with .supplementalGroups -}}
+  supplementalGroups: {{ . | nindent 4 }}
+{{ end -}}
+{{- with .seLinuxOptions -}}
+  seLinuxOptions: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{- with .seccompProfile -}}
+  seccompProfile: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{- with .sysctls -}}
+  sysctls: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{- with .windowsOptions -}}
+  windowsOptions: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{ end -}}
+
 {{- /*
 This takes an array of three values:
 - the top context

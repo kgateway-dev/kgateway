@@ -56,19 +56,37 @@
 |settings.integrations.knative.proxy.affinity.NAME|interface|||
 |settings.integrations.knative.proxy.hostAliases[]|interface|||
 |settings.integrations.knative.proxy.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
-|settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
-|settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
-|settings.integrations.knative.proxy.resources.requests.cpu|string||amount of CPUs|
-|settings.integrations.knative.proxy.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|settings.integrations.knative.proxy.service.type|string|LoadBalancer|K8s service type|
-|settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
-|settings.integrations.knative.proxy.service.loadBalancerIP|string||IP address of the load balancer|
-|settings.integrations.knative.proxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
-|settings.integrations.knative.proxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
-|settings.integrations.knative.proxy.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|settings.integrations.knative.proxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|settings.integrations.knative.proxy.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy|int|||
+|settings.integrations.knative.proxy|string|||
+|settings.integrations.knative.proxy|int|||
+|settings.integrations.knative.proxy|bool|||
+|settings.integrations.knative.proxy|int|||
+|settings.integrations.knative.proxy[]|int|||
+|settings.integrations.knative.proxy[]|string|||
+|settings.integrations.knative.proxy[]|string|||
+|settings.integrations.knative.proxy[]|string|||
+|settings.integrations.knative.proxy[]|string|||
+|settings.integrations.knative.proxy[]|string|||
+|settings.integrations.knative.proxy[]|string|||
+|settings.integrations.knative.proxy[][]|string|||
+|settings.integrations.knative.proxy[][]|string|||
+|settings.integrations.knative.proxy[][]|string|||
+|settings.integrations.knative.proxy[][]|string|||
+|settings.integrations.knative.proxy[][]|bool|||
+|settings.integrations.knative.proxy[][]|string|||
+|settings.integrations.knative.proxy[][].resources.limits.memory|string||amount of memory|
+|settings.integrations.knative.proxy[][].resources.limits.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy[][].resources.requests.memory|string||amount of memory|
+|settings.integrations.knative.proxy[][].resources.requests.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy[][].service.type|string|LoadBalancer|K8s service type|
+|settings.integrations.knative.proxy[][].service.extraAnnotations.NAME|string||extra annotations to add to the service|
+|settings.integrations.knative.proxy[][].service.loadBalancerIP|string||IP address of the load balancer|
+|settings.integrations.knative.proxy[][].service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy[][].service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy[][].service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy[][].configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|settings.integrations.knative.proxy[][].deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeInternalAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the knative internal deployment.|
@@ -176,11 +194,29 @@
 |gloo.deployment.affinity.NAME|interface|||
 |gloo.deployment.hostAliases[]|interface|||
 |gloo.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gloo.deployment.resources.limits.memory|string||amount of memory|
-|gloo.deployment.resources.limits.cpu|string||amount of CPUs|
-|gloo.deployment.resources.requests.memory|string||amount of memory|
-|gloo.deployment.resources.requests.cpu|string||amount of CPUs|
-|gloo.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gloo.deployment|int|||
+|gloo.deployment|string|||
+|gloo.deployment|int|||
+|gloo.deployment|bool|||
+|gloo.deployment|int|||
+|gloo.deployment[]|int|||
+|gloo.deployment[]|string|||
+|gloo.deployment[]|string|||
+|gloo.deployment[]|string|||
+|gloo.deployment[]|string|||
+|gloo.deployment[]|string|||
+|gloo.deployment[]|string|||
+|gloo.deployment[][]|string|||
+|gloo.deployment[][]|string|||
+|gloo.deployment[][]|string|||
+|gloo.deployment[][]|string|||
+|gloo.deployment[][]|bool|||
+|gloo.deployment[][]|string|||
+|gloo.deployment[][].resources.limits.memory|string||amount of memory|
+|gloo.deployment[][].resources.limits.cpu|string||amount of CPUs|
+|gloo.deployment[][].resources.requests.memory|string||amount of memory|
+|gloo.deployment[][].resources.requests.cpu|string||amount of CPUs|
+|gloo.deployment[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -242,11 +278,29 @@
 |discovery.deployment.affinity.NAME|interface|||
 |discovery.deployment.hostAliases[]|interface|||
 |discovery.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|discovery.deployment.resources.limits.memory|string||amount of memory|
-|discovery.deployment.resources.limits.cpu|string||amount of CPUs|
-|discovery.deployment.resources.requests.memory|string||amount of memory|
-|discovery.deployment.resources.requests.cpu|string||amount of CPUs|
-|discovery.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|discovery.deployment|int|||
+|discovery.deployment|string|||
+|discovery.deployment|int|||
+|discovery.deployment|bool|||
+|discovery.deployment|int|||
+|discovery.deployment[]|int|||
+|discovery.deployment[]|string|||
+|discovery.deployment[]|string|||
+|discovery.deployment[]|string|||
+|discovery.deployment[]|string|||
+|discovery.deployment[]|string|||
+|discovery.deployment[]|string|||
+|discovery.deployment[][]|string|||
+|discovery.deployment[][]|string|||
+|discovery.deployment[][]|string|||
+|discovery.deployment[][]|string|||
+|discovery.deployment[][]|bool|||
+|discovery.deployment[][]|string|||
+|discovery.deployment[][].resources.limits.memory|string||amount of memory|
+|discovery.deployment[][].resources.limits.cpu|string||amount of CPUs|
+|discovery.deployment[][].resources.requests.memory|string||amount of memory|
+|discovery.deployment[][].resources.requests.cpu|string||amount of CPUs|
+|discovery.deployment[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.udsOptions.enabled|bool||Enable upstream discovery service. Defaults to true.|
 |discovery.udsOptions.watchLabels.NAME|string||Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS.|
@@ -292,28 +346,46 @@
 |gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
 |gateway.certGenJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
-|gateway.certGenJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
-|gateway.certGenJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
-|gateway.certGenJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
-|gateway.certGenJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
-|gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
-|gateway.certGenJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
-|gateway.certGenJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
-|gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
-|gateway.certGenJob.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
-|gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
-|gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished on the job. Defaults to true|
-|gateway.certGenJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gateway.certGenJob.resources.limits.memory|string||amount of memory|
-|gateway.certGenJob.resources.limits.cpu|string||amount of CPUs|
-|gateway.certGenJob.resources.requests.memory|string||amount of memory|
-|gateway.certGenJob.resources.requests.cpu|string||amount of CPUs|
-|gateway.certGenJob.runOnUpdate|bool|false|enable to run the job also on pre-upgrade|
-|gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
-|gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
-|gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
+|gateway.certGenJob|int|||
+|gateway.certGenJob|string|||
+|gateway.certGenJob|int|||
+|gateway.certGenJob|bool|||
+|gateway.certGenJob|int|||
+|gateway.certGenJob[]|int|||
+|gateway.certGenJob[]|string|||
+|gateway.certGenJob[]|string|||
+|gateway.certGenJob[]|string|||
+|gateway.certGenJob[]|string|||
+|gateway.certGenJob[]|string|||
+|gateway.certGenJob[]|string|||
+|gateway.certGenJob[][]|string|||
+|gateway.certGenJob[][]|string|||
+|gateway.certGenJob[][]|string|||
+|gateway.certGenJob[][]|string|||
+|gateway.certGenJob[][]|bool|||
+|gateway.certGenJob[][]|string|||
+|gateway.certGenJob[][].activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
+|gateway.certGenJob[][].backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
+|gateway.certGenJob[][].completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
+|gateway.certGenJob[][].manualSelector|bool||Controls generation of pod labels and pod selectors.|
+|gateway.certGenJob[][].parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
+|gateway.certGenJob[][].ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.certGenJob[][].extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
+|gateway.certGenJob[][].extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
+|gateway.certGenJob[][].kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
+|gateway.certGenJob[][].mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen job.|
+|gateway.certGenJob[][].enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
+|gateway.certGenJob[][].setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished on the job. Defaults to true|
+|gateway.certGenJob[][].floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
+|gateway.certGenJob[][].runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gateway.certGenJob[][].resources.limits.memory|string||amount of memory|
+|gateway.certGenJob[][].resources.limits.cpu|string||amount of CPUs|
+|gateway.certGenJob[][].resources.requests.memory|string||amount of memory|
+|gateway.certGenJob[][].resources.requests.cpu|string||amount of CPUs|
+|gateway.certGenJob[][].runOnUpdate|bool|false|enable to run the job also on pre-upgrade|
+|gateway.certGenJob[][].cron.enabled|bool|false|enable the cronjob|
+|gateway.certGenJob[][].cron.schedule|string|* * * * *|Cron job scheduling|
+|gateway.certGenJob[][].cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
 |gateway.rolloutJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.rolloutJob.priorityClassName|string||name of a defined priority class|
 |gateway.rolloutJob.nodeName|string||name of node to run on|
@@ -326,30 +398,48 @@
 |gateway.rolloutJob.affinity.NAME|interface|||
 |gateway.rolloutJob.hostAliases[]|interface|||
 |gateway.rolloutJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
-|gateway.rolloutJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
-|gateway.rolloutJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
-|gateway.rolloutJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
-|gateway.rolloutJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
-|gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
-|gateway.rolloutJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
-|gateway.rolloutJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
-|gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
-|gateway.rolloutJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|gateway.rolloutJob.image.repository|string|kubectl|The image repository (name) for the container.|
-|gateway.rolloutJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gateway.rolloutJob.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gateway.rolloutJob.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gateway.rolloutJob.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gateway.rolloutJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gateway.rolloutJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gateway.rolloutJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|gateway.rolloutJob.resources.limits.memory|string||amount of memory|
-|gateway.rolloutJob.resources.limits.cpu|string||amount of CPUs|
-|gateway.rolloutJob.resources.requests.memory|string||amount of memory|
-|gateway.rolloutJob.resources.requests.cpu|string||amount of CPUs|
-|gateway.rolloutJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gateway.rolloutJob|int|||
+|gateway.rolloutJob|string|||
+|gateway.rolloutJob|int|||
+|gateway.rolloutJob|bool|||
+|gateway.rolloutJob|int|||
+|gateway.rolloutJob[]|int|||
+|gateway.rolloutJob[]|string|||
+|gateway.rolloutJob[]|string|||
+|gateway.rolloutJob[]|string|||
+|gateway.rolloutJob[]|string|||
+|gateway.rolloutJob[]|string|||
+|gateway.rolloutJob[]|string|||
+|gateway.rolloutJob[][]|string|||
+|gateway.rolloutJob[][]|string|||
+|gateway.rolloutJob[][]|string|||
+|gateway.rolloutJob[][]|string|||
+|gateway.rolloutJob[][]|bool|||
+|gateway.rolloutJob[][]|string|||
+|gateway.rolloutJob[][].activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
+|gateway.rolloutJob[][].backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
+|gateway.rolloutJob[][].completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
+|gateway.rolloutJob[][].manualSelector|bool||Controls generation of pod labels and pod selectors.|
+|gateway.rolloutJob[][].parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
+|gateway.rolloutJob[][].ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.rolloutJob[][].extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
+|gateway.rolloutJob[][].extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
+|gateway.rolloutJob[][].enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
+|gateway.rolloutJob[][].image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|gateway.rolloutJob[][].image.repository|string|kubectl|The image repository (name) for the container.|
+|gateway.rolloutJob[][].image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gateway.rolloutJob[][].image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gateway.rolloutJob[][].image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gateway.rolloutJob[][].image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gateway.rolloutJob[][].image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gateway.rolloutJob[][].image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gateway.rolloutJob[][].image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gateway.rolloutJob[][].resources.limits.memory|string||amount of memory|
+|gateway.rolloutJob[][].resources.limits.cpu|string||amount of CPUs|
+|gateway.rolloutJob[][].resources.requests.memory|string||amount of memory|
+|gateway.rolloutJob[][].resources.requests.cpu|string||amount of CPUs|
+|gateway.rolloutJob[][].floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
+|gateway.rolloutJob[][].runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |gateway.cleanupJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.cleanupJob.priorityClassName|string||name of a defined priority class|
 |gateway.cleanupJob.nodeName|string||name of node to run on|
@@ -362,30 +452,48 @@
 |gateway.cleanupJob.affinity.NAME|interface|||
 |gateway.cleanupJob.hostAliases[]|interface|||
 |gateway.cleanupJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
-|gateway.cleanupJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
-|gateway.cleanupJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
-|gateway.cleanupJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
-|gateway.cleanupJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
-|gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
-|gateway.cleanupJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
-|gateway.cleanupJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
-|gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
-|gateway.cleanupJob.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|gateway.cleanupJob.image.repository|string|kubectl|The image repository (name) for the container.|
-|gateway.cleanupJob.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gateway.cleanupJob.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gateway.cleanupJob.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gateway.cleanupJob.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gateway.cleanupJob.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gateway.cleanupJob.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gateway.cleanupJob.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|gateway.cleanupJob.resources.limits.memory|string||amount of memory|
-|gateway.cleanupJob.resources.limits.cpu|string||amount of CPUs|
-|gateway.cleanupJob.resources.requests.memory|string||amount of memory|
-|gateway.cleanupJob.resources.requests.cpu|string||amount of CPUs|
-|gateway.cleanupJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gateway.cleanupJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gateway.cleanupJob|int|||
+|gateway.cleanupJob|string|||
+|gateway.cleanupJob|int|||
+|gateway.cleanupJob|bool|||
+|gateway.cleanupJob|int|||
+|gateway.cleanupJob[]|int|||
+|gateway.cleanupJob[]|string|||
+|gateway.cleanupJob[]|string|||
+|gateway.cleanupJob[]|string|||
+|gateway.cleanupJob[]|string|||
+|gateway.cleanupJob[]|string|||
+|gateway.cleanupJob[]|string|||
+|gateway.cleanupJob[][]|string|||
+|gateway.cleanupJob[][]|string|||
+|gateway.cleanupJob[][]|string|||
+|gateway.cleanupJob[][]|string|||
+|gateway.cleanupJob[][]|bool|||
+|gateway.cleanupJob[][]|string|||
+|gateway.cleanupJob[][].activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
+|gateway.cleanupJob[][].backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
+|gateway.cleanupJob[][].completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
+|gateway.cleanupJob[][].manualSelector|bool||Controls generation of pod labels and pod selectors.|
+|gateway.cleanupJob[][].parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
+|gateway.cleanupJob[][].ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.cleanupJob[][].extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
+|gateway.cleanupJob[][].extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
+|gateway.cleanupJob[][].enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
+|gateway.cleanupJob[][].image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|gateway.cleanupJob[][].image.repository|string|kubectl|The image repository (name) for the container.|
+|gateway.cleanupJob[][].image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gateway.cleanupJob[][].image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gateway.cleanupJob[][].image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gateway.cleanupJob[][].image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gateway.cleanupJob[][].image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gateway.cleanupJob[][].image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gateway.cleanupJob[][].image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gateway.cleanupJob[][].resources.limits.memory|string||amount of memory|
+|gateway.cleanupJob[][].resources.limits.cpu|string||amount of CPUs|
+|gateway.cleanupJob[][].resources.requests.memory|string||amount of memory|
+|gateway.cleanupJob[][].resources.requests.cpu|string||amount of CPUs|
+|gateway.cleanupJob[][].floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
+|gateway.cleanupJob[][].runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |gateway.updateValues|bool||if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
@@ -428,7 +536,25 @@
 |gatewayProxies.NAME.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.NAME.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.NAME.kind.deployment|int|||
+|gatewayProxies.NAME.kind.deployment|string|||
+|gatewayProxies.NAME.kind.deployment|int|||
+|gatewayProxies.NAME.kind.deployment|bool|||
+|gatewayProxies.NAME.kind.deployment|int|||
+|gatewayProxies.NAME.kind.deployment[]|int|||
+|gatewayProxies.NAME.kind.deployment[]|string|||
+|gatewayProxies.NAME.kind.deployment[]|string|||
+|gatewayProxies.NAME.kind.deployment[]|string|||
+|gatewayProxies.NAME.kind.deployment[]|string|||
+|gatewayProxies.NAME.kind.deployment[]|string|||
+|gatewayProxies.NAME.kind.deployment[]|string|||
+|gatewayProxies.NAME.kind.deployment[][]|string|||
+|gatewayProxies.NAME.kind.deployment[][]|string|||
+|gatewayProxies.NAME.kind.deployment[][]|string|||
+|gatewayProxies.NAME.kind.deployment[][]|string|||
+|gatewayProxies.NAME.kind.deployment[][]|bool|||
+|gatewayProxies.NAME.kind.deployment[][]|string|||
+|gatewayProxies.NAME.kind.deployment[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
@@ -627,7 +753,25 @@
 |gatewayProxies.gatewayProxy.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gatewayProxies.gatewayProxy.kind.deployment|int|||
+|gatewayProxies.gatewayProxy.kind.deployment|string|||
+|gatewayProxies.gatewayProxy.kind.deployment|int|||
+|gatewayProxies.gatewayProxy.kind.deployment|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment|int|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|int|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[][]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[][]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[][]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[][]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[][]|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment[][]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
@@ -846,11 +990,29 @@
 |ingress.deployment.affinity.NAME|interface|||
 |ingress.deployment.hostAliases[]|interface|||
 |ingress.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|ingress.deployment.resources.limits.memory|string||amount of memory|
-|ingress.deployment.resources.limits.cpu|string||amount of CPUs|
-|ingress.deployment.resources.requests.memory|string||amount of memory|
-|ingress.deployment.resources.requests.cpu|string||amount of CPUs|
-|ingress.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|ingress.deployment|int|||
+|ingress.deployment|string|||
+|ingress.deployment|int|||
+|ingress.deployment|bool|||
+|ingress.deployment|int|||
+|ingress.deployment[]|int|||
+|ingress.deployment[]|string|||
+|ingress.deployment[]|string|||
+|ingress.deployment[]|string|||
+|ingress.deployment[]|string|||
+|ingress.deployment[]|string|||
+|ingress.deployment[]|string|||
+|ingress.deployment[][]|string|||
+|ingress.deployment[][]|string|||
+|ingress.deployment[][]|string|||
+|ingress.deployment[][]|string|||
+|ingress.deployment[][]|bool|||
+|ingress.deployment[][]|string|||
+|ingress.deployment[][].resources.limits.memory|string||amount of memory|
+|ingress.deployment[][].resources.limits.cpu|string||amount of CPUs|
+|ingress.deployment[][].resources.requests.memory|string||amount of memory|
+|ingress.deployment[][].resources.requests.cpu|string||amount of CPUs|
+|ingress.deployment[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass.|
 |ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Edge Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
@@ -902,11 +1064,29 @@
 |ingressProxy.deployment.affinity.NAME|interface|||
 |ingressProxy.deployment.hostAliases[]|interface|||
 |ingressProxy.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|ingressProxy.deployment.resources.limits.memory|string||amount of memory|
-|ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
-|ingressProxy.deployment.resources.requests.memory|string||amount of memory|
-|ingressProxy.deployment.resources.requests.cpu|string||amount of CPUs|
-|ingressProxy.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|ingressProxy.deployment|int|||
+|ingressProxy.deployment|string|||
+|ingressProxy.deployment|int|||
+|ingressProxy.deployment|bool|||
+|ingressProxy.deployment|int|||
+|ingressProxy.deployment[]|int|||
+|ingressProxy.deployment[]|string|||
+|ingressProxy.deployment[]|string|||
+|ingressProxy.deployment[]|string|||
+|ingressProxy.deployment[]|string|||
+|ingressProxy.deployment[]|string|||
+|ingressProxy.deployment[]|string|||
+|ingressProxy.deployment[][]|string|||
+|ingressProxy.deployment[][]|string|||
+|ingressProxy.deployment[][]|string|||
+|ingressProxy.deployment[][]|string|||
+|ingressProxy.deployment[][]|bool|||
+|ingressProxy.deployment[][]|string|||
+|ingressProxy.deployment[][].resources.limits.memory|string||amount of memory|
+|ingressProxy.deployment[][].resources.limits.cpu|string||amount of CPUs|
+|ingressProxy.deployment[][].resources.requests.memory|string||amount of memory|
+|ingressProxy.deployment[][].resources.requests.cpu|string||amount of CPUs|
+|ingressProxy.deployment[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingressProxy.configMap.data.NAME|string|||
 |ingressProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |ingressProxy.tracing|string|||
@@ -976,11 +1156,29 @@
 |accessLogger.affinity.NAME|interface|||
 |accessLogger.hostAliases[]|interface|||
 |accessLogger.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|accessLogger.resources.limits.memory|string||amount of memory|
-|accessLogger.resources.limits.cpu|string||amount of CPUs|
-|accessLogger.resources.requests.memory|string||amount of memory|
-|accessLogger.resources.requests.cpu|string||amount of CPUs|
-|accessLogger.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|accessLogger|int|||
+|accessLogger|string|||
+|accessLogger|int|||
+|accessLogger|bool|||
+|accessLogger|int|||
+|accessLogger[]|int|||
+|accessLogger[]|string|||
+|accessLogger[]|string|||
+|accessLogger[]|string|||
+|accessLogger[]|string|||
+|accessLogger[]|string|||
+|accessLogger[]|string|||
+|accessLogger[][]|string|||
+|accessLogger[][]|string|||
+|accessLogger[][]|string|||
+|accessLogger[][]|string|||
+|accessLogger[][]|bool|||
+|accessLogger[][]|string|||
+|accessLogger[][].resources.limits.memory|string||amount of memory|
+|accessLogger[][].resources.limits.cpu|string||amount of CPUs|
+|accessLogger[][].resources.requests.memory|string||amount of memory|
+|accessLogger[][].resources.requests.cpu|string||amount of CPUs|
+|accessLogger[][].kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |global.image.tag|string||The image tag for the container.|
 |global.image.repository|string||The image repository (name) for the container.|
 |global.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
