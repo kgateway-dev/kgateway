@@ -71,10 +71,10 @@ type ResourceRequirements struct {
 }
 
 type SecuritySpec struct {
-	FsGroup             *int                           ``
-	FsGroupChangePolicy *string                        ``
-	RunAsGroup          *int                           ``
-	RunAsNonRoot        *bool                          ``
+	FsGroup             *int                           `json:"fsGroup,omitempty"`
+	FsGroupChangePolicy *string                        `json:"fsGroupChangePolicy,omitempty"`
+	RunAsGroup          *int                           `json:"runAsGroup,omitempty"`
+	RunAsNonRoot        *bool                          `json:"runAsNonRoot,omitempty"`
 	RunAsUser           *int                           ``
 	SupplementalGroups  []int                          ``
 	SELinuxOptions      *SELinuxOptions                ``
@@ -115,7 +115,7 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	SecurityContext   *SecuritySpec          ``
+	*SecuritySpec
 }
 
 type JobSpec struct {

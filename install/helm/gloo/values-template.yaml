@@ -55,12 +55,21 @@ discovery:
   fdsMode: WHITELIST
   serviceAccount: {}
   deployment:
+    securitySpec:
+      fsGroup: 54321 
     image:
       repository: discovery
     replicas: 1
-    runAsUser: 10101
     enablePodSecurityContext: true
-    fsGroup: 10101
+    fsGroup: 10102
+    fsGroupChangePolicy: "33333"
+    runAsUser: 10101
+    deploymentSpec:
+      deploymentSpecSansResources:
+        podSpec:
+          securityContext:
+            fsGroupChangePolicy: 666666
+
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
