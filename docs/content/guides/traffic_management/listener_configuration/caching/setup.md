@@ -71,7 +71,7 @@ Configure your gateway to cache responses for all upstreams that are served by a
      name: gateway-proxy
      namespace: gloo-system
    spec:
-     bindAddress: ‘::’
+     bindAddress: '::'
      bindPort: 8080
      proxyNames:
      - gateway-proxy
