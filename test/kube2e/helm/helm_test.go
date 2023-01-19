@@ -3,8 +3,8 @@ package helm_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,9 +15,11 @@ import (
 	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
@@ -35,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	admission_v1_types "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
+	core_v1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 )
@@ -67,6 +70,8 @@ var _ = Describe("Kube2e: helm", func() {
 		fromRelease string
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
+		// function to get the helm values override file
+		valuesOverrideFunc func() (string, func())
 	)
 
 	BeforeEach(func() {
@@ -90,13 +95,15 @@ var _ = Describe("Kube2e: helm", func() {
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 		strictValidation = false
+
+		valuesOverrideFunc = kube2e.GetHelmValuesOverrideFile
 	})
 
 	JustBeforeEach(func() {
 		if fromRelease == "" && targetVersion != "" {
 			fromRelease = targetVersion
 		}
-		installGloo(testHelper, chartUri, fromRelease, strictValidation)
+		installGloo(testHelper, chartUri, fromRelease, strictValidation, valuesOverrideFunc)
 	})
 
 	AfterEach(func() {
@@ -290,6 +297,58 @@ var _ = Describe("Kube2e: helm", func() {
 
 	})
 
+	Context("installing with large proto descriptor", func() {
+		var gatewayClient gatewayv1kube.GatewayV1Interface
+		var configMapClient core_v1_types.ConfigMapInterface
+
+		BeforeEach(func() {
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			// initialize gateway client
+			gatewayClient, err = gatewayv1kube.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			// initialize configmap client
+			kubeClientset, err := kubernetes.NewForConfig(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			configMapClient = kubeClientset.CoreV1().ConfigMaps(testHelper.InstallNamespace)
+		})
+		Context("using protoDescrfiptorBin field", func() {
+			BeforeEach(func() {
+				valuesOverrideFunc = getHelmProtoDescriptorBinValuesOverrideFile
+			})
+			It("can install with large protoDescriptorBin", func() {
+				// check that the Gateway's protoDescriptorBin field was populated
+				gw, err := gatewayClient.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				// the field on the Gateway gets automatically decoded to the binary bytes, so we need to re-encode it to do the comparison
+				protoDescBytes := gw.Spec.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.Options.GrpcJsonTranscoder.DescriptorSet.(*grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin).ProtoDescriptorBin
+				encoded := base64.StdEncoding.EncodeToString(protoDescBytes)
+				Expect(encoded).To(Equal(getExampleProtoDescriptor()))
+			})
+		})
+		Context("using protoDescriptorConfigMap field", func() {
+			BeforeEach(func() {
+				valuesOverrideFunc = getHelmProtoDescriptorConfigMapValuesOverrideFile
+			})
+			It("can install with protoDescriptorConfigMap", func() {
+				// check that the Gateway's protoDescriptorConfigMap field was populated
+				gw, err := gatewayClient.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				protoDescConfigMap := gw.Spec.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.Options.GrpcJsonTranscoder.DescriptorSet.(*grpc_json.GrpcJsonTranscoder_ProtoDescriptorConfigMap).ProtoDescriptorConfigMap
+				Expect(protoDescConfigMap.GetConfigMapRef().GetName()).To(Equal("my-config-map"))
+				Expect(protoDescConfigMap.GetConfigMapRef().GetNamespace()).To(Equal("gloo-system"))
+				Expect(protoDescConfigMap.GetKey()).To(Equal("my-key"))
+
+				// check that the ConfigMap was created to store the proto descriptor
+				cm, err := configMapClient.Get(ctx, "my-config-map", metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cm.Data["my-key"]).To(Equal(getExampleProtoDescriptor()))
+			})
+		})
+	})
+
 	Context("applies all CRD manifests without an error", func() {
 
 		var crdsByFileName = map[string]v1.CustomResourceDefinition{}
@@ -406,8 +465,8 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 	return makeUnstructured(b.String())
 }
 
-func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool) {
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool, valuesOverrideFunc func() (string, func())) {
+	valueOverrideFile, cleanupFunc := valuesOverrideFunc()
 	defer cleanupFunc()
 
 	// construct helm args
@@ -487,7 +546,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 }
 
 func getHelmUpgradeValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+	values, err := os.CreateTemp("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = values.Write([]byte(`
@@ -526,6 +585,68 @@ gatewayProxies:
 	Expect(err).NotTo(HaveOccurred())
 
 	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
+
+func getHelmProtoDescriptorBinValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := os.CreateTemp("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	protoDescriptor := getExampleProtoDescriptor()
+	_, err = values.Write([]byte(`
+gatewayProxies:
+  gatewayProxy:
+    gatewaySettings:
+      customHttpGateway:
+        options:
+          grpcJsonTranscoder:
+            protoDescriptorBin: ` + protoDescriptor + `
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
+
+func getHelmProtoDescriptorConfigMapValuesOverrideFile() (filename string, cleanup func()) {
+	values, err := os.CreateTemp("", "values-*.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
+	protoDescriptor := getExampleProtoDescriptor()
+	_, err = values.Write([]byte(`
+gatewayProxies:
+  gatewayProxy:
+    gatewaySettings:
+      customHttpGateway:
+        options:
+          grpcJsonTranscoder:
+            protoDescriptorConfigMap:
+              configMapRef:
+                name: my-config-map
+                namespace: gloo-system
+              key: my-key
+global:
+  configMaps:
+  - name: my-config-map
+    namespace: gloo-system
+    data:
+      my-key: ` + protoDescriptor + `
+`))
+	Expect(err).NotTo(HaveOccurred())
+
+	err = values.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
+
+// return a base64-encoded proto descriptor to use for testing
+func getExampleProtoDescriptor() string {
+	pathToDescriptors := "../../v1helpers/test_grpc_service/descriptors/proto.pb"
+	bytes, err := os.ReadFile(pathToDescriptors)
+	Expect(err).NotTo(HaveOccurred())
+	return base64.StdEncoding.EncodeToString(bytes)
 }
 
 var strictValidationArgs = []string{
