@@ -94,11 +94,17 @@ ttlSecondsAfterFinished: {{ . }}
 
 {{- define "gloo.securityContext" -}}
 securityContext:
-{{- with .fsGroup -}}
-    {{ printf "fsGroup: %.0f" (float64 .) | nindent 4 }}
+{{ with .fsGroup -}}
+    {{ printf "fsGroup: %.0f" (float64 .) | indent 2 }}
 {{ end -}}
-{{ with .fsGroupChangePolicy }}
-  fsGroupChangePolicy: {{ . | nindent 4 }}
+{{ with .securitySpec -}}
+    {{ printf "fsGroup2: %.0f" (float64 .) | indent 2 }}
+{{ end -}}
+{{- with .FsGroupChangePolicy }}
+  fsGroupChangePolicy: {{ . | nindent 2 }}
+{{ end -}}
+{{- with .legacy }}
+  legacy: {{ . | nindent 2 }}
 {{ end -}}
 {{- with .runAsGroup -}}
   runAsGroup: {{ . | nindent 4 }}
@@ -106,8 +112,8 @@ securityContext:
 {{- with .runAsNonRoot -}}
   runAsNonRoot: {{ . | nindent 4  }}
 {{ end -}}
-{{ with .runAsUser -}}
-  runAsUser: {{ printf "%.0f" (float64 .) | nindent 4 }}
+{{- with .runAsUser -}}
+  {{ printf "runAsUser: %.0f" (float64 .) | indent 2 }}
 {{ end -}}
 {{- with .supplementalGroups -}}
   supplementalGroups: {{ . | nindent 4 }}
