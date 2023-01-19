@@ -1,9 +1,19 @@
 #!/bin/sh
-set -e
+set -eu
 
-if [ -n "$ENVOY_SIDECAR" ]
+if $DISABLE_CORE_DUMPS ; then
+  ulimit -c 0
+fi
+
+if [ -n "${ENVOY_SIDECAR:-}" ] # true if ENVOY_SIDECAR is a non-empty string
 then
-  exec /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml "$@"
+  # FIXME delete this
+  while sleep 2 ; do
+    /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml "$@"
+  done
 else
-  exec /usr/local/bin/envoyinit "$@"
+  # FIXME delete this
+  while sleep 2 ; do
+    /usr/local/bin/envoyinit "$@"
+  done
 fi
