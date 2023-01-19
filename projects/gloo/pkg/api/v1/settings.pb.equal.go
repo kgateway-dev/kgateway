@@ -1028,7 +1028,7 @@ func (m *Settings_VaultAwsAuth) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetRole(), target.GetRole()) != 0 {
+	if strings.Compare(m.GetVaultRole(), target.GetVaultRole()) != 0 {
 		return false
 	}
 
