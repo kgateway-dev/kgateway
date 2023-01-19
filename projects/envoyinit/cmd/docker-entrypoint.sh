@@ -7,13 +7,7 @@ fi
 
 if [ -n "${ENVOY_SIDECAR:-}" ] # true if ENVOY_SIDECAR is a non-empty string
 then
-  # FIXME delete this
-  while sleep 2 ; do
-    /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml "$@"
-  done
+  /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml "$@"
 else
-  # FIXME delete this
-  while sleep 2 ; do
-    /usr/local/bin/envoyinit "$@"
-  done
+  /usr/local/bin/envoyinit "$@"
 fi
