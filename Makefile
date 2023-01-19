@@ -206,7 +206,6 @@ install-test-tools:
 	mkdir -p $(DEPSGOBIN)
 	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
 
-
 .PHONY: test ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 test: install-test-tools
 	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -failOnPending -failFast -noColor -trace -progress -race -compilers=4 -randomizeSuites -randomizeAllSpecs -r $(TEST_PKG)
@@ -822,11 +821,13 @@ build-test-chart:
 
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
+# The minimum version to scan with trivy
+MIN_SCANNED_VERSION ?= v1.10.0
 
 .PHONY: run-security-scans
 run-security-scan:
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
-	GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
+	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r gloo -a github-issue-latest
+	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run docs/cmd/generate_docs.go run-security-scan -r glooe -a github-issue-latest
 
 .PHONY: publish-security-scan
 publish-security-scan:

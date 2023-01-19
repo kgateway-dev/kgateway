@@ -6,12 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
-
 	"github.com/hashicorp/go-multierror"
-
 	"github.com/rotisserie/eris"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -24,6 +21,7 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -93,11 +91,11 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
-
 func CheckResources(opts *options.Options) error {
 	var multiErr *multierror.Error
 
 	ctx, cancel := context.WithCancel(opts.Top.Ctx)
+
 	if opts.Check.CheckTimeout != 0 {
 		ctx, cancel = context.WithTimeout(opts.Top.Ctx, opts.Check.CheckTimeout)
 	}
@@ -239,7 +237,7 @@ func CheckResources(opts *options.Options) error {
 
 func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1.DeploymentList, error) {
 	printer.AppendCheck("Checking deployments... ")
-	client, err := helpers.GetKubernetesClient()
+	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
 	if err != nil {
 		errMessage := "error getting KubeClient"
 		fmt.Println(errMessage)
@@ -316,7 +314,7 @@ func getAndCheckDeployments(ctx context.Context, opts *options.Options) (*appsv1
 
 func checkPods(ctx context.Context, opts *options.Options) error {
 	printer.AppendCheck("Checking pods... ")
-	client, err := helpers.GetKubernetesClient()
+	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
 	if err != nil {
 		return err
 	}
@@ -394,7 +392,6 @@ func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error)
 	if settings.GetWatchNamespaces() != nil {
 		return settings.GetWatchNamespaces(), nil
 	}
-
 	return helpers.GetNamespaces(ctx)
 }
 
@@ -428,8 +425,11 @@ func checkUpstreams(ctx context.Context, opts *options.Options, namespaces []str
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownUpstreams = append(knownUpstreams, renderMetadata(upstream.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found upstream with no status: %s\n", renderMetadata(upstream.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownUpstreams = append(knownUpstreams, renderMetadata(upstream.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -472,6 +472,9 @@ func checkUpstreamGroups(ctx context.Context, opts *options.Options, namespaces 
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found upstream group with no status: %s\n", renderMetadata(upstreamGroup.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 		}
 	}
@@ -513,8 +516,11 @@ func checkAuthConfigs(ctx context.Context, opts *options.Options, namespaces []s
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownAuthConfigs = append(knownAuthConfigs, renderMetadata(authConfig.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found auth config with no status: %s\n", renderMetadata(authConfig.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownAuthConfigs = append(knownAuthConfigs, renderMetadata(authConfig.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -549,7 +555,7 @@ func checkRateLimitConfigs(ctx context.Context, opts *options.Options, namespace
 			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
 				errMessage := fmt.Sprintf("Found rejected rate limit config: %s ", renderMetadata(config.GetMetadata()))
 				errMessage += fmt.Sprintf("(Reason: %s)", config.Status.GetMessage())
-				multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 
 			knownConfigs = append(knownConfigs, renderMetadata(config.GetMetadata()))
@@ -598,8 +604,11 @@ func checkVirtualHostOptions(ctx context.Context, opts *options.Options, namespa
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownVhOpts = append(knownVhOpts, renderMetadata(vhOpt.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found VirtualHostOption with no status: %s\n", renderMetadata(vhOpt.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownVhOpts = append(knownVhOpts, renderMetadata(vhOpt.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -643,8 +652,11 @@ func checkRouteOptions(ctx context.Context, opts *options.Options, namespaces []
 						multiErr = multierror.Append(multiErr, errors.New(errMessage))
 					}
 				}
-				knownRouteOpts = append(knownRouteOpts, renderMetadata(routeOpt.GetMetadata()))
+			} else {
+				errMessage := fmt.Sprintf("Found RouteOption with no status: %s\n", renderMetadata(routeOpt.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
+			knownRouteOpts = append(knownRouteOpts, renderMetadata(routeOpt.GetMetadata()))
 		}
 	}
 	if multiErr != nil {
@@ -685,6 +697,9 @@ func checkVirtualServices(ctx context.Context, opts *options.Options, namespaces
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found virtual service with no status: %s\n", renderMetadata(virtualService.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 
 			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
@@ -822,6 +837,9 @@ func checkGateways(ctx context.Context, opts *options.Options, namespaces []stri
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found gateway with no status: %s\n", renderMetadata(gateway.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 		}
 	}
@@ -872,6 +890,9 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 						multiErr = multierror.Append(multiErr, fmt.Errorf(errMessage))
 					}
 				}
+			} else {
+				errMessage := fmt.Sprintf("Found proxy with no status: %s\n", renderMetadata(proxy.GetMetadata()))
+				multiErr = multierror.Append(multiErr, errors.New(errMessage))
 			}
 		}
 	}
@@ -933,7 +954,7 @@ func renderNamespaceName(namespace, name string) string {
 // Checks whether the cluster that the kubeconfig points at is available
 // The timeout for the kubernetes client is set to a low value to notify the user of the failure
 func checkConnection(ctx context.Context, opts *options.Options) error {
-	client, err := helpers.GetKubernetesClient()
+	client, err := helpers.GetKubernetesClient(opts.Top.KubeContext)
 	if err != nil {
 		return eris.Wrapf(err, "Could not get kubernetes client")
 	}

@@ -56,12 +56,13 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 }
 
 type Params struct {
-	Hosts      string         // Comma-separated hostnames and IPs to generate a certificate for
-	ValidFrom  *time.Time     // Creation date
-	ValidFor   *time.Duration // Duration that certificate is valid for
-	IsCA       bool           // whether this cert should be its own Certificate Authority
-	RsaBits    int            // Size of RSA key to generate. Ignored if EcdsaCurve is set
-	EcdsaCurve string         // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
+	Hosts            string             // Comma-separated hostnames and IPs to generate a certificate for
+	ValidFrom        *time.Time         // Creation date
+	ValidFor         *time.Duration     // Duration that certificate is valid for
+	IsCA             bool               // whether this cert should be its own Certificate Authority
+	RsaBits          int                // Size of RSA key to generate. Ignored if EcdsaCurve is set
+	EcdsaCurve       string             // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
+	AdditionalUsages []x509.ExtKeyUsage // Usages to define in addition to default x509.ExtKeyUsageServerAuth
 }
 
 func GetCerts(params Params) (string, string) {
@@ -123,6 +124,7 @@ func GetCerts(params Params) (string, string) {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 	}
+	template.ExtKeyUsage = append(template.ExtKeyUsage, params.AdditionalUsages...)
 
 	hosts := strings.Split(params.Hosts, ",")
 	for _, h := range hosts {
@@ -156,15 +158,26 @@ func GetCerts(params Params) (string, string) {
 }
 
 var (
-	getCerts sync.Once
-	cert     string
-	privKey  string
+	getCerts     sync.Once
+	getMtlsCerts sync.Once
+	mtlsCert     string
+	mtlsPrivKey  string
+	cert         string
+	privKey      string
 )
 
 func gencerts() {
 	cert, privKey = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,
+	})
+}
+
+func genmtlscerts() {
+	mtlsCert, mtlsPrivKey = GetCerts(Params{
+		Hosts:            "gateway-proxy,knative-proxy,ingress-proxy",
+		IsCA:             true,
+		AdditionalUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 	})
 }
 
@@ -176,6 +189,16 @@ func Certificate() string {
 func PrivateKey() string {
 	getCerts.Do(gencerts)
 	return privKey
+}
+
+func MtlsCertificate() string {
+	getMtlsCerts.Do(genmtlscerts)
+	return mtlsCert
+}
+
+func MtlsPrivateKey() string {
+	getMtlsCerts.Do(genmtlscerts)
+	return mtlsPrivKey
 }
 
 func GetKubeSecret(name, namespace string) *kubev1.Secret {

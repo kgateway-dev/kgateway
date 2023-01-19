@@ -77,6 +77,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_retries "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/router"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_shadowing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_stats "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
@@ -282,6 +284,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.DynamicForwardProxy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
 	} else {
 		target.DynamicForwardProxy = proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
+	}
+
+	if h, ok := interface{}(m.GetRouter()).(clone.Cloner); ok {
+		target.Router = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
+	} else {
+		target.Router = proto.Clone(m.GetRouter()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
 	}
 
 	return target
@@ -683,6 +691,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.MaxStreamDuration = proto.Clone(m.GetMaxStreamDuration()).(*RouteOptions_MaxStreamDuration)
 	}
 
+	if h, ok := interface{}(m.GetIdleTimeout()).(clone.Cloner); ok {
+		target.IdleTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.IdleTimeout = proto.Clone(m.GetIdleTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	switch m.HostRewriteType.(type) {
 
 	case *RouteOptions_HostRewrite:
@@ -700,6 +714,18 @@ func (m *RouteOptions) Clone() proto.Message {
 		} else {
 			target.HostRewriteType = &RouteOptions_AutoHostRewrite{
 				AutoHostRewrite: proto.Clone(m.GetAutoHostRewrite()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+			}
+		}
+
+	case *RouteOptions_HostRewritePathRegex:
+
+		if h, ok := interface{}(m.GetHostRewritePathRegex()).(clone.Cloner); ok {
+			target.HostRewriteType = &RouteOptions_HostRewritePathRegex{
+				HostRewritePathRegex: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute),
+			}
+		} else {
+			target.HostRewriteType = &RouteOptions_HostRewritePathRegex{
+				HostRewritePathRegex: proto.Clone(m.GetHostRewritePathRegex()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_type_matcher_v3.RegexMatchAndSubstitute),
 			}
 		}
 

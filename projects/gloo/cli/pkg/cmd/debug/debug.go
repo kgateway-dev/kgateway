@@ -161,7 +161,7 @@ func displayLogs(w io.Writer, logs strings.Builder) error {
 }
 
 func setup(opts *options.Options) ([]*debugutils.LogsResponse, error) {
-	pods, err := helpers.MustKubeClient().CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
+	pods, err := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext).CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
 		LabelSelector: "gloo",
 	})
 	if err != nil {

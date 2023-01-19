@@ -1,13 +1,12 @@
 ---
-title: Set up tracing
-weight: 4
-description: Configure Gloo Edge for tracing
+title: Default Envoy tracing
+weight: 2
+description: Configure Gloo Edge with default Envoy tracing capabilities.
 ---
 
+With Gloo Edge, you can use Envoy's end-to-end tracing capabilities to obtain visibility and track requests as they pass through your API gateway to distributed backends, such as services, databases, or other endpoints in your ecosystem. 
 
-With Gloo Edge, you can use Envoy's end-to-end tracing capabilities to obtain visibility and track requests as they pass through your API gateway to distributed backends, such as services, databases, or other endpoints in your ecosystem. Tracing enables you to monitor and optimize the performance and latency of requests, and to perform root cause analyses to find bottlenecks and pinpoint failures. 
-
-The following distributed tracing platforms are supported in Gloo Edge: 
+To get started, enable the default Envoy distributed tracing in your Gloo Edge installation to trace requests, analyze service dependencies, and find bottlenecks or high latency services. Then, use a tracing provider to collect and visualize the sampled spans. The following distributed tracing platforms are supported for the default Envoy metrics collection in Gloo Edge: 
 - [Zipkin](https://zipkin.io/)
 - [Jaeger](https://www.jaegertracing.io/)
 - [Datadog](https://docs.datadoghq.com/getting_started/tracing/)

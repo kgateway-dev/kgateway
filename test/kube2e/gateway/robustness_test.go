@@ -113,7 +113,7 @@ var _ = Describe("Robustness tests", func() {
 			WithNamespace(testHelper.InstallNamespace).
 			WithDomain("app").
 			WithRoutePrefixMatcher("route", "/1").
-			WithRouteActionToDestination("route",
+			WithRouteActionToSingleDestination("route",
 				&gloov1.Destination{
 					DestinationType: &gloov1.Destination_Kube{
 						Kube: &gloov1.KubernetesServiceDestination{

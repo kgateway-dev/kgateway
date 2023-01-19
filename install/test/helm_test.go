@@ -6,8 +6,11 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/ghodss/yaml"
 	"github.com/onsi/gomega/format"
@@ -18,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -2000,6 +2002,57 @@ apiVersion: autoscaling/v2beta2
 
 					})
 
+					It("can create gwp autoscaling/v2 hpa", func() {
+
+						prepareMakefileFromValuesFile("values/val_gwp_hpa_v2.yaml")
+
+						hpa := makeUnstructured(`
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app: gloo
+    gateway-proxy-id: gateway-proxy
+    gloo: gateway-proxy
+  name: gateway-proxy-hpa
+  namespace: gloo-system
+spec:
+  maxReplicas: 2
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway-proxy
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      stabilizationWindowSeconds: 300
+`)
+
+						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeEquivalentTo(hpa))
+
+					})
+
 					It("gwp pdb disabled by default", func() {
 						prepareMakefile(namespace, helmValues{})
 
@@ -2921,6 +2974,24 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("sets topologySpreadConstraints", func() {
+
+						gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints = append(
+							gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints,
+							v1.TopologySpreadConstraint{
+								MaxSkew:           1,
+								TopologyKey:       "zone",
+								WhenUnsatisfiable: "ScheduleAnyway",
+								LabelSelector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+								},
+							})
+
+						prepareMakefileFromValuesFile("values/val_gwp_topologyspreadconstraints.yaml")
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("enables probes", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -3093,6 +3164,47 @@ spec:
 							},
 						})
 
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can render Extra Containers", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers = append(gatewayProxyDeployment.Spec.Template.Spec.Containers, gatewayProxyDeployment.Spec.Template.Spec.Containers[0])
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0] = v1.Container{
+							Image: "gcr.io/solo-public",
+							Name:  "podName",
+							Command: []string{
+								"sh",
+								"-c",
+							},
+						}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].image=gcr.io/solo-public",
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].name=podName",
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].command[0]=sh",
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].command[1]=-c",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can render Extra Init Containers", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.InitContainers = append(gatewayProxyDeployment.Spec.Template.Spec.InitContainers, v1.Container{
+							Image: "gcr.io/solo-public",
+							Name:  "podName",
+							Command: []string{
+								"sh",
+								"-c",
+							},
+						})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].image=gcr.io/solo-public",
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].name=podName",
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].command[0]=sh",
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].command[1]=-c",
+							},
+						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -4966,6 +5078,23 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
+				It("can create arbitrary configmaps", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.configMaps[0].name=my-config-map",
+							"global.configMaps[0].namespace=my-ns",
+							"global.configMaps[0].data.key1=value1",
+							"global.configMaps[0].data.key2=value2"},
+					})
+					cmRb := ResourceBuilder{
+						Namespace: "my-ns",
+						Name:      "my-config-map",
+						Labels:    map[string]string{"app": "gloo", "gloo": "gloo"},
+						Data:      map[string]string{"key1": "value1", "key2": "value2"},
+					}
+					cm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(cm)
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {
@@ -5465,7 +5594,7 @@ metadata:
 			})
 
 			Describe("Standard k8s values", func() {
-				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, priorityClassName, restartPolicy, on Deployments and Jobs",
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, priorityClassName, restartPolicy, initContainers, on Deployments and Jobs",
 					func(kind string, resourceName string, value string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
@@ -5476,6 +5605,10 @@ metadata:
 								value + ".affinity.nodeAffinity=someNodeAffinity",
 								value + ".restartPolicy=someRestartPolicy",
 								value + ".priorityClassName=somePriorityClass",
+								value + ".initContainers[0].image=gcr.io/solo-public",
+								value + ".initContainers[0].name=containerName",
+								value + ".initContainers[0].command[0]=sh",
+								value + ".initContainers[0].command[1]=-c",
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5498,6 +5631,8 @@ metadata:
 								Expect(a).To(Equal(map[string]interface{}{"nodeAffinity": "someNodeAffinity"}))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "restartPolicy")...)
 								Expect(a).To(Equal("someRestartPolicy"))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "initContainers")...)
+								Expect(a).To(Equal([]interface{}{map[string]interface{}{"image": "gcr.io/solo-public", "name": "containerName", "command": []interface{}{"sh", "-c"}}}))
 								return true
 							}
 							return false
@@ -5518,12 +5653,24 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 
-				DescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+				const (
+					ACTIVE_DEADLINE_SECONDS    = 123
+					TTL_SECONDS_AFTER_FINISHED = 42
+					BACKOFF_LIMIT              = 10
+					COMPLETIONS                = 5
+					MANUAL_SELECTOR            = true
+					PARALLELISM                = 7
+				)
+				DescribeTable("can set JobSpec fields on Jobs",
 					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
-								jobValuesPrefix + ".activeDeadlineSeconds=123",
-								jobValuesPrefix + ".ttlSecondsAfterFinished=42",
+								jobValuesPrefix + ".activeDeadlineSeconds=" + strconv.Itoa(ACTIVE_DEADLINE_SECONDS),
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+								jobValuesPrefix + ".backoffLimit=" + strconv.Itoa(BACKOFF_LIMIT),
+								jobValuesPrefix + ".completions=" + strconv.Itoa(COMPLETIONS),
+								jobValuesPrefix + ".manualSelector=" + strconv.FormatBool(MANUAL_SELECTOR),
+								jobValuesPrefix + ".parallelism=" + strconv.Itoa(PARALLELISM),
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5533,9 +5680,17 @@ metadata:
 							}
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "activeDeadlineSeconds")...)
-								Expect(a).To(Equal(int64(123)))
+								Expect(a).To(Equal(int64(ACTIVE_DEADLINE_SECONDS)))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
-								Expect(a).To(Equal(int64(42)))
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "backoffLimit")...)
+								Expect(a).To(Equal(int64(BACKOFF_LIMIT)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "completions")...)
+								Expect(a).To(Equal(int64(COMPLETIONS)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "parallelism")...)
+								Expect(a).To(Equal(int64(PARALLELISM)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "manualSelector")...)
+								Expect(a).To(Equal(MANUAL_SELECTOR))
 								return true
 							}
 							return false
@@ -5548,6 +5703,60 @@ metadata:
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
+				)
+
+				DescribeTable("setTtlAfterFinished=false suppresses ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=false",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(BeNil())
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+				)
+
+				DescribeTable("Setting setTtlAfterFinished=true includes ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=true",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",

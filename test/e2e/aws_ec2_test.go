@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -235,11 +237,23 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	})
 
 	BeforeEach(func() {
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.Kubernetes("Uses a Kubernetes client"),
+		)
+
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		testClients = services.RunGateway(ctx, true)
+		runOptions := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableGateway: true,
+			},
+			KubeClient: kube2e.MustKubeClient(),
+		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()

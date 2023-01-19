@@ -34,7 +34,6 @@ During a Gloo Edge release, the `gloo-envoy-wrapper` image is published to the [
 Envoy [configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/configuration) can be provided either statically or dynamically. In Gloo Edge, we leverage both of these patterns: at initialization time, the proxy is provided with basic boostrap configuration, and then all future updates are provided dynamically by the control-plane.
 
 ### Static
-
 Envoy is configured with [Bootstrap configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/bootstrap). This provides static server configuration and configures Envoy to access dynamic configuration from the Gloo control plane.
 
 In Gloo Edge, Envoy configuration is processed in the following order:
@@ -48,28 +47,7 @@ In Gloo Edge, Envoy configuration is processed in the following order:
 Envoy receives dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/master/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
 
 ## Debug
-It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. [hack/envoy.yaml](./hack/envoy.yaml) provides example bootstrap that can be used.
-
-> These commands should be run from this directory. If you built an image you want to use, be sure to update container parameter in the command with the new image address output in the build step.
-
-```shell
-docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.12.34
-```
-
-Envoy supports a series of [command line options](https://www.envoyproxy.io/docs/envoy/latest/operations/cli), which may be helpful as well. `component-log-level` is an especially useful option, below is how it would be used:
-
-```shell
-docker run --rm -ti -p 8000:8000 -p 19000:19000 -v $(pwd)/hack/envoy.yaml:/etc/envoy/envoy.yaml:ro -l trace gcr.io/gloo-edge/gloo-envoy-wrapper:1.12.34 --component-log-level upstream:debug,connection:trace
-```
-
-After running this, you should see a lot of Envoy logs:
-```text
-[2022-05-19 23:21:59.465][8][info][main] [external/envoy/source/server/server.cc:381] initializing epoch 0 (base id=0, hot restart version=11.104)
-[2022-05-19 23:21:59.465][8][info][main] [external/envoy/source/server/server.cc:383] statically linked extensions:
-```
-
-Envoy exposes an [administration interface](https://www.envoyproxy.io/docs/envoy/latest/operations/admin) which can be used to query and modify different aspects of the server. The address of this interface is defined in the [bootstrap API](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto#envoy-v3-api-msg-config-bootstrap-v3-admin), though it is commonly found at port `19000`. 
-If the above command succeeded, you should be able to visit [port 19000 in your browser](http://localhost:19000/) to explore the admin interface.
+It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. Please refer to [Running the Gateway Proxy locally](https://github.com/solo-io/gloo/tree/master/install/local-gateway-proxy) for further instructions.
 
 ## Testing
 Tests are run using [Ginkgo](https://onsi.github.io/ginkgo/).
