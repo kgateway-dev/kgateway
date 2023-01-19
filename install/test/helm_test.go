@@ -4163,7 +4163,9 @@ metadata:
 						})
 
 						It("configmap should contain gateway yaml when default gateways are enabled", func() {
-							prepareMakefile(namespace, helmValues{valuesArgs: []string{}})
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true",
+							}})
 
 							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
 							Expect(configMap.Data).ToNot(BeNil())
