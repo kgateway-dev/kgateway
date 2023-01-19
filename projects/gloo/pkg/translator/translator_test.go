@@ -1069,6 +1069,7 @@ var _ = Describe("Translator", func() {
 							RequestHeadersToRemove: []string{},
 							CodecClientType:        envoy_type_v3.CodecClientType_HTTP2,
 							ExpectedStatuses:       []*envoy_type_v3.Int64Range{},
+							Method:                 envoy_config_core_v3.RequestMethod_POST,
 						},
 					},
 				},

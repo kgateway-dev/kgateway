@@ -8,6 +8,7 @@ import (
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -228,6 +229,7 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 			RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
 			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 			ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
+			Method:                 core.RequestMethod(typed.HttpHealthCheck.GetMethod().Number()),
 		}
 
 		if typed.HttpHealthCheck.GetCodecClientType() == envoy_type_v3.CodecClientType_HTTP2 {
