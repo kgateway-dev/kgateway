@@ -65,6 +65,32 @@ priorityClassName: {{ . }}
 initContainers: {{ toYaml . | nindent 2 }}
 {{ end -}}
 {{- end -}}
+
+{{- define "gloo.jobSpecStandardFields" -}}
+{{- with .activeDeadlineSeconds -}}
+activeDeadlineSeconds: {{ . }}
+{{ end -}}
+{{- with .backoffLimit -}}
+backoffLimit: {{ . }}
+{{ end -}}
+{{- with .completions -}}
+completions: {{ . }}
+{{ end -}}
+{{- with .manualSelector -}}
+manualSelector: {{ . }}
+{{ end -}}
+{{- with .parallelism -}}
+parallelism: {{ . }}
+{{ end -}}
+{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
+      The 'kindIs' comparision is how we can check for undefined */ -}}
+{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
+{{- with .ttlSecondsAfterFinished  -}}
+ttlSecondsAfterFinished: {{ . }}
+{{ end -}}
+{{- end -}}
+{{- end -}}
+
 {{- /*
 This takes an array of three values:
 - the top context

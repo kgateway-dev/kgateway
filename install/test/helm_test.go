@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -5077,6 +5078,23 @@ metadata:
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
 				})
 
+				It("can create arbitrary configmaps", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.configMaps[0].name=my-config-map",
+							"global.configMaps[0].namespace=my-ns",
+							"global.configMaps[0].data.key1=value1",
+							"global.configMaps[0].data.key2=value2"},
+					})
+					cmRb := ResourceBuilder{
+						Namespace: "my-ns",
+						Name:      "my-config-map",
+						Labels:    map[string]string{"app": "gloo", "gloo": "gloo"},
+						Data:      map[string]string{"key1": "value1", "key2": "value2"},
+					}
+					cm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(cm)
+				})
+
 				Describe("gateway proxy - AWS", func() {
 
 					It("has a global cluster", func() {
@@ -5635,12 +5653,24 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 
-				DescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+				const (
+					ACTIVE_DEADLINE_SECONDS    = 123
+					TTL_SECONDS_AFTER_FINISHED = 42
+					BACKOFF_LIMIT              = 10
+					COMPLETIONS                = 5
+					MANUAL_SELECTOR            = true
+					PARALLELISM                = 7
+				)
+				DescribeTable("can set JobSpec fields on Jobs",
 					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
-								jobValuesPrefix + ".activeDeadlineSeconds=123",
-								jobValuesPrefix + ".ttlSecondsAfterFinished=42",
+								jobValuesPrefix + ".activeDeadlineSeconds=" + strconv.Itoa(ACTIVE_DEADLINE_SECONDS),
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+								jobValuesPrefix + ".backoffLimit=" + strconv.Itoa(BACKOFF_LIMIT),
+								jobValuesPrefix + ".completions=" + strconv.Itoa(COMPLETIONS),
+								jobValuesPrefix + ".manualSelector=" + strconv.FormatBool(MANUAL_SELECTOR),
+								jobValuesPrefix + ".parallelism=" + strconv.Itoa(PARALLELISM),
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5650,9 +5680,17 @@ metadata:
 							}
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "activeDeadlineSeconds")...)
-								Expect(a).To(Equal(int64(123)))
+								Expect(a).To(Equal(int64(ACTIVE_DEADLINE_SECONDS)))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
-								Expect(a).To(Equal(int64(42)))
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "backoffLimit")...)
+								Expect(a).To(Equal(int64(BACKOFF_LIMIT)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "completions")...)
+								Expect(a).To(Equal(int64(COMPLETIONS)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "parallelism")...)
+								Expect(a).To(Equal(int64(PARALLELISM)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "manualSelector")...)
+								Expect(a).To(Equal(MANUAL_SELECTOR))
 								return true
 							}
 							return false
@@ -5665,6 +5703,60 @@ metadata:
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
+				)
+
+				DescribeTable("setTtlAfterFinished=false suppresses ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=false",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(BeNil())
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+				)
+
+				DescribeTable("Setting setTtlAfterFinished=true includes ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=true",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",

@@ -1382,6 +1382,23 @@ func (m *PassThroughGrpc) Clone() proto.Message {
 		target.ConnectionTimeout = proto.Clone(m.GetConnectionTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetTlsConfig()).(clone.Cloner); ok {
+		target.TlsConfig = h.Clone().(*PassThroughGrpcTLSConfig)
+	} else {
+		target.TlsConfig = proto.Clone(m.GetTlsConfig()).(*PassThroughGrpcTLSConfig)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *PassThroughGrpcTLSConfig) Clone() proto.Message {
+	var target *PassThroughGrpcTLSConfig
+	if m == nil {
+		return target
+	}
+	target = &PassThroughGrpcTLSConfig{}
+
 	return target
 }
 

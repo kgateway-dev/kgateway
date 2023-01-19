@@ -23,17 +23,18 @@ type Config struct {
 }
 
 type Global struct {
-	Image             *Image           `json:"image,omitempty"`
-	Extensions        interface{}      `json:"extensions,omitempty"`
-	GlooRbac          *Rbac            `json:"glooRbac,omitempty"`
-	GlooStats         Stats            `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
-	GlooMtls          Mtls             `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
-	IstioSDS          IstioSDS         `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	IstioIntegration  IstioIntegration `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
-	ExtraSpecs        *bool            `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
-	ExtauthCustomYaml *bool            `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
-	Console           interface{}      `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
-	Graphql           interface{}      `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
+	Image             *Image             `json:"image,omitempty"`
+	Extensions        interface{}        `json:"extensions,omitempty"`
+	GlooRbac          *Rbac              `json:"glooRbac,omitempty"`
+	GlooStats         Stats              `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
+	GlooMtls          Mtls               `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
+	IstioSDS          IstioSDS           `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	IstioIntegration  IstioIntegration   `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
+	ExtraSpecs        *bool              `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	ExtauthCustomYaml *bool              `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
+	Console           interface{}        `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
+	Graphql           interface{}        `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
+	ConfigMaps        []*GlobalConfigMap `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
 }
 
 type Namespace struct {
@@ -83,6 +84,10 @@ type PodSpec struct {
 type JobSpec struct {
 	*PodSpec
 	ActiveDeadlineSeconds   *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	BackoffLimit            *int              `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
+	Completions             *int              `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
+	ManualSelector          *bool             `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
+	Parallelism             *int              `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
 	TtlSecondsAfterFinished *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 	ExtraPodLabels          map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
 	ExtraPodAnnotations     map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`
@@ -552,10 +557,6 @@ type AccessLogger struct {
 	*DeploymentSpec
 }
 
-type GatewayProxyConfigMap struct {
-	Data map[string]string `json:"data,omitempty"`
-}
-
 type Ingress struct {
 	Enabled             *bool              `json:"enabled,omitempty"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
@@ -606,6 +607,12 @@ type Service struct {
 	HttpPort         *int              `json:"httpPort,omitempty" desc:"HTTP port for the knative/ingress proxy service"`
 	HttpsPort        *int              `json:"httpsPort,omitempty" desc:"HTTPS port for the knative/ingress proxy service"`
 	*KubeResourceOverride
+}
+
+type GlobalConfigMap struct {
+	Name      *string           `json:"name,omitempty" desc:"Name of the ConfigMap to create (required)."`
+	Namespace *string           `json:"namespace,omitempty" desc:"Namespace in which to create the ConfigMap. If empty, defaults to Gloo Edge install namespace."`
+	Data      map[string]string `json:"data,omitempty" desc:"Key-value pairs of ConfigMap data."`
 }
 
 type ConfigMap struct {

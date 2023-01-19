@@ -296,6 +296,9 @@ apis:
   enterprise.gloo.solo.io.PassThroughGrpc:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughGrpc
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.PassThroughGrpcTLSConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughGrpcTLSConfig
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.PassThroughHttp:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughHttp
     package: enterprise.gloo.solo.io
@@ -814,6 +817,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.RouteReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#RouteReport
+    package: gloo.solo.io
+  gloo.solo.io.Router:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto.sk/#Router
     package: gloo.solo.io
   gloo.solo.io.SDSConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SDSConfig
