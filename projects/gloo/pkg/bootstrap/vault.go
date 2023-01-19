@@ -73,31 +73,30 @@ func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 		addSettingFunc(b.GetValue())
 	}
 
+	setCaCert := func(s string) { tlsConfig.CACert = s }
+	setCaPath := func(s string) { tlsConfig.CAPath = s }
+	setClientCert := func(s string) { tlsConfig.ClientCert = s }
+	setClientKey := func(s string) { tlsConfig.ClientKey = s }
+	setTlsServerName := func(s string) { tlsConfig.TLSServerName = s }
+	setInsecure := func(b bool) { tlsConfig.Insecure = b }
+
 	// Add our settings to the vault TLS config, preferring settings set in the
 	// new TlsConfig field to those in the deprecated fields
-	setCaCert := func(s string) { tlsConfig.CACert = s }
-	addStringSetting(vaultSettings.GetCaCert(), setCaCert)
-	addStringSetting(vaultSettings.GetTlsConfig().GetCaCert(), setCaCert)
-
-	setCaPath := func(s string) { tlsConfig.CAPath = s }
-	addStringSetting(vaultSettings.GetCaPath(), setCaPath)
-	addStringSetting(vaultSettings.GetTlsConfig().GetCaPath(), setCaPath)
-
-	setClientCert := func(s string) { tlsConfig.ClientCert = s }
-	addStringSetting(vaultSettings.GetClientCert(), setClientCert)
-	addStringSetting(vaultSettings.GetTlsConfig().GetClientCert(), setClientCert)
-
-	setClientKey := func(s string) { tlsConfig.ClientKey = s }
-	addStringSetting(vaultSettings.GetClientKey(), setClientKey)
-	addStringSetting(vaultSettings.GetTlsConfig().GetClientKey(), setClientKey)
-
-	setTlsServerName := func(s string) { tlsConfig.TLSServerName = s }
-	addStringSetting(vaultSettings.GetTlsServerName(), setTlsServerName)
-	addStringSetting(vaultSettings.GetTlsConfig().GetTlsServerName(), setTlsServerName)
-
-	setInsecure := func(b bool) { tlsConfig.Insecure = b }
-	addBoolSetting(vaultSettings.GetInsecure(), setInsecure)
-	addBoolSetting(vaultSettings.GetTlsConfig().GetInsecure(), setInsecure)
+	if tlsSettings := vaultSettings.GetTlsConfig(); tlsSettings == nil {
+		addStringSetting(vaultSettings.GetCaCert(), setCaCert)
+		addStringSetting(vaultSettings.GetCaPath(), setCaPath)
+		addStringSetting(vaultSettings.GetClientCert(), setClientCert)
+		addStringSetting(vaultSettings.GetClientKey(), setClientKey)
+		addStringSetting(vaultSettings.GetTlsServerName(), setTlsServerName)
+		addBoolSetting(vaultSettings.GetInsecure(), setInsecure)
+	} else {
+		addStringSetting(vaultSettings.GetTlsConfig().GetCaCert(), setCaCert)
+		addStringSetting(vaultSettings.GetTlsConfig().GetCaPath(), setCaPath)
+		addStringSetting(vaultSettings.GetTlsConfig().GetClientCert(), setClientCert)
+		addStringSetting(vaultSettings.GetTlsConfig().GetClientKey(), setClientKey)
+		addStringSetting(vaultSettings.GetTlsConfig().GetTlsServerName(), setTlsServerName)
+		addBoolSetting(vaultSettings.GetTlsConfig().GetInsecure(), setInsecure)
+	}
 
 	return tlsConfig
 
@@ -145,7 +144,7 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 
 	loginOptions := []awsauth.LoginOption{awsauth.WithIAMAuth()}
 
-	if role := aws.GetRole(); role != "" {
+	if role := aws.GetVaultRole(); role != "" {
 		loginOptions = append(loginOptions, awsauth.WithRole(role))
 	}
 
