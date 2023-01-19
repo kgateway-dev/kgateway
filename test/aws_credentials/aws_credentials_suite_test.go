@@ -1,6 +1,7 @@
 package aws_credentials
 
 import (
+	"os"
 	"testing"
 
 	testhelpers "github.com/solo-io/gloo/test/helpers"
@@ -16,7 +17,9 @@ const (
 )
 
 func TestAwsCredentials(t *testing.T) {
-	return
+	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
+		Skip("Skipping Temporarily due to aws issues")
+	}
 	helpers.RegisterCommonFailHandlers()
 	junitReporter := reporters.NewJUnitReporter("junit.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "AWS Credentials Suite", []Reporter{junitReporter})

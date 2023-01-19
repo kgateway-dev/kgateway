@@ -60,7 +60,9 @@ curl http://<instance-public-ip>/
 */
 
 var _ = Describe("AWS EC2 Plugin utils test", func() {
-	return
+	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
+		Skip("Skipping Temporarily due to aws issues")
+	}
 	const region = "us-east-1"
 
 	var (
