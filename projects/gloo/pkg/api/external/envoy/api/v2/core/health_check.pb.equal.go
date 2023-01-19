@@ -374,6 +374,10 @@ func (m *HealthCheck_HttpHealthCheck) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetMethod() != target.GetMethod() {
+		return false
+	}
+
 	return true
 }
 

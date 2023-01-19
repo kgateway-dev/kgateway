@@ -110,7 +110,7 @@ var _ = Describe("Health Checks", func() {
 			Check *envoy_config_core_v3.HealthCheck
 		}{
 			{
-				Name: "http",
+				Name: "http-get",
 				Check: &envoy_config_core_v3.HealthCheck{
 					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
@@ -118,8 +118,17 @@ var _ = Describe("Health Checks", func() {
 						},
 					},
 				},
-			},
-			{
+			}, {
+				Name: "http-post",
+				Check: &envoy_config_core_v3.HealthCheck{
+					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+							Path:   "xyz",
+							Method: envoy_config_core_v3.RequestMethod_POST,
+						},
+					},
+				},
+			}, {
 				Name: "tcp",
 				Check: &envoy_config_core_v3.HealthCheck{
 					HealthChecker: &envoy_config_core_v3.HealthCheck_TcpHealthCheck_{

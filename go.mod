@@ -10,7 +10,7 @@ require (
 	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/envoyproxy/go-control-plane v0.10.3
+	github.com/envoyproxy/go-control-plane v0.10.3-0.20220803141441-64b2023d5b70
 	github.com/envoyproxy/protoc-gen-validate v0.6.7
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.5.4
