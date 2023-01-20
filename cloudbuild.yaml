@@ -53,7 +53,7 @@ steps:
   dir: '/workspace/gloo/example/proxycontroller'
   id: 'build-proxycontroller-example'
 
-- name: gcr.io/cloud-builders/gcloud
+- name: gcr.io/cloud-builders/gcloud:latest
   args:
   - kms
   - decrypt
@@ -73,11 +73,11 @@ steps:
   waitFor: ['-']
   id: 'grab-ginkgo-container'
 
-- name: gcr.io/cloud-builders/gcloud
+- name: gcr.io/cloud-builders/gcloud:latest
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-gcr-zone'
 
-- name: gcr.io/cloud-builders/gcloud
+- name: gcr.io/cloud-builders/gcloud:latest
   args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
   waitFor: ['set-gcr-zone']
   id: 'get-test-credentials'
@@ -129,7 +129,7 @@ steps:
 
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
-- name: gcr.io/cloud-builders/gcloud
+- name: gcr.io/cloud-builders/gcloud:latest
   args: ['auth', 'configure-docker']
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
