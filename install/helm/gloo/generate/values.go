@@ -70,17 +70,36 @@ type ResourceRequirements struct {
 	Requests *ResourceAllocation `json:"requests,omitempty" desc:"resource requests of this container"`
 }
 
-type SecuritySpec struct {
+type PodSecuritySpec struct {
 	FsGroup             *int                           `json:"fsGroup,omitempty"`
 	FsGroupChangePolicy *string                        `json:"fsGroupChangePolicy,omitempty"`
 	RunAsGroup          *int                           `json:"runAsGroup,omitempty"`
 	RunAsNonRoot        *bool                          `json:"runAsNonRoot,omitempty"`
-	RunAsUser           *int                           ``
-	SupplementalGroups  []int                          ``
-	SELinuxOptions      *SELinuxOptions                ``
-	SeccompProfile      *SeccompProfile                ``
-	Sysctls             []Sysctl                       ``
-	WindowsOptions      *WindowsSecurityContextOptions ``
+	RunAsUser           *int                           `json:"runAsUser,omitempty"`
+	SupplementalGroups  []int                          `json:"supplementalGroups,omitempty"`
+	SELinuxOptions      *SELinuxOptions                `json:"seLinuxOptions,omitempty"`
+	SeccompProfile      *SeccompProfile                `json:"seccompProfile,omitempty"`
+	Sysctls             []Sysctl                       `json:"sysctls,omitempty"`
+	WindowsOptions      *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
+}
+
+type SecuritySpec struct {
+	AllowPrivilegeEscalation *bool                          `json:"allowPrivilegeEscalation,omitempty"`
+	Capabilities             *Capabilities                  `json:"capabilities,omitempty"`
+	Privileged               *bool                          `json:"privileged,omitempty"`
+	ProcMount                *string                        `json:"procMount,omitempty"`
+	ReadOnlyRootFilesystem   *bool                          `json:"readOnlyRootFilesystem,omitempty"`
+	RunAsGroup               *int                           `json:"runAsGroup,omitempty"`
+	RunAsNonRoot             *bool                          `json:"runAsNonRoot,omitempty"`
+	RunAsUser                *int                           `json:"runAsUser,omitempty"`
+	SELinuxOptions           *SELinuxOptions                `json:"seLinuxOptions,omitempty"`
+	SeccompProfile           *SeccompProfile                `json:"seccompProfile,omitempty"`
+	WindowsOptions           *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
+}
+
+type Capabilities struct {
+	Add  []string `json:"add,omitempty"`
+	Drop []string `json:"drop,omitempty"`
 }
 
 type SELinuxOptions struct {
@@ -115,7 +134,7 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	*SecuritySpec
+	SecurityContext   *PodSecuritySpec       `json:"securityContext,omitempty" `
 }
 
 type JobSpec struct {

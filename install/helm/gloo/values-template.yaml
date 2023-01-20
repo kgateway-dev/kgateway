@@ -41,6 +41,14 @@ settings:
   disableProxyGarbageCollection: false
 gloo:
   deployment:
+    security_context:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 10101
+      capabilities:
+        drop:
+        - ALL
     image:
       repository: gloo
     xdsPort: 9977
@@ -55,8 +63,9 @@ discovery:
   fdsMode: WHITELIST
   serviceAccount: {}
   deployment:
-    securitySpec:
-      fsGroup: 54321 
+    securityContext:
+      fsGroup: 54321
+      fsGroupChangePolicy: "abcde"
     image:
       repository: discovery
     replicas: 1
@@ -64,12 +73,6 @@ discovery:
     fsGroup: 10102
     fsGroupChangePolicy: "33333"
     runAsUser: 10101
-    deploymentSpec:
-      deploymentSpecSansResources:
-        podSpec:
-          securityContext:
-            fsGroupChangePolicy: 666666
-
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
