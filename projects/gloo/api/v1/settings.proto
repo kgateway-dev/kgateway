@@ -149,9 +149,7 @@ message Settings {
         string iam_server_id_header = 3;
         string mountPath = 4;
         string access_key_id = 5;
-        // This is a secret but can't be a secret ref because we are configuring the secrets engine...
         string secret_access_key = 6;
-        // This is a secret but can't be a secret ref because we are configuring the secrets engine...
         string session_token = 7;
     }
 
