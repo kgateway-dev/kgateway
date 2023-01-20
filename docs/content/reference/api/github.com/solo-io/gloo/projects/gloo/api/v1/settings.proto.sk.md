@@ -237,8 +237,8 @@ For more info see https://developer.hashicorp.com/vault/docs/auth/aws
 | `iamServerIdHeader` | `string` |  |
 | `mountPath` | `string` |  |
 | `accessKeyId` | `string` |  |
-| `secretAccessKey` | `string` | This is a secret but can't be a secret ref because we are configuring the secrets engine... |
-| `sessionToken` | `string` | This is a secret but can't be a secret ref because we are configuring the secrets engine... |
+| `secretAccessKey` | `string` |  |
+| `sessionToken` | `string` |  |
 
 
 

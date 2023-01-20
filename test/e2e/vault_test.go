@@ -21,8 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Vault e2e", func() {
-
+var _ = Describe("Vault e2e", func() {
 	var (
 		ctx           context.Context
 		cancel        context.CancelFunc
@@ -31,6 +30,8 @@ var _ = FDescribe("Vault e2e", func() {
 	)
 
 	BeforeEach(func() {
+		Skip("until AWS creds are in cloudbuild")
+
 		helpers.ValidateRequirementsAndNotifyGinkgo(
 			helpers.Vault(),
 			helpers.LinuxOnly("docker image we get the executable from is only built for linux"),

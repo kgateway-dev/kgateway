@@ -1460,10 +1460,8 @@ type Settings_VaultAwsAuth struct {
 	IamServerIdHeader string `protobuf:"bytes,3,opt,name=iam_server_id_header,json=iamServerIdHeader,proto3" json:"iam_server_id_header,omitempty"`
 	MountPath         string `protobuf:"bytes,4,opt,name=mountPath,proto3" json:"mountPath,omitempty"`
 	AccessKeyId       string `protobuf:"bytes,5,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
-	// This is a secret but can't be a secret ref because we are configuring the secrets engine...
-	SecretAccessKey string `protobuf:"bytes,6,opt,name=secret_access_key,json=secretAccessKey,proto3" json:"secret_access_key,omitempty"`
-	// This is a secret but can't be a secret ref because we are configuring the secrets engine...
-	SessionToken string `protobuf:"bytes,7,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
+	SecretAccessKey   string `protobuf:"bytes,6,opt,name=secret_access_key,json=secretAccessKey,proto3" json:"secret_access_key,omitempty"`
+	SessionToken      string `protobuf:"bytes,7,opt,name=session_token,json=sessionToken,proto3" json:"session_token,omitempty"`
 }
 
 func (x *Settings_VaultAwsAuth) Reset() {

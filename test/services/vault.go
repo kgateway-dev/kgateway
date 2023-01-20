@@ -188,7 +188,7 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) 
 	}
 
 	// Add our admin policy
-	tmpFileName := fmt.Sprintf("%s/policy.json", i.tmpdir)
+	tmpFileName := filepath.Join(i.tmpdir, "policy.json")
 	err = os.WriteFile(tmpFileName, []byte(`{"path":{"*":{"capabilities":["create","read","update","delete","list","patch","sudo"]}}}`), 0666)
 	if err != nil {
 		return err
