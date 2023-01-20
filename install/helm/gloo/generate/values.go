@@ -134,7 +134,7 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	SecurityContext   *PodSecuritySpec       `json:"initContainers,omitempty"`
+	SecurityContext   *PodSecuritySpec       `json:"securityContext,omitempty"`
 }
 
 type JobSpec struct {
