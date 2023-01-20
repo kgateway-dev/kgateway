@@ -66,7 +66,7 @@ The translator takes all of this information and initiates a new *translation lo
 
 ![Component Architecture]({{% versioned_link_path fromRoot="/img/translation_loop.png" %}})
 
-1. The translation cycle starts by defining *[Envoy clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto)* from all configured Upstreams. Clusters in this context are groups of similar Upstream hosts. Each Upstream has a *type*, which determines how the Upstream is processed. Correctly configured Upstreams are converted into Envoy clusters that match their type. including information like cluster metadata.
+1. The translation cycle starts by defining *[Envoy clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto)* from all configured Upstreams. Clusters in this context are groups of similar Upstream hosts. Each Upstream has a *type*, which determines how the Upstream is processed. Correctly configured Upstreams are converted into Envoy clusters that match their type, including information like cluster metadata.
 
 1. The next step in the translation cycle is to process all the functions on each Upstream. Function specific cluster metadata is added, which will be later processed by function-specific Envoy filters.
 
