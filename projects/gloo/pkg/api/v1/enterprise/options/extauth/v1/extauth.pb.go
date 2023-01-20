@@ -4765,7 +4765,7 @@ type UserSession_InternalSession struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call. 
+	// Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
 	// Defaults to false. To enable refreshing, set to true.
 	AllowRefreshing *wrappers.BoolValue `protobuf:"bytes,1,opt,name=allow_refreshing,json=allowRefreshing,proto3" json:"allow_refreshing,omitempty"`
 	// Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
@@ -4842,7 +4842,7 @@ type UserSession_RedisSession struct {
 	KeyPrefix string `protobuf:"bytes,2,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
 	// Cookie name to set and store the session id. If empty the default "__session" is used.
 	CookieName string `protobuf:"bytes,3,opt,name=cookie_name,json=cookieName,proto3" json:"cookie_name,omitempty"`
-	// Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call. 
+	// Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
 	// Defaults to true. To disable refreshing, set to false.
 	AllowRefreshing *wrappers.BoolValue `protobuf:"bytes,4,opt,name=allow_refreshing,json=allowRefreshing,proto3" json:"allow_refreshing,omitempty"`
 	// Specifies a time buffer in which an id-token will be refreshed prior to its

@@ -343,7 +343,7 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
-        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call. 
+        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
         // Defaults to false. To enable refreshing, set to true.
         google.protobuf.BoolValue allow_refreshing = 1;
         // Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
@@ -362,7 +362,7 @@ message UserSession {
         string key_prefix = 2;
         // Cookie name to set and store the session id. If empty the default "__session" is used.
         string cookie_name = 3;
-        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call. 
+        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
         // Defaults to true. To disable refreshing, set to false.
         google.protobuf.BoolValue allow_refreshing = 4;
         // Specifies a time buffer in which an id-token will be refreshed prior to its
