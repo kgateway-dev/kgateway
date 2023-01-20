@@ -2593,7 +2593,7 @@ type AccessTokenValidation_IntrospectionUrl struct {
 
 type AccessTokenValidation_Jwt struct {
 	// Validate access tokens that conform to the
-	// [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+	// [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
 	Jwt *JwtValidation `protobuf:"bytes,2,opt,name=jwt,proto3,oneof"`
 }
 
@@ -6395,7 +6395,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl struct {
 
 type ExtAuthConfig_AccessTokenValidationConfig_Jwt struct {
 	// Validate access tokens that conform to the
-	// [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+	// [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
 	Jwt *ExtAuthConfig_AccessTokenValidationConfig_JwtValidation `protobuf:"bytes,2,opt,name=jwt,proto3,oneof"`
 }
 

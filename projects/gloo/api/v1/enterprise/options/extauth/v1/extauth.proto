@@ -764,7 +764,7 @@ message AccessTokenValidation {
         string introspection_url = 1 [deprecated = true];
 
         // Validate access tokens that conform to the
-        // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+        // [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
         JwtValidation jwt = 2;
 
         // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
@@ -1417,7 +1417,7 @@ message ExtAuthConfig {
             string introspection_url = 1 [deprecated = true];
 
             // Validate access tokens that conform to the
-            // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+            // [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
             JwtValidation jwt = 2;
 
             // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
