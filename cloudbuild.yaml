@@ -98,7 +98,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
-  - 'SKIP_TEMP_DISABLED: "1"'
+  - 'SKIP_TEMP_DISABLED=1'
   dir: *dir
   args: ['run-tests']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
