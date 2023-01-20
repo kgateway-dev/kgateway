@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any "github.com/golang/protobuf/ptypes/any"
+	any1 "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -911,7 +911,7 @@ func (m *HealthCheck_CustomHealthCheck) GetConfigType() isHealthCheck_CustomHeal
 	return nil
 }
 
-func (x *HealthCheck_CustomHealthCheck) GetTypedConfig() *any.Any {
+func (x *HealthCheck_CustomHealthCheck) GetTypedConfig() *any1.Any {
 	if x, ok := x.GetConfigType().(*HealthCheck_CustomHealthCheck_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -923,7 +923,7 @@ type isHealthCheck_CustomHealthCheck_ConfigType interface {
 }
 
 type HealthCheck_CustomHealthCheck_TypedConfig struct {
-	TypedConfig *any.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*HealthCheck_CustomHealthCheck_TypedConfig) isHealthCheck_CustomHealthCheck_ConfigType() {}
@@ -1326,7 +1326,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3
 	(v3.CodecClientType)(0),                  // 16: solo.io.envoy.type.v3.CodecClientType
 	(*v31.StringMatcher)(nil),                // 17: solo.io.envoy.type.matcher.v3.StringMatcher
 	(*advanced_http.ResponseAssertions)(nil), // 18: advancedhttp.options.gloo.solo.io.ResponseAssertions
-	(*any.Any)(nil),                          // 19: google.protobuf.Any
+	(*any1.Any)(nil),                         // 19: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_health_check_proto_depIdxs = []int32{
 	9,  // 0: solo.io.envoy.config.core.v3.HealthCheck.timeout:type_name -> google.protobuf.Duration
