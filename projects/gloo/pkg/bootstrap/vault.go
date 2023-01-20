@@ -73,31 +73,30 @@ func parseTlsSettings(vaultSettings *v1.Settings_VaultSecrets) *api.TLSConfig {
 		addSettingFunc(b.GetValue())
 	}
 
-	// Add our settings to the vault TLS config, preferring settings set in the
-	// new TlsConfig field to those in the deprecated fields
 	setCaCert := func(s string) { tlsConfig.CACert = s }
-	addStringSetting(vaultSettings.GetCaCert(), setCaCert)
-	addStringSetting(vaultSettings.GetTlsConfig().GetCaCert(), setCaCert)
-
 	setCaPath := func(s string) { tlsConfig.CAPath = s }
-	addStringSetting(vaultSettings.GetCaPath(), setCaPath)
-	addStringSetting(vaultSettings.GetTlsConfig().GetCaPath(), setCaPath)
-
 	setClientCert := func(s string) { tlsConfig.ClientCert = s }
-	addStringSetting(vaultSettings.GetClientCert(), setClientCert)
-	addStringSetting(vaultSettings.GetTlsConfig().GetClientCert(), setClientCert)
-
 	setClientKey := func(s string) { tlsConfig.ClientKey = s }
-	addStringSetting(vaultSettings.GetClientKey(), setClientKey)
-	addStringSetting(vaultSettings.GetTlsConfig().GetClientKey(), setClientKey)
-
 	setTlsServerName := func(s string) { tlsConfig.TLSServerName = s }
-	addStringSetting(vaultSettings.GetTlsServerName(), setTlsServerName)
-	addStringSetting(vaultSettings.GetTlsConfig().GetTlsServerName(), setTlsServerName)
-
 	setInsecure := func(b bool) { tlsConfig.Insecure = b }
-	addBoolSetting(vaultSettings.GetInsecure(), setInsecure)
-	addBoolSetting(vaultSettings.GetTlsConfig().GetInsecure(), setInsecure)
+
+	// Add our settings to the vault TLS config, preferring settings set in the
+	// new TlsConfig field if it is used to those in the deprecated fields
+	if tlsSettings := vaultSettings.GetTlsConfig(); tlsSettings == nil {
+		addStringSetting(vaultSettings.GetCaCert(), setCaCert)
+		addStringSetting(vaultSettings.GetCaPath(), setCaPath)
+		addStringSetting(vaultSettings.GetClientCert(), setClientCert)
+		addStringSetting(vaultSettings.GetClientKey(), setClientKey)
+		addStringSetting(vaultSettings.GetTlsServerName(), setTlsServerName)
+		addBoolSetting(vaultSettings.GetInsecure(), setInsecure)
+	} else {
+		addStringSetting(vaultSettings.GetTlsConfig().GetCaCert(), setCaCert)
+		addStringSetting(vaultSettings.GetTlsConfig().GetCaPath(), setCaPath)
+		addStringSetting(vaultSettings.GetTlsConfig().GetClientCert(), setClientCert)
+		addStringSetting(vaultSettings.GetTlsConfig().GetClientKey(), setClientKey)
+		addStringSetting(vaultSettings.GetTlsConfig().GetTlsServerName(), setTlsServerName)
+		addBoolSetting(vaultSettings.GetTlsConfig().GetInsecure(), setInsecure)
+	}
 
 	return tlsConfig
 
@@ -123,20 +122,19 @@ func configureVaultAuth(vaultSettings *v1.Settings_VaultSecrets, client *api.Cli
 	}
 }
 
+// This indirection function exists to more easily enable further extenstion of AWS auth
+// to support EC2 auth method in the future
 func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
 	return configureAwsIamAuth(aws, client)
 }
 
 func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
-
 	if accessKeyId := aws.GetAccessKeyId(); accessKeyId == "" {
 		return nil, errors.New("access key id must be defined for AWS IAM auth")
 	} else {
 		os.Setenv("AWS_ACCESS_KEY_ID", accessKeyId)
 	}
 
-	// TODO(jbohanon) change accessor once we figure out API for this secret value
-	// this is a secret value and should not exist in the Settings in plaintext
 	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey == "" {
 		return nil, errors.New("secret access key must be defined for AWS IAM auth")
 	} else {
@@ -145,7 +143,7 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 
 	loginOptions := []awsauth.LoginOption{awsauth.WithIAMAuth()}
 
-	if role := aws.GetRole(); role != "" {
+	if role := aws.GetVaultRole(); role != "" {
 		loginOptions = append(loginOptions, awsauth.WithRole(role))
 	}
 
@@ -161,8 +159,6 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 		loginOptions = append(loginOptions, awsauth.WithMountPath(mountPath))
 	}
 
-	// TODO(jbohanon) change accessor once we figure out API for this secret value
-	// this is a secret value and should not exist in the Settings in plaintext
 	if sessionToken := aws.GetSessionToken(); sessionToken != "" {
 		os.Setenv("AWS_SESSION_TOKEN", sessionToken)
 	}
@@ -173,7 +169,7 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 	}
 
 	// TODO(jbohanon) set up auth token refreshing with client.NewLifetimeWatcher()
-	authInfo, err := client.Auth().Login(context.TODO(), awsAuth)
+	authInfo, err := client.Auth().Login(context.Background(), awsAuth)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to login to AWS auth method")
 	}

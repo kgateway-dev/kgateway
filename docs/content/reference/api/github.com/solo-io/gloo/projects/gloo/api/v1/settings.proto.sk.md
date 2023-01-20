@@ -220,7 +220,7 @@ Configure Vault client to authenticate to server via AWS auth (IAM only).
 For more info see https://developer.hashicorp.com/vault/docs/auth/aws
 
 ```yaml
-"role": string
+"vaultRole": string
 "region": string
 "iamServerIdHeader": string
 "mountPath": string
@@ -232,7 +232,7 @@ For more info see https://developer.hashicorp.com/vault/docs/auth/aws
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `role` | `string` |  |
+| `vaultRole` | `string` | The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured. |
 | `region` | `string` |  |
 | `iamServerIdHeader` | `string` |  |
 | `mountPath` | `string` |  |

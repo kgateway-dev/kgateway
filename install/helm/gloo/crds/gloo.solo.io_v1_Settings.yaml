@@ -676,11 +676,11 @@ spec:
                         type: string
                       region:
                         type: string
-                      role:
-                        type: string
                       secretAccessKey:
                         type: string
                       sessionToken:
+                        type: string
+                      vaultRole:
                         type: string
                     type: object
                   caCert:

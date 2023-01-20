@@ -628,7 +628,7 @@ func (m *Settings_VaultAwsAuth) Clone() proto.Message {
 	}
 	target = &Settings_VaultAwsAuth{}
 
-	target.Role = m.GetRole()
+	target.VaultRole = m.GetVaultRole()
 
 	target.Region = m.GetRegion()
 

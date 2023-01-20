@@ -1424,7 +1424,7 @@ func (m *Settings_VaultAwsAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetRole())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetVaultRole())); err != nil {
 		return 0, err
 	}
 
