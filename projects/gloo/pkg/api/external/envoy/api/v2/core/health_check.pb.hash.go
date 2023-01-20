@@ -12,6 +12,8 @@ import (
 
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
+
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 )
 
 // ensure the imports are used
@@ -23,6 +25,8 @@ var (
 	_ = fnv.New64
 	_ = hashstructure.Hash
 	_ = new(safe_hasher.SafeHasher)
+
+	_ = v3.RequestMethod(0)
 )
 
 // Hash function

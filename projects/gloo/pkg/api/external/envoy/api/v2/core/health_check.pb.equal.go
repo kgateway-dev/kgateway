@@ -12,6 +12,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	equality "github.com/solo-io/protoc-gen-ext/pkg/equality"
+
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 )
 
 // ensure the imports are used
@@ -23,6 +25,8 @@ var (
 	_ = strings.Compare
 	_ = equality.Equalizer(nil)
 	_ = proto.Message(nil)
+
+	_ = v3.RequestMethod(0)
 )
 
 // Equal function
