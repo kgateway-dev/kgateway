@@ -140,7 +140,7 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 			RequestHeadersToAdd:    requestHeadersToAdd,
 			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 			ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
-			Method:                 envoy_config_core_v3.RequestMethod(typed.HttpHealthCheck.GetMethod().Number()),
+			Method:                 envoy_config_core_v3.RequestMethod(typed.HttpHealthCheck.GetMethod()),
 		}
 		if typed.HttpHealthCheck.GetUseHttp2() {
 			httpHealthChecker.CodecClientType = envoy_type_v3.CodecClientType_HTTP2
@@ -229,7 +229,7 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 			RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
 			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 			ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
-			Method:                 v3.RequestMethod(typed.HttpHealthCheck.GetMethod().Number()),
+			Method:                 v3.RequestMethod(typed.HttpHealthCheck.GetMethod()),
 		}
 
 		if typed.HttpHealthCheck.GetCodecClientType() == envoy_type_v3.CodecClientType_HTTP2 {
