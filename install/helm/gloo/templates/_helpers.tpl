@@ -92,44 +92,80 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 
 
-{{- define "gloo.securityContext" -}}
+{{- define "gloo.containerSecurityContext" -}}
 securityContext:
-{{ with .fsGroup -}}
-    {{ printf "fsGroup: %.0f" (float64 .) | indent 2 }}
-{{ end -}}
-{{ with .securitySpec -}}
-    {{ printf "fsGroup2: %.0f" (float64 .) | indent 2 }}
-{{ end -}}
-{{- with .FsGroupChangePolicy }}
-  fsGroupChangePolicy: {{ . | nindent 2 }}
-{{ end -}}
-{{- with .legacy }}
-  legacy: {{ . | nindent 2 }}
-{{ end -}}
+{{- with .allowPrivilegeEscalation }}
+  allowPrivilegeEscalation: {{ . }}
+{{- end -}}
+{{- with .capabilities }}
+  capabilities: {{ . }}
+{{- end -}}
+{{- with .privileged -}}
+  privileged: {{ . }}
+{{- end -}}
+{{- with .procMount -}}
+  procMount: {{ . }}
+{{- end -}}
+{{- with .readOnlyRootFilesystem -}}
+  readOnlyRootFilesystem: {{ . }}
+{{- end -}}
 {{- with .runAsGroup -}}
-  runAsGroup: {{ . | nindent 4 }}
-{{ end -}}
+  runAsGroup: {{ . }}
+{{- end -}}
 {{- with .runAsNonRoot -}}
-  runAsNonRoot: {{ . | nindent 4  }}
-{{ end -}}
+  runAsNonRoot: {{ . }}
+{{- end -}}
 {{- with .runAsUser -}}
-  {{ printf "runAsUser: %.0f" (float64 .) | indent 2 }}
-{{ end -}}
-{{- with .supplementalGroups -}}
-  supplementalGroups: {{ . | nindent 4 }}
-{{ end -}}
+  runAsUser: {{ . }}
+{{- end -}}
 {{- with .seLinuxOptions -}}
-  seLinuxOptions: {{ toYaml . | nindent 4 }}
-{{ end -}}
+  seLinuxOptions: {{ toYaml . }}
+{{- end -}}
 {{- with .seccompProfile -}}
-  seccompProfile: {{ toYaml . | nindent 4 }}
-{{ end -}}
-{{- with .sysctls -}}
-  sysctls: {{ toYaml . | nindent 4 }}
-{{ end -}}
+  seccompProfile: {{ toYaml . }}
+{{- end -}}
 {{- with .windowsOptions -}}
-  windowsOptions: {{ toYaml . | nindent 4 }}
+  windowsOptions: {{ toYaml . }}
+{{- end -}}
 {{ end -}}
+
+
+
+{{- define "gloo.podSecurityContext" -}}
+securityContext:
+{{- with .fsGroupChangePolicy }}
+  fsGroupChangePolicy: {{ . }}
+{{- end -}}
+{{- with .fsGroup }}
+  fsGroup: {{ printf "%.0f" (float64 .) }}
+{{- end -}}
+{{- with .legacy }}
+  legacy: {{ . }}
+{{- end -}}
+{{- with .runAsGroup -}}
+  runAsGroup: {{ . }}
+{{- end -}}
+{{- with .runAsNonRoot -}}
+  runAsNonRoot: {{ . }}
+{{- end -}}
+{{- with .runAsUser -}}
+  {{ printf "%.0f" (float64 .) }}
+{{- end -}}
+{{- with .supplementalGroups -}}
+  supplementalGroups: {{ . }}
+{{- end -}}
+{{- with .seLinuxOptions -}}
+  seLinuxOptions: {{ toYaml . }}
+{{- end -}}
+{{- with .seccompProfile -}}
+  seccompProfile: {{ toYaml . }}
+{{- end -}}
+{{- with .sysctls -}}
+  sysctls: {{ toYaml . }}
+{{- end -}}
+{{- with .windowsOptions -}}
+  windowsOptions: {{ toYaml . }}
+{{- end -}}
 {{ end -}}
 
 {{- /*

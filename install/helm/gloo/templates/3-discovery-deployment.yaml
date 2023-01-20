@@ -97,9 +97,7 @@ spec:
             containerPort: 9091
         {{- end }}
       # Pod security context
-      {{- include "gloo.securityContext" .Values.discovery.deployment | nindent 6 -}}
-      #Dump
-      {{- .Values.discovery.deployment -}}
+      {{- include "gloo.podSecurityContext" .Values.discovery.deployment.securityContext | nindent 6 -}}
 {{- end }}
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}
 
