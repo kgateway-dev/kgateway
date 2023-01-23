@@ -27,6 +27,9 @@ import (
 var _ = Describe("", func() {
 	const region = "us-east-1"
 
+	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
+		return
+	}
 	var (
 		secret       *v1.Secret
 		secretClient v1.SecretClient

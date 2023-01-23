@@ -61,6 +61,7 @@ runs:
   - name: Testing - kube e2e regression tests
     shell: bash
     env:
+      SKIP_TEMP_DISABLED: "1"
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       ACK_GINKGO_RC: "true"
       ACK_GINKGO_DEPRECATIONS: 1.16.5
