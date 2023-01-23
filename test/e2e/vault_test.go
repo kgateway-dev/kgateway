@@ -98,9 +98,9 @@ var _ = Describe("Vault e2e", func() {
 				vaultFactoryConfig = &services.VaultFactoryConfig{}
 				startVault()
 				settings = &gloov1.Settings_VaultSecrets{
-					Address: "http://localhost:8200",
+					Address: vaultInstance.Address(),
 					AuthMethod: &gloov1.Settings_VaultSecrets_AccessToken{
-						AccessToken: "root",
+						AccessToken: services.DefaultVaultToken,
 					},
 				}
 			})
@@ -128,7 +128,7 @@ var _ = Describe("Vault e2e", func() {
 				}
 
 				settings = &gloov1.Settings_VaultSecrets{
-					Address: "http://localhost:8200",
+					Address: vaultInstance.Address(),
 					AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 						Aws: &gloov1.Settings_VaultAwsAuth{
 							VaultRole:       "vault-role",
@@ -170,7 +170,7 @@ func writeTestSecret() error {
 		return err
 	}
 
-	req.Header.Add("X-Vault-Token", "root")
+	req.Header.Add("X-Vault-Token", services.DefaultVaultToken)
 	_, err = http.DefaultClient.Do(req)
 	if err != nil {
 		return err
