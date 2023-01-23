@@ -57,16 +57,11 @@ spec:
         resources:
 {{ toYaml .Values.discovery.deployment.resources | indent 10}}
 {{- end}}
-        # container security context (template)
-        {{ $security := deepCopy .Values.discovery.deployment.securityContext }}
-        {{/* $security = merge $security .Values.discovery.deployment */}}
-        {{- include "gloo.containerSecurityContext" $security | nindent 8 }}
         # container security context
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true
-          # Todo - implement this logic
           {{- if not .Values.discovery.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.discovery.deployment.runAsUser) -}}
           {{- end }}
@@ -102,7 +97,12 @@ spec:
             containerPort: 9091
         {{- end }}
       # Pod security context
-      {{- include "gloo.podSecurityContext" .Values.discovery.deployment.securityContext | nindent 6 -}}
+      {{- if .Values.discovery.deployment.enablePodSecurityContext }}
+      securityContext:
+        {{- if .Values.discovery.deployment.fsGroup }}
+        fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
+        {{- end}}
+      {{- end}}
 {{- end }}
 {{- end }} {{/* define "discovery.deploymentSpec"*/}}
 
