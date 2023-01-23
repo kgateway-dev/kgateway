@@ -220,7 +220,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	)
 }
 
-// returns package name
 func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_GrpcService, set *descriptor.FileDescriptorSet) error {
 	for _, file := range set.GetFile() {
 		if file.Package == nil || file.GetPackage() != currentsvc.GetPackageName() {
@@ -234,14 +233,14 @@ func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_
 				fullServiceName := genFullServiceName(currentsvc.GetPackageName(), currentsvc.GetServiceName())
 				if method.GetOptions() == nil {
 					method.Options = &descriptor.MethodOptions{}
-				}
-				if err := proto.SetExtension(method.GetOptions(), annotations.E_Http, &annotations.HttpRule{
-					Pattern: &annotations.HttpRule_Post{
-						Post: httpPath(upstream, fullServiceName, method.GetName()),
-					},
-					Body: "*",
-				}); err != nil {
-					return errors.Wrap(err, "setting http extensions for method.Options")
+					if err := proto.SetExtension(method.GetOptions(), annotations.E_Http, &annotations.HttpRule{
+						Pattern: &annotations.HttpRule_Post{
+							Post: httpPath(upstream, fullServiceName, method.GetName()),
+						},
+						Body: "*",
+					}); err != nil {
+						return errors.Wrap(err, "setting http extensions for method.Options")
+					}
 				}
 				log.Debugf("method.options: %v", *method.GetOptions())
 			}
