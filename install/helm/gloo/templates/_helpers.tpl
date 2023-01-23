@@ -134,6 +134,7 @@ securityContext:
 
 
 {{- define "gloo.podSecurityContext" -}}
+{{- if .enablePodSecurityContext -}}
 securityContext:
 {{- with .fsGroupChangePolicy }}
   fsGroupChangePolicy: {{ . }}
@@ -167,6 +168,7 @@ securityContext:
 {{- end -}}
 {{- with .windowsOptions }}
   windowsOptions: {{ toYaml . | nindent 4 }}
+{{- end -}}
 {{- end -}}
 {{ end }}
 

@@ -50,6 +50,14 @@ gloo:
     replicas: 1
     runAsUser: 10101
     serviceAccount: {}
+    securityContext:
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 10101
+      capabilities:
+        drop:
+        - ALL
 discovery:
   enabled: true
   fdsMode: WHITELIST
@@ -161,6 +169,16 @@ gatewayProxies:
       # clusterIP: None
       httpPort: 80
       httpsPort: 443
+      securityContext:
+        runAsUser: 10102
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+          - ALL
+          add:
+          - NET_BIND_SERVICE
     # Annotation example: setup ssl with aws cert when service.type is LoadBalancer
     # extraAnnotations:
     #   service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:EXAMPLE_CERT
@@ -231,10 +249,13 @@ global:
     enableStatsRoute: false
     statsPrefixRewrite: /stats
   glooMtls:
-    enabled: false
+    enabled: true
     sds:
       image:
         repository: sds
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10101
     istioProxy:
       image:
         repository: proxyv2
@@ -243,6 +264,9 @@ global:
     envoy:
       image:
         repository: gloo-envoy-wrapper
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10101
   istioSDS:
     enabled: false
   istioIntegration:
