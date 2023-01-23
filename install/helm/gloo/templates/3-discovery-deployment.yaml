@@ -57,11 +57,16 @@ spec:
         resources:
 {{ toYaml .Values.discovery.deployment.resources | indent 10}}
 {{- end}}
+        # container security context (template)
+        {{ $security := deepCopy .Values.discovery.deployment.securityContext }}
+        {{/* $security = merge $security .Values.discovery.deployment */}}
+        {{- include "gloo.containerSecurityContext" $security | nindent 8 }}
         # container security context
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true
+          # Todo - implement this logic
           {{- if not .Values.discovery.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.discovery.deployment.runAsUser) -}}
           {{- end }}
