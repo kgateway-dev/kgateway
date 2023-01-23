@@ -44,6 +44,9 @@ import (
 )
 
 var _ = Describe("AWS Lambda", func() {
+	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
+		return
+	}
 	const (
 		region               = "us-east-1"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
