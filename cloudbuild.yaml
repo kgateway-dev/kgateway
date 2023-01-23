@@ -53,7 +53,7 @@ steps:
   dir: '/workspace/gloo/example/proxycontroller'
   id: 'build-proxycontroller-example'
 
-- name: gcr.io/cloud-builders/gcloud:latest
+- name: gcr.io/cloud-builders/gcloud
   args:
   - kms
   - decrypt
@@ -73,11 +73,11 @@ steps:
   waitFor: ['-']
   id: 'grab-ginkgo-container'
 
-- name: gcr.io/cloud-builders/gcloud:latest
+- name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-gcr-zone'
 
-- name: gcr.io/cloud-builders/gcloud:latest
+- name: gcr.io/cloud-builders/gcloud
   args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
   waitFor: ['set-gcr-zone']
   id: 'get-test-credentials'
@@ -87,7 +87,7 @@ steps:
   dir: *dir
   id: 'install-go-tools'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.0.0-dev'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.4.28'
   entrypoint: make
   env:
   - 'ENVOY_BINARY=/workspace/envoy'
@@ -97,7 +97,6 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'TAGGED_VERSION=$TAG_NAME'
-  - 'USE_GKE_GCLOUD_AUTH_PLUGIN=True'
   - 'SKIP_TEMP_DISABLED=1'
   dir: *dir
   args: ['run-tests']
@@ -129,7 +128,7 @@ steps:
 
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
-- name: gcr.io/cloud-builders/gcloud:latest
+- name: gcr.io/cloud-builders/gcloud
   args: ['auth', 'configure-docker']
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
