@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gloo-custom-resource-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: custom-resources
+data:
+  {{- $cr := include "gloo.customResources" . | indent 4 -}}
+  {{- $hasCr := contains "kind:" $cr -}}{{/* whether there are any custom resources */}}
+  custom-resources: |
+    {{- $cr }}
+  has-custom-resources: "{{- $hasCr -}}"
