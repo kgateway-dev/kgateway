@@ -41,14 +41,6 @@ settings:
   disableProxyGarbageCollection: false
 gloo:
   deployment:
-    security_context:
-      readOnlyRootFilesystem: true
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      runAsUser: 10101
-      capabilities:
-        drop:
-        - ALL
     image:
       repository: gloo
     xdsPort: 9977
@@ -66,6 +58,12 @@ discovery:
     securityContext:
       fsGroup: 54321
       fsGroupChangePolicy: "abcde"
+      readOnlyRootFilesystem: true
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      capabilities:
+        drop:
+        - ALL
     image:
       repository: discovery
     replicas: 1
@@ -147,6 +145,16 @@ gatewayProxies:
         sleepTimeSeconds: 25
       customReadinessProbe: {}
       customLivenessProbe: {}
+      securityContext:
+        runAsUser: 10102
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+          - ALL
+          add:
+          - NET_BIND_SERVICE
     service:
       customPorts: []
       type: LoadBalancer

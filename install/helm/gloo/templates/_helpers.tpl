@@ -96,38 +96,40 @@ ttlSecondsAfterFinished: {{ . }}
 securityContext:
 {{- with .allowPrivilegeEscalation }}
   allowPrivilegeEscalation: {{ . }}
-{{- end -}}
-{{- with .capabilities }}
-  capabilities: {{ . }}
-{{- end -}}
-{{- with .privileged -}}
-  privileged: {{ . }}
-{{- end -}}
-{{- with .procMount -}}
-  procMount: {{ . }}
-{{- end -}}
-{{- with .readOnlyRootFilesystem -}}
-  readOnlyRootFilesystem: {{ . }}
-{{- end -}}
-{{- with .runAsGroup -}}
-  runAsGroup: {{ . }}
-{{- end -}}
-{{- with .runAsNonRoot -}}
-  runAsNonRoot: {{ . }}
-{{- end -}}
-{{- with .runAsUser -}}
-  runAsUser: {{ . }}
-{{- end -}}
-{{- with .seLinuxOptions -}}
-  seLinuxOptions: {{ toYaml . }}
-{{- end -}}
-{{- with .seccompProfile -}}
-  seccompProfile: {{ toYaml . }}
-{{- end -}}
-{{- with .windowsOptions -}}
-  windowsOptions: {{ toYaml . }}
-{{- end -}}
 {{ end -}}
+{{- with .capabilities }}
+  capabilities: {{ toYaml . | nindent 4  }}
+{{ end -}}
+{{- with .privileged }}
+  privileged: {{ . }}
+{{ end -}}
+{{- with .procMount }}
+  procMount: {{ . }}
+{{ end -}}
+{{- with .readOnlyRootFilesystem }}
+  readOnlyRootFilesystem: {{ . }}
+{{ end -}}
+{{- with .runAsGroup }}
+  runAsGroup: {{ . }}
+{{ end -}}
+{{- with .runAsNonRoot }}
+  runAsNonRoot: {{ . }}
+{{ end -}}
+{{- if not .floatingUserId }}
+{{- with .runAsUser }}
+  runAsUser: {{ . }}
+{{ end -}}
+{{ end -}}
+{{- with .seLinuxOptions }}
+  seLinuxOptions: {{ toYaml . | nindent 4  }}
+{{ end -}}
+{{- with .seccompProfile }}
+  seccompProfile: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{- with .windowsOptions }}
+  windowsOptions: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{ end }}
 
 
 
@@ -142,31 +144,31 @@ securityContext:
 {{- with .legacy }}
   legacy: {{ . }}
 {{- end -}}
-{{- with .runAsGroup -}}
+{{- with .runAsGroup }}
   runAsGroup: {{ . }}
 {{- end -}}
-{{- with .runAsNonRoot -}}
+{{- with .runAsNonRoot }}
   runAsNonRoot: {{ . }}
 {{- end -}}
-{{- with .runAsUser -}}
-  {{ printf "%.0f" (float64 .) }}
+{{- with .runAsUser }}
+  runAsUser: {{ printf "%.0f" (float64 .) }}
 {{- end -}}
-{{- with .supplementalGroups -}}
+{{- with .supplementalGroups }}
   supplementalGroups: {{ . }}
 {{- end -}}
-{{- with .seLinuxOptions -}}
-  seLinuxOptions: {{ toYaml . }}
+{{- with .seLinuxOptions }}
+  seLinuxOptions: {{ toYaml . | nindent 4 }}
 {{- end -}}
-{{- with .seccompProfile -}}
-  seccompProfile: {{ toYaml . }}
+{{- with .seccompProfile }}
+  seccompProfile: {{ toYaml . | nindent 4 }}
 {{- end -}}
-{{- with .sysctls -}}
-  sysctls: {{ toYaml . }}
+{{- with .sysctls }}
+  sysctls: {{ toYaml . | nindent 4 }}
 {{- end -}}
-{{- with .windowsOptions -}}
-  windowsOptions: {{ toYaml . }}
+{{- with .windowsOptions }}
+  windowsOptions: {{ toYaml . | nindent 4 }}
 {{- end -}}
-{{ end -}}
+{{ end }}
 
 {{- /*
 This takes an array of three values:

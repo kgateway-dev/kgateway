@@ -83,7 +83,7 @@ type PodSecuritySpec struct {
 	WindowsOptions      *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
 }
 
-type SecuritySpec struct {
+type ContainerSecuritySpec struct {
 	AllowPrivilegeEscalation *bool                          `json:"allowPrivilegeEscalation,omitempty"`
 	Capabilities             *Capabilities                  `json:"capabilities,omitempty"`
 	Privileged               *bool                          `json:"privileged,omitempty"`
@@ -94,6 +94,24 @@ type SecuritySpec struct {
 	RunAsUser                *int                           `json:"runAsUser,omitempty"`
 	SELinuxOptions           *SELinuxOptions                `json:"seLinuxOptions,omitempty"`
 	SeccompProfile           *SeccompProfile                `json:"seccompProfile,omitempty"`
+	WindowsOptions           *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
+}
+
+type UberSecuritySpec struct {
+	AllowPrivilegeEscalation *bool                          `json:"allowPrivilegeEscalation,omitempty"`
+	Capabilities             *Capabilities                  `json:"capabilities,omitempty"`
+	Privileged               *bool                          `json:"privileged,omitempty"`
+	ProcMount                *string                        `json:"procMount,omitempty"`
+	ReadOnlyRootFilesystem   *bool                          `json:"readOnlyRootFilesystem,omitempty"`
+	FsGroup                  *int                           `json:"fsGroup,omitempty"`
+	FsGroupChangePolicy      *string                        `json:"fsGroupChangePolicy,omitempty"`
+	RunAsGroup               *int                           `json:"runAsGroup,omitempty"`
+	RunAsNonRoot             *bool                          `json:"runAsNonRoot,omitempty"`
+	RunAsUser                *int                           `json:"runAsUser,omitempty"`
+	SupplementalGroups       []int                          `json:"supplementalGroups,omitempty"`
+	SELinuxOptions           *SELinuxOptions                `json:"seLinuxOptions,omitempty"`
+	SeccompProfile           *SeccompProfile                `json:"seccompProfile,omitempty"`
+	Sysctls                  []Sysctl                       `json:"sysctls,omitempty"`
 	WindowsOptions           *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
 }
 
@@ -134,7 +152,7 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	SecurityContext   *PodSecuritySpec       `json:"securityContext,omitempty"`
+	SecurityContext   *UberSecuritySpec      `json:"securityContext,omitempty"`
 }
 
 type JobSpec struct {
@@ -559,6 +577,7 @@ type GatewayProxyPodTemplate struct {
 	ExtraContainers               []interface{}         `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
 	ExtraInitContainers           []interface{}         `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
 	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	SecurityContext               *UberSecuritySpec     `json:"securityContext,omitempty"`
 }
 
 type GracefulShutdownSpec struct {
@@ -700,7 +719,8 @@ type Mtls struct {
 }
 
 type SdsContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image           *Image            `json:"image,omitempty"`
+	SecurityContext *UberSecuritySpec ``
 }
 
 type EnvoySidecarContainer struct {
