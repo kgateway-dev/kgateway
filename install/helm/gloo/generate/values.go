@@ -601,6 +601,7 @@ type GatewayProxyService struct {
 	CustomPorts              []interface{}         `json:"customPorts,omitempty" desc:"List of custom port to expose in the Envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
 	ExternalIPs              []string              `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
 	ConfigDumpService        *KubeResourceOverride `json:"configDumpService,omitempty" desc:"kube resource override for gateway proxy config dump service"`
+	SecurityContext          *UberSecuritySpec     `json:"securityContext,omitempty"`
 	*KubeResourceOverride
 }
 
@@ -720,11 +721,12 @@ type Mtls struct {
 
 type SdsContainer struct {
 	Image           *Image            `json:"image,omitempty"`
-	SecurityContext *UberSecuritySpec ``
+	SecurityContext *UberSecuritySpec `json:"securityContext,omitempty"`
 }
 
 type EnvoySidecarContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image           *Image            `json:"image,omitempty"`
+	SecurityContext *UberSecuritySpec `json:"securityContext,omitempty"`
 }
 
 type IstioProxyContainer struct {

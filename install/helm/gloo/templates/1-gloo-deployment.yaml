@@ -77,7 +77,13 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
-        securityContext:
+        # { template}
+        {{- if .Values.global.glooMtls.envoy.securityContext -}}
+        {{- $security := deepCopy .Values.global.glooMtls.envoy.securityContext -}}
+        {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
+        {{- end -}}
+        # { existing }
+        securityContext: ##1
           runAsNonRoot: true
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
@@ -120,7 +126,13 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
-        securityContext:
+        # { template}
+        {{- if .Values.global.glooMtls.sds.securityContext -}}
+        {{- $security := deepCopy .Values.global.glooMtls.sds.securityContext -}}
+        {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
+        {{- end -}}
+        # { existing }
+        securityContext: ## 2
           runAsNonRoot: true
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
@@ -156,7 +168,13 @@ spec:
             cpu: 500m
             memory: 256Mi
 {{- end}}
-        securityContext:
+        # { template}
+        {{- if .Values.gloo.deployment.securityContext -}}
+        {{- $security := deepCopy .Values.gloo.deployment.securityContext -}}
+        {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
+        {{- end -}}
+        # Original
+        securityContext: ## 3
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true
