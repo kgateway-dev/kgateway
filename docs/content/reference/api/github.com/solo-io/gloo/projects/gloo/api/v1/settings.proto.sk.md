@@ -233,12 +233,12 @@ For more info see https://developer.hashicorp.com/vault/docs/auth/aws
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `vaultRole` | `string` | The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured. |
-| `region` | `string` |  |
-| `iamServerIdHeader` | `string` |  |
-| `mountPath` | `string` |  |
-| `accessKeyId` | `string` |  |
-| `secretAccessKey` | `string` |  |
-| `sessionToken` | `string` |  |
+| `region` | `string` | The AWS region to use for the login attempt. |
+| `iamServerIdHeader` | `string` | The IAM Server ID Header required to be included in the request. |
+| `mountPath` | `string` | The Vault path on which the AWS auth is mounted. |
+| `accessKeyId` | `string` | The Access Key ID as provided by the security credentials on the AWS IAM resource. |
+| `secretAccessKey` | `string` | The Secret Access Key as provided by the security credentials on the AWS IAM resource. |
+| `sessionToken` | `string` | The Session Token as provided by the security credentials on the AWS IAM resource. |
 
 
 

@@ -5,8 +5,8 @@ import (
 	"context"
 	"net/http"
 	"net/url"
-	"os"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -30,11 +30,10 @@ var _ = Describe("Vault e2e", func() {
 	)
 
 	BeforeEach(func() {
-		Skip("until AWS creds are in cloudbuild")
-
 		helpers.ValidateRequirementsAndNotifyGinkgo(
 			helpers.Vault(),
 			helpers.LinuxOnly("docker image we get the executable from is only built for linux"),
+			helpers.AwsCredentials(),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())
@@ -73,7 +72,7 @@ var _ = Describe("Vault e2e", func() {
 			}, "5s", ".5s").Should(Succeed())
 		}
 
-		testWriteSecret := &gloov1.Secret{
+		secretForWriteTests := &gloov1.Secret{
 			Kind: &gloov1.Secret_Oauth{Oauth: &v1.OauthSecret{
 				ClientSecret: "test",
 			}},
@@ -109,7 +108,7 @@ var _ = Describe("Vault e2e", func() {
 				eventuallyReadsTestSecret()
 			})
 			It("writes secret", func() {
-				_, err = secretClient.Write(testWriteSecret, clients.WriteOpts{})
+				_, err = secretClient.Write(secretForWriteTests, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 				sec, err := vaultInstance.Exec("kv", "get", "-mount=secret", "gloo/gloo.solo.io/v1/Secret/gloo-system/test-write-secret")
 				Expect(err).NotTo(HaveOccurred())
@@ -118,16 +117,24 @@ var _ = Describe("Vault e2e", func() {
 		})
 		Context("aws auth", func() {
 			BeforeEach(func() {
+				Skip("until AWS creds are in cloudbuild")
+
 				vaultFactoryConfig = &services.VaultFactoryConfig{}
 				startVault()
+				localAwsCredentials := credentials.NewSharedCredentials("", "")
+				v, err := localAwsCredentials.Get()
+				if err != nil {
+					Fail("no AWS creds available")
+				}
+
 				settings = &gloov1.Settings_VaultSecrets{
 					Address: "http://localhost:8200",
 					AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 						Aws: &gloov1.Settings_VaultAwsAuth{
 							VaultRole:       "vault-role",
 							Region:          "us-east-1",
-							AccessKeyId:     os.Getenv("AWS_ACCESS_KEY_ID"),
-							SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+							AccessKeyId:     v.AccessKeyID,
+							SecretAccessKey: v.SecretAccessKey,
 						},
 					},
 				}
@@ -138,7 +145,7 @@ var _ = Describe("Vault e2e", func() {
 				eventuallyReadsTestSecret()
 			})
 			It("writes secret", func() {
-				_, err = secretClient.Write(testWriteSecret, clients.WriteOpts{})
+				_, err = secretClient.Write(secretForWriteTests, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 				sec, err := vaultInstance.Exec("kv", "get", "-mount=secret", "gloo/gloo.solo.io/v1/Secret/gloo-system/test-write-secret")
 				Expect(err).NotTo(HaveOccurred())
