@@ -5,32 +5,40 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/onsi/gomega/gexec"
-	"github.com/solo-io/go-utils/log"
-
-	"io/ioutil"
-
+	"strings"
 	"time"
 
-	"strings"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/log"
 
 	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega/gexec"
 )
 
-const defaultVaultDockerImage = "vault:1.1.3"
+const defaultVaultDockerImage = "vault:1.12.2"
 const defaultAddress = "127.0.0.1:8200"
+const DefaultVaultToken = "root"
+const defaultAWSArn = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
 
 type VaultFactory struct {
 	vaultPath string
 	tmpdir    string
+	useTls    bool
 }
 
 type VaultFactoryConfig struct {
 	PathPrefix string
+	UseTls     bool
 }
 
 func NewVaultFactory() (*VaultFactory, error) {
+	return NewVaultFactoryForConfig(&VaultFactoryConfig{})
+}
+
+func NewVaultFactoryForConfig(cfg *VaultFactoryConfig) (*VaultFactory, error) {
+	if cfg == nil {
+		cfg = &VaultFactoryConfig{}
+	}
 	path := os.Getenv("VAULT_BINARY")
 
 	if path != "" {
@@ -48,7 +56,7 @@ func NewVaultFactory() (*VaultFactory, error) {
 	}
 
 	// try to grab one form docker...
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "vault")
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "vault")
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +74,7 @@ docker rm -f $CID
     `, defaultVaultDockerImage, defaultVaultDockerImage)
 	scriptfile := filepath.Join(tmpdir, "getvault.sh")
 
-	ioutil.WriteFile(scriptfile, []byte(bash), 0755)
+	os.WriteFile(scriptfile, []byte(bash), 0755)
 
 	cmd := exec.Command("bash", scriptfile)
 	cmd.Dir = tmpdir
@@ -79,15 +87,16 @@ docker rm -f $CID
 	return &VaultFactory{
 		vaultPath: filepath.Join(tmpdir, "vault"),
 		tmpdir:    tmpdir,
+		useTls:    cfg.UseTls,
 	}, nil
 }
 
-func (ef *VaultFactory) Clean() error {
-	if ef == nil {
+func (vf *VaultFactory) Clean() error {
+	if vf == nil {
 		return nil
 	}
-	if ef.tmpdir != "" {
-		os.RemoveAll(ef.tmpdir)
+	if vf.tmpdir != "" {
+		os.RemoveAll(vf.tmpdir)
 
 	}
 	return nil
@@ -100,18 +109,21 @@ type VaultInstance struct {
 	session   *gexec.Session
 	token     string
 	address   string
+	useTls    bool
+	customCfg string
 }
 
-func (ef *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
-	// try to grab one form docker...
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "vault")
+func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
+	// try to get an executable from docker...
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "vault")
 	if err != nil {
 		return nil, err
 	}
 
 	return &VaultInstance{
-		vaultpath: ef.vaultPath,
+		vaultpath: vf.vaultPath,
 		tmpdir:    tmpdir,
+		useTls:    vf.useTls,
 	}, nil
 
 }
@@ -121,13 +133,17 @@ func (i *VaultInstance) Run() error {
 }
 
 func (i *VaultInstance) RunWithAddress(address string) error {
-	i.token = "root"
+	i.token = DefaultVaultToken
 	i.address = address
+	devCmd := "-dev"
+	if i.useTls {
+		devCmd = "-dev-tls"
+	}
 
 	cmd := exec.Command(i.vaultpath,
 		"server",
 		// https://www.vaultproject.io/docs/concepts/dev-server
-		"-dev",
+		devCmd,
 		fmt.Sprintf("-dev-root-token-id=%s", i.token),
 		fmt.Sprintf("-dev-listen-address=%s", i.address),
 	)
@@ -152,12 +168,49 @@ func (i *VaultInstance) Token() string {
 }
 
 func (i *VaultInstance) Address() string {
-	return fmt.Sprintf("http://%s", i.address)
+	scheme := "http"
+	if i.useTls {
+		scheme = "https"
+	}
+	return fmt.Sprintf("%s://%s", scheme, i.address)
 }
 
 func (i *VaultInstance) EnableSecretEngine(secretEngine string) error {
 	_, err := i.Exec("secrets", "enable", "-version=2", fmt.Sprintf("-path=%s", secretEngine), "kv")
 	return err
+}
+
+func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) error {
+	// Enable the AWS auth method
+	_, err := i.Exec("auth", "enable", "aws")
+	if err != nil {
+		return err
+	}
+
+	// Add our admin policy
+	tmpFileName := filepath.Join(i.tmpdir, "policy.json")
+	err = os.WriteFile(tmpFileName, []byte(`{"path":{"*":{"capabilities":["create","read","update","delete","list","patch","sudo"]}}}`), 0666)
+	if err != nil {
+		return err
+	}
+	_, err = i.Exec("policy", "write", "admin", tmpFileName)
+	if err != nil {
+		return err
+	}
+
+	// Configure the AWS auth method with the creds provided
+	_, err = i.Exec("write", "auth/aws/config/client", fmt.Sprintf("secret_key=%s", settings.GetAws().GetSecretAccessKey()), fmt.Sprintf("access_key=%s", settings.GetAws().GetAccessKeyId()))
+	if err != nil {
+		return err
+	}
+
+	// Configure the Vault role to align with the provided AWS role
+	_, err = i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", defaultAWSArn), "policies=admin")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (i *VaultInstance) Binary() string {
