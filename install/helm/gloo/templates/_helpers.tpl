@@ -147,25 +147,25 @@ securityContext:
 
 {{- define "gloo.containerSecurityContext2" -}}
 {{- $fieldsToDisplay := or 
-  (not (kindIs "invalid" .conf.allowPrivilegeEscalation))
+  (not (kindIs "invalid" .sec.allowPrivilegeEscalation))
   .capabilities
-  (not (kindIs "invalid" .conf.privileged))
-  .conf.procMount
-  (not (kindIs "invalid" .conf.readOnlyRootFilesystem))
-  .conf.runAsGroup 
-  (or (not (kindIs "invalid" .conf.runAsNonRoot)) .ctx.runUnprivileged)
-  (and (not .ctx.floatingUserId) (or .conf.runAsUser .ctx.runAsUser))
-  .conf.seLinuxOptions
-  .conf.seccompProfile
-  .conf.windowsOptions
+  (not (kindIs "invalid" .sec.privileged))
+  .sec.procMount
+  (not (kindIs "invalid" .sec.readOnlyRootFilesystem))
+  .sec.runAsGroup 
+  (or (not (kindIs "invalid" .sec.runAsNonRoot)) .ctx.runUnprivileged)
+  (and (not .ctx.floatingUserId) (or .sec.runAsUser .ctx.runAsUser))
+  .sec.seLinuxOptions
+  .sec.seccompProfile
+  .sec.windowsOptions
  -}}
 {{- if $fieldsToDisplay -}}
 securityContext:
-{{- if not (kindIs "invalid" .conf.allowPrivilegeEscalation) }}
-  allowPrivilegeEscalation: {{ .conf.allowPrivilegeEscalation }}
+{{- if not (kindIs "invalid" .sec.allowPrivilegeEscalation) }}
+  allowPrivilegeEscalation: {{ .sec.allowPrivilegeEscalation }}
 {{- end }}
-{{- if .conf.capabilities }}
-  capabilities: {{ toYaml .conf.capabilities | nindent 4  }}
+{{- if .sec.capabilities }}
+  capabilities: {{ toYaml .sec.capabilities | nindent 4  }}
 {{- else if .ctx.useDefaultCapabilities }}
   capabilities:
     drop:
@@ -175,33 +175,33 @@ securityContext:
     - NET_BIND_SERVICE
     {{- end}}
 {{- end }}
-{{- if not (kindIs "invalid" .conf.runAsNonRoot) }}
-  runAsNonRoot: {{ .conf.runAsNonRoot }}
+{{- if not (kindIs "invalid" .sec.runAsNonRoot) }}
+  runAsNonRoot: {{ .sec.runAsNonRoot }}
 {{- else if .ctx.runUnprivileged }}
   runAsNonRoot: true
 {{- end }}
-{{- with .conf.procMount }}
+{{- with .sec.procMount }}
   procMount: {{ . }}
 {{- end }}
-{{- if not (kindIs "invalid" .conf.readOnlyRootFilesystem) }}
-  readOnlyRootFilesystem: {{ .conf.readOnlyRootFilesystem }}
+{{- if not (kindIs "invalid" .sec.readOnlyRootFilesystem) }}
+  readOnlyRootFilesystem: {{ .sec.readOnlyRootFilesystem }}
 {{- end }}
-{{- with .conf.runAsGroup }}
+{{- with .sec.runAsGroup }}
   runAsGroup: {{ . }}
 {{- end }}
 
 {{- if not .ctx.floatingUserId }}
-{{- with .conf.runAsUser }}
+{{- with .sec.runAsUser }}
   runAsUser: {{ . }}
 {{ end -}}
 {{ end -}}
-{{- with .conf.seLinuxOptions }}
+{{- with .sec.seLinuxOptions }}
   seLinuxOptions: {{ toYaml . | nindent 4  }}
 {{ end -}}
-{{- with .conf.seccompProfile }}
+{{- with .sec.seccompProfile }}
   seccompProfile: {{ toYaml . | nindent 4 }}
 {{ end -}}
-{{- with .conf.windowsOptions }}
+{{- with .sec.windowsOptions }}
   windowsOptions: {{ toYaml . | nindent 4 }}
 {{- end }}
 {{- end }}
@@ -209,56 +209,7 @@ securityContext:
 
 
 {{- define "gloo.podSecurityContext2" -}}
-{{- $fieldsToDisplay := or 
-  .conf.fsGroupChangePolicy
-  (or .conf.fsGroup .ctx.fsGroup)
-  .conf.runAsGroup
-  (or .conf.runAsUser .ctx.runAsUser)
-  (not (kindIs "invalid" .ctx.runAsNonRoot) )
-  (and .conf.runAsUser (not .ctx.floatingUserId))
-  .conf.supplementalGroups
-  .conf.seLinuxOptions 
-  .conf.seccompProfile
-  .conf.sysctls
-  .conf.windowsOptions -}}
-{{- if and $fieldsToDisplay .ctx.enablePodSecurityContext -}}
-securityContext:
-{{- with .conf.fsGroupChangePolicy }}
-  fsGroupChangePolicy: {{ . }}
-{{- end }}
-{{- if (or .conf.fsGroup .ctx.fsGroup) }}
-  fsGroup: {{ printf "%.0f" (float64 (or .conf.fsGroup .ctx.fsGroup)) }}
-{{- end }}
-{{- with .conf.legacy }}
-  legacy: {{ . }}
-{{- end }}
-{{- with .conf.runAsGroup }}
-  runAsGroup: {{ . }}
-{{- end }}
-{{- if not (kindIs "invalid" .conf.runAsNonRoot) }}
-  runAsNonRoot: {{ .conf.runAsNonRoot }}
-{{- end }}
-{{- if not .ctx.floatingUserId }}
-{{- if (or .conf.runAsUser .ctx.runAsUser) }}
-  runAsUser: {{ (or .conf.runAsUser .ctx.runAsUser) }}
-{{- end }}
-{{- end }}
-{{- with .conf.supplementalGroups }}
-  supplementalGroups: {{ . }}
-{{- end }}
-{{- with .conf.seLinuxOptions }}
-  seLinuxOptions: {{ toYaml . | nindent 4 }}
-{{- end }}
-{{- with .conf.seccompProfile }}
-  seccompProfile: {{ toYaml . | nindent 4 }}
-{{- end }}
-{{- with .conf.sysctls }}
-  sysctls: {{ toYaml . | nindent 4 }}
-{{- end }}
-{{- with .conf.windowsOptions }}
-  windowsOptions: {{ toYaml . | nindent 4 }}
-{{- end }}
-{{- end }}
+{{ . }}
 {{- end }}
 
 

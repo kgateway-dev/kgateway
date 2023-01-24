@@ -56,24 +56,43 @@
 |settings.integrations.knative.proxy.affinity.NAME|interface|||
 |settings.integrations.knative.proxy.hostAliases[]|interface|||
 |settings.integrations.knative.proxy.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|settings.integrations.knative.proxy.securityContext.fsGroup|int|||
-|settings.integrations.knative.proxy.securityContext.fsGroupChangePolicy|string|||
-|settings.integrations.knative.proxy.securityContext.runAsGroup|int|||
-|settings.integrations.knative.proxy.securityContext.runAsNonRoot|bool|||
-|settings.integrations.knative.proxy.securityContext.runAsUser|int|||
-|settings.integrations.knative.proxy.securityContext.supplementalGroups[]|int|||
-|settings.integrations.knative.proxy.securityContext.seLinuxOptions|string|||
-|settings.integrations.knative.proxy.securityContext.seLinuxOptions|string|||
-|settings.integrations.knative.proxy.securityContext.seLinuxOptions|string|||
-|settings.integrations.knative.proxy.securityContext.seLinuxOptions|string|||
-|settings.integrations.knative.proxy.securityContext.seccompProfile|string|||
-|settings.integrations.knative.proxy.securityContext.seccompProfile|string|||
-|settings.integrations.knative.proxy.securityContext.sysctls[]|string|||
-|settings.integrations.knative.proxy.securityContext.sysctls[]|string|||
-|settings.integrations.knative.proxy.securityContext.windowsOptions|string|||
-|settings.integrations.knative.proxy.securityContext.windowsOptions|string|||
-|settings.integrations.knative.proxy.securityContext.windowsOptions|bool|||
-|settings.integrations.knative.proxy.securityContext.windowsOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.fsGroup|int|||
+|settings.integrations.knative.proxy.podSecurityContext.fsGroupChangePolicy|string|||
+|settings.integrations.knative.proxy.podSecurityContext.runAsGroup|int|||
+|settings.integrations.knative.proxy.podSecurityContext.runAsNonRoot|bool|||
+|settings.integrations.knative.proxy.podSecurityContext.runAsUser|int|||
+|settings.integrations.knative.proxy.podSecurityContext.supplementalGroups[]|int|||
+|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.seccompProfile|string|||
+|settings.integrations.knative.proxy.podSecurityContext.seccompProfile|string|||
+|settings.integrations.knative.proxy.podSecurityContext.sysctls[]|string|||
+|settings.integrations.knative.proxy.podSecurityContext.sysctls[]|string|||
+|settings.integrations.knative.proxy.podSecurityContext.windowsOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.windowsOptions|string|||
+|settings.integrations.knative.proxy.podSecurityContext.windowsOptions|bool|||
+|settings.integrations.knative.proxy.podSecurityContext.windowsOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.capabilities.add[]|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.capabilities.drop[]|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.privileged|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.procMount|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.runAsGroup|int|||
+|settings.integrations.knative.proxy.containerSecurityContext.runAsNonRoot|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.runAsUser|int|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seccompProfile|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.seccompProfile|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions|string|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions|bool|||
+|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions|string|||
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
@@ -194,24 +213,43 @@
 |gloo.deployment.affinity.NAME|interface|||
 |gloo.deployment.hostAliases[]|interface|||
 |gloo.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gloo.deployment.securityContext.fsGroup|int|||
-|gloo.deployment.securityContext.fsGroupChangePolicy|string|||
-|gloo.deployment.securityContext.runAsGroup|int|||
-|gloo.deployment.securityContext.runAsNonRoot|bool|||
-|gloo.deployment.securityContext.runAsUser|int|||
-|gloo.deployment.securityContext.supplementalGroups[]|int|||
-|gloo.deployment.securityContext.seLinuxOptions|string|||
-|gloo.deployment.securityContext.seLinuxOptions|string|||
-|gloo.deployment.securityContext.seLinuxOptions|string|||
-|gloo.deployment.securityContext.seLinuxOptions|string|||
-|gloo.deployment.securityContext.seccompProfile|string|||
-|gloo.deployment.securityContext.seccompProfile|string|||
-|gloo.deployment.securityContext.sysctls[]|string|||
-|gloo.deployment.securityContext.sysctls[]|string|||
-|gloo.deployment.securityContext.windowsOptions|string|||
-|gloo.deployment.securityContext.windowsOptions|string|||
-|gloo.deployment.securityContext.windowsOptions|bool|||
-|gloo.deployment.securityContext.windowsOptions|string|||
+|gloo.deployment.podSecurityContext.fsGroup|int|||
+|gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|gloo.deployment.podSecurityContext.runAsGroup|int|||
+|gloo.deployment.podSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.podSecurityContext.runAsUser|int|||
+|gloo.deployment.podSecurityContext.supplementalGroups[]|int|||
+|gloo.deployment.podSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.podSecurityContext.seccompProfile|string|||
+|gloo.deployment.podSecurityContext.seccompProfile|string|||
+|gloo.deployment.podSecurityContext.sysctls[]|string|||
+|gloo.deployment.podSecurityContext.sysctls[]|string|||
+|gloo.deployment.podSecurityContext.windowsOptions|string|||
+|gloo.deployment.podSecurityContext.windowsOptions|string|||
+|gloo.deployment.podSecurityContext.windowsOptions|bool|||
+|gloo.deployment.podSecurityContext.windowsOptions|string|||
+|gloo.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gloo.deployment.containerSecurityContext.capabilities.add[]|string|||
+|gloo.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|gloo.deployment.containerSecurityContext.privileged|bool|||
+|gloo.deployment.containerSecurityContext.procMount|string|||
+|gloo.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gloo.deployment.containerSecurityContext.runAsGroup|int|||
+|gloo.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.containerSecurityContext.runAsUser|int|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gloo.deployment.containerSecurityContext.seccompProfile|string|||
+|gloo.deployment.containerSecurityContext.seccompProfile|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions|bool|||
+|gloo.deployment.containerSecurityContext.windowsOptions|string|||
 |gloo.deployment.resources.limits.memory|string||amount of memory|
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
@@ -278,24 +316,43 @@
 |discovery.deployment.affinity.NAME|interface|||
 |discovery.deployment.hostAliases[]|interface|||
 |discovery.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|discovery.deployment.securityContext.fsGroup|int|54321||
-|discovery.deployment.securityContext.fsGroupChangePolicy|string|abcde||
-|discovery.deployment.securityContext.runAsGroup|int|||
-|discovery.deployment.securityContext.runAsNonRoot|bool|||
-|discovery.deployment.securityContext.runAsUser|int|||
-|discovery.deployment.securityContext.supplementalGroups[]|int|||
-|discovery.deployment.securityContext.seLinuxOptions|string|||
-|discovery.deployment.securityContext.seLinuxOptions|string|||
-|discovery.deployment.securityContext.seLinuxOptions|string|||
-|discovery.deployment.securityContext.seLinuxOptions|string|||
-|discovery.deployment.securityContext.seccompProfile|string|||
-|discovery.deployment.securityContext.seccompProfile|string|||
-|discovery.deployment.securityContext.sysctls[]|string|||
-|discovery.deployment.securityContext.sysctls[]|string|||
-|discovery.deployment.securityContext.windowsOptions|string|||
-|discovery.deployment.securityContext.windowsOptions|string|||
-|discovery.deployment.securityContext.windowsOptions|bool|||
-|discovery.deployment.securityContext.windowsOptions|string|||
+|discovery.deployment.podSecurityContext.fsGroup|int|||
+|discovery.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|discovery.deployment.podSecurityContext.runAsGroup|int|||
+|discovery.deployment.podSecurityContext.runAsNonRoot|bool|||
+|discovery.deployment.podSecurityContext.runAsUser|int|||
+|discovery.deployment.podSecurityContext.supplementalGroups[]|int|||
+|discovery.deployment.podSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.podSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.podSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.podSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.podSecurityContext.seccompProfile|string|||
+|discovery.deployment.podSecurityContext.seccompProfile|string|||
+|discovery.deployment.podSecurityContext.sysctls[]|string|||
+|discovery.deployment.podSecurityContext.sysctls[]|string|||
+|discovery.deployment.podSecurityContext.windowsOptions|string|||
+|discovery.deployment.podSecurityContext.windowsOptions|string|||
+|discovery.deployment.podSecurityContext.windowsOptions|bool|||
+|discovery.deployment.podSecurityContext.windowsOptions|string|||
+|discovery.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|discovery.deployment.containerSecurityContext.capabilities.add[]|string|||
+|discovery.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|discovery.deployment.containerSecurityContext.privileged|bool|||
+|discovery.deployment.containerSecurityContext.procMount|string|||
+|discovery.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|discovery.deployment.containerSecurityContext.runAsGroup|int|||
+|discovery.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|discovery.deployment.containerSecurityContext.runAsUser|int|||
+|discovery.deployment.containerSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.containerSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.containerSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.containerSecurityContext.seLinuxOptions|string|||
+|discovery.deployment.containerSecurityContext.seccompProfile|string|||
+|discovery.deployment.containerSecurityContext.seccompProfile|string|||
+|discovery.deployment.containerSecurityContext.windowsOptions|string|||
+|discovery.deployment.containerSecurityContext.windowsOptions|string|||
+|discovery.deployment.containerSecurityContext.windowsOptions|bool|||
+|discovery.deployment.containerSecurityContext.windowsOptions|string|||
 |discovery.deployment.resources.limits.memory|string||amount of memory|
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
@@ -346,24 +403,43 @@
 |gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
 |gateway.certGenJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.certGenJob.securityContext.fsGroup|int|||
-|gateway.certGenJob.securityContext.fsGroupChangePolicy|string|||
-|gateway.certGenJob.securityContext.runAsGroup|int|||
-|gateway.certGenJob.securityContext.runAsNonRoot|bool|||
-|gateway.certGenJob.securityContext.runAsUser|int|||
-|gateway.certGenJob.securityContext.supplementalGroups[]|int|||
-|gateway.certGenJob.securityContext.seLinuxOptions|string|||
-|gateway.certGenJob.securityContext.seLinuxOptions|string|||
-|gateway.certGenJob.securityContext.seLinuxOptions|string|||
-|gateway.certGenJob.securityContext.seLinuxOptions|string|||
-|gateway.certGenJob.securityContext.seccompProfile|string|||
-|gateway.certGenJob.securityContext.seccompProfile|string|||
-|gateway.certGenJob.securityContext.sysctls[]|string|||
-|gateway.certGenJob.securityContext.sysctls[]|string|||
-|gateway.certGenJob.securityContext.windowsOptions|string|||
-|gateway.certGenJob.securityContext.windowsOptions|string|||
-|gateway.certGenJob.securityContext.windowsOptions|bool|||
-|gateway.certGenJob.securityContext.windowsOptions|string|||
+|gateway.certGenJob.podSecurityContext.fsGroup|int|||
+|gateway.certGenJob.podSecurityContext.fsGroupChangePolicy|string|||
+|gateway.certGenJob.podSecurityContext.runAsGroup|int|||
+|gateway.certGenJob.podSecurityContext.runAsNonRoot|bool|||
+|gateway.certGenJob.podSecurityContext.runAsUser|int|||
+|gateway.certGenJob.podSecurityContext.supplementalGroups[]|int|||
+|gateway.certGenJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.podSecurityContext.seccompProfile|string|||
+|gateway.certGenJob.podSecurityContext.seccompProfile|string|||
+|gateway.certGenJob.podSecurityContext.sysctls[]|string|||
+|gateway.certGenJob.podSecurityContext.sysctls[]|string|||
+|gateway.certGenJob.podSecurityContext.windowsOptions|string|||
+|gateway.certGenJob.podSecurityContext.windowsOptions|string|||
+|gateway.certGenJob.podSecurityContext.windowsOptions|bool|||
+|gateway.certGenJob.podSecurityContext.windowsOptions|string|||
+|gateway.certGenJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gateway.certGenJob.containerSecurityContext.capabilities.add[]|string|||
+|gateway.certGenJob.containerSecurityContext.capabilities.drop[]|string|||
+|gateway.certGenJob.containerSecurityContext.privileged|bool|||
+|gateway.certGenJob.containerSecurityContext.procMount|string|||
+|gateway.certGenJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gateway.certGenJob.containerSecurityContext.runAsGroup|int|||
+|gateway.certGenJob.containerSecurityContext.runAsNonRoot|bool|||
+|gateway.certGenJob.containerSecurityContext.runAsUser|int|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.certGenJob.containerSecurityContext.seccompProfile|string|||
+|gateway.certGenJob.containerSecurityContext.seccompProfile|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions|string|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions|bool|||
+|gateway.certGenJob.containerSecurityContext.windowsOptions|string|||
 |gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.certGenJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -398,24 +474,43 @@
 |gateway.rolloutJob.affinity.NAME|interface|||
 |gateway.rolloutJob.hostAliases[]|interface|||
 |gateway.rolloutJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.rolloutJob.securityContext.fsGroup|int|||
-|gateway.rolloutJob.securityContext.fsGroupChangePolicy|string|||
-|gateway.rolloutJob.securityContext.runAsGroup|int|||
-|gateway.rolloutJob.securityContext.runAsNonRoot|bool|||
-|gateway.rolloutJob.securityContext.runAsUser|int|||
-|gateway.rolloutJob.securityContext.supplementalGroups[]|int|||
-|gateway.rolloutJob.securityContext.seLinuxOptions|string|||
-|gateway.rolloutJob.securityContext.seLinuxOptions|string|||
-|gateway.rolloutJob.securityContext.seLinuxOptions|string|||
-|gateway.rolloutJob.securityContext.seLinuxOptions|string|||
-|gateway.rolloutJob.securityContext.seccompProfile|string|||
-|gateway.rolloutJob.securityContext.seccompProfile|string|||
-|gateway.rolloutJob.securityContext.sysctls[]|string|||
-|gateway.rolloutJob.securityContext.sysctls[]|string|||
-|gateway.rolloutJob.securityContext.windowsOptions|string|||
-|gateway.rolloutJob.securityContext.windowsOptions|string|||
-|gateway.rolloutJob.securityContext.windowsOptions|bool|||
-|gateway.rolloutJob.securityContext.windowsOptions|string|||
+|gateway.rolloutJob.podSecurityContext.fsGroup|int|||
+|gateway.rolloutJob.podSecurityContext.fsGroupChangePolicy|string|||
+|gateway.rolloutJob.podSecurityContext.runAsGroup|int|||
+|gateway.rolloutJob.podSecurityContext.runAsNonRoot|bool|||
+|gateway.rolloutJob.podSecurityContext.runAsUser|int|||
+|gateway.rolloutJob.podSecurityContext.supplementalGroups[]|int|||
+|gateway.rolloutJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.podSecurityContext.seccompProfile|string|||
+|gateway.rolloutJob.podSecurityContext.seccompProfile|string|||
+|gateway.rolloutJob.podSecurityContext.sysctls[]|string|||
+|gateway.rolloutJob.podSecurityContext.sysctls[]|string|||
+|gateway.rolloutJob.podSecurityContext.windowsOptions|string|||
+|gateway.rolloutJob.podSecurityContext.windowsOptions|string|||
+|gateway.rolloutJob.podSecurityContext.windowsOptions|bool|||
+|gateway.rolloutJob.podSecurityContext.windowsOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gateway.rolloutJob.containerSecurityContext.capabilities.add[]|string|||
+|gateway.rolloutJob.containerSecurityContext.capabilities.drop[]|string|||
+|gateway.rolloutJob.containerSecurityContext.privileged|bool|||
+|gateway.rolloutJob.containerSecurityContext.procMount|string|||
+|gateway.rolloutJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gateway.rolloutJob.containerSecurityContext.runAsGroup|int|||
+|gateway.rolloutJob.containerSecurityContext.runAsNonRoot|bool|||
+|gateway.rolloutJob.containerSecurityContext.runAsUser|int|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.seccompProfile|string|||
+|gateway.rolloutJob.containerSecurityContext.seccompProfile|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions|string|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions|bool|||
+|gateway.rolloutJob.containerSecurityContext.windowsOptions|string|||
 |gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.rolloutJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.rolloutJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -452,24 +547,43 @@
 |gateway.cleanupJob.affinity.NAME|interface|||
 |gateway.cleanupJob.hostAliases[]|interface|||
 |gateway.cleanupJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.cleanupJob.securityContext.fsGroup|int|||
-|gateway.cleanupJob.securityContext.fsGroupChangePolicy|string|||
-|gateway.cleanupJob.securityContext.runAsGroup|int|||
-|gateway.cleanupJob.securityContext.runAsNonRoot|bool|||
-|gateway.cleanupJob.securityContext.runAsUser|int|||
-|gateway.cleanupJob.securityContext.supplementalGroups[]|int|||
-|gateway.cleanupJob.securityContext.seLinuxOptions|string|||
-|gateway.cleanupJob.securityContext.seLinuxOptions|string|||
-|gateway.cleanupJob.securityContext.seLinuxOptions|string|||
-|gateway.cleanupJob.securityContext.seLinuxOptions|string|||
-|gateway.cleanupJob.securityContext.seccompProfile|string|||
-|gateway.cleanupJob.securityContext.seccompProfile|string|||
-|gateway.cleanupJob.securityContext.sysctls[]|string|||
-|gateway.cleanupJob.securityContext.sysctls[]|string|||
-|gateway.cleanupJob.securityContext.windowsOptions|string|||
-|gateway.cleanupJob.securityContext.windowsOptions|string|||
-|gateway.cleanupJob.securityContext.windowsOptions|bool|||
-|gateway.cleanupJob.securityContext.windowsOptions|string|||
+|gateway.cleanupJob.podSecurityContext.fsGroup|int|||
+|gateway.cleanupJob.podSecurityContext.fsGroupChangePolicy|string|||
+|gateway.cleanupJob.podSecurityContext.runAsGroup|int|||
+|gateway.cleanupJob.podSecurityContext.runAsNonRoot|bool|||
+|gateway.cleanupJob.podSecurityContext.runAsUser|int|||
+|gateway.cleanupJob.podSecurityContext.supplementalGroups[]|int|||
+|gateway.cleanupJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.podSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.podSecurityContext.seccompProfile|string|||
+|gateway.cleanupJob.podSecurityContext.seccompProfile|string|||
+|gateway.cleanupJob.podSecurityContext.sysctls[]|string|||
+|gateway.cleanupJob.podSecurityContext.sysctls[]|string|||
+|gateway.cleanupJob.podSecurityContext.windowsOptions|string|||
+|gateway.cleanupJob.podSecurityContext.windowsOptions|string|||
+|gateway.cleanupJob.podSecurityContext.windowsOptions|bool|||
+|gateway.cleanupJob.podSecurityContext.windowsOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gateway.cleanupJob.containerSecurityContext.capabilities.add[]|string|||
+|gateway.cleanupJob.containerSecurityContext.capabilities.drop[]|string|||
+|gateway.cleanupJob.containerSecurityContext.privileged|bool|||
+|gateway.cleanupJob.containerSecurityContext.procMount|string|||
+|gateway.cleanupJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gateway.cleanupJob.containerSecurityContext.runAsGroup|int|||
+|gateway.cleanupJob.containerSecurityContext.runAsNonRoot|bool|||
+|gateway.cleanupJob.containerSecurityContext.runAsUser|int|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.seLinuxOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.seccompProfile|string|||
+|gateway.cleanupJob.containerSecurityContext.seccompProfile|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions|string|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions|bool|||
+|gateway.cleanupJob.containerSecurityContext.windowsOptions|string|||
 |gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.cleanupJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.cleanupJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -536,24 +650,43 @@
 |gatewayProxies.NAME.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.NAME.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gatewayProxies.NAME.kind.deployment.securityContext.fsGroup|int|||
-|gatewayProxies.NAME.kind.deployment.securityContext.fsGroupChangePolicy|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.runAsGroup|int|||
-|gatewayProxies.NAME.kind.deployment.securityContext.runAsNonRoot|bool|||
-|gatewayProxies.NAME.kind.deployment.securityContext.runAsUser|int|||
-|gatewayProxies.NAME.kind.deployment.securityContext.supplementalGroups[]|int|||
-|gatewayProxies.NAME.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.seccompProfile|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.seccompProfile|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.sysctls[]|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.sysctls[]|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.windowsOptions|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.windowsOptions|string|||
-|gatewayProxies.NAME.kind.deployment.securityContext.windowsOptions|bool|||
-|gatewayProxies.NAME.kind.deployment.securityContext.windowsOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.fsGroup|int|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.runAsGroup|int|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.runAsUser|int|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.supplementalGroups[]|int|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions|bool|||
+|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.privileged|bool|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.procMount|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.runAsGroup|int|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.runAsUser|int|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions|bool|||
+|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions|string|||
 |gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
@@ -634,6 +767,43 @@
 |gatewayProxies.NAME.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
 |gatewayProxies.NAME.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
 |gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true|
+|gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroup|int|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.runAsGroup|int|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.runAsUser|int|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.supplementalGroups[]|int|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions|bool|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.privileged|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.procMount|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsGroup|int|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsUser|int|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions|string|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -753,24 +923,43 @@
 |gatewayProxies.gatewayProxy.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.fsGroup|int|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.fsGroupChangePolicy|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.runAsGroup|int|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.runAsNonRoot|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.runAsUser|int|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.supplementalGroups[]|int|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.seLinuxOptions|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.seccompProfile|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.seccompProfile|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.sysctls[]|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.sysctls[]|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.windowsOptions|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.windowsOptions|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.windowsOptions|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.securityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.fsGroup|int|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.runAsGroup|int|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.runAsUser|int|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.supplementalGroups[]|int|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.privileged|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.procMount|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.runAsGroup|int|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.runAsUser|int|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
@@ -851,6 +1040,43 @@
 |gatewayProxies.gatewayProxy.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroup|int|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsGroup|int|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsUser|int|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.supplementalGroups[]|int|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.sysctls[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|false||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.privileged|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.procMount|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|true||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsGroup|int|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsNonRoot|bool|true||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsUser|int|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions|string|||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -990,24 +1216,43 @@
 |ingress.deployment.affinity.NAME|interface|||
 |ingress.deployment.hostAliases[]|interface|||
 |ingress.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|ingress.deployment.securityContext.fsGroup|int|||
-|ingress.deployment.securityContext.fsGroupChangePolicy|string|||
-|ingress.deployment.securityContext.runAsGroup|int|||
-|ingress.deployment.securityContext.runAsNonRoot|bool|||
-|ingress.deployment.securityContext.runAsUser|int|||
-|ingress.deployment.securityContext.supplementalGroups[]|int|||
-|ingress.deployment.securityContext.seLinuxOptions|string|||
-|ingress.deployment.securityContext.seLinuxOptions|string|||
-|ingress.deployment.securityContext.seLinuxOptions|string|||
-|ingress.deployment.securityContext.seLinuxOptions|string|||
-|ingress.deployment.securityContext.seccompProfile|string|||
-|ingress.deployment.securityContext.seccompProfile|string|||
-|ingress.deployment.securityContext.sysctls[]|string|||
-|ingress.deployment.securityContext.sysctls[]|string|||
-|ingress.deployment.securityContext.windowsOptions|string|||
-|ingress.deployment.securityContext.windowsOptions|string|||
-|ingress.deployment.securityContext.windowsOptions|bool|||
-|ingress.deployment.securityContext.windowsOptions|string|||
+|ingress.deployment.podSecurityContext.fsGroup|int|||
+|ingress.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|ingress.deployment.podSecurityContext.runAsGroup|int|||
+|ingress.deployment.podSecurityContext.runAsNonRoot|bool|||
+|ingress.deployment.podSecurityContext.runAsUser|int|||
+|ingress.deployment.podSecurityContext.supplementalGroups[]|int|||
+|ingress.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.podSecurityContext.seccompProfile|string|||
+|ingress.deployment.podSecurityContext.seccompProfile|string|||
+|ingress.deployment.podSecurityContext.sysctls[]|string|||
+|ingress.deployment.podSecurityContext.sysctls[]|string|||
+|ingress.deployment.podSecurityContext.windowsOptions|string|||
+|ingress.deployment.podSecurityContext.windowsOptions|string|||
+|ingress.deployment.podSecurityContext.windowsOptions|bool|||
+|ingress.deployment.podSecurityContext.windowsOptions|string|||
+|ingress.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|ingress.deployment.containerSecurityContext.capabilities.add[]|string|||
+|ingress.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|ingress.deployment.containerSecurityContext.privileged|bool|||
+|ingress.deployment.containerSecurityContext.procMount|string|||
+|ingress.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|ingress.deployment.containerSecurityContext.runAsGroup|int|||
+|ingress.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|ingress.deployment.containerSecurityContext.runAsUser|int|||
+|ingress.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingress.deployment.containerSecurityContext.seccompProfile|string|||
+|ingress.deployment.containerSecurityContext.seccompProfile|string|||
+|ingress.deployment.containerSecurityContext.windowsOptions|string|||
+|ingress.deployment.containerSecurityContext.windowsOptions|string|||
+|ingress.deployment.containerSecurityContext.windowsOptions|bool|||
+|ingress.deployment.containerSecurityContext.windowsOptions|string|||
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
@@ -1064,24 +1309,43 @@
 |ingressProxy.deployment.affinity.NAME|interface|||
 |ingressProxy.deployment.hostAliases[]|interface|||
 |ingressProxy.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|ingressProxy.deployment.securityContext.fsGroup|int|||
-|ingressProxy.deployment.securityContext.fsGroupChangePolicy|string|||
-|ingressProxy.deployment.securityContext.runAsGroup|int|||
-|ingressProxy.deployment.securityContext.runAsNonRoot|bool|||
-|ingressProxy.deployment.securityContext.runAsUser|int|||
-|ingressProxy.deployment.securityContext.supplementalGroups[]|int|||
-|ingressProxy.deployment.securityContext.seLinuxOptions|string|||
-|ingressProxy.deployment.securityContext.seLinuxOptions|string|||
-|ingressProxy.deployment.securityContext.seLinuxOptions|string|||
-|ingressProxy.deployment.securityContext.seLinuxOptions|string|||
-|ingressProxy.deployment.securityContext.seccompProfile|string|||
-|ingressProxy.deployment.securityContext.seccompProfile|string|||
-|ingressProxy.deployment.securityContext.sysctls[]|string|||
-|ingressProxy.deployment.securityContext.sysctls[]|string|||
-|ingressProxy.deployment.securityContext.windowsOptions|string|||
-|ingressProxy.deployment.securityContext.windowsOptions|string|||
-|ingressProxy.deployment.securityContext.windowsOptions|bool|||
-|ingressProxy.deployment.securityContext.windowsOptions|string|||
+|ingressProxy.deployment.podSecurityContext.fsGroup|int|||
+|ingressProxy.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|ingressProxy.deployment.podSecurityContext.runAsGroup|int|||
+|ingressProxy.deployment.podSecurityContext.runAsNonRoot|bool|||
+|ingressProxy.deployment.podSecurityContext.runAsUser|int|||
+|ingressProxy.deployment.podSecurityContext.supplementalGroups[]|int|||
+|ingressProxy.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.podSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.podSecurityContext.seccompProfile|string|||
+|ingressProxy.deployment.podSecurityContext.seccompProfile|string|||
+|ingressProxy.deployment.podSecurityContext.sysctls[]|string|||
+|ingressProxy.deployment.podSecurityContext.sysctls[]|string|||
+|ingressProxy.deployment.podSecurityContext.windowsOptions|string|||
+|ingressProxy.deployment.podSecurityContext.windowsOptions|string|||
+|ingressProxy.deployment.podSecurityContext.windowsOptions|bool|||
+|ingressProxy.deployment.podSecurityContext.windowsOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|ingressProxy.deployment.containerSecurityContext.capabilities.add[]|string|||
+|ingressProxy.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|ingressProxy.deployment.containerSecurityContext.privileged|bool|||
+|ingressProxy.deployment.containerSecurityContext.procMount|string|||
+|ingressProxy.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|ingressProxy.deployment.containerSecurityContext.runAsGroup|int|||
+|ingressProxy.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|ingressProxy.deployment.containerSecurityContext.runAsUser|int|||
+|ingressProxy.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.seLinuxOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.seccompProfile|string|||
+|ingressProxy.deployment.containerSecurityContext.seccompProfile|string|||
+|ingressProxy.deployment.containerSecurityContext.windowsOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.windowsOptions|string|||
+|ingressProxy.deployment.containerSecurityContext.windowsOptions|bool|||
+|ingressProxy.deployment.containerSecurityContext.windowsOptions|string|||
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
@@ -1156,24 +1420,43 @@
 |accessLogger.affinity.NAME|interface|||
 |accessLogger.hostAliases[]|interface|||
 |accessLogger.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|accessLogger.securityContext.fsGroup|int|||
-|accessLogger.securityContext.fsGroupChangePolicy|string|||
-|accessLogger.securityContext.runAsGroup|int|||
-|accessLogger.securityContext.runAsNonRoot|bool|||
-|accessLogger.securityContext.runAsUser|int|||
-|accessLogger.securityContext.supplementalGroups[]|int|||
-|accessLogger.securityContext.seLinuxOptions|string|||
-|accessLogger.securityContext.seLinuxOptions|string|||
-|accessLogger.securityContext.seLinuxOptions|string|||
-|accessLogger.securityContext.seLinuxOptions|string|||
-|accessLogger.securityContext.seccompProfile|string|||
-|accessLogger.securityContext.seccompProfile|string|||
-|accessLogger.securityContext.sysctls[]|string|||
-|accessLogger.securityContext.sysctls[]|string|||
-|accessLogger.securityContext.windowsOptions|string|||
-|accessLogger.securityContext.windowsOptions|string|||
-|accessLogger.securityContext.windowsOptions|bool|||
-|accessLogger.securityContext.windowsOptions|string|||
+|accessLogger.podSecurityContext.fsGroup|int|||
+|accessLogger.podSecurityContext.fsGroupChangePolicy|string|||
+|accessLogger.podSecurityContext.runAsGroup|int|||
+|accessLogger.podSecurityContext.runAsNonRoot|bool|||
+|accessLogger.podSecurityContext.runAsUser|int|||
+|accessLogger.podSecurityContext.supplementalGroups[]|int|||
+|accessLogger.podSecurityContext.seLinuxOptions|string|||
+|accessLogger.podSecurityContext.seLinuxOptions|string|||
+|accessLogger.podSecurityContext.seLinuxOptions|string|||
+|accessLogger.podSecurityContext.seLinuxOptions|string|||
+|accessLogger.podSecurityContext.seccompProfile|string|||
+|accessLogger.podSecurityContext.seccompProfile|string|||
+|accessLogger.podSecurityContext.sysctls[]|string|||
+|accessLogger.podSecurityContext.sysctls[]|string|||
+|accessLogger.podSecurityContext.windowsOptions|string|||
+|accessLogger.podSecurityContext.windowsOptions|string|||
+|accessLogger.podSecurityContext.windowsOptions|bool|||
+|accessLogger.podSecurityContext.windowsOptions|string|||
+|accessLogger.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|accessLogger.containerSecurityContext.capabilities.add[]|string|||
+|accessLogger.containerSecurityContext.capabilities.drop[]|string|||
+|accessLogger.containerSecurityContext.privileged|bool|||
+|accessLogger.containerSecurityContext.procMount|string|||
+|accessLogger.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|accessLogger.containerSecurityContext.runAsGroup|int|||
+|accessLogger.containerSecurityContext.runAsNonRoot|bool|||
+|accessLogger.containerSecurityContext.runAsUser|int|||
+|accessLogger.containerSecurityContext.seLinuxOptions|string|||
+|accessLogger.containerSecurityContext.seLinuxOptions|string|||
+|accessLogger.containerSecurityContext.seLinuxOptions|string|||
+|accessLogger.containerSecurityContext.seLinuxOptions|string|||
+|accessLogger.containerSecurityContext.seccompProfile|string|||
+|accessLogger.containerSecurityContext.seccompProfile|string|||
+|accessLogger.containerSecurityContext.windowsOptions|string|||
+|accessLogger.containerSecurityContext.windowsOptions|string|||
+|accessLogger.containerSecurityContext.windowsOptions|bool|||
+|accessLogger.containerSecurityContext.windowsOptions|string|||
 |accessLogger.resources.limits.memory|string||amount of memory|
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|
@@ -1199,7 +1482,7 @@
 |global.glooStats.statsPrefixRewrite|string|/stats|The Envoy stats endpoint with general metrics for the additional stats route|
 |global.glooStats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |global.glooStats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
-|global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
+|global.glooMtls.enabled|bool|true|Enables internal mtls authentication|
 |global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.sds.image.repository|string|sds|The image repository (name) for the container.|
 |global.glooMtls.sds.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1209,6 +1492,25 @@
 |global.glooMtls.sds.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.sds.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.sds.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.sds.securityContext.allowPrivilegeEscalation|bool|||
+|global.glooMtls.sds.securityContext.capabilities.add[]|string|||
+|global.glooMtls.sds.securityContext.capabilities.drop[]|string|||
+|global.glooMtls.sds.securityContext.privileged|bool|||
+|global.glooMtls.sds.securityContext.procMount|string|||
+|global.glooMtls.sds.securityContext.readOnlyRootFilesystem|bool|||
+|global.glooMtls.sds.securityContext.runAsGroup|int|||
+|global.glooMtls.sds.securityContext.runAsNonRoot|bool|true||
+|global.glooMtls.sds.securityContext.runAsUser|int|10101||
+|global.glooMtls.sds.securityContext.seLinuxOptions|string|||
+|global.glooMtls.sds.securityContext.seLinuxOptions|string|||
+|global.glooMtls.sds.securityContext.seLinuxOptions|string|||
+|global.glooMtls.sds.securityContext.seLinuxOptions|string|||
+|global.glooMtls.sds.securityContext.seccompProfile|string|||
+|global.glooMtls.sds.securityContext.seccompProfile|string|||
+|global.glooMtls.sds.securityContext.windowsOptions|string|||
+|global.glooMtls.sds.securityContext.windowsOptions|string|||
+|global.glooMtls.sds.securityContext.windowsOptions|bool|||
+|global.glooMtls.sds.securityContext.windowsOptions|string|||
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |global.glooMtls.envoy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1218,6 +1520,25 @@
 |global.glooMtls.envoy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.envoy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.envoy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.envoy.securityContext.allowPrivilegeEscalation|bool|||
+|global.glooMtls.envoy.securityContext.capabilities.add[]|string|||
+|global.glooMtls.envoy.securityContext.capabilities.drop[]|string|||
+|global.glooMtls.envoy.securityContext.privileged|bool|||
+|global.glooMtls.envoy.securityContext.procMount|string|||
+|global.glooMtls.envoy.securityContext.readOnlyRootFilesystem|bool|||
+|global.glooMtls.envoy.securityContext.runAsGroup|int|||
+|global.glooMtls.envoy.securityContext.runAsNonRoot|bool|true||
+|global.glooMtls.envoy.securityContext.runAsUser|int|10101||
+|global.glooMtls.envoy.securityContext.seLinuxOptions|string|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions|string|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions|string|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions|string|||
+|global.glooMtls.envoy.securityContext.seccompProfile|string|||
+|global.glooMtls.envoy.securityContext.seccompProfile|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions|bool|||
+|global.glooMtls.envoy.securityContext.windowsOptions|string|||
 |global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|

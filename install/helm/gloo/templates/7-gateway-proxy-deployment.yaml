@@ -110,18 +110,13 @@ spec:
 {{- end}}
     spec:
       # { template}
-      {{- $security := deepCopy $spec.podTemplate -}}
-      {{- if $spec.podTemplate.podSecurityContext -}}
-      {{- $security = $security  | merge (deepCopy $spec.podTemplate.podSecurityContext ) -}}
-      {{/* todo - update this to only use legacy values */}}
-      {{- end }}
       {{- $context := dict
           "fsGroup" $spec.podTemplate.fsGroup 
           "floatingUserId" $spec.podTemplate.floatingUserId
           "runAsUser" $spec.podTemplate.runAsUser
           "enablePodSecurityContext" $spec.podTemplate.enablePodSecurityContext 
       -}}
-      {{- include "gloo.podSecurityContext2" (dict "conf" $security "ctx" $context) | nindent 6 }}
+      {{- include "gloo.podSecurityContext2" (dict "sec" $spec.podTemplate.podSecurityContext "ctx" $context) | nindent 6 }}
       # {preexisting}
 {{- if $spec.podTemplate.enablePodSecurityContext }}
       securityContext:
@@ -254,7 +249,6 @@ spec:
           capabilities:
             drop:
             - ALL
-          # TODO - how to handle this logic? Rollout in the template instead of toYaml?
           {{- if not $spec.podTemplate.disableNetBind }}
             add:
             - NET_BIND_SERVICE
