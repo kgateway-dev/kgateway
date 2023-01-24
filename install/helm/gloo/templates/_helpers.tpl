@@ -94,27 +94,27 @@ ttlSecondsAfterFinished: {{ . }}
 
 {{- define "gloo.containerSecurityContext" -}}
 securityContext:
-{{- with .allowPrivilegeEscalation }}
-  allowPrivilegeEscalation: {{ . }}
-{{ end -}}
+{{- if not (kindIs "invalid" .allowPrivilegeEscalation) }}
+  allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}
+{{- end }}
 {{- with .capabilities }}
   capabilities: {{ toYaml . | nindent 4  }}
-{{ end -}}
-{{- with .privileged }}
-  privileged: {{ . }}
-{{ end -}}
+{{- end }}
+{{- if not (kindIs "invalid" .privileged) }}
+  privileged: {{ .privileged }}
+{{- end }}
 {{- with .procMount }}
   procMount: {{ . }}
-{{ end -}}
-{{- with .readOnlyRootFilesystem }}
-  readOnlyRootFilesystem: {{ . }}
-{{ end -}}
+{{- end }}
+{{- if not (kindIs "invalid" .readOnlyRootFilesystem) }}
+  readOnlyRootFilesystem: {{ .readOnlyRootFilesystem }}
+{{- end }}
 {{- with .runAsGroup }}
   runAsGroup: {{ . }}
-{{ end -}}
-{{- with .runAsNonRoot }}
-  runAsNonRoot: {{ . }}
-{{ end -}}
+{{- end }}
+{{- if not (kindIs "invalid" .runAsNonRoot) }}
+  runAsNonRoot: {{ .runAsNonRoot }}
+{{- end }}
 {{- if not .floatingUserId }}
 {{- with .runAsUser }}
   runAsUser: {{ . }}
@@ -128,49 +128,63 @@ securityContext:
 {{ end -}}
 {{- with .windowsOptions }}
   windowsOptions: {{ toYaml . | nindent 4 }}
-{{ end -}}
-{{ end }}
+{{- end }}
+{{- end }}
 
 
 
 {{- define "gloo.podSecurityContext" -}}
-{{- if .enablePodSecurityContext -}}
+{{- $fieldsToDisplay := or 
+  .fsGroupChangePolicy
+  .fsGroup
+  .legacy
+  .runAsGroup
+  (not (kindIs "invalid" .runAsNonRoot) )
+  (and .runAsUser (not .floatingUserId))
+  .supplementalGroups
+  .seLinuxOptions 
+  .seccompProfile
+  .sysctls
+  .windowsOptions -}}
+{{- if and $fieldsToDisplay .enablePodSecurityContext -}}
 securityContext:
 {{- with .fsGroupChangePolicy }}
   fsGroupChangePolicy: {{ . }}
-{{- end -}}
+{{- end }}
 {{- with .fsGroup }}
   fsGroup: {{ printf "%.0f" (float64 .) }}
-{{- end -}}
+{{- end }}
 {{- with .legacy }}
   legacy: {{ . }}
-{{- end -}}
+{{- end }}
 {{- with .runAsGroup }}
   runAsGroup: {{ . }}
-{{- end -}}
-{{- with .runAsNonRoot }}
-  runAsNonRoot: {{ . }}
-{{- end -}}
+{{- end }}
+{{- if not (kindIs "invalid" .runAsNonRoot) }}
+  runAsNonRoot: {{ .runAsNonRoot }}
+{{- end }}
+{{- if not .floatingUserId }}
 {{- with .runAsUser }}
-  runAsUser: {{ printf "%.0f" (float64 .) }}
-{{- end -}}
+  runAsUser: {{ . }}
+{{- end }}
+{{- end }}
 {{- with .supplementalGroups }}
   supplementalGroups: {{ . }}
-{{- end -}}
+{{- end }}
 {{- with .seLinuxOptions }}
   seLinuxOptions: {{ toYaml . | nindent 4 }}
-{{- end -}}
+{{- end }}
 {{- with .seccompProfile }}
   seccompProfile: {{ toYaml . | nindent 4 }}
-{{- end -}}
+{{- end }}
 {{- with .sysctls }}
   sysctls: {{ toYaml . | nindent 4 }}
-{{- end -}}
+{{- end }}
 {{- with .windowsOptions }}
   windowsOptions: {{ toYaml . | nindent 4 }}
-{{- end -}}
-{{- end -}}
-{{ end }}
+{{- end }}
+{{- end }}
+{{- end }}
 
 {{- /*
 This takes an array of three values:

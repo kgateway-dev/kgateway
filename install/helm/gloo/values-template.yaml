@@ -154,7 +154,7 @@ gatewayProxies:
       customReadinessProbe: {}
       customLivenessProbe: {}
       securityContext:
-        runAsUser: 10102
+        runAsUser: 10101
         readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
         runAsNonRoot: true
@@ -170,7 +170,7 @@ gatewayProxies:
       httpPort: 80
       httpsPort: 443
       securityContext:
-        runAsUser: 10102
+        runAsUser: 10101
         readOnlyRootFilesystem: true
         allowPrivilegeEscalation: false
         runAsNonRoot: true
