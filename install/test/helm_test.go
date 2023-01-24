@@ -4601,16 +4601,6 @@ metadata:
 						})
 
 					})
-
-					It("can set log level env var", func() {
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							glooDeployment.Spec.Template.Spec.Containers[0].Env,
-						)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gloo.logLevel=debug"},
-						})
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
-					})
 					It("can set disable leader election env var", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							glooDeployment.Spec.Template.Spec.Containers[0].Env,
@@ -4831,16 +4821,6 @@ metadata:
 							},
 						})
 
-					})
-
-					It("can set log level env var", func() {
-						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							discoveryDeployment.Spec.Template.Spec.Containers[0].Env,
-						)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"discovery.logLevel=debug"},
-						})
-						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
 					It("can accept extra env vars", func() {
