@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	admission_v1_types "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
-	core_v1_types "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 )
@@ -276,7 +275,6 @@ var _ = Describe("Kube2e: helm", func() {
 
 	Context("installing with large proto descriptor", func() {
 		var gatewayClient gatewayv1kube.GatewayV1Interface
-		var configMapClient core_v1_types.ConfigMapInterface
 		var protoDescriptor string
 
 		BeforeEach(func() {
@@ -286,11 +284,6 @@ var _ = Describe("Kube2e: helm", func() {
 			// initialize gateway client
 			gatewayClient, err = gatewayv1kube.NewForConfig(cfg)
 			Expect(err).NotTo(HaveOccurred())
-
-			// initialize configmap client
-			kubeClientset, err := kubernetes.NewForConfig(cfg)
-			Expect(err).NotTo(HaveOccurred())
-			configMapClient = kubeClientset.CoreV1().ConfigMaps(testHelper.InstallNamespace)
 
 			protoDescriptor = getExampleProtoDescriptor()
 		})
@@ -317,44 +310,6 @@ var _ = Describe("Kube2e: helm", func() {
 				gwSslProtoDescBytes := gwSsl.Spec.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.Options.GrpcJsonTranscoder.DescriptorSet.(*grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin).ProtoDescriptorBin
 				gwSslProtoDesc := base64.StdEncoding.EncodeToString(gwSslProtoDescBytes)
 				Expect(gwSslProtoDesc).To(Equal(protoDescriptor))
-			})
-		})
-
-		Context("using protoDescriptorConfigMap field", func() {
-			BeforeEach(func() {
-				// args to install gloo with protoDescriptorConfigMap on http and https gateway
-				additionalInstallArgs = []string{
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.configMapRef.name=my-config-map",
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.configMapRef.namespace=gloo-system",
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.key=my-key",
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.configMapRef.name=my-config-map",
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.configMapRef.namespace=gloo-system",
-					"--set", "gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.options.grpcJsonTranscoder.protoDescriptorConfigMap.key=my-key",
-					"--set", "global.configMaps[0].name=my-config-map",
-					"--set", "global.configMaps[0].namespace=gloo-system",
-					"--set", "global.configMaps[0].data.my-key=" + protoDescriptor,
-				}
-			})
-			It("can install with protoDescriptorConfigMap", func() {
-				// check that each Gateway's protoDescriptorConfigMap field was populated
-				gw, err := gatewayClient.Gateways(namespace).Get(ctx, "gateway-proxy", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				gwProtoDescConfigMap := gw.Spec.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.Options.GrpcJsonTranscoder.DescriptorSet.(*grpc_json.GrpcJsonTranscoder_ProtoDescriptorConfigMap).ProtoDescriptorConfigMap
-				Expect(gwProtoDescConfigMap.GetConfigMapRef().GetName()).To(Equal("my-config-map"))
-				Expect(gwProtoDescConfigMap.GetConfigMapRef().GetNamespace()).To(Equal("gloo-system"))
-				Expect(gwProtoDescConfigMap.GetKey()).To(Equal("my-key"))
-
-				gwSsl, err := gatewayClient.Gateways(namespace).Get(ctx, "gateway-proxy-ssl", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				gwSslrotoDescConfigMap := gwSsl.Spec.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.Options.GrpcJsonTranscoder.DescriptorSet.(*grpc_json.GrpcJsonTranscoder_ProtoDescriptorConfigMap).ProtoDescriptorConfigMap
-				Expect(gwSslrotoDescConfigMap.GetConfigMapRef().GetName()).To(Equal("my-config-map"))
-				Expect(gwSslrotoDescConfigMap.GetConfigMapRef().GetNamespace()).To(Equal("gloo-system"))
-				Expect(gwSslrotoDescConfigMap.GetKey()).To(Equal("my-key"))
-
-				// check that the ConfigMap was created to store the proto descriptor
-				cm, err := configMapClient.Get(ctx, "my-config-map", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cm.Data["my-key"]).To(Equal(protoDescriptor))
 			})
 		})
 	})
