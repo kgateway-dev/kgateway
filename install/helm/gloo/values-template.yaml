@@ -143,9 +143,10 @@ gatewayProxies:
         repository: gloo-envoy-wrapper
       httpPort: 8080
       httpsPort: 8443
-      runAsUser: 10101
+      runAsUserforConatienr: 10101
       enablePodSecurityContext: true
-      fsGroup: 10101
+      fsGroupForPod: 10101
+      runAsUser: 10101
       runUnprivileged: true
       disableNetBind: true
       gracefulShutdown:
@@ -163,6 +164,11 @@ gatewayProxies:
       # clusterIP: None
       httpPort: 80
       httpsPort: 443
+      securityContext:
+        runAsUser: 10101
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
     # Annotation example: setup ssl with aws cert when service.type is LoadBalancer
     # extraAnnotations:
     #   service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:EXAMPLE_CERT

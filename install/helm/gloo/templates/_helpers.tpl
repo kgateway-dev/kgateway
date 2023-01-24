@@ -222,7 +222,6 @@ securityContext:
 {{- end }}
 {{- end }}
 
-
 {{- /*
 This takes an array of three values:
 - the top context

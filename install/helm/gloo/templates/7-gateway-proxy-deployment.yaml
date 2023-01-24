@@ -251,6 +251,7 @@ spec:
           capabilities:
             drop:
             - ALL
+          # TODO - how to handle this logic? Rollout in the template instead of toYaml?
           {{- if not $spec.podTemplate.disableNetBind }}
             add:
             - NET_BIND_SERVICE
