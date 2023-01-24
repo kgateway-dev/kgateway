@@ -186,11 +186,6 @@ var _ = Describe("Health Checks", func() {
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				//if hhc := envoyHealthCheckTest.Check.GetHttpHealthCheck(); hhc != nil {
-				//	testRequestHealth := basicReqHealth(hhc.GetMethod())
-				//	Eventually(testRequestHealth, 30, 1).Should(Equal(200))
-				//}
-
 				// ensure that a request fails the health check but is handled by the upstream anyway
 				testRequest := basicReq([]byte(`{"str": "foo"}`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
