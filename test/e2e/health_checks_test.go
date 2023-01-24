@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"io/ioutil"
-	"net/http"
-	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -300,8 +301,14 @@ var _ = Describe("Health Checks", func() {
 			for _, envoyHealthCheckTest := range tests {
 				envoyHealthCheckTest := envoyHealthCheckTest
 				It(envoyHealthCheckTest.Name, func() {
-					testRequest := httpBinReq()
-					Eventually(testRequest, 30, 1).Should(Equal(200))
+					if envoyHealthCheckTest.Name == "http-mismatch" {
+						testRequest := httpBinReq()
+						Eventually(testRequest, 30, 1).ShouldNot(Equal(200))
+					} else {
+						testRequest := httpBinReq()
+						Eventually(testRequest, 30, 1).Should(Equal(200))
+					}
+
 				})
 			}
 		})
