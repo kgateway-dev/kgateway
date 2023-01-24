@@ -132,7 +132,7 @@ spec:
         {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
         {{- end -}}
         # { existing }
-        securityContext: ## 2
+        securityContext: ##2
           runAsNonRoot: true
           {{- if not .Values.gloo.deployment.floatingUserId }}
           runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
@@ -174,7 +174,7 @@ spec:
         {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
         {{- end -}}
         # Original
-        securityContext: ## 3
+        securityContext: ##3
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
           runAsNonRoot: true

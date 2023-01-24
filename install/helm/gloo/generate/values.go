@@ -152,7 +152,7 @@ type PodSpec struct {
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
 	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	SecurityContext   *UberSecuritySpec      `json:"securityContext,omitempty"`
+	SecurityContext   *PodSecuritySpec       `json:"securityContext,omitempty"`
 }
 
 type JobSpec struct {
@@ -577,7 +577,7 @@ type GatewayProxyPodTemplate struct {
 	ExtraContainers               []interface{}         `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
 	ExtraInitContainers           []interface{}         `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
 	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
-	SecurityContext               *UberSecuritySpec     `json:"securityContext,omitempty"`
+	SecurityContext               *PodSecuritySpec      `json:"securityContext,omitempty"`
 }
 
 type GracefulShutdownSpec struct {
@@ -601,7 +601,6 @@ type GatewayProxyService struct {
 	CustomPorts              []interface{}         `json:"customPorts,omitempty" desc:"List of custom port to expose in the Envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
 	ExternalIPs              []string              `json:"externalIPs,omitempty" desc:"externalIPs is a list of IP addresses for which nodes in the cluster will also accept traffic for this service"`
 	ConfigDumpService        *KubeResourceOverride `json:"configDumpService,omitempty" desc:"kube resource override for gateway proxy config dump service"`
-	SecurityContext          *UberSecuritySpec     `json:"securityContext,omitempty"`
 	*KubeResourceOverride
 }
 
@@ -717,17 +716,16 @@ type Mtls struct {
 	IstioProxy            IstioProxyContainer   `json:"istioProxy,omitempty" desc:"Istio-proxy container"`
 	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all Envoy sidecar containers."`
 	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
-	SecurityContext       *UberSecuritySpec     `json:"securityContext,omitempty"`
 }
 
 type SdsContainer struct {
-	Image           *Image            `json:"image,omitempty"`
-	SecurityContext *UberSecuritySpec `json:"securityContext,omitempty"`
+	Image           *Image                 `json:"image,omitempty"`
+	SecurityContext *ContainerSecuritySpec `json:"securityContext,omitempty"`
 }
 
 type EnvoySidecarContainer struct {
-	Image           *Image            `json:"image,omitempty"`
-	SecurityContext *UberSecuritySpec `json:"securityContext,omitempty"`
+	Image           *Image                 `json:"image,omitempty"`
+	SecurityContext *ContainerSecuritySpec `json:"securityContext,omitempty"`
 }
 
 type IstioProxyContainer struct {
