@@ -16,9 +16,7 @@ metadata:
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
-  {{- with .Values.gateway.rolloutJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
     metadata:
       labels:
@@ -78,7 +76,6 @@ spec:
             {{- range include "gloo.gatewayNamespaces" $ | fromJsonArray }}
             kubectl annotate gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/resource-policy- || exit $?
             {{- end }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

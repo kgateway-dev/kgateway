@@ -81,8 +81,12 @@ type PodSpec struct {
 
 type JobSpec struct {
 	*PodSpec
-	ActiveDeadlineSeconds   *int `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
-	TtlSecondsAfterFinished *int `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	ActiveDeadlineSeconds   *int  `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	BackoffLimit            *int  `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
+	Completions             *int  `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
+	ManualSelector          *bool `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
+	Parallelism             *int  `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
+	TtlSecondsAfterFinished *int  `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 type DeploymentSpecSansResources struct {
