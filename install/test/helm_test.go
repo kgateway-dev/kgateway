@@ -99,6 +99,15 @@ var _ = Describe("Helm Test", func() {
 			statsAnnotations map[string]string
 		)
 
+		expectCustomResourceSubstring := func(substr string, contains bool) {
+			configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+			Expect(configMap.Data).NotTo(BeNil())
+			if contains {
+				Expect(configMap.Data["custom-resources"]).To(ContainSubstring(substr))
+			} else {
+				Expect(configMap.Data["custom-resources"]).NotTo(ContainSubstring(substr))
+			}
+		}
 		BeforeEach(func() {
 			// Ensure that tests do not shares manifests by accident
 			testManifest = nil
@@ -1403,66 +1412,62 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				Context("default gateways", func() {
-					// Gateways are not directly included in the helm manifest anymore; instead, a Job applies
-					// them via kubectl. In these tests, to confirm their existence we look for parts of the gateway
-					// yaml in the text of the job's command.
+					// Gateways are not directly included in the helm manifest anymore; instead, their contents are
+					// stored in a ConfigMap, and the resource rollout job mounts the ConfigMap as a file and applies
+					// the file via kubectl.
+					// In these tests, to confirm the existence of the Gateway CRs, we look for parts of the gateway
+					// yaml in ConfigMap data.
 
 					It("does not render when gatewaySettings is disabled", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting enabled=true, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting enabled=false, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
 					})
 
 					It("does not render when gatewayProxy is disabled", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting disabled=false, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting disabled=true, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled", func() {
@@ -1473,9 +1478,8 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.disabled=true",
 							},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + "another-gateway-proxy"))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						expectCustomResourceSubstring("name: "+"another-gateway-proxy", false)
 
 						// when disabling default gateway and enabling custom gateway, only custom gateway should render
 						prepareMakefile(namespace, helmValues{
@@ -1484,9 +1488,8 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.disabled=false",
 							},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("name: " + "another-gateway-proxy"))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						expectCustomResourceSubstring("name: "+"another-gateway-proxy", true)
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled and custom disabled is not set", func() {
@@ -1497,9 +1500,8 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("name: " + "another-gateway-proxy"))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						expectCustomResourceSubstring("name: "+"another-gateway-proxy", true)
 					})
 
 					It("does not overwrite nodeSelectors specified for custom gateway proxy", func() {
@@ -1570,68 +1572,64 @@ metadata:
 
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						// gateway-proxy and gateway-proxy-ssl should both render
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace + `
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindAddress: "`+defaults.GatewayBindAddress+`"
   bindPort: 8080
   httpGateway: {}
   useProxyProto: false
   ssl: false
   proxyNames:
-  - ` + defaults.GatewayProxyName))
+  - `+defaults.GatewayProxyName, true)
 
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `-ssl
-  namespace: ` + namespace + `
+  name: `+defaults.GatewayProxyName+`-ssl
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindAddress: "`+defaults.GatewayBindAddress+`"
   bindPort: 8443
   httpGateway: {}
   useProxyProto: false
   ssl: true
   proxyNames:
-  - ` + defaults.GatewayProxyName))
+  - `+defaults.GatewayProxyName, true)
 					})
 
 					It("can disable rendering http/https gateways", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true"},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, false)
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `-ssl
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`-ssl
+  namespace: `+namespace, false)
 					})
 
 					It("can disable http gateway", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, false)
 					})
 
 					It("disabling http gateway disables corresponding service port", func() {
@@ -1675,12 +1673,11 @@ metadata:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `-ssl
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`-ssl
+  namespace: `+namespace, false)
 					})
 
 					It("disabling https gateway disables corresponding service port", func() {
@@ -1756,8 +1753,7 @@ spec:
   - gateway-proxy
 `
 						prepareMakefileFromValuesFile("values/val_gwp_http_hybrid_gateway.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 					})
 
 					It("sets https hybrid gateway", func() {
@@ -1803,8 +1799,7 @@ spec:
   proxyNames:
   - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_gwp_https_hybrid_gateway.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 					})
 
 					It("can set accessLoggingService", func() {
@@ -1833,8 +1828,7 @@ spec:
   proxyNames:
   - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
@@ -1860,7 +1854,7 @@ spec:
   ssl: ` + ssl + `
   proxyNames:
   - gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
+						expectCustomResourceSubstring(gwSslYaml, true)
 					})
 
 					It("can set tracing provider", func() {
@@ -1889,8 +1883,7 @@ spec:
   proxyNames:
   - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
@@ -1916,7 +1909,7 @@ spec:
   ssl: ` + ssl + `
   proxyNames:
   - gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
+						expectCustomResourceSubstring(gwSslYaml, true)
 					})
 
 					It("gwp hpa disabled by default", func() {
@@ -2135,7 +2128,6 @@ spec:
 
 					It("can render with custom listener yaml", func() {
 						prepareMakefileFromValuesFile("values/val_custom_gateways.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
 						gwYamls := []string{`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -2209,7 +2201,7 @@ spec:
   proxyNames:
   - test-name`}
 						for _, gwYaml := range gwYamls {
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+							expectCustomResourceSubstring(gwYaml, true)
 						}
 					})
 				})
@@ -2223,7 +2215,6 @@ spec:
 								"gatewayProxies.gatewayProxy.failover.port=15444",
 							},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
 						gwYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -2245,13 +2236,12 @@ spec:
         forwardSniClusterName: {}
   proxyNames:
   - ` + defaults.GatewayProxyName
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 					})
 
 					It("by default will not render failover gateway", func() {
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(defaults.GatewayProxyName + "-failover"))
+						expectCustomResourceSubstring(defaults.GatewayProxyName+"-failover", false)
 					})
 
 				})
@@ -2267,17 +2257,16 @@ spec:
 							})
 						})
 						It("uses default values for the gateway", func() {
-							job := getJob(testManifest, namespace, "gloo-resource-rollout")
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+							expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: another-gateway-proxy
-  namespace: ` + namespace + `
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
-  bindPort: 8080`))
+  bindAddress: "`+defaults.GatewayBindAddress+`"
+  bindPort: 8080`, true)
 						})
 						It("uses default values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -2296,12 +2285,8 @@ spec:
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("LoadBalancer")))
 						})
 						It("uses default values for the config map", func() {
-							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
-							configMapStr := configMap.(*v1.ConfigMap)
-							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
+							configMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
+							Expect(configMap.Data).ToNot(BeNil()) // Uses the default config data
 						})
 					})
 
@@ -2317,17 +2302,16 @@ spec:
 							})
 						})
 						It("uses merged values for the gateway", func() {
-							job := getJob(testManifest, namespace, "gloo-resource-rollout")
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+							expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: another-gateway-proxy
-  namespace: ` + namespace + `
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
-  bindPort: 9999`))
+  bindAddress: "`+defaults.GatewayBindAddress+`"
+  bindPort: 9999`, true)
 						})
 						It("uses merged values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -2346,12 +2330,8 @@ spec:
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("NodePort")))
 						})
 						It("uses merged values for the config map", func() {
-							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
-							configMapStr := configMap.(*v1.ConfigMap)
-							Expect(configMapStr.Data).To(Equal(map[string]string{"customData": "someData"}))
+							configMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
+							Expect(configMap.Data).To(Equal(map[string]string{"customData": "someData"}))
 						})
 					})
 
@@ -2393,22 +2373,21 @@ spec:
 						})
 					})
 					It("correctly merges custom gatewayproxy values", func() {
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: gateway-proxy
-  namespace: ` + namespace))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+  namespace: `+namespace, false)
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: first-gateway-proxy
-  namespace: ` + namespace))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+  namespace: `+namespace, false)
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: second-gateway-proxy
-  namespace: ` + namespace))
+  namespace: `+namespace, false)
 
 						gwSslYaml1 := `apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -2444,8 +2423,8 @@ spec:
   ssl: true
   proxyNames:
   - second-gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml1))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml2))
+						expectCustomResourceSubstring(gwSslYaml1, true)
+						expectCustomResourceSubstring(gwSslYaml2, true)
 					})
 				})
 
@@ -4183,13 +4162,26 @@ metadata:
 							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl rollout"))
 						})
 
-						It("does not call kubectl apply when default gateways are disabled", func() {
+						It("configmap should contain gateway yaml when default gateways are enabled", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true",
+							}})
+
+							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+							Expect(configMap.Data).ToNot(BeNil())
+							Expect(configMap.Data["custom-resources"]).To(ContainSubstring("kind: Gateway"))
+							Expect(configMap.Data["has-custom-resources"]).To(Equal("true"))
+						})
+
+						It("configmap should not contain gateway yaml when default gateways are disabled", func() {
 							prepareMakefile(namespace, helmValues{valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false",
 							}})
-							job := getJob(testManifest, namespace, "gloo-resource-rollout")
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl apply"))
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("no custom resources to apply"))
+
+							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+							Expect(configMap.Data).ToNot(BeNil())
+							Expect(configMap.Data["custom-resources"]).NotTo(ContainSubstring("kind:"))
+							Expect(configMap.Data["has-custom-resources"]).To(Equal("false"))
 						})
 
 						It("can disable rollout, migration, and cleanup jobs", func() {
@@ -5860,11 +5852,13 @@ metadata:
 					})
 					countFromResources := resources.NumResources()
 
-					// gloo custom resources are applied by a job so don't appear in the resources count.
-					job := getJob(testManifest, namespace, "gloo-resource-rollout")
-					countFromJob := strings.Count(job.Spec.Template.Spec.Containers[0].Command[2], "overriddenLabel: label")
+					// gloo custom resources are stored as yaml in a configmap so they don't appear in the resources count.
+					configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+					Expect(configMap.Data).ToNot(BeNil())
+					Expect(configMap.Data["custom-resources"]).NotTo(BeEmpty())
+					countFromConfigMap := strings.Count(configMap.Data["custom-resources"], "overriddenLabel: label")
 
-					Expect(countFromResources + countFromJob).To(Equal(len(proxies)))
+					Expect(countFromResources + countFromConfigMap).To(Equal(len(proxies)))
 				},
 					Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
 					Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayKubeOverride", nil),
@@ -5883,8 +5877,7 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false"},
 					})
-					job := getJob(testManifest, namespace, "gloo-resource-rollout")
-					Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+					expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   labels:
@@ -5898,7 +5891,7 @@ spec:
   proxyNames:
   - gateway-proxy
   ssl: false
-  useProxyProto: false`))
+  useProxyProto: false`, true)
 				})
 			})
 
@@ -5995,15 +5988,14 @@ spec:
 					manifestStartingLine = idx
 					continue
 				}
-				// skip all the content within kubectl apply commands (used in the rollout job)
-				// since there is extra whitespace that can't be removed
-				if strings.Contains(line, "kubectl apply -f - <<EOF") {
+				// skip all the content within the custom resource configmap since there is extra whitespace
+				// that can't be removed
+				if strings.Contains(line, "custom-resources: |") {
 					skip = true
 					continue
 				}
-				if strings.TrimSpace(line) == "EOF" {
+				if strings.Contains(line, "has-custom-resources:") {
 					skip = false
-					continue
 				}
 				if !skip && strings.TrimRightFunc(line, unicode.IsSpace) != line {
 					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
@@ -6059,4 +6051,12 @@ func getJob(testManifest TestManifest, jobNamespace string, jobName string) *job
 	Expect(err).NotTo(HaveOccurred())
 	Expect(jobObj).To(BeAssignableToTypeOf(&jobsv1.Job{}))
 	return jobObj.(*jobsv1.Job)
+}
+
+func getConfigMap(testManifest TestManifest, namespace string, name string) *v1.ConfigMap {
+	configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, name)
+	configMapObj, err := kuberesource.ConvertUnstructured(configMapUns)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(configMapObj).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+	return configMapObj.(*v1.ConfigMap)
 }
