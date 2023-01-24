@@ -201,7 +201,7 @@ var _ = Describe("Health Checks", func() {
 			})
 		}
 
-		FContext("passes health checks with different methods", func() {
+		Context("passes health checks with different methods", func() {
 			BeforeEach(func() {
 				envoyInstance.EnablePanicMode()
 
