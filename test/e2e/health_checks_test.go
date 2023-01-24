@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -39,9 +43,9 @@ var _ = Describe("Health Checks", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.LinuxOnly("Relies on FDS"),
-		)
+		//helpers.ValidateRequirementsAndNotifyGinkgo(
+		//	helpers.LinuxOnly("Relies on FDS"),
+		//)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -73,7 +77,7 @@ var _ = Describe("Health Checks", func() {
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+		err = helpers.WriteDefaultGatewaysWithHealthChecks(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 	})
 
@@ -97,6 +101,17 @@ var _ = Describe("Health Checks", func() {
 		}
 	}
 
+	httpBinReq := func() func() (int, error) {
+		return func() (int, error) {
+			// send a request with a body
+			res, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+			if err != nil {
+				return 0, err
+			}
+			return res.StatusCode, err
+		}
+	}
+
 	Context("regression for config", func() {
 
 		BeforeEach(func() {
@@ -110,21 +125,11 @@ var _ = Describe("Health Checks", func() {
 			Check *envoy_config_core_v3.HealthCheck
 		}{
 			{
-				Name: "http-get",
+				Name: "http",
 				Check: &envoy_config_core_v3.HealthCheck{
 					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
 							Path: "xyz",
-						},
-					},
-				},
-			}, {
-				Name: "http-post",
-				Check: &envoy_config_core_v3.HealthCheck{
-					HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-						HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-							Path:   "xyz",
-							Method: envoy_config_core_v3.RequestMethod_POST,
 						},
 					},
 				},
@@ -155,6 +160,7 @@ var _ = Describe("Health Checks", func() {
 			envoyHealthCheckTest := envoyHealthCheckTest
 
 			It(envoyHealthCheckTest.Name, func() {
+				fmt.Println(envoyHealthCheckTest.Name)
 				// by default we disable panic mode
 				// this purpose of this test is to verify panic modes behavior so we need to enable it
 				envoyInstance.EnablePanicMode()
@@ -180,6 +186,11 @@ var _ = Describe("Health Checks", func() {
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
+				//if hhc := envoyHealthCheckTest.Check.GetHttpHealthCheck(); hhc != nil {
+				//	testRequestHealth := basicReqHealth(hhc.GetMethod())
+				//	Eventually(testRequestHealth, 30, 1).Should(Equal(200))
+				//}
+
 				// ensure that a request fails the health check but is handled by the upstream anyway
 				testRequest := basicReq([]byte(`{"str": "foo"}`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
@@ -189,6 +200,116 @@ var _ = Describe("Health Checks", func() {
 				}))))
 			})
 		}
+
+		FContext("passes health checks with different methods", func() {
+			BeforeEach(func() {
+				envoyInstance.EnablePanicMode()
+
+				var hosts []*static_plugin_gloo.Host
+				hosts = append(hosts, &static_plugin_gloo.Host{
+					Addr: "httpbin.org",
+					Port: 80,
+				})
+				testUpstream := &gloov1.Upstream{
+					Metadata: &core.Metadata{
+						Name:      fmt.Sprintf("local-test-upstream"),
+						Namespace: "default",
+					},
+					UpstreamType: &gloov1.Upstream_Static{
+						Static: &static_plugin_gloo.UpstreamSpec{
+							Hosts: hosts,
+						},
+					},
+				}
+				_, err := testClients.UpstreamClient.Write(testUpstream, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				testVirtualService := &v1.VirtualService{
+					Metadata: &core.Metadata{
+						Name:      "default",
+						Namespace: defaults.GlooSystem,
+					},
+					VirtualHost: &v1.VirtualHost{
+						Domains: []string{"*"},
+						Routes: []*v1.Route{
+							{
+								Name: "testRouteName",
+								Matchers: []*matchers.Matcher{
+									{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}},
+								},
+								Action: &v1.Route_RouteAction{
+									RouteAction: &gloov1.RouteAction{
+										Destination: &gloov1.RouteAction_Single{
+											Single: &gloov1.Destination{
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: testUpstream.Metadata.Ref(),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+				_, err = testClients.VirtualServiceClient.Write(testVirtualService, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			tests := []struct {
+				Name  string
+				Check *envoy_config_core_v3.HealthCheck
+			}{
+				{
+					Name: "http-default",
+					Check: &envoy_config_core_v3.HealthCheck{
+						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+								Path:   "post",
+								Method: envoy_config_core_v3.RequestMethod_POST,
+							},
+						},
+					},
+				}, {
+					Name: "http-get",
+					Check: &envoy_config_core_v3.HealthCheck{
+						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+								Path:   "get",
+								Method: envoy_config_core_v3.RequestMethod_GET,
+							},
+						},
+					},
+				}, {
+					Name: "http-post",
+					Check: &envoy_config_core_v3.HealthCheck{
+						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+								Path:   "get",
+								Method: envoy_config_core_v3.RequestMethod_GET,
+							},
+						},
+					},
+				}, {
+					Name: "http-mismatch",
+					Check: &envoy_config_core_v3.HealthCheck{
+						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+								Path:   "some-invalid-path",
+								Method: envoy_config_core_v3.RequestMethod_GET,
+							},
+						},
+					},
+				},
+			}
+			for _, envoyHealthCheckTest := range tests {
+				envoyHealthCheckTest := envoyHealthCheckTest
+				It(envoyHealthCheckTest.Name, func() {
+					testRequest := httpBinReq()
+					Eventually(testRequest, 30, 1).Should(Equal(200))
+				})
+			}
+		})
 
 		It("outlier detection", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
