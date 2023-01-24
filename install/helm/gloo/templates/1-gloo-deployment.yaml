@@ -77,11 +77,13 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
-        # { template}
-        {{- if .Values.global.glooMtls.envoy.securityContext -}}
-        {{- $security := deepCopy .Values.global.glooMtls.envoy.securityContext -}}
-        {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
-        {{- end -}}
+        # {template}
+        {{- $context := dict 
+            "floatingUserId" .Values.gloo.deployment.floatingUserId 
+            "runAsUser" .Values.gloo.deployment.runAsUser
+            "runAsNonRoot" true
+        -}}
+      {{- include "gloo.podSecurityContext" (dict "sec" .Values.global.glooMtls.envoy.securityContext "ctx" $context) | nindent 8}}
         # { existing }
         securityContext: ##1
           runAsNonRoot: true
@@ -126,11 +128,13 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
-        # { template}
-        {{- if .Values.global.glooMtls.sds.securityContext -}}
-        {{- $security := deepCopy .Values.global.glooMtls.sds.securityContext -}}
-        {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
-        {{- end -}}
+        ## {template}
+        {{- $context := dict 
+            "floatingUserId" .Values.gloo.deployment.floatingUserId 
+            "runAsUser" .Values.gloo.deployment.runAsUser
+            "runAsNonRoot" true
+        -}}
+      {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.sds.securityContext "ctx" $context) | nindent 8}}
         # { existing }
         securityContext: ##2
           runAsNonRoot: true
@@ -173,6 +177,18 @@ spec:
         {{- $security := deepCopy .Values.gloo.deployment.containerSecurityContext -}}
         {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
         {{- end -}}
+        ## {template}
+        {{- $context := dict 
+            "floatingUserId" .Values.gloo.deployment.floatingUserId 
+            "runAsUser" .Values.gloo.deployment.runAsUser
+            "runAsNonRoot" true
+            "useDefaultCapabilities" true
+            "disableNetBind" true
+            "readOnlyRootFilesystem" true
+            "allowPrivilegeEscalation" false
+        -}}
+      {{- include "gloo.containerSecurityContext" (dict "sec" .Values.gloo.deployment.containerSecurityContext "ctx" $context) | nindent 8}}
+ 
         # Original
         securityContext: ##3
           readOnlyRootFilesystem: true

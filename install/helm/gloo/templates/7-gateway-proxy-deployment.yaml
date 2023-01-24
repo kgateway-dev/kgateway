@@ -114,9 +114,9 @@ spec:
           "fsGroup" $spec.podTemplate.fsGroup 
           "floatingUserId" $spec.podTemplate.floatingUserId
           "runAsUser" $spec.podTemplate.runAsUser
-          "enablePodSecurityContext" $spec.podTemplate.enablePodSecurityContext 
+          "disablePodSecurityContext" (not $spec.podTemplate.enablePodSecurityContext)
       -}}
-      {{- include "gloo.podSecurityContext2" (dict "sec" $spec.podTemplate.podSecurityContext "ctx" $context) | nindent 6 }}
+      {{- include "gloo.podSecurityContext" (dict "sec" $spec.podTemplate.podSecurityContext "ctx" $context) | nindent 6 }}
       # {preexisting}
 {{- if $spec.podTemplate.enablePodSecurityContext }}
       securityContext:
@@ -234,8 +234,10 @@ spec:
             "runAsUser" $spec.podTemplate.runAsUser
             "disableNetBind" $spec.podTemplate.disableNetBind
             "useDefaultCapabilities" true
+            "readOnlyRootFilesystem" true
+            "allowPrivilegeEscalation" false
         -}}
-        {{- include "gloo.containerSecurityContext2" (dict "conf" $spec.podTemplate.containerSecurityContext "ctx" $context) | nindent 8}}
+        {{- include "gloo.containerSecurityContext" (dict "sec" $spec.podTemplate.containerSecurityContext "ctx" $context) | nindent 8}}
         ## Existing security
         securityContext:
           readOnlyRootFilesystem: true
