@@ -4605,7 +4605,6 @@ metadata:
 					It("can set log level env var", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							glooDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gloo.logLevel=debug"},
@@ -4837,7 +4836,6 @@ metadata:
 					It("can set log level env var", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							discoveryDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"discovery.logLevel=debug"},
