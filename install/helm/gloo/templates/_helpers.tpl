@@ -93,6 +93,19 @@ ttlSecondsAfterFinished: {{ . }}
 
 
 {{- define "gloo.containerSecurityContext" -}}
+{{- $fieldsToDisplay := or 
+  (not (kindIs "invalid" .allowPrivilegeEscalation))
+  .capabilities
+  (not (kindIs "invalid" .privileged))
+  .procMount
+  (not (kindIs "invalid" .readOnlyRootFilesystem))
+  .runAsGroup 
+  (not (kindIs "invalid" .runAsNonRoot))
+  (and (not .floatingUserId) .runAsUser)
+  .seLinuxOptions
+  .seccompProfile
+  .windowsOptions
+ -}}
 securityContext:
 {{- if not (kindIs "invalid" .allowPrivilegeEscalation) }}
   allowPrivilegeEscalation: {{ .allowPrivilegeEscalation }}

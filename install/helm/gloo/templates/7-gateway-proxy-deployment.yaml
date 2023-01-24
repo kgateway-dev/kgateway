@@ -110,11 +110,12 @@ spec:
 {{- end}}
     spec:
       # { template}
-      {{- $security := deepCopy $spec.podTemplate -}}
-      {{- if $spec.podTemplate.securityContext -}}
-      {{- $security = $security  | merge (deepCopy $spec.podTemplate.securityContext ) -}}
-      {{/* todo: don't use the legacy value here because we weren't before */}}
-      {{- end }}
+      {{- $security := deepCopy $spec.podTemplate.securityContext -}}
+      {{/* Merge legacy/ad-hoc top-level values into securityContext */}}
+      {{/*{{- $security.fsGroup := or $security.fsGroup $spec.podTemplate.fsGroup -}}
+      {{- $security.floatingUserId := $spec.podTemplate.floatingUserId -}}
+      {{- $security.enablePodSecurityContext = $spec.podTemplate.enablePodSecurityContext -}}
+      {{- $security.runAsUser = or $security.runAsUser $spec.podTemplate.runAsUser -}} */}}
       {{- include "gloo.podSecurityContext" $security | nindent 6 }}
       # {preexisting}
 {{- if $spec.podTemplate.enablePodSecurityContext }}
