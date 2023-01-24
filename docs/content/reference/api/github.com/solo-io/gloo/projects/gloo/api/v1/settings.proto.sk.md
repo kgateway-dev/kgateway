@@ -15,6 +15,8 @@ weight: 5
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
+- [VaultAwsAuth](#vaultawsauth)
+- [VaultTlsConfig](#vaulttlsconfig)
 - [ConsulKv](#consulkv)
 - [KubernetesConfigmaps](#kubernetesconfigmaps)
 - [Directory](#directory)
@@ -185,21 +187,86 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 "insecure": .google.protobuf.BoolValue
 "rootKey": string
 "pathPrefix": string
+"tlsConfig": .gloo.solo.io.Settings.VaultTlsConfig
+"accessToken": string
+"aws": .gloo.solo.io.Settings.VaultAwsAuth
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `token` | `string` | the Token used to authenticate to Vault. |
-| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io. |
+| `token` | `string` | DEPRECATED: use field auth_method.access_token the Token used to authenticate to Vault. |
+| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200). |
+| `caCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
+| `caPath` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
+| `clientCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault clientCert is the path to the certificate for Vault communication. |
+| `clientKey` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault clientKey is the path to the private key for Vault communication. |
+| `tlsServerName` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | DEPRECATED: use field tls_config to configure TLS connection to Vault When set to true, disables TLS verification. |
+| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to `gloo`. |
+| `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
+| `tlsConfig` | [.gloo.solo.io.Settings.VaultTlsConfig](../settings.proto.sk/#vaulttlsconfig) | Configure TLS options for client connection to Vault. This is only available when running Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad. |
+| `accessToken` | `string` |  Only one of `accessToken` or `aws` can be set. |
+| `aws` | [.gloo.solo.io.Settings.VaultAwsAuth](../settings.proto.sk/#vaultawsauth) |  Only one of `aws` or `accessToken` can be set. |
+
+
+
+
+---
+### VaultAwsAuth
+
+ 
+Configure Vault client to authenticate to server via AWS auth (IAM only).
+For more info see https://developer.hashicorp.com/vault/docs/auth/aws
+
+```yaml
+"vaultRole": string
+"region": string
+"iamServerIdHeader": string
+"mountPath": string
+"accessKeyId": string
+"secretAccessKey": string
+"sessionToken": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `vaultRole` | `string` | The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured. |
+| `region` | `string` | The AWS region to use for the login attempt. |
+| `iamServerIdHeader` | `string` | The IAM Server ID Header required to be included in the request. |
+| `mountPath` | `string` | The Vault path on which the AWS auth is mounted. |
+| `accessKeyId` | `string` | The Access Key ID as provided by the security credentials on the AWS IAM resource. |
+| `secretAccessKey` | `string` | The Secret Access Key as provided by the security credentials on the AWS IAM resource. |
+| `sessionToken` | `string` | The Session Token as provided by the security credentials on the AWS IAM resource. |
+
+
+
+
+---
+### VaultTlsConfig
+
+ 
+Settings to configure TLS-enabled Vault as a secret store
+
+```yaml
+"caCert": string
+"caPath": string
+"clientCert": string
+"clientKey": string
+"tlsServerName": string
+"insecure": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 | `caCert` | `string` | caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
 | `caPath` | `string` | caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
 | `clientCert` | `string` | clientCert is the path to the certificate for Vault communication. |
 | `clientKey` | `string` | clientKey is the path to the private key for Vault communication. |
 | `tlsServerName` | `string` | tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
-| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Insecure enables or disables SSL verification. |
-| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo`. |
-| `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set to true, disables TLS verification. |
 
 
 
