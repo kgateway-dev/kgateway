@@ -83,36 +83,43 @@ message Settings {
 
     // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
+        // DEPRECATED: use field auth_method.access_token
         // the Token used to authenticate to Vault
         string token = 1;
 
         // address is the address of the Vault server. This should be a complete
-        // URL such as http://solo.io
+        // URL such as http://solo.io and include port if necessary (vault's default port is 8200)
         string address = 2;
 
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // caCert is the path to a PEM-encoded CA cert file to use to verify the
         // Vault server SSL certificate.
         string ca_cert = 3;
 
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // caPath is the path to a directory of PEM-encoded CA cert files to verify
         // the Vault server SSL certificate.
         string ca_path = 4;
 
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // clientCert is the path to the certificate for Vault communication
         string client_cert = 5;
 
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // clientKey is the path to the private key for Vault communication
         string client_key = 6;
 
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
         // tlsServerName, if set, is used to set the SNI host when connecting via
         // TLS.
         string tls_server_name = 7;
 
-        // Insecure enables or disables SSL verification
+        // DEPRECATED: use field tls_config to configure TLS connection to Vault
+        // When set to true, disables TLS verification
         google.protobuf.BoolValue insecure = 8;
 
         // all keys stored in Vault will begin with this Vault
-        // this can be used to run multiple instances of Gloo against the same Consul cluster
+        // this can be used to run multiple instances of Gloo against the same Vault cluster
         // defaults to `gloo`
         string root_key = 9;
 
@@ -120,8 +127,61 @@ message Settings {
         // For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines.
         // Defaults to 'secret'
         string path_prefix = 10;
+
+        // Configure TLS options for client connection to Vault. This is only available when running
+        // Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad.
+        VaultTlsConfig tls_config = 11;
+
+        // Support for multiple authentication methods
+        oneof auth_method {
+            string access_token = 12;
+            VaultAwsAuth aws = 13;
+        }
     }
 
+    // Configure Vault client to authenticate to server via AWS auth (IAM only).
+    // For more info see https://developer.hashicorp.com/vault/docs/auth/aws
+    message VaultAwsAuth {
+        // The Vault role we are trying to authenticate to.
+        // This is not necessarily the same as the AWS role to which the Vault role is configured.
+        string vault_role = 1;
+        // The AWS region to use for the login attempt
+        string region = 2;
+        // The IAM Server ID Header required to be included in the request
+        string iam_server_id_header = 3;
+        // The Vault path on which the AWS auth is mounted
+        string mount_path = 4;
+        // The Access Key ID as provided by the security credentials on the AWS IAM resource
+        string access_key_id = 5;
+        // The Secret Access Key as provided by the security credentials on the AWS IAM resource
+        string secret_access_key = 6;
+        // The Session Token as provided by the security credentials on the AWS IAM resource
+        string session_token = 7;
+    }
+
+    // Settings to configure TLS-enabled Vault as a secret store
+    message VaultTlsConfig {
+        // caCert is the path to a PEM-encoded CA cert file to use to verify the
+        // Vault server SSL certificate.
+        string ca_cert = 1;
+
+        // caPath is the path to a directory of PEM-encoded CA cert files to verify
+        // the Vault server SSL certificate.
+        string ca_path = 2;
+
+        // clientCert is the path to the certificate for Vault communication
+        string client_cert = 3;
+
+        // clientKey is the path to the private key for Vault communication
+        string client_key = 4;
+
+        // tlsServerName, if set, is used to set the SNI host when connecting via
+        // TLS.
+        string tls_server_name = 5;
+
+        // When set to true, disables TLS verification
+        google.protobuf.BoolValue insecure = 6;
+    }
     // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
     // Configuration options for connecting to Consul can be configured in the Settings' root
     // `consul` field
@@ -535,7 +595,7 @@ message GlooOptions {
         google.protobuf.Duration credential_refresh_delay = 4;
 
         // Sets the unsafe behavior where a route can specify a lambda upstream
-        // but not set the function to target. It will use the first function which 
+        // but not set the function to target. It will use the first function which
         // if discovery is enabled the first function is the first function name alphabetically
         // from the last discovery run. This means that the lambda being pointed to could change.
         // Defaults to false.

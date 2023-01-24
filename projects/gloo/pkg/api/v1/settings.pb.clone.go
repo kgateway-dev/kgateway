@@ -589,6 +589,86 @@ func (m *Settings_VaultSecrets) Clone() proto.Message {
 
 	target.PathPrefix = m.GetPathPrefix()
 
+	if h, ok := interface{}(m.GetTlsConfig()).(clone.Cloner); ok {
+		target.TlsConfig = h.Clone().(*Settings_VaultTlsConfig)
+	} else {
+		target.TlsConfig = proto.Clone(m.GetTlsConfig()).(*Settings_VaultTlsConfig)
+	}
+
+	switch m.AuthMethod.(type) {
+
+	case *Settings_VaultSecrets_AccessToken:
+
+		target.AuthMethod = &Settings_VaultSecrets_AccessToken{
+			AccessToken: m.GetAccessToken(),
+		}
+
+	case *Settings_VaultSecrets_Aws:
+
+		if h, ok := interface{}(m.GetAws()).(clone.Cloner); ok {
+			target.AuthMethod = &Settings_VaultSecrets_Aws{
+				Aws: h.Clone().(*Settings_VaultAwsAuth),
+			}
+		} else {
+			target.AuthMethod = &Settings_VaultSecrets_Aws{
+				Aws: proto.Clone(m.GetAws()).(*Settings_VaultAwsAuth),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsAuth) Clone() proto.Message {
+	var target *Settings_VaultAwsAuth
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsAuth{}
+
+	target.VaultRole = m.GetVaultRole()
+
+	target.Region = m.GetRegion()
+
+	target.IamServerIdHeader = m.GetIamServerIdHeader()
+
+	target.MountPath = m.GetMountPath()
+
+	target.AccessKeyId = m.GetAccessKeyId()
+
+	target.SecretAccessKey = m.GetSecretAccessKey()
+
+	target.SessionToken = m.GetSessionToken()
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultTlsConfig) Clone() proto.Message {
+	var target *Settings_VaultTlsConfig
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultTlsConfig{}
+
+	target.CaCert = m.GetCaCert()
+
+	target.CaPath = m.GetCaPath()
+
+	target.ClientCert = m.GetClientCert()
+
+	target.ClientKey = m.GetClientKey()
+
+	target.TlsServerName = m.GetTlsServerName()
+
+	if h, ok := interface{}(m.GetInsecure()).(clone.Cloner); ok {
+		target.Insecure = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.Insecure = proto.Clone(m.GetInsecure()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
