@@ -133,7 +133,8 @@ var _ = Describe("Health Checks", func() {
 						},
 					},
 				},
-			}, {
+			},
+			{
 				Name: "tcp",
 				Check: &envoy_config_core_v3.HealthCheck{
 					HealthChecker: &envoy_config_core_v3.HealthCheck_TcpHealthCheck_{
