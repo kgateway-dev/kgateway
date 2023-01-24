@@ -113,8 +113,9 @@ spec:
       {{- $security := deepCopy $spec.podTemplate -}}
       {{- if $spec.podTemplate.securityContext -}}
       {{- $security = $security  | merge (deepCopy $spec.podTemplate.securityContext ) -}}
-      {{- end -}}
-      {{- include "gloo.podSecurityContext" $security | nindent 6 -}}
+      {{/* todo: don't use the legacy value here because we weren't before */}}
+      {{- end }}
+      {{- include "gloo.podSecurityContext" $security | nindent 6 }}
       # {preexisting}
 {{- if $spec.podTemplate.enablePodSecurityContext }}
       securityContext:
@@ -230,7 +231,7 @@ spec:
         {{- if $spec.podTemplate.securityContext -}}
         {{- $security = $security  | merge (deepCopy $spec.podTemplate.securityContext ) -}}
         {{- end -}}
-        {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
+        {{- include "gloo.containerSecurityContext" $security | nindent 8 }}
         ## Existing security
         securityContext:
           readOnlyRootFilesystem: true

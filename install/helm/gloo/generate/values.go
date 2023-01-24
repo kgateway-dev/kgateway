@@ -717,6 +717,7 @@ type Mtls struct {
 	IstioProxy            IstioProxyContainer   `json:"istioProxy,omitempty" desc:"Istio-proxy container"`
 	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all Envoy sidecar containers."`
 	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
+	SecurityContext       *UberSecuritySpec     `json:"securityContext,omitempty"`
 }
 
 type SdsContainer struct {
