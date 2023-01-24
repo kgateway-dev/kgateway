@@ -60,6 +60,7 @@ runs:
   - name: Testing - kube e2e regression tests
     shell: bash
     env:
+      SKIP_TEMP_DISABLED: "1"
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       GITHUB_TOKEN: ${{ github.token }}
       VERSION: '1.0.0-ci'
