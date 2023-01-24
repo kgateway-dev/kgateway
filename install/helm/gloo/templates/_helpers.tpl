@@ -145,6 +145,122 @@ securityContext:
 {{- end }}
 
 
+{{- define "gloo.containerSecurityContext2" -}}
+{{- $fieldsToDisplay := or 
+  (not (kindIs "invalid" .conf.allowPrivilegeEscalation))
+  .capabilities
+  (not (kindIs "invalid" .conf.privileged))
+  .conf.procMount
+  (not (kindIs "invalid" .conf.readOnlyRootFilesystem))
+  .conf.runAsGroup 
+  (or (not (kindIs "invalid" .conf.runAsNonRoot)) .ctx.runUnprivileged)
+  (and (not .ctx.floatingUserId) (or .conf.runAsUser .ctx.runAsUser))
+  .conf.seLinuxOptions
+  .conf.seccompProfile
+  .conf.windowsOptions
+ -}}
+{{- if $fieldsToDisplay -}}
+securityContext:
+{{- if not (kindIs "invalid" .conf.allowPrivilegeEscalation) }}
+  allowPrivilegeEscalation: {{ .conf.allowPrivilegeEscalation }}
+{{- end }}
+{{- if .conf.capabilities }}
+  capabilities: {{ toYaml .conf.capabilities | nindent 4  }}
+{{- else if .ctx.useDefaultCapabilities }}
+  capabilities:
+    drop:
+    - ALL
+    {{- if not .ctx.disableNetBind }}
+    add:
+    - NET_BIND_SERVICE
+    {{- end}}
+{{- end }}
+{{- if not (kindIs "invalid" .conf.runAsNonRoot) }}
+  runAsNonRoot: {{ .conf.runAsNonRoot }}
+{{- else if .ctx.runUnprivileged }}
+  runAsNonRoot: true
+{{- end }}
+{{- with .conf.procMount }}
+  procMount: {{ . }}
+{{- end }}
+{{- if not (kindIs "invalid" .conf.readOnlyRootFilesystem) }}
+  readOnlyRootFilesystem: {{ .conf.readOnlyRootFilesystem }}
+{{- end }}
+{{- with .conf.runAsGroup }}
+  runAsGroup: {{ . }}
+{{- end }}
+
+{{- if not .ctx.floatingUserId }}
+{{- with .conf.runAsUser }}
+  runAsUser: {{ . }}
+{{ end -}}
+{{ end -}}
+{{- with .conf.seLinuxOptions }}
+  seLinuxOptions: {{ toYaml . | nindent 4  }}
+{{ end -}}
+{{- with .conf.seccompProfile }}
+  seccompProfile: {{ toYaml . | nindent 4 }}
+{{ end -}}
+{{- with .conf.windowsOptions }}
+  windowsOptions: {{ toYaml . | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+
+{{- define "gloo.podSecurityContext2" -}}
+{{- $fieldsToDisplay := or 
+  .conf.fsGroupChangePolicy
+  (or .conf.fsGroup .ctx.fsGroup)
+  .conf.runAsGroup
+  (or .conf.runAsUser .ctx.runAsUser)
+  (not (kindIs "invalid" .ctx.runAsNonRoot) )
+  (and .conf.runAsUser (not .ctx.floatingUserId))
+  .conf.supplementalGroups
+  .conf.seLinuxOptions 
+  .conf.seccompProfile
+  .conf.sysctls
+  .conf.windowsOptions -}}
+{{- if and $fieldsToDisplay .ctx.enablePodSecurityContext -}}
+securityContext:
+{{- with .conf.fsGroupChangePolicy }}
+  fsGroupChangePolicy: {{ . }}
+{{- end }}
+{{- if (or .conf.fsGroup .ctx.fsGroup) }}
+  fsGroup: {{ printf "%.0f" (float64 (or .conf.fsGroup .ctx.fsGroup)) }}
+{{- end }}
+{{- with .conf.legacy }}
+  legacy: {{ . }}
+{{- end }}
+{{- with .conf.runAsGroup }}
+  runAsGroup: {{ . }}
+{{- end }}
+{{- if not (kindIs "invalid" .conf.runAsNonRoot) }}
+  runAsNonRoot: {{ .conf.runAsNonRoot }}
+{{- end }}
+{{- if not .ctx.floatingUserId }}
+{{- if (or .conf.runAsUser .ctx.runAsUser) }}
+  runAsUser: {{ (or .conf.runAsUser .ctx.runAsUser) }}
+{{- end }}
+{{- end }}
+{{- with .conf.supplementalGroups }}
+  supplementalGroups: {{ . }}
+{{- end }}
+{{- with .conf.seLinuxOptions }}
+  seLinuxOptions: {{ toYaml . | nindent 4 }}
+{{- end }}
+{{- with .conf.seccompProfile }}
+  seccompProfile: {{ toYaml . | nindent 4 }}
+{{- end }}
+{{- with .conf.sysctls }}
+  sysctls: {{ toYaml . | nindent 4 }}
+{{- end }}
+{{- with .conf.windowsOptions }}
+  windowsOptions: {{ toYaml . | nindent 4 }}
+{{- end }}
+{{- end }}
+{{- end }}
+
 
 {{- define "gloo.podSecurityContext" -}}
 {{- $fieldsToDisplay := or 

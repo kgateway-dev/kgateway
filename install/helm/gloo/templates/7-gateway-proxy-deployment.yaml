@@ -110,13 +110,18 @@ spec:
 {{- end}}
     spec:
       # { template}
-      {{- $security := deepCopy $spec.podTemplate.securityContext -}}
-      {{/* Merge legacy/ad-hoc top-level values into securityContext */}}
-      {{/*{{- $security.fsGroup := or $security.fsGroup $spec.podTemplate.fsGroup -}}
-      {{- $security.floatingUserId := $spec.podTemplate.floatingUserId -}}
-      {{- $security.enablePodSecurityContext = $spec.podTemplate.enablePodSecurityContext -}}
-      {{- $security.runAsUser = or $security.runAsUser $spec.podTemplate.runAsUser -}} */}}
-      {{- include "gloo.podSecurityContext" $security | nindent 6 }}
+      {{- $security := deepCopy $spec.podTemplate -}}
+      {{- if $spec.podTemplate.podSecurityContext -}}
+      {{- $security = $security  | merge (deepCopy $spec.podTemplate.podSecurityContext ) -}}
+      {{/* todo - update this to only use legacy values */}}
+      {{- end }}
+      {{- $context := dict
+          "fsGroup" $spec.podTemplate.fsGroup 
+          "floatingUserId" $spec.podTemplate.floatingUserId
+          "runAsUser" $spec.podTemplate.runAsUser
+          "enablePodSecurityContext" $spec.podTemplate.enablePodSecurityContext 
+      -}}
+      {{- include "gloo.podSecurityContext2" (dict "conf" $security "ctx" $context) | nindent 6 }}
       # {preexisting}
 {{- if $spec.podTemplate.enablePodSecurityContext }}
       securityContext:
@@ -227,12 +232,15 @@ spec:
         {{- end}}
         {{- end}}
         name: {{ $name | kebabcase }}
-        ## Template security
-        {{- $security := deepCopy $spec.podTemplate -}}
-        {{- if $spec.podTemplate.securityContext -}}
-        {{- $security = $security  | merge (deepCopy $spec.podTemplate.securityContext ) -}}
-        {{- end -}}
-        {{- include "gloo.containerSecurityContext" $security | nindent 8 }}
+        ## Template
+        {{- $context := dict
+            "runUnprivileged" $spec.podTemplate.runUnprivileged 
+            "floatingUserId" $spec.podTemplate.floatingUserId
+            "runAsUser" $spec.podTemplate.runAsUser
+            "disableNetBind" $spec.podTemplate.disableNetBind
+            "useDefaultCapabilities" true
+        -}}
+        {{- include "gloo.containerSecurityContext2" (dict "conf" $spec.podTemplate.containerSecurityContext "ctx" $context) | nindent 8}}
         ## Existing security
         securityContext:
           readOnlyRootFilesystem: true

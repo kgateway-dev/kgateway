@@ -169,8 +169,8 @@ spec:
             memory: 256Mi
 {{- end}}
         # { template}
-        {{- if .Values.gloo.deployment.securityContext -}}
-        {{- $security := deepCopy .Values.gloo.deployment.securityContext -}}
+        {{- if .Values.gloo.deployment.containerSecurityContext -}}
+        {{- $security := deepCopy .Values.gloo.deployment.containerSecurityContext -}}
         {{- include "gloo.containerSecurityContext" $security | nindent 8 -}}
         {{- end -}}
         # Original

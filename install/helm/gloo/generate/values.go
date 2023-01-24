@@ -144,15 +144,16 @@ type WindowsSecurityContextOptions struct {
 }
 
 type PodSpec struct {
-	RestartPolicy     *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
-	PriorityClassName *string                `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
-	NodeName          *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector      map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations       []*appsv1.Toleration   `json:"tolerations,omitempty"`
-	Affinity          map[string]interface{} `json:"affinity,omitempty"`
-	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
-	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	SecurityContext   *PodSecuritySpec       `json:"securityContext,omitempty"`
+	RestartPolicy            *string                `json:"restartPolicy,omitempty" desc:"restart policy to use when the pod exits"`
+	PriorityClassName        *string                `json:"priorityClassName,omitempty" desc:"name of a defined priority class"`
+	NodeName                 *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector             map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations              []*appsv1.Toleration   `json:"tolerations,omitempty"`
+	Affinity                 map[string]interface{} `json:"affinity,omitempty"`
+	HostAliases              []interface{}          `json:"hostAliases,omitempty"`
+	InitContainers           []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
+	PodSecurityContext       *PodSecuritySpec       `json:"podSecurityContext,omitempty"`
+	ContainerSecurityContext *ContainerSecuritySpec `json:"containerSecurityContext,omitempty"`
 }
 
 type JobSpec struct {
@@ -553,31 +554,32 @@ type DaemonSetSpec struct {
 }
 
 type GatewayProxyPodTemplate struct {
-	Image                         *Image                `json:"image,omitempty"`
-	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
-	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
-	ExtraPorts                    []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
-	ExtraAnnotations              map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
-	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitempty"`
-	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
-	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
-	Resources                     *ResourceRequirements `json:"resources,omitempty"`
-	DisableNetBind                *bool                 `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
-	RunUnprivileged               *bool                 `json:"runUnprivileged,omitempty" desc:"run Envoy as an unprivileged user"`
-	FloatingUserId                *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser                     *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                       *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
-	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
-	CustomLivenessProbe           *appsv1.Probe         `json:"customLivenessProbe,omitempty"`
-	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
-	ExtraContainers               []interface{}         `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
-	ExtraInitContainers           []interface{}         `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
-	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
-	SecurityContext               *PodSecuritySpec      `json:"securityContext,omitempty"`
+	Image                         *Image                 `json:"image,omitempty"`
+	HttpPort                      *int                   `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
+	HttpsPort                     *int                   `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
+	ExtraPorts                    []interface{}          `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
+	ExtraAnnotations              map[string]string      `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
+	NodeName                      *string                `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector                  map[string]string      `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations                   []*appsv1.Toleration   `json:"tolerations,omitempty"`
+	Probes                        *bool                  `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
+	LivenessProbeEnabled          *bool                  `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
+	Resources                     *ResourceRequirements  `json:"resources,omitempty"`
+	DisableNetBind                *bool                  `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
+	RunUnprivileged               *bool                  `json:"runUnprivileged,omitempty" desc:"run Envoy as an unprivileged user"`
+	FloatingUserId                *bool                  `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	RunAsUser                     *float64               `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
+	FsGroup                       *float64               `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	GracefulShutdown              *GracefulShutdownSpec  `json:"gracefulShutdown,omitempty"`
+	TerminationGracePeriodSeconds *int                   `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
+	CustomReadinessProbe          *appsv1.Probe          `json:"customReadinessProbe,omitempty"`
+	CustomLivenessProbe           *appsv1.Probe          `json:"customLivenessProbe,omitempty"`
+	ExtraGatewayProxyLabels       map[string]string      `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
+	ExtraContainers               []interface{}          `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
+	ExtraInitContainers           []interface{}          `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
+	EnablePodSecurityContext      *bool                  `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	PodSecurityContext            *PodSecuritySpec       `json:"podSecurityContext,omitempty"`
+	ContainerSecurityContext      *ContainerSecuritySpec `json:"containerSecurityContext,omitempty"`
 }
 
 type GracefulShutdownSpec struct {
