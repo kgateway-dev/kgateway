@@ -160,7 +160,6 @@ var _ = Describe("Health Checks", func() {
 			envoyHealthCheckTest := envoyHealthCheckTest
 
 			It(envoyHealthCheckTest.Name, func() {
-				fmt.Println(envoyHealthCheckTest.Name)
 				// by default we disable panic mode
 				// this purpose of this test is to verify panic modes behavior so we need to enable it
 				envoyInstance.EnablePanicMode()
