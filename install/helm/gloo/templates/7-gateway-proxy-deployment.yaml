@@ -109,7 +109,6 @@ spec:
         {{- end }}
 {{- end}}
     spec:
-      # { template}
       {{- $context := dict
           "fsGroup" $spec.podTemplate.fsGroup 
           "floatingUserId" $spec.podTemplate.floatingUserId
@@ -117,14 +116,6 @@ spec:
           "disablePodSecurityContext" (not $spec.podTemplate.enablePodSecurityContext)
       -}}
       {{- include "gloo.podSecurityContext" (dict "sec" $spec.podTemplate.podSecurityContext "ctx" $context) | nindent 6 }}
-      # {preexisting}
-{{- if $spec.podTemplate.enablePodSecurityContext }}
-      securityContext:
-        fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) }}
-        {{- if not $spec.podTemplate.floatingUserId }}
-        runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
-        {{- end}}
-{{- end}}
 {{- if $spec.kind.deployment }}
 {{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:
@@ -227,7 +218,6 @@ spec:
         {{- end}}
         {{- end}}
         name: {{ $name | kebabcase }}
-        ## Template
         {{- $context := dict
             "runUnprivileged" $spec.podTemplate.runUnprivileged 
             "floatingUserId" $spec.podTemplate.floatingUserId
@@ -238,23 +228,6 @@ spec:
             "allowPrivilegeEscalation" false
         -}}
         {{- include "gloo.containerSecurityContext" (dict "sec" $spec.podTemplate.containerSecurityContext "ctx" $context) | nindent 8}}
-        ## Existing security
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          {{- if $spec.podTemplate.runUnprivileged }}
-          runAsNonRoot: true
-          {{- if not $spec.podTemplate.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
-          {{- end }}
-          {{- end}}
-          capabilities:
-            drop:
-            - ALL
-          {{- if not $spec.podTemplate.disableNetBind }}
-            add:
-            - NET_BIND_SERVICE
-          {{- end}}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
