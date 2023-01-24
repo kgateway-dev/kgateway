@@ -18,16 +18,3 @@ func WriteDefaultGateways(writeNamespace string, gatewayClient v1.GatewayClient)
 
 	return err
 }
-
-func WriteDefaultGatewaysWithHealthChecks(writeNamespace string, gatewayClient v1.GatewayClient) error {
-	defaultGateway := defaults.DefaultGatewayWithHealthCheck(writeNamespace)
-	defaultSslGateway := defaults.DefaultSslGatewayWithHealthCheck(writeNamespace)
-
-	_, err := gatewayClient.Write(defaultGateway, clients.WriteOpts{})
-	if err != nil {
-		return err
-	}
-	_, err = gatewayClient.Write(defaultSslGateway, clients.WriteOpts{})
-
-	return err
-}

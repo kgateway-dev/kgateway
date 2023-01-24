@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/onsi/ginkgo/extensions/table"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
+	"github.com/solo-io/gloo/test/helpers"
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -22,11 +20,11 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
+	gatewayDefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -78,7 +76,25 @@ var _ = Describe("Health Checks", func() {
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-		err = helpers.WriteDefaultGatewaysWithHealthChecks(writeNamespace, testClients.GatewayClient)
+
+		defaultGateway := gatewayDefaults.DefaultGateway(writeNamespace)
+		defaultGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			HealthCheck: &healthcheck.HealthCheck{
+				Path: "get",
+			},
+		}
+		defaultSslGateway := gatewayDefaults.DefaultSslGateway(writeNamespace)
+		defaultSslGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+			HealthCheck: &healthcheck.HealthCheck{
+				Path: "get",
+			},
+		}
+
+		_, err = testClients.GatewayClient.Write(defaultGateway, clients.WriteOpts{})
+		Expect(err).To(Not(HaveOccurred()))
+		_, err = testClients.GatewayClient.Write(defaultSslGateway, clients.WriteOpts{})
+		Expect(err).To(Not(HaveOccurred()))
+
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 	})
 
@@ -197,121 +213,68 @@ var _ = Describe("Health Checks", func() {
 			})
 		}
 
-		Context("passes health checks with different methods", func() {
-			BeforeEach(func() {
-				envoyInstance.EnablePanicMode()
+		table.FDescribeTable("passes health checks with different methods", func(check *envoy_config_core_v3.HealthCheck, expectedCode int) {
+			envoyInstance.EnablePanicMode()
+			tu = v1helpers.NewTestHttpUpstream(ctx, "httpbin.org")
 
-				var hosts []*static_plugin_gloo.Host
-				hosts = append(hosts, &static_plugin_gloo.Host{
-					Addr: "httpbin.org",
-					Port: 80,
-				})
-				testUpstream := &gloov1.Upstream{
-					Metadata: &core.Metadata{
-						Name:      fmt.Sprintf("local-test-upstream"),
-						Namespace: "default",
-					},
-					UpstreamType: &gloov1.Upstream_Static{
-						Static: &static_plugin_gloo.UpstreamSpec{
-							Hosts: hosts,
-						},
-					},
-				}
-				_, err := testClients.UpstreamClient.Write(testUpstream, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
+			// update the health check configuration
+			check.Timeout = translator.DefaultHealthCheckTimeout
+			check.Interval = translator.DefaultHealthCheckInterval
+			check.HealthyThreshold = translator.DefaultThreshold
+			check.UnhealthyThreshold = translator.DefaultThreshold
 
-				testVirtualService := &v1.VirtualService{
-					Metadata: &core.Metadata{
-						Name:      "default",
-						Namespace: defaults.GlooSystem,
-					},
-					VirtualHost: &v1.VirtualHost{
-						Domains: []string{"*"},
-						Routes: []*v1.Route{
-							{
-								Name: "testRouteName",
-								Matchers: []*matchers.Matcher{
-									{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}},
-								},
-								Action: &v1.Route_RouteAction{
-									RouteAction: &gloov1.RouteAction{
-										Destination: &gloov1.RouteAction_Single{
-											Single: &gloov1.Destination{
-												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: testUpstream.Metadata.Ref(),
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				}
-				_, err = testClients.VirtualServiceClient.Write(testVirtualService, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
-			})
+			// persist the health check configuration
+			var err error
+			tu.Upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{check})
+			Expect(err).NotTo(HaveOccurred())
 
-			tests := []struct {
-				Name  string
-				Check *envoy_config_core_v3.HealthCheck
-			}{
-				{
-					Name: "http-default",
-					Check: &envoy_config_core_v3.HealthCheck{
-						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-								Path:   "post",
-								Method: envoy_config_core_v3.RequestMethod_POST,
-							},
-						},
-					},
-				}, {
-					Name: "http-get",
-					Check: &envoy_config_core_v3.HealthCheck{
-						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-								Path:   "get",
-								Method: envoy_config_core_v3.RequestMethod_GET,
-							},
-						},
-					},
-				}, {
-					Name: "http-post",
-					Check: &envoy_config_core_v3.HealthCheck{
-						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-								Path:   "get",
-								Method: envoy_config_core_v3.RequestMethod_GET,
-							},
-						},
-					},
-				}, {
-					Name: "http-mismatch",
-					Check: &envoy_config_core_v3.HealthCheck{
-						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-								Path:   "some-invalid-path",
-								Method: envoy_config_core_v3.RequestMethod_GET,
-							},
-						},
+			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			testVirtualService := helpers.NewVirtualServiceBuilder().
+				WithName("default").
+				WithNamespace(defaults.GlooSystem).
+				WithDomain("*").
+				WithRoutePrefixMatcher("testRouteName", "/").
+				WithRouteActionToUpstream("testRouteName", tu.Upstream).
+				Build()
+
+			_, err = testClients.VirtualServiceClient.Write(testVirtualService, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			testRequest := httpBinReq()
+			Eventually(testRequest, 30, 1).Should(Equal(expectedCode))
+		}, table.Entry("Default", &envoy_config_core_v3.HealthCheck{
+			HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+				HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+					Path: "health",
+				},
+			},
+		}, 200),
+			table.Entry("POST", &envoy_config_core_v3.HealthCheck{
+				HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+						Method: envoy_config_core_v3.RequestMethod_POST,
+						Path:   "health",
 					},
 				},
-			}
-			for _, envoyHealthCheckTest := range tests {
-				envoyHealthCheckTest := envoyHealthCheckTest
-				It(envoyHealthCheckTest.Name, func() {
-					if envoyHealthCheckTest.Name == "http-mismatch" {
-						testRequest := httpBinReq()
-						Eventually(testRequest, 30, 1).ShouldNot(Equal(200))
-					} else {
-						testRequest := httpBinReq()
-						Eventually(testRequest, 30, 1).Should(Equal(200))
-					}
-
-				})
-			}
-		})
+			}, 200),
+			table.Entry("GET", &envoy_config_core_v3.HealthCheck{
+				HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+						Method: envoy_config_core_v3.RequestMethod_GET,
+						Path:   "health",
+					},
+				},
+			}, 200),
+			table.Entry("Mismatch", &envoy_config_core_v3.HealthCheck{
+				HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+						Method: envoy_config_core_v3.RequestMethod_POST,
+						Path:   "health",
+					},
+				},
+			}, 503))
 
 		It("outlier detection", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})

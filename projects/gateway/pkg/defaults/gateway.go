@@ -6,7 +6,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -34,27 +33,8 @@ func DefaultGateway(writeNamespace string) *v1.Gateway {
 	}
 }
 
-func DefaultGatewayWithHealthCheck(writeNamespace string) *v1.Gateway {
-	defaultgw := DefaultGateway(writeNamespace)
-	defaultgw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-		HealthCheck: &healthcheck.HealthCheck{
-			Path: "get",
-		},
-	}
-	return defaultgw
-}
-
 func DefaultSslGateway(writeNamespace string) *v1.Gateway {
 	defaultgw := DefaultGateway(writeNamespace)
-	defaultgw.GetMetadata().Name = defaultgw.GetMetadata().GetName() + "-ssl"
-	defaultgw.BindPort = defaults.HttpsPort
-	defaultgw.Ssl = true
-
-	return defaultgw
-}
-
-func DefaultSslGatewayWithHealthCheck(writeNamespace string) *v1.Gateway {
-	defaultgw := DefaultGatewayWithHealthCheck(writeNamespace)
 	defaultgw.GetMetadata().Name = defaultgw.GetMetadata().GetName() + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
 	defaultgw.Ssl = true
