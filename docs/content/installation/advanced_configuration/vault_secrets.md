@@ -27,7 +27,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
    * Remove the existing `kubernetesSecretSource` or `directorySecretSource` field, which direct the gateway to use other secret stores than Vault.
    * Add the `vaultSecretSource` section to enable secrets to be read from and written to Vault.
    * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
-   {{< highlight yaml "hl_lines=16-25" >}}
+   {{< highlight yaml "hl_lines=16-23" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
    metadata:
@@ -43,14 +43,14 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
        xdsBindAddr: 0.0.0.0:9977
      kubernetesArtifactSource: {}
      kubernetesConfigSource: {}
-     # Delete or comment out the existing 
+     # Delete or comment out the existing
      # kubernetesSecretSource or directorySecretSource field
      #kubernetesSecretSource: {}
      # Enable secrets to be read from and written to HashiCorp Vault
      vaultSecretSource:
        # Address that your Vault instance is routeable on
        address: http://vault:8200
-       token: root
+       accessToken: root
      # refresh rate for polling config backends for changes
      # this is used for watching vault secrets and by other resource clients
      refreshRate: 15s
@@ -58,6 +58,44 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
    {{< /highlight >}}
 
 For the full list of options for Gloo Edge Settings, including the ability to set auth/TLS parameters for Vault, see the {{< protobuf name="gloo.solo.io.Settings" display="v1.Settings API reference">}}.
+
+An example using AWS IAM auth might look like the following:
+   {{< highlight yaml "hl_lines=16-29" >}}
+   apiVersion: gloo.solo.io/v1
+   kind: Settings
+   metadata:
+     name: default
+     namespace: gloo-system
+   spec:
+     discoveryNamespace: gloo-system
+     gateway:
+       validation:
+         alwaysAccept: true
+         proxyValidationServerAddr: gloo:9988
+     gloo:
+       xdsBindAddr: 0.0.0.0:9977
+     kubernetesArtifactSource: {}
+     kubernetesConfigSource: {}
+     # Delete or comment out the existing
+     # kubernetesSecretSource or directorySecretSource field
+     #kubernetesSecretSource: {}
+     # Enable secrets to be read from and written to HashiCorp Vault
+     vaultSecretSource:
+       # Address that your Vault instance is routeable on
+       address: http://vault:8200
+       aws:
+         vaultRole: vault-role
+         region: us-east-1
+         iamServerIdHeader: vault.example.com
+         accessKeyId: your-aws-iam-access-key-id
+         secretAccessKey: your-aws-iam-secret-access-key
+         sessionToken: your-aws-iam-session-token
+     # refresh rate for polling config backends for changes
+     # this is used for watching vault secrets and by other resource clients
+     refreshRate: 15s
+     requestTimeout: 0.5s
+   {{< /highlight >}}
+
 
 ## Writing secret objects to Vault
 

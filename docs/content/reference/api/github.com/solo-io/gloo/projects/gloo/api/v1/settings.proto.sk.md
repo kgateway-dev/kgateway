@@ -195,7 +195,7 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `token` | `string` | DEPRECATED: use field auth_method.access_token the Token used to authenticate to Vault. |
+| `token` | `string` | DEPRECATED: use field accessToken the Token used to authenticate to Vault. |
 | `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200). |
 | `caCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
 | `caPath` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
