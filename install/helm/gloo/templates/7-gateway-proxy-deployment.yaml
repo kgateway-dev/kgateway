@@ -200,10 +200,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-      {{- if $spec.logLevel }}
-        - name: LOG_LEVEL
-          value: {{ $spec.logLevel }}
-      {{- end}}
         image: {{ template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         {{- if $spec.podTemplate.gracefulShutdown }}
