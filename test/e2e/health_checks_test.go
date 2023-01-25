@@ -242,8 +242,7 @@ var _ = Describe("Health Checks", func() {
 		})
 	})
 
-	table.FDescribeTable("passes health checks with different methods", func(check *envoy_config_core_v3.HealthCheck, expectedCode int) {
-		envoyInstance.EnablePanicMode()
+	table.DescribeTable("passes health checks with different methods", func(check *envoy_config_core_v3.HealthCheck, expectedCode int) {
 		tu = v1helpers.NewTestHttpUpstreamWithReplyAndHealthReply(ctx, "localhost", "ok", "ok")
 
 		// update the health check configuration
