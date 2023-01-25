@@ -16,10 +16,12 @@ GraphQL resolution is included in Gloo Edge Enterprise version 1.11.0 and later.
 
 1. [Contact your account representative](https://www.solo.io/company/talk-to-an-expert/) to request a Gloo Edge Enterprise license that specifically enables the GraphQL capability.
 
-2. To try out GraphQL, install Gloo Edge in a development environment. Note that you currently cannot update an existing installation to use GraphQL. Be sure to specify version 1.11.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
-   ```sh
-   glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_KEY>
-   ```
+2. Install or update Gloo Edge with your GraphQL-enabled license key. Be sure to specify version 1.11.0 or later. For the latest available version, see the [Gloo Edge Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
+   * Install:
+     ```sh
+     glooctl install gateway enterprise --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --license-key=<GRAPHQL_ENABLED_LICENSE_KEY>
+     ```
+   * Update: See the steps for [updating your license]({{% versioned_link_path fromRoot="/operations/updating_license/" %}}).
 
 ## Step 2: GraphQL service discovery with Pet Store {#pet-store}
 
