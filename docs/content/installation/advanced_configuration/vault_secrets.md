@@ -139,7 +139,7 @@ If you manually write Gloo Edge secrets, you must store them in Vault with the c
 
 `<secret_engine_path_prefix>/<gloo_root_key>/<resource_group>/<group_version>/Secret/<resource_namespace>/<resource_name>`
 
-For example, if you want to create a secret named `tls-secret` in the `gloo-system` namespace, store the secret file in Vault on the path `secret/root/gloo.solo.io/v1/gloo-system/tls-secret`.
+For example, if you want to create a secret named `tls-secret` in the `gloo-system` namespace, store the secret file in Vault on the path `secret/root/gloo.solo.io/v1/Secret/gloo-system/tls-secret`.
 
 | Path | Description |
 | ---- | ----------- |
