@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/extensions/table"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -22,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
-	gatewayDefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -74,25 +72,7 @@ var _ = Describe("Health Checks", func() {
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-
-		defaultGateway := gatewayDefaults.DefaultGateway(writeNamespace)
-		defaultGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-			HealthCheck: &healthcheck.HealthCheck{
-				Path: "get",
-			},
-		}
-		defaultSslGateway := gatewayDefaults.DefaultSslGateway(writeNamespace)
-		defaultSslGateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-			HealthCheck: &healthcheck.HealthCheck{
-				Path: "get",
-			},
-		}
-
-		_, err = testClients.GatewayClient.Write(defaultGateway, clients.WriteOpts{})
-		Expect(err).To(Not(HaveOccurred()))
-		_, err = testClients.GatewayClient.Write(defaultSslGateway, clients.WriteOpts{})
-		Expect(err).To(Not(HaveOccurred()))
-
+		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 	})
 
