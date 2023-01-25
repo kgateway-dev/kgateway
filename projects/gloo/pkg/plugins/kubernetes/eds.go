@@ -391,11 +391,7 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 			}
 		}
 		key := Epkey{}
-		podHasIstioProxy, err := pods.hasIstioProxy(addr.IP, podName, podNamespace)
-		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.GetServiceName(), err))
-			continue
-		}
+		podHasIstioProxy, _ := pods.hasIstioProxy(addr.IP, podName, podNamespace)
 		// Istio uses the Service for routing requests
 		if istioIntegrationEnabled && podHasIstioProxy {
 			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
