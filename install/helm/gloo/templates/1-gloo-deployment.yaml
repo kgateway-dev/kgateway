@@ -82,7 +82,7 @@ spec:
             "runAsUser" .Values.gloo.deployment.runAsUser
             "runAsNonRoot" true
         -}}
-      {{- include "gloo.podSecurityContext" (dict "sec" .Values.global.glooMtls.envoy.securityContext "ctx" $context) | nindent 8}}
+        {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.envoy.securityContext "ctx" $context) | nindent 8}}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -126,7 +126,7 @@ spec:
             "runAsUser" .Values.gloo.deployment.runAsUser
             "runAsNonRoot" true
         -}}
-      {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.sds.securityContext "ctx" $context) | nindent 8}}
+        {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.sds.securityContext "ctx" $context) | nindent 8}}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation

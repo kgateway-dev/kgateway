@@ -133,7 +133,7 @@ securityContext:
 {{- else if $ctx.runUnprivileged }}
   runAsNonRoot: true
 {{- end }}
-{{- if or $sec.procMount $ctx.procMount  }}}
+{{- if or $sec.procMount $ctx.procMount  }}
   procMount: {{ (or $sec.procMount $ctx.procMount) }}
 {{- end }}
 {{- if not (kindIs "invalid" $sec.readOnlyRootFilesystem) }}
@@ -141,7 +141,7 @@ securityContext:
 {{- else if not (kindIs "invalid" $ctx.readOnlyRootFilesystem) }}
   readOnlyRootFilesystem: {{ $ctx.readOnlyRootFilesystem }}
 {{- end }}
-{{- if or $sec.runAsGroup $ctx.runAsGroup  }}}
+{{- if or $sec.runAsGroup $ctx.runAsGroup  }}
   runAsGroup: {{ (or $sec.runAsGroup $ctx.runAsGroup) }}
 {{- end }}
 {{- if not $ctx.floatingUserId }}

@@ -97,6 +97,7 @@ type ContainerSecuritySpec struct {
 	WindowsOptions           *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
 }
 
+// Probably drop this and use the separate pod/container contexts
 type UberSecuritySpec struct {
 	AllowPrivilegeEscalation *bool                          `json:"allowPrivilegeEscalation,omitempty"`
 	Capabilities             *Capabilities                  `json:"capabilities,omitempty"`
@@ -121,26 +122,26 @@ type Capabilities struct {
 }
 
 type SELinuxOptions struct {
-	Level *string ``
-	Role  *string ``
-	Type  *string ``
-	User  *string ``
+	Level *string `json:"level,omitempty"`
+	Role  *string `json:"role,omitempty"`
+	Type  *string `json:"type,omitempty"`
+	User  *string `json:"user,omitempty"`
 }
 
 type SeccompProfile struct {
-	LocalhostProfile *string ``
-	Type             *string ``
+	LocalhostProfile *string `json:"localhostProfile,omitempty"`
+	Type             *string `json:"type,omitempty"`
 }
 type Sysctl struct {
-	Name  *string ``
-	Value *string ``
+	Name  *string `json:"name,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
 
 type WindowsSecurityContextOptions struct {
-	GmsaCredentialSpec     *string ``
-	GmsaCredentialSpecName *string ``
-	HostProcess            *bool   ``
-	RunAsUserName          *string
+	GmsaCredentialSpec     *string `json:"gmsaCredentialSpec,omitempty"`
+	GmsaCredentialSpecName *string `json:"gmsaCredentialSpecName,omitempty"`
+	HostProcess            *bool   `json:"hostProcess,omitempty"`
+	RunAsUserName          *string `json:"runAsUserName,omitempty"`
 }
 
 type PodSpec struct {
