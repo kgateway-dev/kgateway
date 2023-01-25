@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
 	"github.com/onsi/ginkgo/extensions/table"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"io/ioutil"
-	"net/http"
-	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
