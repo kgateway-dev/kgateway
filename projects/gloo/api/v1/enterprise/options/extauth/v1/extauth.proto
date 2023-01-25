@@ -343,8 +343,8 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
-        // When set, refresh expired id-tokens using the refresh-token. Defaults to false.
-        // Explicitly set to true to enable refreshing.
+        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
+        // Defaults to false. To enable refreshing, set to true.
         google.protobuf.BoolValue allow_refreshing = 1;
         // Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
         // Cookie keys are stored in the form `<key_prefix>_<cookie_name>`.
@@ -362,8 +362,8 @@ message UserSession {
         string key_prefix = 2;
         // Cookie name to set and store the session id. If empty the default "__session" is used.
         string cookie_name = 3;
-        // When set, refresh expired id-tokens using the refresh-token. Defaults to true.
-        // Explicitly set to false to disable refreshing.
+        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
+        // Defaults to true. To disable refreshing, set to false.
         google.protobuf.BoolValue allow_refreshing = 4;
         // Specifies a time buffer in which an id-token will be refreshed prior to its
         // actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh
@@ -764,7 +764,7 @@ message AccessTokenValidation {
         string introspection_url = 1 [deprecated = true];
 
         // Validate access tokens that conform to the
-        // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+        // [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
         JwtValidation jwt = 2;
 
         // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
@@ -1417,7 +1417,7 @@ message ExtAuthConfig {
             string introspection_url = 1 [deprecated = true];
 
             // Validate access tokens that conform to the
-            // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+            // [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
             JwtValidation jwt = 2;
 
             // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
