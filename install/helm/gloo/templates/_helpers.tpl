@@ -93,20 +93,20 @@ ttlSecondsAfterFinished: {{ . }}
 
 
 {{- define "gloo.containerSecurityContext" -}}
-{{- $sec := (kindIs "invalid" .sec) | ternary dict .sec -}}
-{{- $ctx := (kindIs "invalid" .ctx) | ternary dict .ctx -}}
+{{- $sec := or .sec dict -}}
+{{- $ctx := or .ctx dict -}}
 {{- $fieldsToDisplay := or 
   (or (not (kindIs "invalid" $sec.allowPrivilegeEscalation)) (not (kindIs "invalid" $ctx.allowPrivilegeEscalation)) )
-  (or .capabilities $ctx.useDefaultCapabilities)
-  (not (kindIs "invalid" $sec.privileged))
-  $sec.procMount
+  (or $sec.capabilities $ctx.useDefaultCapabilities $ctx.capabilities)
+  (or (not (kindIs "invalid" $sec.privileged)) (not (kindIs "invalid" $ctx.privileged)))
+  (or $sec.procMount $ctx.procMount)
   (or (not (kindIs "invalid" $sec.readOnlyRootFilesystem)) (not (kindIs "invalid" $ctx.readOnlyRootFilesystem)) )
-  $sec.runAsGroup 
+  (or $sec.runAsGroup $ctx.runAsGroup )
   (or (not (kindIs "invalid" $sec.runAsNonRoot)) $ctx.runUnprivileged (not (kindIs "invalid" $ctx.runAsNonRoot)) )
   (and (not $ctx.floatingUserId) (or $sec.runAsUser $ctx.runAsUser))
-  $sec.seLinuxOptions
-  $sec.seccompProfile
-  $sec.windowsOptions
+  (or $sec.seLinuxOptions $ctx.seLinuxOptions)
+  (or $sec.seccompProfile $ctx.seccompProfile)
+  (or $sec.windowsOptions $ctx.windowsOptions)
  -}}
 {{- if $fieldsToDisplay -}}
 securityContext:
@@ -115,8 +115,8 @@ securityContext:
 {{- else if not (kindIs "invalid" $ctx.allowPrivilegeEscalation) }}
   allowPrivilegeEscalation: {{ $ctx.allowPrivilegeEscalation }}
 {{- end }}
-{{- if $sec.capabilities }}
-  capabilities: {{ toYaml $sec.capabilities | nindent 4  }}
+{{- if or $sec.capabilities $ctx.capabilities }}
+  capabilities: {{ toYaml (or $sec.capabilities $ctx.capabilities) | nindent 4  }}
 {{- else if $ctx.useDefaultCapabilities }}
   capabilities:
     drop:
@@ -133,66 +133,63 @@ securityContext:
 {{- else if $ctx.runUnprivileged }}
   runAsNonRoot: true
 {{- end }}
-{{- with $sec.procMount }}
-  procMount: {{ . }}
+{{- if or $sec.procMount $ctx.procMount  }}}
+  procMount: {{ (or $sec.procMount $ctx.procMount) }}
 {{- end }}
 {{- if not (kindIs "invalid" $sec.readOnlyRootFilesystem) }}
   readOnlyRootFilesystem: {{ $sec.readOnlyRootFilesystem }}
 {{- else if not (kindIs "invalid" $ctx.readOnlyRootFilesystem) }}
   readOnlyRootFilesystem: {{ $ctx.readOnlyRootFilesystem }}
 {{- end }}
-{{- with $sec.runAsGroup }}
-  runAsGroup: {{ . }}
+{{- if or $sec.runAsGroup $ctx.runAsGroup  }}}
+  runAsGroup: {{ (or $sec.runAsGroup $ctx.runAsGroup) }}
 {{- end }}
 {{- if not $ctx.floatingUserId }}
-{{- with $sec.runAsUser }}
-  runAsUser: {{ . }}
-{{ end -}}
 {{- if or $sec.runAsUser $ctx.runAsUser}}
   runAsUser: {{ or $sec.runAsUser $ctx.runAsUser  }}
 {{- end }}
 {{- end }}
-{{- with $sec.seLinuxOptions }}
-  seLinuxOptions: {{ toYaml . | nindent 4  }}
-{{ end -}}
-{{- with $sec.seccompProfile }}
-  seccompProfile: {{ toYaml . | nindent 4 }}
-{{ end -}}
-{{- with $sec.windowsOptions }}
-  windowsOptions: {{ toYaml . | nindent 4 }}
+{{- if or $sec.seLinuxOptions $ctx.seLinuxOptions }}
+  seLinuxOptions: {{ toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
+{{- end }}
+{{- if or $sec.seccompProfile $ctx.seccompProfile }}
+  seccompProfile: {{ toYaml (or $sec.seccompProfile $ctx.seccompProfile) | nindent 4  }}
+{{- end }}
+{{- if or $sec.windowsOptions $ctx.windowsOptions }}
+  windowsOptions: {{ toYaml (or $sec.windowsOptions $ctx.windowsOptions) | nindent 4  }}
 {{- end }}
 {{- end }}
 {{- end }}
 
 
 {{- define "gloo.podSecurityContext" -}}
-{{- $sec := (kindIs "invalid" .sec) | ternary dict .sec -}}
-{{- $ctx := (kindIs "invalid" .ctx) | ternary dict .ctx -}}
+{{- $sec := or .sec dict -}}
+{{- $ctx := or .ctx dict -}}
 {{- $fieldsToDisplay := or 
-  $sec.fsGroupChangePolicy
+  (or $sec.fsGroupChangePolicy $ctx.fsGroupChangePolicy)
   (or $sec.fsGroup $ctx.fsGroup)
-  $sec.runAsGroup
-  (or $sec.runAsUser $ctx.runAsUser)
+  (or $sec.runAsGroup $ctx.runAsGroup)
+  (and (not $ctx.floatingUserId) (or $sec.runAsUser $ctx.runAsUser))
   (not (kindIs "invalid" $ctx.runAsNonRoot) )
-  (and $sec.runAsUser (not $ctx.floatingUserId))
-  $sec.supplementalGroups
-  $sec.seLinuxOptions 
-  $sec.seccompProfile
-  $sec.sysctls
-  $sec.windowsOptions -}}
+  (or $sec.supplementalGroups $ctx.supplementalGroups)
+  (or $sec.seLinuxOptions $ctx.seLinuxOptions)
+  (or $sec.seccompProfile $ctx.seccompProfile)
+  (or $sec.sysctls $ctx.sysctls)
+  (or $sec.windowsOptions $ctx.windowsOptions)
+ -}}
 {{- if and $fieldsToDisplay (not $ctx.disablePodSecurityContext) -}}
 securityContext:
-{{- with $sec.fsGroupChangePolicy }}
-  fsGroupChangePolicy: {{ . }}
+{{- if (or $sec.fsGroupChangePolicy $ctx.fsGroupChangePolicy) }}
+  fsGroupChangePolicy: {{ (or $sec.fsGroupChangePolicy $ctx.fsGroupChangePolicy) }}
 {{- end }}
 {{- if (or $sec.fsGroup $ctx.fsGroup) }}
   fsGroup: {{ printf "%.0f" (float64 (or $sec.fsGroup $ctx.fsGroup)) }}
 {{- end }}
-{{- with $sec.legacy }}
-  legacy: {{ . }}
+{{- if (or $sec.legacy $ctx.legacy) }}
+  legacy: {{ (or $sec.legacy $ctx.legacy) }}
 {{- end }}
-{{- with $sec.runAsGroup }}
-  runAsGroup: {{ . }}
+{{- if (or $sec.runAsGroup $ctx.runAsGroup) }}
+  runAsGroup: {{ (or $sec.runAsGroup $ctx.runAsGroup) }}
 {{- end }}
 {{- if not (kindIs "invalid" $sec.runAsNonRoot) }}
   runAsNonRoot: {{ $sec.runAsNonRoot }}
@@ -204,20 +201,20 @@ securityContext:
   runAsUser: {{ (or $sec.runAsUser $ctx.runAsUser) }}
 {{- end }}
 {{- end }}
-{{- with $sec.supplementalGroups }}
-  supplementalGroups: {{ . }}
+{{- if (or $sec.supplementalGroups $ctx.supplementalGroups) }}
+  supplementalGroups: {{ (or $sec.supplementalGroups $ctx.supplementalGroups) }}
 {{- end }}
-{{- with $sec.seLinuxOptions }}
-  seLinuxOptions: {{ toYaml . | nindent 4 }}
+{{- if or $sec.seLinuxOptions $ctx.seLinuxOptions }}
+  seLinuxOptions: {{ toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
 {{- end }}
-{{- with $sec.seccompProfile }}
-  seccompProfile: {{ toYaml . | nindent 4 }}
+{{- if or $sec.seccompProfile $ctx.seccompProfile }}
+  seccompProfile: {{ toYaml (or $sec.seccompProfile $ctx.seccompProfile) | nindent 4  }}
 {{- end }}
-{{- with $sec.sysctls }}
-  sysctls: {{ toYaml . | nindent 4 }}
+{{- if or $sec.windowsOptions $ctx.windowsOptions }}
+  windowsOptions: {{ toYaml (or $sec.windowsOptions $ctx.windowsOptions) | nindent 4  }}
 {{- end }}
-{{- with $sec.windowsOptions }}
-  windowsOptions: {{ toYaml . | nindent 4 }}
+{{- if or $sec.windowsOptions $ctx.sysctls }}
+  sysctls: {{ toYaml (or $sec.sysctls $ctx.sysctls) | nindent 4  }}
 {{- end }}
 {{- end }}
 {{- end }}

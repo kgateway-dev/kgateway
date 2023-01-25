@@ -211,7 +211,8 @@ global:
     enableStatsRoute: false
     statsPrefixRewrite: /stats
   glooMtls:
-    enabled: false
+    #enabled: false
+    enabled: true
     sds:
       image:
         repository: sds
@@ -223,6 +224,10 @@ global:
     envoy:
       image:
         repository: gloo-envoy-wrapper
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 555
+        allowPrivilegeEscalation: true
   istioSDS:
     enabled: false
   istioIntegration:
