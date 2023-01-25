@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7060
+    resolvesIssue: false
+    description: >
+      Fix for `argument list too long` errors from resource rollout job. The Gateway custom resource yaml 
+      is now stored in a ConfigMap. The resource rollout job mounts the ConfigMap as a file and applies
+      the file, instead of applying the entire yaml inline. 
