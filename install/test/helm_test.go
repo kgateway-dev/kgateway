@@ -3510,7 +3510,7 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("can set log level env var", func() {
+					It("can set envoy log level", func() {
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
 							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
 							"--log-level debug",
