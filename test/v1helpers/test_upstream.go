@@ -196,6 +196,22 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte(healthReply))
 	}))
+	mux.Handle("/healthGet", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println(r)
+		if r.Method == http.MethodGet {
+			rw.Write([]byte(healthReply))
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
+	mux.Handle("/healthPost", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Println(r)
+		if r.Method == http.MethodPost {
+			rw.Write([]byte(healthReply))
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+	}))
 
 	go func() {
 		defer GinkgoRecover()
