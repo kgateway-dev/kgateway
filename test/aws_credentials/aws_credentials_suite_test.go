@@ -12,7 +12,7 @@ import (
 
 const (
 	region        = "us-east-1"
-	roleArnEnvVar = "AWS_ARN_ROLE_1"
+	roleArnEnvVar = "AWS_ROLE_ARN"
 )
 
 func TestAwsCredentials(t *testing.T) {
