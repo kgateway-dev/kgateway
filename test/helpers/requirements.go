@@ -199,8 +199,6 @@ func Vault() Requirement {
 func AwsCredentials() Requirement {
 	return func(configuration *RequiredConfiguration) {
 		DefinedEnv("AWS_SHARED_CREDENTIALS_FILE")(configuration)
-		DefinedEnv("AWS_ARN_ROLE_1")(configuration)
-
 		configuration.reasons["aws"] = "AWS_SHARED_CREDENTIALS_FILE defines the file location where AWS credentials are stored"
 	}
 }

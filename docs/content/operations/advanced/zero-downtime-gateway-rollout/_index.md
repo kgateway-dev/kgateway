@@ -186,7 +186,7 @@ service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "10" # 10s or
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: "/envoy-hc" # Envoy HC filter
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "HTTPS" # https://github.com/kubernetes/cloud-provider-aws/blob/ddfe0df3ce630bbf01ea2368c9ad816429e35c2b/pkg/providers/v1/aws.go#L189
 service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "traffic-port" # https://github.com/kubernetes/cloud-provider-aws/blob/ddfe0df3ce630bbf01ea2368c9ad816429e35c2b/pkg/providers/v1/aws.go#L196
-service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "6" # 6s is the minimum
+service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2" # 2s is the minimum and is recommended to detect failure quickly
 ```
 
 ## Demo
