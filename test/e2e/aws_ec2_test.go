@@ -63,7 +63,10 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
 		return
 	}
-	const region = "us-east-1"
+	const (
+		region     = "us-east-1"
+		awsRoleArn = "AWS_ROLE_ARN"
+	)
 
 	var (
 		ctx           context.Context
@@ -83,7 +86,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		}
 
 		// role arn format: "arn:aws:iam::[account_number]:role/[role_name]"
-		roleArn = os.Getenv("AWS_ARN_ROLE_1")
+		roleArn = os.Getenv(awsRoleArn)
 		if roleArn == "" {
 			Skip("no AWS role ARN available")
 		}
