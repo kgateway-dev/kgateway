@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-if $DISABLE_CORE_DUMPS ; then
+if "${DISABLE_CORE_DUMPS:-false}" ; then
   ulimit -c 0
 fi
 
