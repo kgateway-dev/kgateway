@@ -7,7 +7,7 @@ fi
 
 if [ -n "${ENVOY_SIDECAR:-}" ] # true if ENVOY_SIDECAR is a non-empty string
 then
-  /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml "$@"
+  exec /usr/local/bin/envoy -c /etc/envoy/envoy-sidecar.yaml "$@"
 else
-  /usr/local/bin/envoyinit "$@"
+  exec /usr/local/bin/envoyinit "$@"
 fi
