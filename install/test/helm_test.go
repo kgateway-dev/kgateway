@@ -2780,7 +2780,6 @@ spec:
 									Expect(envvar.Value).To(Equal("true"))
 								}
 							})
-							// testManifest.Expect("Deployment", "Spec.Template.Spec.Containers[0].Env", "Value").To(Equal("true"))
 						})
 
 						It("can explicitly disable hostNetwork", func() {
