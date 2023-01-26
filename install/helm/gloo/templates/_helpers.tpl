@@ -97,12 +97,12 @@ ttlSecondsAfterFinished: {{ . }}
 {{- $ctx := or .ctx dict -}}
 {{- $fieldsToDisplay := or 
   (or (not (kindIs "invalid" $sec.allowPrivilegeEscalation)) (not (kindIs "invalid" $ctx.allowPrivilegeEscalation)) )
-  (or $sec.capabilities $ctx.useDefaultCapabilities $ctx.capabilities)
+  (or $sec.capabilities $ctx.capabilities)
   (or (not (kindIs "invalid" $sec.privileged)) (not (kindIs "invalid" $ctx.privileged)))
   (or $sec.procMount $ctx.procMount)
   (or (not (kindIs "invalid" $sec.readOnlyRootFilesystem)) (not (kindIs "invalid" $ctx.readOnlyRootFilesystem)) )
   (or $sec.runAsGroup $ctx.runAsGroup )
-  (or (not (kindIs "invalid" $sec.runAsNonRoot)) $ctx.runUnprivileged (not (kindIs "invalid" $ctx.runAsNonRoot)) )
+  (or (not (kindIs "invalid" $sec.runAsNonRoot)) $ctx.runUnprivileged)
   (and (not $ctx.floatingUserId) (or $sec.runAsUser $ctx.runAsUser))
   (or $sec.seLinuxOptions $ctx.seLinuxOptions)
   (or $sec.seccompProfile $ctx.seccompProfile)
@@ -117,14 +117,6 @@ securityContext:
 {{- end }}
 {{- if or $sec.capabilities $ctx.capabilities }}
   capabilities: {{ toYaml (or $sec.capabilities $ctx.capabilities) | nindent 4  }}
-{{- else if $ctx.useDefaultCapabilities }}
-  capabilities:
-    drop:
-    - ALL
-    {{- if not $ctx.disableNetBind }}
-    add:
-    - NET_BIND_SERVICE
-    {{- end}}
 {{- end }}
 {{- if not (kindIs "invalid" $sec.runAsNonRoot) }}
   runAsNonRoot: {{ $sec.runAsNonRoot }}
@@ -144,10 +136,8 @@ securityContext:
 {{- if or $sec.runAsGroup $ctx.runAsGroup  }}
   runAsGroup: {{ (or $sec.runAsGroup $ctx.runAsGroup) }}
 {{- end }}
-{{- if not $ctx.floatingUserId }}
 {{- if or $sec.runAsUser $ctx.runAsUser}}
   runAsUser: {{ or $sec.runAsUser $ctx.runAsUser  }}
-{{- end }}
 {{- end }}
 {{- if or $sec.seLinuxOptions $ctx.seLinuxOptions }}
   seLinuxOptions: {{ toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
@@ -169,8 +159,8 @@ securityContext:
   (or $sec.fsGroupChangePolicy $ctx.fsGroupChangePolicy)
   (or $sec.fsGroup $ctx.fsGroup)
   (or $sec.runAsGroup $ctx.runAsGroup)
-  (and (not $ctx.floatingUserId) (or $sec.runAsUser $ctx.runAsUser))
-  (not (kindIs "invalid" $ctx.runAsNonRoot) )
+  (or $sec.runAsUser $ctx.runAsUser)
+  (or (not (kindIs "invalid" $sec.runAsNonRoot) ) (not (kindIs "invalid" $ctx.runAsNonRoot) ))
   (or $sec.supplementalGroups $ctx.supplementalGroups)
   (or $sec.seLinuxOptions $ctx.seLinuxOptions)
   (or $sec.seccompProfile $ctx.seccompProfile)
@@ -196,10 +186,8 @@ securityContext:
 {{- else if not (kindIs "invalid" $ctx.runAsNonRoot) }}
   runAsNonRoot: {{ $ctx.runAsNonRoot }}
 {{- end }}
-{{- if not $ctx.floatingUserId }}
 {{- if (or $sec.runAsUser $ctx.runAsUser) }}
   runAsUser: {{ (or $sec.runAsUser $ctx.runAsUser) }}
-{{- end }}
 {{- end }}
 {{- if (or $sec.supplementalGroups $ctx.supplementalGroups) }}
   supplementalGroups: {{ (or $sec.supplementalGroups $ctx.supplementalGroups) }}

@@ -77,9 +77,12 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
+        {{- $runAsUser := .Values.gloo.deployment.runAsUser -}}
+        {{- if .Values.gloo.deployment.floatingUserId -}}
+        {{- $runAsUser = 0 -}}
+        {{- end -}}
         {{- $context := dict 
-            "floatingUserId" .Values.gloo.deployment.floatingUserId 
-            "runAsUser" .Values.gloo.deployment.runAsUser
+            "runAsUser" $runAsUser
             "runAsNonRoot" true
         -}}
         {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.envoy.securityContext "ctx" $context) | nindent 8}}
@@ -121,9 +124,13 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
+        {{- $runAsUser := .Values.gloo.deployment.runAsUser -}}
+        {{- if .Values.gloo.deployment.floatingUserId -}}
+        {{- $runAsUser = 0 -}}
+        {{- end -}}
         {{- $context := dict 
             "floatingUserId" .Values.gloo.deployment.floatingUserId 
-            "runAsUser" .Values.gloo.deployment.runAsUser
+            "runAsUser" $runAsUser
             "runAsNonRoot" true
         -}}
         {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.sds.securityContext "ctx" $context) | nindent 8}}
@@ -158,12 +165,17 @@ spec:
             cpu: 500m
             memory: 256Mi
 {{- end}}
+        {{- $runAsUser := .Values.gloo.deployment.runAsUser -}}
+        {{- if .Values.gloo.deployment.floatingUserId  -}}
+        {{- $runAsUser = 0 -}}
+        {{- end -}}
+        {{- $capabilities := dict
+          "drop" (list "ALL")
+        -}}
         {{- $context := dict 
-            "floatingUserId" .Values.gloo.deployment.floatingUserId 
-            "runAsUser" .Values.gloo.deployment.runAsUser
+            "runAsUser" $runAsUser
             "runAsNonRoot" true
-            "useDefaultCapabilities" true
-            "disableNetBind" true
+            "capabilities" $capabilities
             "readOnlyRootFilesystem" true
             "allowPrivilegeEscalation" false
         -}}
