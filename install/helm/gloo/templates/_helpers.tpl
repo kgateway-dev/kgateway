@@ -116,7 +116,7 @@ securityContext:
   allowPrivilegeEscalation: {{ $ctx.allowPrivilegeEscalation }}
 {{- end }}
 {{- if or $sec.capabilities $ctx.capabilities }}
-  capabilities: {{ toYaml (or $sec.capabilities $ctx.capabilities) | nindent 4  }}
+  capabilities: {{- toYaml (or $sec.capabilities $ctx.capabilities) | nindent 4  }}
 {{- end }}
 {{- if not (kindIs "invalid" $sec.runAsNonRoot) }}
   runAsNonRoot: {{ $sec.runAsNonRoot }}
@@ -140,13 +140,13 @@ securityContext:
   runAsUser: {{ or $sec.runAsUser $ctx.runAsUser  }}
 {{- end }}
 {{- if or $sec.seLinuxOptions $ctx.seLinuxOptions }}
-  seLinuxOptions: {{ toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
+  seLinuxOptions: {{- toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
 {{- end }}
 {{- if or $sec.seccompProfile $ctx.seccompProfile }}
-  seccompProfile: {{ toYaml (or $sec.seccompProfile $ctx.seccompProfile) | nindent 4  }}
+  seccompProfile: {{- toYaml (or $sec.seccompProfile $ctx.seccompProfile) | nindent 4  }}
 {{- end }}
 {{- if or $sec.windowsOptions $ctx.windowsOptions }}
-  windowsOptions: {{ toYaml (or $sec.windowsOptions $ctx.windowsOptions) | nindent 4  }}
+  windowsOptions: {{- toYaml (or $sec.windowsOptions $ctx.windowsOptions) | nindent 4  }}
 {{- end }}
 {{- end }}
 {{- end }}
@@ -193,16 +193,16 @@ securityContext:
   supplementalGroups: {{ (or $sec.supplementalGroups $ctx.supplementalGroups) }}
 {{- end }}
 {{- if or $sec.seLinuxOptions $ctx.seLinuxOptions }}
-  seLinuxOptions: {{ toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
+  seLinuxOptions: {{- toYaml (or $sec.seLinuxOptions $ctx.seLinuxOptions) | nindent 4  }}
 {{- end }}
 {{- if or $sec.seccompProfile $ctx.seccompProfile }}
-  seccompProfile: {{ toYaml (or $sec.seccompProfile $ctx.seccompProfile) | nindent 4  }}
+  seccompProfile: {{- toYaml (or $sec.seccompProfile $ctx.seccompProfile) | nindent 4  }}
 {{- end }}
 {{- if or $sec.windowsOptions $ctx.windowsOptions }}
-  windowsOptions: {{ toYaml (or $sec.windowsOptions $ctx.windowsOptions) | nindent 4  }}
+  windowsOptions: {{- toYaml (or $sec.windowsOptions $ctx.windowsOptions) | nindent 4  }}
 {{- end }}
 {{- if or $sec.windowsOptions $ctx.sysctls }}
-  sysctls: {{ toYaml (or $sec.sysctls $ctx.sysctls) | nindent 4  }}
+  sysctls: {{- toYaml (or $sec.sysctls $ctx.sysctls) | nindent 4  }}
 {{- end }}
 {{- end }}
 {{- end }}
