@@ -5528,11 +5528,11 @@ metadata:
 
 					deployments.ExpectAll(func(resource *unstructured.Unstructured) {
 						rawDeploy, err := resource.MarshalJSON()
-						Expect(err).NotTo(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred(), "resource.MarshalJSON error")
 
 						deploy := appsv1.Deployment{}
 						err = json.Unmarshal(rawDeploy, &deploy)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred(), "json.Unmarshall error")
 
 						Expect(deploy.Spec.Template).NotTo(BeNil())
 
