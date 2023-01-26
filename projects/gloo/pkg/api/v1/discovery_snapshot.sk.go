@@ -12,7 +12,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type DiscoverySnapshot struct {
@@ -82,6 +84,101 @@ func (s DiscoverySnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *DiscoverySnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *Upstream:
+		return s.Upstreams.AsResources(), nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespace:
+		return s.Kubenamespaces.AsResources(), nil
+	case *Secret:
+		return s.Secrets.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *DiscoverySnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *Upstream:
+
+		for i, res := range s.Upstreams {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Upstreams = append(s.Upstreams[:i], s.Upstreams[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespace:
+
+		for i, res := range s.Kubenamespaces {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Kubenamespaces = append(s.Kubenamespaces[:i], s.Kubenamespaces[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *Secret:
+
+		for i, res := range s.Secrets {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Secrets = append(s.Secrets[:i], s.Secrets[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *DiscoverySnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *Upstream:
+		updated := false
+		for i, res := range s.Upstreams {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Upstreams[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Upstreams = append(s.Upstreams, typed)
+		}
+		s.Upstreams.Sort()
+		return nil
+	case *github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespace:
+		updated := false
+		for i, res := range s.Kubenamespaces {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Kubenamespaces[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Kubenamespaces = append(s.Kubenamespaces, typed)
+		}
+		s.Kubenamespaces.Sort()
+		return nil
+	case *Secret:
+		updated := false
+		for i, res := range s.Secrets {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Secrets[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Secrets = append(s.Secrets, typed)
+		}
+		s.Secrets.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type DiscoverySnapshotStringer struct {
 	Version        uint64
 	Upstreams      []string
@@ -121,4 +218,10 @@ func (s DiscoverySnapshot) Stringer() DiscoverySnapshotStringer {
 		Kubenamespaces: s.Kubenamespaces.Names(),
 		Secrets:        s.Secrets.NamespacesDotNames(),
 	}
+}
+
+var DiscoveryGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	UpstreamGVK: NewUpstreamHashableResource,
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.KubeNamespaceGVK: github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes.NewKubeNamespaceHashableResource,
+	SecretGVK: NewSecretHashableResource,
 }

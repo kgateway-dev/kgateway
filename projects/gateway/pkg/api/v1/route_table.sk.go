@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(RouteTable)
 )
 
+func NewRouteTableHashableResource() resources.HashableResource {
+	return new(RouteTable)
+}
+
 func NewRouteTable(namespace, name string) *RouteTable {
 	routetable := &RouteTable{}
 	routetable.SetMetadata(&core.Metadata{

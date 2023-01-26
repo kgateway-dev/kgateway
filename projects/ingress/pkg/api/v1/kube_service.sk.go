@@ -19,6 +19,10 @@ var (
 	_ resources.Resource = new(KubeService)
 )
 
+func NewKubeServiceHashableResource() resources.HashableResource {
+	return new(KubeService)
+}
+
 func NewKubeService(namespace, name string) *KubeService {
 	kubeservice := &KubeService{}
 	kubeservice.SetMetadata(&core.Metadata{

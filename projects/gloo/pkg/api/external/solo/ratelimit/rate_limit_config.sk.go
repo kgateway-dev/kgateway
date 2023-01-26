@@ -22,6 +22,10 @@ var (
 	_ resources.Resource = new(RateLimitConfig)
 )
 
+func NewRateLimitConfigHashableResource() resources.HashableResource {
+	return new(RateLimitConfig)
+}
+
 func NewRateLimitConfig(namespace, name string) *RateLimitConfig {
 	ratelimitconfig := &RateLimitConfig{}
 	ratelimitconfig.RateLimitConfig.SetMetadata(&core.Metadata{

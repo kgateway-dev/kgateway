@@ -12,7 +12,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type TranslatorSnapshot struct {
@@ -82,6 +84,101 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *TranslatorSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *gloo_solo_io.Upstream:
+		return s.Upstreams.AsResources(), nil
+	case *KubeService:
+		return s.Services.AsResources(), nil
+	case *Ingress:
+		return s.Ingresses.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *TranslatorSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *gloo_solo_io.Upstream:
+
+		for i, res := range s.Upstreams {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Upstreams = append(s.Upstreams[:i], s.Upstreams[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *KubeService:
+
+		for i, res := range s.Services {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Services = append(s.Services[:i], s.Services[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *Ingress:
+
+		for i, res := range s.Ingresses {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Ingresses = append(s.Ingresses[:i], s.Ingresses[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *TranslatorSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *gloo_solo_io.Upstream:
+		updated := false
+		for i, res := range s.Upstreams {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Upstreams[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Upstreams = append(s.Upstreams, typed)
+		}
+		s.Upstreams.Sort()
+		return nil
+	case *KubeService:
+		updated := false
+		for i, res := range s.Services {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Services[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Services = append(s.Services, typed)
+		}
+		s.Services.Sort()
+		return nil
+	case *Ingress:
+		updated := false
+		for i, res := range s.Ingresses {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Ingresses[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Ingresses = append(s.Ingresses, typed)
+		}
+		s.Ingresses.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type TranslatorSnapshotStringer struct {
 	Version   uint64
 	Upstreams []string
@@ -121,4 +218,10 @@ func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 		Services:  s.Services.NamespacesDotNames(),
 		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}
+}
+
+var TranslatorGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	gloo_solo_io.UpstreamGVK: gloo_solo_io.NewUpstreamHashableResource,
+	KubeServiceGVK:           NewKubeServiceHashableResource,
+	IngressGVK:               NewIngressHashableResource,
 }
