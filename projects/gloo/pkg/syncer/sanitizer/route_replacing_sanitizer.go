@@ -2,8 +2,10 @@ package sanitizer
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"sort"
+	"strings"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -239,12 +241,34 @@ func getClusters(glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapsh
 	// mark all valid destination clusters, i.e. those that are in both the gloo snapshot and xds snapshot
 	validClusters := make(map[string]struct{})
 	xdsClusters := xdsSnapshot.GetResources(types.ClusterTypeV3)
+
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
 		clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 		if xdsClusters.Items[clusterName] != nil {
 			validClusters[clusterName] = struct{}{}
 		}
 	}
+
+	// dfp clusters are always valid, and should not be censored
+	for clusterName := range xdsClusters.Items {
+		if strings.HasPrefix(clusterName, "solo_io_generated_dfp:") {
+			validClusters[clusterName] = struct{}{}
+		}
+	}
+
+	// v --- temporary debug; remove before merging --- v
+	fmt.Printf("cat me\nxds_snapshot_clusters: {")
+	for clusterName := range xdsClusters.Items {
+		fmt.Printf("%s, ", clusterName)
+	}
+	fmt.Printf("}\n")
+
+	fmt.Printf("gloo_snapshot_clusters: {")
+	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
+		fmt.Printf("%s, ", translator.UpstreamToClusterName(up.GetMetadata().Ref()))
+	}
+	fmt.Printf("}\n")
+	// ^ --- temporary debug; remove before merging --- ^
 	return validClusters
 }
 
@@ -256,13 +280,15 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 ) ([]*envoy_config_route_v3.RouteConfiguration, bool) {
 	var sanitizedRouteConfigs []*envoy_config_route_v3.RouteConfiguration
 
+	debugW := contextutils.LoggerFrom(ctx).Debugw
+
 	isInvalid := func(cluster string, name string) bool {
 		_, valid := validClusters[cluster]
 		_, errored := erroredRoutes[name]
+		debugW("checked isInvalid: ", zap.Any("!valid", !valid), zap.Any("errored", errored))
+
 		return !valid || errored
 	}
-
-	debugW := contextutils.LoggerFrom(ctx).Debugw
 
 	var anyRoutesReplaced bool
 
