@@ -254,6 +254,26 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetRespectDnsTtl()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRespectDnsTtl()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRespectDnsTtl(), target.GetRespectDnsTtl()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetDnsRefreshRate()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDnsRefreshRate()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDnsRefreshRate(), target.GetDnsRefreshRate()) {
+			return false
+		}
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:

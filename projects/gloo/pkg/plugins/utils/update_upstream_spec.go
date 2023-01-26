@@ -72,4 +72,12 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 	if desired.GetIgnoreHealthOnHostRemoval() == nil {
 		desired.IgnoreHealthOnHostRemoval = original.GetIgnoreHealthOnHostRemoval()
 	}
+
+	if desired.GetRespectDnsTtl() == nil {
+		desired.RespectDnsTtl = original.GetRespectDnsTtl()
+	}
+
+	if desired.GetDnsRefreshRate() == nil {
+		desired.DnsRefreshRate = original.GetDnsRefreshRate()
+	}
 }
