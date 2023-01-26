@@ -77,7 +77,7 @@ var _ = Describe("", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		secretClient, err = getSecretClient(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Setenv("AWS_ARN_ROLE_1", "arn:aws:iam::410461945957:role/describe-all-ec2-poc")).NotTo(HaveOccurred())
+		Expect(os.Setenv("AWS_ARN_ROLE_1", "arn:aws:iam::802411188784:role/gloo-edge-e2e-sts")).NotTo(HaveOccurred())
 
 		addCredentials()
 	})
