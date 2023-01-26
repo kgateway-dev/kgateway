@@ -2719,6 +2719,12 @@ spec:
 							RunAsUser:                &defaultUser,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
+						deploy.Spec.Template.Spec.Containers[0].Env = append(
+							deploy.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_CORE_DUMPS",
+								Value: "false",
+							})
 						gatewayProxyDeployment = deploy
 					})
 

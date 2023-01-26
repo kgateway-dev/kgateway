@@ -201,7 +201,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: DISABLE_CORE_DUMPS
-          value: {{ $spec.disableCoreDumps | default "false" }}
+          value: {{ $spec.disableCoreDumps | quote }}
       {{- if $spec.logLevel }}
         - name: LOG_LEVEL
           value: {{ $spec.logLevel }}
