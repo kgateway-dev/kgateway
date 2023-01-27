@@ -62,7 +62,6 @@ var _ = Describe("", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-
 		createSecret()
 	})
 
@@ -73,15 +72,17 @@ var _ = Describe("", func() {
 
 	It("should assume role correctly", func() {
 		var filters []*glooec2.TagFilter
+		roleArn := "arn:aws:iam::802411188784:role/gloo-edge-e2e-sts" // this role will not have correct perms for now - tests are currently disabled
 		withRole := &v1.Upstream{
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
 					Region:    region,
 					SecretRef: secret.Metadata.Ref(),
-					RoleArn:   os.Getenv(roleArnEnvVar),
-					Filters:   filters,
-					PublicIp:  false,
-					Port:      80,
+					//todo - figure out what credentials this role needs for this test
+					RoleArn:  roleArn,
+					Filters:  filters,
+					PublicIp: false,
+					Port:     80,
 				},
 			},
 			Metadata: &core.Metadata{Name: "with-role", Namespace: "default"},
@@ -89,8 +90,9 @@ var _ = Describe("", func() {
 		withRoleWithoutSecret := &v1.Upstream{
 			UpstreamType: &v1.Upstream_AwsEc2{
 				AwsEc2: &glooec2.UpstreamSpec{
-					Region:   region,
-					RoleArn:  os.Getenv(roleArnEnvVar),
+					Region: region,
+					//todo - figure out what credentials this role needs for this test
+					RoleArn:  roleArn,
 					Filters:  filters,
 					PublicIp: false,
 					Port:     80,
