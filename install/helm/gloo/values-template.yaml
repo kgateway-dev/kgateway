@@ -262,8 +262,8 @@ global:
     enableStatsRoute: false
     statsPrefixRewrite: /stats
   glooMtls:
-    #enabled: false
-    enabled: true
+    enabled: false
+    #enabled: true
     sds:
       image:
         repository: sds

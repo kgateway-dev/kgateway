@@ -1482,7 +1482,7 @@
 |global.glooStats.statsPrefixRewrite|string|/stats|The Envoy stats endpoint with general metrics for the additional stats route|
 |global.glooStats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |global.glooStats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
-|global.glooMtls.enabled|bool|true|Enables internal mtls authentication|
+|global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
 |global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.sds.image.repository|string|sds|The image repository (name) for the container.|
 |global.glooMtls.sds.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|

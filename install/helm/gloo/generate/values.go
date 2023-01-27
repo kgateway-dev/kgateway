@@ -97,25 +97,6 @@ type ContainerSecuritySpec struct {
 	WindowsOptions           *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
 }
 
-// Probably drop this and use the separate pod/container contexts
-type UberSecuritySpec struct {
-	AllowPrivilegeEscalation *bool                          `json:"allowPrivilegeEscalation,omitempty"`
-	Capabilities             *Capabilities                  `json:"capabilities,omitempty"`
-	Privileged               *bool                          `json:"privileged,omitempty"`
-	ProcMount                *string                        `json:"procMount,omitempty"`
-	ReadOnlyRootFilesystem   *bool                          `json:"readOnlyRootFilesystem,omitempty"`
-	FsGroup                  *int                           `json:"fsGroup,omitempty"`
-	FsGroupChangePolicy      *string                        `json:"fsGroupChangePolicy,omitempty"`
-	RunAsGroup               *int                           `json:"runAsGroup,omitempty"`
-	RunAsNonRoot             *bool                          `json:"runAsNonRoot,omitempty"`
-	RunAsUser                *int                           `json:"runAsUser,omitempty"`
-	SupplementalGroups       []int                          `json:"supplementalGroups,omitempty"`
-	SELinuxOptions           *SELinuxOptions                `json:"seLinuxOptions,omitempty"`
-	SeccompProfile           *SeccompProfile                `json:"seccompProfile,omitempty"`
-	Sysctls                  []Sysctl                       `json:"sysctls,omitempty"`
-	WindowsOptions           *WindowsSecurityContextOptions `json:"windowsOptions,omitempty"`
-}
-
 type Capabilities struct {
 	Add  []string `json:"add,omitempty"`
 	Drop []string `json:"drop,omitempty"`

@@ -5779,21 +5779,28 @@ metadata:
 				FDescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							securityRoot + ".runAsNonRoot=false",
+							securityRoot + ".runAsNonRoot=true",
 							securityRoot + ".runAsUser=1234",
 							securityRoot + ".allowPrivilegeEscalation=true",
 							securityRoot + ".readOnlyRootFilesystem=true",
 							securityRoot + ".seLinuxOptions.level=seLevel",
-							//securityRoot + ".capabilities.add=[ADD]",
-							securityRoot + ".seccompProfile.localhostProfile=localhostprofile",
-							securityRoot + ".windowsOptions.runAsUserName=someuser",
+							securityRoot + ".seLinuxOptions.role=seRole",
+							securityRoot + ".seLinuxOptions.type=seType",
+							securityRoot + ".seLinuxOptions.user=seUser",
+							securityRoot + ".capabilities.add={ADD}",
+							securityRoot + ".capabilities.drop={DROP}",
+							securityRoot + ".seccompProfile.localhostProfile=seccompLHP",
+							securityRoot + ".seccompProfile.type=seccompType",
+							securityRoot + ".windowsOptions.gmsaCredentialSpec=winGmsaCredSpec",
+							securityRoot + ".windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName",
+							securityRoot + ".windowsOptions.hostProcess=true",
+							securityRoot + ".windowsOptions.runAsUserName=winUser",
 						}, extraArgs...),
 					})
-					kind := "Deployment"
 
-					// We are overriding the generated yaml by adding our own label to the metadata
+					// Get the resources
 					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == kind && u.GetName() == resourceName {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
 							return true
 						}
 						return false
@@ -5814,15 +5821,40 @@ metadata:
 								Expect(*container.SecurityContext.AllowPrivilegeEscalation).To(Equal(true))
 								Expect(*container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(true))
 								Expect(container.SecurityContext.SELinuxOptions.Level).To(Equal("seLevel"))
-								Expect(*container.SecurityContext.SeccompProfile.LocalhostProfile).To(Equal("localhostprofile"))
-								Expect(*container.SecurityContext.WindowsOptions.RunAsUserName).To(Equal("someuser"))
+								Expect(container.SecurityContext.SELinuxOptions.Role).To(Equal("seRole"))
+								Expect(container.SecurityContext.SELinuxOptions.Type).To(Equal("seType"))
+								Expect(container.SecurityContext.SELinuxOptions.User).To(Equal("seUser"))
+								Expect(container.SecurityContext.SELinuxOptions).To(Equal(
+									&v1.SELinuxOptions{
+										Level: "seLevel",
+										Role:  "seRole",
+										Type:  "seType",
+										User:  "seUser",
+									}))
+								Expect(container.SecurityContext.Capabilities).To(Equal(
+									&v1.Capabilities{
+										Add:  []v1.Capability{"ADD"},
+										Drop: []v1.Capability{"DROP"},
+									}))
+								// Expect(*container.SecurityContext.SeccompProfile).To(Equal(
+								// 	v1.SeccompProfile{
+								// 		LocalhostProfile: "seccompLHP",
+								// 		Type:             "seccompType",
+								// 	}))
+								//Expect(*container.SecurityContext.SeccompProfile.Type).To(Equal("seccompType"))
+								//Expect(*container.SecurityContext.WindowsOptions.GmsaCredentialSpec).To(Equal("someuser"))
+								//Expect(*container.SecurityContext.WindowsOptions.GmsaCredentialSpecName).To(Equal("someuser"))
+								Expect(*container.SecurityContext.WindowsOptions.HostProcess).To(Equal(true))
+								Expect(*container.SecurityContext.WindowsOptions.RunAsUserName).To(Equal("winUser"))
 							}
 						}
 						Expect(foundExpected).To(Equal(true))
 					})
 				},
-					//Entry("7-gateway-proxy-deployment", "gateway-proxy", "POD_NAME", "gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext"),
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext"),
 					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.containerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 				)
 			})
 
