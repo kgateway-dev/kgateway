@@ -110,20 +110,14 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       httpbin-847f64cc8d-9kz2d   1/1     Running   0          35s
       ```
    
-   3. Create an upstream for `httpbin`. 
+   3. Get the name of upstream for `httpbin`. 
       ```shell
-      kubectl apply -f- <<EOF
-      apiVersion: gloo.solo.io/v1
-      kind: Upstream
-      metadata:
-        name: "httpbin"
-        namespace: "gloo-system"
-      spec:
-        static:
-          hosts:
-          - addr: "httpbin.org"
-            port: 80
-      EOF
+      kubectl get upstreams -n gloo-system
+      ```
+
+      Example output: 
+      ```
+      httpbin-httpbin-8000                                   40s
       ```
 
 2. Deploy and configure the Envoy caching service. 
@@ -211,7 +205,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
            routeAction:
              single:
                upstream:
-                 name: httpbin
+                 name: httpbin-httpbin-8000
                  namespace: gloo-system
            options:
              prefixRewrite: /
@@ -369,7 +363,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       ```
       
       Example output: 
-      ```
+      {{< highlight yaml "hl_lines=7 11 16" >}}
       ...
       < cache-control: max-age=60
       cache-control: max-age=60
@@ -386,7 +380,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       This response will stay fresh for one minute
 
       Response generated at: Thu, 15 Dec 2022 15:45:19 GMT
-      ```
+      {{< /highlight >}}
       
    3. After the 1 minute passes and the cached response becomes stale, send another request to the same endpoint. The Envoy caching app is configured to automatically add the `If-Modified-Since` header to each request to trigger the response validation process. In addition, the app is configured to always return a `304 Not Modified` HTTP response code to indicate that the response has not changed. When the `304` HTTP response code is received by the Gloo Edge caching server, the caching server fetches the original response from Redis, and sends it back to the client. 
       
