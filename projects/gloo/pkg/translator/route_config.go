@@ -13,6 +13,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/rotisserie/eris"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -838,7 +839,7 @@ func isWarningErr(err error) bool {
 
 func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidateRoutePath(path); err != nil {
-		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, err.Error(), name)
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, eris.Wrapf(err, "the path is invalid: %s", path).Error(), name)
 	}
 }
 
