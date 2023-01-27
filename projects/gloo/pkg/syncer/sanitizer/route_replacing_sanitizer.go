@@ -2,6 +2,7 @@ package sanitizer
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -257,6 +258,19 @@ func getClusters(glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapsh
 		}
 	}
 
+	// v --- temporary debug; remove before merging --- v
+	fmt.Printf("cat me\nxds_snapshot_clusters: {")
+	for clusterName := range xdsClusters.Items {
+		fmt.Printf("%s, ", clusterName)
+	}
+	fmt.Printf("}\n")
+
+	fmt.Printf("gloo_snapshot_clusters: {")
+	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
+		fmt.Printf("%s, ", translator.UpstreamToClusterName(up.GetMetadata().Ref()))
+	}
+	fmt.Printf("}\n")
+	// ^ --- temporary debug; remove before merging --- ^
 	return validClusters
 }
 
