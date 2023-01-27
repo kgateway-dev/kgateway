@@ -83,7 +83,7 @@ message Settings {
 
     // Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
     message VaultSecrets {
-        // DEPRECATED: use field auth_method.access_token
+        // DEPRECATED: use field accessToken
         // the Token used to authenticate to Vault
         string token = 1;
 
