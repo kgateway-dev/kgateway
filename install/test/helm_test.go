@@ -5775,6 +5775,55 @@ metadata:
 					Entry("resource migration job", "Job", "gloo-resource-migration"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
+
+				FDescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							securityRoot + ".runAsNonRoot=false",
+							securityRoot + ".runAsUser=1234",
+							securityRoot + ".allowPrivilegeEscalation=true",
+							securityRoot + ".readOnlyRootFilesystem=true",
+							securityRoot + ".seLinuxOptions.level=seLevel",
+							//securityRoot + ".capabilities.add=[ADD]",
+							securityRoot + ".seccompProfile.localhostProfile=localhostprofile",
+							securityRoot + ".windowsOptions.runAsUserName=someuser",
+						}, extraArgs...),
+					})
+					kind := "Deployment"
+
+					// We are overriding the generated yaml by adding our own label to the metadata
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == kind && u.GetName() == resourceName {
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						foundExpected := false
+						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+							if container.Name == containerName {
+								foundExpected = true
+								//Expect(*container.SecurityContext.RunAsNonRoot).To(Equal(false))
+								Expect(*container.SecurityContext.RunAsUser).To(Equal(int64(1234)))
+								Expect(*container.SecurityContext.AllowPrivilegeEscalation).To(Equal(true))
+								Expect(*container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(true))
+								Expect(container.SecurityContext.SELinuxOptions.Level).To(Equal("seLevel"))
+								Expect(*container.SecurityContext.SeccompProfile.LocalhostProfile).To(Equal("localhostprofile"))
+								Expect(*container.SecurityContext.WindowsOptions.RunAsUserName).To(Equal("someuser"))
+							}
+						}
+						Expect(foundExpected).To(Equal(true))
+					})
+				},
+					//Entry("7-gateway-proxy-deployment", "gateway-proxy", "POD_NAME", "gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.containerSecurityContext", "global.glooMtls.enabled=true"),
+				)
 			})
 
 			Context("Kube resource overrides", func() {
@@ -5973,7 +6022,7 @@ spec:
 		})
 
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
-		FIt("should not contain trailing whitespace", func() {
+		It("should not contain trailing whitespace", func() {
 			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 

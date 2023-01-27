@@ -150,9 +150,9 @@ gatewayProxies:
         sleepTimeSeconds: 25
       customReadinessProbe: {}
       customLivenessProbe: {}
-      # containerSecurityContext:
+      containerSecurityContext:
       #   runAsNonRoot: false
-      #   runAsUser: 222
+        runAsUser: 222
       #   allowPrivilegeEscalation: true
       #   runAsGroup: 222
       #   readOnlyRootFilesystem: true
@@ -262,8 +262,8 @@ global:
     enableStatsRoute: false
     statsPrefixRewrite: /stats
   glooMtls:
-    enabled: false
-    #enabled: true
+    #enabled: false
+    enabled: true
     sds:
       image:
         repository: sds
