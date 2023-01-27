@@ -23,8 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-const istioProxyContainerName = "istio-proxy"
-
 type podMap struct {
 	// ipMap will record pods which
 	// - pod.Status.Phase is kubev1.PodRunning
@@ -74,31 +72,6 @@ func (pm *podMap) getPodLabelsForIp(ip string, podName, podNamespace string) (ma
 	}
 
 	return nil, errors.Errorf("running pod not found with IP %v", ip)
-}
-
-func (pm *podMap) hasIstioProxy(ip string, podName, podNamespace string) (bool, error) {
-	if podName != "" && podNamespace != "" {
-		if p, ok := pm.metaMap[podName+"/"+podNamespace]; ok {
-			for _, c := range p.Spec.Containers {
-				if c.Name == istioProxyContainerName {
-					return true, nil
-				}
-			}
-			return false, nil
-		}
-	}
-	if ip != "" {
-		if p, ok := pm.ipMap[ip]; ok {
-			for _, c := range p.Spec.Containers {
-				if c.Name == istioProxyContainerName {
-					return true, nil
-				}
-			}
-			return false, nil
-		}
-	}
-
-	return false, errors.Errorf("running pod not found with IP %v", ip)
 }
 
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -339,6 +312,21 @@ func filterEndpoints(
 			continue
 		}
 
+		// Istio uses the service's port for routing requests
+		if istioIntegrationEnabled {
+			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+			copyRef := *usRef
+			key := Epkey{
+				Address:     hostname,
+				Port:        uint32(kubeServicePort.Port),
+				Name:        spec.GetServiceName(),
+				Namespace:   spec.GetServiceNamespace(),
+				UpstreamRef: &copyRef,
+			}
+			endpointsMap[key] = append(endpointsMap[key], &copyRef)
+			continue
+		}
+
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
 			if eps.Namespace != spec.GetServiceNamespace() || eps.Name != spec.GetServiceName() {
@@ -351,7 +339,7 @@ func filterEndpoints(
 					continue
 				}
 
-				warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap, kubeServicePort)
+				warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
 				warnsToLog = append(warnsToLog, warnings...)
 			}
 		}
@@ -362,9 +350,8 @@ func filterEndpoints(
 	return endpoints, warnsToLog, errorsToLog
 }
 
-func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods *podMap, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef, kubeServicePort *kubev1.ServicePort) []string {
+func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods *podMap, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef) []string {
 	var warnings []string
-	istioIntegrationEnabled := isIstioIntegrationEnabled()
 	for _, addr := range subset.Addresses {
 		var podName, podNamespace string
 		targetRef := addr.TargetRef
@@ -390,25 +377,7 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 				continue
 			}
 		}
-		key := Epkey{}
-		podHasIstioProxy, err := pods.hasIstioProxy(addr.IP, podName, podNamespace)
-		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("error for upstream %v service %v: %v", usRef.Key(), spec.GetServiceName(), err))
-			continue
-		}
-		// Istio uses the Service for routing requests
-		if istioIntegrationEnabled && podHasIstioProxy {
-			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-			key = Epkey{
-				Address:     hostname,
-				Port:        uint32(kubeServicePort.Port),
-				Name:        spec.GetServiceName(),
-				Namespace:   spec.GetServiceNamespace(),
-				UpstreamRef: usRef,
-			}
-		} else {
-			key = Epkey{addr.IP, port, podName, podNamespace, usRef}
-		}
+		key := Epkey{addr.IP, port, podName, podNamespace, usRef}
 		copyRef := *usRef
 		endpointsMap[key] = append(endpointsMap[key], &copyRef)
 	}
@@ -457,16 +426,9 @@ func generateFilteredEndpointList(
 
 		var ep *v1.Endpoint
 		if istioIntegrationEnabled {
-			// If the error isn't nil, that means the hostname->service was not stored in our endpoints.
-			// This occurs when we have istioIntegrationEnabled, but a pod does not have an istio-proxy container, and in that case we _should_ have stored using the endpoint address.
-			service, err := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
-			if err != nil {
-				podLabels, _ := pods.getPodLabelsForIp(addr.Address, addr.Name, addr.Namespace)
-				ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, podLabels)
-			} else {
-				// Istio integration requires assigning endpoints the Kub service VIP rather than pod address
-				ep = createEndpoint(writeNamespace, endpointName, refs, service.Spec.ClusterIP, addr.Port, service.GetObjectMeta().GetLabels()) // TODO: labels may be nil
-			}
+			// Istio integration requires assigning endpoints the Kub service VIP rather than pod address
+			service, _ := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
+			ep = createEndpoint(writeNamespace, endpointName, refs, service.Spec.ClusterIP, addr.Port, service.GetObjectMeta().GetLabels()) // TODO: labels may be nil
 		} else {
 			podLabels, _ := pods.getPodLabelsForIp(addr.Address, addr.Name, addr.Namespace)
 			ep = createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, podLabels)
