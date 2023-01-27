@@ -70,21 +70,18 @@ The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secr
 
 1. Save the new license key in an environment variable.
    ```bash
-   export GLOO_KEY=<your-new-enterprise-key-string>
+   export GLOO_LICENSE_KEY=<your-new-enterprise-key-string>
    ```
 
-2. Encode the license key in base64.
+2. Update the `license` secret with the new key.
    ```sh
-   export GLOO_KEY_BASE64=$(echo $GLOO_KEY | base64 -w 0)
-   echo $GLOO_KEY_BASE64
+   kubectl create secret generic --save-config -n gloo-system license --from-literal=license-key=$GLOO_LICENSE_KEY --dry-run=client -o yaml | kubectl apply -f - 
    ```
 
-3. Patch the `license` secret with the base64-encoded key.
-   ```sh
-   kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$GLOO_KEY_BASE64\"}}" -v=1
+3. Restart the Gloo deployment to pick up the license secret changes.
+   ```bash
+   kubectl -n gloo-system rollout restart deploy/gloo
    ```
-
-If successful, this script should respond with: `secret/license patched`.
 
 ## Verify the New License
 
