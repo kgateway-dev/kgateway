@@ -38,14 +38,6 @@ var _ = Describe("dynamic forward proxy", func() {
 		)
 
 		testContext.BeforeEach()
-		testContext.SetRunSettings(&gloov1.Settings{
-			Gloo: &gloov1.GlooOptions{
-				InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
-					ReplaceInvalidRoutes:     true,
-					InvalidRouteResponseBody: "Dynamic Forward Proxy Response Body",
-				},
-			},
-		})
 	})
 
 	AfterEach(func() {

@@ -88,16 +88,6 @@ var _ = Describe("tunneling", func() {
 				DisableFds: true,
 				DisableUds: true,
 			},
-			Settings: &gloov1.Settings{
-				Gloo: &gloov1.GlooOptions{
-					InvalidConfigPolicy: &gloov1.GlooOptions_InvalidConfigPolicy{
-						// These tests fail when ReplaceInvalidRoutes is true
-						// https://github.com/solo-io/gloo/issues/7577
-						ReplaceInvalidRoutes:     false,
-						InvalidRouteResponseBody: "Http Tunneling Response Body",
-					},
-				},
-			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
