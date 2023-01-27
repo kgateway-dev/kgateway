@@ -146,7 +146,7 @@ func getHelmOverrides() (filename string, cleanup func()) {
 	_, err = values.Write([]byte(`
 global:
   istioIntegration:
-	enableIstioSidecarOnGateway: true
+    enableIstioSidecarOnGateway: true
     disableAutoinjection: true
     labelInstallNamespace: true
 gloo:
