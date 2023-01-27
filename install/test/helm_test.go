@@ -5844,36 +5844,34 @@ metadata:
 						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
 							if container.Name == containerName {
 								foundExpected = true
-								//Expect(*container.SecurityContext.RunAsNonRoot).To(Equal(false))
-								Expect(*container.SecurityContext.RunAsUser).To(Equal(int64(1234)))
-								Expect(*container.SecurityContext.AllowPrivilegeEscalation).To(Equal(true))
-								Expect(*container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(true))
-								Expect(container.SecurityContext.SELinuxOptions.Level).To(Equal("seLevel"))
-								Expect(container.SecurityContext.SELinuxOptions.Role).To(Equal("seRole"))
-								Expect(container.SecurityContext.SELinuxOptions.Type).To(Equal("seType"))
-								Expect(container.SecurityContext.SELinuxOptions.User).To(Equal("seUser"))
-								Expect(container.SecurityContext.SELinuxOptions).To(Equal(
-									&v1.SELinuxOptions{
-										Level: "seLevel",
-										Role:  "seRole",
-										Type:  "seType",
-										User:  "seUser",
-									}))
-								Expect(container.SecurityContext.Capabilities).To(Equal(
-									&v1.Capabilities{
-										Add:  []v1.Capability{"ADD"},
-										Drop: []v1.Capability{"DROP"},
-									}))
-								// Expect(*container.SecurityContext.SeccompProfile).To(Equal(
-								// 	v1.SeccompProfile{
-								// 		LocalhostProfile: "seccompLHP",
-								// 		Type:             "seccompType",
-								// 	}))
-								//Expect(*container.SecurityContext.SeccompProfile.Type).To(Equal("seccompType"))
-								//Expect(*container.SecurityContext.WindowsOptions.GmsaCredentialSpec).To(Equal("someuser"))
-								//Expect(*container.SecurityContext.WindowsOptions.GmsaCredentialSpecName).To(Equal("someuser"))
-								Expect(*container.SecurityContext.WindowsOptions.HostProcess).To(Equal(true))
-								Expect(*container.SecurityContext.WindowsOptions.RunAsUserName).To(Equal("winUser"))
+								Expect(container.SecurityContext).To(Equal(
+									&v1.SecurityContext{
+										RunAsUser:                pointer.Int64(int64(1234)),
+										AllowPrivilegeEscalation: pointer.Bool(true),
+										ReadOnlyRootFilesystem:   pointer.Bool(true),
+										RunAsNonRoot:             pointer.Bool(true),
+										SELinuxOptions: &v1.SELinuxOptions{
+											Level: "seLevel",
+											Role:  "seRole",
+											Type:  "seType",
+											User:  "seUser",
+										},
+										Capabilities: &v1.Capabilities{
+											Add:  []v1.Capability{"ADD"},
+											Drop: []v1.Capability{"DROP"},
+										},
+										SeccompProfile: &v1.SeccompProfile{
+											LocalhostProfile: pointer.String("seccompLHP"),
+											Type:             "seccompType",
+										},
+										WindowsOptions: &v1.WindowsSecurityContextOptions{
+											GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+											GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+											RunAsUserName:          pointer.String("winUser"),
+											HostProcess:            pointer.Bool(true),
+										},
+									},
+								))
 							}
 						}
 						Expect(foundExpected).To(Equal(true))
