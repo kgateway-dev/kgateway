@@ -10,7 +10,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type ApiSnapshot struct {
@@ -122,6 +124,173 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *ApiSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *VirtualService:
+		return s.VirtualServices.AsResources(), nil
+	case *RouteTable:
+		return s.RouteTables.AsResources(), nil
+	case *Gateway:
+		return s.Gateways.AsResources(), nil
+	case *VirtualHostOption:
+		return s.VirtualHostOptions.AsResources(), nil
+	case *RouteOption:
+		return s.RouteOptions.AsResources(), nil
+	case *MatchableHttpGateway:
+		return s.HttpGateways.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *VirtualService:
+
+		for i, res := range s.VirtualServices {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.VirtualServices = append(s.VirtualServices[:i], s.VirtualServices[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *RouteTable:
+
+		for i, res := range s.RouteTables {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.RouteTables = append(s.RouteTables[:i], s.RouteTables[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *Gateway:
+
+		for i, res := range s.Gateways {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Gateways = append(s.Gateways[:i], s.Gateways[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *VirtualHostOption:
+
+		for i, res := range s.VirtualHostOptions {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.VirtualHostOptions = append(s.VirtualHostOptions[:i], s.VirtualHostOptions[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *RouteOption:
+
+		for i, res := range s.RouteOptions {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.RouteOptions = append(s.RouteOptions[:i], s.RouteOptions[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *MatchableHttpGateway:
+
+		for i, res := range s.HttpGateways {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.HttpGateways = append(s.HttpGateways[:i], s.HttpGateways[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *ApiSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *VirtualService:
+		updated := false
+		for i, res := range s.VirtualServices {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.VirtualServices[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.VirtualServices = append(s.VirtualServices, typed)
+		}
+		s.VirtualServices.Sort()
+		return nil
+	case *RouteTable:
+		updated := false
+		for i, res := range s.RouteTables {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.RouteTables[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.RouteTables = append(s.RouteTables, typed)
+		}
+		s.RouteTables.Sort()
+		return nil
+	case *Gateway:
+		updated := false
+		for i, res := range s.Gateways {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Gateways[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Gateways = append(s.Gateways, typed)
+		}
+		s.Gateways.Sort()
+		return nil
+	case *VirtualHostOption:
+		updated := false
+		for i, res := range s.VirtualHostOptions {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.VirtualHostOptions[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.VirtualHostOptions = append(s.VirtualHostOptions, typed)
+		}
+		s.VirtualHostOptions.Sort()
+		return nil
+	case *RouteOption:
+		updated := false
+		for i, res := range s.RouteOptions {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.RouteOptions[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.RouteOptions = append(s.RouteOptions, typed)
+		}
+		s.RouteOptions.Sort()
+		return nil
+	case *MatchableHttpGateway:
+		updated := false
+		for i, res := range s.HttpGateways {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.HttpGateways[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.HttpGateways = append(s.HttpGateways, typed)
+		}
+		s.HttpGateways.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type ApiSnapshotStringer struct {
 	Version            uint64
 	VirtualServices    []string
@@ -182,4 +351,13 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		RouteOptions:       s.RouteOptions.NamespacesDotNames(),
 		HttpGateways:       s.HttpGateways.NamespacesDotNames(),
 	}
+}
+
+var ApiGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	VirtualServiceGVK:       NewVirtualServiceHashableResource,
+	RouteTableGVK:           NewRouteTableHashableResource,
+	GatewayGVK:              NewGatewayHashableResource,
+	VirtualHostOptionGVK:    NewVirtualHostOptionHashableResource,
+	RouteOptionGVK:          NewRouteOptionHashableResource,
+	MatchableHttpGatewayGVK: NewMatchableHttpGatewayHashableResource,
 }

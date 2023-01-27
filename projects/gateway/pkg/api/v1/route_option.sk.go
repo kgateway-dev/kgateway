@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(RouteOption)
 )
 
+func NewRouteOptionHashableResource() resources.HashableResource {
+	return new(RouteOption)
+}
+
 func NewRouteOption(namespace, name string) *RouteOption {
 	routeoption := &RouteOption{}
 	routeoption.SetMetadata(&core.Metadata{

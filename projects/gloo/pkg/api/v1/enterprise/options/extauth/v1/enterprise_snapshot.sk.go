@@ -10,7 +10,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type EnterpriseSnapshot struct {
@@ -52,6 +54,53 @@ func (s EnterpriseSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *EnterpriseSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *AuthConfig:
+		return s.AuthConfigs.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *EnterpriseSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *AuthConfig:
+
+		for i, res := range s.AuthConfigs {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.AuthConfigs = append(s.AuthConfigs[:i], s.AuthConfigs[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *EnterpriseSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *AuthConfig:
+		updated := false
+		for i, res := range s.AuthConfigs {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.AuthConfigs[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.AuthConfigs = append(s.AuthConfigs, typed)
+		}
+		s.AuthConfigs.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type EnterpriseSnapshotStringer struct {
 	Version     uint64
 	AuthConfigs []string
@@ -77,4 +126,8 @@ func (s EnterpriseSnapshot) Stringer() EnterpriseSnapshotStringer {
 		Version:     snapshotHash,
 		AuthConfigs: s.AuthConfigs.NamespacesDotNames(),
 	}
+}
+
+var EnterpriseGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	AuthConfigGVK: NewAuthConfigHashableResource,
 }

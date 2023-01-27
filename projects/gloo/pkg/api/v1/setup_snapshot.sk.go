@@ -10,7 +10,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type SetupSnapshot struct {
@@ -52,6 +54,53 @@ func (s SetupSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *SetupSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *Settings:
+		return s.Settings.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *SetupSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *Settings:
+
+		for i, res := range s.Settings {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Settings = append(s.Settings[:i], s.Settings[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *SetupSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *Settings:
+		updated := false
+		for i, res := range s.Settings {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Settings[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Settings = append(s.Settings, typed)
+		}
+		s.Settings.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type SetupSnapshotStringer struct {
 	Version  uint64
 	Settings []string
@@ -77,4 +126,8 @@ func (s SetupSnapshot) Stringer() SetupSnapshotStringer {
 		Version:  snapshotHash,
 		Settings: s.Settings.NamespacesDotNames(),
 	}
+}
+
+var SetupGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	SettingsGVK: NewSettingsHashableResource,
 }

@@ -12,7 +12,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type TranslatorSnapshot struct {
@@ -54,6 +56,53 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *TranslatorSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngress:
+		return s.Clusteringresses.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *TranslatorSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngress:
+
+		for i, res := range s.Clusteringresses {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Clusteringresses = append(s.Clusteringresses[:i], s.Clusteringresses[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *TranslatorSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngress:
+		updated := false
+		for i, res := range s.Clusteringresses {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Clusteringresses[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Clusteringresses = append(s.Clusteringresses, typed)
+		}
+		s.Clusteringresses.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type TranslatorSnapshotStringer struct {
 	Version          uint64
 	Clusteringresses []string
@@ -79,4 +128,8 @@ func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 		Version:          snapshotHash,
 		Clusteringresses: s.Clusteringresses.NamespacesDotNames(),
 	}
+}
+
+var TranslatorGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressGVK: github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.NewClusterIngressHashableResource,
 }

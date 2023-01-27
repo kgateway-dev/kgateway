@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(AuthConfig)
 )
 
+func NewAuthConfigHashableResource() resources.HashableResource {
+	return new(AuthConfig)
+}
+
 func NewAuthConfig(namespace, name string) *AuthConfig {
 	authconfig := &AuthConfig{}
 	authconfig.SetMetadata(&core.Metadata{
