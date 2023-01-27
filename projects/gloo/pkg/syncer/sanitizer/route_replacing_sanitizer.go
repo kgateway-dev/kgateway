@@ -2,7 +2,6 @@ package sanitizer
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -256,19 +255,6 @@ func getClusters(glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapsh
 		}
 	}
 
-	// v --- temporary debug; remove before merging --- v
-	fmt.Printf("cat me\nxds_snapshot_clusters: {")
-	for clusterName := range xdsClusters.Items {
-		fmt.Printf("%s, ", clusterName)
-	}
-	fmt.Printf("}\n")
-
-	fmt.Printf("gloo_snapshot_clusters: {")
-	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
-		fmt.Printf("%s, ", translator.UpstreamToClusterName(up.GetMetadata().Ref()))
-	}
-	fmt.Printf("}\n")
-	// ^ --- temporary debug; remove before merging --- ^
 	return validClusters
 }
 
@@ -280,15 +266,13 @@ func (s *RouteReplacingSanitizer) replaceRoutes(
 ) ([]*envoy_config_route_v3.RouteConfiguration, bool) {
 	var sanitizedRouteConfigs []*envoy_config_route_v3.RouteConfiguration
 
-	debugW := contextutils.LoggerFrom(ctx).Debugw
-
 	isInvalid := func(cluster string, name string) bool {
 		_, valid := validClusters[cluster]
 		_, errored := erroredRoutes[name]
-		debugW("checked isInvalid: ", zap.Any("!valid", !valid), zap.Any("errored", errored))
-
 		return !valid || errored
 	}
+
+	debugW := contextutils.LoggerFrom(ctx).Debugw
 
 	var anyRoutesReplaced bool
 
