@@ -157,6 +157,7 @@ gatewayProxies:
     globalDownstreamMaxConnections: 250000
     healthyPanicThreshold: 50
     tcpKeepaliveTimeSeconds: 60
+    disableCoreDumps: false
     # intentionally unset, so we default to the gloo service address. if set, this overrides the derived gloo service address
     # xdsServiceAddress: xds-relay.default.svc.cluster.local
     # intentionally unset, so we default to the gloo service port. if set, this overrides .Values.gloo.deployment.xdsPort

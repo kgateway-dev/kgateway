@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7659
+    description: >-
+      Provide a helm template value `gatewayProxies.gatewayProxy.disableCoreDumps` which disables core dumps from being written in the event of an Envoy crash

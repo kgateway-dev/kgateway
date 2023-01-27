@@ -13,6 +13,7 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	rbacv1 "k8s.io/api/rbac/v1"
 
@@ -166,7 +167,7 @@ type helm3Renderer struct {
 func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
 	rel, err := buildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in buildHelm3Release: %s", err.Error())
 	}
 
 	// the test manifest utils can only read from a file
@@ -206,26 +207,30 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 func buildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
 	chartRequested, err := loader.Load(chartDir)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to load chart directory: %s", err.Error())
 	}
 
 	helmValues, err := buildHelmValues(chartDir, values)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in buildHelmValues: %s", err.Error())
 	}
 
 	// Validate that the provided values match the Go types used to construct out docs
 	err = validateHelmValues(helmValues)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in validateHelmValues: %s", err.Error())
 	}
 
 	// Install the chart
 	installAction, err := createInstallAction(namespace)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in createInstallAction: %s", err.Error())
 	}
-	return installAction.Run(chartRequested, helmValues)
+	release, err := installAction.Run(chartRequested, helmValues)
+	if err != nil {
+		return nil, errors.Errorf("failure in installAction.run: %s", err.Error())
+	}
+	return release, err
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
