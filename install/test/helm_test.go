@@ -1091,7 +1091,6 @@ var _ = Describe("Helm Test", func() {
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
 							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
-							fmt.Sprintf("gatewayProxies.namedGatewayProxy.logLevel=debug"),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -1143,7 +1142,6 @@ var _ = Describe("Helm Test", func() {
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
 							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
-							fmt.Sprintf("gatewayProxies.namedGatewayProxy.logLevel=debug"),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -2719,6 +2717,12 @@ spec:
 							RunAsUser:                &defaultUser,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
+						deploy.Spec.Template.Spec.Containers[0].Env = append(
+							deploy.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_CORE_DUMPS",
+								Value: "false",
+							})
 						gatewayProxyDeployment = deploy
 					})
 
@@ -2754,6 +2758,28 @@ spec:
 								},
 							})
 							testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
+						})
+
+						It("can set the DISABLE_CORE_DUMPS environment variable", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{"gatewayProxies.gatewayProxy.disableCoreDumps=true"},
+							})
+							testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+								return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+							}).ExpectAll(func(deployment *unstructured.Unstructured) {
+								deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+								Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+								structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+								Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+								Expect(structuredDeployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+								for _, envvar := range structuredDeployment.Spec.Template.Spec.Containers[0].Env {
+									if envvar.Name != "DISABLE_CORE_DUMPS" {
+										continue
+									}
+									Expect(envvar.Value).To(Equal("true"))
+								}
+							})
 						})
 
 						It("can explicitly disable hostNetwork", func() {
@@ -3512,13 +3538,13 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("can set log level env var", func() {
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
+					It("can set envoy log level", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
+							"--log-level debug",
 						)
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.logLevel=debug"},
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.envoyLogLevel=debug"},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -5528,11 +5554,11 @@ metadata:
 
 					deployments.ExpectAll(func(resource *unstructured.Unstructured) {
 						rawDeploy, err := resource.MarshalJSON()
-						Expect(err).NotTo(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred(), "resource.MarshalJSON error")
 
 						deploy := appsv1.Deployment{}
 						err = json.Unmarshal(rawDeploy, &deploy)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred(), "json.Unmarshall error")
 
 						Expect(deploy.Spec.Template).NotTo(BeNil())
 
