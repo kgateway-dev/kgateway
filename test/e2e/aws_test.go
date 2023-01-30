@@ -44,14 +44,10 @@ import (
 )
 
 var _ = Describe("AWS Lambda", func() {
-	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
-		return
-	}
 	const (
 		region               = "us-east-1"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
 		jwtPrivateKey        = "JWT_PRIVATE_KEY"
-		awsRoleArnSts        = "AWS_ROLE_ARN_STS"
 		awsRoleArn           = "AWS_ROLE_ARN"
 	)
 
@@ -658,12 +654,7 @@ var _ = Describe("AWS Lambda", func() {
 		)
 
 		addCredentialsSts := func() {
-
-			roleArn := os.Getenv(awsRoleArnSts)
-			if roleArn == "" {
-				Fail(fmt.Sprintf("AWS role arn unset, set via %s", awsRoleArnSts))
-			}
-
+			roleArn := "arn:aws:iam::802411188784:role/gloo-edge-e2e-sts"
 			jwtKey := os.Getenv(jwtPrivateKey)
 			if jwtKey == "" {
 				Fail(fmt.Sprintf("Token location unset, set via %s", jwtPrivateKey))
@@ -782,7 +773,6 @@ var _ = Describe("AWS Lambda", func() {
 				os.Remove(tmpFile.Name())
 			}
 			os.Unsetenv(webIdentityTokenFile)
-			os.Unsetenv(awsRoleArn)
 		})
 		Context("No gateway translation ", func() {
 			BeforeEach(func() {
