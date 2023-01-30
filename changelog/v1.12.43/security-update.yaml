@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: golang
+  dependencyRepo: x/net
+  dependencyTag: v0.5.0
+  description: Update golang.org/x/net to version 0.5.0 to resolve CVE https://avd.aquasec.com/nvd/2022/cve-2022-41721/
