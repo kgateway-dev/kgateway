@@ -6,7 +6,7 @@ changelog:
   resolvesIssue: false
   description: Updates the rate limiter doc with information about the Aerospike integration.
 - type: NON_USER_FACING
-  description: Small doc updates for things like link fixes and typos.
+  description: Small doc updates for things like link fixes, version bumps, and typos.
 - type: NON_USER_FACING
   description: Updates the canary upgrade doc for Gloo Fed.
   issueLink: https://github.com/solo-io/gloo/issues/7240
