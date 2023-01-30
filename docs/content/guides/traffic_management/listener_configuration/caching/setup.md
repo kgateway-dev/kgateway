@@ -110,7 +110,7 @@ Follow the steps to set up `httpbin` and the Envoy caching service, and to try o
       httpbin-847f64cc8d-9kz2d   1/1     Running   0          35s
       ```
    
-   3. Get the name of upstream for `httpbin`. 
+   3. Get the name of the upstream for `httpbin`. 
       ```shell
       kubectl get upstreams -n gloo-system
       ```
