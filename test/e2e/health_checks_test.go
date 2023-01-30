@@ -211,7 +211,7 @@ var _ = Describe("Health Checks", func() {
 		})
 	})
 
-	table.FDescribeTable("translates and persists health checkers with different methods",
+	table.DescribeTable("translates and persists health checkers with different methods",
 		func(check *envoy_config_core_v3.HealthCheck,
 			expectedConfig string,
 			expectedLog string) {
