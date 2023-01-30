@@ -151,6 +151,7 @@ func runTestServer(ctx context.Context, reply string, tlsServer UpstreamTlsRequi
 func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, tlsServer UpstreamTlsRequired) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
+		fmt.Printf("GOT A DEFAULT REQUEST: %v\n", r)
 		var rr ReceivedRequest
 		rr.Method = r.Method
 
@@ -194,23 +195,8 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handlerFunc))
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(http.StatusOK)
 		rw.Write([]byte(healthReply))
-	}))
-	mux.Handle("/healthGet", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(r)
-		if r.Method == http.MethodGet {
-			rw.Write([]byte(healthReply))
-		} else {
-			rw.WriteHeader(http.StatusInternalServerError)
-		}
-	}))
-	mux.Handle("/healthPost", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		fmt.Println(r)
-		if r.Method == http.MethodPost {
-			rw.Write([]byte(healthReply))
-		} else {
-			rw.WriteHeader(http.StatusInternalServerError)
-		}
 	}))
 
 	go func() {

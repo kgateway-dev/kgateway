@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/onsi/ginkgo/extensions/table"
@@ -57,7 +58,7 @@ var _ = Describe("Health Checks", func() {
 				DisableGateway: false,
 				DisableUds:     true,
 				// test relies on FDS to discover the grpc spec via reflection
-				DisableFds: false,
+				DisableFds: true,
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
@@ -93,18 +94,6 @@ var _ = Describe("Health Checks", func() {
 			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
 			return string(body), err
-		}
-	}
-
-	httpBinReq := func(port uint32) func() (int, error) {
-		return func() (int, error) {
-			// send a request with a body
-			res, err := http.Get(fmt.Sprintf("http://localhost:%d/health", port))
-			if err != nil {
-				fmt.Println(err)
-				return 0, err
-			}
-			return res.StatusCode, err
 		}
 	}
 
@@ -222,72 +211,79 @@ var _ = Describe("Health Checks", func() {
 		})
 	})
 
-	table.DescribeTable("passes health checks with different methods", func(check *envoy_config_core_v3.HealthCheck, expectedCode int) {
-		tu = v1helpers.NewTestHttpUpstreamWithReplyAndHealthReply(ctx, "localhost", "ok", "ok")
+	table.FDescribeTable("translates and persists health checkers with different methods",
+		func(check *envoy_config_core_v3.HealthCheck,
+			expectedConfig string,
+			expectedLog string) {
+			tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-		// update the health check configuration
-		check.Timeout = translator.DefaultHealthCheckTimeout
-		check.Interval = translator.DefaultHealthCheckInterval
-		check.HealthyThreshold = translator.DefaultThreshold
-		check.UnhealthyThreshold = translator.DefaultThreshold
+			// update the health check configuration
+			check.Timeout = translator.DefaultHealthCheckTimeout
+			check.Interval = translator.DefaultHealthCheckInterval
+			check.HealthyThreshold = translator.DefaultThreshold
+			check.UnhealthyThreshold = translator.DefaultThreshold
 
-		// persist the health check configuration
-		var err error
-		tu.Upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{check})
-		Expect(err).NotTo(HaveOccurred())
+			// persist the health check configuration
+			var err error
+			tu.Upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{check})
+			Expect(err).NotTo(HaveOccurred())
 
-		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
-		})
+			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
+			})
 
-		testVirtualService := helpers.NewVirtualServiceBuilder().
-			WithName("default").
-			WithNamespace(defaults.GlooSystem).
-			WithDomain(fmt.Sprintf("localhost:%d", defaults.HttpPort)).
-			WithRoutePrefixMatcher("testRouteName", "/").
-			WithRouteActionToUpstream("testRouteName", tu.Upstream).
-			Build()
+			vs := getTrivialVirtualServiceForUpstream(writeNamespace, tu.Upstream.Metadata.Ref())
+			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testClients.VirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+			})
 
-		_, err = testClients.VirtualServiceClient.Write(testVirtualService, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-			return testClients.VirtualServiceClient.Read(testVirtualService.Metadata.Namespace, testVirtualService.Metadata.Name, clients.ReadOpts{})
-		})
-		testRequest := httpBinReq(tu.Port)
-		Eventually(testRequest, 30*time.Second, 1*time.Second).Should(Equal(expectedCode))
-	}, table.Entry("Default", &envoy_config_core_v3.HealthCheck{
-		HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-			HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-				Path: "health",
+			envoyConfig, err := envoyInstance.ConfigDump()
+			Expect(err).To(Not(HaveOccurred()))
+
+			// Get "http_health_check" and its contents out of the envoy config dump
+			http_health_check := regexp.MustCompile(`(?sU)("http_health_check": {).*(})`).FindString(envoyConfig)
+			Expect(http_health_check).To(ContainSubstring(expectedConfig))
+
+			envoyLogs, err := envoyInstance.Logs()
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(envoyLogs).To(ContainSubstring(expectedLog))
+
+		}, table.Entry("Default", &envoy_config_core_v3.HealthCheck{
+			AlwaysLogHealthCheckFailures: true,
+			HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+				HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+					Path: "health",
+				},
 			},
-		},
-	}, http.StatusOK),
-		table.Entry("POST", &envoy_config_core_v3.HealthCheck{
+		}, `"path": "health"`, ""), table.Entry("POST", &envoy_config_core_v3.HealthCheck{
+			AlwaysLogHealthCheckFailures: true,
 			HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 				HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
 					Method: envoy_config_core_v3.RequestMethod_POST,
-					Path:   "healthPost",
+					Path:   "health",
 				},
 			},
-		}, http.StatusOK),
-		table.Entry("GET", &envoy_config_core_v3.HealthCheck{
+		}, `"method": "POST"`, ""), table.Entry("GET", &envoy_config_core_v3.HealthCheck{
+			AlwaysLogHealthCheckFailures: true,
 			HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 				HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
 					Method: envoy_config_core_v3.RequestMethod_GET,
-					Path:   "healthGet",
+					Path:   "health",
 				},
 			},
-		}, http.StatusOK),
-		table.Entry("Mismatch", &envoy_config_core_v3.HealthCheck{
+		}, `"method": "GET"`, ""), table.Entry("CONNECT", &envoy_config_core_v3.HealthCheck{
+			AlwaysLogHealthCheckFailures: true,
 			HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
 				HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-					Method: envoy_config_core_v3.RequestMethod_POST,
-					Path:   "healthGet",
+					Method: envoy_config_core_v3.RequestMethod_CONNECT,
+					Path:   "health",
 				},
 			},
-		}, http.StatusInternalServerError))
+		}, "", "embedded message failed validation | caused by HttpHealthCheckValidationError.Method"))
 
 	Context("e2e + GRPC", func() {
 
