@@ -11,5 +11,5 @@ changelog:
   description: Updates the canary upgrade doc for Gloo Fed.
   issueLink: https://github.com/solo-io/gloo/issues/7240
   resolvesIssue: true 
-  - type: NON_USER_FACING
-    description: Adds docs for OTel tracing integration.
+- type: NON_USER_FACING
+  description: Adds docs for OTel tracing integration.
