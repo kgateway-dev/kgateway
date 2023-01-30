@@ -6,3 +6,8 @@ changelog:
     dependencyOwner: solo-io
     dependencyTag: v1.24.0-patch2
     dependencyRepo: envoy-gloo
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoyproxy
+    dependencyTag: v0.10.3-0.20220803141441-64b2023d5b70
+    dependencyRepo: go-control-plane
+    description: Depending on this unreleased version since no released version contains this requested field.
