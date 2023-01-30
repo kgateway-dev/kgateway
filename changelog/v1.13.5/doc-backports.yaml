@@ -1,0 +1,15 @@
+changelog:
+- type: NON_USER_FACING
+  description: General doc backports for the 1.13 release, including the upgrade notice page, removing references to separate Proxy CR, and various fixes noticed while running through doc topics like Gloo Fed demo.
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/7489
+  resolvesIssue: false
+  description: Updates the rate limiter doc with information about the Aerospike integration.
+- type: NON_USER_FACING
+  description: Small doc updates for things like link fixes and typos.
+- type: NON_USER_FACING
+  description: Updates the canary upgrade doc for Gloo Fed.
+  issueLink: https://github.com/solo-io/gloo/issues/7240
+  resolvesIssue: true 
+  - type: NON_USER_FACING
+    description: Adds docs for OTel tracing integration.
