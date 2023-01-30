@@ -58,7 +58,7 @@ var _ = Describe("Health Checks", func() {
 				DisableGateway: false,
 				DisableUds:     true,
 				// test relies on FDS to discover the grpc spec via reflection
-				DisableFds: true,
+				DisableFds: false,
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
