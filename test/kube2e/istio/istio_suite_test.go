@@ -48,8 +48,9 @@ func TestIstio(t *testing.T) {
 }
 
 var (
-	testHelper  *helper.SoloTestHelper
-	ctx, cancel = context.WithCancel(context.Background())
+	testHelper *helper.SoloTestHelper
+	ctx        context.Context
+	cancel     context.CancelFunc
 
 	namespace         = defaults.GlooSystem
 	resourceClientSet *kube2e.KubeResourceClientSet
@@ -57,6 +58,8 @@ var (
 
 var _ = BeforeSuite(func() {
 	var err error
+
+	ctx, cancel = context.WithCancel(context.Background())
 
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
@@ -110,7 +113,6 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	err := os.Unsetenv(statusutils.PodNamespaceEnvName)
 	Expect(err).NotTo(HaveOccurred())
-
 	if os.Getenv("TEAR_DOWN") == "true" {
 		err := testHelper.UninstallGlooAll()
 		Expect(err).NotTo(HaveOccurred())
@@ -122,9 +124,8 @@ var _ = AfterSuite(func() {
 		EventuallyWithOffset(1, func() error {
 			return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
 		}, "60s", "1s").Should(HaveOccurred())
-
-		cancel()
 	}
+	cancel()
 })
 
 // expects gateway-proxy and testrunner to have the istio-proxy sidecar
@@ -142,7 +143,8 @@ func expectIstioInjected() {
 func getHelmOverrides() (filename string, cleanup func()) {
 	values, err := ioutil.TempFile("", "*.yaml")
 	Expect(err).NotTo(HaveOccurred())
-	// Set up gloo with istio integration enabled
+	// Set up gloo with istio integration enabled (through `enableIstioSidecarOnGateway`)
+	// We have limited GitHub action resources which can cause containers to not create, therefore we lessen the cpu resource requests values from the default (500m) to 100m.
 	_, err = values.Write([]byte(`
 global:
   istioIntegration:
