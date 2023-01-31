@@ -2,5 +2,5 @@
     description: >
       Added the ability to specify the PodSecurityContext for the pod and the SecurityContext for the "extraContainers" in gateway-proxy-deployment chart
       and the SecurityContext in the envoy-sidecar, sds, and gloo containers in the gloo-deployment chart
-    issueLink: https://github.com/solo-io/gloo/issues/5477
+    issueLink: https://github.com/solo-io/gloo/issues/7473
     resolvesIssue: false
