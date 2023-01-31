@@ -66,7 +66,6 @@ var _ = BeforeSuite(func() {
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
-	// Install Gloo
 	values, cleanup := getHelmOverrides()
 	defer cleanup()
 
@@ -76,6 +75,7 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
 
+	// Install Gloo
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", values))
 	Expect(err).NotTo(HaveOccurred())
 
