@@ -844,9 +844,18 @@ func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 }
 
 func validatePrefixRewrite(rewrite, name string, routeReport *validationapi.RouteReport) {
-	if _, err := url.Parse(rewrite); err != nil {
+	if err := ValidatePrefixRewrite(rewrite); err != nil {
 		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
 	}
+}
+
+// ValidatePrefixRewrite will validate the rewrite using url.Parse. Then it will evaluate the Path of the rewrite.
+func ValidatePrefixRewrite(s string) error {
+	u, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+	return ValidateRoutePath(u.Path)
 }
 
 // ValidateRoutePath will validate a string for all characters according to RFC 3986
