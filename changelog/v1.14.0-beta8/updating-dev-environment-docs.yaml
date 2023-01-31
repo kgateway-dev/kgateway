@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/7758
+  description: >
+    Added a link for the new contributors trying to set up the gloo project locally to have a 
+    Kubernetes Cluster running before running this command: 
+    go run projects/gloo/cmd/main.go
