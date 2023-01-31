@@ -81,11 +81,15 @@ spec:
         {{- if .Values.gloo.deployment.floatingUserId -}}
         {{- $runAsUser = 0 -}}
         {{- end -}}
-        {{- $context := dict 
+        {{- $securityDefaults := dict 
             "runAsUser" $runAsUser
             "runAsNonRoot" true
         -}}
-        {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.envoy.securityContext "ctx" $context) | nindent 8}}
+        {{- $securityContext := or .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
+        {{- with $securityContext }}
+        securityContext:
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -128,12 +132,16 @@ spec:
         {{- if .Values.gloo.deployment.floatingUserId -}}
         {{- $runAsUser = 0 -}}
         {{- end -}}
-        {{- $context := dict 
+        {{- $securityDefaults := dict 
             "floatingUserId" .Values.gloo.deployment.floatingUserId 
             "runAsUser" $runAsUser
             "runAsNonRoot" true
         -}}
-        {{- include "gloo.containerSecurityContext" (dict "sec" .Values.global.glooMtls.sds.securityContext "ctx" $context) | nindent 8}}
+        {{- $securityContext := or .Values.global.glooMtls.sds.securityContext $securityDefaults }}
+        {{- with $securityContext }}
+        securityContext:
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -172,14 +180,18 @@ spec:
         {{- $capabilities := dict
           "drop" (list "ALL")
         -}}
-        {{- $context := dict 
+        {{- $securityDefaults := dict 
             "runAsUser" $runAsUser
             "runAsNonRoot" true
             "capabilities" $capabilities
             "readOnlyRootFilesystem" true
             "allowPrivilegeEscalation" false
         -}}
-      {{- include "gloo.containerSecurityContext" (dict "sec" .Values.gloo.deployment.containerSecurityContext "ctx" $context) | nindent 8}}
+        {{- $securityContext := or .Values.gloo.deployment.containerSecurityContext $securityDefaults }}
+        {{- with $securityContext }}
+        securityContext:
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}

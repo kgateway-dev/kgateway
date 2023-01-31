@@ -79,8 +79,8 @@ type PodSpec struct {
 	Affinity                 map[string]interface{}     `json:"affinity,omitempty"`
 	HostAliases              []interface{}              `json:"hostAliases,omitempty"`
 	InitContainers           []interface{}              `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
-	PodSecurityContext       *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty"`
-	ContainerSecurityContext *appsv1.SecurityContext    `json:"containerSecurityContext,omitempty"`
+	PodSecurityContext       *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core"`
+	ContainerSecurityContext *appsv1.SecurityContext    `json:"containerSecurityContext,omitempty" desc:"https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
 }
 
 type JobSpec struct {
@@ -205,7 +205,7 @@ type Settings struct {
 	DisableKubernetesDestinations *bool                   `json:"disableKubernetesDestinations,omitempty" desc:"Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
 	Aws                           AwsSettings             `json:"aws,omitempty"`
 	RateLimit                     interface{}             `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
-	CircuitBreakers               CircuitBreakersSettings `json:"circuitBreakers,omitempty desc:"Set this to configure the circuit breaker settings for Gloo."`
+	CircuitBreakers               CircuitBreakersSettings `json:"circuitBreakers,omitempty" desc:"Set this to configure the circuit breaker settings for Gloo."`
 	EnableRestEds                 *bool                   `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Defaults to false."`
 	*KubeResourceOverride
 }
@@ -506,8 +506,8 @@ type GatewayProxyPodTemplate struct {
 	ExtraContainers               []interface{}              `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
 	ExtraInitContainers           []interface{}              `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
 	EnablePodSecurityContext      *bool                      `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
-	PodSecurityContext            *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty"`
-	ContainerSecurityContext      *appsv1.SecurityContext    `json:"containerSecurityContext,omitempty"`
+	PodSecurityContext            *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core"`
+	ContainerSecurityContext      *appsv1.SecurityContext    `json:"containerSecurityContext,omitempty" desc:"https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
 }
 
 type GracefulShutdownSpec struct {

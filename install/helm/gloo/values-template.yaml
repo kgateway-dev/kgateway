@@ -50,21 +50,6 @@ gloo:
     replicas: 1
     runAsUser: 10101
     serviceAccount: {}
-    # containerSecurityContext:
-    #   runAsNonRoot: false
-    #   runAsUser: 333
-    #   allowPrivilegeEscalation: true
-    #   runAsGroup: 333
-    #   readOnlyRootFilesystem: true
-    #   seLinuxOptions:
-    #     level: gloo-seLinuxLevel
-    #   capabilities:
-    #     add: 
-    #     - 'gloo-ADD'
-    #   seccompProfile:
-    #     localhostProfile: gloo-localhostProfileValue
-    #   windowsOptions:
-    #     runAsUserName: gloo-runAsUserNameValue
 discovery:
   enabled: true
   fdsMode: WHITELIST
@@ -151,41 +136,6 @@ gatewayProxies:
       customReadinessProbe: {}
       customLivenessProbe: {}
       containerSecurityContext:
-      #   runAsNonRoot: false
-        runAsUser: 222
-      #   allowPrivilegeEscalation: true
-      #   runAsGroup: 222
-      #   readOnlyRootFilesystem: true
-      #   seLinuxOptions:
-      #     level: podcon-seLinuxLevel
-      #   capabilities:
-      #     add: 
-      #     - 'podcon-ADD'
-      #   seccompProfile:
-      #     localhostProfile: podcon-localhostProfileValue
-      #   windowsOptions:
-      #     runAsUserName: podcon-runAsUserNameValue
-      # podSecurityContext:
-      #   fsGroup: 1111
-      #   fsGroupChangePolicy: podpod-changePolicy
-      #   runAsGroup: 1112
-      #   runAsNonRoot: false
-      #   runAsUser: 1113
-      #   supplementalGroups:
-      #   - 1
-      #   - 2
-      #   seLinuxOptions:
-      #     level: podpod-seLinuxLevel
-      #   capabilities:
-      #     add: 
-      #     - 'podpod-ADD'
-      #   seccompProfile:
-      #     localhostProfile: podpod-localhostProfileValue
-      #   windowsOptions:
-      #     runAsUserName: podpod-runAsUserNameValue
-      #   sysctls:
-      #     - name: sys-name
-      #       value: sys-value
     service:
       customPorts: []
       type: LoadBalancer
@@ -264,25 +214,9 @@ global:
     statsPrefixRewrite: /stats
   glooMtls:
     enabled: false
-    #enabled: true
     sds:
       image:
         repository: sds
-      # securityContext:
-      #   runAsNonRoot: false
-      #   runAsUser: 444
-      #   allowPrivilegeEscalation: true
-      #   runAsGroup: 444
-      #   readOnlyRootFilesystem: true
-      #   seLinuxOptions:
-      #     level: sds-seLinuxLevel
-      #   capabilities:
-      #     add: 
-      #     - 'sds-ADD'
-      #   seccompProfile:
-      #     localhostProfile: sds-localhostProfileValue
-      #   windowsOptions:
-      #     runAsUserName: sds-runAsUserNameValue
     istioProxy:
       image:
         repository: proxyv2
@@ -291,21 +225,6 @@ global:
     envoy:
       image:
         repository: gloo-envoy-wrapper
-      # securityContext:
-      #   runAsNonRoot: false
-      #   runAsUser: 555
-      #   allowPrivilegeEscalation: true
-      #   runAsGroup: 555
-      #   readOnlyRootFilesystem: true
-      #   seLinuxOptions:
-      #     level: envoy-seLinuxLevel
-      #   capabilities:
-      #     add: 
-      #     - 'envoy-ADD'
-      #   seccompProfile:
-      #     localhostProfile: envoy-localhostProfileValue
-      #   windowsOptions:
-      #     runAsUserName: envoy-runAsUserNameValue
   istioSDS:
     enabled: false
   istioIntegration:

@@ -1070,7 +1070,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
 |gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
 |gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsUser|int64|222||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsUser|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsGroup|int64|||
 |gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
 |gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||

@@ -113,12 +113,17 @@ spec:
       {{- if $spec.podTemplate.floatingUserId -}}
       {{- $runAsUser = 0 -}}
       {{- end -}}
-      {{- $context := dict
+      {{- $securityDefaults := dict
           "fsGroup" $spec.podTemplate.fsGroup 
           "runAsUser" $runAsUser
-          "disablePodSecurityContext" (not $spec.podTemplate.enablePodSecurityContext)
       -}}
-      {{- include "gloo.podSecurityContext" (dict "sec" $spec.podTemplate.podSecurityContext "ctx" $context) | nindent 6 }}
+      {{- $securityContext := or $spec.podTemplate.podSecurityContext $securityDefaults }}
+      {{- if $spec.podTemplate.enablePodSecurityContext }}
+      {{- with $securityContext }}
+      securityContext:
+      {{- toYaml . | nindent 8  }}
+      {{- end }}
+      {{- end }}
 {{- if $spec.kind.deployment }}
 {{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:
@@ -232,14 +237,17 @@ spec:
           "drop" (list "ALL")
         -}}
         {{- end -}}
-        {{- $context := dict
+        {{- $securityDefaults := dict
             "runAsNonRoot" $spec.podTemplate.runUnprivileged 
             "runAsUser" $runAsUser
             "capabilities" $capabilities
             "readOnlyRootFilesystem" true
-            "allowPrivilegeEscalation" false
-        -}}
-        {{- include "gloo.containerSecurityContext" (dict "sec" $spec.podTemplate.containerSecurityContext "ctx" $context) | nindent 8}}
+            "allowPrivilegeEscalation" false }}
+        {{- $securityContext := or $spec.podTemplate.containerSecurityContext $securityDefaults }}
+        {{- with $securityContext }}
+        securityContext:
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http

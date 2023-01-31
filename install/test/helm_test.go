@@ -5804,13 +5804,13 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
 
-				FDescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
 							securityRoot + ".runAsNonRoot=true",
 							securityRoot + ".runAsUser=1234",
 							securityRoot + ".allowPrivilegeEscalation=true",
-							securityRoot + ".readOnlyRootFilesystem=true",
+							securityRoot + ".readOnlyRootFilesystem=false",
 							securityRoot + ".seLinuxOptions.level=seLevel",
 							securityRoot + ".seLinuxOptions.role=seRole",
 							securityRoot + ".seLinuxOptions.type=seType",
@@ -5848,7 +5848,7 @@ metadata:
 									&v1.SecurityContext{
 										RunAsUser:                pointer.Int64(int64(1234)),
 										AllowPrivilegeEscalation: pointer.Bool(true),
-										ReadOnlyRootFilesystem:   pointer.Bool(true),
+										ReadOnlyRootFilesystem:   pointer.Bool(false),
 										RunAsNonRoot:             pointer.Bool(true),
 										SELinuxOptions: &v1.SELinuxOptions{
 											Level: "seLevel",
@@ -5881,6 +5881,79 @@ metadata:
 					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.containerSecurityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+				)
+
+				DescribeTable("overrides resources for pod security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							securityRoot + ".fsGroup=101010",
+							securityRoot + ".fsGroupChangePolicy=fsGroupChangePolicyValue",
+							securityRoot + ".runAsGroup=202020",
+							securityRoot + ".runAsNonRoot=true",
+							securityRoot + ".runAsUser=303030",
+							securityRoot + ".supplementalGroups={11,22,33}",
+							securityRoot + ".seLinuxOptions.level=seLevel",
+							securityRoot + ".seLinuxOptions.role=seRole",
+							securityRoot + ".seLinuxOptions.type=seType",
+							securityRoot + ".seLinuxOptions.user=seUser",
+							securityRoot + ".seccompProfile.localhostProfile=seccompLHP",
+							securityRoot + ".seccompProfile.type=seccompType",
+							securityRoot + ".windowsOptions.gmsaCredentialSpec=winGmsaCredSpec",
+							securityRoot + ".windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName",
+							securityRoot + ".windowsOptions.hostProcess=true",
+							securityRoot + ".windowsOptions.runAsUserName=winUser",
+							securityRoot + ".sysctls[0].name=sysctlName",
+							securityRoot + ".sysctls[0].value=sysctlValue",
+						}, extraArgs...),
+					})
+
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							deploymentObject, err := kuberesource.ConvertUnstructured(u)
+							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+
+							fsGroupChangePolicy := v1.PodFSGroupChangePolicy("fsGroupChangePolicyValue")
+							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(
+								&v1.PodSecurityContext{
+									FSGroup:             pointer.Int64(int64(101010)),
+									FSGroupChangePolicy: &fsGroupChangePolicy,
+									RunAsGroup:          pointer.Int64(int64(202020)),
+									RunAsNonRoot:        pointer.Bool(true),
+									RunAsUser:           pointer.Int64(int64(303030)),
+									SupplementalGroups:  []int64{int64(11), int64(22), int64(33)},
+									SELinuxOptions: &v1.SELinuxOptions{
+										Level: "seLevel",
+										Role:  "seRole",
+										Type:  "seType",
+										User:  "seUser",
+									},
+									SeccompProfile: &v1.SeccompProfile{
+										LocalhostProfile: pointer.String("seccompLHP"),
+										Type:             "seccompType",
+									},
+									WindowsOptions: &v1.WindowsSecurityContextOptions{
+										GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+										GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+										RunAsUserName:          pointer.String("winUser"),
+										HostProcess:            pointer.Bool(true),
+									},
+									Sysctls: []v1.Sysctl{
+										{
+											Name:  "sysctlName",
+											Value: "sysctlValue",
+										},
+									},
+								},
+							))
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "envoy-sidecar", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 				)
 			})
 
