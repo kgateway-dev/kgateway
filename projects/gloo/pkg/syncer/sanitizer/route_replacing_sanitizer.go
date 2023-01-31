@@ -4,7 +4,9 @@ import (
 	"context"
 	"regexp"
 	"sort"
+	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -239,12 +241,25 @@ func getClusters(glooSnapshot *v1snap.ApiSnapshot, xdsSnapshot envoycache.Snapsh
 	// mark all valid destination clusters, i.e. those that are in both the gloo snapshot and xds snapshot
 	validClusters := make(map[string]struct{})
 	xdsClusters := xdsSnapshot.GetResources(types.ClusterTypeV3)
+
 	for _, up := range glooSnapshot.Upstreams.AsInputResources() {
 		clusterName := translator.UpstreamToClusterName(up.GetMetadata().Ref())
 		if xdsClusters.Items[clusterName] != nil {
 			validClusters[clusterName] = struct{}{}
 		}
 	}
+
+	for clusterName := range xdsClusters.Items {
+		// clusters created by gloo, such as dynamic forward proxy clusters, are always valid.
+		// This loop _ensures_ they are, because the "exist in gloo snapshot's upstreams" isn't a valid assumption
+		// for such clusters.  They can be identified with the prefix "solo_io_generated_"
+		if strings.HasPrefix(clusterName, constants.SoloGeneratedClusterPrefix) {
+			validClusters[clusterName] = struct{}{}
+		}
+		// in the future, if you are considering adding a new prefix here, please consider whether it is
+		// possible to rename the cluster to use $SoloGeneratedClusterPrefix instead.
+	}
+
 	return validClusters
 }
 

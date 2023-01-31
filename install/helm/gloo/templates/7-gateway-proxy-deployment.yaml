@@ -200,6 +200,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: DISABLE_CORE_DUMPS
+          value: {{ $spec.disableCoreDumps | quote }}
         image: {{ template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         {{- if $spec.podTemplate.gracefulShutdown }}

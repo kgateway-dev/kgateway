@@ -1254,7 +1254,7 @@ type Settings_VaultSecrets struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// DEPRECATED: use field auth_method.access_token
+	// DEPRECATED: use field accessToken
 	// the Token used to authenticate to Vault
 	Token string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	// address is the address of the Vault server. This should be a complete

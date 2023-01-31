@@ -838,7 +838,7 @@ func isWarningErr(err error) bool {
 
 func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidateRoutePath(path); err != nil {
-		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, err.Error(), name)
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the path is invalid: %s", path).Error(), name)
 	}
 }
 
