@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4451
+  resolvesIssue: false
+  description: >-
+    Use Ginkgo's "-randomizeSuites -randomizeAllSpecs" flags when running regression builds
