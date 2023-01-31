@@ -1,3 +1,4 @@
+changelog:
   - type: HELM
     description: >
       Added the ability to specify the PodSecurityContext for the pod and the SecurityContext for the "extraContainers" in gateway-proxy-deployment chart
