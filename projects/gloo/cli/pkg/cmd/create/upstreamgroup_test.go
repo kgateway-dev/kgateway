@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -111,7 +111,7 @@ var _ = Describe("UpstreamGroup", func() {
 				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
 			for index, actualDestination := range ug.Destinations {
-				Expect(actualDestination).To(matchers2.MatchProto(expectedDest[index]))
+				Expect(actualDestination).To(matchers.MatchProto(expectedDest[index]))
 			}
 		})
 
@@ -124,7 +124,7 @@ var _ = Describe("UpstreamGroup", func() {
 				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
 			for index, actualDestination := range ug.Destinations {
-				Expect(actualDestination).To(matchers2.MatchProto(expectedDest[index]))
+				Expect(actualDestination).To(matchers.MatchProto(expectedDest[index]))
 			}
 		})
 

@@ -261,7 +261,7 @@ var _ = Describe("Health Checks", func() {
 				g.Expect(http_health_check).To(ContainSubstring(expectedConfig))
 			}, "10s", "1s").ShouldNot(HaveOccurred())
 		}
-		BeforeEach(func() {
+		FIt("with different methods", func() {
 			tu = getUpstreamWithMethod(v3.RequestMethod_METHOD_UNSPECIFIED)
 
 			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
@@ -276,8 +276,7 @@ var _ = Describe("Health Checks", func() {
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return testClients.VirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 			})
-		})
-		It("with different methods", func() {
+
 			patchUpstreamAndCheckConfig(v3.RequestMethod_METHOD_UNSPECIFIED, `"path": "health`)
 			patchUpstreamAndCheckConfig(v3.RequestMethod_POST, `"method": "POST"`)
 			patchUpstreamAndCheckConfig(v3.RequestMethod_GET, `"method": "GET"`)

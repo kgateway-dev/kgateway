@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+	matchers_sk "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
@@ -1128,7 +1128,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				}
 				for index, route := range routes {
-					Expect(httpListener.VirtualHosts[0].Routes[index]).To(matchers2.MatchProto(route))
+					Expect(httpListener.VirtualHosts[0].Routes[index]).To(matchers_sk.MatchProto(route))
 				}
 				routes = []*gloov1.Route{
 					{
@@ -1222,7 +1222,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				}
 				for index, route := range routes {
-					Expect(httpListener.VirtualHosts[1].Routes[index]).To(matchers2.MatchProto(route))
+					Expect(httpListener.VirtualHosts[1].Routes[index]).To(matchers_sk.MatchProto(route))
 				}
 			})
 

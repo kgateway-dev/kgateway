@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+	matchers_sk "github.com/solo-io/gloo/test/gomega/matchers"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -285,13 +285,13 @@ var _ = Describe("SnapshotBenchmark", func() {
 				snap, errs, report := fnvTranslator.Translate(params, proxyClone)
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(snap).NotTo(BeNil())
-				Expect(report).To(matchers2.BeEquivalentToDiff(validationutils.MakeReport(proxy)))
+				Expect(report).To(matchers_sk.BeEquivalentToDiff(validationutils.MakeReport(proxy)))
 			})
 			b.Time(fmt.Sprintf("runtime of hashstructure translate"), func() {
 				snap, errs, report := hashstructureTranslator.Translate(params, proxyClone)
 				Expect(errs.Validate()).NotTo(HaveOccurred())
 				Expect(snap).NotTo(BeNil())
-				Expect(report).To(matchers2.BeEquivalentToDiff(validationutils.MakeReport(proxy)))
+				Expect(report).To(matchers_sk.BeEquivalentToDiff(validationutils.MakeReport(proxy)))
 			})
 		}, 15)
 	})

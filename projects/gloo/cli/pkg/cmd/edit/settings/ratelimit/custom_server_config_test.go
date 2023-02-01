@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+	"github.com/solo-io/solo-kit/test/matchers"
 
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
@@ -119,10 +119,10 @@ setDescriptors:
 		}
 
 		for index, descriptor := range d.Descriptors {
-			Expect(descriptor).To(matchers2.MatchProto(expectDescriptor[index]))
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
 		}
 		for index, setDescriptor := range d.SetDescriptors {
-			Expect(setDescriptor).To(matchers2.MatchProto(expectSetDescriptor[index]))
+			Expect(setDescriptor).To(matchers.MatchProto(expectSetDescriptor[index]))
 		}
 	})
 
@@ -164,7 +164,7 @@ descriptors:
 			},
 		}
 		for index, descriptor := range d.Descriptors {
-			Expect(descriptor).To(matchers2.MatchProto(expectDescriptor[index]))
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
 		}
 	})
 
@@ -199,7 +199,7 @@ descriptors:
 			},
 		}
 		for index, descriptor := range d.Descriptors {
-			Expect(descriptor).To(matchers2.MatchProto(expectDescriptor[index]))
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
 		}
 	})
 
@@ -229,7 +229,7 @@ descriptors:
 			},
 		}
 		for index, descriptor := range d.Descriptors {
-			Expect(descriptor).To(matchers2.MatchProto(expectDescriptor[index]))
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
 		}
 	})
 
