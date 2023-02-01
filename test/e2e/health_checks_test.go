@@ -240,7 +240,7 @@ var _ = Describe("Health Checks", func() {
 		}
 
 		//Patch the upstream with a given http method then check for expected envoy config and expected envoy logs
-		checkConfigAndLogForMethod := func(method v3.RequestMethod, expectedConfig string) {
+		patchUpstreamAndCheckConfig := func(method v3.RequestMethod, expectedConfig string) {
 			err := helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), func(resource resources.Resource) resources.Resource {
 				upstream := resource.(*gloov1.Upstream)
 				upstream.GetHealthChecks()[0].GetHttpHealthCheck().Method = method
@@ -278,12 +278,12 @@ var _ = Describe("Health Checks", func() {
 			})
 		})
 		It("with different methods", func() {
-			checkConfigAndLogForMethod(v3.RequestMethod_METHOD_UNSPECIFIED, `"path": "health`)
-			checkConfigAndLogForMethod(v3.RequestMethod_POST, `"method": "POST"`)
-			checkConfigAndLogForMethod(v3.RequestMethod_GET, `"method": "GET"`)
+			patchUpstreamAndCheckConfig(v3.RequestMethod_METHOD_UNSPECIFIED, `"path": "health`)
+			patchUpstreamAndCheckConfig(v3.RequestMethod_POST, `"method": "POST"`)
+			patchUpstreamAndCheckConfig(v3.RequestMethod_GET, `"method": "GET"`)
 
 			//We expect a health checker with the CONNECT method to be rejected and the prior health check to be retained
-			checkConfigAndLogForMethod(v3.RequestMethod_CONNECT, `"method": "GET"`)
+			patchUpstreamAndCheckConfig(v3.RequestMethod_CONNECT, `"method": "GET"`)
 		})
 	})
 
