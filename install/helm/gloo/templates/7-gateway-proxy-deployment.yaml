@@ -114,7 +114,7 @@ spec:
       {{- $runAsUser = 0 -}}
       {{- end -}}
       {{- $securityDefaults := dict
-          "fsGroup" $spec.podTemplate.fsGroup$
+          "fsGroup" $spec.podTemplate.fsGroup
           "runAsUser" $runAsUser
       -}}
       {{- $securityContext := or $spec.podTemplate.podSecurityContext $securityDefaults }}
@@ -238,7 +238,7 @@ spec:
         -}}
         {{- end -}}
         {{- $securityDefaults := dict
-            "runAsNonRoot" $spec.podTemplate.runUnprivileged$
+            "runAsNonRoot" $spec.podTemplate.runUnprivileged
             "runAsUser" $runAsUser
             "capabilities" $capabilities
             "readOnlyRootFilesystem" true
