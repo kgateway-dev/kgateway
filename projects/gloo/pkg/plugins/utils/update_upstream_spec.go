@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"time"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -80,8 +78,6 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 	}
 
 	if desired.GetDnsRefreshRate() == nil {
-		if original.GetDnsRefreshRate().AsDuration() >= time.Duration(1*time.Millisecond) {
-			desired.DnsRefreshRate = original.GetDnsRefreshRate()
-		}
+		desired.DnsRefreshRate = original.GetDnsRefreshRate()
 	}
 }

@@ -7,11 +7,11 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"go.opencensus.io/trace"
+	"google.golang.org/protobuf/types/known/durationpb"
 	_structpb "google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -89,6 +90,21 @@ func (t *translatorInstance) initializeCluster(
 	}
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
+
+	var dnrP *durationpb.Duration
+
+	if dnrP == nil {
+		// envoy default is 5 seconds or 5000 ms
+		dnrP = prototime.DurationToProto(time.Duration(5 * time.Second))
+	} else if upstream.GetDnsRefreshRate().AsDuration() < time.Duration(1*time.Millisecond) {
+		reports.AddError(upstream, errors.New("dnsRefreshRate was set to less than 1ms"))
+		// the default for envoy is 5 seconds or 5000 milliseconds
+		dnrP = prototime.DurationToProto(time.Duration(5 * time.Second))
+	} else {
+		// else, set it to the value passed along
+		dnrP = upstream.GetDnsRefreshRate()
+	}
+
 	out := &envoy_config_cluster_v3.Cluster{
 		Name:             UpstreamToClusterName(upstream.GetMetadata().Ref()),
 		Metadata:         new(envoy_config_core_v3.Metadata),
@@ -99,11 +115,11 @@ func (t *translatorInstance) initializeCluster(
 		//defaults to Cluster_USE_CONFIGURED_PROTOCOL
 		ProtocolSelection: envoy_config_cluster_v3.Cluster_ClusterProtocolSelection(upstream.GetProtocolSelection()),
 		// this field can be overridden by plugins
-		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
+		ConnectTimeout:            durationpb.New(ClusterConnectionTimeout),
 		Http2ProtocolOptions:      getHttp2options(upstream),
 		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
 		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
-		DnsRefreshRate:            upstream.GetDnsRefreshRate(),
+		DnsRefreshRate:            dnrP,
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
