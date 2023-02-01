@@ -10,4 +10,3 @@ changelog:
     dependencyOwner: envoyproxy
     dependencyTag: v0.11.0
     dependencyRepo: go-control-plane
-    description: Depending on this unreleased version since no released version contains this requested field.
