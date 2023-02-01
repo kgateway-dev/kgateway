@@ -115,11 +115,9 @@ spec:
       {{- end -}}
       {{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup "runAsUser" $runAsUser }}
       {{- $securityContext := or $spec.podTemplate.podSecurityContext $securityDefaults }}
-      {{- if $spec.podTemplate.enablePodSecurityContext }}
-        {{- with $securityContext }}
+      {{- if and $spec.podTemplate.enablePodSecurityContext $securityContext }}
       securityContext:
-      {{- toYaml . | nindent 8  }}
-        {{- end }}
+      {{- toYaml $securityContext | nindent 8  }}
       {{- end }}
 {{- if $spec.kind.deployment }}
 {{ if or ($spec.antiAffinity) ($spec.affinity) }}
