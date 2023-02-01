@@ -239,7 +239,7 @@ var _ = Describe("Health Checks", func() {
 			return upstream
 		}
 
-		//Patch the upstream with a given http method then check for expected envoy config and expected envoy logs
+		//Patch the upstream with a given http method then check for expected envoy config
 		patchUpstreamAndCheckConfig := func(method v3.RequestMethod, expectedConfig string) {
 			err := helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), func(resource resources.Resource) resources.Resource {
 				upstream := resource.(*gloov1.Upstream)
