@@ -6155,7 +6155,7 @@ spec:
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
 		It("should not contain trailing whitespace", func() {
 			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred(), "Helm template Generation error, output was ", out)
+			Expect(err).NotTo(HaveOccurred(), "Helm template Generation error, output was ", string(out))
 
 			lines := strings.Split(string(out), "\n")
 			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
