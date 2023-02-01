@@ -17,6 +17,7 @@ package filter_types
 import (
 	_ "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/config/v3alpha"
 	_ "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/dynamo/v3"
+	_ "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/golang/v3alpha"
 	_ "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/language/v3alpha"
 	_ "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/squash/v3"
 	_ "github.com/envoyproxy/go-control-plane/contrib/envoy/extensions/filters/http/sxg/v3alpha"
@@ -183,6 +184,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/previous_routes/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/internal_redirect/safe_cross_scheme/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/key_value/file_based/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/client_side_weighted_round_robin/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/common/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/least_request/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/load_balancing_policies/maglev/v3"
@@ -234,6 +236,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/tcp/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/tcp/generic/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/tcp/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/wasm/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/watchdog/profile_action/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
@@ -263,6 +266,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/watchdog/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	_ "github.com/envoyproxy/go-control-plane/pkg/client/sotw/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/server/rest/v3"
@@ -271,6 +275,8 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/test/resource/v3"
 	_ "github.com/envoyproxy/go-control-plane/pkg/test/v3"
+	_ "github.com/envoyproxy/go-control-plane/ratelimit/config/ratelimit/v3"
+	_ "github.com/envoyproxy/go-control-plane/ratelimit/service/ratelimit/v3"
 
 	// gloo filter types
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
