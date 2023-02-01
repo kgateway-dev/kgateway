@@ -311,6 +311,22 @@ func filterEndpoints(
 			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName()))
 			continue
 		}
+
+		// Istio uses the service's port for routing requests
+		if istioIntegrationEnabled {
+			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+			copyRef := *usRef
+			key := Epkey{
+				Address:     hostname,
+				Port:        uint32(kubeServicePort.Port),
+				Name:        spec.GetServiceName(),
+				Namespace:   spec.GetServiceNamespace(),
+				UpstreamRef: &copyRef,
+			}
+			endpointsMap[key] = append(endpointsMap[key], &copyRef)
+			continue
+		}
+
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
 			if eps.Namespace != spec.GetServiceNamespace() || eps.Name != spec.GetServiceName() {
@@ -323,15 +339,8 @@ func filterEndpoints(
 					continue
 				}
 
-				if istioIntegrationEnabled {
-					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), usRef}
-					copyRef := *usRef
-					endpointsMap[key] = append(endpointsMap[key], &copyRef)
-				} else {
-					warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
-					warnsToLog = append(warnsToLog, warnings...)
-				}
+				warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
+				warnsToLog = append(warnsToLog, warnings...)
 			}
 		}
 	}
@@ -435,7 +444,7 @@ func generateFilteredEndpointList(
 }
 
 func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, address string, port uint32, labels map[string]string) *v1.Endpoint {
-	ep := &v1.Endpoint{
+	return &v1.Endpoint{
 		Metadata: &core.Metadata{
 			Namespace: namespace,
 			Name:      name,
@@ -445,9 +454,7 @@ func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, addre
 		Address:   address,
 		Port:      port,
 		// TODO: add locality info
-
 	}
-	return ep
 }
 
 func getServiceForHostname(hostname string, serviceName, serviceNamespace string, services []*kubev1.Service) (*kubev1.Service, error) {
