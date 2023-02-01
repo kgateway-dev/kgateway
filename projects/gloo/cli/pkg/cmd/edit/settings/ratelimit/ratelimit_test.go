@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	matchers2 "github.com/solo-io/skv2/test/matchers"
+
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -146,7 +148,11 @@ var _ = Describe("RateLimit", func() {
 						Namespace: "gloo-system",
 					},
 				}
-				Expect(rlSettings).To(BeEquivalentTo(expectedSettings))
+				Expect(rlSettings.RatelimitServerRef).To(matchers2.MatchProto(expectedSettings.RatelimitServerRef))
+				Expect(rlSettings.RequestTimeout).To(matchers2.MatchProto(expectedSettings.RequestTimeout))
+				Expect(rlSettings.DenyOnFail).To(Equal(expectedSettings.DenyOnFail))
+				Expect(rlSettings.EnableXRatelimitHeaders).To(Equal(expectedSettings.EnableXRatelimitHeaders))
+				Expect(rlSettings.RateLimitBeforeAuth).To(Equal(expectedSettings.RateLimitBeforeAuth))
 			})
 		})
 
