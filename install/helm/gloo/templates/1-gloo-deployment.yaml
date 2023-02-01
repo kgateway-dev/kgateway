@@ -170,9 +170,7 @@ spec:
         {{- if .Values.gloo.deployment.floatingUserId  -}}
         {{- $runAsUser = 0 -}}
         {{- end -}}
-        {{- $capabilities := dict
-          "drop" (list "ALL")
-        -}}
+        {{- $capabilities := dict "drop" (list "ALL") -}}
         {{- $securityDefaults := dict "runAsUser" $runAsUser "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
         {{- $securityContext := or .Values.gloo.deployment.containerSecurityContext $securityDefaults }}
         {{- with $securityContext }}
