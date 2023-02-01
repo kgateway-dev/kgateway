@@ -81,10 +81,7 @@ spec:
         {{- if .Values.gloo.deployment.floatingUserId -}}
           {{- $runAsUser = 0 -}}
         {{- end -}}
-        {{- $securityDefaults := dict
-            "runAsUser" $runAsUser
-            "runAsNonRoot" true
-        -}}
+        {{- $securityDefaults := dict "runAsUser" $runAsUser "runAsNonRoot" true }}
         {{- $securityContext := or .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
@@ -132,11 +129,7 @@ spec:
         {{- if .Values.gloo.deployment.floatingUserId -}}
         {{- $runAsUser = 0 -}}
         {{- end -}}
-        {{- $securityDefaults := dict
-            "floatingUserId" .Values.gloo.deployment.floatingUserId
-            "runAsUser" $runAsUser
-            "runAsNonRoot" true
-        -}}
+        {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsUser" $runAsUser "runAsNonRoot" true }}
         {{- $securityContext := or .Values.global.glooMtls.sds.securityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
@@ -180,13 +173,7 @@ spec:
         {{- $capabilities := dict
           "drop" (list "ALL")
         -}}
-        {{- $securityDefaults := dict
-            "runAsUser" $runAsUser
-            "runAsNonRoot" true
-            "capabilities" $capabilities
-            "readOnlyRootFilesystem" true
-            "allowPrivilegeEscalation" false
-        -}}
+        {{- $securityDefaults := dict "runAsUser" $runAsUser "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
         {{- $securityContext := or .Values.gloo.deployment.containerSecurityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
