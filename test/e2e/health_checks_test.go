@@ -276,6 +276,7 @@ var _ = Describe("Health Checks", func() {
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return testClients.VirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 			})
+
 			By("default", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_METHOD_UNSPECIFIED, `"path": "health`) })
 			By("POST", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_POST, `"method": "POST"`) })
 			By("GET", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_GET, `"method": "GET"`) })
