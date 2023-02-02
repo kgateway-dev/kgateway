@@ -216,7 +216,7 @@ var _ = Describe("Health Checks", func() {
 	})
 
 	// This test can be run locally by setting INVALID_TEST_REQS=run, to bypass this ValidateRequirements method in the BeforeEach
-	Describe("translates and persists health checkers", func() {
+	Context("translates and persists health checkers", func() {
 		var healthCheck *envoy_config_core_v3.HealthCheck
 
 		getUpstreamWithMethod := func(method v3.RequestMethod) *v1helpers.TestUpstream {
