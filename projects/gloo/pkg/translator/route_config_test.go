@@ -74,4 +74,19 @@ var _ = Describe("Route Configs", func() {
 		}
 	})
 
+	DescribeTable("path rewrites", func(s string, pass bool) {
+		err := translator.ValidatePrefixRewrite(s)
+		if pass {
+			Expect(err).ToNot(HaveOccurred())
+		} else {
+			Expect(err).To(HaveOccurred())
+		}
+	},
+		Entry("allow query parameters", "some/site?a=data&b=location&c=searchterm", true),
+		Entry("allow fragments", "some/site#framgentedinfo", true),
+		Entry("invalid", "some/site<hello", false),
+		Entry("invalid", "some/site{hello", false),
+		Entry("invalid", "some/site}hello", false),
+		Entry("invalid", "some/site[hello", false),
+	)
 })
