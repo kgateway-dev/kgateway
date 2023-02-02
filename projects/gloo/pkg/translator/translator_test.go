@@ -1084,6 +1084,7 @@ var _ = Describe("Translator", func() {
 			}
 			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 
+			By("rejects http health checkers with CONNECT method")
 			expectedResult[0].GetHttpHealthCheck().Method = envoy_config_core_v3.RequestMethod_CONNECT
 			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
 			Expect(err).NotTo(HaveOccurred())

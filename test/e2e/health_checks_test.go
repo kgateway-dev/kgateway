@@ -266,15 +266,11 @@ var _ = Describe("Health Checks", func() {
 
 			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
-			})
-
-			vs := getTrivialVirtualServiceForUpstream(writeNamespace, tu.Upstream.Metadata.Ref())
-			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+			_, err = testClients.VirtualServiceClient.Write(getTrivialVirtualServiceForUpstream(writeNamespace, tu.Upstream.Metadata.Ref()), clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-				return testClients.VirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+				return testClients.ProxyClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{})
 			})
 
 			By("default", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_METHOD_UNSPECIFIED, `"path": "health`) })
