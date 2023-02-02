@@ -77,12 +77,11 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
-        {{- $runAsUser := .Values.gloo.deployment.runAsUser -}}
-        {{- if .Values.gloo.deployment.floatingUserId -}}
-          {{- $runAsUser = 0 -}}
+        {{- $securityDefaults := dict "runAsNonRoot" true }}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- $securityDefaults := dict "runAsUser" $runAsUser "runAsNonRoot" true }}
-        {{- $securityContext := or .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
+        {{- $securityContext := or  .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
         {{- toYaml . | nindent 10  }}
@@ -125,11 +124,14 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
-        {{- $runAsUser := .Values.gloo.deployment.runAsUser -}}
-        {{- if .Values.gloo.deployment.floatingUserId -}}
-        {{- $runAsUser = 0 -}}
+        {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsNonRoot" true }}
+        {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
+        {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
+        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
+        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */}}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
-        {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsUser" $runAsUser "runAsNonRoot" true }}
         {{- $securityContext := or .Values.global.glooMtls.sds.securityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
@@ -166,12 +168,11 @@ spec:
             cpu: 500m
             memory: 256Mi
 {{- end}}
-        {{- $runAsUser := .Values.gloo.deployment.runAsUser -}}
-        {{- if .Values.gloo.deployment.floatingUserId  -}}
-        {{- $runAsUser = 0 -}}
-        {{- end -}}
         {{- $capabilities := dict "drop" (list "ALL") -}}
-        {{- $securityDefaults := dict "runAsUser" $runAsUser "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- $securityDefaults := dict "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
+        {{- end -}}
         {{- $securityContext := or .Values.gloo.deployment.containerSecurityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
