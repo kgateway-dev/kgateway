@@ -44,9 +44,9 @@ var _ = Describe("Health Checks", func() {
 	)
 
 	BeforeEach(func() {
-		//helpers.ValidateRequirementsAndNotifyGinkgo(
-		//	helpers.LinuxOnly("Relies on FDS"),
-		//)
+		helpers.ValidateRequirementsAndNotifyGinkgo(
+			helpers.LinuxOnly("Relies on FDS"),
+		)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -261,7 +261,7 @@ var _ = Describe("Health Checks", func() {
 				g.Expect(http_health_check).To(ContainSubstring(expectedConfig))
 			}, "10s", "1s").ShouldNot(HaveOccurred())
 		}
-		FIt("with different methods", func() {
+		It("with different methods", func() {
 			tu = getUpstreamWithMethod(v3.RequestMethod_METHOD_UNSPECIFIED)
 
 			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
