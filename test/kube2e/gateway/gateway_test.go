@@ -1666,6 +1666,11 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			})
 
+			AfterEach(func() {
+				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, "secret", metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
 			It("correctly routes to the service (tcp/tls)", func() {
 				responseString := fmt.Sprintf(`"hostname":"%s"`, httpEchoClusterName)
 
