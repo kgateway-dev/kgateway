@@ -125,10 +125,6 @@ spec:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
         {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsNonRoot" true }}
-        {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
-        {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
-        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
-        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */}}
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
@@ -170,6 +166,10 @@ spec:
 {{- end}}
         {{- $capabilities := dict "drop" (list "ALL") -}}
         {{- $securityDefaults := dict "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
+        {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
+        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
+        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */}}
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
