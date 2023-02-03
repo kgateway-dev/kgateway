@@ -525,6 +525,9 @@ spec:
                           type: array
                         host:
                           type: string
+                        method:
+                          type: string
+                          x-kubernetes-int-or-string: true
                         path:
                           type: string
                         requestHeadersToAdd:

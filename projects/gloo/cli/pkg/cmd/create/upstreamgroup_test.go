@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"github.com/solo-io/solo-kit/test/matchers"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	. "github.com/onsi/ginkgo"
@@ -108,7 +110,9 @@ var _ = Describe("UpstreamGroup", func() {
 			sort.SliceStable(ug.Destinations, func(i, j int) bool {
 				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
-			Expect(ug.Destinations).To(Equal(expectedDest))
+			for index, actualDestination := range ug.Destinations {
+				Expect(actualDestination).To(matchers.MatchProto(expectedDest[index]))
+			}
 		})
 
 		It("should bump weights to at least 1", func() {
@@ -119,7 +123,9 @@ var _ = Describe("UpstreamGroup", func() {
 			sort.SliceStable(ug.Destinations, func(i, j int) bool {
 				return ug.Destinations[i].Weight.GetValue() < ug.Destinations[j].Weight.GetValue()
 			})
-			Expect(ug.Destinations).To(Equal(expectedDest))
+			for index, actualDestination := range ug.Destinations {
+				Expect(actualDestination).To(matchers.MatchProto(expectedDest[index]))
+			}
 		})
 
 		It("can print as kube yaml in dry-run", func() {

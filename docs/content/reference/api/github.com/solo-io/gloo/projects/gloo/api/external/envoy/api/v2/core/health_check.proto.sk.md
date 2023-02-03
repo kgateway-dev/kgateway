@@ -119,6 +119,7 @@ Describes the encoding of the payload bytes in the payload.
 "useHttp2": bool
 "expectedStatuses": []solo.io.envoy.type.Int64Range
 "responseAssertions": .advancedhttp.options.gloo.solo.io.ResponseAssertions
+"method": .solo.io.envoy.config.core.v3.RequestMethod
 
 ```
 
@@ -132,6 +133,7 @@ Describes the encoding of the payload bytes in the payload.
 | `useHttp2` | `bool` | If set, health checks will be made using http/2. |
 | `expectedStatuses` | [[]solo.io.envoy.type.Int64Range](../../../../type/range.proto.sk/#int64range) | Specifies a list of HTTP response statuses considered healthy. If provided, replaces default 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open semantics of `Int64Range (envoy_api_msg_type.Int64Range)`. |
 | `responseAssertions` | [.advancedhttp.options.gloo.solo.io.ResponseAssertions](../../../../../../v1/options/advanced_http/advanced_http.proto.sk/#responseassertions) | (Enterprise Only): If defined, the response health check rules take precedence over the http `expected_statuses`. |
+| `method` | [.solo.io.envoy.config.core.v3.RequestMethod](../../../../config/core/v3/base.proto.sk/#requestmethod) | HTTP Method that will be used for health checking, default is "GET". GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, PATCH methods are supported, but making request body is not supported. CONNECT method is disallowed because it is not appropriate for health check request. If a non-200 response is expected by the method, it needs to be set in :ref:`expected_statuses <envoy_v3_api_field_config.core.v3.HealthCheck.HttpHealthCheck.expected_statuses>`. |
 
 
 

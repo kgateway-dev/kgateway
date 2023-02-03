@@ -5,8 +5,10 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/rotisserie/eris"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -133,12 +135,16 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 		if err != nil {
 			return nil, err
 		}
+		if typed.HttpHealthCheck.GetMethod().Number() == envoy_config_core_v3.RequestMethod_CONNECT.Number() {
+			return nil, eris.New("method CONNECT is not allowed on http health checkers")
+		}
 		httpHealthChecker := &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
 			Host:                   typed.HttpHealthCheck.GetHost(),
 			Path:                   typed.HttpHealthCheck.GetPath(),
 			RequestHeadersToAdd:    requestHeadersToAdd,
 			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 			ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
+			Method:                 envoy_config_core_v3.RequestMethod(typed.HttpHealthCheck.GetMethod()),
 		}
 		if typed.HttpHealthCheck.GetUseHttp2() {
 			httpHealthChecker.CodecClientType = envoy_type_v3.CodecClientType_HTTP2
@@ -227,6 +233,7 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 			RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
 			RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 			ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
+			Method:                 v3.RequestMethod(typed.HttpHealthCheck.GetMethod()),
 		}
 
 		if typed.HttpHealthCheck.GetCodecClientType() == envoy_type_v3.CodecClientType_HTTP2 {
