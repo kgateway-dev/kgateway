@@ -5878,7 +5878,7 @@ metadata:
 					})
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext"),
-					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.containerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.containerSecurityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 				)

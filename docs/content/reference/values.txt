@@ -671,6 +671,25 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.privileged|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsUser|int64|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsGroup|int64|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.procMount|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -907,6 +926,25 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.privileged|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsUser|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsGroup|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.procMount|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
