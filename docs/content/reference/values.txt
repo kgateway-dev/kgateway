@@ -74,25 +74,6 @@
 |settings.integrations.knative.proxy.podSecurityContext.fsGroupChangePolicy|string|||
 |settings.integrations.knative.proxy.podSecurityContext.seccompProfile.type|string|||
 |settings.integrations.knative.proxy.podSecurityContext.seccompProfile.localhostProfile|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.capabilities.add[]|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.capabilities.drop[]|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.privileged|bool|||
-|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.user|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.role|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.type|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.seLinuxOptions.level|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|settings.integrations.knative.proxy.containerSecurityContext.runAsUser|int64|||
-|settings.integrations.knative.proxy.containerSecurityContext.runAsGroup|int64|||
-|settings.integrations.knative.proxy.containerSecurityContext.runAsNonRoot|bool|||
-|settings.integrations.knative.proxy.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|settings.integrations.knative.proxy.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|settings.integrations.knative.proxy.containerSecurityContext.procMount|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.seccompProfile.type|string|||
-|settings.integrations.knative.proxy.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
@@ -174,13 +155,32 @@
 |gloo.deployment.stats.statsPrefixRewrite|string||The Envoy stats endpoint with general metrics for the additional stats route|
 |gloo.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
-|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If containerSecurityContext is defined, this value is not applied.|
+|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If containerSecurityContext is defined, this value is not applied.|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
 |gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
 |gloo.deployment.ossImageTag|string|<release_version, ex: 1.2.3>|Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with.|
+|gloo.deployment.containerSecurityContext.capabilities.add[]|string|||
+|gloo.deployment.containerSecurityContext.capabilities.drop[]|string|||
+|gloo.deployment.containerSecurityContext.privileged|bool|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions.user|string|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions.role|string|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions.type|string|||
+|gloo.deployment.containerSecurityContext.seLinuxOptions.level|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
+|gloo.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
+|gloo.deployment.containerSecurityContext.runAsUser|int64|||
+|gloo.deployment.containerSecurityContext.runAsGroup|int64|||
+|gloo.deployment.containerSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
+|gloo.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
+|gloo.deployment.containerSecurityContext.procMount|string|||
+|gloo.deployment.containerSecurityContext.seccompProfile.type|string|||
+|gloo.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -231,25 +231,6 @@
 |gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gloo.deployment.containerSecurityContext.capabilities.add[]|string|||
-|gloo.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|gloo.deployment.containerSecurityContext.privileged|bool|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gloo.deployment.containerSecurityContext.runAsUser|int64|||
-|gloo.deployment.containerSecurityContext.runAsGroup|int64|||
-|gloo.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|gloo.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gloo.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gloo.deployment.containerSecurityContext.procMount|string|||
-|gloo.deployment.containerSecurityContext.seccompProfile.type|string|||
-|gloo.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.deployment.resources.limits.memory|string||amount of memory|
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
@@ -334,25 +315,6 @@
 |discovery.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |discovery.deployment.podSecurityContext.seccompProfile.type|string|||
 |discovery.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|discovery.deployment.containerSecurityContext.capabilities.add[]|string|||
-|discovery.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|discovery.deployment.containerSecurityContext.privileged|bool|||
-|discovery.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|discovery.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|discovery.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|discovery.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|discovery.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|discovery.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|discovery.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|discovery.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|discovery.deployment.containerSecurityContext.runAsUser|int64|||
-|discovery.deployment.containerSecurityContext.runAsGroup|int64|||
-|discovery.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|discovery.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|discovery.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|discovery.deployment.containerSecurityContext.procMount|string|||
-|discovery.deployment.containerSecurityContext.seccompProfile.type|string|||
-|discovery.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |discovery.deployment.resources.limits.memory|string||amount of memory|
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
@@ -421,25 +383,6 @@
 |gateway.certGenJob.podSecurityContext.fsGroupChangePolicy|string|||
 |gateway.certGenJob.podSecurityContext.seccompProfile.type|string|||
 |gateway.certGenJob.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gateway.certGenJob.containerSecurityContext.capabilities.add[]|string|||
-|gateway.certGenJob.containerSecurityContext.capabilities.drop[]|string|||
-|gateway.certGenJob.containerSecurityContext.privileged|bool|||
-|gateway.certGenJob.containerSecurityContext.seLinuxOptions.user|string|||
-|gateway.certGenJob.containerSecurityContext.seLinuxOptions.role|string|||
-|gateway.certGenJob.containerSecurityContext.seLinuxOptions.type|string|||
-|gateway.certGenJob.containerSecurityContext.seLinuxOptions.level|string|||
-|gateway.certGenJob.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gateway.certGenJob.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gateway.certGenJob.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gateway.certGenJob.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gateway.certGenJob.containerSecurityContext.runAsUser|int64|||
-|gateway.certGenJob.containerSecurityContext.runAsGroup|int64|||
-|gateway.certGenJob.containerSecurityContext.runAsNonRoot|bool|||
-|gateway.certGenJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gateway.certGenJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gateway.certGenJob.containerSecurityContext.procMount|string|||
-|gateway.certGenJob.containerSecurityContext.seccompProfile.type|string|||
-|gateway.certGenJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.certGenJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -492,25 +435,6 @@
 |gateway.rolloutJob.podSecurityContext.fsGroupChangePolicy|string|||
 |gateway.rolloutJob.podSecurityContext.seccompProfile.type|string|||
 |gateway.rolloutJob.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gateway.rolloutJob.containerSecurityContext.capabilities.add[]|string|||
-|gateway.rolloutJob.containerSecurityContext.capabilities.drop[]|string|||
-|gateway.rolloutJob.containerSecurityContext.privileged|bool|||
-|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.user|string|||
-|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.role|string|||
-|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.type|string|||
-|gateway.rolloutJob.containerSecurityContext.seLinuxOptions.level|string|||
-|gateway.rolloutJob.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gateway.rolloutJob.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gateway.rolloutJob.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gateway.rolloutJob.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gateway.rolloutJob.containerSecurityContext.runAsUser|int64|||
-|gateway.rolloutJob.containerSecurityContext.runAsGroup|int64|||
-|gateway.rolloutJob.containerSecurityContext.runAsNonRoot|bool|||
-|gateway.rolloutJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gateway.rolloutJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gateway.rolloutJob.containerSecurityContext.procMount|string|||
-|gateway.rolloutJob.containerSecurityContext.seccompProfile.type|string|||
-|gateway.rolloutJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.rolloutJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.rolloutJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -565,25 +489,6 @@
 |gateway.cleanupJob.podSecurityContext.fsGroupChangePolicy|string|||
 |gateway.cleanupJob.podSecurityContext.seccompProfile.type|string|||
 |gateway.cleanupJob.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gateway.cleanupJob.containerSecurityContext.capabilities.add[]|string|||
-|gateway.cleanupJob.containerSecurityContext.capabilities.drop[]|string|||
-|gateway.cleanupJob.containerSecurityContext.privileged|bool|||
-|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.user|string|||
-|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.role|string|||
-|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.type|string|||
-|gateway.cleanupJob.containerSecurityContext.seLinuxOptions.level|string|||
-|gateway.cleanupJob.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gateway.cleanupJob.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gateway.cleanupJob.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gateway.cleanupJob.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gateway.cleanupJob.containerSecurityContext.runAsUser|int64|||
-|gateway.cleanupJob.containerSecurityContext.runAsGroup|int64|||
-|gateway.cleanupJob.containerSecurityContext.runAsNonRoot|bool|||
-|gateway.cleanupJob.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gateway.cleanupJob.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gateway.cleanupJob.containerSecurityContext.procMount|string|||
-|gateway.cleanupJob.containerSecurityContext.seccompProfile.type|string|||
-|gateway.cleanupJob.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.cleanupJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.cleanupJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -668,25 +573,6 @@
 |gatewayProxies.NAME.kind.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.kind.deployment.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.kind.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.capabilities.add[]|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.privileged|bool|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.runAsUser|int64|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.runAsGroup|int64|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.procMount|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.NAME.kind.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
@@ -717,11 +603,11 @@
 |gatewayProxies.NAME.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.NAME.podTemplate.resources.requests.memory|string||amount of memory|
 |gatewayProxies.NAME.podTemplate.resources.requests.cpu|string||amount of CPUs|
-|gatewayProxies.NAME.podTemplate.disableNetBind|bool||don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
-|gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run Envoy as an unprivileged user|
-|gatewayProxies.NAME.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.NAME.podTemplate.disableNetBind|bool||don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run Envoy as an unprivileged user. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
 |gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
@@ -785,25 +671,6 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.add[]|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.privileged|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsUser|int64|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsGroup|int64|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.procMount|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -942,25 +809,6 @@
 |gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.capabilities.add[]|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.privileged|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.runAsUser|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.runAsGroup|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.procMount|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
@@ -991,11 +839,11 @@
 |gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu|string||amount of CPUs|
-|gatewayProxies.gatewayProxy.podTemplate.disableNetBind|bool|true|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
-|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run Envoy as an unprivileged user|
-|gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.disableNetBind|bool|true|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run Envoy as an unprivileged user. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
 |gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
@@ -1059,25 +907,6 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.add[]|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.privileged|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsUser|int64|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsGroup|int64|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.procMount|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -1236,25 +1065,6 @@
 |ingress.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |ingress.deployment.podSecurityContext.seccompProfile.type|string|||
 |ingress.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|ingress.deployment.containerSecurityContext.capabilities.add[]|string|||
-|ingress.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|ingress.deployment.containerSecurityContext.privileged|bool|||
-|ingress.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|ingress.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|ingress.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|ingress.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|ingress.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|ingress.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|ingress.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|ingress.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|ingress.deployment.containerSecurityContext.runAsUser|int64|||
-|ingress.deployment.containerSecurityContext.runAsGroup|int64|||
-|ingress.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|ingress.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|ingress.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|ingress.deployment.containerSecurityContext.procMount|string|||
-|ingress.deployment.containerSecurityContext.seccompProfile.type|string|||
-|ingress.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
@@ -1329,25 +1139,6 @@
 |ingressProxy.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |ingressProxy.deployment.podSecurityContext.seccompProfile.type|string|||
 |ingressProxy.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
-|ingressProxy.deployment.containerSecurityContext.capabilities.add[]|string|||
-|ingressProxy.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|ingressProxy.deployment.containerSecurityContext.privileged|bool|||
-|ingressProxy.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|ingressProxy.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|ingressProxy.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|ingressProxy.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|ingressProxy.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|ingressProxy.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|ingressProxy.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|ingressProxy.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|ingressProxy.deployment.containerSecurityContext.runAsUser|int64|||
-|ingressProxy.deployment.containerSecurityContext.runAsGroup|int64|||
-|ingressProxy.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|ingressProxy.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|ingressProxy.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|ingressProxy.deployment.containerSecurityContext.procMount|string|||
-|ingressProxy.deployment.containerSecurityContext.seccompProfile.type|string|||
-|ingressProxy.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
@@ -1440,25 +1231,6 @@
 |accessLogger.podSecurityContext.fsGroupChangePolicy|string|||
 |accessLogger.podSecurityContext.seccompProfile.type|string|||
 |accessLogger.podSecurityContext.seccompProfile.localhostProfile|string|||
-|accessLogger.containerSecurityContext.capabilities.add[]|string|||
-|accessLogger.containerSecurityContext.capabilities.drop[]|string|||
-|accessLogger.containerSecurityContext.privileged|bool|||
-|accessLogger.containerSecurityContext.seLinuxOptions.user|string|||
-|accessLogger.containerSecurityContext.seLinuxOptions.role|string|||
-|accessLogger.containerSecurityContext.seLinuxOptions.type|string|||
-|accessLogger.containerSecurityContext.seLinuxOptions.level|string|||
-|accessLogger.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|accessLogger.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|accessLogger.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|accessLogger.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|accessLogger.containerSecurityContext.runAsUser|int64|||
-|accessLogger.containerSecurityContext.runAsGroup|int64|||
-|accessLogger.containerSecurityContext.runAsNonRoot|bool|||
-|accessLogger.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|accessLogger.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|accessLogger.containerSecurityContext.procMount|string|||
-|accessLogger.containerSecurityContext.seccompProfile.type|string|||
-|accessLogger.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |accessLogger.resources.limits.memory|string||amount of memory|
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|

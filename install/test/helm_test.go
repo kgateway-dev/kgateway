@@ -5878,12 +5878,12 @@ metadata:
 					})
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext"),
-					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.containerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.containerSecurityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 				)
 
-				DescribeTable("overrides resources for pod security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
 							securityRoot + ".fsGroup=101010",
@@ -5953,7 +5953,7 @@ metadata:
 					})
 					Expect(resources.NumResources()).To(Equal(1))
 				},
-					Entry("7-gateway-proxy-deployment", "gateway-proxy", "envoy-sidecar", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 				)
 			})
 

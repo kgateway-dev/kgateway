@@ -135,7 +135,6 @@ gatewayProxies:
         sleepTimeSeconds: 25
       customReadinessProbe: {}
       customLivenessProbe: {}
-      containerSecurityContext:
     service:
       customPorts: []
       type: LoadBalancer
