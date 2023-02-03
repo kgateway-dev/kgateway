@@ -83,7 +83,7 @@ require (
 	k8s.io/utils v0.0.0-20211208161948-7d6a63dca704
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
-	sigs.k8s.io/controller-runtime v0.10.3
+	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/yaml v1.3.0
 )
 
