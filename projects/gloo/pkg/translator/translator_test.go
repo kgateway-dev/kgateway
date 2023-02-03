@@ -1069,6 +1069,7 @@ var _ = Describe("Translator", func() {
 							RequestHeadersToRemove: []string{},
 							CodecClientType:        envoy_type_v3.CodecClientType_HTTP2,
 							ExpectedStatuses:       []*envoy_type_v3.Int64Range{},
+							Method:                 envoy_config_core_v3.RequestMethod_POST,
 						},
 					},
 				},
@@ -1082,6 +1083,15 @@ var _ = Describe("Translator", func() {
 				msgList = append(msgList, v)
 			}
 			Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
+
+			By("rejects http health checkers with CONNECT method")
+			expectedResult[0].GetHttpHealthCheck().Method = envoy_config_core_v3.RequestMethod_CONNECT
+			upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
+			_, errs, _ := translator.Translate(params, proxy)
+			_, usReport := errs.Find("*v1.Upstream", upstream.Metadata.Ref())
+			Expect(usReport.Errors).To(Not(BeNil()))
+			Expect(usReport.Errors.Error()).To(ContainSubstring("method CONNECT is not allowed on http health checkers"))
 		})
 
 		It("can translate the grpc health check", func() {

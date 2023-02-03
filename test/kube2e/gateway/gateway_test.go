@@ -12,7 +12,7 @@ import (
 	v1alpha1skv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
-	matchers2 "github.com/solo-io/solo-kit/test/matchers"
+	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
@@ -2222,7 +2222,7 @@ spec:
 						testRunnerVs.GetMetadata().GetName(),
 						clients.ReadOpts{Ctx: ctx})
 					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(vs.GetVirtualHost().GetOptions().GetTransformations()).To(matchers2.MatchProto(invalidTransform))
+					g.Expect(vs.GetVirtualHost().GetOptions().GetTransformations()).To(gloo_matchers.MatchProto(invalidTransform))
 				})
 
 			})
