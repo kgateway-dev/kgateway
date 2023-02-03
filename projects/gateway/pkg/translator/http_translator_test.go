@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
+
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -972,7 +974,7 @@ var _ = Describe("Http Translator", func() {
 				httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 				Expect(httpListener.VirtualHosts).To(HaveLen(2))
 
-				Expect(httpListener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
+				routes := []*gloov1.Route{
 					{
 						Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:<unnamed-0>",
 						Matchers: []*matchers.Matcher{{
@@ -1124,8 +1126,11 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 					},
-				}))
-				Expect(httpListener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
+				}
+				for index, route := range routes {
+					Expect(httpListener.VirtualHosts[0].Routes[index]).To(gloo_matchers.MatchProto(route))
+				}
+				routes = []*gloov1.Route{
 					{
 						Name: "vs:name_proxy1_gloo-system_name2_route:<unnamed-0>_rt:gloo-system_delegate-2_route:delegate2Route1",
 						Matchers: []*matchers.Matcher{{
@@ -1215,7 +1220,10 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 					},
-				}))
+				}
+				for index, route := range routes {
+					Expect(httpListener.VirtualHosts[1].Routes[index]).To(gloo_matchers.MatchProto(route))
+				}
 			})
 
 		})
