@@ -90,7 +90,7 @@ type RouteDelay struct {
 	// Percentage of requests that should be delayed, defaulting to 0.
 	// This should be a value between 0.0 and 100.0, with up to 6 significant digits.
 	Percentage float32 `protobuf:"fixed32,1,opt,name=percentage,proto3" json:"percentage,omitempty"`
-	// Fixed delay, defaulting to 0. Will be rejected by cp if does not respect the validation.
+	// Fixed delay, defaulting to 0. Will be rejected by the control plane if the delay is specified and less than 1 second.
 	FixedDelay *duration.Duration `protobuf:"bytes,2,opt,name=fixed_delay,json=fixedDelay,proto3" json:"fixed_delay,omitempty"`
 }
 
