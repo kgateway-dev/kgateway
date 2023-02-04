@@ -131,8 +131,6 @@ jobs:
           PARENT_JOB_URL: https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} # parent job hyperlink
           PREAMBLE: ${{ steps.compute-preamble.outputs.preamble }}  # text to hyperlink at start of slack message
           SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
-          SLACK_CHANNEL: "C04CJMXAH7A"  #edge-nightly-results
-          # SLACK_CHANNEL: "C0314KESVNV"  #slack-integration-testing
         run: |
           test_results="$(cat */test-out.json | jq -c --slurp .)"
           echo $test_results

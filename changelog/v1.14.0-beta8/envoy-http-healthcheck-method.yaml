@@ -1,0 +1,12 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7149
+    description: Expose `config.core.v3.HealthCheck.HttpHealthCheck.method` as `v3.HealthCheck.HttpHealthCheck.RequestMethod`
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyTag: v1.24.0-patch2
+    dependencyRepo: envoy-gloo
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoyproxy
+    dependencyTag: v0.11.0
+    dependencyRepo: go-control-plane
