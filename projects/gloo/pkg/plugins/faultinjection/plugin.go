@@ -102,7 +102,7 @@ func toEnvoyAbort(abort *fault.RouteAbort) (*envoyhttpfault.FaultAbort, error) {
 	}
 	// Validation really should catch this at proto level but sometimes things can sneak by
 	// https://github.com/envoyproxy/envoy/blob/bc8f0cd19f991a56269f1ea30b5b8d8d331da0dc/api/envoy/config/filter/http/fault/v2/fault.proto#L39
-	if abort.GetHttpStatus() > 600 || abort.GetHttpStatus() < 200 {
+	if abort.GetHttpStatus() >= 600 || abort.GetHttpStatus() < 200 {
 		return nil, errors.Errorf("invalid abort status code '%v', must be in range of [200,600)", abort.GetHttpStatus())
 	}
 	percentage := common.ToEnvoyPercentage(abort.GetPercentage())
