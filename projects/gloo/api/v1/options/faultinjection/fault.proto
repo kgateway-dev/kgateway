@@ -17,7 +17,7 @@ message RouteAbort {
     // Percentage of requests that should be aborted, defaulting to 0.
     // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
     float percentage = 1;
-    // This should be a standard HTTP status in the range [200, 600), i.e. 503. Defaults to 0.
+    // This should be a standard HTTP status in the range [200, 600), e.g. 503. Defaults to 0.
     uint32 http_status = 2 [(validate.rules).uint32 = {lt: 600 gte: 200}];
 }
 
