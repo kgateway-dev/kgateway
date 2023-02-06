@@ -328,7 +328,7 @@ EOF
       ```
    
    2. Create the Gloo Edge AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
-      {{< highlight yaml "hl_lines=15-19" >}}
+      ```yaml
       kubectl apply -f - <<EOF
       apiVersion: enterprise.gloo.solo.io/v1
       kind: AuthConfig
@@ -349,7 +349,7 @@ EOF
                     name: ldapcredentials
                     namespace: gloo-system
       EOF
-      {{< /highlight >}}
+      ```
    
    {{% /tab %}}
    {{< /tabs >}}
