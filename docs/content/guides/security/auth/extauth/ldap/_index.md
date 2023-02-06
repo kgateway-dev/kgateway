@@ -315,12 +315,12 @@ EOF
    - Gloo Edge looks for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`. This is the format of the user entry DNs the LDAP server was bootstrapped with.
    - Only members of the `cn=managers,ou=groups,dc=solo,dc=io` group can access the upstream.
 
-   {{% /tab %}}
+   {{< /tab >}}
    {{% tab name="Service account" %}}
 
    1. Create a secret to store the credentials of the service account. 
       ```sh
-      glooctl create secret authcredentials --name ldapcredentials --username ldapusername --username cn=admin,dc=solo,dc=io  --password solopwd
+      glooctl create secret authcredentials --name ldapcredentials --username cn=admin,dc=solo,dc=io  --password solopwd
       ```
       
       {{% notice warning %}}
@@ -352,10 +352,10 @@ EOF
       {{< /highlight >}}
    
    {{% /tab %}}
-   {{% /tabs %}}
+   {{< /tabs >}}
    
 2. Edit the Virtual Service and reference the LDAP AuthConfig that you created.
-   {{< highlight shell "hl_lines=22-26" >}}
+   {{< highlight yaml "hl_lines=22-26" >}}
    {{< readfile file="guides/security/auth/extauth/ldap/vs-auth-ldap.sh" >}}
    {{< /highlight >}}
 
@@ -378,7 +378,7 @@ EOF
    
    Example output: 
    {{< highlight bash "hl_lines=9" >}}
-*   Trying 192.168.99.100...
+* Trying 192.168.99.100...
 * TCP_NODELAY set
 * Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
 > GET /echo HTTP/1.1
