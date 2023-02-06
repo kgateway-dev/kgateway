@@ -3,8 +3,11 @@ package dynamic_forward_proxy
 import (
 	"fmt"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_network_dns_resolver_apple_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/apple/v3"
 	envoy_extensions_network_dns_resolver_cares_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/cares/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -19,6 +22,7 @@ import (
 	envoy_extensions_clusters_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/clusters/dynamic_forward_proxy/v3"
 	envoy_extensions_common_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/common/dynamic_forward_proxy/v3"
 	envoy_extensions_filters_http_dynamic_forward_proxy_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/dynamic_forward_proxy/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/duration"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
@@ -49,7 +53,7 @@ type plugin struct {
 	filterHashMap map[string]*dynamic_forward_proxy.FilterConfig
 }
 
-func (p *plugin) GeneratedResources(_ plugins.Params,
+func (p *plugin) GeneratedResources(params plugins.Params,
 	_ []*envoy_config_cluster_v3.Cluster,
 	_ []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	_ []*envoy_config_route_v3.RouteConfiguration,
@@ -59,6 +63,33 @@ func (p *plugin) GeneratedResources(_ plugins.Params,
 	[]*envoy_config_route_v3.RouteConfiguration,
 	[]*envoy_config_listener_v3.Listener, error) {
 	var generatedClusters []*envoy_config_cluster_v3.Cluster
+
+	// assemble a map of vs_name:sslConfig where...
+	// 	1. sslConfig is not nil
+	// 	2. vs has dynamic forward proxy
+	vsToSslConfig := make(map[string]*v1.SslConfig)
+	virtualServices := params.Snapshot.VirtualServices
+	for _, vs := range virtualServices {
+		if vs.GetSslConfig() == nil {
+			continue
+		}
+		for _, route := range vs.GetVirtualHost().GetRoutes() {
+			if route.GetRouteAction().GetDynamicForwardProxy() != nil {
+				vsToSslConfig[vs.GetMetadata().Name] = vs.GetSslConfig()
+			}
+		}
+	}
+
+	// debug prints for potential use in mapping
+	fmt.Println("p.filterHashMap")
+	for k := range p.filterHashMap {
+		fmt.Printf("key: %s\n", k)
+	}
+	fmt.Println("vsToSslConfig")
+	for k := range vsToSslConfig {
+		fmt.Printf("key: %s\n", k)
+	}
+
 	for _, lCfg := range p.filterHashMap {
 		generatedCluster, err := generateCustomDynamicForwardProxyCluster(lCfg)
 		if err != nil {
@@ -96,6 +127,25 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 	if err != nil {
 		return nil, err
 	}
+	tlsContext := &envoyauth.UpstreamTlsContext{
+		CommonTlsContext: &tlsv3.CommonTlsContext{
+			ValidationContextType: &envoyauth.CommonTlsContext_ValidationContext{
+				ValidationContext: &envoyauth.CertificateValidationContext{
+					TrustedCa: &envoycore.DataSource{
+						Specifier: &envoycore.DataSource_InlineString{
+							InlineString: "TODO: this absolutely will not work",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tlsTypedConfig, err := utils.MessageToAny(tlsContext)
+	if err != nil {
+		return nil, err
+	}
+
 	return &envoy_config_cluster_v3.Cluster{
 		Name:           GetGeneratedClusterName(listenerCfg),
 		ConnectTimeout: &duration.Duration{Seconds: 5},
@@ -106,6 +156,21 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 				TypedConfig: typedConfig,
 			},
 		},
+		// transport_socket:
+		// name: envoy.transport_sockets.tls
+		// typed_config:
+		//   "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+		//   common_tls_context:
+		// 	   validation_context:
+		// 	     trusted_ca: {filename: /etc/ssl/certs/ca-certificates.crt}
+		TransportSocket: &envoy_config_core_v3.TransportSocket{
+			Name:       wellknown.TransportSocketTls,
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: tlsTypedConfig},
+		},
+		// [2023-02-02 17:56:11.589][9][warning][config] [external/envoy/source/common/config/grpc_subscription_impl.cc:126]
+		// gRPC config for type.googleapis.com/envoy.config.cluster.v3.Cluster rejected:
+		//   Error adding/updating cluster(s) solo_io_generated_dfp:9830940034953162036:
+		//     Didn't find a registered implementation for 'envoy.transport_sockets.tls' with type URL: 'envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig'
 	}, nil
 }
 

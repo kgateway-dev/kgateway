@@ -58,6 +58,7 @@ func main() {
 				"ratelimit.api.solo.io.Descriptor",
 				"als.options.gloo.solo.io.AndFilter",
 				"als.options.gloo.solo.io.OrFilter",
+				"dfp.options.gloo.solo.io.FilterConfig",
 
 				// These messages are part of our internal API, and therefore aren't required
 				// Also they are quite large and can cause the Proxy CRD to become too large,
