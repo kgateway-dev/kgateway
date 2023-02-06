@@ -283,19 +283,13 @@ request that needs to be authenticated with LDAP:
    for an attribute with a name equal to `membershipAttributeName` on the user entry.
 6. Check if one of the values for the attribute matches one of the `allowedGroups`; if so, allow the request, otherwise return a `403` response.
 
-
-### LDAP auth flow for a service account {#service-account}
-
-Instead of giving every user access to the group membership information, you can use a service account to perform this request on behalf of the user. During the `BIND` operation, Gloo Edge uses the credentials of the service account to authenticate with the LDAP server. Then, the service account looks up the group membership information of the user that was extracted from the basic auth request header.  
-
-
 ### Create an LDAP AuthConfig
 
 The steps to create an LDAP AuthConfig vary depending on which LDAP binding option you choose. 
 
 1. Create the LDAP AuthConfig. 
 
-   {{< tabs >}}
+   {{% tabs %}}
    {{% tab name="User binding" %}}
 
    {{< highlight shell "hl_lines=10-13" >}}
@@ -323,15 +317,15 @@ EOF
 
    {{% /tab %}}
    {{% tab name="Service account" %}}
-   
-   {{% notice warning %}}
-   For simplicity reasons, the following example uses the `admin` account as the service account. This setup is **NOT** a recommended security practice. If you plan to use this setup in production, make sure to set up a service account in your LDAP server that has the required permissions to look up group membership information on behalf of a user. Note that you can verify only the user's group membership in the LDAP server when using service account binding. For all other LDAP queries, user binding is used by default. 
-   {{% /notice %}}
 
    1. Create a secret to store the credentials of the service account. 
       ```sh
       glooctl create secret authcredentials --name ldapcredentials --username ldapusername --username cn=admin,dc=solo,dc=io  --password solopwd
       ```
+      
+      {{% notice warning %}}
+   For simplicity reasons, the following example uses the `admin` account as the service account. This setup is **NOT** a recommended security practice. If you plan to use this setup in production, make sure to set up a service account in your LDAP server that has the required permissions to look up group membership information on behalf of a user. Note that you can verify only the user's group membership in the LDAP server when using service account binding. For all other LDAP queries, user binding is used by default. 
+      {{% /notice %}}
    
    2. Create the Gloo Edge AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
       {{< highlight shell "hl_lines=14-18" >}}
@@ -358,7 +352,7 @@ EOF
       {{< /highlight >}}
    
    {{% /tab %}}
-   {{< /tabs >}}
+   {{% /tabs %}}
    
 2. Edit the Virtual Service and reference the LDAP AuthConfig that you created.
    {{< highlight shell "hl_lines=22-26" >}}
