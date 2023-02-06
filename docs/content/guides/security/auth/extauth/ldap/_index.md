@@ -317,15 +317,15 @@ EOF
 
    {{% /tab %}}
    {{% tab name="Service account" %}}
+   
+   {{% notice warning %}}
+   For simplicity reasons, the following example uses the `admin` account as the service account. This setup is **NOT** a recommended security practice. If you plan to use this setup in production, make sure to set up a service account in your LDAP server that has the required permissions to look up group membership information on behalf of a user. Note that you can verify only the user's group membership in the LDAP server when using service account binding. For all other LDAP queries, user binding is used by default. 
+   {{% /notice %}}
 
    1. Create a secret to store the credentials of the service account. 
       ```sh
       glooctl create secret authcredentials --name ldapcredentials --username cn=admin,dc=solo,dc=io  --password solopwd
       ```
-      
-   {{% notice warning %}}
-   For simplicity reasons, the following example uses the `admin` account as the service account. This setup is **NOT** a recommended security practice. If you plan to use this setup in production, make sure to set up a service account in your LDAP server that has the required permissions to look up group membership information on behalf of a user. Note that you can verify only the user's group membership in the LDAP server when using service account binding. For all other LDAP queries, user binding is used by default. 
-   {{% /notice %}}
    
    2. Create the Gloo Edge AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
       {{< highlight shell "hl_lines=14-18" >}}
