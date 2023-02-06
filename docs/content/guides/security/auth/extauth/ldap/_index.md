@@ -328,7 +328,7 @@ EOF
       ```
    
    2. Create the Gloo Edge AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
-      ```yaml
+      {{< highlight yaml "hl_lines=15-19" >}}
       kubectl apply -f - <<EOF
       apiVersion: enterprise.gloo.solo.io/v1
       kind: AuthConfig
@@ -349,17 +349,16 @@ EOF
                     name: ldapcredentials
                     namespace: gloo-system
       EOF
-      ```
+      {{< /highlight >}}
    
    {{% /tab %}}
    {{< /tabs >}}
    
-2. Edit the Virtual Service and reference the LDAP AuthConfig that you created.
+2. Edit the Virtual Service and reference the LDAP AuthConfig that you created. This setup configures the Virtual Service to use the `ldap` AuthConfig in the `gloo-system` namespace when authenticating requests to `/echo`.
    {{< highlight yaml "hl_lines=22-26" >}}
    {{< readfile file="guides/security/auth/extauth/ldap/vs-auth-ldap.sh" >}}
    {{< /highlight >}}
 
-   This configures the Virtual Service to use the `ldap` AuthConfig in the `gloo-system` namespace when authenticating requests to `/echo`.
    
 ## Step 4: Verify LDAP auth for your Virtual Service
 
