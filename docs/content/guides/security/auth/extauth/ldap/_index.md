@@ -323,32 +323,32 @@ EOF
       glooctl create secret authcredentials --name ldapcredentials --username cn=admin,dc=solo,dc=io  --password solopwd
       ```
       
-      {{% notice warning %}}
-      For simplicity reasons, the following example uses the `admin` account as the service account. This setup is **NOT** a recommended security practice. If you plan to use this setup in production, make sure to set up a service account in your LDAP server that has the required permissions to look up group membership information on behalf of a user. Note that you can verify only the user's group membership in the LDAP server when using service account binding. For all other LDAP queries, user binding is used by default. 
-      {{% /notice %}}
+   {{% notice warning %}}
+   For simplicity reasons, the following example uses the `admin` account as the service account. This setup is **NOT** a recommended security practice. If you plan to use this setup in production, make sure to set up a service account in your LDAP server that has the required permissions to look up group membership information on behalf of a user. Note that you can verify only the user's group membership in the LDAP server when using service account binding. For all other LDAP queries, user binding is used by default. 
+   {{% /notice %}}
    
    2. Create the Gloo Edge AuthConfig and enable group membership checking for the service account by setting the `checksGroupsWithServiceAccount` option to true. In addition, you must reference the secret that stores the credentials of the service account in the `credentialsSecretRef` field.  
       {{< highlight shell "hl_lines=14-18" >}}
-kubectl apply -f - <<EOF
-apiVersion: enterprise.gloo.solo.io/v1
-kind: AuthConfig
-metadata:
-  name: ldap
-  namespace: gloo-system
-spec:
-  configs:
-  - ldap:
-      address: "ldap://ldap.default.svc.cluster.local:389" # Substitute your namespace for `default` here
-      userDnTemplate: "uid=%s,ou=people,dc=solo,dc=io"
-      allowedGroups:
-      - "cn=managers,ou=groups,dc=solo,dc=io"
-      searchFilter: "(objectClass=*)"
-      groupLookupSettings:
-          checkGroupsWithServiceAccount: true
-          credentialsSecretRef:
-              name: ldapcredentials
-              namespace: gloo-system
-EOF
+      kubectl apply -f - <<EOF
+      apiVersion: enterprise.gloo.solo.io/v1
+      kind: AuthConfig
+      metadata:
+        name: ldap
+        namespace: gloo-system
+      spec:
+        configs:
+        - ldap:
+            address: "ldap://ldap.default.svc.cluster.local:389" # Substitute your namespace for `default` here
+            userDnTemplate: "uid=%s,ou=people,dc=solo,dc=io"
+            allowedGroups:
+            - "cn=managers,ou=groups,dc=solo,dc=io"
+            searchFilter: "(objectClass=*)"
+            groupLookupSettings:
+                checkGroupsWithServiceAccount: true
+                credentialsSecretRef:
+                    name: ldapcredentials
+                    namespace: gloo-system
+      EOF
       {{< /highlight >}}
    
    {{% /tab %}}
