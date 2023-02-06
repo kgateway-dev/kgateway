@@ -7,13 +7,14 @@
 package waf
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	waf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
