@@ -289,7 +289,7 @@ The steps to create an LDAP AuthConfig vary depending on which LDAP binding opti
 
 1. Create the LDAP AuthConfig. 
 
-   {{% tabs %}}
+   {{< tabs >}}
    {{% tab name="User binding" %}}
 
    {{< highlight shell "hl_lines=10-13" >}}
@@ -315,7 +315,7 @@ EOF
    - Gloo Edge looks for user entries with DNs in the format `uid=<USERNAME_FROM_HEADER>,ou=people,dc=solo,dc=io`. This is the format of the user entry DNs the LDAP server was bootstrapped with.
    - Only members of the `cn=managers,ou=groups,dc=solo,dc=io` group can access the upstream.
 
-   {{< /tab >}}
+   {{% /tab %}}
    {{% tab name="Service account" %}}
 
    1. Create a secret to store the credentials of the service account. 
