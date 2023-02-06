@@ -12,6 +12,9 @@ weight: 5
 
 
 - [ListenerOptions](#listeneroptions)
+- [ConnectionBalanceConfig](#connectionbalanceconfig)
+- [ExactBalance](#exactbalance)
+- [TypedExtensionConfig](#typedextensionconfig)
 - [RouteConfigurationOptions](#routeconfigurationoptions)
 - [HttpListenerOptions](#httplisteneroptions)
 - [TcpListenerOptions](#tcplisteneroptions)
@@ -45,6 +48,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "perConnectionBufferLimitBytes": .google.protobuf.UInt32Value
 "socketOptions": []solo.io.envoy.api.v2.core.SocketOption
 "proxyProtocol": .proxy_protocol.options.gloo.solo.io.ProxyProtocol
+"connectionBalanceConfig": .gloo.solo.io.ConnectionBalanceConfig
 
 ```
 
@@ -55,6 +59,67 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto). |
 | `socketOptions` | [[]solo.io.envoy.api.v2.core.SocketOption](../../../../../../solo-kit/api/external/envoy/api/v2/core/socket_option.proto.sk/#socketoption) | Additional socket options that may not be present in Envoy source code or precompiled binaries. |
 | `proxyProtocol` | [.proxy_protocol.options.gloo.solo.io.ProxyProtocol](../options/proxy_protocol/proxy_protocol.proto.sk/#proxyprotocol) | Enable ProxyProtocol support for this listener. |
+| `connectionBalanceConfig` | [.gloo.solo.io.ConnectionBalanceConfig](../options.proto.sk/#connectionbalanceconfig) |  |
+
+
+
+
+---
+### ConnectionBalanceConfig
+
+ 
+Configuration for listener connection balancing.
+
+```yaml
+"exactBalance": .gloo.solo.io.ConnectionBalanceConfig.ExactBalance
+"extendBalance": .gloo.solo.io.TypedExtensionConfig
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `exactBalance` | [.gloo.solo.io.ConnectionBalanceConfig.ExactBalance](../options.proto.sk/#exactbalance) | If specified, the listener will use the exact connection balancer. Only one of `exactBalance` or `extendBalance` can be set. |
+| `extendBalance` | [.gloo.solo.io.TypedExtensionConfig](../options.proto.sk/#typedextensionconfig) | The listener will use the connection balancer according to ``type_url``. If ``type_url`` is invalid, Envoy will not attempt to balance active connections between worker threads. [#extension-category: envoy.network.connection_balance]. Only one of `extendBalance` or `exactBalance` can be set. |
+
+
+
+
+---
+### ExactBalance
+
+ 
+A connection balancer implementation that does exact balancing. This means that a lock is
+held during balancing so that connection counts are nearly exactly balanced between worker
+threads. This is "nearly" exact in the sense that a connection might close in parallel thus
+making the counts incorrect, but this should be rectified on the next accept. This balancer
+sacrifices accept throughput for accuracy and should be used when there are a small number of
+connections that rarely cycle (e.g., service mesh gRPC egress).
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### TypedExtensionConfig
+
+
+
+```yaml
+"name": string
+"typedConfig": .google.protobuf.Any
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `name` | `string` | The name of an extension. This is not used to select the extension, instead it serves the role of an opaque identifier. |
+| `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | The typed config for the extension. The type URL will be used to identify the extension. In the case that the type URL is ``xds.type.v3.TypedStruct`` (or, for historical reasons, ``udpa.type.v1.TypedStruct``), the inner type URL of ``TypedStruct`` will be utilized. See the :ref:`extension configuration overview <config_overview_extension_configuration>` for further details. |
 
 
 

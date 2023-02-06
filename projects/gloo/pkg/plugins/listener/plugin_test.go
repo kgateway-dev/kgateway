@@ -1,8 +1,11 @@
 package listener_test
 
 import (
+	"errors"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	anypb "github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/listener"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -63,5 +67,91 @@ var _ = Describe("Plugin", func() {
 				State:       envoy_config_core_v3.SocketOption_STATE_LISTENING,
 			},
 		}))
+	})
+
+	Context("should set connection balance config", func() {
+		It("should fail if no balancer set", func() {
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(errors.New("connection balancer does not specify balancer type")))
+		})
+
+		It("should set Exact balance", func() {
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
+						BalanceType: &v1.ConnectionBalanceConfig_ExactBalance_{
+							ExactBalance: &v1.ConnectionBalanceConfig_ExactBalance{},
+						},
+					},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.ConnectionBalanceConfig).To(matchers.MatchProto(&envoy_config_listener_v3.Listener_ConnectionBalanceConfig{
+				BalanceType: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance_{
+					ExactBalance: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance{},
+				},
+			}))
+		})
+
+		It("should set Extend balance", func() {
+			name, url, value := "some-extension", "some-url", []byte("some-bytes")
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
+						BalanceType: &v1.ConnectionBalanceConfig_ExtendBalance{
+							ExtendBalance: &v1.TypedExtensionConfig{
+								Name: name,
+								TypedConfig: &anypb.Any{
+									TypeUrl: url,
+									Value:   value,
+								},
+							},
+						},
+					},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.ConnectionBalanceConfig).To(matchers.MatchProto(&envoy_config_listener_v3.Listener_ConnectionBalanceConfig{
+				BalanceType: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExtendBalance{
+					ExtendBalance: &envoy_config_core_v3.TypedExtensionConfig{
+						Name: name,
+						TypedConfig: &anypb.Any{
+							TypeUrl: url,
+							Value:   value,
+						},
+					},
+				},
+			}))
+		})
+
+		It("should fail to set Extend balance if name missing", func() {
+			name, url, value := "", "some-url", []byte("some-bytes")
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
+						BalanceType: &v1.ConnectionBalanceConfig_ExtendBalance{
+							ExtendBalance: &v1.TypedExtensionConfig{
+								Name: name,
+								TypedConfig: &anypb.Any{
+									TypeUrl: url,
+									Value:   value,
+								},
+							},
+						},
+					},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(errors.New("name of connection balancer extension cannot be empty")))
+		})
 	})
 })

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/any"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/onsi/ginkgo/extensions/table"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -447,8 +448,20 @@ var _ = Describe("Translator", func() {
 
 	It("translates listener options", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
-
-		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 4096}}
+		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{
+			PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 4096},
+			ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
+				BalanceType: &v1.ConnectionBalanceConfig_ExtendBalance{
+					ExtendBalance: &v1.TypedExtensionConfig{
+						Name: "some-name",
+						TypedConfig: &any.Any{
+							TypeUrl: "some-url",
+							Value:   []byte("some-value"),
+						},
+					},
+				},
+			},
+		}
 
 		snap, errs, report := translator.Translate(params, proxyClone)
 		Expect(errs.Validate()).NotTo(HaveOccurred())
@@ -461,6 +474,11 @@ var _ = Describe("Translator", func() {
 		listenerConfiguration := listenerResource.ResourceProto().(*envoy_config_listener_v3.Listener)
 		Expect(listenerConfiguration).NotTo(BeNil())
 		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(MatchProto(&wrappers.UInt32Value{Value: 4096}))
+		Expect(listenerConfiguration.GetConnectionBalanceConfig().GetExtendBalance().GetName()).To(Equal("some-name"))
+		Expect(listenerConfiguration.GetConnectionBalanceConfig().GetExtendBalance().GetTypedConfig()).To(MatchProto(&any.Any{
+			TypeUrl: "some-url",
+			Value:   []byte("some-value"),
+		}))
 	})
 
 	Context("Auth configs", func() {

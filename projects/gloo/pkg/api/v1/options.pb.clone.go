@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
+
 	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
 
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
@@ -148,6 +150,70 @@ func (m *ListenerOptions) Clone() proto.Message {
 		target.ProxyProtocol = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
 	} else {
 		target.ProxyProtocol = proto.Clone(m.GetProxyProtocol()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
+	}
+
+	if h, ok := interface{}(m.GetConnectionBalanceConfig()).(clone.Cloner); ok {
+		target.ConnectionBalanceConfig = h.Clone().(*ConnectionBalanceConfig)
+	} else {
+		target.ConnectionBalanceConfig = proto.Clone(m.GetConnectionBalanceConfig()).(*ConnectionBalanceConfig)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ConnectionBalanceConfig) Clone() proto.Message {
+	var target *ConnectionBalanceConfig
+	if m == nil {
+		return target
+	}
+	target = &ConnectionBalanceConfig{}
+
+	switch m.BalanceType.(type) {
+
+	case *ConnectionBalanceConfig_ExactBalance_:
+
+		if h, ok := interface{}(m.GetExactBalance()).(clone.Cloner); ok {
+			target.BalanceType = &ConnectionBalanceConfig_ExactBalance_{
+				ExactBalance: h.Clone().(*ConnectionBalanceConfig_ExactBalance),
+			}
+		} else {
+			target.BalanceType = &ConnectionBalanceConfig_ExactBalance_{
+				ExactBalance: proto.Clone(m.GetExactBalance()).(*ConnectionBalanceConfig_ExactBalance),
+			}
+		}
+
+	case *ConnectionBalanceConfig_ExtendBalance:
+
+		if h, ok := interface{}(m.GetExtendBalance()).(clone.Cloner); ok {
+			target.BalanceType = &ConnectionBalanceConfig_ExtendBalance{
+				ExtendBalance: h.Clone().(*TypedExtensionConfig),
+			}
+		} else {
+			target.BalanceType = &ConnectionBalanceConfig_ExtendBalance{
+				ExtendBalance: proto.Clone(m.GetExtendBalance()).(*TypedExtensionConfig),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *TypedExtensionConfig) Clone() proto.Message {
+	var target *TypedExtensionConfig
+	if m == nil {
+		return target
+	}
+	target = &TypedExtensionConfig{}
+
+	target.Name = m.GetName()
+
+	if h, ok := interface{}(m.GetTypedConfig()).(clone.Cloner); ok {
+		target.TypedConfig = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
+	} else {
+		target.TypedConfig = proto.Clone(m.GetTypedConfig()).(*github_com_golang_protobuf_ptypes_any.Any)
 	}
 
 	return target
@@ -958,6 +1024,17 @@ func (m *WeightedDestinationOptions) Clone() proto.Message {
 	} else {
 		target.StagedTransformations = proto.Clone(m.GetStagedTransformations()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.TransformationStages)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ConnectionBalanceConfig_ExactBalance) Clone() proto.Message {
+	var target *ConnectionBalanceConfig_ExactBalance
+	if m == nil {
+		return target
+	}
+	target = &ConnectionBalanceConfig_ExactBalance{}
 
 	return target
 }

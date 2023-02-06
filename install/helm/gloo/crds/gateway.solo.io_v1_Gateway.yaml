@@ -4245,6 +4245,19 @@ spec:
                           type: object
                         type: array
                     type: object
+                  connectionBalanceConfig:
+                    properties:
+                      exactBalance:
+                        type: object
+                      extendBalance:
+                        properties:
+                          name:
+                            type: string
+                          typedConfig:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        type: object
+                    type: object
                   extensions:
                     properties:
                       configs:
