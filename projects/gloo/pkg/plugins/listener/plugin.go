@@ -55,6 +55,9 @@ func (p *plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_c
 			if len(extendBalance.GetName()) == 0 {
 				return errors.New("name of connection balancer extension cannot be empty")
 			}
+			if extendBalance.GetTypedConfig() == nil {
+				return errors.New("typed config of connection balancer extension cannot be empty")
+			}
 			out.ConnectionBalanceConfig = &envoy_config_listener_v3.Listener_ConnectionBalanceConfig{
 				BalanceType: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExtendBalance{
 					ExtendBalance: &envoy_config_core_v3.TypedExtensionConfig{

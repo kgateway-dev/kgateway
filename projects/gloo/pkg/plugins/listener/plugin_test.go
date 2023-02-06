@@ -153,5 +153,21 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(errors.New("name of connection balancer extension cannot be empty")))
 		})
+		It("should fail to set Extend balance if typedConfig missing", func() {
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
+						BalanceType: &v1.ConnectionBalanceConfig_ExtendBalance{
+							ExtendBalance: &v1.TypedExtensionConfig{
+								Name: "some-name",
+							},
+						},
+					},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(errors.New("typed config of connection balancer extension cannot be empty")))
+		})
 	})
 })
