@@ -339,6 +339,7 @@ func filterEndpoints(
 				IsHeadless:  isHeadlessSvc,
 			}
 			endpointsMap[key] = append(endpointsMap[key], &copyRef)
+			continue
 		}
 
 		// find each matching endpoint
