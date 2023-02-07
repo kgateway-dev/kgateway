@@ -269,6 +269,8 @@ type Epkey struct {
 	Name        string
 	Namespace   string
 	UpstreamRef *core.ResourceRef
+	// While we can use the upstream ref to get the upstream and service, if there are too many upstreams that could be slow.
+	IsHeadless bool
 }
 
 // Returns first matching port in the namespace and boolean value of true if the
@@ -286,6 +288,15 @@ func findPortForService(services []*kubev1.Service, spec *kubeplugin.UpstreamSpe
 		}
 	}
 	return nil, false
+}
+
+func getServiceFromUpstreamSpec(spec *kubeplugin.UpstreamSpec, services []*kubev1.Service) *kubev1.Service {
+	for _, svc := range services {
+		if svc.Namespace == spec.GetServiceNamespace() && svc.Name == spec.GetServiceName() {
+			return svc
+		}
+	}
+	return nil
 }
 
 func filterEndpoints(
@@ -312,21 +323,6 @@ func filterEndpoints(
 			continue
 		}
 
-		// Istio uses the service's port for routing requests
-		if istioIntegrationEnabled {
-			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-			copyRef := *usRef
-			key := Epkey{
-				Address:     hostname,
-				Port:        uint32(kubeServicePort.Port),
-				Name:        spec.GetServiceName(),
-				Namespace:   spec.GetServiceNamespace(),
-				UpstreamRef: &copyRef,
-			}
-			endpointsMap[key] = append(endpointsMap[key], &copyRef)
-			continue
-		}
-
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
 			if eps.Namespace != spec.GetServiceNamespace() || eps.Name != spec.GetServiceName() {
@@ -339,8 +335,26 @@ func filterEndpoints(
 					continue
 				}
 
-				warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap)
-				warnsToLog = append(warnsToLog, warnings...)
+				svc := getServiceFromUpstreamSpec(spec, services)
+				isHeadlessSvc := svc.Spec.ClusterIP == "None"
+				// Istio uses the service's port for routing requests
+				// Headless services don't have a cluster IP, so we'll resort to pod IP endpoints
+				if istioIntegrationEnabled && !isHeadlessSvc {
+					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+					copyRef := *usRef
+					key := Epkey{
+						Address:     hostname,
+						Port:        uint32(kubeServicePort.Port),
+						Name:        spec.GetServiceName(),
+						Namespace:   spec.GetServiceNamespace(),
+						UpstreamRef: &copyRef,
+						IsHeadless:  isHeadlessSvc,
+					}
+					endpointsMap[key] = append(endpointsMap[key], &copyRef)
+				} else {
+					warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap, isHeadlessSvc)
+					warnsToLog = append(warnsToLog, warnings...)
+				}
 			}
 		}
 	}
@@ -350,7 +364,7 @@ func filterEndpoints(
 	return endpoints, warnsToLog, errorsToLog
 }
 
-func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods *podMap, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef) []string {
+func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.UpstreamSpec, pods *podMap, usRef *core.ResourceRef, port uint32, endpointsMap map[Epkey][]*core.ResourceRef, isHeadlessService bool) []string {
 	var warnings []string
 	for _, addr := range subset.Addresses {
 		var podName, podNamespace string
@@ -377,7 +391,7 @@ func processSubsetAddresses(subset kubev1.EndpointSubset, spec *kubeplugin.Upstr
 				continue
 			}
 		}
-		key := Epkey{addr.IP, port, podName, podNamespace, usRef}
+		key := Epkey{addr.IP, port, podName, podNamespace, usRef, isHeadlessService}
 		copyRef := *usRef
 		endpointsMap[key] = append(endpointsMap[key], &copyRef)
 	}
@@ -425,7 +439,8 @@ func generateFilteredEndpointList(
 		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum64())
 
 		var ep *v1.Endpoint
-		if istioIntegrationEnabled {
+		// While istio integration requires the Service VIP, headless services require the pod IP, as there is no Cluster IP
+		if istioIntegrationEnabled && !addr.IsHeadless {
 			// Istio integration requires assigning endpoints the Kub service VIP rather than pod address
 			service, _ := getServiceForHostname(addr.Address, addr.Name, addr.Namespace, services)
 			ep = createEndpoint(writeNamespace, endpointName, refs, service.Spec.ClusterIP, addr.Port, service.GetObjectMeta().GetLabels()) // TODO: labels may be nil
