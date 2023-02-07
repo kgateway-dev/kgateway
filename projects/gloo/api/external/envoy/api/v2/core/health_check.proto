@@ -10,6 +10,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envo
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/advanced_http/advanced_http.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
 
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
@@ -136,6 +137,13 @@ message HealthCheck {
         // (Enterprise Only): If defined, the response health check rules take precedence over the http
         // `expected_statuses`.
         .advancedhttp.options.gloo.solo.io.ResponseAssertions response_assertions = 10;
+
+
+        // HTTP Method that will be used for health checking, default is "GET".
+        // GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, PATCH methods are supported, but making request body is not supported.
+        // CONNECT method is disallowed because it is not appropriate for health check request.
+        // If a non-200 response is expected by the method, it needs to be set in :ref:`expected_statuses <envoy_v3_api_field_config.core.v3.HealthCheck.HttpHealthCheck.expected_statuses>`.
+        solo.io.envoy.config.core.v3.RequestMethod method = 11;
     }
 
     message TcpHealthCheck {

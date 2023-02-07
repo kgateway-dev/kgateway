@@ -146,7 +146,12 @@ var _ = Describe("RateLimit", func() {
 						Namespace: "gloo-system",
 					},
 				}
-				Expect(rlSettings).To(BeEquivalentTo(expectedSettings))
+
+				Expect(rlSettings.RatelimitServerRef).To(matchers.MatchProto(expectedSettings.RatelimitServerRef))
+				Expect(rlSettings.RequestTimeout).To(matchers.MatchProto(expectedSettings.RequestTimeout))
+				Expect(rlSettings.DenyOnFail).To(Equal(expectedSettings.DenyOnFail))
+				Expect(rlSettings.EnableXRatelimitHeaders).To(Equal(expectedSettings.EnableXRatelimitHeaders))
+				Expect(rlSettings.RateLimitBeforeAuth).To(Equal(expectedSettings.RateLimitBeforeAuth))
 			})
 		})
 

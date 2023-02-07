@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 
+	"github.com/solo-io/solo-kit/test/matchers"
+
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
@@ -116,8 +118,12 @@ setDescriptors:
 			},
 		}
 
-		Expect(d.Descriptors).To(BeEquivalentTo(expectDescriptor))
-		Expect(d.SetDescriptors).To(BeEquivalentTo(expectSetDescriptor))
+		for index, descriptor := range d.Descriptors {
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
+		}
+		for index, setDescriptor := range d.SetDescriptors {
+			Expect(setDescriptor).To(matchers.MatchProto(expectSetDescriptor[index]))
+		}
 	})
 
 	It("should parse example 2", func() {
@@ -157,7 +163,9 @@ descriptors:
 				},
 			},
 		}
-		Expect(d.Descriptors).To(BeEquivalentTo(expectDescriptor))
+		for index, descriptor := range d.Descriptors {
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
+		}
 	})
 
 	It("should parse example 3", func() {
@@ -190,7 +198,9 @@ descriptors:
 				},
 			},
 		}
-		Expect(d.Descriptors).To(BeEquivalentTo(expectDescriptor))
+		for index, descriptor := range d.Descriptors {
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
+		}
 	})
 
 	It("should parse example 4", func() {
@@ -218,7 +228,9 @@ descriptors:
 				}},
 			},
 		}
-		Expect(d.Descriptors).To(BeEquivalentTo(expectDescriptor))
+		for index, descriptor := range d.Descriptors {
+			Expect(descriptor).To(matchers.MatchProto(expectDescriptor[index]))
+		}
 	})
 
 	It("should not allow non existing fields", func() {

@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7715
+    description: adds transparency to the path that is used for the invalid route
+    resolvesIssue: false
