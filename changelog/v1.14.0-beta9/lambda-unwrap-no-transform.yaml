@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/4434
+  resolvesIssue: false
