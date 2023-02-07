@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"google.golang.org/genproto/googleapis/api/annotations"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -97,7 +96,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if err != nil {
 		return errors.Wrapf(err, "parsing grpc spec as a proto descriptor set")
 	}
-	b := annotations.HttpRule{}
 	addWellKnownProtos(descriptors)
 
 	p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = in

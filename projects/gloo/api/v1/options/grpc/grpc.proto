@@ -19,6 +19,7 @@ message ServiceSpec {
 
   // Descriptors that contain information of the services listed below.
   // this is a serialized google.protobuf.FileDescriptorSet
+  // Deprecated: prefer putting descriptors in manualGrpcConfig
   bytes descriptors = 1 [deprecated = true];
 
   // Describes a grpc service
@@ -31,15 +32,15 @@ message ServiceSpec {
     repeated string function_names = 3;
   }
 
-  // List of services used by this upstream. For a grpc upstream where you don't
-  // need to use Gloo's function routing, this can be an empty list. These
-  // services must be present in the descriptors.
-  repeated GrpcService grpc_services = 2;
+  // List of services used by this upstream. These services must be present in the descriptors.
+  // Deprecated: All services are found in descriptors in manualGrpcConfig.
+  repeated GrpcService grpc_services = 2 [deprecated = true];
 
   grpc_json.options.gloo.solo.io.GrpcJsonTranscoder manual_grpc_config = 3;
 }
 
 // This is only for upstream with Grpc service spec.
+// Deprecated: prefer providing descriptors in manualGrpcConfig
 message DestinationSpec {
   // The proto package of the function.
   string package = 1;
