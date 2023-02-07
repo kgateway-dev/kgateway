@@ -6,7 +6,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
+
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -21,7 +27,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -100,6 +105,7 @@ var _ = Describe("Health Checks", func() {
 	Context("regression for config", func() {
 
 		BeforeEach(func() {
+
 			tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
 			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
@@ -209,9 +215,77 @@ var _ = Describe("Health Checks", func() {
 		})
 	})
 
+	// This test can be run locally by setting INVALID_TEST_REQS=run, to bypass this ValidateRequirements method in the BeforeEach
+	Context("translates and persists health checkers", func() {
+		var healthCheck *envoy_config_core_v3.HealthCheck
+
+		getUpstreamWithMethod := func(method v3.RequestMethod) *v1helpers.TestUpstream {
+			upstream := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+			healthCheck = &envoy_config_core_v3.HealthCheck{
+				Timeout:            translator.DefaultHealthCheckTimeout,
+				Interval:           translator.DefaultHealthCheckInterval,
+				HealthyThreshold:   translator.DefaultThreshold,
+				UnhealthyThreshold: translator.DefaultThreshold,
+				HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+						Path:   "health",
+						Method: envoy_config_core_v3.RequestMethod(method),
+					},
+				},
+			}
+			var err error
+			upstream.Upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList([]*envoy_config_core_v3.HealthCheck{healthCheck})
+			Expect(err).To(Not(HaveOccurred()))
+			return upstream
+		}
+
+		//Patch the upstream with a given http method then check for expected envoy config
+		patchUpstreamAndCheckConfig := func(method v3.RequestMethod, expectedConfig string) {
+			err := helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), func(resource resources.Resource) resources.Resource {
+				upstream := resource.(*gloov1.Upstream)
+				upstream.GetHealthChecks()[0].GetHttpHealthCheck().Method = method
+				return upstream
+			}, testClients.UpstreamClient.BaseClient())
+			Expect(err).ToNot(HaveOccurred())
+
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
+			})
+
+			Eventually(func(g Gomega) {
+				envoyConfig, err := envoyInstance.ConfigDump()
+				g.Expect(err).To(Not(HaveOccurred()))
+
+				// Get "http_health_check" and its contents out of the envoy config dump
+				http_health_check := regexp.MustCompile(`(?sU)("http_health_check": {).*(})`).FindString(envoyConfig)
+				g.Expect(http_health_check).To(ContainSubstring(expectedConfig))
+			}, "10s", "1s").ShouldNot(HaveOccurred())
+		}
+		It("with different methods", func() {
+			tu = getUpstreamWithMethod(v3.RequestMethod_METHOD_UNSPECIFIED)
+
+			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = testClients.VirtualServiceClient.Write(getTrivialVirtualServiceForUpstream(writeNamespace, tu.Upstream.Metadata.Ref()), clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testClients.ProxyClient.Read(writeNamespace, gwdefaults.GatewayProxyName, clients.ReadOpts{})
+			})
+
+			By("default", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_METHOD_UNSPECIFIED, `"path": "health`) })
+			By("POST", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_POST, `"method": "POST"`) })
+			By("GET", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_GET, `"method": "GET"`) })
+
+			//We expect a health checker with the CONNECT method to be rejected and the prior health check to be retained
+			By("CONNECT", func() { patchUpstreamAndCheckConfig(v3.RequestMethod_CONNECT, `"method": "GET"`) })
+		})
+	})
+
 	Context("e2e + GRPC", func() {
 
 		BeforeEach(func() {
+
 			tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 5)
 			_, err := testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
