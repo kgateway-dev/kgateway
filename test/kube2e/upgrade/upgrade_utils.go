@@ -48,7 +48,6 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
-	fmt.Printf(filename)
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
 	//we can end up in a situation where the path contains the repo_name twice when running in ci - keep going until we find the last use ex: /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
