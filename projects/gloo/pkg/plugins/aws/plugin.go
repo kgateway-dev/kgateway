@@ -237,6 +237,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, nil
 			}
 
+			// Do not transform if we are unwrapping since response is handled in its entirety by these
+			if awsDestinationSpec.Aws.GetUnwrapAsAlb() || awsDestinationSpec.Aws.GetUnwrapAsApiGateway() {
+				return nil, nil
+			}
+
 			requiresRequestTransformation := awsDestinationSpec.Aws.GetRequestTransformation()
 			requiresResponseTransformation := awsDestinationSpec.Aws.GetResponseTransformation()
 			if !requiresRequestTransformation && !requiresResponseTransformation {
