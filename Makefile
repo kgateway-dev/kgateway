@@ -169,6 +169,9 @@ include Makefile.ci
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
+ROOT_DIR := $(shell pwd)
+OUTPUT_DIR := $(ROOT_DIR)/_output
+DEPSGOBIN=$(OUTPUT_DIR)/.bin
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
@@ -184,7 +187,6 @@ fmt-changed:
 mod-download:
 	go mod download all
 
-DEPSGOBIN=$(shell pwd)/_output/.bin
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
@@ -201,14 +203,45 @@ install-go-tools: mod-download install-test-tools ## Download and install Go dep
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
 
+
+.PHONY: check-format
+check-format:
+	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
+
+.PHONY: check-spelling
+check-spelling:
+	./ci/spell.sh check
+
+
+#----------------------------------------------------------------------------------
+# Tests
+#----------------------------------------------------------------------------------
+
+GINKGO_VERSION ?= 1.16.5 # match our go.mod
+GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --randomize-all --trace -progress -race
+GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
+GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
+TEST_PKG ?= ./... # Default to run all tests
+
+# This is a way for a user executing `make test` to be able to provide flags which we do not include by default
+# For example, you may want to run tests multiple times, or with various timeouts
+GINKGO_USER_FLAGS ?=
+
 .PHONY: install-test-tools
 install-test-tools:
-	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
+	go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
-.PHONY: test ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-test: install-test-tools
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -failOnPending -failFast -noColor -trace -progress -race -compilers=4 -randomizeSuites -randomizeAllSpecs -r $(TEST_PKG)
+.PHONY: test
+test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+	$(GINKGO_ENV) ginkgo \
+	$(GINKGO_TEST_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
+	$(TEST_PKG)
+
+.PHONY: test-with-coverage
+test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
+test-with-coverage: test
+	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 # command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
 # requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
@@ -224,13 +257,7 @@ run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in 
 	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
 	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -randomizeSuites -randomizeAllSpecs -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
-.PHONY: check-format
-check-format:
-	NOT_FORMATTED=$$(gofmt -l ./projects/ ./pkg/ ./test/) && if [ -n "$$NOT_FORMATTED" ]; then echo These files are not formatted: $$NOT_FORMATTED; exit 1; fi
 
-.PHONY: check-spelling
-check-spelling:
-	./ci/spell.sh check
 #----------------------------------------------------------------------------------
 # Clean
 #----------------------------------------------------------------------------------
