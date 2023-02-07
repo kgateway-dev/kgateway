@@ -22,6 +22,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	grpc_json_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 )
 
 func getGrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
@@ -184,7 +185,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		return errors.Wrap(err, "marshalling proto descriptors")
 	}
 
-	encodedDescriptors := []byte(base64.StdEncoding.EncodeToString(rawDescriptors))
+	doubleEncodedDescriptors := []byte(base64.StdEncoding.EncodeToString(rawDescriptors))
 
 	return updatecb(func(out *v1.Upstream) error {
 		svcSpec := getGrpcspec(out)
@@ -194,7 +195,10 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
 		//  but that doesn't work with gogoproto.equal_all.
 		svcSpec.GrpcServices = grpcServices
-		svcSpec.Descriptors = encodedDescriptors
+		svcSpec.Descriptors = doubleEncodedDescriptors
+		svcSpec.ManualGrpcConfig = &grpc_json_plugins.GrpcJsonTranscoder{
+			DescriptorSet: &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors},
+		}
 		return nil
 	})
 }

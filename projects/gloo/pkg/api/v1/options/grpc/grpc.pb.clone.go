@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
 
@@ -51,6 +53,12 @@ func (m *ServiceSpec) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	if h, ok := interface{}(m.GetManualGrpcConfig()).(clone.Cloner); ok {
+		target.ManualGrpcConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json.GrpcJsonTranscoder)
+	} else {
+		target.ManualGrpcConfig = proto.Clone(m.GetManualGrpcConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_grpc_json.GrpcJsonTranscoder)
 	}
 
 	return target

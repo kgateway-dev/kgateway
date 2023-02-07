@@ -243,6 +243,53 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          manualGrpcConfig:
+                            properties:
+                              autoMapping:
+                                type: boolean
+                              convertGrpcStatus:
+                                type: boolean
+                              ignoreUnknownQueryParameters:
+                                type: boolean
+                              ignoredQueryParameters:
+                                items:
+                                  type: string
+                                type: array
+                              matchIncomingRequestRoute:
+                                type: boolean
+                              printOptions:
+                                properties:
+                                  addWhitespace:
+                                    type: boolean
+                                  alwaysPrintEnumsAsInts:
+                                    type: boolean
+                                  alwaysPrintPrimitiveFields:
+                                    type: boolean
+                                  preserveProtoFieldNames:
+                                    type: boolean
+                                type: object
+                              protoDescriptor:
+                                type: string
+                              protoDescriptorBin:
+                                format: byte
+                                type: string
+                              protoDescriptorConfigMap:
+                                properties:
+                                  configMapRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                  key:
+                                    type: string
+                                type: object
+                              services:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
                         type: object
                       rest:
                         properties:
@@ -764,6 +811,53 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          manualGrpcConfig:
+                            properties:
+                              autoMapping:
+                                type: boolean
+                              convertGrpcStatus:
+                                type: boolean
+                              ignoreUnknownQueryParameters:
+                                type: boolean
+                              ignoredQueryParameters:
+                                items:
+                                  type: string
+                                type: array
+                              matchIncomingRequestRoute:
+                                type: boolean
+                              printOptions:
+                                properties:
+                                  addWhitespace:
+                                    type: boolean
+                                  alwaysPrintEnumsAsInts:
+                                    type: boolean
+                                  alwaysPrintPrimitiveFields:
+                                    type: boolean
+                                  preserveProtoFieldNames:
+                                    type: boolean
+                                type: object
+                              protoDescriptor:
+                                type: string
+                              protoDescriptorBin:
+                                format: byte
+                                type: string
+                              protoDescriptorConfigMap:
+                                properties:
+                                  configMapRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                  key:
+                                    type: string
+                                type: object
+                              services:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
                         type: object
                       rest:
                         properties:
@@ -1020,6 +1114,53 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          manualGrpcConfig:
+                            properties:
+                              autoMapping:
+                                type: boolean
+                              convertGrpcStatus:
+                                type: boolean
+                              ignoreUnknownQueryParameters:
+                                type: boolean
+                              ignoredQueryParameters:
+                                items:
+                                  type: string
+                                type: array
+                              matchIncomingRequestRoute:
+                                type: boolean
+                              printOptions:
+                                properties:
+                                  addWhitespace:
+                                    type: boolean
+                                  alwaysPrintEnumsAsInts:
+                                    type: boolean
+                                  alwaysPrintPrimitiveFields:
+                                    type: boolean
+                                  preserveProtoFieldNames:
+                                    type: boolean
+                                type: object
+                              protoDescriptor:
+                                type: string
+                              protoDescriptorBin:
+                                format: byte
+                                type: string
+                              protoDescriptorConfigMap:
+                                properties:
+                                  configMapRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                  key:
+                                    type: string
+                                type: object
+                              services:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
                         type: object
                       rest:
                         properties:
@@ -1228,6 +1369,53 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          manualGrpcConfig:
+                            properties:
+                              autoMapping:
+                                type: boolean
+                              convertGrpcStatus:
+                                type: boolean
+                              ignoreUnknownQueryParameters:
+                                type: boolean
+                              ignoredQueryParameters:
+                                items:
+                                  type: string
+                                type: array
+                              matchIncomingRequestRoute:
+                                type: boolean
+                              printOptions:
+                                properties:
+                                  addWhitespace:
+                                    type: boolean
+                                  alwaysPrintEnumsAsInts:
+                                    type: boolean
+                                  alwaysPrintPrimitiveFields:
+                                    type: boolean
+                                  preserveProtoFieldNames:
+                                    type: boolean
+                                type: object
+                              protoDescriptor:
+                                type: string
+                              protoDescriptorBin:
+                                format: byte
+                                type: string
+                              protoDescriptorConfigMap:
+                                properties:
+                                  configMapRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                  key:
+                                    type: string
+                                type: object
+                              services:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
                         type: object
                       rest:
                         properties:
