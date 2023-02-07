@@ -323,6 +323,19 @@ func filterEndpoints(
 			errorsToLog = append(errorsToLog, fmt.Sprintf("upstream %v: port %v not found for service %v", usRef.Key(), spec.GetServicePort(), spec.GetServiceName()))
 			continue
 		}
+
+		svc := getServiceFromUpstreamSpec(spec, services)
+		isHeadlessSvc := svc.Spec.ClusterIP == "None"
+		// Istio uses the service's port for routing requests
+		// Headless services don't have a cluster IP, so we'll resort to pod IP endpoints
+		if istioIntegrationEnabled && !isHeadlessSvc {
+			hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
+			copyRef := *usRef
+			key := Epkey{hostname, uint32(kubeServicePort.Port), spec.GetServiceName(), spec.GetServiceNamespace(), &copyRef, isHeadlessSvc}
+			endpointsMap[key] = append(endpointsMap[key], &copyRef)
+			continue
+		}
+
 		// find each matching endpoint
 		for _, eps := range kubeEndpoints {
 			if eps.Namespace != spec.GetServiceNamespace() || eps.Name != spec.GetServiceName() {
@@ -335,19 +348,8 @@ func filterEndpoints(
 					continue
 				}
 
-				svc := getServiceFromUpstreamSpec(spec, services)
-				isHeadlessSvc := svc.Spec.ClusterIP == "None"
-				// Istio uses the service's port for routing requests
-				// Headless services don't have a cluster IP, so we'll resort to pod IP endpoints
-				if istioIntegrationEnabled && !isHeadlessSvc {
-					hostname := fmt.Sprintf("%v.%v", spec.GetServiceName(), spec.GetServiceNamespace())
-					copyRef := *usRef
-					key := Epkey{hostname, port, spec.GetServiceName(), spec.GetServiceNamespace(), &copyRef, isHeadlessSvc}
-					endpointsMap[key] = append(endpointsMap[key], &copyRef)
-				} else {
-					warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap, isHeadlessSvc)
-					warnsToLog = append(warnsToLog, warnings...)
-				}
+				warnings := processSubsetAddresses(subset, spec, podMap, usRef, port, endpointsMap, isHeadlessSvc)
+				warnsToLog = append(warnsToLog, warnings...)
 			}
 		}
 	}
