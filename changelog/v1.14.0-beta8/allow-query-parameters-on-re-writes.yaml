@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7715#issuecomment-1410014270
+  resolvesIssue: false
+  description: >-
+    No longer fail validation when specifying query parameters on re-writes.

@@ -47,5 +47,7 @@
     "PathNormalizationOptions",
     "StripTrailingHostDot",
     "ProxyStatusConfig",
-    "TypedHeaderValidationConfig"
+    "TypedHeaderValidationConfig",
+    "EarlyHeaderMutationExtensions",
+    "AppendXForwardedPort"
 ]

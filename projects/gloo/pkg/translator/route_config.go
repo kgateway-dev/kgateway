@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -230,11 +231,11 @@ func validateEnvoyRoute(r *envoy_config_route_v3.Route, routeReport *validationa
 	validatePath(match.GetPath(), name, routeReport)
 	validatePath(match.GetPrefix(), name, routeReport)
 	validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
-	validatePath(route.GetPrefixRewrite(), name, routeReport)
-	validatePath(re.GetPrefixRewrite(), name, routeReport)
 	validatePath(re.GetPathRedirect(), name, routeReport)
 	validatePath(re.GetHostRedirect(), name, routeReport)
 	validatePath(re.GetSchemeRedirect(), name, routeReport)
+	validatePrefixRewrite(route.GetPrefixRewrite(), name, routeReport)
+	validatePrefixRewrite(re.GetPrefixRewrite(), name, routeReport)
 }
 
 // utility function to transform gloo matcher to envoy route matcher
@@ -840,6 +841,21 @@ func validatePath(path, name string, routeReport *validationapi.RouteReport) {
 	if err := ValidateRoutePath(path); err != nil {
 		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the path is invalid: %s", path).Error(), name)
 	}
+}
+
+func validatePrefixRewrite(rewrite, name string, routeReport *validationapi.RouteReport) {
+	if err := ValidatePrefixRewrite(rewrite); err != nil {
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
+	}
+}
+
+// ValidatePrefixRewrite will validate the rewrite using url.Parse. Then it will evaluate the Path of the rewrite.
+func ValidatePrefixRewrite(s string) error {
+	u, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+	return ValidateRoutePath(u.Path)
 }
 
 // ValidateRoutePath will validate a string for all characters according to RFC 3986
