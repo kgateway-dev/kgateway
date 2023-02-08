@@ -548,67 +548,48 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("filters", func() {
-		When("transformations are not present", func() {
-			var (
-				filters []plugins.StagedHttpFilter
-				err     error
-			)
-			JustBeforeEach(func() {
-				filters, err = awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-				Expect(err).NotTo(HaveOccurred())
-			})
-			When("upstream is present", func() {
-				BeforeEach(func() {
-					// process upstream
-					err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-					Expect(err).NotTo(HaveOccurred())
-					err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-					Expect(err).NotTo(HaveOccurred())
-				})
-				It("should produce filters", func() {
-					Expect(filters).To(HaveLen(1))
-				})
-			})
+		It("should produce filters when upstream is present", func() {
+			// process upstream
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
 
-			When("upstream is present", func() {
-				It("should not produce filters", func() {
-					Expect(filters).To(BeEmpty())
-				})
-			})
+			// check that we have filters
+			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(HaveLen(1))
+		})
+
+		It("should not produce filters when no upstreams are present", func() {
+			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(BeEmpty())
 		})
 
 		When("transformations are present", func() {
-			var (
-				filters []plugins.StagedHttpFilter
-				err     error
-			)
-			BeforeEach(func() {
+			It("should produce 2 filters when not unwrapping", func() {
 				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 				Expect(err).NotTo(HaveOccurred())
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
-			})
-
-			JustBeforeEach(func() {
 				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 				Expect(err).NotTo(HaveOccurred())
 
-				filters, err = awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(2))
 			})
+			It("should produce 1 filter when unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
 
-			When("not unwrapping response", func() {
-				It("should produce 2 filters", func() {
-					Expect(filters).To(HaveLen(2))
-				})
-			})
-
-			When("unwrapping response", func() {
-				BeforeEach(func() {
-					route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
-				})
-				It("should produce 1 filter when unwrapping", func() {
-					Expect(filters).To(HaveLen(1))
-				})
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(1))
 			})
 		})
 	})
