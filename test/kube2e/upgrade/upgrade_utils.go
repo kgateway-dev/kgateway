@@ -99,7 +99,7 @@ func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion in
 	for i := 0; i < 5; i++ {
 		// Get the next page of
 		listOpts := github.ListOptions{Page: i, PerPage: 10} // max per request
-		releases, _, err := client.Repositories.ListReleases(ctx, "solo-io", "solo-projects", &listOpts)
+		releases, _, err := client.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error listing releases")
 		}
