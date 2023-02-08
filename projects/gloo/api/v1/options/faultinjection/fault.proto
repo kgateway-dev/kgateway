@@ -17,15 +17,15 @@ message RouteAbort {
     // Percentage of requests that should be aborted, defaulting to 0.
     // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
     float percentage = 1;
-    // This should be a standard HTTP status, i.e. 503. Defaults to 0.
-    uint32 http_status = 2;
+    // This should be a standard HTTP status in the range [200, 600), e.g. 503. Defaults to 0.
+    uint32 http_status = 2 [(validate.rules).uint32 = {lt: 600 gte: 200}];
 }
 
 message RouteDelay {
     // Percentage of requests that should be delayed, defaulting to 0.
     // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
     float percentage = 1;
-    // Fixed delay, defaulting to 0.
+    // Fixed delay, defaulting to 0. Will be rejected by the control plane if the delay is specified and less than 1 second.
     google.protobuf.Duration fixed_delay = 2
         [(validate.rules).duration.gt = {}];
 }
