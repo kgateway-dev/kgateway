@@ -173,7 +173,10 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 	})
 
 	Context("headless services", func() {
-		serviceSetup := func() {
+		BeforeEach(func() {
+			serviceRef = core.ResourceRef{Name: "headless-svc", Namespace: "gloo-system"}
+			virtualServiceRef = core.ResourceRef{Name: "headless-vs", Namespace: "gloo-system"}
+
 			// create a headless service routed to testrunner
 			service := corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
@@ -246,12 +249,6 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
 			})
-		}
-
-		BeforeEach(func() {
-			serviceRef = core.ResourceRef{Name: "headless-svc", Namespace: "gloo-system"}
-			virtualServiceRef = core.ResourceRef{Name: "headless-vs", Namespace: "gloo-system"}
-			serviceSetup()
 		})
 
 		It("routes to headless services", func() {
