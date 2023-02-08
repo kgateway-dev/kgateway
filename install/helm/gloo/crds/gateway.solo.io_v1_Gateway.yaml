@@ -4245,6 +4245,11 @@ spec:
                           type: object
                         type: array
                     type: object
+                  connectionBalanceConfig:
+                    properties:
+                      exactBalance:
+                        type: object
+                    type: object
                   extensions:
                     properties:
                       configs:

@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7530
+    resolvesIssue: false
+    description: >-
+      Expose `config.listener.v3.Listener.ConnectionBalanceConfig` as `gloo.solo.io.ListenerOptions.connection_balance_config` to allow manual
+      balancing of connections between worker threads.
