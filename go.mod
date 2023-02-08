@@ -91,6 +91,7 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.6.3
 	k8s.io/api v0.22.4
 	k8s.io/apiextensions-apiserver v0.22.4

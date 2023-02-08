@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: gopkg.in
+  dependencyRepo: yaml.v3
+  dependencyTag: v3.0.1
+  description: Update gopkg.in to v3.0.1 to resolve https://avd.aquasec.com/nvd/2022/cve-2022-28948/
