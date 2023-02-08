@@ -56,24 +56,6 @@
 |settings.integrations.knative.proxy.affinity.NAME|interface|||
 |settings.integrations.knative.proxy.hostAliases[]|interface|||
 |settings.integrations.knative.proxy.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions.user|string|||
-|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions.role|string|||
-|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions.type|string|||
-|settings.integrations.knative.proxy.podSecurityContext.seLinuxOptions.level|string|||
-|settings.integrations.knative.proxy.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|settings.integrations.knative.proxy.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|settings.integrations.knative.proxy.podSecurityContext.windowsOptions.runAsUserName|string|||
-|settings.integrations.knative.proxy.podSecurityContext.windowsOptions.hostProcess|bool|||
-|settings.integrations.knative.proxy.podSecurityContext.runAsUser|int64|||
-|settings.integrations.knative.proxy.podSecurityContext.runAsGroup|int64|||
-|settings.integrations.knative.proxy.podSecurityContext.runAsNonRoot|bool|||
-|settings.integrations.knative.proxy.podSecurityContext.supplementalGroups[]|int64|||
-|settings.integrations.knative.proxy.podSecurityContext.fsGroup|int64|||
-|settings.integrations.knative.proxy.podSecurityContext.sysctls[].name|string|||
-|settings.integrations.knative.proxy.podSecurityContext.sysctls[].value|string|||
-|settings.integrations.knative.proxy.podSecurityContext.fsGroupChangePolicy|string|||
-|settings.integrations.knative.proxy.podSecurityContext.seccompProfile.type|string|||
-|settings.integrations.knative.proxy.podSecurityContext.seccompProfile.localhostProfile|string|||
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
@@ -213,24 +195,6 @@
 |gloo.deployment.affinity.NAME|interface|||
 |gloo.deployment.hostAliases[]|interface|||
 |gloo.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gloo.deployment.podSecurityContext.seLinuxOptions.user|string|||
-|gloo.deployment.podSecurityContext.seLinuxOptions.role|string|||
-|gloo.deployment.podSecurityContext.seLinuxOptions.type|string|||
-|gloo.deployment.podSecurityContext.seLinuxOptions.level|string|||
-|gloo.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gloo.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gloo.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
-|gloo.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
-|gloo.deployment.podSecurityContext.runAsUser|int64|||
-|gloo.deployment.podSecurityContext.runAsGroup|int64|||
-|gloo.deployment.podSecurityContext.runAsNonRoot|bool|||
-|gloo.deployment.podSecurityContext.supplementalGroups[]|int64|||
-|gloo.deployment.podSecurityContext.fsGroup|int64|||
-|gloo.deployment.podSecurityContext.sysctls[].name|string|||
-|gloo.deployment.podSecurityContext.sysctls[].value|string|||
-|gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
-|gloo.deployment.podSecurityContext.seccompProfile.type|string|||
-|gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.deployment.resources.limits.memory|string||amount of memory|
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
@@ -297,24 +261,6 @@
 |discovery.deployment.affinity.NAME|interface|||
 |discovery.deployment.hostAliases[]|interface|||
 |discovery.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|discovery.deployment.podSecurityContext.seLinuxOptions.user|string|||
-|discovery.deployment.podSecurityContext.seLinuxOptions.role|string|||
-|discovery.deployment.podSecurityContext.seLinuxOptions.type|string|||
-|discovery.deployment.podSecurityContext.seLinuxOptions.level|string|||
-|discovery.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|discovery.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|discovery.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
-|discovery.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
-|discovery.deployment.podSecurityContext.runAsUser|int64|||
-|discovery.deployment.podSecurityContext.runAsGroup|int64|||
-|discovery.deployment.podSecurityContext.runAsNonRoot|bool|||
-|discovery.deployment.podSecurityContext.supplementalGroups[]|int64|||
-|discovery.deployment.podSecurityContext.fsGroup|int64|||
-|discovery.deployment.podSecurityContext.sysctls[].name|string|||
-|discovery.deployment.podSecurityContext.sysctls[].value|string|||
-|discovery.deployment.podSecurityContext.fsGroupChangePolicy|string|||
-|discovery.deployment.podSecurityContext.seccompProfile.type|string|||
-|discovery.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |discovery.deployment.resources.limits.memory|string||amount of memory|
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
@@ -365,24 +311,6 @@
 |gateway.certGenJob.affinity.NAME|interface|||
 |gateway.certGenJob.hostAliases[]|interface|||
 |gateway.certGenJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.certGenJob.podSecurityContext.seLinuxOptions.user|string|||
-|gateway.certGenJob.podSecurityContext.seLinuxOptions.role|string|||
-|gateway.certGenJob.podSecurityContext.seLinuxOptions.type|string|||
-|gateway.certGenJob.podSecurityContext.seLinuxOptions.level|string|||
-|gateway.certGenJob.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gateway.certGenJob.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gateway.certGenJob.podSecurityContext.windowsOptions.runAsUserName|string|||
-|gateway.certGenJob.podSecurityContext.windowsOptions.hostProcess|bool|||
-|gateway.certGenJob.podSecurityContext.runAsUser|int64|||
-|gateway.certGenJob.podSecurityContext.runAsGroup|int64|||
-|gateway.certGenJob.podSecurityContext.runAsNonRoot|bool|||
-|gateway.certGenJob.podSecurityContext.supplementalGroups[]|int64|||
-|gateway.certGenJob.podSecurityContext.fsGroup|int64|||
-|gateway.certGenJob.podSecurityContext.sysctls[].name|string|||
-|gateway.certGenJob.podSecurityContext.sysctls[].value|string|||
-|gateway.certGenJob.podSecurityContext.fsGroupChangePolicy|string|||
-|gateway.certGenJob.podSecurityContext.seccompProfile.type|string|||
-|gateway.certGenJob.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.certGenJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.certGenJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.certGenJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -417,24 +345,6 @@
 |gateway.rolloutJob.affinity.NAME|interface|||
 |gateway.rolloutJob.hostAliases[]|interface|||
 |gateway.rolloutJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.rolloutJob.podSecurityContext.seLinuxOptions.user|string|||
-|gateway.rolloutJob.podSecurityContext.seLinuxOptions.role|string|||
-|gateway.rolloutJob.podSecurityContext.seLinuxOptions.type|string|||
-|gateway.rolloutJob.podSecurityContext.seLinuxOptions.level|string|||
-|gateway.rolloutJob.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gateway.rolloutJob.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gateway.rolloutJob.podSecurityContext.windowsOptions.runAsUserName|string|||
-|gateway.rolloutJob.podSecurityContext.windowsOptions.hostProcess|bool|||
-|gateway.rolloutJob.podSecurityContext.runAsUser|int64|||
-|gateway.rolloutJob.podSecurityContext.runAsGroup|int64|||
-|gateway.rolloutJob.podSecurityContext.runAsNonRoot|bool|||
-|gateway.rolloutJob.podSecurityContext.supplementalGroups[]|int64|||
-|gateway.rolloutJob.podSecurityContext.fsGroup|int64|||
-|gateway.rolloutJob.podSecurityContext.sysctls[].name|string|||
-|gateway.rolloutJob.podSecurityContext.sysctls[].value|string|||
-|gateway.rolloutJob.podSecurityContext.fsGroupChangePolicy|string|||
-|gateway.rolloutJob.podSecurityContext.seccompProfile.type|string|||
-|gateway.rolloutJob.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.rolloutJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.rolloutJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.rolloutJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -471,24 +381,6 @@
 |gateway.cleanupJob.affinity.NAME|interface|||
 |gateway.cleanupJob.hostAliases[]|interface|||
 |gateway.cleanupJob.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gateway.cleanupJob.podSecurityContext.seLinuxOptions.user|string|||
-|gateway.cleanupJob.podSecurityContext.seLinuxOptions.role|string|||
-|gateway.cleanupJob.podSecurityContext.seLinuxOptions.type|string|||
-|gateway.cleanupJob.podSecurityContext.seLinuxOptions.level|string|||
-|gateway.cleanupJob.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gateway.cleanupJob.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gateway.cleanupJob.podSecurityContext.windowsOptions.runAsUserName|string|||
-|gateway.cleanupJob.podSecurityContext.windowsOptions.hostProcess|bool|||
-|gateway.cleanupJob.podSecurityContext.runAsUser|int64|||
-|gateway.cleanupJob.podSecurityContext.runAsGroup|int64|||
-|gateway.cleanupJob.podSecurityContext.runAsNonRoot|bool|||
-|gateway.cleanupJob.podSecurityContext.supplementalGroups[]|int64|||
-|gateway.cleanupJob.podSecurityContext.fsGroup|int64|||
-|gateway.cleanupJob.podSecurityContext.sysctls[].name|string|||
-|gateway.cleanupJob.podSecurityContext.sysctls[].value|string|||
-|gateway.cleanupJob.podSecurityContext.fsGroupChangePolicy|string|||
-|gateway.cleanupJob.podSecurityContext.seccompProfile.type|string|||
-|gateway.cleanupJob.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gateway.cleanupJob.activeDeadlineSeconds|int||Deadline in seconds for Kubernetes jobs.|
 |gateway.cleanupJob.backoffLimit|int||Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6|
 |gateway.cleanupJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
@@ -555,37 +447,10 @@
 |gatewayProxies.NAME.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.NAME.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.NAME.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.runAsUser|int64|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.runAsGroup|int64|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.supplementalGroups[]|int64|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.fsGroup|int64|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.sysctls[].name|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.sysctls[].value|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.fsGroupChangePolicy|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.NAME.kind.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.NAME.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
-|gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
-|gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
-|gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gatewayProxies.NAME.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gatewayProxies.NAME.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gatewayProxies.NAME.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gatewayProxies.NAME.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gatewayProxies.NAME.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gatewayProxies.NAME.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
 |gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -671,25 +536,34 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.add[]|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.privileged|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsUser|int64|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsGroup|int64|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.procMount|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.NAME.podTemplate.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
+|gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
+|gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gatewayProxies.NAME.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gatewayProxies.NAME.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gatewayProxies.NAME.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gatewayProxies.NAME.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gatewayProxies.NAME.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gatewayProxies.NAME.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.privileged|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.runAsUser|int64|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.runAsGroup|int64|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.procMount|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -810,37 +684,10 @@
 |gatewayProxies.gatewayProxy.kind.deployment.affinity.NAME|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.hostAliases[]|interface|||
 |gatewayProxies.gatewayProxy.kind.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.runAsUser|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.runAsGroup|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.supplementalGroups[]|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.fsGroup|int64|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.sysctls[].name|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.sysctls[].value|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.fsGroupChangePolicy|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.gatewayProxy.kind.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
-|gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
-|gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gatewayProxies.gatewayProxy.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gatewayProxies.gatewayProxy.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gatewayProxies.gatewayProxy.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gatewayProxies.gatewayProxy.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
 |gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -926,25 +773,34 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.add[]|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.capabilities.drop[]|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.privileged|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.user|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.role|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.type|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seLinuxOptions.level|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsUser|int64|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsGroup|int64|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.runAsNonRoot|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.procMount|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile.type|string|||
-|gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
+|gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gatewayProxies.gatewayProxy.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gatewayProxies.gatewayProxy.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gatewayProxies.gatewayProxy.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gatewayProxies.gatewayProxy.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.privileged|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.runAsUser|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.runAsGroup|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.procMount|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -1085,24 +941,6 @@
 |ingress.deployment.affinity.NAME|interface|||
 |ingress.deployment.hostAliases[]|interface|||
 |ingress.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|ingress.deployment.podSecurityContext.seLinuxOptions.user|string|||
-|ingress.deployment.podSecurityContext.seLinuxOptions.role|string|||
-|ingress.deployment.podSecurityContext.seLinuxOptions.type|string|||
-|ingress.deployment.podSecurityContext.seLinuxOptions.level|string|||
-|ingress.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|ingress.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|ingress.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
-|ingress.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
-|ingress.deployment.podSecurityContext.runAsUser|int64|||
-|ingress.deployment.podSecurityContext.runAsGroup|int64|||
-|ingress.deployment.podSecurityContext.runAsNonRoot|bool|||
-|ingress.deployment.podSecurityContext.supplementalGroups[]|int64|||
-|ingress.deployment.podSecurityContext.fsGroup|int64|||
-|ingress.deployment.podSecurityContext.sysctls[].name|string|||
-|ingress.deployment.podSecurityContext.sysctls[].value|string|||
-|ingress.deployment.podSecurityContext.fsGroupChangePolicy|string|||
-|ingress.deployment.podSecurityContext.seccompProfile.type|string|||
-|ingress.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
@@ -1159,24 +997,6 @@
 |ingressProxy.deployment.affinity.NAME|interface|||
 |ingressProxy.deployment.hostAliases[]|interface|||
 |ingressProxy.deployment.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|ingressProxy.deployment.podSecurityContext.seLinuxOptions.user|string|||
-|ingressProxy.deployment.podSecurityContext.seLinuxOptions.role|string|||
-|ingressProxy.deployment.podSecurityContext.seLinuxOptions.type|string|||
-|ingressProxy.deployment.podSecurityContext.seLinuxOptions.level|string|||
-|ingressProxy.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|ingressProxy.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|ingressProxy.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
-|ingressProxy.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
-|ingressProxy.deployment.podSecurityContext.runAsUser|int64|||
-|ingressProxy.deployment.podSecurityContext.runAsGroup|int64|||
-|ingressProxy.deployment.podSecurityContext.runAsNonRoot|bool|||
-|ingressProxy.deployment.podSecurityContext.supplementalGroups[]|int64|||
-|ingressProxy.deployment.podSecurityContext.fsGroup|int64|||
-|ingressProxy.deployment.podSecurityContext.sysctls[].name|string|||
-|ingressProxy.deployment.podSecurityContext.sysctls[].value|string|||
-|ingressProxy.deployment.podSecurityContext.fsGroupChangePolicy|string|||
-|ingressProxy.deployment.podSecurityContext.seccompProfile.type|string|||
-|ingressProxy.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
@@ -1251,24 +1071,6 @@
 |accessLogger.affinity.NAME|interface|||
 |accessLogger.hostAliases[]|interface|||
 |accessLogger.initContainers[]|interface||[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment.|
-|accessLogger.podSecurityContext.seLinuxOptions.user|string|||
-|accessLogger.podSecurityContext.seLinuxOptions.role|string|||
-|accessLogger.podSecurityContext.seLinuxOptions.type|string|||
-|accessLogger.podSecurityContext.seLinuxOptions.level|string|||
-|accessLogger.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|accessLogger.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|accessLogger.podSecurityContext.windowsOptions.runAsUserName|string|||
-|accessLogger.podSecurityContext.windowsOptions.hostProcess|bool|||
-|accessLogger.podSecurityContext.runAsUser|int64|||
-|accessLogger.podSecurityContext.runAsGroup|int64|||
-|accessLogger.podSecurityContext.runAsNonRoot|bool|||
-|accessLogger.podSecurityContext.supplementalGroups[]|int64|||
-|accessLogger.podSecurityContext.fsGroup|int64|||
-|accessLogger.podSecurityContext.sysctls[].name|string|||
-|accessLogger.podSecurityContext.sysctls[].value|string|||
-|accessLogger.podSecurityContext.fsGroupChangePolicy|string|||
-|accessLogger.podSecurityContext.seccompProfile.type|string|||
-|accessLogger.podSecurityContext.seccompProfile.localhostProfile|string|||
 |accessLogger.resources.limits.memory|string||amount of memory|
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|
@@ -1360,6 +1162,25 @@
 |global.glooMtls.istioProxy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.istioProxy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.istioProxy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.istioProxy.securityContext.capabilities.add[]|string|||
+|global.glooMtls.istioProxy.securityContext.capabilities.drop[]|string|||
+|global.glooMtls.istioProxy.securityContext.privileged|bool|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.user|string|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.role|string|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.type|string|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.level|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.gmsaCredentialSpec|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.runAsUserName|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.hostProcess|bool|||
+|global.glooMtls.istioProxy.securityContext.runAsUser|int64|||
+|global.glooMtls.istioProxy.securityContext.runAsGroup|int64|||
+|global.glooMtls.istioProxy.securityContext.runAsNonRoot|bool|||
+|global.glooMtls.istioProxy.securityContext.readOnlyRootFilesystem|bool|||
+|global.glooMtls.istioProxy.securityContext.allowPrivilegeEscalation|bool|||
+|global.glooMtls.istioProxy.securityContext.procMount|string|||
+|global.glooMtls.istioProxy.securityContext.seccompProfile.type|string|||
+|global.glooMtls.istioProxy.securityContext.seccompProfile.localhostProfile|string|||
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|
