@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v32/github"
 	errors "github.com/rotisserie/eris"
@@ -98,7 +99,7 @@ func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion in
 	for i := 0; i < 5; i++ {
 		// Get the next page of
 		listOpts := github.ListOptions{Page: i, PerPage: 10} // max per request
-		releases, _, err := client.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
+		releases, _, err := client.Repositories.ListReleases(ctx, "solo-io", "solo-projects", &listOpts)
 		if err != nil {
 			return nil, errors.Wrapf(err, "error listing releases")
 		}
@@ -106,9 +107,13 @@ func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion in
 		for _, release := range releases {
 			v, err := versionutils.ParseVersion(*release.Name)
 			if err != nil {
+				return nil, errors.Wrapf(err, "error parsing version from release")
+			}
+			if release.GetPrerelease() || // we don't want a prerelease version
+				strings.Contains(release.GetBody(), "This release build failed") || // we don't want a failed build
+				!release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-30)*time.Minute)) { // releases take time to propagate - image might not be available for 30 minutes
 				continue
 			}
-
 			// either a major-minor was specified something of the form v%d.%d
 			// or are searching for latest stable and have found the most recent
 			// experimental and are now searching for a conforming release
