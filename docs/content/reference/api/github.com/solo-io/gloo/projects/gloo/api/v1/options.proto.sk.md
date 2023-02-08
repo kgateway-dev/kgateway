@@ -76,7 +76,7 @@ Configuration for listener connection balancing.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `exactBalance` | [.gloo.solo.io.ConnectionBalanceConfig.ExactBalance](../options.proto.sk/#exactbalance) | If specified, the listener will use the exact connection balancer. |
+| `exactBalance` | [.gloo.solo.io.ConnectionBalanceConfig.ExactBalance](../options.proto.sk/#exactbalance) |  |
 
 
 

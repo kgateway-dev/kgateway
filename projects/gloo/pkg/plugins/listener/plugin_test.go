@@ -84,9 +84,7 @@ var _ = Describe("Plugin", func() {
 			in := &v1.Listener{
 				Options: &v1.ListenerOptions{
 					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
-						BalanceType: &v1.ConnectionBalanceConfig_ExactBalance_{
-							ExactBalance: &v1.ConnectionBalanceConfig_ExactBalance{},
-						},
+						ExactBalance: &v1.ConnectionBalanceConfig_ExactBalance{},
 					},
 				},
 			}

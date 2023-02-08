@@ -167,20 +167,10 @@ func (m *ConnectionBalanceConfig) Clone() proto.Message {
 	}
 	target = &ConnectionBalanceConfig{}
 
-	switch m.BalanceType.(type) {
-
-	case *ConnectionBalanceConfig_ExactBalance_:
-
-		if h, ok := interface{}(m.GetExactBalance()).(clone.Cloner); ok {
-			target.BalanceType = &ConnectionBalanceConfig_ExactBalance_{
-				ExactBalance: h.Clone().(*ConnectionBalanceConfig_ExactBalance),
-			}
-		} else {
-			target.BalanceType = &ConnectionBalanceConfig_ExactBalance_{
-				ExactBalance: proto.Clone(m.GetExactBalance()).(*ConnectionBalanceConfig_ExactBalance),
-			}
-		}
-
+	if h, ok := interface{}(m.GetExactBalance()).(clone.Cloner); ok {
+		target.ExactBalance = h.Clone().(*ConnectionBalanceConfig_ExactBalance)
+	} else {
+		target.ExactBalance = proto.Clone(m.GetExactBalance()).(*ConnectionBalanceConfig_ExactBalance)
 	}
 
 	return target

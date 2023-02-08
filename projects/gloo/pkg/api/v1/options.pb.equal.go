@@ -137,26 +137,12 @@ func (m *ConnectionBalanceConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	switch m.BalanceType.(type) {
-
-	case *ConnectionBalanceConfig_ExactBalance_:
-		if _, ok := target.BalanceType.(*ConnectionBalanceConfig_ExactBalance_); !ok {
+	if h, ok := interface{}(m.GetExactBalance()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExactBalance()) {
 			return false
 		}
-
-		if h, ok := interface{}(m.GetExactBalance()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetExactBalance()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetExactBalance(), target.GetExactBalance()) {
-				return false
-			}
-		}
-
-	default:
-		// m is nil but target is not nil
-		if m.BalanceType != target.BalanceType {
+	} else {
+		if !proto.Equal(m.GetExactBalance(), target.GetExactBalance()) {
 			return false
 		}
 	}
