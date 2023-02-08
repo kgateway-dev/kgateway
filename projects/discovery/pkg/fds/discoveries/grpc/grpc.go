@@ -2,9 +2,7 @@ package grpc
 
 import (
 	"context"
-	"encoding/base64"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -21,11 +19,10 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	grpc_json_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 )
 
-func getGrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
+func getGrpcspec(u *v1.Upstream) *grpc_json_plugins.GrpcJsonTranscoder {
 	upstreamType, ok := u.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
@@ -35,11 +32,11 @@ func getGrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
 		return nil
 	}
 
-	grpcWrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc)
+	grpcWrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_GrpcJsonTranscoder)
 	if !ok {
 		return nil
 	}
-	return grpcWrapper.Grpc
+	return grpcWrapper.GrpcJsonTranscoder
 }
 
 func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
@@ -94,8 +91,8 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 	}
 
 	svcInfo := &plugins.ServiceSpec{
-		PluginType: &plugins.ServiceSpec_Grpc{
-			Grpc: &grpc_plugins.ServiceSpec{},
+		PluginType: &plugins.ServiceSpec_GrpcJsonTranscoder{
+			GrpcJsonTranscoder: &grpc_json_plugins.GrpcJsonTranscoder{},
 		},
 	}
 	return svcInfo, nil
@@ -144,8 +141,6 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 
 	descriptors := &descriptor.FileDescriptorSet{}
 
-	var grpcServices []*grpc_plugins.ServiceSpec_GrpcService
-
 	for _, s := range services {
 		// ignore the reflection descriptor
 		if s == "grpc.reflection.v1alpha.ServerReflection" {
@@ -160,32 +155,12 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 
 		descriptors.File = append(descriptors.GetFile(), files...)
 
-		parts := strings.Split(s, ".")
-		serviceName := parts[len(parts)-1]
-		servicePackage := strings.Join(parts[:len(parts)-1], ".")
-		grpcService := &grpc_plugins.ServiceSpec_GrpcService{
-			PackageName: servicePackage,
-			ServiceName: serviceName,
-		}
-		// find the service in the file and get its functions
-		for _, svc := range root.GetServices() {
-			if svc.GetName() == serviceName {
-				methods := svc.GetMethods()
-				for _, method := range methods {
-					methodName := method.GetName()
-					grpcService.FunctionNames = append(grpcService.GetFunctionNames(), methodName)
-				}
-			}
-		}
-		grpcServices = append(grpcServices, grpcService)
 	}
 
 	rawDescriptors, err := proto.Marshal(descriptors)
 	if err != nil {
 		return errors.Wrap(err, "marshalling proto descriptors")
 	}
-
-	doubleEncodedDescriptors := []byte(base64.StdEncoding.EncodeToString(rawDescriptors))
 
 	return updatecb(func(out *v1.Upstream) error {
 		svcSpec := getGrpcspec(out)
@@ -194,11 +169,8 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		}
 		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
 		//  but that doesn't work with gogoproto.equal_all.
-		svcSpec.GrpcServices = grpcServices
-		svcSpec.Descriptors = doubleEncodedDescriptors
-		svcSpec.ManualGrpcConfig = &grpc_json_plugins.GrpcJsonTranscoder{
-			DescriptorSet: &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors},
-		}
+		svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
+		svcSpec.Services = services
 		return nil
 	})
 }

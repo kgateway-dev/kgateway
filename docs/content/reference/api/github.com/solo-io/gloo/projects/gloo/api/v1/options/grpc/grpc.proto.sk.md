@@ -36,15 +36,13 @@ spec is fine), to make sure that traffic to it is routed with http2.
 ```yaml
 "descriptors": bytes
 "grpcServices": []grpc.options.gloo.solo.io.ServiceSpec.GrpcService
-"manualGrpcConfig": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet Deprecated: prefer putting descriptors in manualGrpcConfig. |
-| `grpcServices` | [[]grpc.options.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. These services must be present in the descriptors. Deprecated: All services are found in descriptors in manualGrpcConfig. |
-| `manualGrpcConfig` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder](../../grpc_json/grpc_json.proto.sk/#grpcjsontranscoder) |  |
+| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. These will be discovered if FDS is enabled and may be modified by Gloo. |
+| `grpcServices` | [[]grpc.options.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. These services must be present in the descriptors. |
 
 
 

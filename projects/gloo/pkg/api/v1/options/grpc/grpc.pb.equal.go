@@ -67,16 +67,6 @@ func (m *ServiceSpec) Equal(that interface{}) bool {
 
 	}
 
-	if h, ok := interface{}(m.GetManualGrpcConfig()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetManualGrpcConfig()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetManualGrpcConfig(), target.GetManualGrpcConfig()) {
-			return false
-		}
-	}
-
 	return true
 }
 

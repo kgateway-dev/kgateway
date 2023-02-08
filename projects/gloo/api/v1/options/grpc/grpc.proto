@@ -18,9 +18,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json
 message ServiceSpec {
 
   // Descriptors that contain information of the services listed below.
-  // this is a serialized google.protobuf.FileDescriptorSet
-  // Deprecated: prefer putting descriptors in manualGrpcConfig
-  bytes descriptors = 1 [deprecated = true];
+  // this is a serialized google.protobuf.FileDescriptorSet. These will be discovered if FDS is enabled and may be modified by Gloo.
+  bytes descriptors = 1;
 
   // Describes a grpc service
   message GrpcService {
@@ -33,10 +32,8 @@ message ServiceSpec {
   }
 
   // List of services used by this upstream. These services must be present in the descriptors.
-  // Deprecated: All services are found in descriptors in manualGrpcConfig.
   repeated GrpcService grpc_services = 2 [deprecated = true];
 
-  grpc_json.options.gloo.solo.io.GrpcJsonTranscoder manual_grpc_config = 3;
 }
 
 // This is only for upstream with Grpc service spec.
