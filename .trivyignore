@@ -1,3 +1,0 @@
-# https://nvd.nist.gov/vuln/detail/CVE-2022-41721
-# Ignore this vulnerability; it does not affect the gateway-proxy image.
-CVE-2022-41721
