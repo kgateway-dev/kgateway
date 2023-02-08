@@ -1,6 +1,8 @@
 package listener
 
 import (
+	"errors"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -40,13 +42,14 @@ func (p *plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_c
 		out.SocketOptions = translateSocketOptions(in.GetOptions().GetSocketOptions())
 	}
 	if connectionBalanceConfig := in.GetOptions().GetConnectionBalanceConfig(); connectionBalanceConfig != nil {
-
 		if connectionBalanceConfig.GetExactBalance() != nil {
 			out.ConnectionBalanceConfig = &envoy_config_listener_v3.Listener_ConnectionBalanceConfig{
 				BalanceType: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance_{
 					ExactBalance: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance{},
 				},
 			}
+		} else {
+			return errors.New("connection balancer does not specify balancer type")
 		}
 	}
 

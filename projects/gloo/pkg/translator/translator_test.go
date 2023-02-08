@@ -450,9 +450,7 @@ var _ = Describe("Translator", func() {
 		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{
 			PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 4096},
 			ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
-				BalanceType: &v1.ConnectionBalanceConfig_ExactBalance_{
-					ExactBalance: &v1.ConnectionBalanceConfig_ExactBalance{},
-				},
+				ExactBalance: &v1.ConnectionBalanceConfig_ExactBalance{},
 			},
 		}
 
