@@ -474,7 +474,7 @@ func RouteTableClient(ctx context.Context, namespaces []string) (gatewayv1.Route
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	routeTableClient, err := gatewayv1.NewRouteTableClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                gatewayv1.RouteTableCrd,
 		Cfg:                cfg,
@@ -661,7 +661,7 @@ func AuthConfigClient(ctx context.Context, namespaces []string) (extauth.AuthCon
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	cache := kube.NewKubeCache(context.TODO())
+	cache := kube.NewKubeCache(ctx)
 	authConfigClient, err := extauth.NewAuthConfigClient(ctx, &factory.KubeResourceClientFactory{
 		Crd:                extauth.AuthConfigCrd,
 		Cfg:                cfg,

@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  descrption: Harden the cli code to not leak on kube caches. Useful when using the code not as a standalone call.
+  issueLink: https://github.com/solo-io/solo-projects/issues/4312
+  resolvesIssue: false
