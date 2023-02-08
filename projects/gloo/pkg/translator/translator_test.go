@@ -466,6 +466,11 @@ var _ = Describe("Translator", func() {
 		Expect(listenerConfiguration).NotTo(BeNil())
 		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(MatchProto(&wrappers.UInt32Value{Value: 4096}))
 		Expect(listenerConfiguration.GetConnectionBalanceConfig().GetExactBalance()).To(Not(BeNil()))
+		Expect(listenerConfiguration.GetConnectionBalanceConfig()).To(MatchProto(&envoy_config_listener_v3.Listener_ConnectionBalanceConfig{
+			BalanceType: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance_{
+				ExactBalance: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance{},
+			},
+		}))
 	})
 
 	Context("Auth configs", func() {
