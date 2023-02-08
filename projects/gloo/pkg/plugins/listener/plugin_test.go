@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/listener"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -63,5 +64,35 @@ var _ = Describe("Plugin", func() {
 				State:       envoy_config_core_v3.SocketOption_STATE_LISTENING,
 			},
 		}))
+	})
+
+	Context("should set connection balance config", func() {
+		It("should fail if no balancer set", func() {
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("connection balancer does not specify balancer type"))
+		})
+
+		It("should set Exact balance", func() {
+			in := &v1.Listener{
+				Options: &v1.ListenerOptions{
+					ConnectionBalanceConfig: &v1.ConnectionBalanceConfig{
+						ExactBalance: &v1.ConnectionBalanceConfig_ExactBalance{},
+					},
+				},
+			}
+			err := plugin.ProcessListener(plugins.Params{}, in, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.ConnectionBalanceConfig).To(matchers.MatchProto(&envoy_config_listener_v3.Listener_ConnectionBalanceConfig{
+				BalanceType: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance_{
+					ExactBalance: &envoy_config_listener_v3.Listener_ConnectionBalanceConfig_ExactBalance{},
+				},
+			}))
+		})
 	})
 })
