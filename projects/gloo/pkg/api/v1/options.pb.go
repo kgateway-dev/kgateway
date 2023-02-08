@@ -88,8 +88,9 @@ type ListenerOptions struct {
 	// precompiled binaries.
 	SocketOptions []*core.SocketOption `protobuf:"bytes,4,rep,name=socket_options,json=socketOptions,proto3" json:"socket_options,omitempty"`
 	// Enable ProxyProtocol support for this listener.
-	ProxyProtocol           *proxy_protocol.ProxyProtocol `protobuf:"bytes,5,opt,name=proxy_protocol,json=proxyProtocol,proto3" json:"proxy_protocol,omitempty"`
-	ConnectionBalanceConfig *ConnectionBalanceConfig      `protobuf:"bytes,6,opt,name=connection_balance_config,json=connectionBalanceConfig,proto3" json:"connection_balance_config,omitempty"`
+	ProxyProtocol *proxy_protocol.ProxyProtocol `protobuf:"bytes,5,opt,name=proxy_protocol,json=proxyProtocol,proto3" json:"proxy_protocol,omitempty"`
+	// Configuration for listener connection balancing.
+	ConnectionBalanceConfig *ConnectionBalanceConfig `protobuf:"bytes,6,opt,name=connection_balance_config,json=connectionBalanceConfig,proto3" json:"connection_balance_config,omitempty"`
 }
 
 func (x *ListenerOptions) Reset() {

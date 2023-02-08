@@ -58,7 +58,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto). |
 | `socketOptions` | [[]solo.io.envoy.api.v2.core.SocketOption](../../../../../../solo-kit/api/external/envoy/api/v2/core/socket_option.proto.sk/#socketoption) | Additional socket options that may not be present in Envoy source code or precompiled binaries. |
 | `proxyProtocol` | [.proxy_protocol.options.gloo.solo.io.ProxyProtocol](../options/proxy_protocol/proxy_protocol.proto.sk/#proxyprotocol) | Enable ProxyProtocol support for this listener. |
-| `connectionBalanceConfig` | [.gloo.solo.io.ConnectionBalanceConfig](../options.proto.sk/#connectionbalanceconfig) |  |
+| `connectionBalanceConfig` | [.gloo.solo.io.ConnectionBalanceConfig](../options.proto.sk/#connectionbalanceconfig) | Configuration for listener connection balancing. |
 
 
 

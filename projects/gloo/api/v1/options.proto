@@ -83,6 +83,7 @@ message ListenerOptions {
     // Enable ProxyProtocol support for this listener.
     proxy_protocol.options.gloo.solo.io.ProxyProtocol proxy_protocol = 5;
 
+    // Configuration for listener connection balancing.
     ConnectionBalanceConfig connection_balance_config = 6;
 }
 
