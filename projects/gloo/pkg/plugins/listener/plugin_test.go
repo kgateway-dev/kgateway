@@ -6,7 +6,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/listener"
@@ -76,7 +75,7 @@ var _ = Describe("Plugin", func() {
 			}
 			err := plugin.ProcessListener(plugins.Params{}, in, out)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(errors.New("connection balancer does not specify balancer type")))
+			Expect(err.Error()).To(Equal("connection balancer does not specify balancer type"))
 		})
 
 		It("should set Exact balance", func() {
