@@ -150,6 +150,29 @@ func (m *ListenerOptions) Clone() proto.Message {
 		target.ProxyProtocol = proto.Clone(m.GetProxyProtocol()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol.ProxyProtocol)
 	}
 
+	if h, ok := interface{}(m.GetConnectionBalanceConfig()).(clone.Cloner); ok {
+		target.ConnectionBalanceConfig = h.Clone().(*ConnectionBalanceConfig)
+	} else {
+		target.ConnectionBalanceConfig = proto.Clone(m.GetConnectionBalanceConfig()).(*ConnectionBalanceConfig)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ConnectionBalanceConfig) Clone() proto.Message {
+	var target *ConnectionBalanceConfig
+	if m == nil {
+		return target
+	}
+	target = &ConnectionBalanceConfig{}
+
+	if h, ok := interface{}(m.GetExactBalance()).(clone.Cloner); ok {
+		target.ExactBalance = h.Clone().(*ConnectionBalanceConfig_ExactBalance)
+	} else {
+		target.ExactBalance = proto.Clone(m.GetExactBalance()).(*ConnectionBalanceConfig_ExactBalance)
+	}
+
 	return target
 }
 
@@ -958,6 +981,17 @@ func (m *WeightedDestinationOptions) Clone() proto.Message {
 	} else {
 		target.StagedTransformations = proto.Clone(m.GetStagedTransformations()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.TransformationStages)
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ConnectionBalanceConfig_ExactBalance) Clone() proto.Message {
+	var target *ConnectionBalanceConfig_ExactBalance
+	if m == nil {
+		return target
+	}
+	target = &ConnectionBalanceConfig_ExactBalance{}
 
 	return target
 }

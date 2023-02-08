@@ -662,6 +662,9 @@ apis:
   gloo.solo.io.ClientVersion:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#ClientVersion
     package: gloo.solo.io
+  gloo.solo.io.ConnectionBalanceConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#ConnectionBalanceConfig
+    package: gloo.solo.io
   gloo.solo.io.ConnectionConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/#ConnectionConfig
     package: gloo.solo.io
