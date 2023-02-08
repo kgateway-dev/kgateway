@@ -2,3 +2,5 @@ changelog:
 - type: FIX
   issueLink: https://github.com/solo-io/solo-projects/issues/4434
   resolvesIssue: false
+  description: >-
+    Do not add transformations to lambda response when we are unwrapping since those filters handle the response in its entirety
