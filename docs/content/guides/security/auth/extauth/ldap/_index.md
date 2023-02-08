@@ -344,10 +344,10 @@ EOF
             - "cn=managers,ou=groups,dc=solo,dc=io"
             searchFilter: "(objectClass=*)"
             groupLookupSettings:
-                checkGroupsWithServiceAccount: true
-                credentialsSecretRef:
-                    name: ldapcredentials
-                    namespace: gloo-system
+              checkGroupsWithServiceAccount: true
+              credentialsSecretRef:
+                name: ldapcredentials
+                namespace: gloo-system
       EOF
       ```
    
