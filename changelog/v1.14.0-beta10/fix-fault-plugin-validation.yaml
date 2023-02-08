@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/
+  resolvesIssue: false
+  description: >-
+    Add extra gaurd-rails to fault filter for cases with non-nil invalid configuration.
+    This moves the potential failures in the configuration of faultinjectino into the control plane where we report on it rather than risking allowing it through to envoy.
