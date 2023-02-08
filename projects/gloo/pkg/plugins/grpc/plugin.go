@@ -28,6 +28,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
+	"google.golang.org/genproto/googleapis/api/annotations"
 )
 
 var (
@@ -96,6 +97,16 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if err != nil {
 		return errors.Wrapf(err, "parsing grpc spec as a proto descriptor set")
 	}
+
+	for _, svc := range grpcSpec.GetGrpcServices() {
+
+		// find the relevant service
+		err := addHttpRulesToProto(in, svc, descriptors)
+		if err != nil {
+			return errors.Wrapf(err, "failed to generate http rules for service %s in proto descriptors", svc.GetServiceName())
+		}
+	}
+
 	addWellKnownProtos(descriptors)
 
 	p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = in
@@ -207,6 +218,37 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}, nil
 		},
 	)
+}
+
+// returns package name
+func addHttpRulesToProto(upstream *v1.Upstream, currentsvc *grpcapi.ServiceSpec_GrpcService, set *descriptor.FileDescriptorSet) error {
+	for _, file := range set.GetFile() {
+		if file.Package == nil || file.GetPackage() != currentsvc.GetPackageName() {
+			continue
+		}
+		for _, svc := range file.GetService() {
+			if svc.Name == nil || svc.GetName() != currentsvc.GetServiceName() {
+				continue
+			}
+			for _, method := range svc.GetMethod() {
+				fullServiceName := genFullServiceName(currentsvc.GetPackageName(), currentsvc.GetServiceName())
+				if method.GetOptions() == nil {
+					method.Options = &descriptor.MethodOptions{}
+				}
+				if err := proto.SetExtension(method.GetOptions(), annotations.E_Http, &annotations.HttpRule{
+					Pattern: &annotations.HttpRule_Post{
+						Post: httpPath(upstream, fullServiceName, method.GetName()),
+					},
+					Body: "*",
+				}); err != nil {
+					return errors.Wrap(err, "setting http extensions for method.Options")
+				}
+				log.Debugf("method.options: %v", *method.GetOptions())
+			}
+		}
+	}
+
+	return nil
 }
 
 func addWellKnownProtos(descriptors *descriptor.FileDescriptorSet) {
