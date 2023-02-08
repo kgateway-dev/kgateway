@@ -14,7 +14,6 @@ weight: 5
 - [ListenerOptions](#listeneroptions)
 - [ConnectionBalanceConfig](#connectionbalanceconfig)
 - [ExactBalance](#exactbalance)
-- [TypedExtensionConfig](#typedextensionconfig)
 - [RouteConfigurationOptions](#routeconfigurationoptions)
 - [HttpListenerOptions](#httplisteneroptions)
 - [TcpListenerOptions](#tcplisteneroptions)
@@ -72,14 +71,12 @@ Configuration for listener connection balancing.
 
 ```yaml
 "exactBalance": .gloo.solo.io.ConnectionBalanceConfig.ExactBalance
-"extendBalance": .gloo.solo.io.TypedExtensionConfig
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `exactBalance` | [.gloo.solo.io.ConnectionBalanceConfig.ExactBalance](../options.proto.sk/#exactbalance) | If specified, the listener will use the exact connection balancer. Only one of `exactBalance` or `extendBalance` can be set. |
-| `extendBalance` | [.gloo.solo.io.TypedExtensionConfig](../options.proto.sk/#typedextensionconfig) | The listener will use the connection balancer according to ``type_url``. If ``type_url`` is invalid, Envoy will not attempt to balance active connections between worker threads. [#extension-category: envoy.network.connection_balance]. Only one of `extendBalance` or `exactBalance` can be set. |
+| `exactBalance` | [.gloo.solo.io.ConnectionBalanceConfig.ExactBalance](../options.proto.sk/#exactbalance) | If specified, the listener will use the exact connection balancer. |
 
 
 
@@ -101,25 +98,6 @@ connections that rarely cycle (e.g., service mesh gRPC egress).
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-
-
-
-
----
-### TypedExtensionConfig
-
-
-
-```yaml
-"name": string
-"typedConfig": .google.protobuf.Any
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `name` | `string` | The name of an extension. This is not used to select the extension, instead it serves the role of an opaque identifier. |
-| `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | The typed config for the extension. The type URL will be used to identify the extension. In the case that the type URL is ``xds.type.v3.TypedStruct`` (or, for historical reasons, ``udpa.type.v1.TypedStruct``), the inner type URL of ``TypedStruct`` will be utilized. See the :ref:`extension configuration overview <config_overview_extension_configuration>` for further details. |
 
 
 

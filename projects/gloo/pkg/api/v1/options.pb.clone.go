@@ -13,8 +13,6 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_any "github.com/golang/protobuf/ptypes/any"
-
 	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
 
 	github_com_golang_protobuf_ptypes_struct "github.com/golang/protobuf/ptypes/struct"
@@ -183,37 +181,6 @@ func (m *ConnectionBalanceConfig) Clone() proto.Message {
 			}
 		}
 
-	case *ConnectionBalanceConfig_ExtendBalance:
-
-		if h, ok := interface{}(m.GetExtendBalance()).(clone.Cloner); ok {
-			target.BalanceType = &ConnectionBalanceConfig_ExtendBalance{
-				ExtendBalance: h.Clone().(*TypedExtensionConfig),
-			}
-		} else {
-			target.BalanceType = &ConnectionBalanceConfig_ExtendBalance{
-				ExtendBalance: proto.Clone(m.GetExtendBalance()).(*TypedExtensionConfig),
-			}
-		}
-
-	}
-
-	return target
-}
-
-// Clone function
-func (m *TypedExtensionConfig) Clone() proto.Message {
-	var target *TypedExtensionConfig
-	if m == nil {
-		return target
-	}
-	target = &TypedExtensionConfig{}
-
-	target.Name = m.GetName()
-
-	if h, ok := interface{}(m.GetTypedConfig()).(clone.Cloner); ok {
-		target.TypedConfig = h.Clone().(*github_com_golang_protobuf_ptypes_any.Any)
-	} else {
-		target.TypedConfig = proto.Clone(m.GetTypedConfig()).(*github_com_golang_protobuf_ptypes_any.Any)
 	}
 
 	return target

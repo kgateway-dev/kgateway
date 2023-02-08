@@ -154,62 +154,9 @@ func (m *ConnectionBalanceConfig) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ConnectionBalanceConfig_ExtendBalance:
-		if _, ok := target.BalanceType.(*ConnectionBalanceConfig_ExtendBalance); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetExtendBalance()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetExtendBalance()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetExtendBalance(), target.GetExtendBalance()) {
-				return false
-			}
-		}
-
 	default:
 		// m is nil but target is not nil
 		if m.BalanceType != target.BalanceType {
-			return false
-		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *TypedExtensionConfig) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*TypedExtensionConfig)
-	if !ok {
-		that2, ok := that.(TypedExtensionConfig)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetName(), target.GetName()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetTypedConfig()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetTypedConfig()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetTypedConfig(), target.GetTypedConfig()) {
 			return false
 		}
 	}

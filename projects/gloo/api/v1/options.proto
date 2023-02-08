@@ -101,26 +101,7 @@ message ConnectionBalanceConfig {
     oneof balance_type {
         // If specified, the listener will use the exact connection balancer.
         ExactBalance exact_balance = 1;
-
-        // The listener will use the connection balancer according to ``type_url``. If ``type_url`` is invalid,
-        // Envoy will not attempt to balance active connections between worker threads.
-        // [#extension-category: envoy.network.connection_balance]
-        TypedExtensionConfig extend_balance = 2;
     }
-}
-
-message TypedExtensionConfig {
-    // The name of an extension. This is not used to select the extension, instead
-    // it serves the role of an opaque identifier.
-    string name = 1;
-
-    // The typed config for the extension. The type URL will be used to identify
-    // the extension. In the case that the type URL is ``xds.type.v3.TypedStruct``
-    // (or, for historical reasons, ``udpa.type.v1.TypedStruct``), the inner type
-    // URL of ``TypedStruct`` will be utilized. See the
-    // :ref:`extension configuration overview
-    // <config_overview_extension_configuration>` for further details.
-    google.protobuf.Any typed_config = 2;
 }
 
 message RouteConfigurationOptions {
