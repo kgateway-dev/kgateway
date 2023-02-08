@@ -3,7 +3,6 @@ package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "google/protobuf/struct.proto";
-import "google/protobuf/any.proto";
 
 import "extproto/ext.proto";
 option (extproto.equal_all) = true;
