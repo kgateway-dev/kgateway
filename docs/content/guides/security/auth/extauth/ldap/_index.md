@@ -267,7 +267,7 @@ name="enterprise.gloo.solo.io.Ldap"
 - `allowedGroups`: The DNs of the user groups that are allowed to access the secured upstream.
 - `searchFilter`: The filter to use when searching for the user entry that you want to authorize.
 - `disableGroupChecking`: If set to true, disables validation for the membership attribute of the user entry. 
-- `groupLookupSettings`: Configure a separate service account to look up group memberships from the LDAP server. 
+- `groupLookupSettings`: Configures a separate service account to look up group memberships from the LDAP server. 
 
 To better understand how this configuration is used, let's go over the steps that Gloo Edge performs when it detects a 
 request that needs to be authenticated with LDAP:
