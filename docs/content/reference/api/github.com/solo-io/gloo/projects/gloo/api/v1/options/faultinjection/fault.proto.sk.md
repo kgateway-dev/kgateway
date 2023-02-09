@@ -38,7 +38,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `percentage` | `float` | Percentage of requests that should be aborted, defaulting to 0. This should be a value between 0.0 and 100.0, with up to 6 significant digits. |
-| `httpStatus` | `int` | This should be a standard HTTP status, i.e. 503. Defaults to 0. |
+| `httpStatus` | `int` | This should be a standard HTTP status in the range [200, 600), e.g. 503. Defaults to 0. |
 
 
 
@@ -57,7 +57,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `percentage` | `float` | Percentage of requests that should be delayed, defaulting to 0. This should be a value between 0.0 and 100.0, with up to 6 significant digits. |
-| `fixedDelay` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Fixed delay, defaulting to 0. |
+| `fixedDelay` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Fixed delay, defaulting to 0. Will be rejected by the control plane if the delay is specified and less than 1 second. |
 
 
 
