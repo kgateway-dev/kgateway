@@ -7,3 +7,5 @@ changelog:
     description: |
       Fix a bug where the validation webhook would still start even if the `VALIDATION_MUST_START` environment variable was `false`.
       Now it only starts if it's set to `true`, or if it is unset, so it acts as it previously has.
+    issueLink: https://github.com/solo-io/gloo/issues/7826
+    resolvesIssue: false
