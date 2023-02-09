@@ -262,7 +262,7 @@ name="enterprise.gloo.solo.io.Ldap"
 - `address`: The address of the LDAP server that Gloo Edge will query when a request matches the Virtual Service.
 - `userDnTemplate`: A template string that Gloo Edge uses to build the DNs of the user entry or service account that 
    needs to be authenticated and authorized. It must contain a single occurrence of the “%s” placeholder.
-- `membershipAttributeName`: The case-insensitive name of the attribute that contains the names of the groups an entry is 
+- `membershipAttributeName`: The case-insensitive name of the attribute that contains the names of the groups an entry is a
    member of. Defaults to `memberOf` if not provided.
 - `allowedGroups`: The DNs of the user groups that are allowed to access the secured upstream.
 - `searchFilter`: The filter to use when searching for the user entry that you want to authorize.
