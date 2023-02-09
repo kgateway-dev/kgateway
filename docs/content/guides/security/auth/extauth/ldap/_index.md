@@ -7,7 +7,7 @@ description: Authenticate and authorize requests using LDAP.
 {{% notice note %}}
 The LDAP feature was introduced with **Gloo Edge Enterprise**, release 0.18.27. If you are using an earlier 
 version, this tutorial will not work.
-{{% /notice %}} 
+{{% /notice %}}
 
 The _Lightweight Directory Access Protocol_, commonly referred to as LDAP, is an open protocol used to store and retrieve 
 hierarchically structured data over a network. It has been widely adopted by enterprises to centrally store and secure 
