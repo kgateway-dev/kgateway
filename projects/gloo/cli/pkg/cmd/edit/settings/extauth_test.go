@@ -3,6 +3,8 @@ package settings_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -37,13 +39,6 @@ var _ = Describe("Extauth", func() {
 
 	AfterEach(func() { cancel() })
 
-	extAuthExtension := func() *extauthpb.Settings {
-		var err error
-		settings, err = settingsClient.Read(settings.Metadata.Namespace, settings.Metadata.Name, clients.ReadOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		return settings.Extauth
-	}
-
 	DescribeTable("should edit extauth config",
 		func(cmd string, expected *extauthpb.Settings) {
 
@@ -52,7 +47,7 @@ var _ = Describe("Extauth", func() {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
 
-			extension := extAuthExtension()
+			extension := readExtAuthSettings(settingsClient)
 			Expect(extension).To(matchers.MatchProto(expected))
 
 			// check that the rest of the settings were not changed.
@@ -120,7 +115,7 @@ var _ = Describe("Extauth", func() {
 			}, func() {
 				err := testutils.Glooctl("edit settings externalauth -i")
 				Expect(err).NotTo(HaveOccurred())
-				extension := extAuthExtension()
+				extension := readExtAuthSettings(helpers.MustSettingsClient(ctx))
 				Expect(extension).To(matchers.MatchProto(&extauthpb.Settings{
 					ExtauthzServerRef: &core.ResourceRef{
 						Name:      "extauth",
@@ -132,3 +127,9 @@ var _ = Describe("Extauth", func() {
 
 	})
 })
+
+func readExtAuthSettings(settingsClient gloov1.SettingsClient) *extauthpb.Settings {
+	settings, err := settingsClient.Read(defaults.GlooSystem, "default", clients.ReadOpts{})
+	Expect(err).NotTo(HaveOccurred())
+	return settings.Extauth
+}
