@@ -20,11 +20,12 @@ var _ = Describe("Root", func() {
 		vs       *gatewayv1.VirtualService
 		vsClient gatewayv1.VirtualServiceClient
 		ctx      context.Context
+		cancel   context.CancelFunc
 	)
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
-		ctx, _ = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(context.Background())
 		// create a settings object
 		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vs = &gatewayv1.VirtualService{
@@ -33,6 +34,10 @@ var _ = Describe("Root", func() {
 				Namespace: "gloo-system",
 			},
 		}
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	RefreshVirtualHost := func() {
