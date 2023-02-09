@@ -252,7 +252,7 @@ type GlooDeployment struct {
 	ExtraGlooAnnotations     map[string]string       `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
 	LivenessProbeEnabled     *bool                   `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
 	OssImageTag              *string                 `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
-	ContainerSecurityContext *appsv1.SecurityContext `json:"containerSecurityContext,omitempty" desc:"Security spec for the gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
+	ContainerSecurityContext *appsv1.SecurityContext `json:"containerSecurityContext,omitempty" desc:"SecurityContext for the gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
 	*DeploymentSpec
 	*GlooDeploymentContainer
 }
