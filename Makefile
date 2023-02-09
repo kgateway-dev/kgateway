@@ -247,7 +247,7 @@ test-with-coverage: test
 run-tests: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += -skipPackage=kube2e
 ifneq ($(RELEASE), "true")
-	test
+run-tests: test
 endif
 
 .PHONY: run-ci-regression-tests
