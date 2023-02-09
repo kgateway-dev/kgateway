@@ -240,7 +240,6 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image                    *Image                  `json:"image,omitempty"`
 	XdsPort                  *int                    `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
 	RestXdsPort              *uint32                 `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
 	ValidationPort           *int                    `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
@@ -255,6 +254,12 @@ type GlooDeployment struct {
 	OssImageTag              *string                 `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
 	ContainerSecurityContext *appsv1.SecurityContext `json:"containerSecurityContext,omitempty" desc:"Security spec for the gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
 	*DeploymentSpec
+	*GlooDeploymentContainer
+}
+
+type GlooDeploymentContainer struct {
+	Image                        *Image                  `json:"image,omitempty"`
+	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securitySpec for gloo container in the gloo-deployment chart. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
 }
 
 type Discovery struct {
@@ -505,12 +510,12 @@ type GatewayProxyPodTemplate struct {
 	ExtraInitContainers           []interface{}              `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
 	EnablePodSecurityContext      *bool                      `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
 	PodSecurityContext            *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gateway proxy deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core"`
-	*GlooContainer
+	*GlooGatewayProxyContainer
 }
 
-type GlooContainer struct {
+type GlooGatewayProxyContainer struct {
 	Image                        *Image                  `json:"image,omitempty"`
-	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securitySpec for sds gloo deployment container If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
+	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securitySpec for the gloo container int the gateway-proxy deployment chart. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
 }
 
 type GracefulShutdownSpec struct {

@@ -173,7 +173,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- $securityContext := or .Values.gloo.deployment.containerSecurityContext $securityDefaults }}
+        {{- $securityContext := or .Values.gloo.deployment.glooContainerSecurityContext $securityDefaults }}
         {{- with $securityContext }}
         securityContext:
         {{- toYaml . | nindent 10  }}

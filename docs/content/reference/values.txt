@@ -117,15 +117,6 @@
 |settings.circuitBreakers.maxRetries|uint32||Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3.|
 |settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Defaults to false.|
 |settings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|gloo.deployment.image.repository|string|gloo|The image repository (name) for the container.|
-|gloo.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gloo.deployment.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gloo.deployment.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gloo.deployment.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gloo.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gloo.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gloo.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
@@ -200,6 +191,34 @@
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
 |gloo.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|gloo.deployment.image.repository|string|gloo|The image repository (name) for the container.|
+|gloo.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gloo.deployment.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gloo.deployment.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gloo.deployment.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gloo.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gloo.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gloo.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gloo.deployment.glooContainerSecurityContext.capabilities.add[]|string|||
+|gloo.deployment.glooContainerSecurityContext.capabilities.drop[]|string|||
+|gloo.deployment.glooContainerSecurityContext.privileged|bool|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.user|string|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.role|string|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.type|string|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.level|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|gloo.deployment.glooContainerSecurityContext.runAsUser|int64|||
+|gloo.deployment.glooContainerSecurityContext.runAsGroup|int64|||
+|gloo.deployment.glooContainerSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|gloo.deployment.glooContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|gloo.deployment.glooContainerSecurityContext.procMount|string|||
+|gloo.deployment.glooContainerSecurityContext.seccompProfile.type|string|||
+|gloo.deployment.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|

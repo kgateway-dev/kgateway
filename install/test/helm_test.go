@@ -5880,7 +5880,7 @@ metadata:
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
-					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.containerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 				)
