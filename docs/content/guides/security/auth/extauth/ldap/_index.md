@@ -267,7 +267,7 @@ name="enterprise.gloo.solo.io.Ldap"
 - `allowedGroups`: The DNs of the user groups that are allowed to access the secured upstream.
 - `searchFilter`: The filter to use when searching for the user entry that you want to authorize.
 - `disableGroupChecking`: If set to true, disables validation for the membership attribute of the user entry. 
-- `groupLookupSettings`: Configures a separate service account to look up group memberships from the LDAP server. 
+- `groupLookupSettings`: Configures a service account to look up group memberships from the LDAP server. The service account must be set up in the LDAP server. 
 
 To better understand how this configuration is used, let's go over the steps that Gloo Edge performs when it detects a 
 request that needs to be authenticated with LDAP:
@@ -276,9 +276,9 @@ request that needs to be authenticated with LDAP:
    and extract the username and credentials. 
 2. If the header is not present, return a `401` response. 
 3. Try to perform a [BIND](https://ldap.com/the-ldap-bind-operation/) operation with the LDAP server. Gloo Edge supports the following LDAP binding options: 
-   - **User binding**: Gloo Edge extracts the username from the basic auth header, and substitutes the name with the `%s` placeholder in the `userDnTemplate` to build the DN for the `BIND` operation. Note that [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) are removed from the username before performing the `BIND` operation to prevent injection attacks. Instead of user binding, you can use a service account to retrieve group membership information on behalf of the user.
-   - **Service account binding**: Instead of giving each user access to the group membership information, you can use a service account to look up this information on behalf of the user. To authenticate with the LDAP server, you must store the service account credentials in a Kubernetes secret in your cluster. Then, you reference that secret in your `AuthConfig`. Note that you can only verify the user's group membership in the LDAP server with the service account. 
-4. If the `BIND` operation fails, the user is either unknown or their credentials are incorrect, and a `401` response code is returned. 
+   - **User binding**: Gloo Edge extracts the username from the basic auth header, and substitutes the name with the `%s` placeholder in the `userDnTemplate` to build the DN for the `BIND` operation. Note that [special characters](https://ldapwiki.com/wiki/DN%20Escape%20Values) are removed from the username before performing the `BIND` operation to prevent injection attacks. Instead of user binding, you can use an LDAP service account to retrieve group membership information on behalf of the user.
+   - **Service account binding**: Instead of giving each user access to the group membership information, you can use an LDAP service account to look up this information on behalf of the user. To authenticate with the LDAP server, you must store the LDAP service account credentials in a Kubernetes secret in your cluster. Then, you reference that secret in your `AuthConfig`. Note that you can only verify the user's group membership in the LDAP server with the service account. 
+4. If the `BIND` operation fails when using user binding, the user is either unknown or their credentials are incorrect, and a `401` response code is returned. If the `BIND` operations fails for the service account, a `500` response code is returned. 
 5. If the `BIND` operation is successful, issue a search operation using the `searchFilter` filter for the user entry (with a [`base` scope](https://ldapwiki.com/wiki/BaseObject)) and look 
    for an attribute with a name equal to `membershipAttributeName` on the user entry.
 6. Check if one of the values for the attribute matches one of the `allowedGroups`; if so, allow the request, otherwise return a `403` response.
