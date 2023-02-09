@@ -234,7 +234,7 @@ install-test-tools:
 
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) ginkgo \
+	$(GINKGO_ENV) ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
