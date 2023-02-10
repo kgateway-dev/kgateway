@@ -324,6 +324,7 @@ func filterEndpoints(
 		}
 
 		svc := getServiceFromUpstreamSpec(spec, services)
+		// TODO: Investigate possible deprecation of ClusterIPs in newer k8s versions https://github.com/solo-io/gloo/issues/7830
 		isHeadlessSvc := svc.Spec.ClusterIP == "None"
 		// Istio uses the service's port for routing requests
 		// Headless services don't have a cluster IP, so we'll resort to pod IP endpoints
