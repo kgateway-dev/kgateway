@@ -37,6 +37,8 @@ var _ = Describe("Leader Startup Action", func() {
 	})
 
 	AfterEach(func() {
+		cancel()
+
 		select {
 		case <-electedChan:
 			// channel is closed, do nothing
@@ -44,8 +46,6 @@ var _ = Describe("Leader Startup Action", func() {
 			// channel is still open, close it
 			close(electedChan)
 		}
-
-		cancel()
 	})
 
 	It("StartupAction not executed, if not elected", func() {

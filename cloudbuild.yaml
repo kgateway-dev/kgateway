@@ -96,8 +96,7 @@ steps:
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
-  - 'TAGGED_VERSION=$TAG_NAME'
-  - 'SKIP_TEMP_DISABLED=1'
+  - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
   dir: *dir
   args: ['run-tests']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials', 'install-go-tools']
@@ -117,10 +116,6 @@ steps:
   # 1) Run make targets to push docker images to quay.io
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.28'
   args: ['docker-push-extended']
-  env:
-  - 'DOCKER_CONFIG=/workspace/docker-config'
-  - 'TAGGED_VERSION=$TAG_NAME'
-  - 'TEST_ASSET_ID=$_PR_NUM'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['docker-login']
@@ -130,8 +125,6 @@ steps:
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
 - name: gcr.io/cloud-builders/gcloud
   args: ['auth', 'configure-docker']
-  env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
   dir: *dir
   waitFor: ['docker-push-extended']
   id: 'gcr-auth'
@@ -139,10 +132,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.28'
   args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'push-chart-to-registry', '-B']
   env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
     - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
-    - 'TAGGED_VERSION=$TAG_NAME'
-    - 'TEST_ASSET_ID=$_PR_NUM'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
@@ -153,9 +143,6 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.28'
   args: ['docker-push-retag']
   env:
-  - 'DOCKER_CONFIG=/workspace/docker-config'
-  - 'TAGGED_VERSION=$TAG_NAME'
-  - 'TEST_ASSET_ID=$_PR_NUM'
   - 'IMAGE_REPO=gcr.io/gloo-edge'
   - 'RETAG_IMAGE_REGISTRY=quay.io/solo-io'
   dir: *dir
@@ -174,6 +161,10 @@ timeout: 5400s
 tags: ['gloo']
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+  - 'DOCKER_CONFIG=/workspace/docker-config'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'TEST_ASSET_ID=$_PR_NUM'
   volumes:
   - name: 'gopath'
     path: '/go'
