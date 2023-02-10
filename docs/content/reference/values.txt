@@ -128,13 +128,31 @@
 |gloo.deployment.stats.statsPrefixRewrite|string||The Envoy stats endpoint with general metrics for the additional stats route|
 |gloo.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
-|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If containerSecurityContext is defined, this value is not applied.|
-|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If containerSecurityContext is defined, this value is not applied.|
+|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If glooContainerSecurityContext is defined, this value is not applied.|
+|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If glooContainerSecurityContext is defined, this value is not applied.|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
 |gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
 |gloo.deployment.ossImageTag|string|<release_version, ex: 1.2.3>|Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with.|
+|gloo.deployment.podSecurityContext.seLinuxOptions.user|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions.role|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions.type|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions.level|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
+|gloo.deployment.podSecurityContext.runAsUser|int64|||
+|gloo.deployment.podSecurityContext.runAsGroup|int64|||
+|gloo.deployment.podSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.podSecurityContext.supplementalGroups[]|int64|||
+|gloo.deployment.podSecurityContext.fsGroup|int64|||
+|gloo.deployment.podSecurityContext.sysctls[].name|string|||
+|gloo.deployment.podSecurityContext.sysctls[].value|string|||
+|gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|gloo.deployment.podSecurityContext.seccompProfile.type|string|||
+|gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -469,9 +487,9 @@
 |gatewayProxies.NAME.podTemplate.resources.requests.memory|string||amount of memory|
 |gatewayProxies.NAME.podTemplate.resources.requests.cpu|string||amount of CPUs|
 |gatewayProxies.NAME.podTemplate.disableNetBind|bool||don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied.|
-|gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run Envoy as an unprivileged user. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run Envoy as an unprivileged user. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied.|
-|gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
 |gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
@@ -706,9 +724,9 @@
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu|string||amount of CPUs|
 |gatewayProxies.gatewayProxy.podTemplate.disableNetBind|bool|true|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied.|
-|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run Envoy as an unprivileged user. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run Envoy as an unprivileged user. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied.|
-|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
 |gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|

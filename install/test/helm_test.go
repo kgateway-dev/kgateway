@@ -5956,6 +5956,7 @@ metadata:
 					Expect(resources.NumResources()).To(Equal(1))
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
 			})
 
