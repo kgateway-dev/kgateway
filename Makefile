@@ -217,7 +217,7 @@ check-spelling:
 
 GINKGO_VERSION ?= 1.16.5 # match our go.mod
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --trace -progress -race # -randomizeAllSpecs -randomizeSuites
+GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --trace -progress -race -randomizeAllSpecs -randomizeSuites
 GINKGO_REPORT_FLAGS ?= #--json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= #--cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
@@ -251,7 +251,6 @@ endif
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
-run-ci-regression-tests: GINKGO_FLAGS += -randomizeAllSpecs -randomizeSuites
 run-ci-regression-tests: test
 
 #----------------------------------------------------------------------------------
