@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Revert most recent cloudbuild go-mod-make upgrades, because they use go 1.18 and we are still on 1.16.
+      This should fix a glooctl cluster registration panic https://github.com/json-iterator/go/issues/608
