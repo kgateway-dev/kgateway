@@ -471,9 +471,11 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("should interact well with transform plugin", func() {
+
 			var (
 				transformationPlugin *transformation.Plugin
 			)
+
 			BeforeEach(func() {
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
 				route.Options = &v1.RouteOptions{
@@ -487,7 +489,19 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
+				// The transformation plugin is responsible for validating transformations
+				// It does this by executing Envoy in validate mode
+				// This functionality is not necessary in our unit tests, so we disable it
 				transformationPlugin = transformation.NewPlugin()
+				initParams.Settings = &v1.Settings{
+					Gateway: &v1.GatewayOptions{
+						Validation: &v1.GatewayOptions_ValidationOptions{
+							DisableTransformationValidation: &wrapperspb.BoolValue{
+								Value: true,
+							},
+						},
+					},
+				}
 				transformationPlugin.Init(initParams)
 			})
 			verify := func() {
