@@ -2,8 +2,9 @@ package ratelimit_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"

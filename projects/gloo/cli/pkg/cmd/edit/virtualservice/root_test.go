@@ -2,6 +2,7 @@ package virtualservice_test
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"

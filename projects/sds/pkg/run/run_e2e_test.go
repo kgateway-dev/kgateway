@@ -73,6 +73,8 @@ var _ = Describe("SDS Server E2E Test", func() {
 	It("runs and stops correctly", func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
+			defer GinkgoRecover()
+
 			if err := run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress); err != nil {
 				Expect(err).To(BeNil())
 			}
@@ -104,7 +106,11 @@ var _ = Describe("SDS Server E2E Test", func() {
 
 	It("correctly picks up multiple cert rotations", func() {
 
-		go run.Run(context.Background(), []server.Secret{secret}, sdsClient, testServerAddress)
+		go func() {
+			defer GinkgoRecover()
+
+			_ = run.Run(context.Background(), []server.Secret{secret}, sdsClient, testServerAddress)
+		}()
 
 		// Give it a second to spin up + read the files
 		time.Sleep(1 * time.Second)
