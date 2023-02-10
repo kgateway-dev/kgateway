@@ -29,10 +29,9 @@ var _ = Describe("Extauth", func() {
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
-		// create a settings object
+
 		settings = testutils.GetTestSettings()
 		settingsClient = helpers.MustSettingsClient(ctx)
-
 		_, err := settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -102,6 +101,9 @@ var _ = Describe("Extauth", func() {
 		})
 
 		It("should enabled auth on route", func() {
+			// Assertions are performed in a separate goroutine, so we copy the values to avoid race conditions
+			settingsClientCpy := settingsClient
+
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString("Use default namespace (gloo-system)?")
 				c.SendLine("")
@@ -115,7 +117,7 @@ var _ = Describe("Extauth", func() {
 			}, func() {
 				err := testutils.Glooctl("edit settings externalauth -i")
 				Expect(err).NotTo(HaveOccurred())
-				extension := readExtAuthSettings(helpers.MustSettingsClient(ctx))
+				extension := readExtAuthSettings(settingsClientCpy)
 				Expect(extension).To(matchers.MatchProto(&extauthpb.Settings{
 					ExtauthzServerRef: &core.ResourceRef{
 						Name:      "extauth",

@@ -2,6 +2,7 @@ package virtualservice_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,12 +27,12 @@ var _ = Describe("Root", func() {
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
-		// create a settings object
+
 		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vs = &gatewayv1.VirtualService{
 			Metadata: &core.Metadata{
 				Name:      "vs",
-				Namespace: "gloo-system",
+				Namespace: defaults.GlooSystem,
 			},
 		}
 	})
@@ -123,6 +124,10 @@ var _ = Describe("Root", func() {
 	Context("interactive", func() {
 
 		It("should enabled ssl on virtual service", func() {
+			// Assertions are performed in a separate goroutine, so we copy the values to avoid race conditions
+			vsClientCpy := vsClient
+			ctxCpy := ctx
+
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString("Use default namespace (gloo-system)?")
 				c.SendLine("yes")
@@ -138,7 +143,11 @@ var _ = Describe("Root", func() {
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
-				Glooctl("edit virtualservice -i")
+				err := testutils.Glooctl("edit virtualservice -i")
+				Expect(err).NotTo(HaveOccurred())
+				vs, err := vsClientCpy.Read(defaults.GlooSystem, "vs", clients.ReadOpts{Ctx: ctxCpy})
+				Expect(err).NotTo(HaveOccurred())
+
 				sslconfig := vs.GetSslConfig()
 				ref := sslconfig.GetSecretRef()
 
