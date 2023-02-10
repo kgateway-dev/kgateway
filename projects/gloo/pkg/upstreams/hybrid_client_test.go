@@ -82,7 +82,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			nil,
 		).AnyTimes()
 
-		// In certain test we override this, so we need to default to nil before each test
+		// In certain tests we override this, so we need to default to nil before each test
 		upstreams.TimerOverride = nil
 	})
 
