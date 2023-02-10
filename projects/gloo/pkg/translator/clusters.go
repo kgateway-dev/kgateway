@@ -102,6 +102,8 @@ func (t *translatorInstance) initializeCluster(
 		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions:      getHttp2options(upstream),
 		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
+		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
+		DnsRefreshRate:            getDnsRefreshRate(upstream, reports),
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
@@ -142,6 +144,8 @@ var (
 	NilFieldError = func(fieldName string) error {
 		return eris.Errorf("The field %s cannot be nil", fieldName)
 	}
+
+	minimumDnsRefreshRate = prototime.DurationToProto(time.Millisecond * 1)
 )
 
 func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
@@ -270,6 +274,24 @@ func getHttp2options(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions
 		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 	return nil
+}
+
+// getDnsRefreshRate returns the DnsRefreshRate for an Upstream:
+// - defined and valid: returns the duration
+// - defined and invalid: adds a warning and returns nil
+// - undefined: returns nil
+func getDnsRefreshRate(us *v1.Upstream, reports reporter.ResourceReports) *duration.Duration {
+	refreshRate := us.GetDnsRefreshRate()
+	if refreshRate == nil {
+		return nil
+	}
+
+	if refreshRate.AsDuration() < minimumDnsRefreshRate.AsDuration() {
+		reports.AddWarning(us, fmt.Sprintf("dnsRefreshRate was set below mimimuim requirement (%s), ignoring configuration", minimumDnsRefreshRate))
+		return nil
+	}
+
+	return refreshRate
 }
 
 // Validates routes that point to the current AWS lambda upstream
