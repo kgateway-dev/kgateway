@@ -17,8 +17,18 @@ var _ = Describe("Virtual Clusters", func() {
 	var (
 		ctx          = context.Background()
 		plugin       plugins.VirtualHostPlugin
+		pluginParams plugins.VirtualHostParams
+		inputVh      v1.VirtualHost
+		outputVh     envoy_config_route_v3.VirtualHost
+		referenceVh  envoy_config_route_v3.VirtualHost
+	)
+
+	BeforeEach(func() {
+		plugin = NewPlugin()
+		plugin.Init(plugins.InitParams{Ctx: ctx})
+
 		pluginParams = plugins.VirtualHostParams{Params: plugins.Params{Ctx: ctx}}
-		inputVh      = v1.VirtualHost{
+		inputVh = v1.VirtualHost{
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},
 			Options: &v1.VirtualHostOptions{
@@ -35,11 +45,6 @@ var _ = Describe("Virtual Clusters", func() {
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},
 		}
-	)
-
-	BeforeEach(func() {
-		plugin = NewPlugin()
-		plugin.Init(plugins.InitParams{Ctx: ctx})
 	})
 
 	It("does nothing if no virtual clusters are specified", func() {

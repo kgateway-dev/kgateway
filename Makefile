@@ -53,7 +53,7 @@ endif
 ORIGIN_URL ?= $(shell git remote get-url origin)
 UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
 UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
-UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo.git
+UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo
 ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
 	VERSION ?= 0.0.1-fork
 	CREATE_TEST_ASSETS := "false"
@@ -147,8 +147,6 @@ BUILD_ID := $(BUILD_ID)
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
-GINKGO_ENV := GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=1.16.5
-
 #----------------------------------------------------------------------------------
 # Macros
 #----------------------------------------------------------------------------------
@@ -169,6 +167,9 @@ include Makefile.ci
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
+ROOT_DIR := $(shell pwd)
+OUTPUT_DIR := $(ROOT_DIR)/_output
+DEPSGOBIN=$(OUTPUT_DIR)/.bin
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
@@ -184,7 +185,6 @@ fmt-changed:
 mod-download:
 	go mod download all
 
-DEPSGOBIN=$(shell pwd)/_output/.bin
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
@@ -201,28 +201,6 @@ install-go-tools: mod-download install-test-tools ## Download and install Go dep
 	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
 	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
 
-.PHONY: install-test-tools
-install-test-tools:
-	mkdir -p $(DEPSGOBIN)
-	GOBIN=$(DEPSGOBIN) go install github.com/onsi/ginkgo/ginkgo
-
-.PHONY: test ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-test: install-test-tools
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -failOnPending -failFast -noColor -trace -progress -race -compilers=4 -randomizeSuites -randomizeAllSpecs -r $(TEST_PKG)
-
-# command to run regression tests with guaranteed access to $(DEPSGOBIN)/ginkgo
-# requires the environment variable KUBE2E_TESTS to be set to the test type you wish to run
-# see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md
-.PHONY: run-tests
-run-tests: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-ifneq ($(RELEASE), "true")
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor -skipPackage=kube2e $(TEST_PKG)
-endif
-
-.PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-	# We intentionally leave out the `-r` ginkgo flag, since we are specifying the exact package that we want run
-	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) -randomizeSuites -randomizeAllSpecs -failFast -trace -progress -race -failOnPending -noColor ./test/kube2e/$(KUBE2E_TESTS)
 
 .PHONY: check-format
 check-format:
@@ -231,6 +209,50 @@ check-format:
 .PHONY: check-spelling
 check-spelling:
 	./ci/spell.sh check
+
+
+#----------------------------------------------------------------------------------
+# Tests
+#----------------------------------------------------------------------------------
+
+GINKGO_VERSION ?= 1.16.5 # match our go.mod
+GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
+GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --trace -progress -race -randomizeAllSpecs -randomizeSuites
+GINKGO_REPORT_FLAGS ?= #--json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
+GINKGO_COVERAGE_FLAGS ?= #--cover --covermode=count --coverprofile=coverage.cov
+TEST_PKG ?= ./... # Default to run all tests
+
+# This is a way for a user executing `make test` to be able to provide flags which we do not include by default
+# For example, you may want to run tests multiple times, or with various timeouts
+GINKGO_USER_FLAGS ?=
+
+.PHONY: install-test-tools
+install-test-tools:
+	go install github.com/onsi/ginkgo/ginkgo@v$(GINKGO_VERSION)
+
+.PHONY: test
+test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+	$(GINKGO_ENV) ginkgo -ldflags=$(LDFLAGS) \
+	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
+	$(TEST_PKG)
+
+.PHONY: test-with-coverage
+test-with-coverage: GINKGO_FLAGS += $(GINKGO_COVERAGE_FLAGS)
+test-with-coverage: test
+	go tool cover -html $(OUTPUT_DIR)/coverage.cov
+
+.PHONY: run-tests
+run-tests: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += -skipPackage=kube2e
+ifneq ($(RELEASE), "true")
+run-tests: test
+endif
+
+.PHONY: run-ci-regression-tests
+run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
+run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
+run-ci-regression-tests: test
+
 #----------------------------------------------------------------------------------
 # Clean
 #----------------------------------------------------------------------------------
