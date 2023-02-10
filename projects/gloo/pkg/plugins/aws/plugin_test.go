@@ -529,6 +529,22 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.UnwrapAsAlb).Should(Equal(true))
 			Expect(cfg.Async).Should(Equal(true))
 		})
+
+		When("unwrapping response", func() {
+			BeforeEach(func() {
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			})
+			It("should not apply transformations", func() {
+				err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
+
+				msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+				Expect(err).Should(BeNil())
+				cfg := msg.(*AWSLambdaPerRoute)
+				Expect(cfg.UnwrapAsAlb).Should(Equal(true))
+				Expect(cfg.GetTransformerConfig()).Should(BeNil())
+			})
+		})
 	})
 
 	Context("filters", func() {
@@ -551,16 +567,30 @@ var _ = Describe("Plugin", func() {
 			Expect(filters).To(BeEmpty())
 		})
 
-		It("should produce 2 filters when transformations are present", func() {
-			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
-			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-			Expect(err).NotTo(HaveOccurred())
+		When("transformations are present", func() {
+			It("should produce 2 filters when not unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
 
-			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(filters).To(HaveLen(2))
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(2))
+			})
+			It("should produce 1 filter when unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
+
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(1))
+			})
 		})
 	})
 
