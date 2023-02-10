@@ -5,7 +5,6 @@ changelog:
       and the SecurityContext in the envoy-sidecar, sds, and gloo containers in the gloo-deployment chart. You can expose access to these values with the following helm values:
         gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.
         gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext
-        gatewayProxies.gatewayProxy.podTemplate.containerSecurityContext
         gloo.deployment.glooContainerSecurityContext
         global.glooMtls.istioProxy.securityContext
         global.glooMtls.envoy.securityContext

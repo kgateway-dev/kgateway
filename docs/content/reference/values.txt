@@ -135,25 +135,6 @@
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
 |gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
 |gloo.deployment.ossImageTag|string|<release_version, ex: 1.2.3>|Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with.|
-|gloo.deployment.containerSecurityContext.capabilities.add[]|string|||
-|gloo.deployment.containerSecurityContext.capabilities.drop[]|string|||
-|gloo.deployment.containerSecurityContext.privileged|bool|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.user|string|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.role|string|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.type|string|||
-|gloo.deployment.containerSecurityContext.seLinuxOptions.level|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.runAsUserName|string|||
-|gloo.deployment.containerSecurityContext.windowsOptions.hostProcess|bool|||
-|gloo.deployment.containerSecurityContext.runAsUser|int64|||
-|gloo.deployment.containerSecurityContext.runAsGroup|int64|||
-|gloo.deployment.containerSecurityContext.runAsNonRoot|bool|||
-|gloo.deployment.containerSecurityContext.readOnlyRootFilesystem|bool|||
-|gloo.deployment.containerSecurityContext.allowPrivilegeEscalation|bool|||
-|gloo.deployment.containerSecurityContext.procMount|string|||
-|gloo.deployment.containerSecurityContext.seccompProfile.type|string|||
-|gloo.deployment.containerSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
