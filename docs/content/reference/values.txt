@@ -117,10 +117,10 @@
 |settings.circuitBreakers.maxRetries|uint32||Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3.|
 |settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Defaults to false.|
 |settings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
-|gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
-|gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
-|gloo.deployment.proxyDebugPort|int|9966|port where gloo serves gRPC Proxy contents to glooctl|
+|gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy.|
+|gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy.|
+|gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway.|
+|gloo.deployment.proxyDebugPort|int|9966|port where gloo serves gRPC Proxy contents to glooctl.|
 |gloo.deployment.stats.enabled|bool||Controls whether or not Envoy stats are enabled|
 |gloo.deployment.stats.routePrefixRewrite|string||The Envoy stats endpoint to which the metrics are written|
 |gloo.deployment.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
@@ -128,9 +128,9 @@
 |gloo.deployment.stats.statsPrefixRewrite|string||The Envoy stats endpoint with general metrics for the additional stats route|
 |gloo.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
-|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If glooContainerSecurityContext is defined, this value is not applied.|
-|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If glooContainerSecurityContext is defined, this value is not applied.|
-|gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
+|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If a SecurityContext is defined for the container, this value is not applied for the container.|
+|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
+|gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service.|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
 |gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
@@ -469,12 +469,12 @@
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
-|gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
-|gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
-|gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
-|gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
-|gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on|
-|gatewayProxies.NAME.podTemplate.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port.|
+|gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port.|
+|gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod.|
+|gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod.|
+|gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on.|
+|gatewayProxies.NAME.podTemplate.nodeSelector.NAME|string||label selector for nodes.|
 |gatewayProxies.NAME.podTemplate.tolerations[].key|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].operator|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].value|string|||
@@ -493,7 +493,7 @@
 |gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
-|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info.|
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.exec.command[]|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.path|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int64|||
@@ -535,7 +535,7 @@
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.NAME.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
 |gatewayProxies.NAME.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
-|gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true|
+|gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true.|
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.user|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.role|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.type|string|||
@@ -706,12 +706,12 @@
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
-|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
-|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
-|gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
-|gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
-|gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on|
-|gatewayProxies.gatewayProxy.podTemplate.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port.|
+|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port.|
+|gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod.|
+|gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod.|
+|gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on.|
+|gatewayProxies.gatewayProxy.podTemplate.nodeSelector.NAME|string||label selector for nodes.|
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].key|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].operator|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].value|string|||
@@ -730,7 +730,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
-|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info.|
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.exec.command[]|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int64|||
@@ -772,7 +772,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
-|gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
+|gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true.|
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.user|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.role|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.type|string|||
