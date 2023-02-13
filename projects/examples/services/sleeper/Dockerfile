@@ -1,4 +1,4 @@
-FROM alpine:3.15.6
+FROM alpine:3.17.2
 
 RUN apk upgrade --update-cache \
     && apk add ca-certificates \
