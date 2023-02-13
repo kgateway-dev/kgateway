@@ -72,7 +72,7 @@ var _ = Describe("Gateway", func() {
 					// Record the config status for virtual services. Use the resource name as a
 					// label on the metric so that a unique time series is tracked for each VS
 					ObservabilityOptions: &gloov1.Settings_ObservabilityOptions{
-						ConfigStatusMetricLabels: map[string]*metrics.Labels{
+						ConfigStatusMetricLabels: map[string]*metrics.MetricLabels{
 							"VirtualService.v1.gateway.solo.io": {
 								LabelToPath: map[string]string{
 									"name": "{.metadata.name}",

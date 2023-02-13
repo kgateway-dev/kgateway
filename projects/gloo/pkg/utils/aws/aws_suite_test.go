@@ -9,5 +9,5 @@ import (
 
 func TestAws(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpec(t, "Aws Suite")
+	RunSpecs(t, "Aws Suite")
 }

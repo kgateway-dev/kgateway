@@ -83,7 +83,7 @@ func makeProxy(nameSuffix string) resources.Resource {
 var _ = Describe("ConfigStatusMetrics Test", func() {
 	DescribeTable("SetResource[Invalid|Valid] works as expected",
 		func(gvk string, metricName string, makeResource func(nameSuffix string) resources.Resource) {
-			opts := map[string]*metrics.Labels{
+			opts := map[string]*metrics.MetricLabels{
 				gvk: {
 					LabelToPath: map[string]string{
 						"name": "{.metadata.name}",
