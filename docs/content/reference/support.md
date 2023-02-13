@@ -18,8 +18,6 @@ Gloo Edge Enterprise offers `n-3` patching support for bug and critical security
 | 1.11.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15|
 | 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
 
-{{% notice note %}}`*` **Kubernetes versions**: Gloo Edge is tested on Kubernetes 1.21 - 1.22.{{% /notice %}}
-
 {{% notice note %}}`†` **Istio versions**: Gloo Edge is tested on Istio 1.11 - 1.12. Istio must run on a compatible version of Kubernetes. For example, you cannot run Istio 1.15 on Kubernetes 1.21. For more information, see the [Istio docs](https://istio.io/latest/docs/releases/supported-releases/). If you want hardened `n-4` versions of Istio for particular requirements such as FIPS, consider using [Gloo Platform](https://www.solo.io/products/gloo-platform/), which includes Gateway and Mesh components.{{% /notice %}}
 
 <!--TO FIND VERSIONS

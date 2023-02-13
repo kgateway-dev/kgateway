@@ -104,7 +104,7 @@ As we just saw, we were able to reach the upstream without having to provide any
 
 #### Define an OPA policy 
 
-Let's create a Policy to control which actions are allowed on our service:
+Let's create a policy to control which actions are allowed on our service. 
 
 ```shell
 cat <<EOF > policy.rego
@@ -130,6 +130,10 @@ This policy:
 - allows requests if:
   - the path starts with `/api/pets` AND the http method is `GET` **OR**
   - the path is exactly `/api/pets/2` AND the http method is either `GET` or `DELETE`
+
+{{% notice note %}}
+If you decide to modify the policy example and add in your own allow rules, make sure to also use the `package test` value in your policy. 
+{{% /notice %}}
 
 #### Create an OPA AuthConfig CRD
 Gloo Edge expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the contents of the above policy file:
