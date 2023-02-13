@@ -259,7 +259,7 @@ type GlooDeployment struct {
 
 type GlooDeploymentContainer struct {
 	Image                        *Image                  `json:"image,omitempty"`
-	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core"`
+	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"SecurityContext for the gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type Discovery struct {
