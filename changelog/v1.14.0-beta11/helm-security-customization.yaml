@@ -1,0 +1,14 @@
+changelog:
+  - type: HELM
+    description: >
+      Added the ability to specify the PodSecurityContext for the pod and the SecurityContext for the gateway-proxy, sds, and istio-proxy containers in the gateway-proxy-deployment chart
+      and the SecurityContext in the envoy-sidecar, sds, and gloo containers in the gloo-deployment chart. You can expose access to these values with the following helm values: 
+        gatewayProxies.gatewayProxy.podTemplate.podSecurityContext
+        gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext
+        gloo.deployment.podSecurityContext
+        gloo.deployment.glooContainerSecurityContext
+        global.glooMtls.istioProxy.securityContext
+        global.glooMtls.envoy.securityContext
+        global.glooMtls.sds.securityContext
+    issueLink: https://github.com/solo-io/gloo/issues/7473
+    resolvesIssue: false
