@@ -4,8 +4,6 @@
 .DEFAULT_GOAL := help
 
 
-
-
 #----------------------------------------------------------------------------------
 # Help
 #----------------------------------------------------------------------------------
@@ -29,6 +27,11 @@ help: ## Output the self-documenting make targets
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
+DEPSGOBIN := $(OUTPUT_DIR)/.bin
+
+# Important to use binaries built from module.
+export PATH:=$(DEPSGOBIN):$(PATH)
+export GOBIN:=$(DEPSGOBIN)
 
 # If you just put your username, then that refers to your account at hub.docker.com
 # To use quay images, set the IMAGE_REPO to "quay.io/solo-io" (or leave unset)
@@ -167,9 +170,6 @@ include Makefile.ci
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
-ROOT_DIR := $(shell pwd)
-OUTPUT_DIR := $(ROOT_DIR)/_output
-DEPSGOBIN=$(OUTPUT_DIR)/.bin
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
@@ -191,17 +191,15 @@ mod-download:
 install-go-tools: mod-download ## Download and install Go dependencies
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	# Install versions which match our go.mod
-	go install github.com/solo-io/protoc-gen-ext@v0.0.18
-	go install github.com/solo-io/protoc-gen-openapi@v0.1.0
-	go install github.com/envoyproxy/protoc-gen-validate@v0.9.1
-	go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
+	go install github.com/solo-io/protoc-gen-ext
+	go install github.com/solo-io/protoc-gen-openapi
+	go install github.com/envoyproxy/protoc-gen-validate
+	go install github.com/golang/protobuf/protoc-gen-go
 	go install golang.org/x/tools/cmd/goimports
-	go install github.com/cratonica/2goarray@v0.0.0-20190331194516-514510793eaa
+	go install github.com/cratonica/2goarray
 	go install github.com/golang/mock/gomock
 	go install github.com/golang/mock/mockgen
-	go install github.com/saiskee/gettercheck@v0.0.0-20210820204958-38443d06ebe0
-
+	go install github.com/saiskee/gettercheck
 
 .PHONY: check-format
 check-format:
@@ -290,13 +288,12 @@ $(OUTPUT_DIR)/.generated-code:
 	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
 	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
 	rm -rf vendor_any
-	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go generate ./...
-	PATH=$(DEPSGOBIN):$$PATH rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
-	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
-	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
-	PATH=$(DEPSGOBIN):$$PATH gettercheck -ignoretests -ignoregenerated -write ./...
+	GO111MODULE=on go generate ./...
+	rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	gofmt -w $(SUBDIRS)
+	goimports -w $(SUBDIRS)
+	gettercheck -ignoretests -ignoregenerated -write ./...
 	go mod tidy
-	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
 .PHONY: verify-enterprise-protos
