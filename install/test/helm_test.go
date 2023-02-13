@@ -5803,6 +5803,161 @@ metadata:
 					Entry("resource migration job", "Job", "gloo-resource-migration"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
+
+				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							securityRoot + ".runAsNonRoot=true",
+							securityRoot + ".runAsUser=1234",
+							securityRoot + ".allowPrivilegeEscalation=true",
+							securityRoot + ".readOnlyRootFilesystem=false",
+							securityRoot + ".seLinuxOptions.level=seLevel",
+							securityRoot + ".seLinuxOptions.role=seRole",
+							securityRoot + ".seLinuxOptions.type=seType",
+							securityRoot + ".seLinuxOptions.user=seUser",
+							securityRoot + ".capabilities.add={ADD}",
+							securityRoot + ".capabilities.drop={DROP}",
+							securityRoot + ".seccompProfile.localhostProfile=seccompLHP",
+							securityRoot + ".seccompProfile.type=seccompType",
+							securityRoot + ".windowsOptions.gmsaCredentialSpec=winGmsaCredSpec",
+							securityRoot + ".windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName",
+							securityRoot + ".windowsOptions.hostProcess=true",
+							securityRoot + ".windowsOptions.runAsUserName=winUser",
+						}, extraArgs...),
+					})
+
+					// Get the resources
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						foundExpected := false
+						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+							if container.Name == containerName {
+								foundExpected = true
+								Expect(container.SecurityContext).To(Equal(
+									&v1.SecurityContext{
+										RunAsUser:                pointer.Int64(int64(1234)),
+										AllowPrivilegeEscalation: pointer.Bool(true),
+										ReadOnlyRootFilesystem:   pointer.Bool(false),
+										RunAsNonRoot:             pointer.Bool(true),
+										SELinuxOptions: &v1.SELinuxOptions{
+											Level: "seLevel",
+											Role:  "seRole",
+											Type:  "seType",
+											User:  "seUser",
+										},
+										Capabilities: &v1.Capabilities{
+											Add:  []v1.Capability{"ADD"},
+											Drop: []v1.Capability{"DROP"},
+										},
+										SeccompProfile: &v1.SeccompProfile{
+											LocalhostProfile: pointer.String("seccompLHP"),
+											Type:             "seccompType",
+										},
+										WindowsOptions: &v1.WindowsSecurityContextOptions{
+											GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+											GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+											RunAsUserName:          pointer.String("winUser"),
+											HostProcess:            pointer.Bool(true),
+										},
+									},
+								))
+							}
+						}
+						Expect(foundExpected).To(Equal(true))
+					})
+				},
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+				)
+
+				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							securityRoot + ".fsGroup=101010",
+							securityRoot + ".fsGroupChangePolicy=fsGroupChangePolicyValue",
+							securityRoot + ".runAsGroup=202020",
+							securityRoot + ".runAsNonRoot=true",
+							securityRoot + ".runAsUser=303030",
+							securityRoot + ".supplementalGroups={11,22,33}",
+							securityRoot + ".seLinuxOptions.level=seLevel",
+							securityRoot + ".seLinuxOptions.role=seRole",
+							securityRoot + ".seLinuxOptions.type=seType",
+							securityRoot + ".seLinuxOptions.user=seUser",
+							securityRoot + ".seccompProfile.localhostProfile=seccompLHP",
+							securityRoot + ".seccompProfile.type=seccompType",
+							securityRoot + ".windowsOptions.gmsaCredentialSpec=winGmsaCredSpec",
+							securityRoot + ".windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName",
+							securityRoot + ".windowsOptions.hostProcess=true",
+							securityRoot + ".windowsOptions.runAsUserName=winUser",
+							securityRoot + ".sysctls[0].name=sysctlName",
+							securityRoot + ".sysctls[0].value=sysctlValue",
+						}, extraArgs...),
+					})
+
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							deploymentObject, err := kuberesource.ConvertUnstructured(u)
+							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+
+							fsGroupChangePolicy := v1.PodFSGroupChangePolicy("fsGroupChangePolicyValue")
+							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(
+								&v1.PodSecurityContext{
+									FSGroup:             pointer.Int64(int64(101010)),
+									FSGroupChangePolicy: &fsGroupChangePolicy,
+									RunAsGroup:          pointer.Int64(int64(202020)),
+									RunAsNonRoot:        pointer.Bool(true),
+									RunAsUser:           pointer.Int64(int64(303030)),
+									SupplementalGroups:  []int64{int64(11), int64(22), int64(33)},
+									SELinuxOptions: &v1.SELinuxOptions{
+										Level: "seLevel",
+										Role:  "seRole",
+										Type:  "seType",
+										User:  "seUser",
+									},
+									SeccompProfile: &v1.SeccompProfile{
+										LocalhostProfile: pointer.String("seccompLHP"),
+										Type:             "seccompType",
+									},
+									WindowsOptions: &v1.WindowsSecurityContextOptions{
+										GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+										GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+										RunAsUserName:          pointer.String("winUser"),
+										HostProcess:            pointer.Bool(true),
+									},
+									Sysctls: []v1.Sysctl{
+										{
+											Name:  "sysctlName",
+											Value: "sysctlValue",
+										},
+									},
+								},
+							))
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+				)
 			})
 
 			Context("Kube resource overrides", func() {
@@ -6002,8 +6157,8 @@ spec:
 
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
 		It("should not contain trailing whitespace", func() {
-			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
+			out, err := exec.Command("helm", "template", "../helm/gloo").Output()
+			Expect(err).NotTo(HaveOccurred(), "Helm template Generation error")
 
 			lines := strings.Split(string(out), "\n")
 			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
