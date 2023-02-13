@@ -53,6 +53,10 @@ changelog:
     dependencyRepo: code-generator
     dependencyTag: v0.23.16
   - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: kubectl
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
     dependencyOwner: sigs.k8s.io
     dependencyRepo: controller-runtime
     dependencyTag: v0.11.2

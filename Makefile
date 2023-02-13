@@ -188,18 +188,19 @@ mod-download:
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
-install-go-tools: mod-download install-test-tools ## Download and install Go dependencies
+install-go-tools: mod-download ## Download and install Go dependencies
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
-	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
-	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
-	GOBIN=$(DEPSGOBIN) go install github.com/cratonica/2goarray
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
+	# Install versions which match our go.mod
+	go install github.com/solo-io/protoc-gen-ext@v0.0.18
+	go install github.com/solo-io/protoc-gen-openapi@v0.1.0
+	go install github.com/envoyproxy/protoc-gen-validate@v0.9.1
+	go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
+	go install golang.org/x/tools/cmd/goimports
+	go install github.com/cratonica/2goarray@v0.0.0-20190331194516-514510793eaa
+	go install github.com/golang/mock/gomock
+	go install github.com/golang/mock/mockgen
+	go install github.com/saiskee/gettercheck@v0.0.0-20210820204958-38443d06ebe0
 
 
 .PHONY: check-format

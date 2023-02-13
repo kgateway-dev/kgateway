@@ -20,6 +20,7 @@ import (
 	v12 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	v1beta12 "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
 	v13 "k8s.io/client-go/kubernetes/typed/autoscaling/v1"
+	v2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2"
 	v2beta1 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1"
 	v2beta2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2"
 	v14 "k8s.io/client-go/kubernetes/typed/batch/v1"
@@ -36,6 +37,7 @@ import (
 	v1beta18 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 	v1alpha10 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
 	v1beta19 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
+	v1beta20 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
 	v110 "k8s.io/client-go/kubernetes/typed/networking/v1"
 	v1beta110 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
 	v111 "k8s.io/client-go/kubernetes/typed/node/v1"
@@ -215,6 +217,20 @@ func (m *MockInterface) AutoscalingV1() v13.AutoscalingV1Interface {
 func (mr *MockInterfaceMockRecorder) AutoscalingV1() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutoscalingV1", reflect.TypeOf((*MockInterface)(nil).AutoscalingV1))
+}
+
+// AutoscalingV2 mocks base method.
+func (m *MockInterface) AutoscalingV2() v2.AutoscalingV2Interface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AutoscalingV2")
+	ret0, _ := ret[0].(v2.AutoscalingV2Interface)
+	return ret0
+}
+
+// AutoscalingV2 indicates an expected call of AutoscalingV2.
+func (mr *MockInterfaceMockRecorder) AutoscalingV2() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutoscalingV2", reflect.TypeOf((*MockInterface)(nil).AutoscalingV2))
 }
 
 // AutoscalingV2beta1 mocks base method.
@@ -453,6 +469,20 @@ func (m *MockInterface) FlowcontrolV1beta1() v1beta19.FlowcontrolV1beta1Interfac
 func (mr *MockInterfaceMockRecorder) FlowcontrolV1beta1() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlowcontrolV1beta1", reflect.TypeOf((*MockInterface)(nil).FlowcontrolV1beta1))
+}
+
+// FlowcontrolV1beta2 mocks base method.
+func (m *MockInterface) FlowcontrolV1beta2() v1beta20.FlowcontrolV1beta2Interface {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FlowcontrolV1beta2")
+	ret0, _ := ret[0].(v1beta20.FlowcontrolV1beta2Interface)
+	return ret0
+}
+
+// FlowcontrolV1beta2 indicates an expected call of FlowcontrolV1beta2.
+func (mr *MockInterfaceMockRecorder) FlowcontrolV1beta2() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FlowcontrolV1beta2", reflect.TypeOf((*MockInterface)(nil).FlowcontrolV1beta2))
 }
 
 // InternalV1alpha1 mocks base method.
