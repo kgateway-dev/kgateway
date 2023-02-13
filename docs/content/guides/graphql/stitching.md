@@ -137,7 +137,7 @@ What if a client wants the full name of the seller for a product, instead of the
 
 When you have different services with data that you want clients to be able to request, you can stitch the services together. In a separate `GraphQLApi` resource, specify a `stitchedSchema` section that indicates how to merge the types between the services. 
 
-In the user service subschema, you can specify which fields are unique to the `User` type, and how to get these fields. For example, the following `typeMerge`, Gloo Edge can use the `GetUser` query to provide the full name from the user service.
+In the user service subschema, you can specify which fields are unique to the `User` type, and how to get these fields. For example, in the following `typeMerge`, Gloo Edge can use the `GetUser` query to provide the full name from the user service.
 
 ```yaml
 apiVersion: graphql.gloo.solo.io/v1beta1
