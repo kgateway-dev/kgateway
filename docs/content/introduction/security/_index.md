@@ -9,7 +9,7 @@ Some of the security features are only available on the Enterprise version of Gl
 
 ---
 
-## External Authentication
+## External authentication
 
 API Gateways act as a control point for the outside world to access the various applications running in your environment. These applications need to accept incoming requests from external end users. The incoming requests can be treated as anonymous or authenticated depending on the requirements of your application. External authentication provides you with the ability to establish and validate who the client is, the service they are requesting, and define access or traffic control policies.
 
@@ -38,7 +38,7 @@ External authentication in Gloo Edge supports several forms of authentication:
 
 ---
 
-## Network Encryption
+## Network encryption
 
 An API gateway sits between the downstream client and the upstream service it wants to connect with. The network traffic between the API gateway and the downstream client, and between the API gateway and the upstream service should be encrypted using Transport Layer Security (TLS). Gloo Edge can configure [server TLS]({{% versioned_link_path fromRoot="/guides/security/tls/server_tls//" %}}) to present a valid certificate to downstream clients and [client TLS]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}}) to present a valid certificate to upstream services.
 
@@ -61,6 +61,17 @@ When configuring permissions for your developers and administrators, you may wis
 As a simple example, you may want to allow a developer access to create Virtual Services, but only for the domain *example.com*. Kubernetes RBAC would allows you to grant a developer access to create the Virtual Service, but it does not have a way to constrain the creation to a specific domain. OPA can evaluate the Virtual Service custom resource when it is submitted and reject any Virtual Services that are not defined for *example.com*.
 
 The [following guide]({{% versioned_link_path fromRoot="/guides/security/opa/" %}}) shows how to configure a simple OPA policy dictating that all Virtual Services must not have a prefix re-write.
+
+---
+
+## Personal information
+
+Personally identifying information (PII) includes names, certain IP addresses, email addresses, or other data that might identify you or your customers. To prevent PII, consider implementing security practices such as the following:
+
+* Do not include personal information in the name of resources such as Kubernetes namespaces or Gloo Edge virtual services.
+* Store personal information properly in your environment, such as in Kubernetes secrets or with a secret manager such as HashiCorp Vault.
+* [Install Gloo Edge]({{% versioned_link_path fromRoot="/installation/" %}}) with the `gatewayProxies.gatewayProxy.disableCoreDumps` Helm setting. This setting disables writing core dumps that might have personal information in case of an Envoy crash.
+* [Set up Data Loss Prevention (DLP)]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}}) to prevent personal information in your network traffic from being logged or leaked.
 
 ---
 
