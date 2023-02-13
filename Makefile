@@ -214,11 +214,11 @@ check-spelling:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION ?= 1.16.5 # match our go.mod
+GINKGO_VERSION ?= 2.5.0 # match our go.mod
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --trace -progress -race -randomizeAllSpecs -randomizeSuites
-GINKGO_REPORT_FLAGS ?= #--json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
-GINKGO_COVERAGE_FLAGS ?= #--cover --covermode=count --coverprofile=coverage.cov
+GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --trace -progress -race --randomize-all
+GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
+GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
@@ -227,7 +227,7 @@ GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
 install-test-tools:
-	go install github.com/onsi/ginkgo/ginkgo@v$(GINKGO_VERSION)
+	go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
@@ -242,7 +242,7 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-run-tests: GINKGO_FLAGS += -skipPackage=kube2e
+run-tests: GINKGO_FLAGS += -skip-package=kube2e
 ifneq ($(RELEASE), "true")
 run-tests: test
 endif
