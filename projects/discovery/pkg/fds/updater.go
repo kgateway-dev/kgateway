@@ -172,7 +172,7 @@ func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 	/* upstream, err = */
 	newUpstream, err = u.parent.upstreamWriter.Write(newUpstream, wo)
 	if err != nil {
-		logger.Warnw("error updating upstream on first try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
+		logger.Warnw("error updating upstream on first try", "upstream", u.upstream.GetMetadata().GetName(), "error", err, "new version", newUpstream.GetMetadata().ResourceVersion)
 		newUpstream, err = u.parent.upstreamWriter.Read(u.upstream.GetMetadata().GetNamespace(), u.upstream.GetMetadata().GetName(), clients.ReadOpts{Ctx: u.ctx})
 		if err != nil {
 			logger.Warnw("can't read updated upstream for second try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)

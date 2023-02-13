@@ -163,6 +163,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	}
 
 	return updatecb(func(out *v1.Upstream) error {
+		log.Infof("ELC adding services and descriptors to grpc upstream %v", services)
 		svcSpec := getGrpcspec(out)
 		if svcSpec == nil {
 			return errors.New("not a GRPC upstream")
