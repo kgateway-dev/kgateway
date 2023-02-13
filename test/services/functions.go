@@ -8,7 +8,7 @@ package services
 //
 //	"github.com/solo-io/gloo/test/helpers"
 //
-//	"github.com/onsi/ginkgo"
+//	"github.com/onsi/ginkgo/v2"
 //)
 //
 //type FunctionDiscoveryFactory struct {

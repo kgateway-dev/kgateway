@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/go-utils/stats"
 
 	"github.com/solo-io/gloo/test/gomega/assertions"
