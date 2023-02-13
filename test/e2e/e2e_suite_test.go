@@ -5,8 +5,8 @@ import (
 
 	"github.com/solo-io/gloo/test/e2e"
 
-	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 

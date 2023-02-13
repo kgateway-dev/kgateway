@@ -17,8 +17,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
-	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/test/helpers"

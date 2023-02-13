@@ -1,8 +1,8 @@
 package translator_test
 
 import (
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"

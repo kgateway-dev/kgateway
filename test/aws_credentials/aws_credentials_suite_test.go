@@ -5,8 +5,8 @@ import (
 
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 
-	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/solo-kit/test/helpers"
 )
 

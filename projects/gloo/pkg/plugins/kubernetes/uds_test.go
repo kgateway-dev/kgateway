@@ -5,7 +5,7 @@ import (
 	gloov1kube "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"

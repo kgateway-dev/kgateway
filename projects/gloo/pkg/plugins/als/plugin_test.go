@@ -11,7 +11,7 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloo_envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloo_envoy_route "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"

@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"

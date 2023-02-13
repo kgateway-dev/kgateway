@@ -7,7 +7,7 @@ import (
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"

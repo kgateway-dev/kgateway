@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	installutil "github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"

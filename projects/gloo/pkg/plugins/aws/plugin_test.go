@@ -13,7 +13,7 @@ import (
 	gogoproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoytransform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
