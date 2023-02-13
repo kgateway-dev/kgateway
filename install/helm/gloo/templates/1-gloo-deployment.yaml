@@ -42,6 +42,10 @@ spec:
         {{- end }}
         {{- end }}
     spec:
+      {{- with .Values.gloo.deployment.podSecurityContext }}
+      securityContext:
+      {{- toYaml . | nindent 8  }}
+      {{- end }}
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
       {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
@@ -77,11 +81,15 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
+        {{- $securityDefaults := dict "runAsNonRoot" true }}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
+        {{- end -}}
+        {{- $securityContext := or  .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
+        {{- with $securityContext }}
         securityContext:
-          runAsNonRoot: true
-          {{- if not .Values.gloo.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
-          {{- end }}
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -120,11 +128,15 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
+        {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsNonRoot" true }}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
+        {{- end -}}
+        {{- $securityContext := or .Values.global.glooMtls.sds.securityContext $securityDefaults }}
+        {{- with $securityContext }}
         securityContext:
-          runAsNonRoot: true
-          {{- if not .Values.gloo.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
-          {{- end }}
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -156,19 +168,20 @@ spec:
             cpu: 500m
             memory: 256Mi
 {{- end}}
+        {{- $capabilities := dict "drop" (list "ALL") -}}
+        {{- $securityDefaults := dict "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
+        {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
+        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
+        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */}}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
+        {{- end -}}
+        {{- $securityContext := or .Values.gloo.deployment.glooContainerSecurityContext $securityDefaults }}
+        {{- with $securityContext }}
         securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
-          {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
-          {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
-          {{- if not .Values.gloo.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser) -}}
-          {{- end }}
-          capabilities:
-            drop:
-            - ALL
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
