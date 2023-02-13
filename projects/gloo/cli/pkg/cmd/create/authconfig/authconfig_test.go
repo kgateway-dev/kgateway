@@ -5,7 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/authconfig"
 
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 

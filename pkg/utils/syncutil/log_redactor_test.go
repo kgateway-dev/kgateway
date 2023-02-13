@@ -2,7 +2,6 @@ package syncutil_test
 
 import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"

@@ -10,7 +10,7 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/golang/protobuf/ptypes/any"
-	. "github.com/onsi/ginkgo/extensions/table"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

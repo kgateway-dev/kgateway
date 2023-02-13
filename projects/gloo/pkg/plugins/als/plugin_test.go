@@ -17,8 +17,6 @@ import (
 	gloo_envoy_route "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	gloo_envoy_types "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
-	. "github.com/onsi/ginkgo/extensions/table"
 	accessLogService "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

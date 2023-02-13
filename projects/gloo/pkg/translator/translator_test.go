@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/onsi/ginkgo/extensions/table"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	csrf_v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
@@ -34,6 +34,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
@@ -3497,7 +3498,7 @@ var _ = Describe("Translator", func() {
 	})
 
 	Context("IgnoreHealthOnHostRemoval", func() {
-		table.DescribeTable("propagates IgnoreHealthOnHostRemoval to Cluster", func(upstreamValue *wrappers.BoolValue, expectedClusterValue bool) {
+		DescribeTable("propagates IgnoreHealthOnHostRemoval to Cluster", func(upstreamValue *wrappers.BoolValue, expectedClusterValue bool) {
 			// Set the value
 			upstream.IgnoreHealthOnHostRemoval = upstreamValue
 
@@ -3512,9 +3513,9 @@ var _ = Describe("Translator", func() {
 			Expect(cluster).NotTo(BeNil())
 			Expect(cluster.IgnoreHealthOnHostRemoval).To(Equal(expectedClusterValue))
 		},
-			table.Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
-			table.Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
-			table.Entry("When value=nil", nil, false))
+			Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
+			Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
+			Entry("When value=nil", nil, false))
 	})
 
 	//TODO: We could split this into a test file for clusters.go
