@@ -1,0 +1,8 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/4434
+  resolvesIssue: false
+  description: >-
+    Makes requestTransformation and unwrapAsAlb/unwrapAsApiGateway Lambda DestinationSpec settings mutually exclusive.
+    This corrects a bug where the Content-Type header would be text/html regardless of the response body metadata when
+    both of these options were configured

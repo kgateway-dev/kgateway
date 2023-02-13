@@ -850,70 +850,74 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	// Start the validation webhook
-	validationServerErr := make(chan error, 1)
-	if gwOpts.Validation != nil {
-		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
-		// ReadGatewaysFromAllNamespaces is false
-		if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
-			foundSelf := false
-			for _, namespace := range opts.WatchNamespaces {
-				if gwOpts.GlooNamespace == namespace {
-					foundSelf = true
-					break
+	validationMustStart := os.Getenv("VALIDATION_MUST_START")
+	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
+	if validationMustStart == "true" || validationMustStart == "" {
+		// Start the validation webhook
+		validationServerErr := make(chan error, 1)
+		if gwOpts.Validation != nil {
+			// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
+			// ReadGatewaysFromAllNamespaces is false
+			if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
+				foundSelf := false
+				for _, namespace := range opts.WatchNamespaces {
+					if gwOpts.GlooNamespace == namespace {
+						foundSelf = true
+						break
+					}
+				}
+				if !foundSelf {
+					return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
+						"to false, but the non-empty settings.watchNamespaces "+
+						"list (%s) did not contain this gloo instance's own namespace: %s.",
+						strings.Join(opts.WatchNamespaces, ", "), gwOpts.GlooNamespace)
 				}
 			}
-			if !foundSelf {
-				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
-					"to false, but the non-empty settings.watchNamespaces "+
-					"list (%s) did not contain this gloo instance's own namespace: %s.",
-					strings.Join(opts.WatchNamespaces, ", "), gwOpts.GlooNamespace)
-			}
-		}
 
-		validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
-			k8sadmission.NewWebhookConfig(
-				watchOpts.Ctx,
-				gwValidationSyncer,
-				gwOpts.WatchNamespaces,
-				gwOpts.Validation.ValidatingWebhookPort,
-				gwOpts.Validation.ValidatingWebhookCertPath,
-				gwOpts.Validation.ValidatingWebhookKeyPath,
-				gwOpts.Validation.AlwaysAcceptResources,
-				gwOpts.ReadGatewaysFromAllNamespaces,
-				gwOpts.GlooNamespace,
-			),
-		)
-		if err != nil {
-			return errors.Wrapf(err, "creating validating webhook")
-		}
-
-		go func() {
-			// close out validation server when context is cancelled
-			<-watchOpts.Ctx.Done()
-			validationWebhook.Close()
-		}()
-		go func() {
-			contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
-				zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
-				zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
-				zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
+			validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
+				k8sadmission.NewWebhookConfig(
+					watchOpts.Ctx,
+					gwValidationSyncer,
+					gwOpts.WatchNamespaces,
+					gwOpts.Validation.ValidatingWebhookPort,
+					gwOpts.Validation.ValidatingWebhookCertPath,
+					gwOpts.Validation.ValidatingWebhookKeyPath,
+					gwOpts.Validation.AlwaysAcceptResources,
+					gwOpts.ReadGatewaysFromAllNamespaces,
+					gwOpts.GlooNamespace,
+				),
 			)
-			if err := validationWebhook.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-				select {
-				case validationServerErr <- err:
-				default:
-					logger.DPanicw("failed to start validation webhook server", zap.Error(err))
-				}
+			if err != nil {
+				return errors.Wrapf(err, "creating validating webhook")
 			}
-		}()
-	}
 
-	// give the validation server 100ms to start
-	select {
-	case err := <-validationServerErr:
-		return errors.Wrapf(err, "failed to start validation webhook server")
-	case <-time.After(time.Millisecond * 100):
+			go func() {
+				// close out validation server when context is cancelled
+				<-watchOpts.Ctx.Done()
+				validationWebhook.Close()
+			}()
+			go func() {
+				contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
+					zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
+					zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
+					zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
+				)
+				if err := validationWebhook.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+					select {
+					case validationServerErr <- err:
+					default:
+						logger.DPanicw("failed to start validation webhook server", zap.Error(err))
+					}
+				}
+			}()
+		}
+
+		// give the validation server 100ms to start
+		select {
+		case err := <-validationServerErr:
+			return errors.Wrapf(err, "failed to start validation webhook server")
+		case <-time.After(time.Millisecond * 100):
+		}
 	}
 
 	go func() {

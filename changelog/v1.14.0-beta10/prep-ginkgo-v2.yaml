@@ -1,0 +1,13 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4200
+    resolvesIssue: false
+    description: >-
+      Use ginkgo randomize flags for all test suites. Previously, this was only applied to our kube2e 
+      suites which were run in isolation (one suite at a time).
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7222
+    resolvesIssue: false
+    description: >-
+      Prepare Makefile and cloudbuild.yaml for changes that our ginkgo v2 update will rely on. This is introduced
+      separately so as to make reviewing the ginkgo v2 upgrade easier.
