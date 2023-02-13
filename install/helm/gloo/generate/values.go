@@ -240,26 +240,26 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	XdsPort               *int                       `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	RestXdsPort           *uint32                    `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
-	ValidationPort        *int                       `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	ProxyDebugPort        *int                       `json:"proxyDebugPort,omitempty" desc:"port where gloo serves gRPC Proxy contents to glooctl"`
-	Stats                 *Stats                     `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
-	FloatingUserId        *bool                      `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If glooContainerSecurityContext is defined, this value is not applied."`
-	RunAsUser             *float64                   `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101. If glooContainerSecurityContext is defined, this value is not applied."`
-	ExternalTrafficPolicy *string                    `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
+	XdsPort               *int                       `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy."`
+	RestXdsPort           *uint32                    `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy."`
+	ValidationPort        *int                       `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway."`
+	ProxyDebugPort        *int                       `json:"proxyDebugPort,omitempty" desc:"port where gloo serves gRPC Proxy contents to glooctl."`
+	Stats                 *Stats                     `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod."`
+	FloatingUserId        *bool                      `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If a SecurityContext is defined for the container, this value is not applied for the container."`
+	RunAsUser             *float64                   `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container."`
+	ExternalTrafficPolicy *string                    `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service."`
 	ExtraGlooLabels       map[string]string          `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
 	ExtraGlooAnnotations  map[string]string          `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
 	LivenessProbeEnabled  *bool                      `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
 	OssImageTag           *string                    `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
-	PodSecurityContext    *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core"`
+	PodSecurityContext    *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core for details."`
 	*DeploymentSpec
 	*GlooDeploymentContainer
 }
 
 type GlooDeploymentContainer struct {
 	Image                        *Image                  `json:"image,omitempty"`
-	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"SecurityContext for the gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
+	GlooContainerSecurityContext *appsv1.SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type Discovery struct {
@@ -486,12 +486,12 @@ type DaemonSetSpec struct {
 }
 
 type GatewayProxyPodTemplate struct {
-	HttpPort                      *int                       `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
-	HttpsPort                     *int                       `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
-	ExtraPorts                    []interface{}              `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
-	ExtraAnnotations              map[string]string          `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
-	NodeName                      *string                    `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector                  map[string]string          `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	HttpPort                      *int                       `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port."`
+	HttpsPort                     *int                       `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port."`
+	ExtraPorts                    []interface{}              `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod."`
+	ExtraAnnotations              map[string]string          `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod."`
+	NodeName                      *string                    `json:"nodeName,omitempty" desc:"name of node to run on."`
+	NodeSelector                  map[string]string          `json:"nodeSelector,omitempty" desc:"label selector for nodes."`
 	Tolerations                   []*appsv1.Toleration       `json:"tolerations,omitempty"`
 	Probes                        *bool                      `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
 	LivenessProbeEnabled          *bool                      `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
@@ -502,14 +502,14 @@ type GatewayProxyPodTemplate struct {
 	RunAsUser                     *float64                   `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container."`
 	FsGroup                       *float64                   `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied."`
 	GracefulShutdown              *GracefulShutdownSpec      `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                       `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
+	TerminationGracePeriodSeconds *int                       `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info."`
 	CustomReadinessProbe          *appsv1.Probe              `json:"customReadinessProbe,omitempty"`
 	CustomLivenessProbe           *appsv1.Probe              `json:"customLivenessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string          `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
 	ExtraContainers               []interface{}              `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
 	ExtraInitContainers           []interface{}              `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
-	EnablePodSecurityContext      *bool                      `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
-	PodSecurityContext            *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gateway proxy deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core"`
+	EnablePodSecurityContext      *bool                      `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true."`
+	PodSecurityContext            *appsv1.PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gateway proxy deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core for details."`
 	*GlooDeploymentContainer
 }
 
@@ -653,17 +653,17 @@ type Mtls struct {
 
 type SdsContainer struct {
 	Image           *Image                  `json:"image,omitempty"`
-	SecurityContext *appsv1.SecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details"`
+	SecurityContext *appsv1.SecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type EnvoySidecarContainer struct {
 	Image           *Image                  `json:"image,omitempty"`
-	SecurityContext *appsv1.SecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy-sidecar gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details"`
+	SecurityContext *appsv1.SecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy-sidecar gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type IstioProxyContainer struct {
 	Image           *Image                  `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
-	SecurityContext *appsv1.SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details"`
+	SecurityContext *appsv1.SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type IstioSDS struct {
