@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
@@ -75,8 +76,8 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 					Name:      fakeUpstreamName(service.Name + "-tls"),
 					Namespace: defaults.GlooSystem,
 				},
-				SslConfig: &v1.UpstreamSslConfig{
-					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+				SslConfig: &ssl.UpstreamSslConfig{
+					SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
 							Name:      consulConfig.GetRootCa().GetName(),
 							Namespace: consulConfig.GetRootCa().GetNamespace(),

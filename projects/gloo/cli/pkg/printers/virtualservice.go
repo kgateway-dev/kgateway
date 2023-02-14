@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/olekukonko/tablewriter"
@@ -301,11 +302,11 @@ func sslConfig(v *v1.VirtualService) string {
 	}
 
 	switch v.GetSslConfig().GetSslSecrets().(type) {
-	case *gloov1.SslConfig_SecretRef:
+	case *ssl.SslConfig_SecretRef:
 		return "secret_ref"
-	case *gloov1.SslConfig_SslFiles:
+	case *ssl.SslConfig_SslFiles:
 		return "ssl_files"
-	case *gloov1.SslConfig_Sds:
+	case *ssl.SslConfig_Sds:
 		return "sds"
 	default:
 		return "unknown"

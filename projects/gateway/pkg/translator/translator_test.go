@@ -2,6 +2,9 @@ package translator_test
 
 import (
 	"context"
+	"net/http"
+
+	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/onsi/ginkgo/extensions/table"
 
@@ -389,23 +392,39 @@ var _ = Describe("Translator", func() {
 					gwTranslator := NewDefaultTranslator(Opts{
 						IsolateVirtualHostsBySslConfig: globalSetting,
 						WriteNamespace:                 ns,
+						ReadGatewaysFromAllNamespaces:  true,
 					})
 
 					// Apply the annotation, if provided
-					annotatedGateway := gateway
+					annotatedGateway := gateway.Clone().(*v1.Gateway)
 					if annotation != "" {
 						annotatedGateway.Metadata.Annotations = map[string]string{
 							IsolateVirtualHostsAnnotation: annotation,
 						}
 					}
 
-					snap.Gateways = v1.GatewayList{annotatedGateway}
+					// Create the minimal snapshot necessary to produce a Proxy
+					snapshot := &gloov1snap.ApiSnapshot{
+						Gateways: v1.GatewayList{annotatedGateway},
+						VirtualServices: v1.VirtualServiceList{
+							helpers.NewVirtualServiceBuilder().
+								WithName("vs").
+								WithNamespace(ns).
+								WithDomain("custom-domain").
+								WithRoutePrefixMatcher("route", "/route").
+								WithRouteDirectResponseAction("route", &gloov1.DirectResponseAction{
+									Body:   "direct-response",
+									Status: http.StatusOK,
+								}).
+								Build(),
+						},
+					}
 
 					proxy, errs := gwTranslator.Translate(
 						context.Background(),
 						defaults.GatewayProxyName,
-						snap,
-						v1.GatewayList{annotatedGateway})
+						snapshot,
+						snapshot.Gateways)
 
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 					Expect(proxy.GetListeners()).To(HaveLen(1))

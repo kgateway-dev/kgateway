@@ -242,6 +242,17 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			if !requiresRequestTransformation && !requiresResponseTransformation {
 				return nil, nil
 			}
+
+			requiresUnwrap := awsDestinationSpec.Aws.GetUnwrapAsAlb() || awsDestinationSpec.Aws.GetUnwrapAsApiGateway()
+			if requiresUnwrap {
+				// if we are unwrapping the response and have no request transformation, we can return early
+				if !requiresRequestTransformation {
+					return nil, nil
+				}
+				// Do not transform response if we are unwrapping since response is handled in its entirety by these
+				requiresResponseTransformation = false
+			}
+
 			p.requiresTransformationFilter = true
 
 			transform := &envoy_transform.RouteTransformations_RouteTransformation{
@@ -288,7 +299,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					},
 				}
 			} else {
-				// if we got here, we have a response transform. otherwise, we would have returned early.
+				// if we got here, we have a response transform and are not unwrapping. otherwise, we would have returned early.
 				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
 					ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
 						ResponseTransformation: respTransform,

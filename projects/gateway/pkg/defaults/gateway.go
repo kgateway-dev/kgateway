@@ -6,6 +6,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -105,7 +106,7 @@ func DefaultHybridSslGateway(writeNamespace string) *v1.Gateway {
 				{
 					Matcher: &v1.Matcher{
 						// Define a non-nil SslConfig
-						SslConfig: &gloov1.SslConfig{
+						SslConfig: &ssl.SslConfig{
 							TransportSocketConnectTimeout: &duration.Duration{
 								Seconds: 30,
 							},
@@ -122,7 +123,7 @@ func DefaultHybridSslGateway(writeNamespace string) *v1.Gateway {
 	return gw
 }
 
-func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *gloov1.SslConfig) *v1.MatchableHttpGateway {
+func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *ssl.SslConfig) *v1.MatchableHttpGateway {
 	return &v1.MatchableHttpGateway{
 		Metadata: &core.Metadata{
 			Name:        "matchable-http-gateway",

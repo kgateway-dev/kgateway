@@ -21,6 +21,7 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	v1transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -246,9 +247,9 @@ var _ = Describe("Plugin", func() {
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
-							SslParameters: &v1.SslParameters{
-								MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
-								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							SslParameters: &ssl.SslParameters{
+								MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+								MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
 							},
@@ -277,14 +278,14 @@ var _ = Describe("Plugin", func() {
 
 			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
 
-				var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+				var invalidProtocolVersion ssl.SslParameters_ProtocolVersion = 5 // INVALID
 
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
-							SslParameters: &v1.SslParameters{
+							SslParameters: &ssl.SslParameters{
 								MinimumProtocolVersion: invalidProtocolVersion,
-								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
 							},
@@ -471,9 +472,11 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("should interact well with transform plugin", func() {
+
 			var (
 				transformationPlugin *transformation.Plugin
 			)
+
 			BeforeEach(func() {
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
 				route.Options = &v1.RouteOptions{
@@ -487,7 +490,19 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
+				// The transformation plugin is responsible for validating transformations
+				// It does this by executing Envoy in validate mode
+				// This functionality is not necessary in our unit tests, so we disable it
 				transformationPlugin = transformation.NewPlugin()
+				initParams.Settings = &v1.Settings{
+					Gateway: &v1.GatewayOptions{
+						Validation: &v1.GatewayOptions_ValidationOptions{
+							DisableTransformationValidation: &wrapperspb.BoolValue{
+								Value: true,
+							},
+						},
+					},
+				}
 				transformationPlugin.Init(initParams)
 			})
 			verify := func() {
@@ -529,6 +544,22 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.UnwrapAsAlb).Should(Equal(true))
 			Expect(cfg.Async).Should(Equal(true))
 		})
+
+		When("unwrapping response", func() {
+			BeforeEach(func() {
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			})
+			It("should not apply transformations", func() {
+				err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
+
+				msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+				Expect(err).Should(BeNil())
+				cfg := msg.(*AWSLambdaPerRoute)
+				Expect(cfg.UnwrapAsAlb).Should(Equal(true))
+				Expect(cfg.GetTransformerConfig()).Should(BeNil())
+			})
+		})
 	})
 
 	Context("filters", func() {
@@ -551,16 +582,30 @@ var _ = Describe("Plugin", func() {
 			Expect(filters).To(BeEmpty())
 		})
 
-		It("should produce 2 filters when transformations are present", func() {
-			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
-			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-			Expect(err).NotTo(HaveOccurred())
+		When("transformations are present", func() {
+			It("should produce 2 filters when not unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
 
-			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(filters).To(HaveLen(2))
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(2))
+			})
+			It("should produce 1 filter when unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
+
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(1))
+			})
 		})
 	})
 
