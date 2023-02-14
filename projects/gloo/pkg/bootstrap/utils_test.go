@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
@@ -144,24 +143,6 @@ var _ = Describe("Utils", func() {
 	})
 
 	Context("consul tests", func() {
-		var (
-			consulFactory  *services.ConsulFactory
-			consulInstance *services.ConsulInstance
-			client         *api.Client
-		)
-
-		BeforeSuite(func() {
-			var err error
-			consulFactory, err = services.NewConsulFactory()
-			Expect(err).NotTo(HaveOccurred())
-			client, err = api.NewClient(api.DefaultConfig())
-			Expect(err).NotTo(HaveOccurred())
-
-		})
-
-		AfterSuite(func() {
-			_ = consulFactory.Clean()
-		})
 
 		BeforeEach(func() {
 			if os.Getenv("RUN_CONSUL_TESTS") != "1" {
