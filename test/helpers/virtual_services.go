@@ -8,6 +8,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -19,7 +20,7 @@ type virtualServiceBuilder struct {
 	domains            []string
 	virtualHostOptions *gloov1.VirtualHostOptions
 	routesByName       map[string]*v1.Route
-	sslConfig          *gloov1.SslConfig
+	sslConfig          *ssl.SslConfig
 }
 
 func BuilderFromVirtualService(vs *v1.VirtualService) *virtualServiceBuilder {
@@ -43,7 +44,7 @@ func NewVirtualServiceBuilder() *virtualServiceBuilder {
 	}
 }
 
-func (b *virtualServiceBuilder) WithSslConfig(sslConfig *gloov1.SslConfig) *virtualServiceBuilder {
+func (b *virtualServiceBuilder) WithSslConfig(sslConfig *ssl.SslConfig) *virtualServiceBuilder {
 	b.sslConfig = sslConfig
 	return b
 }

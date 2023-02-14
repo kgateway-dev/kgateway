@@ -12,6 +12,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -23,7 +24,7 @@ const (
 )
 
 var (
-	TlsVersionNotFoundError = func(v v1.SslParameters_ProtocolVersion) error {
+	TlsVersionNotFoundError = func(v ssl.SslParameters_ProtocolVersion) error {
 		return eris.Errorf("tls version %v not found", v)
 	}
 
@@ -52,10 +53,10 @@ var (
 )
 
 type SslConfigTranslator interface {
-	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
-	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
+	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *ssl.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
+	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *ssl.SslConfig) (*envoyauth.DownstreamTlsContext, error)
 	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList, mustHaveCert bool) (*envoyauth.CommonTlsContext, error)
-	ResolveSslParamsConfig(params *v1.SslParameters) (*envoyauth.TlsParameters, error)
+	ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error)
 }
 
 type sslConfigTranslator struct {
@@ -65,7 +66,7 @@ func NewSslConfigTranslator() *sslConfigTranslator {
 	return &sslConfigTranslator{}
 }
 
-func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
+func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *ssl.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
 	common, err := s.ResolveCommonSslConfig(uc, secrets, false)
 	if err != nil {
 		return nil, err
@@ -77,7 +78,7 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc
 	}, nil
 }
 
-func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
+func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *ssl.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
 	common, err := s.ResolveCommonSslConfig(dc, secrets, true)
 	if err != nil {
 		return nil, err
@@ -107,10 +108,10 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 
 type CertSource interface {
 	GetSecretRef() *core.ResourceRef
-	GetSslFiles() *v1.SSLFiles
-	GetSds() *v1.SDSConfig
+	GetSslFiles() *ssl.SSLFiles
+	GetSds() *ssl.SDSConfig
 	GetVerifySubjectAltName() []string
-	GetParameters() *v1.SslParameters
+	GetParameters() *ssl.SslParameters
 	GetAlpnProtocols() []string
 }
 
@@ -131,7 +132,7 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 	}
 }
 
-func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
+func buildSds(name string, sslSecrets *ssl.SDSConfig) *envoyauth.SdsSecretConfig {
 	if sslSecrets.GetCallCredentials() != nil {
 		// Deprecated way of building SDS. No longer used
 		// by anything in gloo but still enabled for now
@@ -183,7 +184,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 }
 
-func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
+func buildDeprecatedSDS(name string, sslSecrets *ssl.SDSConfig) *envoyauth.SdsSecretConfig {
 	config := &envoygrpccredential.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
@@ -236,7 +237,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 	}
 }
 
-func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, matchSan []*envoymatcher.StringMatcher) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) handleSds(sslSecrets *ssl.SDSConfig, matchSan []*envoymatcher.StringMatcher) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.GetCertificatesSecretName() == "" && sslSecrets.GetValidationContextName() == "" {
 		return nil, eris.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
@@ -398,7 +399,7 @@ func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	return err
 }
 
-func (s *sslConfigTranslator) ResolveSslParamsConfig(params *v1.SslParameters) (*envoyauth.TlsParameters, error) {
+func (s *sslConfigTranslator) ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -420,21 +421,21 @@ func (s *sslConfigTranslator) ResolveSslParamsConfig(params *v1.SslParameters) (
 	}, nil
 }
 
-func convertVersion(v v1.SslParameters_ProtocolVersion) (envoyauth.TlsParameters_TlsProtocol, error) {
+func convertVersion(v ssl.SslParameters_ProtocolVersion) (envoyauth.TlsParameters_TlsProtocol, error) {
 	switch v {
-	case v1.SslParameters_TLS_AUTO:
+	case ssl.SslParameters_TLS_AUTO:
 		return envoyauth.TlsParameters_TLS_AUTO, nil
 	// TLS 1.0
-	case v1.SslParameters_TLSv1_0:
+	case ssl.SslParameters_TLSv1_0:
 		return envoyauth.TlsParameters_TLSv1_0, nil
 	// TLS 1.1
-	case v1.SslParameters_TLSv1_1:
+	case ssl.SslParameters_TLSv1_1:
 		return envoyauth.TlsParameters_TLSv1_1, nil
 	// TLS 1.2
-	case v1.SslParameters_TLSv1_2:
+	case ssl.SslParameters_TLSv1_2:
 		return envoyauth.TlsParameters_TLSv1_2, nil
 	// TLS 1.3
-	case v1.SslParameters_TLSv1_3:
+	case ssl.SslParameters_TLSv1_3:
 		return envoyauth.TlsParameters_TLSv1_3, nil
 	}
 

@@ -29,6 +29,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -331,9 +333,9 @@ func (m *UpstreamOptions) Clone() proto.Message {
 	target = &UpstreamOptions{}
 
 	if h, ok := interface{}(m.GetSslParameters()).(clone.Cloner); ok {
-		target.SslParameters = h.Clone().(*SslParameters)
+		target.SslParameters = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslParameters)
 	} else {
-		target.SslParameters = proto.Clone(m.GetSslParameters()).(*SslParameters)
+		target.SslParameters = proto.Clone(m.GetSslParameters()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslParameters)
 	}
 
 	if m.GetGlobalAnnotations() != nil {

@@ -6,13 +6,13 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 )
 
 // groupVirtualServicesBySslConfig returning a stable order of sslConfigs
 // and a map of sslconfigs to their associated Virtual service lists to use on.
-func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*gloov1.SslConfig, map[*gloov1.SslConfig][]*v1.VirtualService) {
-	mergedSslConfig := map[string]*gloov1.SslConfig{}
+func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*ssl.SslConfig, map[*ssl.SslConfig][]*v1.VirtualService) {
+	mergedSslConfig := map[string]*ssl.SslConfig{}
 	groupedVirtualServices := map[string][]*v1.VirtualService{}
 
 	for _, virtualService := range virtualServices {
@@ -31,7 +31,7 @@ func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*g
 
 		} else {
 			// there is no existing sslConfig, create a new entry
-			ptrToCopy := proto.Clone(sslConfig).(*gloov1.SslConfig)
+			ptrToCopy := proto.Clone(sslConfig).(*ssl.SslConfig)
 			mergedSslConfig[sslConfigHash] = ptrToCopy
 			groupedVirtualServices[sslConfigHash] = append(groupedVirtualServices[sslConfigHash], virtualService)
 		}
@@ -45,8 +45,8 @@ func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*g
 	}
 	sort.Strings(orderedHashes)
 
-	result := map[*gloov1.SslConfig][]*v1.VirtualService{}
-	orderedResultKeys := make([]*gloov1.SslConfig, 0, len(mergedSslConfig))
+	result := map[*ssl.SslConfig][]*v1.VirtualService{}
+	orderedResultKeys := make([]*ssl.SslConfig, 0, len(mergedSslConfig))
 
 	for _, sslHash := range orderedHashes {
 		sslConfig := mergedSslConfig[sslHash]
@@ -56,9 +56,9 @@ func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*g
 	return orderedResultKeys, result
 }
 
-func hashSslConfig(sslConfig *gloov1.SslConfig) string {
+func hashSslConfig(sslConfig *ssl.SslConfig) string {
 	// make sure ssl configs are only different by sni domains
-	sslConfigCopy := proto.Clone(sslConfig).(*gloov1.SslConfig)
+	sslConfigCopy := proto.Clone(sslConfig).(*ssl.SslConfig)
 	sslConfigCopy.SniDomains = nil
 
 	hash, _ := sslConfigCopy.Hash(nil)
