@@ -87,7 +87,6 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 
 	_, err = refClient.ListServices()
 	if err != nil {
-		log.Infof("ELC did not detect functions for %v", url)
 		return nil, errors.Wrapf(err, "listing services. are you sure %v implements reflection?", url)
 	}
 
@@ -98,7 +97,6 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 			},
 		},
 	}
-	log.Infof("ELC returning new spec %v %v", svcInfo.GetPluginType(), url)
 	return svcInfo, nil
 }
 
@@ -147,7 +145,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	servicesToAdd := make([]string, len(services)-1)
 	for _, s := range services {
 		// ignore the reflection descriptor
-		if s == "grpc.reflection.v1alpha.ServerReflection" {
+		if s == "grpc.reflection.v1alpha.ServerReflection" || s == "" {
 			continue
 		}
 		// TODO(yuval-k): do not add the same file twice
@@ -167,23 +165,12 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	}
 
 	return updatecb(func(out *v1.Upstream) error {
-		log.Infof("ELC adding services and descriptors to grpc upstream %v", servicesToAdd)
 		svcSpec := getGrpcspec(out)
 		if svcSpec == nil {
-			log.Infof("ELC not a grpc upstream %v", out.GetUpstreamType())
-			t, ok := out.GetUpstreamType().(v1.ServiceSpecGetter)
-			if ok {
-				log.Infof("found us type %v", t.GetServiceSpec())
-				log.Infof("found plugin type %v", t.GetServiceSpec().GetPluginType())
-			}
 			return errors.New("not a GRPC upstream")
 		}
-		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
-		//  but that doesn't work with gogoproto.equal_all.
-		log.Infof("ELC setting spec for %v", out.GetMetadata().GetName())
 		svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
 		svcSpec.Services = servicesToAdd
-
 		return nil
 	})
 }
