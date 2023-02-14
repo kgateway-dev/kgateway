@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -221,7 +222,7 @@ func (a *AggregateTranslator) processMatchableGateway(
 	listenerOptions := reconcileGatewayLevelHCMConfig(parentGateway, matchableHttpGateway)
 
 	// reconcile the ssl configuration that is shared by Gateway and MatchableHttpGateways
-	var sslConfig *gloov1.SslConfig
+	var sslConfig *ssl.SslConfig
 	if sslGateway {
 		sslConfig = reconcileGatewayLevelSslConfig(parentGateway, matchableHttpGateway)
 	}
@@ -284,13 +285,13 @@ func reconcileGatewayLevelHCMConfig(parentGateway *v1.Gateway, matchableHttpGate
 
 // A Gateway and MatchableHttpGateway share configuration
 // reconcileGatewayLevelConfig establishes the reconciled set of options
-func reconcileGatewayLevelSslConfig(parentGateway *v1.Gateway, matchableHttpGateway *v1.MatchableHttpGateway) *gloov1.SslConfig {
+func reconcileGatewayLevelSslConfig(parentGateway *v1.Gateway, matchableHttpGateway *v1.MatchableHttpGateway) *ssl.SslConfig {
 	// v ---- inheritance logic ---- v
 	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
 
 	// SslConfig
 	parentSslConfig := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetSslConfig()
-	var childSslConfig *gloov1.SslConfig
+	var childSslConfig *ssl.SslConfig
 	if matchableHttpGateway.GetMatcher() != nil {
 		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
 	}

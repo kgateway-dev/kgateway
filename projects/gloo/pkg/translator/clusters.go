@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -379,7 +380,7 @@ func validateRouteDestinationForValidLambdas(
 }
 
 // Apply defaults to UpstreamSslConfig
-func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *v1.UpstreamOptions) {
+func applyDefaultsToUpstreamSslConfig(sslConfig *ssl.UpstreamSslConfig, options *v1.UpstreamOptions) {
 	if options == nil {
 		return
 	}

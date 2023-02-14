@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -309,9 +310,9 @@ var _ = Describe("Translate", func() {
 							},
 						},
 					},
-					SslConfigurations: []*gloov1.SslConfig{
+					SslConfigurations: []*ssl.SslConfig{
 						{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "areallygreatsecret",
 									Namespace: "example",
