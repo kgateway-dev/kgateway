@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"regexp"
-	"strconv"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -98,16 +97,6 @@ var _ = Describe("DNS E2E Test", func() {
 func countRegexFrequency(matcher, text string) int {
 	regex := regexp.MustCompile(matcher)
 	matches := regex.FindAllStringSubmatch(text, -1)
-	if len(matches) != 1 {
-		return 0
-	}
 
-	// matches[0] is the first match
-	// matches[0][1] is the first capture group
-	matchCount, conversionErr := strconv.Atoi(matches[0][1])
-	if conversionErr != nil {
-		return 0
-	}
-
-	return matchCount
+	return len(matches)
 }
