@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -598,8 +599,8 @@ var _ = Describe("Gateway", func() {
 						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
 						vs := getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
-						vs.SslConfig = &gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
+						vs.SslConfig = &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      secret.GetMetadata().GetName(),
 									Namespace: secret.GetMetadata().GetNamespace(),
@@ -716,8 +717,8 @@ var _ = Describe("Gateway", func() {
 								},
 							},
 						},
-						SslConfig: &gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
+						SslConfig: &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      secret.GetMetadata().GetName(),
 									Namespace: secret.GetMetadata().GetNamespace(),
@@ -1115,8 +1116,8 @@ var _ = Describe("Gateway", func() {
 						// Check tls inspector has not been added yet
 						Eventually(envoyInstance.EnvoyConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
 
-						sslConfig := &gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
+						sslConfig := &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: secret.GetMetadata().Ref(),
 							},
 						}
@@ -1210,8 +1211,8 @@ var _ = Describe("Gateway", func() {
 								},
 							},
 						},
-						SslConfig: &gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
+						SslConfig: &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      secret.GetMetadata().GetName(),
 									Namespace: secret.GetMetadata().GetNamespace(),

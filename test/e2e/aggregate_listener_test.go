@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -271,8 +272,8 @@ var _ = Describe("Aggregate Listener", func() {
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
-				WithSslConfig(&gloov1.SslConfig{
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+				WithSslConfig(&ssl.SslConfig{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
 					},
 				}).
@@ -283,12 +284,12 @@ var _ = Describe("Aggregate Listener", func() {
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
-				WithSslConfig(&gloov1.SslConfig{
+				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
 					},
 					SniDomains: []string{"west.com"},
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: westTLSSecret.GetMetadata().Ref(),
 					},
 				}).
@@ -506,8 +507,8 @@ var _ = Describe("Aggregate Listener", func() {
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
-				WithSslConfig(&gloov1.SslConfig{
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+				WithSslConfig(&ssl.SslConfig{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
 					},
 				}).
@@ -518,12 +519,12 @@ var _ = Describe("Aggregate Listener", func() {
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
-				WithSslConfig(&gloov1.SslConfig{
+				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
 					},
 					SniDomains: []string{"west.com"},
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: westTLSSecret.GetMetadata().Ref(),
 					},
 				}).
@@ -744,8 +745,8 @@ var _ = Describe("Aggregate Listener", func() {
 				WithDomain("east.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/east").
-				WithSslConfig(&gloov1.SslConfig{
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+				WithSslConfig(&ssl.SslConfig{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
 					},
 				}).
@@ -756,18 +757,18 @@ var _ = Describe("Aggregate Listener", func() {
 				WithDomain("west.com").
 				WithRouteActionToUpstream(simpleRouteName, testUpstream.Upstream).
 				WithRoutePrefixMatcher(simpleRouteName, "/west").
-				WithSslConfig(&gloov1.SslConfig{
+				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
 					},
 					SniDomains: []string{"west.com"},
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: westTLSSecret.GetMetadata().Ref(),
 					},
 				}).
 				Build()
 
-			nonEmptySslConfig := &gloov1.SslConfig{
+			nonEmptySslConfig := &ssl.SslConfig{
 				TransportSocketConnectTimeout: &duration.Duration{
 					Seconds: 30,
 				},
@@ -850,7 +851,7 @@ func buildInsecureHybridGatewayWithDelegation(writeNamespace string) *v1.Gateway
 	return buildHybridGatewayWithDelegation(writeNamespace, nil)
 }
 
-func buildHybridGatewayWithDelegation(writeNamespace string, sslConfig *gloov1.SslConfig) *v1.Gateway {
+func buildHybridGatewayWithDelegation(writeNamespace string, sslConfig *ssl.SslConfig) *v1.Gateway {
 	gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
 	gw.GatewayType = &v1.Gateway_HybridGateway{
 		HybridGateway: &v1.HybridGateway{

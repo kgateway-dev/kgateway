@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	corsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
@@ -190,10 +191,10 @@ var _ = Describe("Listener Subsystem", func() {
 				},
 				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
 					Matcher: &v1.Matcher{
-						SslConfig: &v1.SslConfig{
+						SslConfig: &ssl.SslConfig{
 							SniDomains:    []string{"sni-domain"},
 							AlpnProtocols: []string{"h2"},
-							SslSecrets: &v1.SslConfig_SecretRef{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: createTLSSecret().GetMetadata().Ref(),
 							},
 						},
@@ -241,10 +242,10 @@ var _ = Describe("Listener Subsystem", func() {
 				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{
 					{
 						Matcher: &v1.Matcher{
-							SslConfig: &v1.SslConfig{
+							SslConfig: &ssl.SslConfig{
 								SniDomains:    []string{"sni-domain"},
 								AlpnProtocols: []string{"h2"},
-								SslSecrets: &v1.SslConfig_SecretRef{
+								SslSecrets: &ssl.SslConfig_SecretRef{
 									SecretRef: createTLSSecret().GetMetadata().Ref(),
 								},
 							},
@@ -254,10 +255,10 @@ var _ = Describe("Listener Subsystem", func() {
 					},
 					{
 						Matcher: &v1.Matcher{
-							SslConfig: &v1.SslConfig{
+							SslConfig: &ssl.SslConfig{
 								SniDomains:    []string{"other-sni-domain"},
 								AlpnProtocols: []string{"h2"},
-								SslSecrets: &v1.SslConfig_SecretRef{
+								SslSecrets: &ssl.SslConfig_SecretRef{
 									SecretRef: createTLSSecret().GetMetadata().Ref(),
 								},
 							},
@@ -362,8 +363,8 @@ var _ = Describe("Listener Subsystem", func() {
 				},
 				HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
 					Matcher: &v1.Matcher{
-						SslConfig: &v1.SslConfig{
-							SslSecrets: &v1.SslConfig_SecretRef{
+						SslConfig: &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "secret-that-is-not-in-snapshot",
 									Namespace: defaults.GlooSystem,

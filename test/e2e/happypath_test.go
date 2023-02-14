@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
@@ -283,8 +284,8 @@ var _ = Describe("Happy path", func() {
 								}},
 							},
 						}
-						copyUp.SslConfig = &gloov1.UpstreamSslConfig{
-							SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
+						copyUp.SslConfig = &ssl.UpstreamSslConfig{
+							SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 								SecretRef: ref,
 							},
 						}
