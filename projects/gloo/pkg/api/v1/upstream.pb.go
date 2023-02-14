@@ -191,6 +191,7 @@ type Upstream struct {
 	RespectDnsTtl *wrappers.BoolValue `protobuf:"bytes,29,opt,name=respect_dns_ttl,json=respectDnsTtl,proto3" json:"respect_dns_ttl,omitempty"`
 	// Service Discovery DNS Refresh Rate.
 	// Minimum value is 1 ms. Values below the minimum are considered invalid.
+	// Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid.
 	DnsRefreshRate *duration.Duration `protobuf:"bytes,30,opt,name=dns_refresh_rate,json=dnsRefreshRate,proto3" json:"dns_refresh_rate,omitempty"`
 }
 

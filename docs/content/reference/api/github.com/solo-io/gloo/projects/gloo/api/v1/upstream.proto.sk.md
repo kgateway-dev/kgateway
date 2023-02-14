@@ -97,7 +97,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `httpConnectHeaders` | [[]gloo.solo.io.HeaderValue](../upstream.proto.sk/#headervalue) | HttpConnectHeaders specifies the headers sent with the initial HTTP Connect request. |
 | `ignoreHealthOnHostRemoval` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
 | `respectDnsTtl` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, Service Discovery update period will be triggered once the TTL is expired. If minimum TTL of all records is 0 then dns_refresh_rate will be used. |
-| `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Service Discovery DNS Refresh Rate. Minimum value is 1 ms. Values below the minimum are considered invalid. |
+| `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Service Discovery DNS Refresh Rate. Minimum value is 1 ms. Values below the minimum are considered invalid. Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid. |
 
 
 

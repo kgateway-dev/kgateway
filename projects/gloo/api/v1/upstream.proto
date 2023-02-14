@@ -169,6 +169,7 @@ message Upstream {
 
     // Service Discovery DNS Refresh Rate.
     // Minimum value is 1 ms. Values below the minimum are considered invalid.
+    // Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid.
     google.protobuf.Duration dns_refresh_rate = 30;
 }
 
