@@ -12,7 +12,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -79,7 +79,7 @@ var _ = Describe("Root", func() {
 		Context("with existing config", func() {
 
 			BeforeEach(func() {
-				vs.SslConfig = &gloov1.SslConfig{
+				vs.SslConfig = &ssl.SslConfig{
 					SniDomains: []string{"somesni"},
 				}
 			})

@@ -5,19 +5,19 @@ import (
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 )
 
-func ConsolidateSslConfigurations(sslConfigurations []*v1.SslConfig) []*v1.SslConfig {
-	var result []*v1.SslConfig
-	mergedSslSecrets := map[string]*v1.SslConfig{}
+func ConsolidateSslConfigurations(sslConfigurations []*ssl.SslConfig) []*ssl.SslConfig {
+	var result []*ssl.SslConfig
+	mergedSslSecrets := map[string]*ssl.SslConfig{}
 
 	for _, sslConfig := range sslConfigurations {
 		if sslConfig == nil {
 			continue
 		}
 		// make sure ssl configs are only different by sni domains
-		sslConfigCopy := proto.Clone(sslConfig).(*v1.SslConfig)
+		sslConfigCopy := proto.Clone(sslConfig).(*ssl.SslConfig)
 		sslConfigCopy.SniDomains = nil
 
 		hash, _ := sslConfigCopy.Hash(nil)
@@ -31,7 +31,7 @@ func ConsolidateSslConfigurations(sslConfigurations []*v1.SslConfig) []*v1.SslCo
 				matchingCfg.SniDomains = merge(matchingCfg.GetSniDomains(), sslConfig.GetSniDomains()...)
 			}
 		} else {
-			ptrToCopy := proto.Clone(sslConfig).(*v1.SslConfig)
+			ptrToCopy := proto.Clone(sslConfig).(*ssl.SslConfig)
 			mergedSslSecrets[key] = ptrToCopy
 			result = append(result, ptrToCopy)
 		}
@@ -59,13 +59,13 @@ func merge(values []string, newValues ...string) []string {
 
 // Merges the fields of src into dst.
 // The fields in dst that have non-zero values will not be overwritten.
-func MergeSslConfig(dst, src *v1.SslConfig) *v1.SslConfig {
+func MergeSslConfig(dst, src *ssl.SslConfig) *ssl.SslConfig {
 	if src == nil {
 		return dst
 	}
 
 	if dst == nil {
-		return proto.Clone(src).(*v1.SslConfig)
+		return proto.Clone(src).(*ssl.SslConfig)
 	}
 
 	dstValue, srcValue := reflect.ValueOf(dst).Elem(), reflect.ValueOf(src).Elem()

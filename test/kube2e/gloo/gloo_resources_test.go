@@ -21,6 +21,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -98,8 +99,8 @@ var _ = Describe("GlooResourcesTest", func() {
 			_, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			upstreamSslConfig := &gloov1.UpstreamSslConfig{
-				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
+			upstreamSslConfig := &ssl.UpstreamSslConfig{
+				SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      tlsSecret.GetName(),
 						Namespace: tlsSecret.GetNamespace(),

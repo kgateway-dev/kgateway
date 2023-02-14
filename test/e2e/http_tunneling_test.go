@@ -29,6 +29,7 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -202,8 +203,8 @@ var _ = Describe("tunneling", func() {
 			_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
-			sslCfg := &gloov1.UpstreamSslConfig{
-				SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
+			sslCfg := &ssl.UpstreamSslConfig{
+				SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{Name: "secret", Namespace: "default"},
 				},
 			}

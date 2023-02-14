@@ -10,6 +10,7 @@ import (
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
@@ -52,7 +53,7 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveCommonSslConfig(arg0, arg1
 }
 
 // ResolveDownstreamSslConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveDownstreamSslConfig(arg0 v1.SecretList, arg1 *v1.SslConfig) (*tlsv3.DownstreamTlsContext, error) {
+func (m *MockSslConfigTranslator) ResolveDownstreamSslConfig(arg0 v1.SecretList, arg1 *ssl.SslConfig) (*tlsv3.DownstreamTlsContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveDownstreamSslConfig", arg0, arg1)
 	ret0, _ := ret[0].(*tlsv3.DownstreamTlsContext)
@@ -67,7 +68,7 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveDownstreamSslConfig(arg0, 
 }
 
 // ResolveSslParamsConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveSslParamsConfig(arg0 *v1.SslParameters) (*tlsv3.TlsParameters, error) {
+func (m *MockSslConfigTranslator) ResolveSslParamsConfig(arg0 *ssl.SslParameters) (*tlsv3.TlsParameters, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveSslParamsConfig", arg0)
 	ret0, _ := ret[0].(*tlsv3.TlsParameters)
@@ -82,7 +83,7 @@ func (mr *MockSslConfigTranslatorMockRecorder) ResolveSslParamsConfig(arg0 inter
 }
 
 // ResolveUpstreamSslConfig mocks base method.
-func (m *MockSslConfigTranslator) ResolveUpstreamSslConfig(arg0 v1.SecretList, arg1 *v1.UpstreamSslConfig) (*tlsv3.UpstreamTlsContext, error) {
+func (m *MockSslConfigTranslator) ResolveUpstreamSslConfig(arg0 v1.SecretList, arg1 *ssl.UpstreamSslConfig) (*tlsv3.UpstreamTlsContext, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResolveUpstreamSslConfig", arg0, arg1)
 	ret0, _ := ret[0].(*tlsv3.UpstreamTlsContext)

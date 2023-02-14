@@ -16,6 +16,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -142,8 +143,8 @@ var _ = Describe("Proxy Protocol", func() {
 					WithDomain(e2e.DefaultHost).
 					WithRoutePrefixMatcher("test", "/").
 					WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
-					WithSslConfig(&gloov1.SslConfig{
-						SslSecrets: &gloov1.SslConfig_SecretRef{
+					WithSslConfig(&ssl.SslConfig{
+						SslSecrets: &ssl.SslConfig_SecretRef{
 							SecretRef: secret.Metadata.Ref(),
 						},
 					}).
@@ -194,8 +195,8 @@ var _ = Describe("Proxy Protocol", func() {
 						WithDomain(e2e.DefaultHost).
 						WithRoutePrefixMatcher("test", "/").
 						WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
-						WithSslConfig(&gloov1.SslConfig{
-							SslSecrets: &gloov1.SslConfig_SecretRef{
+						WithSslConfig(&ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: secret.Metadata.Ref(),
 							},
 							SniDomains: []string{"gateway-proxy"},
