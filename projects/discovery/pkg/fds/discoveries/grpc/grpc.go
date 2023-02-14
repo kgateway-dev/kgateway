@@ -87,14 +87,18 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 
 	_, err = refClient.ListServices()
 	if err != nil {
+		log.Infof("ELC did not detect functions for %v", url)
 		return nil, errors.Wrapf(err, "listing services. are you sure %v implements reflection?", url)
 	}
 
 	svcInfo := &plugins.ServiceSpec{
 		PluginType: &plugins.ServiceSpec_GrpcJsonTranscoder{
-			GrpcJsonTranscoder: &grpc_json_plugins.GrpcJsonTranscoder{},
+			GrpcJsonTranscoder: &grpc_json_plugins.GrpcJsonTranscoder{
+				AutoMapping: false,
+			},
 		},
 	}
+	log.Infof("ELC returning new spec %v %v", svcInfo.GetPluginType(), url)
 	return svcInfo, nil
 }
 
@@ -140,7 +144,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	}
 
 	descriptors := &descriptor.FileDescriptorSet{}
-
+	servicesToAdd := make([]string, len(services)-1)
 	for _, s := range services {
 		// ignore the reflection descriptor
 		if s == "grpc.reflection.v1alpha.ServerReflection" {
@@ -152,7 +156,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 			return errors.Wrapf(err, "getting file for svc symbol %s", s)
 		}
 		files := getDepTree(root)
-
+		servicesToAdd = append(servicesToAdd, s)
 		descriptors.File = append(descriptors.GetFile(), files...)
 
 	}
@@ -163,15 +167,23 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	}
 
 	return updatecb(func(out *v1.Upstream) error {
-		log.Infof("ELC adding services and descriptors to grpc upstream %v", services)
+		log.Infof("ELC adding services and descriptors to grpc upstream %v", servicesToAdd)
 		svcSpec := getGrpcspec(out)
 		if svcSpec == nil {
+			log.Infof("ELC not a grpc upstream %v", out.GetUpstreamType())
+			t, ok := out.GetUpstreamType().(v1.ServiceSpecGetter)
+			if ok {
+				log.Infof("found us type %v", t.GetServiceSpec())
+				log.Infof("found plugin type %v", t.GetServiceSpec().GetPluginType())
+			}
 			return errors.New("not a GRPC upstream")
 		}
 		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
 		//  but that doesn't work with gogoproto.equal_all.
+		log.Infof("ELC setting spec for %v", out.GetMetadata().GetName())
 		svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
-		svcSpec.Services = services
+		svcSpec.Services = servicesToAdd
+
 		return nil
 	})
 }
