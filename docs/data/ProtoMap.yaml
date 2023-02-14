@@ -654,7 +654,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AzureSecret
     package: gloo.solo.io
   gloo.solo.io.CallCredentials:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#CallCredentials
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#CallCredentials
     package: gloo.solo.io
   gloo.solo.io.CircuitBreakerConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk/#CircuitBreakerConfig
@@ -825,10 +825,10 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto.sk/#Router
     package: gloo.solo.io
   gloo.solo.io.SDSConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SDSConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SDSConfig
     package: gloo.solo.io
   gloo.solo.io.SSLFiles:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SSLFiles
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SSLFiles
     package: gloo.solo.io
   gloo.solo.io.Secret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#Secret
@@ -843,10 +843,10 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#SourceMetadata
     package: gloo.solo.io
   gloo.solo.io.SslConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SslConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SslConfig
     package: gloo.solo.io
   gloo.solo.io.SslParameters:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SslParameters
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SslParameters
     package: gloo.solo.io
   gloo.solo.io.Subset:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto.sk/#Subset
@@ -879,7 +879,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#UpstreamOptions
     package: gloo.solo.io
   gloo.solo.io.UpstreamSslConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#UpstreamSslConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#UpstreamSslConfig
     package: gloo.solo.io
   gloo.solo.io.ValidationReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ValidationReport

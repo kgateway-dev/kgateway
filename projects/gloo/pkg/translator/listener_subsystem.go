@@ -7,6 +7,7 @@ import (
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -315,7 +316,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 			parentReport:            listenerReport,
 			networkFilterTranslator: networkFilterTranslator,
 			sslConfigTranslator:     l.sslConfigTranslator,
-			sslConfigurations:       []*v1.SslConfig{httpFilterChain.GetMatcher().GetSslConfig()},
+			sslConfigurations:       []*ssl.SslConfig{httpFilterChain.GetMatcher().GetSslConfig()},
 			defaultSslConfig:        nil,
 			sourcePrefixRanges:      httpFilterChain.GetMatcher().GetSourcePrefixRanges(),
 		}

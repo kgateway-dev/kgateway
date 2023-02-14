@@ -628,7 +628,7 @@ When these properties are defined on a specific upstream, this configuration wil
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
+| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl/ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
 | `globalAnnotations` | `map<string, string>` | Annotations to apply to all upstreams. |
 
 
