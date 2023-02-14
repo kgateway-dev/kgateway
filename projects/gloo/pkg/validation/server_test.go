@@ -458,12 +458,20 @@ var _ = Describe("Validation Server", func() {
 	})
 
 	Context("Watch Sync Notifications", func() {
+
 		var (
+			ctx    context.Context
+			cancel context.CancelFunc
 			srv    *grpc.Server
 			v      Validator
 			client validationgrpc.GlooValidationServiceClient
 		)
-		BeforeEach(func() {
+
+		// The ValidatorConfig is initialized in an outer JustBeforeEach, so we want to run
+		// this block after that has been initialized. That way the inner resources (namely, the context)
+		// are all valid by the time this Setup Node is executed
+		JustBeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.TODO())
 			lis, err := net.Listen("tcp", ":0")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -481,20 +489,19 @@ var _ = Describe("Validation Server", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}()
 
-			cc, err := grpc.DialContext(context.TODO(), lis.Addr().String(), grpc.WithInsecure(), grpc.WithBlock())
+			cc, err := grpc.DialContext(ctx, lis.Addr().String(), grpc.WithInsecure(), grpc.WithBlock())
 			Expect(err).NotTo(HaveOccurred())
 
 			client = validationgrpc.NewGlooValidationServiceClient(cc)
 
 		})
 		AfterEach(func() {
+			cancel()
+
 			srv.Stop()
 		})
 
 		It("sends sync notifications", func() {
-			ctx, cancel := context.WithCancel(context.TODO())
-			defer cancel()
-
 			stream, err := client.NotifyOnResync(ctx, &validationgrpc.NotifyOnResyncRequest{})
 			Expect(err).NotTo(HaveOccurred())
 
