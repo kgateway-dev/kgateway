@@ -22,6 +22,7 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
@@ -282,8 +283,8 @@ func makeSslVirtualService(vsNamespace string, secret *core.ResourceRef) *v1.Vir
 				},
 			}},
 		},
-		SslConfig: &gloov1.SslConfig{
-			SslSecrets: &gloov1.SslConfig_SecretRef{
+		SslConfig: &ssl.SslConfig{
+			SslSecrets: &ssl.SslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{
 					Name:      secret.Name,
 					Namespace: secret.Namespace,

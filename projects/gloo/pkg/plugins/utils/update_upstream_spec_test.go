@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -21,7 +22,7 @@ var _ = Describe("UpdateUpstream", func() {
 	It("should preserve config when updating upstreams", func() {
 		desired := &gloov1.Upstream{}
 		original := &gloov1.Upstream{
-			SslConfig:                               &gloov1.UpstreamSslConfig{Sni: "testsni"},
+			SslConfig:                               &ssl.UpstreamSslConfig{Sni: "testsni"},
 			CircuitBreakers:                         &gloov1.CircuitBreakerConfig{MaxConnections: &wrappers.UInt32Value{Value: 6}},
 			LoadBalancerConfig:                      &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 7}},
 			ConnectionConfig:                        &gloov1.ConnectionConfig{MaxRequestsPerConnection: 8},
@@ -50,8 +51,8 @@ var _ = Describe("UpdateUpstream", func() {
 	})
 
 	It("should update config when one is desired", func() {
-		desiredSslConfig := &gloov1.UpstreamSslConfig{
-			SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
+		desiredSslConfig := &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{Name: "hi", Namespace: "there"},
 			},
 		}
@@ -82,7 +83,7 @@ var _ = Describe("UpdateUpstream", func() {
 			DnsRefreshRate:     desiredDnsRefreshRate,
 		}
 		original := &gloov1.Upstream{
-			SslConfig:          &gloov1.UpstreamSslConfig{Sni: "testsni"},
+			SslConfig:          &ssl.UpstreamSslConfig{Sni: "testsni"},
 			CircuitBreakers:    &gloov1.CircuitBreakerConfig{MaxPendingRequests: &wrappers.UInt32Value{Value: 6}},
 			LoadBalancerConfig: &gloov1.LoadBalancerConfig{HealthyPanicThreshold: &wrappers.DoubleValue{Value: 9}},
 			ConnectionConfig:   &gloov1.ConnectionConfig{PerConnectionBufferLimitBytes: &wrappers.UInt32Value{Value: 10}},
