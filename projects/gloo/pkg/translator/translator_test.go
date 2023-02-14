@@ -3567,7 +3567,7 @@ var _ = Describe("Translator", func() {
 			table.Entry("Static, DnsRefreshRate=nil", true, nil, BeNil(), BeNil()),
 			table.Entry("Static, DsnRefreshRate valid", true, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), BeNil()),
 			table.Entry("Static, DsnRefreshRate=0", true, &duration.Duration{Seconds: 0}, BeNil(), MatchError(ContainSubstring("dnsRefreshRate was set below minimum requirement"))),
-			table.Entry("Eds, DsnRefreshRate valid", false, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), MatchError(ContainSubstring("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DSN cluster type"))),
+			table.Entry("Eds, DsnRefreshRate valid", false, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), MatchError(ContainSubstring("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type"))),
 		)
 	})
 

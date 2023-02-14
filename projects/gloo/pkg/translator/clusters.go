@@ -253,7 +253,7 @@ func validateCluster(c *envoy_config_cluster_v3.Cluster) error {
 
 	if c.GetDnsRefreshRate() != nil {
 		if clusterType != envoy_config_cluster_v3.Cluster_STRICT_DNS && clusterType != envoy_config_cluster_v3.Cluster_LOGICAL_DNS {
-			return eris.Errorf("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DSN cluster type, found %v", clusterType)
+			return eris.Errorf("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type, found %v", clusterType)
 		}
 	}
 	return nil
