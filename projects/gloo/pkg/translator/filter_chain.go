@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -75,11 +76,11 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 type httpFilterChainTranslator struct {
 	parentReport            *validationapi.ListenerReport
 	networkFilterTranslator NetworkFilterTranslator
-	sslConfigurations       []*v1.SslConfig
+	sslConfigurations       []*ssl.SslConfig
 	sslConfigTranslator     utils.SslConfigTranslator
 
 	// These values are optional (currently only available for HybridListeners or AggregateListeners)
-	defaultSslConfig   *v1.SslConfig
+	defaultSslConfig   *ssl.SslConfig
 	sourcePrefixRanges []*v3.CidrRange
 }
 
@@ -110,7 +111,7 @@ func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) [
 	return filterChains
 }
 
-func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslConfig {
+func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*ssl.SslConfig {
 	mergedSslConfigurations := ConsolidateSslConfigurations(h.sslConfigurations)
 
 	if h.defaultSslConfig == nil {
@@ -118,7 +119,7 @@ func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslC
 	}
 
 	// Merge each sslConfig with the default values
-	var sslConfigWithDefaults []*v1.SslConfig
+	var sslConfigWithDefaults []*ssl.SslConfig
 	for _, ssl := range mergedSslConfigurations {
 		sslConfigWithDefaults = append(sslConfigWithDefaults, MergeSslConfig(ssl, h.defaultSslConfig))
 	}
@@ -128,7 +129,7 @@ func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslC
 func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 	snap *v1snap.ApiSnapshot,
 	networkFilters []*envoy_config_listener_v3.Filter,
-	sslConfigurations []*v1.SslConfig,
+	sslConfigurations []*ssl.SslConfig,
 ) []*envoy_config_listener_v3.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain

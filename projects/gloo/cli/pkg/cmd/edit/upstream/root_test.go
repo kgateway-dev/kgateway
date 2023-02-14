@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -73,7 +74,7 @@ var _ = Describe("Root", func() {
 
 			BeforeEach(func() {
 				upstream := ReadUpstream(upClient, upRef)
-				upstream.SslConfig = &gloov1.UpstreamSslConfig{
+				upstream.SslConfig = &ssl.UpstreamSslConfig{
 					Sni: "somesni",
 				}
 				OverwriteUpstream(upClient, upstream)
