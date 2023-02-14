@@ -250,6 +250,12 @@ func validateCluster(c *envoy_config_cluster_v3.Cluster) error {
 			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
+
+	if c.GetDnsRefreshRate() != nil {
+		if clusterType != envoy_config_cluster_v3.Cluster_STRICT_DNS && clusterType != envoy_config_cluster_v3.Cluster_LOGICAL_DNS {
+			return eris.Errorf("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DSN cluster type, found %v", clusterType)
+		}
+	}
 	return nil
 }
 
@@ -288,7 +294,7 @@ func getDnsRefreshRate(us *v1.Upstream, reports reporter.ResourceReports) *durat
 	}
 
 	if refreshRate.AsDuration() < minimumDnsRefreshRate.AsDuration() {
-		reports.AddWarning(us, fmt.Sprintf("dnsRefreshRate was set below mimimuim requirement (%s), ignoring configuration", minimumDnsRefreshRate))
+		reports.AddWarning(us, fmt.Sprintf("dnsRefreshRate was set below minimum requirement (%s), ignoring configuration", minimumDnsRefreshRate))
 		return nil
 	}
 
