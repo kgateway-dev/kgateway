@@ -93,7 +93,6 @@ var _ = Describe("DNS E2E Test", func() {
 })
 
 // countRegexFrequency returns the frequency of a `matcher` within a `text`
-// TODO (sam-heilbron) this does not seem to be working
 func countRegexFrequency(matcher, text string) int {
 	regex := regexp.MustCompile(matcher)
 	matches := regex.FindAllStringSubmatch(text, -1)
