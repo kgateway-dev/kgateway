@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -254,7 +254,7 @@ var _ = Describe("HttpGatewaySelector", func() {
 
 	Context("ssl", func() {
 
-		var sslConfig = &gloov1.SslConfig{
+		var sslConfig = &ssl.SslConfig{
 			TransportSocketConnectTimeout: &duration.Duration{
 				Seconds: 30,
 			},
@@ -309,7 +309,7 @@ func createMatchableHttpGateway(name, namespace string, labels map[string]string
 	}
 }
 
-func createSecureMatchableHttpGateway(name, namespace string, sslConfig *gloov1.SslConfig) *v1.MatchableHttpGateway {
+func createSecureMatchableHttpGateway(name, namespace string, sslConfig *ssl.SslConfig) *v1.MatchableHttpGateway {
 	return &v1.MatchableHttpGateway{
 		Metadata: &core.Metadata{
 			Name:      name,

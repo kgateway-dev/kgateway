@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -87,14 +87,14 @@ func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, args []strin
 		up.SslConfig = nil
 	} else {
 		if up.GetSslConfig() == nil {
-			up.SslConfig = &gloov1.UpstreamSslConfig{}
+			up.SslConfig = &ssl.UpstreamSslConfig{}
 		}
 
 		hasBoth := (optsExt.SslSecretRef.GetName() != "") && (optsExt.SslSecretRef.GetNamespace() != "")
 		hasNone := (optsExt.SslSecretRef.GetName() == "") && (optsExt.SslSecretRef.GetNamespace() == "")
 
 		if hasBoth {
-			up.GetSslConfig().SslSecrets = &gloov1.UpstreamSslConfig_SecretRef{
+			up.GetSslConfig().SslSecrets = &ssl.UpstreamSslConfig_SecretRef{
 				SecretRef: &optsExt.SslSecretRef,
 			}
 		} else if !hasNone {
