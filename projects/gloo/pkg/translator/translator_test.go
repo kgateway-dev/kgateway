@@ -3519,7 +3519,7 @@ var _ = Describe("Translator", func() {
 			table.Entry("When value=nil", nil, false))
 	})
 
-	FContext("DnsRefreshRate", func() {
+	Context("DnsRefreshRate", func() {
 		table.DescribeTable("Sets DnsRefreshRate on Cluster",
 			func(refreshRate *duration.Duration, refreshRateMatcher types2.GomegaMatcher, reportMatcher types2.GomegaMatcher) {
 				upstream.DnsRefreshRate = refreshRate
