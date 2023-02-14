@@ -117,19 +117,10 @@
 |settings.circuitBreakers.maxRetries|uint32||Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3.|
 |settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Defaults to false.|
 |settings.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
-|gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|gloo.deployment.image.repository|string|gloo|The image repository (name) for the container.|
-|gloo.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gloo.deployment.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gloo.deployment.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gloo.deployment.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gloo.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gloo.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gloo.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
-|gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
-|gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
-|gloo.deployment.proxyDebugPort|int|9966|port where gloo serves gRPC Proxy contents to glooctl|
+|gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy.|
+|gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy.|
+|gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway.|
+|gloo.deployment.proxyDebugPort|int|9966|port where gloo serves gRPC Proxy contents to glooctl.|
 |gloo.deployment.stats.enabled|bool||Controls whether or not Envoy stats are enabled|
 |gloo.deployment.stats.routePrefixRewrite|string||The Envoy stats endpoint to which the metrics are written|
 |gloo.deployment.stats.setDatadogAnnotations|bool||Sets the default datadog annotations|
@@ -137,13 +128,31 @@
 |gloo.deployment.stats.statsPrefixRewrite|string||The Envoy stats endpoint with general metrics for the additional stats route|
 |gloo.deployment.stats.serviceMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Service Monitor. Requires that 'enabled' is also true|
 |gloo.deployment.stats.podMonitorEnabled|bool||Whether or not to expose an http-monitoring port that can be scraped by a Prometheus Pod Monitor. Requires that 'enabled' is also true|
-|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
+|gloo.deployment.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If a SecurityContext is defined for the container, this value is not applied for the container.|
+|gloo.deployment.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
+|gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service.|
 |gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment.|
 |gloo.deployment.extraGlooAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment.|
 |gloo.deployment.livenessProbeEnabled|bool||Set to true to enable a liveness probe for Gloo Edge (default is false).|
 |gloo.deployment.ossImageTag|string|<release_version, ex: 1.2.3>|Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with.|
+|gloo.deployment.podSecurityContext.seLinuxOptions.user|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions.role|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions.type|string|||
+|gloo.deployment.podSecurityContext.seLinuxOptions.level|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.runAsUserName|string|||
+|gloo.deployment.podSecurityContext.windowsOptions.hostProcess|bool|||
+|gloo.deployment.podSecurityContext.runAsUser|int64|||
+|gloo.deployment.podSecurityContext.runAsGroup|int64|||
+|gloo.deployment.podSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.podSecurityContext.supplementalGroups[]|int64|||
+|gloo.deployment.podSecurityContext.fsGroup|int64|||
+|gloo.deployment.podSecurityContext.sysctls[].name|string|||
+|gloo.deployment.podSecurityContext.sysctls[].value|string|||
+|gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
+|gloo.deployment.podSecurityContext.seccompProfile.type|string|||
+|gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -181,6 +190,34 @@
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
 |gloo.deployment.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
+|gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|gloo.deployment.image.repository|string|gloo|The image repository (name) for the container.|
+|gloo.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gloo.deployment.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gloo.deployment.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gloo.deployment.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gloo.deployment.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gloo.deployment.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gloo.deployment.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gloo.deployment.glooContainerSecurityContext.capabilities.add[]|string|||
+|gloo.deployment.glooContainerSecurityContext.capabilities.drop[]|string|||
+|gloo.deployment.glooContainerSecurityContext.privileged|bool|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.user|string|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.role|string|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.type|string|||
+|gloo.deployment.glooContainerSecurityContext.seLinuxOptions.level|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|gloo.deployment.glooContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|gloo.deployment.glooContainerSecurityContext.runAsUser|int64|||
+|gloo.deployment.glooContainerSecurityContext.runAsGroup|int64|||
+|gloo.deployment.glooContainerSecurityContext.runAsNonRoot|bool|||
+|gloo.deployment.glooContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|gloo.deployment.glooContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|gloo.deployment.glooContainerSecurityContext.procMount|string|||
+|gloo.deployment.glooContainerSecurityContext.seccompProfile.type|string|||
+|gloo.deployment.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -432,21 +469,12 @@
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.NAME.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
-|gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
-|gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
-|gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gatewayProxies.NAME.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gatewayProxies.NAME.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gatewayProxies.NAME.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gatewayProxies.NAME.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gatewayProxies.NAME.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gatewayProxies.NAME.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
-|gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
-|gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
-|gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
-|gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on|
-|gatewayProxies.NAME.podTemplate.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port.|
+|gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port.|
+|gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod.|
+|gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod.|
+|gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on.|
+|gatewayProxies.NAME.podTemplate.nodeSelector.NAME|string||label selector for nodes.|
 |gatewayProxies.NAME.podTemplate.tolerations[].key|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].operator|string|||
 |gatewayProxies.NAME.podTemplate.tolerations[].value|string|||
@@ -458,14 +486,14 @@
 |gatewayProxies.NAME.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.NAME.podTemplate.resources.requests.memory|string||amount of memory|
 |gatewayProxies.NAME.podTemplate.resources.requests.cpu|string||amount of CPUs|
-|gatewayProxies.NAME.podTemplate.disableNetBind|bool||don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
-|gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run Envoy as an unprivileged user|
-|gatewayProxies.NAME.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.NAME.podTemplate.disableNetBind|bool||don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run Envoy as an unprivileged user. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
+|gatewayProxies.NAME.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
+|gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
-|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info.|
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.exec.command[]|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.path|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int64|||
@@ -507,7 +535,53 @@
 |gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.NAME.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
 |gatewayProxies.NAME.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
-|gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true|
+|gatewayProxies.NAME.podTemplate.enablePodSecurityContext|bool||Whether or not to render the pod security context. Default is true.|
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.runAsUser|int64|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.runAsGroup|int64|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.supplementalGroups[]|int64|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroup|int64|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.sysctls[].name|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.sysctls[].value|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
+|gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
+|gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gatewayProxies.NAME.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gatewayProxies.NAME.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gatewayProxies.NAME.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gatewayProxies.NAME.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gatewayProxies.NAME.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gatewayProxies.NAME.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.privileged|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.runAsUser|int64|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.runAsGroup|int64|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.procMount|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -632,21 +706,12 @@
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostNetwork|bool|||
 |gatewayProxies.gatewayProxy.namespace|string||Namespace in which to deploy this gateway proxy. Defaults to the value of Settings.WriteNamespace|
-|gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
-|gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
-|gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
-|gatewayProxies.gatewayProxy.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
-|gatewayProxies.gatewayProxy.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
-|gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
-|gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
-|gatewayProxies.gatewayProxy.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
-|gatewayProxies.gatewayProxy.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
-|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
-|gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
-|gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
-|gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on|
-|gatewayProxies.gatewayProxy.podTemplate.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port.|
+|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port.|
+|gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod.|
+|gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod.|
+|gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on.|
+|gatewayProxies.gatewayProxy.podTemplate.nodeSelector.NAME|string||label selector for nodes.|
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].key|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].operator|string|||
 |gatewayProxies.gatewayProxy.podTemplate.tolerations[].value|string|||
@@ -658,14 +723,14 @@
 |gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu|string||amount of CPUs|
-|gatewayProxies.gatewayProxy.podTemplate.disableNetBind|bool|true|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
-|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run Envoy as an unprivileged user|
-|gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
-|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
-|gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.disableNetBind|bool|true|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run Envoy as an unprivileged user. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
+|gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied.|
+|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container.|
+|gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied.|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while Envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
 |gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing Envoy to terminate|
-|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info.|
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.exec.command[]|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int64|||
@@ -707,7 +772,53 @@
 |gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.extraContainers[]|interface||Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment.|
 |gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[]|interface||Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment.|
-|gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true|
+|gatewayProxies.gatewayProxy.podTemplate.enablePodSecurityContext|bool|true|Whether or not to render the pod security context. Default is true.|
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsUser|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsGroup|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.supplementalGroups[]|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroup|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.sysctls[].name|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.sysctls[].value|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
+|gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
+|gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
+|gatewayProxies.gatewayProxy.podTemplate.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
+|gatewayProxies.gatewayProxy.podTemplate.image.registry|string||The image hostname prefix and registry, such as quay.io/solo-io.|
+|gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting|
+|gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
+|gatewayProxies.gatewayProxy.podTemplate.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
+|gatewayProxies.gatewayProxy.podTemplate.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.capabilities.add[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.capabilities.drop[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.privileged|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.user|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.role|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seLinuxOptions.level|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.gmsaCredentialSpec|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.runAsUserName|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.windowsOptions.hostProcess|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.runAsUser|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.runAsGroup|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.runAsNonRoot|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.readOnlyRootFilesystem|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.allowPrivilegeEscalation|bool|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.procMount|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -1013,6 +1124,25 @@
 |global.glooMtls.sds.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.sds.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.sds.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.sds.securityContext.capabilities.add[]|string|||
+|global.glooMtls.sds.securityContext.capabilities.drop[]|string|||
+|global.glooMtls.sds.securityContext.privileged|bool|||
+|global.glooMtls.sds.securityContext.seLinuxOptions.user|string|||
+|global.glooMtls.sds.securityContext.seLinuxOptions.role|string|||
+|global.glooMtls.sds.securityContext.seLinuxOptions.type|string|||
+|global.glooMtls.sds.securityContext.seLinuxOptions.level|string|||
+|global.glooMtls.sds.securityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|global.glooMtls.sds.securityContext.windowsOptions.gmsaCredentialSpec|string|||
+|global.glooMtls.sds.securityContext.windowsOptions.runAsUserName|string|||
+|global.glooMtls.sds.securityContext.windowsOptions.hostProcess|bool|||
+|global.glooMtls.sds.securityContext.runAsUser|int64|||
+|global.glooMtls.sds.securityContext.runAsGroup|int64|||
+|global.glooMtls.sds.securityContext.runAsNonRoot|bool|||
+|global.glooMtls.sds.securityContext.readOnlyRootFilesystem|bool|||
+|global.glooMtls.sds.securityContext.allowPrivilegeEscalation|bool|||
+|global.glooMtls.sds.securityContext.procMount|string|||
+|global.glooMtls.sds.securityContext.seccompProfile.type|string|||
+|global.glooMtls.sds.securityContext.seccompProfile.localhostProfile|string|||
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |global.glooMtls.envoy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1022,6 +1152,25 @@
 |global.glooMtls.envoy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.envoy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.envoy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.envoy.securityContext.capabilities.add[]|string|||
+|global.glooMtls.envoy.securityContext.capabilities.drop[]|string|||
+|global.glooMtls.envoy.securityContext.privileged|bool|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions.user|string|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions.role|string|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions.type|string|||
+|global.glooMtls.envoy.securityContext.seLinuxOptions.level|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions.gmsaCredentialSpec|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions.runAsUserName|string|||
+|global.glooMtls.envoy.securityContext.windowsOptions.hostProcess|bool|||
+|global.glooMtls.envoy.securityContext.runAsUser|int64|||
+|global.glooMtls.envoy.securityContext.runAsGroup|int64|||
+|global.glooMtls.envoy.securityContext.runAsNonRoot|bool|||
+|global.glooMtls.envoy.securityContext.readOnlyRootFilesystem|bool|||
+|global.glooMtls.envoy.securityContext.allowPrivilegeEscalation|bool|||
+|global.glooMtls.envoy.securityContext.procMount|string|||
+|global.glooMtls.envoy.securityContext.seccompProfile.type|string|||
+|global.glooMtls.envoy.securityContext.seccompProfile.localhostProfile|string|||
 |global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1031,6 +1180,25 @@
 |global.glooMtls.istioProxy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.istioProxy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.istioProxy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
+|global.glooMtls.istioProxy.securityContext.capabilities.add[]|string|||
+|global.glooMtls.istioProxy.securityContext.capabilities.drop[]|string|||
+|global.glooMtls.istioProxy.securityContext.privileged|bool|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.user|string|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.role|string|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.type|string|||
+|global.glooMtls.istioProxy.securityContext.seLinuxOptions.level|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.gmsaCredentialSpecName|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.gmsaCredentialSpec|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.runAsUserName|string|||
+|global.glooMtls.istioProxy.securityContext.windowsOptions.hostProcess|bool|||
+|global.glooMtls.istioProxy.securityContext.runAsUser|int64|||
+|global.glooMtls.istioProxy.securityContext.runAsGroup|int64|||
+|global.glooMtls.istioProxy.securityContext.runAsNonRoot|bool|||
+|global.glooMtls.istioProxy.securityContext.readOnlyRootFilesystem|bool|||
+|global.glooMtls.istioProxy.securityContext.allowPrivilegeEscalation|bool|||
+|global.glooMtls.istioProxy.securityContext.procMount|string|||
+|global.glooMtls.istioProxy.securityContext.seccompProfile.type|string|||
+|global.glooMtls.istioProxy.securityContext.seccompProfile.localhostProfile|string|||
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|

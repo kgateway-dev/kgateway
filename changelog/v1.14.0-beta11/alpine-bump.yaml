@@ -1,0 +1,6 @@
+changelog:
+  - dependencyOwner: alpine
+    dependencyRepo: alpine
+    dependencyTag: 3.17.2
+    description: Update Alpine image in kubectl Dockerfile to 3.17.2 to resolve CVE-2023-0286
+    type: DEPENDENCY_BUMP

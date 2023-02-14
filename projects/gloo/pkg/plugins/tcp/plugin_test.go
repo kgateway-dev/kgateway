@@ -18,6 +18,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -264,8 +265,8 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("can add the forward sni cluster name filter", func() {
-			sslConfig := &v1.SslConfig{
-				SslSecrets: &v1.SslConfig_SecretRef{
+			sslConfig := &ssl.SslConfig{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "name",
 						Namespace: "namespace",
@@ -304,8 +305,8 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should propagate proided `transport_socket_connect_timeout` to Envoy", func() {
-			sslConfig := &v1.SslConfig{
-				SslSecrets: &v1.SslConfig_SecretRef{
+			sslConfig := &ssl.SslConfig{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "name",
 						Namespace: "namespace",

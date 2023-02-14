@@ -126,7 +126,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | `selector` | [.selectors.core.gloo.solo.io.Selector](../../../../gloo/api/v1/core/selectors/selectors.proto.sk/#selector) | Delegate to the MatchableHttpGateway that match the given selector. Only one of `selector` or `ref` can be set. |
 | `preventChildOverrides` | `bool` | Used as a meta modifier to the `http_connection_manager_settings` and `ssl_config` fields in a DelegatedHttpGateway. When set, provided ancestor config cannot be overriden by matched HttpGateways. Useful in a multi-team context, where a controlling team managing a primary Gateway file may want to lock down specific functionality from other teams. For example: (DelegatedHttpGateway, MatchableHttpGateway) = {"a": "a1", "b": "b1"}, {"b": "b2", "c": "c2"} When true: get_config(MatchableHttpGateway) --> {"a": "a1", "b": "b1", "c": "c2"} When false: get_config(MatchableHttpGateway) --> {"a": "a1", "b": "b2", "c": "c2"}. |
 | `httpConnectionManagerSettings` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings](../../../../gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings) | Anscestry-level HTTP Gateway configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. Ultimately, said options will be consumed by instances of `MatchableHttpGateway.http_gateway`. |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Anscestry-level TLS/SSL traffic configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. From there, they are passed to all VirtualServices associated with said `MatchableHttpGateway`s. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | Anscestry-level TLS/SSL traffic configuration. Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`. From there, they are passed to all VirtualServices associated with said `MatchableHttpGateway`s. |
 
 
 
@@ -165,7 +165,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | Gloo use SNI domains as matching criteria for Gateway selection The other ssl_config properties will be applied to the outputFilterChain's transport socket SslConfig from VirtualServices will be ignored in a MatchedGateway. |
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
 
 

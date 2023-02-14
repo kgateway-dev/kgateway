@@ -5,6 +5,7 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -94,18 +95,18 @@ func isEmptyValue(v reflect.Value) bool {
 	return false
 }
 
-func mergeSslConfig(parent, child *v1.SslConfig, preventChildOverrides bool) *v1.SslConfig {
+func mergeSslConfig(parent, child *ssl.SslConfig, preventChildOverrides bool) *ssl.SslConfig {
 	if child == nil {
 		// use parent exactly as-is
-		return proto.Clone(parent).(*v1.SslConfig)
+		return proto.Clone(parent).(*ssl.SslConfig)
 	}
 	if parent == nil {
 		// use child exactly as-is
-		return proto.Clone(child).(*v1.SslConfig)
+		return proto.Clone(child).(*ssl.SslConfig)
 	}
 
 	// Clone child to be safe, since we will mutate it
-	childClone := proto.Clone(child).(*v1.SslConfig)
+	childClone := proto.Clone(child).(*ssl.SslConfig)
 	mergo.Merge(childClone, parent, mergo.WithTransformers(wrapperTransformer{preventChildOverrides}))
 	return childClone
 }

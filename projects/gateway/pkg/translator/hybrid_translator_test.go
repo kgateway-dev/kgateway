@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -162,7 +163,7 @@ var _ = Describe("Hybrid Translator", func() {
 												Matcher: &v1.Matcher{
 													// This is important as it means the Gateway will only select
 													// VirtualServices with Ssl defined
-													SslConfig: &gloov1.SslConfig{},
+													SslConfig: &ssl.SslConfig{},
 													SourcePrefixRanges: []*v3.CidrRange{
 														{
 															AddressPrefix: "match1",
@@ -301,14 +302,14 @@ var _ = Describe("Hybrid Translator", func() {
 					parent *v1.DelegatedHttpGateway
 					child  *v1.MatchableHttpGateway
 
-					sslNil  *gloov1.SslConfig
-					sslZero = &gloov1.SslConfig{
+					sslNil  *ssl.SslConfig
+					sslZero = &ssl.SslConfig{
 						OneWayTls: &wrapperspb.BoolValue{
 							Value: false,
 						},
 					}
-					sslEmpty *gloov1.SslConfig = &gloov1.SslConfig{}
-					sslSet   *gloov1.SslConfig = &gloov1.SslConfig{
+					sslEmpty *ssl.SslConfig = &ssl.SslConfig{}
+					sslSet   *ssl.SslConfig = &ssl.SslConfig{
 						OneWayTls: &wrapperspb.BoolValue{
 							Value: true,
 						},
@@ -372,7 +373,7 @@ var _ = Describe("Hybrid Translator", func() {
 				})
 
 				Context("SslConfig", func() {
-					DescribeTable("SslConfig anscestry override tests", func(childSsl, parentSsl *gloov1.SslConfig, preventChildOverrides bool, desiredResult DesiredResult) {
+					DescribeTable("SslConfig anscestry override tests", func(childSsl, parentSsl *ssl.SslConfig, preventChildOverrides bool, desiredResult DesiredResult) {
 						parent.PreventChildOverrides = preventChildOverrides
 						// config setting
 						child.GetMatcher().SslConfig = childSsl
@@ -625,7 +626,7 @@ var _ = Describe("Hybrid Translator", func() {
 										DelegatedHttpGateways: &v1.DelegatedHttpGateway{
 											// This is important as it means the Gateway will only select
 											// HttpGateways with Ssl defined
-											SslConfig: &gloov1.SslConfig{},
+											SslConfig: &ssl.SslConfig{},
 											SelectionType: &v1.DelegatedHttpGateway_Ref{
 												Ref: &core.ResourceRef{
 													Name:      "name",
@@ -645,7 +646,7 @@ var _ = Describe("Hybrid Translator", func() {
 								Matcher: &v1.MatchableHttpGateway_Matcher{
 									// This is important as it means the Gateway will only select
 									// VirtualServices with Ssl defined
-									SslConfig: &gloov1.SslConfig{},
+									SslConfig: &ssl.SslConfig{},
 									SourcePrefixRanges: []*v3.CidrRange{
 										{
 											AddressPrefix: "match1",
@@ -717,7 +718,7 @@ func createVirtualService(name, namespace string, includeSsl bool) *v1.VirtualSe
 	}
 
 	if includeSsl {
-		vs.SslConfig = &gloov1.SslConfig{
+		vs.SslConfig = &ssl.SslConfig{
 			SniDomains: []string{fmt.Sprintf("%s.com", name)},
 		}
 	}

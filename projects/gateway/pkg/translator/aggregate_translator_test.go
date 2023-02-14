@@ -2,9 +2,11 @@ package translator_test
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -67,7 +69,7 @@ var _ = Describe("Aggregate translator", func() {
 
 		snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
-			SslConfig: &gloov1.SslConfig{
+			SslConfig: &ssl.SslConfig{
 				SniDomains: []string{"sni-0"},
 				// We have to add some other config since we merge configs where the only
 				// difference is the SniDomains
@@ -80,7 +82,7 @@ var _ = Describe("Aggregate translator", func() {
 			},
 		}, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
-			SslConfig: &gloov1.SslConfig{
+			SslConfig: &ssl.SslConfig{
 				SniDomains: []string{"sni-1"},
 				// We have to add some other config since we merge configs where the only
 				// difference is the SniDomains
@@ -93,7 +95,7 @@ var _ = Describe("Aggregate translator", func() {
 			},
 		}, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
-			SslConfig: &gloov1.SslConfig{
+			SslConfig: &ssl.SslConfig{
 				SniDomains: []string{"sni-2"},
 				// We have to add some other config since we merge configs where the only
 				// difference is the SniDomains
@@ -106,7 +108,7 @@ var _ = Describe("Aggregate translator", func() {
 			},
 		}, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
-			SslConfig: &gloov1.SslConfig{
+			SslConfig: &ssl.SslConfig{
 				SniDomains: []string{"sni-3"},
 				// We have to add some other config since we merge configs where the only
 				// difference is the SniDomains
@@ -119,7 +121,7 @@ var _ = Describe("Aggregate translator", func() {
 			},
 		}, &v1.VirtualService{
 			VirtualHost: &v1.VirtualHost{},
-			SslConfig: &gloov1.SslConfig{
+			SslConfig: &ssl.SslConfig{
 				SniDomains: []string{"sni-4"},
 				// We have to add some other config since we merge configs where the only
 				// difference is the SniDomains
@@ -136,16 +138,29 @@ var _ = Describe("Aggregate translator", func() {
 		aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
 		// run 100 times to ensure idempotency
 		// not sure if 100 times is valid; in anecdotal testing it tended to fail in under 20
+		var originalOrder, currentOrder string
 		for i := 0; i < 100; i++ {
 			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
 			Expect(l).NotTo(BeNil())
 			Expect(l.GetAggregateListener())
-			// since we sort on hashes, this is the ordered output of this config
-			Expect(l.GetAggregateListener().HttpFilterChains[0].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-1"))
-			Expect(l.GetAggregateListener().HttpFilterChains[1].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-4"))
-			Expect(l.GetAggregateListener().HttpFilterChains[2].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-3"))
-			Expect(l.GetAggregateListener().HttpFilterChains[3].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-0"))
-			Expect(l.GetAggregateListener().HttpFilterChains[4].GetMatcher().GetSslConfig().GetSniDomains()[0]).To(Equal("sni-2"))
+
+			currentOrder = ""
+			currentOrder += l.GetAggregateListener().HttpFilterChains[0].GetMatcher().GetSslConfig().GetSniDomains()[0]
+			currentOrder += l.GetAggregateListener().HttpFilterChains[1].GetMatcher().GetSslConfig().GetSniDomains()[0]
+			currentOrder += l.GetAggregateListener().HttpFilterChains[2].GetMatcher().GetSslConfig().GetSniDomains()[0]
+			currentOrder += l.GetAggregateListener().HttpFilterChains[3].GetMatcher().GetSslConfig().GetSniDomains()[0]
+			currentOrder += l.GetAggregateListener().HttpFilterChains[4].GetMatcher().GetSslConfig().GetSniDomains()[0]
+
+			if originalOrder == "" {
+				originalOrder = currentOrder
+				// ensure that all sni domains (sni-1 through sni-5) are present though we do not care what order the hasher has output them in at least the first time.
+				for i := 0; i < 5; i++ {
+					Expect(originalOrder).To(ContainSubstring(fmt.Sprintf("sni-%d", i)))
+				}
+			}
+
+			// demand that the order is deterministic
+			Expect(currentOrder).To(Equal(originalOrder))
 		}
 	})
 })
