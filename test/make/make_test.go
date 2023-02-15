@@ -137,6 +137,8 @@ var _ = Describe("Make", func() {
 			gitDesc = strings.TrimPrefix(gitDesc, "v")
 			ExpectMakeVarsWithEnvVars([]*EnvVar{}, []*MakeVar{
 				{Version, gitDesc},
+				{TaggedVersion, ""},
+				{TestAssetId, ""},
 			})
 		})
 
