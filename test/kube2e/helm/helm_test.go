@@ -220,9 +220,15 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 
 		It("sets timeout on validation webhook", func() {
-			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, []string{"--set", "gateway.validation.webhook.timeoutSeconds=5"})
 			webhookConfigClient := kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+
 			validationWebhook, err := webhookConfigClient.Get(ctx, fmt.Sprintf("gloo-gateway-validation-webhook-%v", namespace), metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(*validationWebhook.Webhooks[0].TimeoutSeconds).To(Equal(int32(10)))
+
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, []string{"--set", "gateway.validation.webhook.timeoutSeconds=5"})
+
+			validationWebhook, err = webhookConfigClient.Get(ctx, fmt.Sprintf("gloo-gateway-validation-webhook-%v", namespace), metav1.GetOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(*validationWebhook.Webhooks[0].TimeoutSeconds).To(Equal(int32(5)))
 		})
