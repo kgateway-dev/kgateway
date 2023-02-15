@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/onsi/gomega/gstruct"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -61,7 +63,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		EventuallyWithOffset(1, func(g Gomega) {
 			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Body:       Succeed(),
+				Body:       gstruct.Ignore(),
 				Headers: map[string]interface{}{
 					"Host": expectedHost,
 				},
