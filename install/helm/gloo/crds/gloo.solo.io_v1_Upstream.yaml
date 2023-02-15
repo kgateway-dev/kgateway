@@ -29,6 +29,8 @@ spec:
                     type: string
                   destinationOverrides:
                     properties:
+                      htmlContentTypeHeader:
+                        type: boolean
                       invocationStyle:
                         type: string
                         x-kubernetes-int-or-string: true

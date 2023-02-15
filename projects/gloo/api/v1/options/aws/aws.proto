@@ -39,10 +39,10 @@ message UpstreamSpec {
 
     // (Optional): The AWS Account ID to use while calling if using resource based access
     string aws_account_id = 5;
-   
+
     // Optional override to disable role chaining;
     bool disable_role_chaining = 6;
-    
+
     // Specifies AWS DestinationSpec configuration overrides for any route targeting this upstream.
     // Note that the route in question must have an AWS DestinationSpec to be affected and this will only set things that are non-falsey as overrides.
     DestinationSpec destination_overrides = 7;
@@ -76,9 +76,12 @@ message DestinationSpec {
     }
     // Include headers, querystring, request path, and request method in the event payload sent to aws lambda
     bool request_transformation = 6;
-    
-    // de-jsonify response bodies returned from aws lambda
+
+    // extract metadata from response bodies returned from aws lambda
     bool response_transformation = 5;
+
+    // Overwrite `Content-Type` header to `text/html`. Defaults to true
+    bool html_content_type_header = 10;
 
     // Unwrap the response as if the proxy was an ALB.
     // Intended to ease migration when previously using alb to invoke Lambdas.
@@ -94,7 +97,7 @@ message DestinationSpec {
     // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
     // If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
     bool unwrap_as_api_gateway = 8;
-    
+
     // Enterprise-Only
     // Wrap the request into AWS API Gateway event format.
     // Intended to ease migration when previously using API Gateway to invoke Lambdas.

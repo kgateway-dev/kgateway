@@ -182,6 +182,11 @@ func (m *DestinationSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetHtmlContentTypeHeader())
+	if err != nil {
+		return 0, err
+	}
+
 	err = binary.Write(hasher, binary.LittleEndian, m.GetUnwrapAsAlb())
 	if err != nil {
 		return 0, err

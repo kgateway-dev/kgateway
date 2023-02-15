@@ -275,21 +275,20 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				respTransform = &envoy_transform.Transformation{
 					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
 						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-								Body: &envoy_transform.InjaTemplate{
-									Text: "{{body}}",
-								},
-							},
-							Headers: map[string]*envoy_transform.InjaTemplate{
-								"content-type": {
-									Text: "text/html",
-								},
-							},
 							HeadersExtractionKey: "headers",
 							StatusExtractionKey:  "statusCode",
 							BodyExtractionKey:    "body",
 						},
 					},
+				}
+
+				if awsDestinationSpec.Aws.GetHtmlContentTypeHeader() {
+					template := respTransform.TransformationType.(*envoy_transform.Transformation_TransformationTemplate).TransformationTemplate
+					template.Headers = map[string]*envoy_transform.InjaTemplate{
+						"content-type": {
+							Text: "text/html",
+						},
+					}
 				}
 			}
 
