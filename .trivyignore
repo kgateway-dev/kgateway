@@ -19,3 +19,9 @@ CVE-2022-23524
 CVE-2022-23525
 # https://github.com/helm/helm/security/advisories/GHSA-67fx-wx78-jx33
 CVE-2022-23526
+
+# https://nvd.nist.gov/vuln/detail/CVE-2022-41721
+# Ignore this vulnerability; it does not affect the gateway-proxy image.
+# No handlers exposed by the control plane fall victim to this attack
+# because we do not use the maxBytesHandler
+CVE-2022-41721
