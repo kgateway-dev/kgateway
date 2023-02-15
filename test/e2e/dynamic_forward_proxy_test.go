@@ -50,7 +50,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		testContext.JustAfterEach()
 	})
 
-	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedBody interface{}) {
+	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedHost interface{}) {
 		By("Prepare request")
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -61,7 +61,10 @@ var _ = Describe("dynamic forward proxy", func() {
 		EventuallyWithOffset(1, func(g Gomega) {
 			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Body:       expectedBody,
+				Body:       Succeed(),
+				Headers: map[string]interface{}{
+					"Host": expectedHost,
+				},
 			}))
 		}, "10s", ".1s").Should(Succeed())
 	}
@@ -100,10 +103,9 @@ var _ = Describe("dynamic forward proxy", func() {
 		// simpler e2e test without transformation to validate basic behavior
 		It("should proxy http if dynamic forward proxy header provided on request", func() {
 			destEcho := `postman-echo.com`
-			expectedSubstr := `"host":"postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
 				r.Header.Set("x-rewrite-me", destEcho)
-			}, ContainSubstring(expectedSubstr))
+			}, Equal("postman-echo.com"))
 		})
 	})
 
@@ -159,10 +161,9 @@ var _ = Describe("dynamic forward proxy", func() {
 		// request using a transformation and use that to determine the upstream destination to route to
 		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
-			expectedSubstr := `"host":"postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
 				// nothing to modify
-			}, ContainSubstring(expectedSubstr))
+			}, Equal("postman-echo.com"))
 		})
 	})
 
