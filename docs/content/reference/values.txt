@@ -304,6 +304,7 @@
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
 |gateway.validation.webhook.enabled|bool|true|enable validation webhook (default true)|
 |gateway.validation.webhook.disableHelmHook|bool|false|do not create the webhook as helm hook (default false)|
+|gateway.validation.webhook.timeoutSeconds|int||the timeout for the webhook, defaults to 10|
 |gateway.validation.webhook.extraAnnotations.NAME|string||extra annotations to add to the webhook|
 |gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.validation.validationServerGrpcMaxSizeBytes|int|104857600|gRPC max message size in bytes for the gloo validation server|
