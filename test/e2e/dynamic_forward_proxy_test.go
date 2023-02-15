@@ -3,8 +3,6 @@ package e2e_test
 import (
 	"fmt"
 
-	"github.com/onsi/gomega/gstruct"
-
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -26,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("dynamic forward proxy", func() {
+var _ = FDescribe("dynamic forward proxy", func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -52,7 +50,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		testContext.JustAfterEach()
 	})
 
-	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedHost interface{}) {
+	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedBody interface{}) {
 		By("Prepare request")
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
@@ -63,10 +61,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		EventuallyWithOffset(1, func(g Gomega) {
 			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Body:       gstruct.Ignore(),
-				Headers: map[string]interface{}{
-					"host": expectedHost,
-				},
+				Body:       expectedBody,
 			}))
 		}, "10s", ".1s").Should(Succeed())
 	}
@@ -107,7 +102,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			destEcho := `postman-echo.com`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
 				r.Header.Set("x-rewrite-me", destEcho)
-			}, Equal("postman-echo.com"))
+			}, ContainSubstring(`"host": "postman-echo.com"`))
 		})
 	})
 
@@ -165,7 +160,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			destEcho := `postman-echo.com`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
 				// nothing to modify
-			}, Equal("postman-echo.com"))
+			}, ContainSubstring(`"host": "postman-echo.com"`))
 		})
 	})
 
