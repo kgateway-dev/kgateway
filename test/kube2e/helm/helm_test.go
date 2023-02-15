@@ -219,6 +219,14 @@ var _ = Describe("Kube2e: helm", func() {
 			Expect(webhookConfig.Webhooks[0].ClientConfig.CABundle).To(Equal(secret.Data[corev1.ServiceAccountRootCAKey]))
 		})
 
+		It("sets timeout on validation webhook", func() {
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, []string{"--set", "gateway.validation.webhook.timeoutSeconds=5"})
+			webhookConfigClient := kubeClientset.AdmissionregistrationV1().ValidatingWebhookConfigurations()
+			validationWebhook, err := webhookConfigClient.Get(ctx, fmt.Sprintf("gloo-gateway-validation-webhook-%v", namespace), metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(*validationWebhook.Webhooks[0].TimeoutSeconds).To(Equal(int32(5)))
+		})
+
 		// Below are tests with different combinations of upgrades with failurePolicy=Ignore/Fail.
 		Context("failurePolicy upgrades", func() {
 
