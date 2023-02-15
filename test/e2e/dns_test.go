@@ -3,12 +3,13 @@ package e2e_test
 import (
 	"regexp"
 
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 var _ = Describe("DNS E2E Test", func() {
@@ -38,7 +39,7 @@ var _ = Describe("DNS E2E Test", func() {
 		// It would be preferable to assert behaviors
 		// However, in the short term, we assert that the configuration has been received by the gateway-proxy
 
-		It("supports DnsRefreshRate", func() {
+		It("ignores DnsRefreshRate on STATIC cluster", func() {
 			Eventually(func(g Gomega) {
 				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
@@ -48,7 +49,36 @@ var _ = Describe("DNS E2E Test", func() {
 			}, "5s", ".5s").Should(Succeed(), "DnsRefreshRate not in ConfigDump")
 
 			// Update the Upstream to include DnsRefreshRate in the definition
+			// This is a STATIC Upstream, so we would expect the resource to have a warning on it
+			// and not propagate the configuration
 			testContext.PatchDefaultUpstream(func(us *gloov1.Upstream) *gloov1.Upstream {
+				us.DnsRefreshRate = &durationpb.Duration{Seconds: 10}
+				return us
+			})
+
+			Consistently(func(g Gomega) {
+				cfg, err := testContext.EnvoyInstance().ConfigDump()
+				g.Expect(err).NotTo(HaveOccurred())
+
+				frequency := countRegexFrequency("dns_refresh_rate", cfg)
+				g.Expect(frequency).To(Equal(0))
+			}, "2s", ".5s").Should(Succeed(), "DnsRefreshRate still not in ConfigDump")
+		})
+
+		It("supports DnsRefreshRate on STRICT_DNS cluster", func() {
+			Eventually(func(g Gomega) {
+				cfg, err := testContext.EnvoyInstance().ConfigDump()
+				g.Expect(err).NotTo(HaveOccurred())
+
+				frequency := countRegexFrequency("dns_refresh_rate", cfg)
+				g.Expect(frequency).To(Equal(0))
+			}, "5s", ".5s").Should(Succeed(), "DnsRefreshRate not in ConfigDump")
+
+			// Update the Upstream to have a non-IP host
+			// This will cause the generated cluster to be STRICT_DNS and the control plane
+			// will accept the DnsRefreshRate change
+			testContext.PatchDefaultUpstream(func(us *gloov1.Upstream) *gloov1.Upstream {
+				us.GetStatic().Hosts[0].Addr = "non-ip-host"
 				us.DnsRefreshRate = &durationpb.Duration{Seconds: 10}
 				return us
 			})
