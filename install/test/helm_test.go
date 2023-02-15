@@ -4015,6 +4015,7 @@ spec:
 					})
 
 					It("creates the validating webhook configuration", func() {
+						timeoutSeconds := 123
 						vwc := makeUnstructured(`
 
 apiVersion: admissionregistration.k8s.io/v1
@@ -4028,7 +4029,8 @@ metadata:
     "helm.sh/hook": pre-install, pre-upgrade
     "helm.sh/hook-weight": "5" # should come before cert-gen job
 webhooks:
- - name: gloo.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+ - name: gloo.` +
+							namespace + `.svc  # must be a domain with at least three segments separated by dots
    clientConfig:
      service:
        name: gloo
@@ -4058,11 +4060,14 @@ webhooks:
        resources: ["ratelimitconfigs"]
    sideEffects: None
    matchPolicy: Exact
+   timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
    admissionReviewVersions:
      - v1beta1
    failurePolicy: Ignore
 `)
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds)},
+						})
 						testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
 					})
 
