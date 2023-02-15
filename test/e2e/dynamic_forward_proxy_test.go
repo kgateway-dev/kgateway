@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = FDescribe("dynamic forward proxy", func() {
+var _ = Describe("dynamic forward proxy", func() {
 
 	var (
 		testContext *e2e.TestContext
