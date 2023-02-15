@@ -632,6 +632,18 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	if _, err = hasher.Write([]byte(m.GetBodyExtractionKey())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetStatusExtractionKey())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetHeadersExtractionKey())); err != nil {
+		return 0, err
+	}
+
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:

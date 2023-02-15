@@ -285,6 +285,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 									Text: "text/html",
 								},
 							},
+							HeadersExtractionKey: "headers",
+							StatusExtractionKey:  "statusCode",
+							BodyExtractionKey:    "body",
 						},
 					},
 				}

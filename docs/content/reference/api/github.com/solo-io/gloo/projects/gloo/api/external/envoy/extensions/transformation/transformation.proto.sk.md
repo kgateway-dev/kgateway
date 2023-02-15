@@ -291,6 +291,9 @@ Defines a transformation template.
 "parseBodyBehavior": .envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse
 "ignoreErrorOnParse": bool
 "dynamicMetadataValues": []envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue
+"bodyExtractionKey": string
+"statusExtractionKey": string
+"headersExtractionKey": string
 
 ```
 
@@ -307,6 +310,9 @@ Defines a transformation template.
 | `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) |  |
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |
 | `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |
+| `bodyExtractionKey` | `string` | Key to extract body data from JSON response body. |
+| `statusExtractionKey` | `string` | Key to extract status code data from JSON response body. |
+| `headersExtractionKey` | `string` | Key to extract headers data from JSON response body. |
 
 
 
@@ -389,9 +395,9 @@ the given name. Use this option when you want to include request header values i
 transformations.
 - base64_encode(string): encodes the input string to base64.
 - base64_decode(string): decodes the input string from base64.
-- substring(string, start_pos, substring_len): returns a substring of the 
+- substring(string, start_pos, substring_len): returns a substring of the
 input string, starting at `start_pos` and extending for `substring_len`
-characters. If no `substring_len` is provided or `substring_len` is <= 0, the 
+characters. If no `substring_len` is provided or `substring_len` is <= 0, the
 substring extends to the end of the input string.
 
 ```yaml
