@@ -4015,7 +4015,7 @@ spec:
 					})
 
 					It("creates the validating webhook configuration", func() {
-						timeoutSeconds := 123
+						timeoutSeconds := 5
 						vwc := makeUnstructured(`
 
 apiVersion: admissionregistration.k8s.io/v1
