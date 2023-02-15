@@ -102,7 +102,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		// simpler e2e test without transformation to validate basic behavior
 		It("should proxy http if dynamic forward proxy header provided on request", func() {
 			destEcho := `postman-echo.com`
-			expectedSubstr := `"host":"postman-echo.com"`
+			expectedSubstr := `"host": "postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
 				r.Host = e2e.DefaultHost
 				r.Header.Set("x-rewrite-me", destEcho)
@@ -162,7 +162,7 @@ var _ = Describe("dynamic forward proxy", func() {
 		// request using a transformation and use that to determine the upstream destination to route to
 		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
-			expectedSubstr := `"host":"postman-echo.com"`
+			expectedSubstr := `"host": "postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
 				r.Host = e2e.DefaultHost
 			}, ContainSubstring(expectedSubstr))
