@@ -216,7 +216,7 @@ check-spelling:
 
 GINKGO_VERSION ?= 2.5.0 # match our go.mod
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -v -tags=purego -compilers=4 --trace -progress -race --fail-fast --randomize-all
+GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race --fail-fast --randomize-all
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
