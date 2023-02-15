@@ -65,7 +65,7 @@ var _ = Describe("dynamic forward proxy", func() {
 				StatusCode: http.StatusOK,
 				Body:       gstruct.Ignore(),
 				Headers: map[string]interface{}{
-					"Host": expectedHost,
+					"host": expectedHost,
 				},
 			}))
 		}, "10s", ".1s").Should(Succeed())
