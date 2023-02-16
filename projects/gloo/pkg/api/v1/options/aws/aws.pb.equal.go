@@ -175,7 +175,7 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetHtmlContentTypeHeader() != target.GetHtmlContentTypeHeader() {
+	if m.GetDisableHtmlContentTypeHeader() != target.GetDisableHtmlContentTypeHeader() {
 		return false
 	}
 

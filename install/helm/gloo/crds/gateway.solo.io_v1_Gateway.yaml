@@ -2642,7 +2642,7 @@ spec:
                                                       properties:
                                                         aws:
                                                           properties:
-                                                            htmlContentTypeHeader:
+                                                            disableHtmlContentTypeHeader:
                                                               type: boolean
                                                             invocationStyle:
                                                               type: string
@@ -3884,7 +3884,7 @@ spec:
                                             properties:
                                               aws:
                                                 properties:
-                                                  htmlContentTypeHeader:
+                                                  disableHtmlContentTypeHeader:
                                                     type: boolean
                                                   invocationStyle:
                                                     type: string
@@ -4454,7 +4454,7 @@ spec:
                                             properties:
                                               aws:
                                                 properties:
-                                                  htmlContentTypeHeader:
+                                                  disableHtmlContentTypeHeader:
                                                     type: boolean
                                                   invocationStyle:
                                                     type: string
@@ -5696,7 +5696,7 @@ spec:
                                   properties:
                                     aws:
                                       properties:
-                                        htmlContentTypeHeader:
+                                        disableHtmlContentTypeHeader:
                                           type: boolean
                                         invocationStyle:
                                           type: string

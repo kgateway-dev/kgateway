@@ -238,19 +238,12 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 
 			requiresRequestTransformation := awsDestinationSpec.Aws.GetRequestTransformation()
-			requiresResponseTransformation := awsDestinationSpec.Aws.GetResponseTransformation()
+			requiresResponseTransformation :=
+				awsDestinationSpec.Aws.GetResponseTransformation() ||
+					awsDestinationSpec.Aws.GetUnwrapAsAlb() ||
+					awsDestinationSpec.Aws.GetUnwrapAsApiGateway()
 			if !requiresRequestTransformation && !requiresResponseTransformation {
 				return nil, nil
-			}
-
-			requiresUnwrap := awsDestinationSpec.Aws.GetUnwrapAsAlb() || awsDestinationSpec.Aws.GetUnwrapAsApiGateway()
-			if requiresUnwrap {
-				// if we are unwrapping the response and have no request transformation, we can return early
-				if !requiresRequestTransformation {
-					return nil, nil
-				}
-				// Do not transform response if we are unwrapping since response is handled in its entirety by these
-				requiresResponseTransformation = false
 			}
 
 			p.requiresTransformationFilter = true
@@ -282,8 +275,8 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					},
 				}
 
-				if awsDestinationSpec.Aws.GetHtmlContentTypeHeader() {
-					template := respTransform.TransformationType.(*envoy_transform.Transformation_TransformationTemplate).TransformationTemplate
+				if !awsDestinationSpec.Aws.GetDisableHtmlContentTypeHeader() {
+					template := respTransform.GetTransformationType().(*envoy_transform.Transformation_TransformationTemplate).TransformationTemplate
 					template.Headers = map[string]*envoy_transform.InjaTemplate{
 						"content-type": {
 							Text: "text/html",

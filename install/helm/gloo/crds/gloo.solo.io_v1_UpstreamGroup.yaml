@@ -45,7 +45,7 @@ spec:
                           properties:
                             aws:
                               properties:
-                                htmlContentTypeHeader:
+                                disableHtmlContentTypeHeader:
                                   type: boolean
                                 invocationStyle:
                                   type: string

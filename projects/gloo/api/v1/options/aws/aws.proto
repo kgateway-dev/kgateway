@@ -74,14 +74,16 @@ message DestinationSpec {
         SYNC = 0;
         ASYNC = 1;
     }
-    // Include headers, querystring, request path, and request method in the event payload sent to aws lambda
+
+    // Include headers, querystring, request path, and request method in the event payload sent to aws lambda.
+    // Incompatible with wrapAsApiGateway
     bool request_transformation = 6;
 
     // extract metadata from response bodies returned from aws lambda
     bool response_transformation = 5;
 
-    // Overwrite `Content-Type` header to `text/html`. Defaults to true
-    bool html_content_type_header = 10;
+    // Disable overwriting response `Content-Type` header to `text/html` when using `responseTransformation`
+    bool disable_html_content_type_header = 10;
 
     // Unwrap the response as if the proxy was an ALB.
     // Intended to ease migration when previously using alb to invoke Lambdas.
@@ -101,5 +103,6 @@ message DestinationSpec {
     // Enterprise-Only
     // Wrap the request into AWS API Gateway event format.
     // Intended to ease migration when previously using API Gateway to invoke Lambdas.
+    // Incompatible with requestTransformation
     bool wrap_as_api_gateway = 9;
 }

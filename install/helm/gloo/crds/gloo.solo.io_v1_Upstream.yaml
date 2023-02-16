@@ -29,7 +29,7 @@ spec:
                     type: string
                   destinationOverrides:
                     properties:
-                      htmlContentTypeHeader:
+                      disableHtmlContentTypeHeader:
                         type: boolean
                       invocationStyle:
                         type: string
