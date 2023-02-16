@@ -344,6 +344,8 @@ spec:
                       type: string
                     type: object
                 type: object
+              dnsRefreshRate:
+                type: string
               failover:
                 properties:
                   policy:
@@ -1112,6 +1114,9 @@ spec:
               protocolSelection:
                 type: string
                 x-kubernetes-int-or-string: true
+              respectDnsTtl:
+                nullable: true
+                type: boolean
               sslConfig:
                 properties:
                   allowRenegotiation:
