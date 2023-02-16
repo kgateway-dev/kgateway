@@ -5,6 +5,7 @@ import (
 
 	envoy_extensions_network_dns_resolver_apple_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/apple/v3"
 	envoy_extensions_network_dns_resolver_cares_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/network/dns_resolver/cares/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -49,7 +50,7 @@ type plugin struct {
 	filterHashMap map[string]*dynamic_forward_proxy.FilterConfig
 }
 
-func (p *plugin) GeneratedResources(_ plugins.Params,
+func (p *plugin) GeneratedResources(params plugins.Params,
 	_ []*envoy_config_cluster_v3.Cluster,
 	_ []*envoy_config_endpoint_v3.ClusterLoadAssignment,
 	_ []*envoy_config_route_v3.RouteConfiguration,
@@ -60,7 +61,7 @@ func (p *plugin) GeneratedResources(_ plugins.Params,
 	[]*envoy_config_listener_v3.Listener, error) {
 	var generatedClusters []*envoy_config_cluster_v3.Cluster
 	for _, lCfg := range p.filterHashMap {
-		generatedCluster, err := generateCustomDynamicForwardProxyCluster(lCfg)
+		generatedCluster, err := generateCustomDynamicForwardProxyCluster(lCfg, params)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}
@@ -80,7 +81,7 @@ func (p *plugin) GeneratedResources(_ plugins.Params,
 // add a new upstream type in the future for dynamic forwarding and make other cluster fields configurable, but this
 // would require very careful validation with all other features and require the extra user step of providing an
 // upstream that in most cases the user does not want to customize at all.
-func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy.FilterConfig) (*envoy_config_cluster_v3.Cluster, error) {
+func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy.FilterConfig, params plugins.Params) (*envoy_config_cluster_v3.Cluster, error) {
 	convertedDnsCacheCfg, err := convertDnsCacheConfig(listenerCfg.GetDnsCacheConfig())
 	if err != nil {
 		return nil, err
@@ -96,7 +97,7 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 	if err != nil {
 		return nil, err
 	}
-	return &envoy_config_cluster_v3.Cluster{
+	out := &envoy_config_cluster_v3.Cluster{
 		Name:           GetGeneratedClusterName(listenerCfg),
 		ConnectTimeout: &duration.Duration{Seconds: 5},
 		LbPolicy:       envoy_config_cluster_v3.Cluster_CLUSTER_PROVIDED,
@@ -106,7 +107,24 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 				TypedConfig: typedConfig,
 			},
 		},
-	}, nil
+	}
+
+	if sslConfig := listenerCfg.GetSslConfig(); sslConfig != nil && params.Snapshot != nil {
+		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(params.Snapshot.Secrets, sslConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		typedConfig, err := utils.MessageToAny(cfg)
+		if err != nil {
+			return nil, err
+		}
+		out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+			Name:       wellknown.TransportSocketTls,
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+		}
+	}
+	return out, nil
 }
 
 func GetGeneratedClusterName(dfpListenerCfg *dynamic_forward_proxy.FilterConfig) string {
