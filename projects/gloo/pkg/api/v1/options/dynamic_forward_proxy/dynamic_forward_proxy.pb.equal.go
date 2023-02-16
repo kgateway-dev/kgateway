@@ -60,6 +60,16 @@ func (m *FilterConfig) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetSslConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSslConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSslConfig(), target.GetSslConfig()) {
+			return false
+		}
+	}
+
 	return true
 }
 
