@@ -269,13 +269,6 @@ message TransformationTemplate {
   }
   // Use this field to set Dynamic Metadata.
   repeated DynamicMetadataValue dynamic_metadata_values = 9;
-
-  // Key to extract body data from JSON response body
-  string body_extraction_key = 12;
-  // Key to extract status code data from JSON response body
-  string status_extraction_key = 13;
-  // Key to extract headers data from JSON response body
-  string headers_extraction_key = 14;
 }
 
 // Defines an [Inja template](https://github.com/pantor/inja) that will be

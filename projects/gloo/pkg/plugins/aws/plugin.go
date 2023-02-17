@@ -17,6 +17,7 @@ import (
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/imdario/mergo"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -41,8 +42,10 @@ var (
 )
 
 const (
-	ExtensionName = "aws_lambda"
-	FilterName    = "io.solo.aws_lambda"
+	ExtensionName                 = "aws_lambda"
+	FilterName                    = "io.solo.aws_lambda"
+	ResponseTransformationName    = "io.solo.api_gateway.api_gateway_transformer"
+	ResponseTransformationTypeUrl = "type.googleapis.com/envoy.config.transformer.aws_lambda.v2.ApiGatewayTransformation"
 )
 
 // PerRouteConfigGenerator defines how to build the Per Route Configuration for a Lambda upstream
@@ -236,12 +239,14 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			if !ok {
 				return nil, nil
 			}
+			awsDestination := awsDestinationSpec.Aws
 
-			requiresRequestTransformation := awsDestinationSpec.Aws.GetRequestTransformation()
+			requiresRequestTransformation := awsDestination.GetRequestTransformation()
 			requiresResponseTransformation :=
-				awsDestinationSpec.Aws.GetResponseTransformation() ||
-					awsDestinationSpec.Aws.GetUnwrapAsAlb() ||
-					awsDestinationSpec.Aws.GetUnwrapAsApiGateway()
+				awsDestination.GetResponseTransformation() ||
+					// TODO(jbohanon) figure out what to do with UnwrapAsAlb
+					// awsDestination.GetUnwrapAsAlb() ||
+					awsDestination.GetUnwrapAsApiGateway()
 			if !requiresRequestTransformation && !requiresResponseTransformation {
 				return nil, nil
 			}
@@ -264,18 +269,12 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				}
 			}
 
+			// transparently use the unwrapAsApiGateway filter as the response transformation
 			if requiresResponseTransformation {
-				respTransform = &envoy_transform.Transformation{
-					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							HeadersExtractionKey: "headers",
-							StatusExtractionKey:  "statusCode",
-							BodyExtractionKey:    "body",
-						},
-					},
-				}
+				awsDestination.UnwrapAsApiGateway = true
 
-				if !awsDestinationSpec.Aws.GetDisableHtmlContentTypeHeader() {
+				// To avoid breaking customers relying on this previous behavior of responseTransformation
+				if !awsDestination.GetDisableHtmlContentTypeHeader() {
 					template := respTransform.GetTransformationType().(*envoy_transform.Transformation_TransformationTemplate).TransformationTemplate
 					template.Headers = map[string]*envoy_transform.InjaTemplate{
 						"content-type": {
@@ -290,17 +289,18 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
 					RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
 						RequestTransformation:  reqTransform,
-						ResponseTransformation: respTransform,
+						ResponseTransformation: respTransform, // This will be nil if we are unwrapping without modifying content-type
 					},
 				}
-			} else {
-				// if we got here, we have a response transform and are not unwrapping. otherwise, we would have returned early.
+			} else if respTransform != nil {
+				// we have to transform the content-type header in addition to unwrapping
 				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
 					ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
 						ResponseTransformation: respTransform,
 					},
 				}
-
+			} else {
+				p.requiresTransformationFilter = false
 			}
 
 			var transforms envoy_transform.RouteTransformations
@@ -408,6 +408,16 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 			awsRegion, upstream.GetAwsAccountId(), functionName)
 	}
 
+	var transformerConfig *v3.TypedExtensionConfig
+	if destination.GetUnwrapAsApiGateway() && !destination.GetUnwrapAsAlb() {
+		transformerConfig = &v3.TypedExtensionConfig{
+			Name: ResponseTransformationName,
+			TypedConfig: &any.Any{
+				TypeUrl: ResponseTransformationTypeUrl,
+			},
+		}
+	}
+
 	// Convert the function that has been retrieved into a useable routefunction
 	lambdaRouteFunc := &AWSLambdaPerRoute{
 		Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
@@ -418,7 +428,7 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 		UnwrapAsAlb: destination.GetUnwrapAsAlb(),
 
 		// TransformerConfig is intentionally not included as that is an enterprise only feature
-		TransformerConfig: nil,
+		TransformerConfig: transformerConfig,
 	}
 
 	return lambdaRouteFunc, nil

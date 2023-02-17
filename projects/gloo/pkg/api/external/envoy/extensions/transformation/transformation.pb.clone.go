@@ -336,12 +336,6 @@ func (m *TransformationTemplate) Clone() proto.Message {
 		}
 	}
 
-	target.BodyExtractionKey = m.GetBodyExtractionKey()
-
-	target.StatusExtractionKey = m.GetStatusExtractionKey()
-
-	target.HeadersExtractionKey = m.GetHeadersExtractionKey()
-
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:

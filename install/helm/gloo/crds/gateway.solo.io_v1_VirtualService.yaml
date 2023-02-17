@@ -1289,8 +1289,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -1327,8 +1325,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -1354,8 +1350,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                         xsltTransformation:
                                           properties:
@@ -1383,8 +1377,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -1421,8 +1413,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -1448,8 +1438,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                         xsltTransformation:
                                           properties:
@@ -1497,8 +1485,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -1535,8 +1521,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -1562,8 +1546,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                         xsltTransformation:
                                           properties:
@@ -1643,8 +1625,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -1681,8 +1661,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -1708,8 +1686,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                         xsltTransformation:
                                           properties:
@@ -1737,8 +1713,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -1775,8 +1749,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -1802,8 +1774,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                         xsltTransformation:
                                           properties:
@@ -1851,8 +1821,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -1889,8 +1857,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -1916,8 +1882,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                         xsltTransformation:
                                           properties:
@@ -1967,8 +1931,6 @@ spec:
                                       text:
                                         type: string
                                     type: object
-                                  bodyExtractionKey:
-                                    type: string
                                   dynamicMetadataValues:
                                     items:
                                       properties:
@@ -2005,8 +1967,6 @@ spec:
                                           type: string
                                       type: object
                                     type: object
-                                  headersExtractionKey:
-                                    type: string
                                   headersToAppend:
                                     items:
                                       properties:
@@ -2032,8 +1992,6 @@ spec:
                                     x-kubernetes-int-or-string: true
                                   passthrough:
                                     type: object
-                                  statusExtractionKey:
-                                    type: string
                                 type: object
                               xsltTransformation:
                                 properties:
@@ -2061,8 +2019,6 @@ spec:
                                       text:
                                         type: string
                                     type: object
-                                  bodyExtractionKey:
-                                    type: string
                                   dynamicMetadataValues:
                                     items:
                                       properties:
@@ -2099,8 +2055,6 @@ spec:
                                           type: string
                                       type: object
                                     type: object
-                                  headersExtractionKey:
-                                    type: string
                                   headersToAppend:
                                     items:
                                       properties:
@@ -2126,8 +2080,6 @@ spec:
                                     x-kubernetes-int-or-string: true
                                   passthrough:
                                     type: object
-                                  statusExtractionKey:
-                                    type: string
                                 type: object
                               xsltTransformation:
                                 properties:
@@ -3386,8 +3338,6 @@ spec:
                                                       text:
                                                         type: string
                                                     type: object
-                                                  bodyExtractionKey:
-                                                    type: string
                                                   dynamicMetadataValues:
                                                     items:
                                                       properties:
@@ -3424,8 +3374,6 @@ spec:
                                                           type: string
                                                       type: object
                                                     type: object
-                                                  headersExtractionKey:
-                                                    type: string
                                                   headersToAppend:
                                                     items:
                                                       properties:
@@ -3451,8 +3399,6 @@ spec:
                                                     x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
-                                                  statusExtractionKey:
-                                                    type: string
                                                 type: object
                                               xsltTransformation:
                                                 properties:
@@ -3480,8 +3426,6 @@ spec:
                                                       text:
                                                         type: string
                                                     type: object
-                                                  bodyExtractionKey:
-                                                    type: string
                                                   dynamicMetadataValues:
                                                     items:
                                                       properties:
@@ -3518,8 +3462,6 @@ spec:
                                                           type: string
                                                       type: object
                                                     type: object
-                                                  headersExtractionKey:
-                                                    type: string
                                                   headersToAppend:
                                                     items:
                                                       properties:
@@ -3545,8 +3487,6 @@ spec:
                                                     x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
-                                                  statusExtractionKey:
-                                                    type: string
                                                 type: object
                                               xsltTransformation:
                                                 properties:
@@ -3594,8 +3534,6 @@ spec:
                                                       text:
                                                         type: string
                                                     type: object
-                                                  bodyExtractionKey:
-                                                    type: string
                                                   dynamicMetadataValues:
                                                     items:
                                                       properties:
@@ -3632,8 +3570,6 @@ spec:
                                                           type: string
                                                       type: object
                                                     type: object
-                                                  headersExtractionKey:
-                                                    type: string
                                                   headersToAppend:
                                                     items:
                                                       properties:
@@ -3659,8 +3595,6 @@ spec:
                                                     x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
-                                                  statusExtractionKey:
-                                                    type: string
                                                 type: object
                                               xsltTransformation:
                                                 properties:
@@ -3740,8 +3674,6 @@ spec:
                                                       text:
                                                         type: string
                                                     type: object
-                                                  bodyExtractionKey:
-                                                    type: string
                                                   dynamicMetadataValues:
                                                     items:
                                                       properties:
@@ -3778,8 +3710,6 @@ spec:
                                                           type: string
                                                       type: object
                                                     type: object
-                                                  headersExtractionKey:
-                                                    type: string
                                                   headersToAppend:
                                                     items:
                                                       properties:
@@ -3805,8 +3735,6 @@ spec:
                                                     x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
-                                                  statusExtractionKey:
-                                                    type: string
                                                 type: object
                                               xsltTransformation:
                                                 properties:
@@ -3834,8 +3762,6 @@ spec:
                                                       text:
                                                         type: string
                                                     type: object
-                                                  bodyExtractionKey:
-                                                    type: string
                                                   dynamicMetadataValues:
                                                     items:
                                                       properties:
@@ -3872,8 +3798,6 @@ spec:
                                                           type: string
                                                       type: object
                                                     type: object
-                                                  headersExtractionKey:
-                                                    type: string
                                                   headersToAppend:
                                                     items:
                                                       properties:
@@ -3899,8 +3823,6 @@ spec:
                                                     x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
-                                                  statusExtractionKey:
-                                                    type: string
                                                 type: object
                                               xsltTransformation:
                                                 properties:
@@ -3948,8 +3870,6 @@ spec:
                                                       text:
                                                         type: string
                                                     type: object
-                                                  bodyExtractionKey:
-                                                    type: string
                                                   dynamicMetadataValues:
                                                     items:
                                                       properties:
@@ -3986,8 +3906,6 @@ spec:
                                                           type: string
                                                       type: object
                                                     type: object
-                                                  headersExtractionKey:
-                                                    type: string
                                                   headersToAppend:
                                                     items:
                                                       properties:
@@ -4013,8 +3931,6 @@ spec:
                                                     x-kubernetes-int-or-string: true
                                                   passthrough:
                                                     type: object
-                                                  statusExtractionKey:
-                                                    type: string
                                                 type: object
                                               xsltTransformation:
                                                 properties:
@@ -4072,8 +3988,6 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        bodyExtractionKey:
-                                          type: string
                                         dynamicMetadataValues:
                                           items:
                                             properties:
@@ -4110,8 +4024,6 @@ spec:
                                                 type: string
                                             type: object
                                           type: object
-                                        headersExtractionKey:
-                                          type: string
                                         headersToAppend:
                                           items:
                                             properties:
@@ -4137,8 +4049,6 @@ spec:
                                           x-kubernetes-int-or-string: true
                                         passthrough:
                                           type: object
-                                        statusExtractionKey:
-                                          type: string
                                       type: object
                                     xsltTransformation:
                                       properties:
@@ -4166,8 +4076,6 @@ spec:
                                             text:
                                               type: string
                                           type: object
-                                        bodyExtractionKey:
-                                          type: string
                                         dynamicMetadataValues:
                                           items:
                                             properties:
@@ -4204,8 +4112,6 @@ spec:
                                                 type: string
                                             type: object
                                           type: object
-                                        headersExtractionKey:
-                                          type: string
                                         headersToAppend:
                                           items:
                                             properties:
@@ -4231,8 +4137,6 @@ spec:
                                           x-kubernetes-int-or-string: true
                                         passthrough:
                                           type: object
-                                        statusExtractionKey:
-                                          type: string
                                       type: object
                                     xsltTransformation:
                                       properties:
@@ -4459,8 +4363,6 @@ spec:
                                                           text:
                                                             type: string
                                                         type: object
-                                                      bodyExtractionKey:
-                                                        type: string
                                                       dynamicMetadataValues:
                                                         items:
                                                           properties:
@@ -4497,8 +4399,6 @@ spec:
                                                               type: string
                                                           type: object
                                                         type: object
-                                                      headersExtractionKey:
-                                                        type: string
                                                       headersToAppend:
                                                         items:
                                                           properties:
@@ -4524,8 +4424,6 @@ spec:
                                                         x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
-                                                      statusExtractionKey:
-                                                        type: string
                                                     type: object
                                                 type: object
                                             type: object
@@ -4771,8 +4669,6 @@ spec:
                                                                     text:
                                                                       type: string
                                                                   type: object
-                                                                bodyExtractionKey:
-                                                                  type: string
                                                                 dynamicMetadataValues:
                                                                   items:
                                                                     properties:
@@ -4809,8 +4705,6 @@ spec:
                                                                         type: string
                                                                     type: object
                                                                   type: object
-                                                                headersExtractionKey:
-                                                                  type: string
                                                                 headersToAppend:
                                                                   items:
                                                                     properties:
@@ -4836,8 +4730,6 @@ spec:
                                                                   x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
-                                                                statusExtractionKey:
-                                                                  type: string
                                                               type: object
                                                             xsltTransformation:
                                                               properties:
@@ -4865,8 +4757,6 @@ spec:
                                                                     text:
                                                                       type: string
                                                                   type: object
-                                                                bodyExtractionKey:
-                                                                  type: string
                                                                 dynamicMetadataValues:
                                                                   items:
                                                                     properties:
@@ -4903,8 +4793,6 @@ spec:
                                                                         type: string
                                                                     type: object
                                                                   type: object
-                                                                headersExtractionKey:
-                                                                  type: string
                                                                 headersToAppend:
                                                                   items:
                                                                     properties:
@@ -4930,8 +4818,6 @@ spec:
                                                                   x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
-                                                                statusExtractionKey:
-                                                                  type: string
                                                               type: object
                                                             xsltTransformation:
                                                               properties:
@@ -4979,8 +4865,6 @@ spec:
                                                                     text:
                                                                       type: string
                                                                   type: object
-                                                                bodyExtractionKey:
-                                                                  type: string
                                                                 dynamicMetadataValues:
                                                                   items:
                                                                     properties:
@@ -5017,8 +4901,6 @@ spec:
                                                                         type: string
                                                                     type: object
                                                                   type: object
-                                                                headersExtractionKey:
-                                                                  type: string
                                                                 headersToAppend:
                                                                   items:
                                                                     properties:
@@ -5044,8 +4926,6 @@ spec:
                                                                   x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
-                                                                statusExtractionKey:
-                                                                  type: string
                                                               type: object
                                                             xsltTransformation:
                                                               properties:
@@ -5125,8 +5005,6 @@ spec:
                                                                     text:
                                                                       type: string
                                                                   type: object
-                                                                bodyExtractionKey:
-                                                                  type: string
                                                                 dynamicMetadataValues:
                                                                   items:
                                                                     properties:
@@ -5163,8 +5041,6 @@ spec:
                                                                         type: string
                                                                     type: object
                                                                   type: object
-                                                                headersExtractionKey:
-                                                                  type: string
                                                                 headersToAppend:
                                                                   items:
                                                                     properties:
@@ -5190,8 +5066,6 @@ spec:
                                                                   x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
-                                                                statusExtractionKey:
-                                                                  type: string
                                                               type: object
                                                             xsltTransformation:
                                                               properties:
@@ -5219,8 +5093,6 @@ spec:
                                                                     text:
                                                                       type: string
                                                                   type: object
-                                                                bodyExtractionKey:
-                                                                  type: string
                                                                 dynamicMetadataValues:
                                                                   items:
                                                                     properties:
@@ -5257,8 +5129,6 @@ spec:
                                                                         type: string
                                                                     type: object
                                                                   type: object
-                                                                headersExtractionKey:
-                                                                  type: string
                                                                 headersToAppend:
                                                                   items:
                                                                     properties:
@@ -5284,8 +5154,6 @@ spec:
                                                                   x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
-                                                                statusExtractionKey:
-                                                                  type: string
                                                               type: object
                                                             xsltTransformation:
                                                               properties:
@@ -5333,8 +5201,6 @@ spec:
                                                                     text:
                                                                       type: string
                                                                   type: object
-                                                                bodyExtractionKey:
-                                                                  type: string
                                                                 dynamicMetadataValues:
                                                                   items:
                                                                     properties:
@@ -5371,8 +5237,6 @@ spec:
                                                                         type: string
                                                                     type: object
                                                                   type: object
-                                                                headersExtractionKey:
-                                                                  type: string
                                                                 headersToAppend:
                                                                   items:
                                                                     properties:
@@ -5398,8 +5262,6 @@ spec:
                                                                   x-kubernetes-int-or-string: true
                                                                 passthrough:
                                                                   type: object
-                                                                statusExtractionKey:
-                                                                  type: string
                                                               type: object
                                                             xsltTransformation:
                                                               properties:
@@ -5435,8 +5297,6 @@ spec:
                                                           text:
                                                             type: string
                                                         type: object
-                                                      bodyExtractionKey:
-                                                        type: string
                                                       dynamicMetadataValues:
                                                         items:
                                                           properties:
@@ -5473,8 +5333,6 @@ spec:
                                                               type: string
                                                           type: object
                                                         type: object
-                                                      headersExtractionKey:
-                                                        type: string
                                                       headersToAppend:
                                                         items:
                                                           properties:
@@ -5500,8 +5358,6 @@ spec:
                                                         x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
-                                                      statusExtractionKey:
-                                                        type: string
                                                     type: object
                                                   xsltTransformation:
                                                     properties:
@@ -5529,8 +5385,6 @@ spec:
                                                           text:
                                                             type: string
                                                         type: object
-                                                      bodyExtractionKey:
-                                                        type: string
                                                       dynamicMetadataValues:
                                                         items:
                                                           properties:
@@ -5567,8 +5421,6 @@ spec:
                                                               type: string
                                                           type: object
                                                         type: object
-                                                      headersExtractionKey:
-                                                        type: string
                                                       headersToAppend:
                                                         items:
                                                           properties:
@@ -5594,8 +5446,6 @@ spec:
                                                         x-kubernetes-int-or-string: true
                                                       passthrough:
                                                         type: object
-                                                      statusExtractionKey:
-                                                        type: string
                                                     type: object
                                                   xsltTransformation:
                                                     properties:
@@ -5701,8 +5551,6 @@ spec:
                                                 text:
                                                   type: string
                                               type: object
-                                            bodyExtractionKey:
-                                              type: string
                                             dynamicMetadataValues:
                                               items:
                                                 properties:
@@ -5739,8 +5587,6 @@ spec:
                                                     type: string
                                                 type: object
                                               type: object
-                                            headersExtractionKey:
-                                              type: string
                                             headersToAppend:
                                               items:
                                                 properties:
@@ -5766,8 +5612,6 @@ spec:
                                               x-kubernetes-int-or-string: true
                                             passthrough:
                                               type: object
-                                            statusExtractionKey:
-                                              type: string
                                           type: object
                                       type: object
                                   type: object

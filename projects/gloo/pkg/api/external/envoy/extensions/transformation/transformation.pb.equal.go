@@ -529,18 +529,6 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 
 	}
 
-	if strings.Compare(m.GetBodyExtractionKey(), target.GetBodyExtractionKey()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetStatusExtractionKey(), target.GetStatusExtractionKey()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetHeadersExtractionKey(), target.GetHeadersExtractionKey()) != 0 {
-		return false
-	}
-
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:

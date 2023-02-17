@@ -291,9 +291,6 @@ Defines a transformation template.
 "parseBodyBehavior": .envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse
 "ignoreErrorOnParse": bool
 "dynamicMetadataValues": []envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue
-"bodyExtractionKey": string
-"statusExtractionKey": string
-"headersExtractionKey": string
 
 ```
 
@@ -310,9 +307,6 @@ Defines a transformation template.
 | `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) |  |
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |
 | `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |
-| `bodyExtractionKey` | `string` | Key to extract body data from JSON response body. |
-| `statusExtractionKey` | `string` | Key to extract status code data from JSON response body. |
-| `headersExtractionKey` | `string` | Key to extract headers data from JSON response body. |
 
 
 
