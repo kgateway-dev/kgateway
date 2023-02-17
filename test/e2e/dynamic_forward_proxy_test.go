@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -9,7 +8,6 @@ import (
 	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"net/http"
-	"time"
 
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
@@ -53,14 +51,14 @@ var _ = Describe("dynamic forward proxy", func() {
 	})
 
 	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedBody interface{}) {
+		By("Prepare request")
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		req.Host = e2e.DefaultHost
+		updateReq(req)
+
 		By("Make request")
 		EventuallyWithOffset(1, func(g Gomega) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
-			g.Expect(err).NotTo(HaveOccurred())
-
-			updateReq(req)
 			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusOK,
 				Body:       expectedBody,
@@ -102,11 +100,9 @@ var _ = Describe("dynamic forward proxy", func() {
 		// simpler e2e test without transformation to validate basic behavior
 		It("should proxy http if dynamic forward proxy header provided on request", func() {
 			destEcho := `postman-echo.com`
-			expectedSubstr := `"host":"postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
-				r.Host = e2e.DefaultHost
 				r.Header.Set("x-rewrite-me", destEcho)
-			}, ContainSubstring(expectedSubstr))
+			}, ContainSubstring(`"host": "postman-echo.com"`))
 		})
 	})
 
@@ -162,10 +158,9 @@ var _ = Describe("dynamic forward proxy", func() {
 		// request using a transformation and use that to determine the upstream destination to route to
 		It("should proxy http", func() {
 			destEcho := `postman-echo.com`
-			expectedSubstr := `"host":"postman-echo.com"`
 			eventuallyRequestMatches(destEcho, func(r *http.Request) {
-				r.Host = e2e.DefaultHost
-			}, ContainSubstring(expectedSubstr))
+				// nothing to modify
+			}, ContainSubstring(`"host": "postman-echo.com"`))
 		})
 	})
 
