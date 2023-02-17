@@ -3,6 +3,7 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
+	"github.com/solo-io/go-utils/contextutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -86,6 +87,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if err != nil {
 		return err
 	}
+	// Discovery will create an empty serviceSpec if the service does not provide descriptors which does not warrant a filter.
+	if envoyGrpcJsonConf.DescriptorSet == nil {
+		return nil
+	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
 	p.upstreamFilters = append(p.upstreamFilters, grpcJsonFilter)
 	if out.GetHttp2ProtocolOptions() == nil {
@@ -96,7 +101,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	grpcJsonConf := listener.GetOptions().GetGrpcJsonTranscoder()
 	if grpcJsonConf == nil {
-		return nil, nil
+		contextutils.LoggerFrom(params.Ctx).Infof("returning filters from us %v", len(p.upstreamFilters))
+		return p.upstreamFilters, nil
 	}
 
 	envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, grpcJsonConf)
@@ -108,7 +114,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
-
+	contextutils.LoggerFrom(params.Ctx).Infof("found json filters %v", len(p.upstreamFilters))
 	return append(p.upstreamFilters, grpcJsonFilter), nil
 }
 
@@ -125,7 +131,7 @@ func translateGlooToEnvoyGrpcJson(params plugins.Params, grpcJsonConf *grpc_json
 		ConvertGrpcStatus:            grpcJsonConf.GetConvertGrpcStatus(),
 	}
 
-	// Convert from our descriptor storages to the appropriate tiype
+	// Convert from our descriptor storages to the appropriate type
 	switch typedDescriptorSet := grpcJsonConf.GetDescriptorSet().(type) {
 	case *grpc_json.GrpcJsonTranscoder_ProtoDescriptorConfigMap:
 		protoDesc, err := translateConfigMapToProtoBin(params.Ctx, params.Snapshot, typedDescriptorSet.ProtoDescriptorConfigMap)

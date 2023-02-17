@@ -172,7 +172,7 @@ func (u *updaterUpdater) saveUpstream(mutator UpstreamMutator) error {
 	/* upstream, err = */
 	newUpstream, err = u.parent.upstreamWriter.Write(newUpstream, wo)
 	if err != nil {
-		logger.Warnw("error updating upstream on first try", "upstream", u.upstream.GetMetadata().GetName(), "error", err, "new version", newUpstream.GetMetadata().GetResourceVersion())
+		logger.Warnw("error updating upstream on first try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
 		newUpstream, err = u.parent.upstreamWriter.Read(u.upstream.GetMetadata().GetNamespace(), u.upstream.GetMetadata().GetName(), clients.ReadOpts{Ctx: u.ctx})
 		if err != nil {
 			logger.Warnw("can't read updated upstream for second try", "upstream", u.upstream.GetMetadata().GetName(), "error", err)
@@ -238,8 +238,6 @@ func (u *updaterUpdater) detectSingle(fp UpstreamFunctionDiscovery, url url.URL,
 }
 
 func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
-	//TODO ELC delete logger
-	logger := contextutils.LoggerFrom(u.ctx)
 	// TODO add global timeout?
 	ctx, cancel := context.WithCancel(u.ctx)
 
@@ -265,7 +263,6 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 		select {
 		case res, ok := <-result:
 			numResultsReceived++
-			logger.Infof("ELC upstream and spec %v %v %v %v", res.fp, res.spec, u.upstream.GetMetadata().GetName(), ok)
 			if ok && res.spec != nil {
 				results = append(results, &res)
 			} else if !ok {
@@ -273,10 +270,8 @@ func (u *updaterUpdater) detectType(url_ url.URL) ([]*detectResult, error) {
 			}
 			if numResultsReceived == len(u.functionalPlugins) {
 				if len(results) == 0 {
-					logger.Infof("ELC can't detect upstream %v", res, u.upstream.GetMetadata().GetName())
 					return nil, errorUndetectableUpstream
 				}
-				logger.Infof("detected spec for upstream %v %v", u.upstream.GetMetadata().GetName(), res.spec)
 				return results, nil
 			}
 		case <-ctx.Done():
@@ -332,10 +327,8 @@ func (u *updaterUpdater) Run() error {
 			upstreamSave(func(upstream *v1.Upstream) error {
 				serviceSpecUpstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 				if !ok {
-					contextutils.LoggerFrom(u.ctx).Infof("ELC can't set upstream spec")
 					return errors.New("can't set spec")
 				}
-				contextutils.LoggerFrom(u.ctx).Infof("ELC setting spec %v", r.spec)
 				serviceSpecUpstream.SetServiceSpec(r.spec)
 				return nil
 			})

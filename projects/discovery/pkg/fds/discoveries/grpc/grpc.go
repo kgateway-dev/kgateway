@@ -142,9 +142,10 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	}
 
 	descriptors := &descriptor.FileDescriptorSet{}
-	servicesToAdd := make([]string, len(services)-1)
+	var servicesToAdd []string
 	for _, s := range services {
 		// ignore the reflection descriptor
+		log.Infof("found service %v", s)
 		if s == "grpc.reflection.v1alpha.ServerReflection" || s == "" {
 			continue
 		}
@@ -154,6 +155,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 			return errors.Wrapf(err, "getting file for svc symbol %s", s)
 		}
 		files := getDepTree(root)
+		log.Infof("files found for service %s %d %v", s, len(files), files[0].GetName())
 		servicesToAdd = append(servicesToAdd, s)
 		descriptors.File = append(descriptors.GetFile(), files...)
 
