@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/skv2/codegen/util"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,15 +14,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
-
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	"github.com/solo-io/skv2/codegen/util"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -64,10 +62,9 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		firstReleaseOfMinor                bool
 	)
 
-	// setup for all tests
-	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
+	BeforeSuite(func() {
 		var err error
+		ctx, cancel = context.WithCancel(context.Background())
 		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 		Expect(err).NotTo(HaveOccurred())
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
@@ -83,6 +80,14 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		if err != nil && strings.Contains(err.Error(), upgrade.FirstReleaseError) {
 			firstReleaseOfMinor = true
 		}
+	})
+
+	// setup for all tests
+	BeforeEach(func() {
+		var err error
+		ctx, cancel = context.WithCancel(context.Background())
+		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {

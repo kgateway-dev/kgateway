@@ -86,47 +86,41 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 	return versions[len(versions)-2], nil
 }
 
+type latestPatchForMinorPredicate struct {
+	versionPrefix string
+}
+
+func (s *latestPatchForMinorPredicate) Apply(release *github.RepositoryRelease) bool {
+	return strings.HasPrefix(*release.Name, s.versionPrefix)
+}
+
+func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorPredicate {
+	return &latestPatchForMinorPredicate{
+		versionPrefix: versionPrefix,
+	}
+}
+
 func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-
-	// inexact version requested may be prerelease and not have assets
-	// We do assume that within a minor version we use monotonically increasing patch numbers
-	// We also assume that the first release that is not strict semver is technically the largest
-	for i := 0; i < 5; i++ {
-		// Get the next page of
-		listOpts := github.ListOptions{Page: i, PerPage: 10} // max per request
-		releases, _, err := client.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error listing releases")
-		}
-
-		for _, release := range releases {
-			v, err := versionutils.ParseVersion(*release.Name)
-			if err != nil {
-				return nil, errors.Wrapf(err, "error parsing version from release")
-			}
-			if release.GetPrerelease() || // we don't want a prerelease version
-				strings.Contains(release.GetBody(), "This release build failed") || // we don't want a failed build
-				!release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-30)*time.Minute)) { // releases take time to propagate - image might not be available for 30 minutes
-				continue
-			}
-			// either a major-minor was specified something of the form v%d.%d
-			// or are searching for latest stable and have found the most recent
-			// experimental and are now searching for a conforming release
-			if versionPrefix != "" {
-				// take the first valid from this version
-				// as we assume increasing ordering
-				if strings.HasPrefix(v.String(), versionPrefix) {
-					return v, nil
-				}
-				continue
-			}
-		}
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 2)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error getting releases from github")
 	}
-
+	for _, release := range releases {
+		v, err := versionutils.ParseVersion(*release.Name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error parsing release name")
+		}
+		if release.GetPrerelease() || // we don't want a prerelease version
+			strings.Contains(release.GetBody(), "This release build failed") || // we don't want a failed build
+			!release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-60)*time.Minute)) { // releases take time to propagate - image might not be available for 30 minutes
+			continue
+		}
+		return v, nil
+	}
 	return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
 }
