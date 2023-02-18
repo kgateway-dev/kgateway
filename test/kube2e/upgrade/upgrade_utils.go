@@ -91,7 +91,10 @@ type latestPatchForMinorPredicate struct {
 }
 
 func (s *latestPatchForMinorPredicate) Apply(release *github.RepositoryRelease) bool {
-	return strings.HasPrefix(*release.Name, s.versionPrefix)
+	return strings.HasPrefix(*release.Name, s.versionPrefix) &&
+		!release.GetPrerelease() && // we don't want a prerelease version
+		!strings.Contains(release.GetBody(), "This release build failed") && // we don't want a failed build
+		release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-60)*time.Minute))
 }
 
 func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorPredicate {
@@ -106,21 +109,13 @@ func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion in
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 2)
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 1)
+	if len(releases) == 0 {
+		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
+	}
+	v, err := versionutils.ParseVersion(*releases[0].Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting releases from github")
+		return nil, errors.Wrapf(err, "error parsing release name")
 	}
-	for _, release := range releases {
-		v, err := versionutils.ParseVersion(*release.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error parsing release name")
-		}
-		if release.GetPrerelease() || // we don't want a prerelease version
-			strings.Contains(release.GetBody(), "This release build failed") || // we don't want a failed build
-			!release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-60)*time.Minute)) { // releases take time to propagate - image might not be available for 30 minutes
-			continue
-		}
-		return v, nil
-	}
-	return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
+	return v, nil
 }
