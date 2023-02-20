@@ -309,7 +309,6 @@ require (
 	k8s.io/klog/v2 v2.70.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/metrics v0.24.0 // indirect
-	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.11.4 // indirect
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.4 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.6 // indirect
@@ -341,21 +340,21 @@ replace (
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
 	helm.sh/helm/v3 => helm.sh/helm/v3 v3.6.3
 
-	// Pin Kube libraries to v0.23
+	// Pin Kube libraries to v0.22
 	// These should be upgraded collectively
-	k8s.io/api => k8s.io/api v0.23.16
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.23.16
-	k8s.io/apimachinery => k8s.io/apimachinery v0.23.16
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.23.16
-	k8s.io/client-go => k8s.io/client-go v0.23.16
-	k8s.io/code-generator => k8s.io/code-generator v0.23.16
-	k8s.io/component-base => k8s.io/component-base v0.23.16
+	k8s.io/api => k8s.io/api v0.22.4
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.22.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.22.4
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.22.4
+	k8s.io/client-go => k8s.io/client-go v0.22.4
+	k8s.io/code-generator => k8s.io/code-generator v0.22.4
+	k8s.io/component-base => k8s.io/component-base v0.22.4
 
 	// klog is likely unused, but if it is we want to use this fork
 	// see https://github.com/solo-io/gloo/pull/1880
 	k8s.io/klog => github.com/stefanprodan/klog v0.0.0-20190418165334-9cbb78b20423
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
-	k8s.io/kubectl => k8s.io/kubectl v0.23.16
+	k8s.io/kubectl => k8s.io/kubectl v0.22.4
 )
 
 exclude (

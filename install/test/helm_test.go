@@ -108,7 +108,7 @@ var _ = Describe("Helm Test", func() {
 			}
 		}
 		BeforeEach(func() {
-			// Ensure that tests do not shares manifests by accident
+			// Ensure that tests do not share manifests by accident
 			testManifest = nil
 		})
 
@@ -3004,7 +3004,7 @@ spec:
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							ProbeHandler: v1.ProbeHandler{
+							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"wget", "-O", "/dev/null", "127.0.0.1:19000/ready",
@@ -3016,7 +3016,7 @@ spec:
 							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							ProbeHandler: v1.ProbeHandler{
+							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
@@ -3050,7 +3050,7 @@ spec:
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							ProbeHandler: v1.ProbeHandler{
+							Handler: v1.Handler{
 								HTTPGet: &v1.HTTPGetAction{
 									Path:   "/ready",
 									Port:   intstr.FromInt(19000),
@@ -3062,7 +3062,7 @@ spec:
 							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							ProbeHandler: v1.ProbeHandler{
+							Handler: v1.Handler{
 								HTTPGet: &v1.HTTPGetAction{
 									Path:   "/server_info",
 									Port:   intstr.FromInt(19000),
@@ -3097,7 +3097,7 @@ spec:
 						})
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-							PreStop: &v1.LifecycleHandler{
+							PreStop: &v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"/bin/sh",
@@ -3120,7 +3120,7 @@ spec:
 						})
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-							PreStop: &v1.LifecycleHandler{
+							PreStop: &v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"/bin/sh",
@@ -4504,7 +4504,7 @@ metadata:
 						}
 
 						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							ProbeHandler: v1.ProbeHandler{
+							Handler: v1.Handler{
 								TCPSocket: &v1.TCPSocketAction{
 									Port: intstr.FromInt(9977),
 								},
@@ -5454,7 +5454,7 @@ metadata:
 												AllowPrivilegeEscalation: pointer.BoolPtr(false),
 											},
 											ReadinessProbe: &v1.Probe{
-												ProbeHandler: v1.ProbeHandler{
+												Handler: v1.Handler{
 													TCPSocket: &v1.TCPSocketAction{
 														Port: intstr.FromInt(9977),
 													},
