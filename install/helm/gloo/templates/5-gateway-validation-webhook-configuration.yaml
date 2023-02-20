@@ -48,6 +48,9 @@ specific resources, we will manage the resources that the webhook receives via t
     resources: ["ratelimitconfigs"]
   sideEffects: None
   matchPolicy: Exact
+{{- if .Values.gateway.validation.webhook.timeoutSeconds }}
+  timeoutSeconds: {{ .Values.gateway.validation.webhook.timeoutSeconds }}
+{{- end }}
   admissionReviewVersions:
     - v1beta1 # v1beta1 still live in 1.22 https://github.com/kubernetes/api/blob/release-1.22/admission/v1beta1/types.go#L33
 {{- if .Values.gateway.validation.failurePolicy }}
