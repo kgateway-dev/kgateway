@@ -81,6 +81,10 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		if err != nil && strings.Contains(err.Error(), upgrade.FirstReleaseError) {
 			firstReleaseOfMinor = true
 		}
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
 		beforeSuiteCtxCancel()
 	})
 
