@@ -1,4 +1,5 @@
 # Test Overview 
+- Internet needed for tests to run
 - All upgrade tests run twice. 
     - current minor last patch -> current code (ex: 1.12.3 -> 1.12.4)
     - previous minor latest patch -> current code (ex 1.11.latest -> 1.12.4)
