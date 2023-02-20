@@ -136,7 +136,7 @@ The response transformation extracts the value of the 'body' key from the upstre
 
 Note that these request and response transformations are incompatible with the features `wrapAsApiGateway`, `unwrapAsApiGateway`, and `unwrapAsAlb`.
 
-**Before you begin**: [Install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+**Before you begin**: [Install Gloo Edge version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsApiGateway: true` setting.
    ```bash
