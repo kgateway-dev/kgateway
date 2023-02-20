@@ -65,11 +65,11 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	BeforeSuite(func() {
 		var err error
-		ctx, cancel = context.WithCancel(context.Background())
-		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
+		beforeSuiteCtx, beforeSuiteCtxCancel := context.WithCancel(context.Background())
+		testHelper, err = kube2e.GetTestHelper(beforeSuiteCtx, namespace)
 		Expect(err).NotTo(HaveOccurred())
 		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
-		targetReleasedVersion = kube2e.GetTestReleasedVersion(ctx, "gloo")
+		targetReleasedVersion = kube2e.GetTestReleasedVersion(beforeSuiteCtx, "gloo")
 		if targetReleasedVersion != "" {
 			chartUri = "gloo/gloo"
 		} else {
@@ -77,10 +77,11 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		}
 		strictValidation = false
 
-		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(ctx, "gloo")
+		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(beforeSuiteCtx, "gloo")
 		if err != nil && strings.Contains(err.Error(), upgrade.FirstReleaseError) {
 			firstReleaseOfMinor = true
 		}
+		beforeSuiteCtxCancel()
 	})
 
 	// setup for all tests
