@@ -105,7 +105,9 @@ func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorP
 
 func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
 	token, _ := githubutils.GetGithubToken()
-	fmt.Printf("Current token is %s\n", token)
+	if token != "" {
+		fmt.Println("Token is not nil")
+	}
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
