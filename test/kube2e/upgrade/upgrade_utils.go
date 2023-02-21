@@ -33,7 +33,7 @@ func (a ByVersion) Less(i, j int) bool {
 func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor(repoName)
+	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
 	if curMinorErr != nil {
 		if curMinorErr.Error() != FirstReleaseError {
 			return nil, nil, curMinorErr
@@ -46,13 +46,13 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 	return lastMinorLatestPatchVersion, currentMinorLatestPatchVersion, curMinorErr
 }
 
-func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error) {
+func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
 	fmt.Printf("current file path: " + filename)
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
-	//we can end up in a situation where the path contains the repo_name twice when running in ci - keep going until we find the last use ex: /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
+	//In all cases the home of the project will be one level above test - this handles forks as well as the standard case /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
 	for idx, dir := range fParts {
 		if dir == "test" {
 			splitIdx = idx - 1
@@ -64,7 +64,6 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
 	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
 	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
-	fmt.Printf("final path to changelogs: " + pathToChangelogs)
 
 	files, err := os.ReadDir(pathToChangelogs)
 	if err != nil {
@@ -83,15 +82,10 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 	}
 
 	sort.Sort(ByVersion(versions))
-	for _, version := range versions {
-		fmt.Printf(version.String() + "\n")
-	}
-
 	//first release of minor
 	if versions[len(versions)-1].Minor != versions[len(versions)-2].Minor {
 		return versions[len(versions)-1], errors.Errorf(FirstReleaseError)
 	}
-	fmt.Printf("found version: " + versions[len(versions)-2].String() + "\n")
 	return versions[len(versions)-2], nil
 }
 
