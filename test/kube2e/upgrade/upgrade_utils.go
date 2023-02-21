@@ -62,11 +62,11 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 	basepath := filepath.Dir(b)
 	//path1 := "/home/runner/work/gloo/gloo/test/kube2e/upgrade/upgrade_utils.go"
 	//path2 := "/Users/ianmacclancy/go/src/github.com/solo-io/iansGlooFork/test/kube2e/upgrade/upgrade_utils.go"
-	fmt.Println("basepath: " + basepath)
+	fmt.Printf("basepath: " + basepath)
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
 	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
 	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
-	fmt.Println("final path to changelogs: " + pathToChangelogs)
+	fmt.Printf("final path to changelogs: " + pathToChangelogs)
 
 	files, err := os.ReadDir(pathToChangelogs)
 	if err != nil {
