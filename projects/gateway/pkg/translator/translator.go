@@ -202,8 +202,8 @@ func ListenerName(gateway *v1.Gateway) string {
 // validateGateways validates a set of Gateways that will be aggregated on a Proxy
 // and writes errors to the ResourceReports.
 // Gateways must meet the following criteria:
-//	1. All bind addresses are unique
-//	2. All VirtualServices that are referenced by a Gateway are available in the API Snapshot
+//  1. All bind addresses are unique
+//  2. All VirtualServices that are referenced by a Gateway are available in the API Snapshot
 func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
 	bindAddresses := map[string]v1.GatewayList{}
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,

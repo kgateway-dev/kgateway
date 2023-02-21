@@ -86,7 +86,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.24.0-patch2
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.1-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -139,7 +139,7 @@ ifeq ($(GOOS),)
 endif
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
-GOLANG_VERSION := golang:1.18.2-alpine
+GOLANG_VERSION := golang:1.20.1-alpine
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
