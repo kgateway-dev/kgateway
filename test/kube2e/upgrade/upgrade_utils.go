@@ -49,7 +49,6 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
-	fmt.Printf("current file path: " + filename)
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
 	//In all cases the home of the project will be one level above test - this handles forks as well as the standard case /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
@@ -59,8 +58,6 @@ func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 		}
 	}
 
-	//path1 := "/home/runner/work/gloo/gloo/test/kube2e/upgrade/upgrade_utils.go"
-	//path2 := "/Users/ianmacclancy/go/src/github.com/solo-io/iansGlooFork/test/kube2e/upgrade/upgrade_utils.go"
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
 	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
 	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
@@ -112,6 +109,13 @@ func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion in
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
+	allReleases, allReleaseErr := githubutils.GetAllRepoReleases(ctx, client, "solo-io", "gloo")
+	if allReleaseErr != nil {
+		return nil, errors.Wrapf(err, "unable to getReleases")
+	}
+	for _, release := range allReleases {
+		fmt.Printf("%s\n", *release.Name)
+	}
 	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 1)
 	if len(releases) == 0 {
 		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
