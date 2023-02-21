@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
@@ -55,7 +57,7 @@ var _ = BeforeSuite(func() {
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "knative-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.InstallNamespace = "knative-test-" + fmt.Sprintf("%d-%d", randomNumber, parallel.GetParallelProcessCount())
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())

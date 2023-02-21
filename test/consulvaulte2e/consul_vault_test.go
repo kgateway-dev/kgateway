@@ -125,6 +125,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 		go func() {
 			defer GinkgoRecover()
+
 			// Start Gloo
 			err = setup.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
