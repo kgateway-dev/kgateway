@@ -58,11 +58,9 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 			splitIdx = idx - 1
 		}
 	}
-	_, b, _, _ := runtime.Caller(0)
-	basepath := filepath.Dir(b)
+
 	//path1 := "/home/runner/work/gloo/gloo/test/kube2e/upgrade/upgrade_utils.go"
 	//path2 := "/Users/ianmacclancy/go/src/github.com/solo-io/iansGlooFork/test/kube2e/upgrade/upgrade_utils.go"
-	fmt.Printf("basepath: " + basepath)
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
 	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
 	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
@@ -82,6 +80,10 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 			}
 			versions[idx] = version
 		}
+	}
+
+	for _, version := range versions {
+		fmt.Printf(version.String() + "\n")
 	}
 
 	sort.Sort(ByVersion(versions))
