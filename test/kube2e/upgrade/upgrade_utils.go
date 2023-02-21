@@ -82,15 +82,16 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 		}
 	}
 
+	sort.Sort(ByVersion(versions))
 	for _, version := range versions {
 		fmt.Printf(version.String() + "\n")
 	}
 
-	sort.Sort(ByVersion(versions))
 	//first release of minor
 	if versions[len(versions)-1].Minor != versions[len(versions)-2].Minor {
 		return versions[len(versions)-1], errors.Errorf(FirstReleaseError)
 	}
+	fmt.Printf("found version: " + versions[len(versions)-2].String() + "\n")
 	return versions[len(versions)-2], nil
 }
 
