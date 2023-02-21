@@ -78,6 +78,11 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		strictValidation = false
 
 		LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(beforeSuiteCtx, "gloo")
+		fmt.Println("-------------------------------")
+		fmt.Println(err.Error())
+		fmt.Println("LastPatchMostRecentMinorVersion: " + LastPatchMostRecentMinorVersion.String())
+		fmt.Println("CurrentPatchMostRecentMinorVersion: " + CurrentPatchMostRecentMinorVersion.String())
+		fmt.Println("-------------------------------")
 		if err != nil {
 			if strings.Contains(err.Error(), upgrade.FirstReleaseError) {
 				firstReleaseOfMinor = true
