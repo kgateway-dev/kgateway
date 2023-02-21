@@ -104,23 +104,11 @@ func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorP
 }
 
 func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
-	token, _ := githubutils.GetGithubToken()
-	if token != "" {
-		fmt.Println("Token is not nil")
-	}
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-	allReleases, allReleaseErr := githubutils.GetAllRepoReleases(ctx, client, "solo-io", "gloo")
-	if allReleaseErr != nil {
-		return nil, errors.Wrapf(err, "unable to getReleases")
-	}
-	fmt.Printf("Number of releases:%d\n", len(allReleases))
-	for _, release := range allReleases {
-		fmt.Printf("%s\n", *release.Name)
-	}
 	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 1)
 	if len(releases) == 0 {
 		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
