@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/kubernetes/fake"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"

@@ -5,16 +5,16 @@ import (
 	"errors"
 	"fmt"
 
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	"github.com/onsi/ginkgo/extensions/table"
 	types2 "github.com/onsi/gomega/types"
+
+	_struct "github.com/golang/protobuf/ptypes/struct"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	csrf_v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
 	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -36,7 +36,8 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -3499,7 +3500,7 @@ var _ = Describe("Translator", func() {
 	})
 
 	Context("IgnoreHealthOnHostRemoval", func() {
-		table.DescribeTable("propagates IgnoreHealthOnHostRemoval to Cluster", func(upstreamValue *wrappers.BoolValue, expectedClusterValue bool) {
+		DescribeTable("propagates IgnoreHealthOnHostRemoval to Cluster", func(upstreamValue *wrappers.BoolValue, expectedClusterValue bool) {
 			// Set the value
 			upstream.IgnoreHealthOnHostRemoval = upstreamValue
 
@@ -3514,13 +3515,13 @@ var _ = Describe("Translator", func() {
 			Expect(cluster).NotTo(BeNil())
 			Expect(cluster.IgnoreHealthOnHostRemoval).To(Equal(expectedClusterValue))
 		},
-			table.Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
-			table.Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
-			table.Entry("When value=nil", nil, false))
+			Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
+			Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
+			Entry("When value=nil", nil, false))
 	})
 
 	Context("DnsRefreshRate", func() {
-		table.DescribeTable("Sets DnsRefreshRate on Cluster",
+		DescribeTable("Sets DnsRefreshRate on Cluster",
 			func(staticUpstream bool, refreshRate *duration.Duration, refreshRateMatcher types2.GomegaMatcher, reportMatcher types2.GomegaMatcher) {
 				// By default, the Upstream is configured as a Static Upstream
 				if !staticUpstream {
@@ -3542,10 +3543,10 @@ var _ = Describe("Translator", func() {
 				cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
 				Expect(cluster.GetDnsRefreshRate()).To(refreshRateMatcher)
 			},
-			table.Entry("Static, DnsRefreshRate=nil", true, nil, BeNil(), BeNil()),
-			table.Entry("Static, DsnRefreshRate valid", true, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), BeNil()),
-			table.Entry("Static, DsnRefreshRate=0", true, &duration.Duration{Seconds: 0}, BeNil(), MatchError(ContainSubstring("dnsRefreshRate was set below minimum requirement"))),
-			table.Entry("Eds, DsnRefreshRate valid", false, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), MatchError(ContainSubstring("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type"))),
+			Entry("Static, DnsRefreshRate=nil", true, nil, BeNil(), BeNil()),
+			Entry("Static, DsnRefreshRate valid", true, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), BeNil()),
+			Entry("Static, DsnRefreshRate=0", true, &duration.Duration{Seconds: 0}, BeNil(), MatchError(ContainSubstring("dnsRefreshRate was set below minimum requirement"))),
+			Entry("Eds, DsnRefreshRate valid", false, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), MatchError(ContainSubstring("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type"))),
 		)
 	})
 

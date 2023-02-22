@@ -18,7 +18,7 @@ package services
 //
 //	"github.com/hashicorp/go-multierror"
 //	"github.com/hashicorp/nomad/api"
-//	"github.com/onsi/ginkgo"
+//	"github.com/onsi/ginkgo/v2"
 //	errors "github.com/rotisserie/eris"
 //	"github.com/solo-io/gloo/pkg/backoff"
 //	"github.com/solo-io/go-utils/log"

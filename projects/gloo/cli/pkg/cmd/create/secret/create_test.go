@@ -5,12 +5,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/hashicorp/vault/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/gloo/test/services"
 )
 
 var _ = Describe("Create", func() {
@@ -18,24 +16,6 @@ var _ = Describe("Create", func() {
 		log.Print("This test downloads and runs vault and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
 		return
 	}
-
-	var (
-		vaultFactory  *services.VaultFactory
-		vaultInstance *services.VaultInstance
-		client        *api.Client
-	)
-
-	BeforeSuite(func() {
-		var err error
-		vaultFactory, err = services.NewVaultFactory()
-		Expect(err).NotTo(HaveOccurred())
-		client, err = api.NewClient(api.DefaultConfig())
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterSuite(func() {
-		_ = vaultFactory.Clean()
-	})
 
 	BeforeEach(func() {
 		helpers.UseDefaultClients()

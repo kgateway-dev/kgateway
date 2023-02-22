@@ -17,8 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/test/helpers"
@@ -43,8 +42,7 @@ func TestIstio(t *testing.T) {
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Istio Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Istio Suite")
 }
 
 var (

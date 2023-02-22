@@ -8,7 +8,7 @@ import (
 
 	alpha1 "knative.dev/networking/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
