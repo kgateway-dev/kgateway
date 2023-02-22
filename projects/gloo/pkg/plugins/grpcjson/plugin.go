@@ -3,6 +3,7 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -88,7 +89,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return err
 	}
 	// Discovery will create an empty serviceSpec if the service does not provide descriptors which does not warrant a filter.
-	if envoyGrpcJsonConf.DescriptorSet == nil {
+	if envoyGrpcJsonConf.GetDescriptorSet() == nil {
 		return nil
 	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)

@@ -5,23 +5,22 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"io/ioutil"
+	"net/http"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -156,7 +155,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			testRequest("test", true)
 		})
 	})
-
 	Describe("Route matching behavior", func() {
 		It("When the route prefix is set to match one of the GrpcJsonTranscoder's services, requests to /test should go through", func() {
 			// Write a virtual service with a single route that matches against the prefix "/glootest.TestService"
@@ -201,6 +199,23 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		})
 	})
 
+	Context("GRPC configured on Upstream", func() {
+		It("with protodescriptor on upstream", func() {
+
+			gw := gwdefaults.DefaultGateway(writeNamespace)
+
+			_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
+			Expect(err).ToNot(HaveOccurred())
+			tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
+			addGrpcJsonToUpstream(tu.Upstream)
+			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			vs := getGrpcJsonRawVs(writeNamespace, tu.Upstream.Metadata.Ref())
+			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+			Expect(err).NotTo(HaveOccurred())
+			testRequest("test", true)
+		})
+	})
 })
 
 func getGrpcJsonGateway() *gatewayv1.Gateway {
@@ -222,14 +237,33 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 			HttpGateway: &gatewayv1.HttpGateway{
 				Options: &gloov1.HttpListenerOptions{
 					GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
-						DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
-						Services:      []string{"glootest.TestService"},
+						DescriptorSet:          &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
+						Services:               []string{"glootest.TestService"},
+						IgnoredQueryParameters: []string{"gateway_param"},
 					},
 				},
 			},
 		},
 		ProxyNames: []string{"gateway-proxy"},
 	}
+}
+func addGrpcJsonToUpstream(tu *gloov1.Upstream) {
+	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
+	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
+	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
+	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	Expect(err).ToNot(HaveOccurred())
+	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
+	t.SetServiceSpec(&options.ServiceSpec{
+		PluginType: &options.ServiceSpec_GrpcJsonTranscoder{
+			GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
+				DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{
+					ProtoDescriptorBin: bytes,
+				},
+				Services:               []string{"glootest.TestService"},
+				IgnoredQueryParameters: []string{"upstream_param"},
+			},
+		}})
 }
 
 func getGrpcJsonRawVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
