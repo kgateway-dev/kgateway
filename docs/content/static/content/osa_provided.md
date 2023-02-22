@@ -28,26 +28,26 @@ Name|Version|License
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.6.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
-[onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.20.0|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.5.0|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.24.1|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
-[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.11.1|Apache License 2.0
+[prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.12.1|Apache License 2.0
 [prometheus/prometheus](https://github.com/prometheus/prometheus)|v2.5.0+incompatible|Apache License 2.0
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License
 [saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.1.0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.9.2|Apache License 2.0
-[spf13/cobra](https://github.com/spf13/cobra)|v1.2.1|Apache License 2.0
+[spf13/cobra](https://github.com/spf13/cobra)|v1.4.0|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
-[go.opencensus.io](https://go.opencensus.io)|v0.23.0|Apache License 2.0
+[go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
 [x/sync](https://golang.org/x/sync)|v0.1.0|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.3.0|BSD 3-clause "New" or "Revised" License
-[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20221118155620-16455021b5e6|Apache License 2.0
+[x/tools](https://golang.org/x/tools)|v0.5.0|BSD 3-clause "New" or "Revised" License
+[google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20221201164419-0e50fba7f41c|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.40.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.28.1|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
@@ -59,10 +59,10 @@ Name|Version|License
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.22.4|Apache License 2.0
 [k8s.io/component-base](https://k8s.io/component-base)|v0.22.4|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.22.4|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20211208161948-7d6a63dca704|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20220728103510-ee6ede2d64ed|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.10.3|Apache License 2.0
+[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.11.2|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.3.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License

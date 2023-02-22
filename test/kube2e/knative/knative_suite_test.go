@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
@@ -38,8 +39,7 @@ func TestKnative(t *testing.T) {
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Knative Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Knative Suite")
 }
 
 var (
@@ -57,7 +57,7 @@ var _ = BeforeSuite(func() {
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "knative-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
+		defaults.InstallNamespace = "knative-test-" + fmt.Sprintf("%d-%d", randomNumber, parallel.GetParallelProcessCount())
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
