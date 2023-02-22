@@ -39,17 +39,32 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 			return nil, nil, curMinorErr
 		}
 	}
+	// we may get a changelog value that does not have a github release - get the latest release for current minor
+	currentMinorLatestRelease, currentMinorLatestReleaseError := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
+	if currentMinorLatestReleaseError != nil {
+		return nil, nil, currentMinorLatestReleaseError
+	}
 	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
 		return nil, nil, lastMinorErr
 	}
-	return lastMinorLatestPatchVersion, currentMinorLatestPatchVersion, curMinorErr
+	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
 }
 
 func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
-	pathToChangelogs := filepath.Join(filename, fmt.Sprintf("../../../../%s", changelogutils.ChangelogDirectory))
+	fParts := strings.Split(filename, string(os.PathSeparator))
+	splitIdx := 0
+	// In all cases the home of the project will be one level above test - this handles forks as well as the standard case /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
+	for idx, dir := range fParts {
+		if dir == "test" {
+			splitIdx = idx - 1
+		}
+	}
+	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
+	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
+	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
 
 	files, err := os.ReadDir(pathToChangelogs)
 	if err != nil {
