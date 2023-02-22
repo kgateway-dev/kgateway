@@ -7,13 +7,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
-
-	"github.com/solo-io/gloo/test/kube2e/upgrade"
-	"github.com/solo-io/skv2/codegen/util"
 
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -25,12 +21,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,12 +39,9 @@ const namespace = defaults.GlooSystem
 var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 	var (
-		crdDir                string
-		chartUri              string
-		targetReleasedVersion string
-		ctx                   context.Context
-		cancel                context.CancelFunc
-		testHelper            *helper.SoloTestHelper
+		ctx        context.Context
+		cancel     context.CancelFunc
+		testHelper *helper.SoloTestHelper
 
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
@@ -96,8 +88,13 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	BeforeEach(func() {
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
+		strictValidation = false
 		testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {

@@ -3,8 +3,7 @@ package metrics_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
@@ -84,7 +83,7 @@ func makeProxy(nameSuffix string) resources.Resource {
 var _ = Describe("ConfigStatusMetrics Test", func() {
 	DescribeTable("SetResource[Invalid|Valid] works as expected",
 		func(gvk string, metricName string, makeResource func(nameSuffix string) resources.Resource) {
-			opts := map[string]*metrics.Labels{
+			opts := map[string]*metrics.MetricLabels{
 				gvk: {
 					LabelToPath: map[string]string{
 						"name": "{.metadata.name}",

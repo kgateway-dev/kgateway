@@ -16,7 +16,7 @@ import (
 
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v3"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"

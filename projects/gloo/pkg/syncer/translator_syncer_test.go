@@ -8,7 +8,7 @@ import (
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
