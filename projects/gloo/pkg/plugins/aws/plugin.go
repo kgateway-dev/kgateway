@@ -242,23 +242,21 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			awsDestination := awsDestinationSpec.Aws
 
 			requiresRequestTransformation := awsDestination.GetRequestTransformation()
-			requiresResponseTransformation :=
-				awsDestination.GetResponseTransformation() ||
-					// TODO(jbohanon) figure out what to do with UnwrapAsAlb
-					// awsDestination.GetUnwrapAsAlb() ||
-					awsDestination.GetUnwrapAsApiGateway()
-			if !requiresRequestTransformation && !requiresResponseTransformation {
+
+			// We should have already mutated awsDestination.UnwrapAsApiGateway if awsDestination.ResponseTransformation
+			// is set to true. This is done in GenerateAWSLambdaRouteConfig
+			requiresUnwrap :=
+				// unwrapAsAlb is handled directly in the aws lambda filter rather than through a transformer.
+				// If both are set, we prioritize unwrapAsAlb.
+				!awsDestination.GetUnwrapAsAlb() && awsDestination.GetUnwrapAsApiGateway()
+
+			if !requiresRequestTransformation && !requiresUnwrap {
 				return nil, nil
 			}
 
 			p.requiresTransformationFilter = true
 
-			transform := &envoy_transform.RouteTransformations_RouteTransformation{
-				Stage: transformation.AwsStageNumber,
-			}
 			var reqTransform *envoy_transform.Transformation
-			var respTransform *envoy_transform.Transformation
-
 			if requiresRequestTransformation {
 				reqTransform = &envoy_transform.Transformation{
 					TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
@@ -269,34 +267,15 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				}
 			}
 
-			// transparently use the unwrapAsApiGateway filter as the response transformation
-			if requiresResponseTransformation {
-				awsDestination.UnwrapAsApiGateway = true
-
-				// To avoid breaking customers relying on this previous behavior of responseTransformation
-				if !awsDestination.GetDisableHtmlContentTypeHeader() {
-					template := respTransform.GetTransformationType().(*envoy_transform.Transformation_TransformationTemplate).TransformationTemplate
-					template.Headers = map[string]*envoy_transform.InjaTemplate{
-						"content-type": {
-							Text: "text/html",
-						},
-					}
-				}
-			}
-
+			var transform *envoy_transform.RouteTransformations_RouteTransformation
 			if requiresRequestTransformation {
 				// Early stage transform: place all headers in the request body
-				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
-					RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
-						RequestTransformation:  reqTransform,
-						ResponseTransformation: respTransform, // This will be nil if we are unwrapping without modifying content-type
-					},
-				}
-			} else if respTransform != nil {
-				// we have to transform the content-type header in addition to unwrapping
-				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
-					ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
-						ResponseTransformation: respTransform,
+				transform = &envoy_transform.RouteTransformations_RouteTransformation{
+					Stage: transformation.AwsStageNumber,
+					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
+						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
+							RequestTransformation: reqTransform,
+						},
 					},
 				}
 			} else {
@@ -311,7 +290,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					return nil, err
 				}
 			}
-			transforms.Transformations = append(transforms.GetTransformations(), transform)
+			if transform != nil {
+				transforms.Transformations = append(transforms.GetTransformations(), transform)
+			}
 			return &transforms, nil
 		},
 	)
@@ -408,8 +389,13 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 			awsRegion, upstream.GetAwsAccountId(), functionName)
 	}
 
+	// transparently use the unwrapAsApiGateway functionality for responseTransformation
+	if destination.GetResponseTransformation() {
+		destination.UnwrapAsApiGateway = true
+	}
+
 	var transformerConfig *v3.TypedExtensionConfig
-	if destination.GetUnwrapAsApiGateway() && !destination.GetUnwrapAsAlb() {
+	if !destination.GetUnwrapAsAlb() && destination.GetUnwrapAsApiGateway() {
 		transformerConfig = &v3.TypedExtensionConfig{
 			Name: ResponseTransformationName,
 			TypedConfig: &any.Any{
@@ -423,11 +409,9 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 		Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
 		// we need to query escape per AWS spec:
 		// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-		Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
-		Name:        url.QueryEscape(functionName),
-		UnwrapAsAlb: destination.GetUnwrapAsAlb(),
-
-		// TransformerConfig is intentionally not included as that is an enterprise only feature
+		Qualifier:         url.QueryEscape(lambdaFunc.GetQualifier()),
+		Name:              url.QueryEscape(functionName),
+		UnwrapAsAlb:       destination.GetUnwrapAsAlb(),
 		TransformerConfig: transformerConfig,
 	}
 

@@ -104,8 +104,6 @@ func (m *DestinationSpec) Clone() proto.Message {
 
 	target.ResponseTransformation = m.GetResponseTransformation()
 
-	target.DisableHtmlContentTypeHeader = m.GetDisableHtmlContentTypeHeader()
-
 	target.UnwrapAsAlb = m.GetUnwrapAsAlb()
 
 	target.UnwrapAsApiGateway = m.GetUnwrapAsApiGateway()

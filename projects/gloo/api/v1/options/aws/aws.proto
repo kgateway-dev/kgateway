@@ -76,24 +76,20 @@ message DestinationSpec {
     }
 
     // Include headers, querystring, request path, and request method in the event payload sent to aws lambda.
-    // Incompatible with wrapAsApiGateway
+    // Only one of `requestTransformation` or `wrapAsApiGateway` should be provided.
     bool request_transformation = 6;
 
-    // extract metadata from response bodies returned from aws lambda
+    // Deprecated. Use unwrapAsApiGateway
     bool response_transformation = 5;
 
-    // Disable overwriting response `Content-Type` header to `text/html` when using `responseTransformation`
-    bool disable_html_content_type_header = 10;
-
     // Unwrap the response as if the proxy was an ALB.
-    // Intended to ease migration when previously using alb to invoke Lambdas.
+    // Intended to ease migration when previously using ALB to invoke Lambdas.
     // For further information see below link for the expected format when true.
     // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
     // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
     // If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
     bool unwrap_as_alb = 7;
 
-    // Enterprise-Only
     // Unwrap the response as if the proxy was an AWS API Gateway.
     // Intended to ease migration when previously using API Gateway to invoke Lambdas.
     // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
@@ -103,6 +99,6 @@ message DestinationSpec {
     // Enterprise-Only
     // Wrap the request into AWS API Gateway event format.
     // Intended to ease migration when previously using API Gateway to invoke Lambdas.
-    // Incompatible with requestTransformation
+    // Only one of `requestTransformation` or `wrapAsApiGateway` should be provided.
     bool wrap_as_api_gateway = 9;
 }

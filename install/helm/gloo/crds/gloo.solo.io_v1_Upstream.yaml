@@ -29,8 +29,6 @@ spec:
                     type: string
                   destinationOverrides:
                     properties:
-                      disableHtmlContentTypeHeader:
-                        type: boolean
                       invocationStyle:
                         type: string
                         x-kubernetes-int-or-string: true

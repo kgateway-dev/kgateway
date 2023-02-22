@@ -175,10 +175,6 @@ func (m *DestinationSpec) Equal(that interface{}) bool {
 		return false
 	}
 
-	if m.GetDisableHtmlContentTypeHeader() != target.GetDisableHtmlContentTypeHeader() {
-		return false
-	}
-
 	if m.GetUnwrapAsAlb() != target.GetUnwrapAsAlb() {
 		return false
 	}

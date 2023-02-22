@@ -2168,8 +2168,6 @@ spec:
                                         properties:
                                           aws:
                                             properties:
-                                              disableHtmlContentTypeHeader:
-                                                type: boolean
                                               invocationStyle:
                                                 type: string
                                                 x-kubernetes-int-or-string: true
@@ -3356,8 +3354,6 @@ spec:
                               properties:
                                 aws:
                                   properties:
-                                    disableHtmlContentTypeHeader:
-                                      type: boolean
                                     invocationStyle:
                                       type: string
                                       x-kubernetes-int-or-string: true
