@@ -45,7 +45,44 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
+
+		// Versions to upgrade from
+		// ex: current branch is 1.13.10 - this would be the latest patch release of 1.12
+		lastPatchMostRecentMinorVersion *versionutils.Version
+
+		// ex:current branch is 1.13.10 - this would be 1.13.9
+		currentPatchMostRecentMinorVersion *versionutils.Version
+		firstReleaseOfMinor                bool
 	)
+
+	BeforeSuite(func() {
+		var err error
+		beforeSuiteCtx, beforeSuiteCtxCancel := context.WithCancel(context.Background())
+		testHelper, err = kube2e.GetTestHelper(beforeSuiteCtx, namespace)
+		Expect(err).NotTo(HaveOccurred())
+		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
+		targetReleasedVersion = kube2e.GetTestReleasedVersion(beforeSuiteCtx, "gloo")
+		if targetReleasedVersion != "" {
+			chartUri = "gloo/gloo"
+		} else {
+			chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+		}
+		strictValidation = false
+
+		lastPatchMostRecentMinorVersion, currentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(beforeSuiteCtx, "gloo")
+		if err != nil {
+			if !strings.Contains(err.Error(), upgrade.FirstReleaseError) {
+				fmt.Println(err.Error())
+				Fail(err.Error())
+			}
+			firstReleaseOfMinor = true
+		}
+		fmt.Println("-------------------------------")
+		fmt.Println("lastPatchMostRecentMinorVersion: " + lastPatchMostRecentMinorVersion.String())
+		fmt.Println("currentPatchMostRecentMinorVersion: " + currentPatchMostRecentMinorVersion.String())
+		fmt.Println("-------------------------------")
+		beforeSuiteCtxCancel()
+	})
 
 	// setup for all tests
 	BeforeEach(func() {
@@ -61,15 +98,15 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	})
 
 	Describe("Upgrading from a previous gloo version to current version", func() {
-		Context("When upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
+		Context("When upgrading from lastPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
-				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
+				installGloo(testHelper, lastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			//It("Used for local testing to check base case upgrades", func() {
-			//	baseUpgradeTest(ctx, crdDir, LastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
+			//	baseUpgradeTest(ctx, crdDir, lastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
 			//})
 			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
@@ -78,12 +115,12 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 		})
-		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
+		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
 			if firstReleaseOfMinor {
 				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
 			} else {
 				BeforeEach(func() {
-					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+					installGloo(testHelper, currentPatchMostRecentMinorVersion.String(), strictValidation)
 				})
 				AfterEach(func() {
 					uninstallGloo(testHelper, ctx, cancel)
@@ -111,9 +148,9 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			strictValidation = true
 		})
 
-		Context("When upgrading from LastPatchMostRecentMinorVersion to PR version of gloo", func() {
+		Context("When upgrading from lastPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
-				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
+				installGloo(testHelper, lastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
@@ -123,12 +160,12 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			})
 		})
 
-		Context("When upgrading from CurrentPatchMostRecentMinorVersion to PR version of gloo", func() {
+		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
 			if firstReleaseOfMinor {
 				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
 			} else {
 				BeforeEach(func() {
-					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+					installGloo(testHelper, currentPatchMostRecentMinorVersion.String(), strictValidation)
 				})
 				AfterEach(func() {
 					uninstallGloo(testHelper, ctx, cancel)
