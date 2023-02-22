@@ -39,7 +39,7 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 			return nil, nil, curMinorErr
 		}
 	}
-	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
+	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
 		return nil, nil, lastMinorErr
 	}
@@ -92,13 +92,13 @@ func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorP
 	}
 }
 
-func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
+func getLatestReleasedVersion(ctx context.Context, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 1)
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
 	if len(releases) == 0 {
 		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
 	}
