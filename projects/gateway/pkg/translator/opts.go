@@ -23,7 +23,7 @@ type Opts struct {
 	DevMode                        bool
 	ReadGatewaysFromAllNamespaces  bool
 	Validation                     *ValidationOpts
-	ConfigStatusMetricOpts         map[string]*metrics.Labels
+	ConfigStatusMetricOpts         map[string]*metrics.MetricLabels
 	IsolateVirtualHostsBySslConfig bool
 }
 

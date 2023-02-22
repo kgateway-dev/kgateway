@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
