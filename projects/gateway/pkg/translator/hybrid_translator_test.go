@@ -15,8 +15,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -412,20 +411,20 @@ var _ = Describe("Hybrid Translator", func() {
 						}
 					},
 						/*┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓
-						I am sitting here, possibly having descended into madness.  In my madness, I have found it necessary/expedient to construct a 36-entry table.
-						So some explanations are in order.  In general, a field can be affected in any 1 of 4 ways:
-							* nil		| an object not existing/instantiated.							|	ssl = nil
-							* zero		| a zero-value being set on a subfield.  ex: (0, "", false)		|	ssl.OneWayTls.Value = false
-							* empty 	| object exists, but has nil subfield.							|	ssl.OneWayTls = nil
-							* set		| object exists and has populated subfield						|	ssl.OneWayTls.Value = true
-						Since our merge operations take in (childSsl, parentSsl, PreventChildOverrides), this leaves 4*4*2 = 36 possible combinations to test.
+						  I am sitting here, possibly having descended into madness.  In my madness, I have found it necessary/expedient to construct a 36-entry table.
+						  So some explanations are in order.  In general, a field can be affected in any 1 of 4 ways:
+						  	* nil		| an object not existing/instantiated.							|	ssl = nil
+						  	* zero		| a zero-value being set on a subfield.  ex: (0, "", false)		|	ssl.OneWayTls.Value = false
+						  	* empty 	| object exists, but has nil subfield.							|	ssl.OneWayTls = nil
+						  	* set		| object exists and has populated subfield						|	ssl.OneWayTls.Value = true
+						  Since our merge operations take in (childSsl, parentSsl, PreventChildOverrides), this leaves 4*4*2 = 36 possible combinations to test.
 
-						When performing all of said combinations on a _nested_ field, such as ssl.OneWayTls.Value, there are 4 possible results:
-							* True		| ssl.OneWayTls.Value is true
-							* False		| ssl.OneWayTls.Value is false
-							* Nil		| ssl or OneWayTls is nil
-							* Error		| translation failed; when either parent XOR child has ssl defined, we should yield an error on the report
-						(┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓)*/
+						  When performing all of said combinations on a _nested_ field, such as ssl.OneWayTls.Value, there are 4 possible results:
+						  	* True		| ssl.OneWayTls.Value is true
+						  	* False		| ssl.OneWayTls.Value is false
+						  	* Nil		| ssl or OneWayTls is nil
+						  	* Error		| translation failed; when either parent XOR child has ssl defined, we should yield an error on the report
+						  (┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓			┏(･o･)┛♪┗ (･o･) ┓)*/
 						Entry("nil,nil,1", sslNil, sslNil, true, Nil),
 						Entry("nil,nil,0", sslNil, sslNil, false, Nil),
 						Entry("nil,zero,1", sslNil, sslZero, true, Error),

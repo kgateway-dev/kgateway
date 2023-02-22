@@ -3,13 +3,17 @@ package authconfig_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 func TestAuthConfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "AuthConfig Suite", []Reporter{junitReporter})
+	RunSpecs(t, "AuthConfig Suite")
 }
+
+var _ = BeforeSuite(func() {
+	helpers.UseMemoryClients()
+})
