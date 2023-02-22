@@ -7,6 +7,7 @@ import (
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/onsi/ginkgo/extensions/table"
+	types2 "github.com/onsi/gomega/types"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	csrf_v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/csrf/v3"
@@ -3516,6 +3517,36 @@ var _ = Describe("Translator", func() {
 			table.Entry("When value=true", &wrappers.BoolValue{Value: true}, true),
 			table.Entry("When value=false", &wrappers.BoolValue{Value: false}, false),
 			table.Entry("When value=nil", nil, false))
+	})
+
+	Context("DnsRefreshRate", func() {
+		table.DescribeTable("Sets DnsRefreshRate on Cluster",
+			func(staticUpstream bool, refreshRate *duration.Duration, refreshRateMatcher types2.GomegaMatcher, reportMatcher types2.GomegaMatcher) {
+				// By default, the Upstream is configured as a Static Upstream
+				if !staticUpstream {
+					upstream.UpstreamType = &v1.Upstream_Kube{
+						Kube: &v1kubernetes.UpstreamSpec{
+							ServiceName:      "service-name",
+							ServiceNamespace: "service-ns",
+						},
+					}
+				}
+				upstream.DnsRefreshRate = refreshRate
+
+				snap, errs, _ := translator.Translate(params, proxy)
+				Expect(snap).NotTo(BeNil(), "Ensure the xds Snapshot is not nil")
+				Expect(errs.ValidateStrict()).To(reportMatcher, "Ensure the reports contain the necessary errors/warnings")
+
+				clusters := snap.GetResources(types.ClusterTypeV3)
+				clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+				cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
+				Expect(cluster.GetDnsRefreshRate()).To(refreshRateMatcher)
+			},
+			table.Entry("Static, DnsRefreshRate=nil", true, nil, BeNil(), BeNil()),
+			table.Entry("Static, DsnRefreshRate valid", true, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), BeNil()),
+			table.Entry("Static, DsnRefreshRate=0", true, &duration.Duration{Seconds: 0}, BeNil(), MatchError(ContainSubstring("dnsRefreshRate was set below minimum requirement"))),
+			table.Entry("Eds, DsnRefreshRate valid", false, &duration.Duration{Seconds: 1}, MatchProto(&duration.Duration{Seconds: 1}), MatchError(ContainSubstring("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type"))),
+		)
 	})
 
 	//TODO: We could split this into a test file for clusters.go
