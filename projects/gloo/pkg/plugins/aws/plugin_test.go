@@ -478,7 +478,7 @@ var _ = Describe("Plugin", func() {
 			)
 
 			BeforeEach(func() {
-				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().RequestTransformation = true
 				route.Options = &v1.RouteOptions{
 					StagedTransformations: &v1transformation.TransformationStages{
 						Regular: &v1transformation.RequestResponseTransformations{
@@ -586,7 +586,7 @@ var _ = Describe("Plugin", func() {
 			It("should produce 2 filters when not unwrapping", func() {
 				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 				Expect(err).NotTo(HaveOccurred())
-				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().RequestTransformation = true
 				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 				Expect(err).NotTo(HaveOccurred())
 
