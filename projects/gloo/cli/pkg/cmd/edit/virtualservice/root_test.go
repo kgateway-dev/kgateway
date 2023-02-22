@@ -3,6 +3,8 @@ package virtualservice_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -10,7 +12,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -20,19 +22,24 @@ var _ = Describe("Root", func() {
 		vs       *gatewayv1.VirtualService
 		vsClient gatewayv1.VirtualServiceClient
 		ctx      context.Context
+		cancel   context.CancelFunc
 	)
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
-		ctx, _ = context.WithCancel(context.Background())
-		// create a settings object
+		ctx, cancel = context.WithCancel(context.Background())
+
 		vsClient = helpers.MustVirtualServiceClient(ctx)
 		vs = &gatewayv1.VirtualService{
 			Metadata: &core.Metadata{
 				Name:      "vs",
-				Namespace: "gloo-system",
+				Namespace: defaults.GlooSystem,
 			},
 		}
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	RefreshVirtualHost := func() {
@@ -72,7 +79,7 @@ var _ = Describe("Root", func() {
 		Context("with existing config", func() {
 
 			BeforeEach(func() {
-				vs.SslConfig = &gloov1.SslConfig{
+				vs.SslConfig = &ssl.SslConfig{
 					SniDomains: []string{"somesni"},
 				}
 			})
@@ -118,6 +125,10 @@ var _ = Describe("Root", func() {
 	Context("interactive", func() {
 
 		It("should enabled ssl on virtual service", func() {
+			// Assertions are performed in a separate goroutine, so we copy the values to avoid race conditions
+			vsClientCpy := vsClient
+			ctxCpy := ctx
+
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString("Use default namespace (gloo-system)?")
 				c.SendLine("yes")
@@ -133,7 +144,11 @@ var _ = Describe("Root", func() {
 				c.SendLine("")
 				c.ExpectEOF()
 			}, func() {
-				Glooctl("edit virtualservice -i")
+				err := testutils.Glooctl("edit virtualservice -i")
+				Expect(err).NotTo(HaveOccurred())
+				vs, err := vsClientCpy.Read(defaults.GlooSystem, "vs", clients.ReadOpts{Ctx: ctxCpy})
+				Expect(err).NotTo(HaveOccurred())
+
 				sslconfig := vs.GetSslConfig()
 				ref := sslconfig.GetSecretRef()
 

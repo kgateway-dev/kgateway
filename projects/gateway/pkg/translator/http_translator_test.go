@@ -6,6 +6,7 @@ import (
 
 	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -52,17 +53,16 @@ var _ = Describe("Http Translator", func() {
 		}
 	})
 
-	JustBeforeEach(func() {
-		// In case sub-contexts modify the snapshot, ensure that we build the ResourceReports last
+	AfterEach(func() {
+		cancel()
+	})
+
+	initializeReportsForSnap := func() {
 		reports = make(reporter.ResourceReports)
 		reports.Accept(snap.Gateways.AsInputResources()...)
 		reports.Accept(snap.VirtualServices.AsInputResources()...)
 		reports.Accept(snap.RouteTables.AsInputResources()...)
-	})
-
-	AfterEach(func() {
-		cancel()
-	})
+	}
 
 	Context("all-in-one virtual service", func() {
 
@@ -147,6 +147,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 		})
 
 		It("should translate an empty gateway to have all virtual services", func() {
@@ -342,9 +343,9 @@ var _ = Describe("Http Translator", func() {
 				}
 				ctx := settingsutil.WithSettings(context.Background(), settings)
 				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+				snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 				snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						OneWayTls: &wrappers.BoolValue{
 							Value: false,
 						},
@@ -382,9 +383,9 @@ var _ = Describe("Http Translator", func() {
 				}
 				ctx := settingsutil.WithSettings(context.Background(), settings)
 				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+				snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 				snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						OneWayTls: &wrappers.BoolValue{
 							Value: true,
 						},
@@ -418,9 +419,9 @@ var _ = Describe("Http Translator", func() {
 				}
 				ctx := settingsutil.WithSettings(context.Background(), settings)
 				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+				snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 				snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						OneWayTls: &wrappers.BoolValue{
 							Value: true,
 						},
@@ -448,7 +449,7 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should not have vhosts with ssl", func() {
-			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
@@ -470,7 +471,7 @@ var _ = Describe("Http Translator", func() {
 
 		It("should not have vhosts without ssl", func() {
 			snap.Gateways[0].Ssl = true
-			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
@@ -962,6 +963,7 @@ var _ = Describe("Http Translator", func() {
 						},
 					},
 				}
+				initializeReportsForSnap()
 			})
 
 			It("merges the vs and route tables to a single gloov1.VirtualHost", func() {
@@ -1306,6 +1308,7 @@ var _ = Describe("Http Translator", func() {
 						},
 					},
 				}
+				initializeReportsForSnap()
 			})
 
 			It("detects cycle and returns error", func() {
@@ -1373,6 +1376,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
@@ -1435,6 +1439,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
@@ -1527,6 +1532,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
@@ -1631,6 +1637,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])

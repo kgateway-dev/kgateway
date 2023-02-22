@@ -49,6 +49,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	gloorest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
@@ -326,8 +327,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// Modify the VirtualService to include the necessary SslConfig
-				testRunnerVs.SslConfig = &gloov1.SslConfig{
-					SslSecrets: &gloov1.SslConfig_SecretRef{
+				testRunnerVs.SslConfig = &ssl.SslConfig{
+					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
 							Name:      createdSecret.ObjectMeta.Name,
 							Namespace: createdSecret.ObjectMeta.Namespace,
@@ -1646,10 +1647,10 @@ var _ = Describe("Kube2e: gateway", func() {
 							ForwardSniClusterName: &empty.Empty{},
 						},
 					},
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						// Use the translated cluster name as the SNI domain so envoy uses that in the cluster field
 						SniDomains: []string{httpEchoClusterName},
-						SslSecrets: &gloov1.SslConfig_SecretRef{
+						SslSecrets: &ssl.SslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{
 								Name:      createdSecret.GetName(),
 								Namespace: createdSecret.GetNamespace(),

@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -102,6 +103,8 @@ func (t *translatorInstance) initializeCluster(
 		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions:      getHttp2options(upstream),
 		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
+		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
+		DnsRefreshRate:            getDnsRefreshRate(upstream, reports),
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
@@ -142,6 +145,8 @@ var (
 	NilFieldError = func(fieldName string) error {
 		return eris.Errorf("The field %s cannot be nil", fieldName)
 	}
+
+	minimumDnsRefreshRate = prototime.DurationToProto(time.Millisecond * 1)
 )
 
 func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
@@ -245,6 +250,12 @@ func validateCluster(c *envoy_config_cluster_v3.Cluster) error {
 			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
+
+	if c.GetDnsRefreshRate() != nil {
+		if clusterType != envoy_config_cluster_v3.Cluster_STRICT_DNS && clusterType != envoy_config_cluster_v3.Cluster_LOGICAL_DNS {
+			return eris.Errorf("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type, found %v", clusterType)
+		}
+	}
 	return nil
 }
 
@@ -270,6 +281,24 @@ func getHttp2options(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions
 		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 	return nil
+}
+
+// getDnsRefreshRate returns the DnsRefreshRate for an Upstream:
+// - defined and valid: returns the duration
+// - defined and invalid: adds a warning and returns nil
+// - undefined: returns nil
+func getDnsRefreshRate(us *v1.Upstream, reports reporter.ResourceReports) *duration.Duration {
+	refreshRate := us.GetDnsRefreshRate()
+	if refreshRate == nil {
+		return nil
+	}
+
+	if refreshRate.AsDuration() < minimumDnsRefreshRate.AsDuration() {
+		reports.AddWarning(us, fmt.Sprintf("dnsRefreshRate was set below minimum requirement (%s), ignoring configuration", minimumDnsRefreshRate))
+		return nil
+	}
+
+	return refreshRate
 }
 
 // Validates routes that point to the current AWS lambda upstream
@@ -379,7 +408,7 @@ func validateRouteDestinationForValidLambdas(
 }
 
 // Apply defaults to UpstreamSslConfig
-func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *v1.UpstreamOptions) {
+func applyDefaultsToUpstreamSslConfig(sslConfig *ssl.UpstreamSslConfig, options *v1.UpstreamOptions) {
 	if options == nil {
 		return
 	}

@@ -21,6 +21,8 @@ import (
 var _ = Describe("SDS Server E2E Test", func() {
 
 	var (
+		ctx                                            context.Context
+		cancel                                         context.CancelFunc
 		err                                            error
 		fs                                             afero.Fs
 		dir                                            string
@@ -32,6 +34,8 @@ var _ = Describe("SDS Server E2E Test", func() {
 	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+
 		fileString := []byte("test")
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
@@ -67,12 +71,16 @@ var _ = Describe("SDS Server E2E Test", func() {
 	})
 
 	AfterEach(func() {
+		cancel()
+
 		_ = fs.RemoveAll(dir)
 	})
 
 	It("runs and stops correctly", func() {
-		ctx, cancel := context.WithCancel(context.Background())
+
 		go func() {
+			defer GinkgoRecover()
+
 			if err := run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress); err != nil {
 				Expect(err).To(BeNil())
 			}
@@ -87,7 +95,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 
 		// Check that we get a good response
 		Eventually(func() bool {
-			_, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
+			_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err != nil
 		}, "5s", "1s").Should(BeTrue())
 
@@ -96,7 +104,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 
 		// The gRPC server should stop eventually
 		Eventually(func() bool {
-			_, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
+			_, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err != nil
 		}, "5s", "1s").Should(BeTrue())
 
@@ -104,7 +112,11 @@ var _ = Describe("SDS Server E2E Test", func() {
 
 	It("correctly picks up multiple cert rotations", func() {
 
-		go run.Run(context.Background(), []server.Secret{secret}, sdsClient, testServerAddress)
+		go func() {
+			defer GinkgoRecover()
+
+			_ = run.Run(ctx, []server.Secret{secret}, sdsClient, testServerAddress)
+		}()
 
 		// Give it a second to spin up + read the files
 		time.Sleep(1 * time.Second)
@@ -127,12 +139,12 @@ var _ = Describe("SDS Server E2E Test", func() {
 		var resp *envoy_service_discovery_v3.DiscoveryResponse
 
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err == nil
 		}, "5s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
 
@@ -150,7 +162,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("16241649556325798095"))
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
@@ -169,7 +181,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("7644406922477208950"))
 		Eventually(func() bool {
-			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
+			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
