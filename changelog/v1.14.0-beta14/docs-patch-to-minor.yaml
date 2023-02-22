@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: update docs site to consume LTS branches, rather than specific tags
+    issueLink: https://github.com/solo-io/gloo/issues/7825
