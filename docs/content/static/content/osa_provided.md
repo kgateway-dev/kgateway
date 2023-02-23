@@ -28,6 +28,7 @@ Name|Version|License
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.6.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
+[onsi/ginkgo](https://github.com/onsi/ginkgo)|v1.16.5|MIT License
 [ginkgo/v2](https://github.com/onsi/ginkgo)|v2.5.0|MIT License
 [onsi/gomega](https://github.com/onsi/gomega)|v1.24.1|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
