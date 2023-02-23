@@ -1,14 +1,12 @@
 package upgrade_test
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
-	"text/template"
 	"time"
 
 	exec_utils "github.com/solo-io/go-utils/testutils/exec"
@@ -20,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	"github.com/ghodss/yaml"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
@@ -29,8 +26,6 @@ import (
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -45,44 +40,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		// whether to set validation webhook's failurePolicy=Fail
 		strictValidation bool
-
-		// Versions to upgrade from
-		// ex: current branch is 1.13.10 - this would be the latest patch release of 1.12
-		lastPatchMostRecentMinorVersion *versionutils.Version
-
-		// ex:current branch is 1.13.10 - this would be 1.13.9
-		currentPatchMostRecentMinorVersion *versionutils.Version
-		firstReleaseOfMinor                bool
 	)
-
-	BeforeSuite(func() {
-		var err error
-		beforeSuiteCtx, beforeSuiteCtxCancel := context.WithCancel(context.Background())
-		testHelper, err = kube2e.GetTestHelper(beforeSuiteCtx, namespace)
-		Expect(err).NotTo(HaveOccurred())
-		crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
-		targetReleasedVersion = kube2e.GetTestReleasedVersion(beforeSuiteCtx, "gloo")
-		if targetReleasedVersion != "" {
-			chartUri = "gloo/gloo"
-		} else {
-			chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-		}
-		strictValidation = false
-
-		lastPatchMostRecentMinorVersion, currentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(beforeSuiteCtx, "gloo")
-		if err != nil {
-			if !strings.Contains(err.Error(), upgrade.FirstReleaseError) {
-				fmt.Println(err.Error())
-				Fail(err.Error())
-			}
-			firstReleaseOfMinor = true
-		}
-		fmt.Println("-------------------------------")
-		fmt.Println("lastPatchMostRecentMinorVersion: " + lastPatchMostRecentMinorVersion.String())
-		fmt.Println("currentPatchMostRecentMinorVersion: " + currentPatchMostRecentMinorVersion.String())
-		fmt.Println("-------------------------------")
-		beforeSuiteCtxCancel()
-	})
 
 	// setup for all tests
 	BeforeEach(func() {
@@ -100,7 +58,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	Describe("Upgrading from a previous gloo version to current version", func() {
 		Context("When upgrading from lastPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
-				installGloo(testHelper, lastPatchMostRecentMinorVersion.String(), strictValidation)
+				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
@@ -120,7 +78,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
 			} else {
 				BeforeEach(func() {
-					installGloo(testHelper, currentPatchMostRecentMinorVersion.String(), strictValidation)
+					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 				})
 				AfterEach(func() {
 					uninstallGloo(testHelper, ctx, cancel)
@@ -150,7 +108,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 
 		Context("When upgrading from lastPatchMostRecentMinorVersion to PR version of gloo", func() {
 			BeforeEach(func() {
-				installGloo(testHelper, lastPatchMostRecentMinorVersion.String(), strictValidation)
+				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
@@ -165,7 +123,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
 			} else {
 				BeforeEach(func() {
-					installGloo(testHelper, currentPatchMostRecentMinorVersion.String(), strictValidation)
+					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 				})
 				AfterEach(func() {
 					uninstallGloo(testHelper, ctx, cancel)
@@ -295,23 +253,6 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 	return v
 }
 
-func makeUnstructured(yam string) *unstructured.Unstructured {
-	jsn, err := yaml.YAMLToJSON([]byte(yam))
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return runtimeObj.(*unstructured.Unstructured)
-}
-
-func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *unstructured.Unstructured {
-	tmpl, err := template.ParseFiles(fixtureName)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	var b bytes.Buffer
-	err = tmpl.Execute(&b, values)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return makeUnstructured(b.String())
-}
-
 func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictValidation bool) {
 	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
@@ -341,7 +282,7 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 // CRDs are applied to a cluster when performing a `helm install` operation
 // However, `helm upgrade` intentionally does not apply CRDs (https://helm.sh/docs/topics/charts/#limitations-on-crds)
 // Before performing the upgrade, we must manually apply any CRDs that were introduced since v1.9.0
-func upgradeCrds(testHelper *helper.SoloTestHelper, crdDir string) {
+func upgradeCrds(crdDir string) {
 	// apply crds from the release we're upgrading to
 	fmt.Printf("Upgrade crds: kubectl apply -f %s\n", crdDir)
 	runAndCleanCommand("kubectl", "apply", "-f", crdDir)
@@ -350,7 +291,7 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, crdDir string) {
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetReleasedVersion string, crdDir string, strictValidation bool, additionalArgs []string) {
-	upgradeCrds(testHelper, crdDir)
+	upgradeCrds(crdDir)
 
 	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
 	defer cleanupFunc()
