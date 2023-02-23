@@ -10,8 +10,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
@@ -148,7 +147,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 			})
 		}
 
-		table.DescribeTable("should act as expected with varied ports", func(port int32, targetPort int, expected int) {
+		DescribeTable("should act as expected with varied ports", func(port int32, targetPort int, expected int) {
 			setupServices(port, targetPort)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -164,11 +163,11 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 				ReturnHeaders:     true,
 			}, fmt.Sprintf("HTTP/1.1 %d", expected), 1, time.Minute*1)
 		},
-			table.Entry("with non-matching, yet valid, port and target (app) port", int32(helper.TestRunnerPort+1), helper.TestRunnerPort, http.StatusOK),
-			table.Entry("with matching port and target port", int32(helper.TestRunnerPort), helper.TestRunnerPort, http.StatusOK),
-			table.Entry("without target port, and port matching pod's port", int32(helper.TestRunnerPort), -1, http.StatusOK),
-			table.Entry("without target port, and port not matching app's port", int32(helper.TestRunnerPort+1), -1, http.StatusServiceUnavailable),
-			table.Entry("pointing to the wrong target port", int32(8000), helper.TestRunnerPort+1, http.StatusServiceUnavailable), // or maybe 404?
+			Entry("with non-matching, yet valid, port and target (app) port", int32(helper.TestRunnerPort+1), helper.TestRunnerPort, http.StatusOK),
+			Entry("with matching port and target port", int32(helper.TestRunnerPort), helper.TestRunnerPort, http.StatusOK),
+			Entry("without target port, and port matching pod's port", int32(helper.TestRunnerPort), -1, http.StatusOK),
+			Entry("without target port, and port not matching app's port", int32(helper.TestRunnerPort+1), -1, http.StatusServiceUnavailable),
+			Entry("pointing to the wrong target port", int32(8000), helper.TestRunnerPort+1, http.StatusServiceUnavailable), // or maybe 404?
 		)
 	})
 

@@ -11,11 +11,9 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
-	. "github.com/onsi/ginkgo/extensions/table"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
