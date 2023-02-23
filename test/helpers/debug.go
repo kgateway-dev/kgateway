@@ -15,7 +15,7 @@ import (
 func DeferredGoroutineLeakDetector(t *testing.T) func() {
 	leakOptions := []goleak.Option{
 		goleak.IgnoreCurrent(),
-		goleak.IgnoreTopFunction("github.com/onsi/ginkgo/internal/specrunner.(*SpecRunner).registerForInterrupts"),
+		goleak.IgnoreTopFunction("github.com/onsi/ginkgo/v2/internal/interrupt_handler.(*InterruptHandler).registerForInterrupts.func2"),
 	}
 
 	return func() {

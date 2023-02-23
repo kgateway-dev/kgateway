@@ -6,10 +6,9 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 
-	"github.com/onsi/ginkgo/extensions/table"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -387,7 +386,7 @@ var _ = Describe("Translator", func() {
 
 			type listenerValidator func(l *gloov1.Listener)
 
-			table.DescribeTable("IsolateVirtualHostsBySslConfig",
+			DescribeTable("IsolateVirtualHostsBySslConfig",
 				func(gateway *v1.Gateway, globalSetting bool, annotation string, listenerValidator listenerValidator) {
 					gwTranslator := NewDefaultTranslator(Opts{
 						IsolateVirtualHostsBySslConfig: globalSetting,
@@ -432,25 +431,25 @@ var _ = Describe("Translator", func() {
 				},
 
 				// HttpGateways
-				table.Entry(
+				Entry(
 					"HttpGateway - false,no annotation", httpGateway, false, "",
 					func(l *gloov1.Listener) {
 						Expect(l.GetHttpListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"HttpGateway - true,no annotation", httpGateway, true, "",
 					func(l *gloov1.Listener) {
 						Expect(l.GetAggregateListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"HttpGateway - false,annotation override", httpGateway, false, "true",
 					func(l *gloov1.Listener) {
 						Expect(l.GetAggregateListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"HttpGateway - true,annotation override", httpGateway, true, "false",
 					func(l *gloov1.Listener) {
 						Expect(l.GetHttpListener()).NotTo(BeNil())
@@ -458,25 +457,25 @@ var _ = Describe("Translator", func() {
 				),
 
 				// TcpGateway
-				table.Entry(
+				Entry(
 					"TcpGateway - false,no annotation", tcpGateway, false, "",
 					func(l *gloov1.Listener) {
 						Expect(l.GetTcpListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"TcpGateway - true,no annotation", tcpGateway, true, "",
 					func(l *gloov1.Listener) {
 						Expect(l.GetTcpListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"TcpGateway - false,annotation override", tcpGateway, false, "true",
 					func(l *gloov1.Listener) {
 						Expect(l.GetTcpListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"TcpGateway - true,annotation override", tcpGateway, true, "false",
 					func(l *gloov1.Listener) {
 						Expect(l.GetTcpListener()).NotTo(BeNil())
@@ -484,25 +483,25 @@ var _ = Describe("Translator", func() {
 				),
 
 				// HybridGateways
-				table.Entry(
+				Entry(
 					"HybridGateway - false,no annotation", hybridGateway, false, "",
 					func(l *gloov1.Listener) {
 						Expect(l.GetHybridListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"HybridGateway - true,no annotation", hybridGateway, true, "",
 					func(l *gloov1.Listener) {
 						Expect(l.GetAggregateListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"HybridGateway - false,annotation override", hybridGateway, false, "true",
 					func(l *gloov1.Listener) {
 						Expect(l.GetAggregateListener()).NotTo(BeNil())
 					},
 				),
-				table.Entry(
+				Entry(
 					"HybridGateway - true,annotation override", hybridGateway, true, "false",
 					func(l *gloov1.Listener) {
 						Expect(l.GetHybridListener()).NotTo(BeNil())

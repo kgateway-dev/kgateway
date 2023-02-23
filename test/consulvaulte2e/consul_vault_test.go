@@ -30,7 +30,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -125,8 +125,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 		go func() {
 			defer GinkgoRecover()
+
 			// Start Gloo
-			err = setup.StartGlooInTest(ctx)
+			err = setup.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {

@@ -4,8 +4,6 @@
 .DEFAULT_GOAL := help
 
 
-
-
 #----------------------------------------------------------------------------------
 # Help
 #----------------------------------------------------------------------------------
@@ -29,6 +27,11 @@ help: ## Output the self-documenting make targets
 
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
+DEPSGOBIN := $(OUTPUT_DIR)/.bin
+
+# Important to use binaries built from module.
+export PATH:=$(DEPSGOBIN):$(PATH)
+export GOBIN:=$(DEPSGOBIN)
 
 # If you just put your username, then that refers to your account at hub.docker.com
 # To use quay images, set the IMAGE_REPO to "quay.io/solo-io" (or leave unset)
@@ -167,14 +170,15 @@ include Makefile.ci
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
-ROOT_DIR := $(shell pwd)
-OUTPUT_DIR := $(ROOT_DIR)/_output
-DEPSGOBIN=$(OUTPUT_DIR)/.bin
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
 init:
 	git config core.hooksPath .githooks
+
+.PHONY: fmt
+fmt:
+	$(DEPSGOBIN)/goimports -w $(shell ls -d */ | grep -v vendor)
 
 .PHONY: fmt-changed
 fmt-changed:
@@ -188,19 +192,18 @@ mod-download:
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
-install-go-tools: mod-download install-test-tools ## Download and install Go dependencies
+install-go-tools: mod-download ## Download and install Go dependencies
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
-	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-openapi
-	GOBIN=$(DEPSGOBIN) go install github.com/envoyproxy/protoc-gen-validate
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/protobuf/protoc-gen-go
-	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
-	GOBIN=$(DEPSGOBIN) go install github.com/cratonica/2goarray
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
-	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
-	GOBIN=$(DEPSGOBIN) go install github.com/saiskee/gettercheck
-
+	go install github.com/solo-io/protoc-gen-ext
+	go install github.com/solo-io/protoc-gen-openapi
+	go install github.com/envoyproxy/protoc-gen-validate
+	go install github.com/golang/protobuf/protoc-gen-go
+	go install golang.org/x/tools/cmd/goimports
+	go install github.com/cratonica/2goarray
+	go install github.com/golang/mock/gomock
+	go install github.com/golang/mock/mockgen
+	go install github.com/saiskee/gettercheck
 
 .PHONY: check-format
 check-format:
@@ -215,11 +218,11 @@ check-spelling:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION ?= 1.16.5 # match our go.mod
+GINKGO_VERSION ?= 2.5.0 # match our go.mod
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race -failFast -failOnPending -randomizeAllSpecs -randomizeSuites
-GINKGO_REPORT_FLAGS ?= #--json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
-GINKGO_COVERAGE_FLAGS ?= #--cover --covermode=count --coverprofile=coverage.cov
+GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race --fail-fast -fail-on-pending --randomize-all
+GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
+GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
 
 # This is a way for a user executing `make test` to be able to provide flags which we do not include by default
@@ -228,11 +231,11 @@ GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
 install-test-tools:
-	go install github.com/onsi/ginkgo/ginkgo@v$(GINKGO_VERSION)
+	go install github.com/onsi/ginkgo/v2/ginkgo@v$(GINKGO_VERSION)
 
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) ginkgo -ldflags=$(LDFLAGS) \
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
@@ -243,7 +246,7 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-run-tests: GINKGO_FLAGS += -skipPackage=kube2e
+run-tests: GINKGO_FLAGS += -skip-package=kube2e
 ifneq ($(RELEASE), "true")
 run-tests: test
 endif
@@ -267,6 +270,29 @@ clean:
 	rm -rf docs/resources
 	git clean -f -X install
 
+.PHONY: clean-tests
+clean-tests:
+	find * -type f -name '*.test' -exec rm {} \;
+	find * -type f -name '*.cov' -exec rm {} \;
+	find * -type f -name 'junit*.xml' -exec rm {} \;
+
+.PHONY: clean-vendor-any
+clean-vendor-any:
+	rm -rf vendor_any
+
+.PHONY: clean-solo-kit-gen
+clean-solo-kit-gen:
+	find * -type f -name '*.sk.md' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.sk.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.hash.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+
+.PHONY: clean-cli-docs
+clean-cli-docs:
+	rm docs/content/reference/cli/glooctl*
+
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
@@ -275,27 +301,19 @@ clean:
 generate-all: generated-code ## Calls generated-code
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init ## Execute Gloo Edge codegen
+generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
+generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: verify-enterprise-protos generate-helm-files update-licenses
+generated-code: fmt
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
 # TODO(EItanya): make mockgen work for gloo
-SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	find * -type f -name '*.sk.md' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.sk.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.hash.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	rm -rf vendor_any
-	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go generate ./...
-	PATH=$(DEPSGOBIN):$$PATH rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
-	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
-	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
-	PATH=$(DEPSGOBIN):$$PATH gettercheck -ignoretests -ignoregenerated -write ./...
+	GO111MODULE=on go generate ./...
+	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
 	go mod tidy
-	mkdir -p $(OUTPUT_DIR)
 	touch $@
 
 .PHONY: verify-enterprise-protos
