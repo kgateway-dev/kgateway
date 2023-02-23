@@ -299,7 +299,7 @@ $(OUTPUT_DIR)/.generated-code:
 	rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
-	gettercheck -ignoretests -ignoregenerated -write ./...
+	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
 	go mod tidy
 	touch $@
 
