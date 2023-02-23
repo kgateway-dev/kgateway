@@ -2,6 +2,7 @@ package aws_test
 
 import (
 	"context"
+	"log"
 	"net/url"
 
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -469,6 +470,39 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+		})
+
+		getPerRouteConfig := func(outroute *envoy_config_route_v3.Route) *AWSLambdaPerRoute {
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			pfc := outroute.GetTypedPerFilterConfig()[FilterName]
+			var perRouteCfg AWSLambdaPerRoute
+			err := pfc.UnmarshalTo(&perRouteCfg)
+			Expect(err).NotTo(HaveOccurred())
+			return &perRouteCfg
+		}
+
+		It("should prefer unwrapAsAlb to unwrapAsApiGateway when both are set", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			perRouteCfg := getPerRouteConfig(outroute)
+
+			Expect(perRouteCfg.GetUnwrapAsAlb()).To(BeTrue())
+			Expect(perRouteCfg.GetTransformerConfig()).To(BeNil())
+		})
+
+		It("should set unwrapAsApiGateway when responseTransformation is true", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			perRouteCfg := getPerRouteConfig(outroute)
+			Expect(perRouteCfg.GetTransformerConfig()).NotTo(BeNil())
+			log.Println(perRouteCfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl())
+			Expect(perRouteCfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
 		})
 
 		Context("should interact well with transform plugin", func() {
