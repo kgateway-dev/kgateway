@@ -176,6 +176,10 @@ include Makefile.ci
 init:
 	git config core.hooksPath .githooks
 
+.PHONY: fmt
+fmt:
+	$(DEPSGOBIN)/goimports -w $(shell ls -d */ | grep -v vendor)
+
 .PHONY: fmt-changed
 fmt-changed:
 	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
@@ -266,12 +270,28 @@ clean:
 	rm -rf docs/resources
 	git clean -f -X install
 
-
 .PHONY: clean-tests
 clean-tests:
 	find * -type f -name '*.test' -exec rm {} \;
 	find * -type f -name '*.cov' -exec rm {} \;
 	find * -type f -name 'junit*.xml' -exec rm {} \;
+
+.PHONY: clean-vendor-any
+clean-vendor-any:
+	rm -rf vendor_any
+
+.PHONY: clean-solo-kit-gen
+clean-solo-kit-gen:
+	find * -type f -name '*.sk.md' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.sk.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.hash.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
+
+.PHONY: clean-cli-docs
+clean-cli-docs:
+	rm docs/content/reference/cli/glooctl*
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
@@ -281,24 +301,17 @@ clean-tests:
 generate-all: generated-code ## Calls generated-code
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos generate-helm-files update-licenses init ## Execute Gloo Edge codegen
+generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
+generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: verify-enterprise-protos generate-helm-files update-licenses
+generated-code: fmt
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
 # TODO(EItanya): make mockgen work for gloo
-SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	find * -type f -name '*.sk.md' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.sk.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.hash.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.equal.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	find * -type f -name '*.pb.clone.go' -not -path "docs/*" -not -path "test/*" -exec rm {} \;
-	rm -rf vendor_any
 	GO111MODULE=on go generate ./...
-	rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
-	$(DEPSGOBIN)/gofmt -w $(SUBDIRS)
-	$(DEPSGOBIN)/goimports -w $(SUBDIRS)
+	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
 	go mod tidy
 	touch $@
