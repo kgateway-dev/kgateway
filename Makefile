@@ -231,7 +231,7 @@ install-test-tools:
 
 .PHONY: test
 test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
-	$(GINKGO_ENV) ginkgo -ldflags=$(LDFLAGS) \
+	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
 
@@ -297,9 +297,9 @@ $(OUTPUT_DIR)/.generated-code:
 	rm -rf vendor_any
 	GO111MODULE=on go generate ./...
 	rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
-	gofmt -w $(SUBDIRS)
-	goimports -w $(SUBDIRS)
-	gettercheck -ignoretests -ignoregenerated -write ./...
+	$(DEPSGOBIN)/gofmt -w $(SUBDIRS)
+	$(DEPSGOBIN)/goimports -w $(SUBDIRS)
+	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
 	go mod tidy
 	touch $@
 
