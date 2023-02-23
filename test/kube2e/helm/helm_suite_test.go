@@ -4,8 +4,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/log"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
@@ -19,6 +18,5 @@ func TestHelm(t *testing.T) {
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Helm Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Helm Suite")
 }

@@ -163,7 +163,7 @@ function getContentForVersion() {
   then
     git checkout "$latestMasterTag"
   else
-    git checkout tags/v"$version"
+    git checkout "$version"
   fi
   # Replace version with "latest" if it's the latest version. This enables URLs with "/latest/..."
   if [[ "$version" ==  "$latestVersion" ]]

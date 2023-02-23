@@ -36,8 +36,19 @@ old_docs_temp_dir/
 
 # junit
 junit.xml
+junit-*.xml
 
 # e2e tests
 *.test
 # swp files
 *.swp
+
+# Ginkgo test report output
+test-report.json
+
+# Ginkgo test coverage output
+*.cov
+
+# At time we run Gloo Edge locally and store configuration in a local directory named `data`
+# These should be ignored, as often times `source_data` is the configuration we check into the repo
+data

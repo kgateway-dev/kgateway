@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/util/jsonpath"
 )
 
-type Labels = gloov1.Settings_ObservabilityOptions_MetricLabels
+type MetricLabels = gloov1.Settings_ObservabilityOptions_MetricLabels
 
 var Names = map[schema.GroupVersionKind]string{
 	gwv1.GatewayGVK:         "validation.gateway.solo.io/gateway_config_status",
@@ -53,13 +53,13 @@ type resourceMetric struct {
 	labelToPath map[string]string
 }
 
-func GetDefaultConfigStatusOptions() map[string]*Labels {
-	return make(map[string]*Labels)
+func GetDefaultConfigStatusOptions() map[string]*MetricLabels {
+	return make(map[string]*MetricLabels)
 }
 
 // NewConfigStatusMetrics creates and returns a ConfigStatusMetrics from the specified options.
 // If the options are invalid, an error is returned.
-func NewConfigStatusMetrics(opts map[string]*Labels) (ConfigStatusMetrics, error) {
+func NewConfigStatusMetrics(opts map[string]*MetricLabels) (ConfigStatusMetrics, error) {
 	configMetrics := ConfigStatusMetrics{
 		metrics: make(map[schema.GroupVersionKind]*resourceMetric),
 	}
