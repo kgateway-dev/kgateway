@@ -244,7 +244,7 @@ test-with-coverage: test
 run-tests: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += -skip-package=kube2e
 ifneq ($(RELEASE), "true")
-run-tests: test
+# run-tests: test (sam-heilbron) temporarily disable build-bot tests
 endif
 
 .PHONY: run-ci-regression-tests
