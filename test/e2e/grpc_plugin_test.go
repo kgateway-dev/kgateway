@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -39,8 +41,8 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.LinuxOnly("Relies on FDS"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.LinuxOnly("Relies on FDS"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

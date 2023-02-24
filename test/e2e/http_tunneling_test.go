@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -71,8 +73,8 @@ var _ = Describe("tunneling", func() {
 	}
 
 	BeforeEach(func() {
-		testhelpers.ValidateRequirementsAndNotifyGinkgo(
-			testhelpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
 		)
 
 		tlsRequired = v1helpers.NO_TLS

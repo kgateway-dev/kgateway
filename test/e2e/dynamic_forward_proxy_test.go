@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -32,7 +34,7 @@ var _ = Describe("dynamic forward proxy", func() {
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext(
-			helpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
+			testutils.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
 		)
 
 		testContext.BeforeEach()

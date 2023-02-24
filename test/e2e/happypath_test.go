@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -428,8 +430,8 @@ var _ = Describe("Happy path", func() {
 
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
-					testhelpers.ValidateRequirementsAndNotifyGinkgo(
-						testhelpers.Kubernetes("Uses a Kubernetes cluster"),
+					testutils.ValidateRequirementsAndNotifyGinkgo(
+						testutils.Kubernetes("Uses a Kubernetes cluster"),
 					)
 				})
 
