@@ -147,10 +147,7 @@ var _ = Describe("AWS Lambda", func() {
 		}))
 	}
 
-	testProxy := func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
-
+	createProxy := func(unwrapAsApiGateway, requestTransformation, responseTransformation bool, logicalName string) {
 		proxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{
 				Name:      "proxy",
@@ -176,7 +173,10 @@ var _ = Describe("AWS Lambda", func() {
 												DestinationSpec: &gloov1.DestinationSpec{
 													DestinationType: &gloov1.DestinationSpec_Aws{
 														Aws: &aws_plugin.DestinationSpec{
-															LogicalName: "uppercase",
+															LogicalName:            logicalName,
+															UnwrapAsApiGateway:     unwrapAsApiGateway,
+															RequestTransformation:  requestTransformation,
+															ResponseTransformation: responseTransformation,
 														},
 													},
 												},
@@ -185,16 +185,23 @@ var _ = Describe("AWS Lambda", func() {
 									},
 								},
 							}},
-						}},
+						},
+						},
 					},
 				},
 			}},
 		}
 
 		var opts clients.WriteOpts
-		_, err = testClients.ProxyClient.Write(proxy, opts)
+		_, err := testClients.ProxyClient.Write(proxy, opts)
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	testProxy := func() {
+		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
+		createProxy(false, false, false, "uppercase")
 		validateLambdaUppercase(defaults.HttpPort)
 	}
 
@@ -202,51 +209,7 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxy := &gloov1.Proxy{
-			Metadata: &core.Metadata{
-				Name:      "proxy",
-				Namespace: "default",
-			},
-			Listeners: []*gloov1.Listener{{
-				Name:        "listener",
-				BindAddress: "::",
-				BindPort:    defaults.HttpPort,
-				ListenerType: &gloov1.Listener_HttpListener{
-					HttpListener: &gloov1.HttpListener{
-						VirtualHosts: []*gloov1.VirtualHost{{
-							Name:    "virt1",
-							Domains: []string{"*"},
-							Routes: []*gloov1.Route{{
-								Action: &gloov1.Route_RouteAction{
-									RouteAction: &gloov1.RouteAction{
-										Destination: &gloov1.RouteAction_Single{
-											Single: &gloov1.Destination{
-												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: upstream.Metadata.Ref(),
-												},
-												DestinationSpec: &gloov1.DestinationSpec{
-													DestinationType: &gloov1.DestinationSpec_Aws{
-														Aws: &aws_plugin.DestinationSpec{
-															LogicalName:            "contact-form",
-															ResponseTransformation: true,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							}},
-						}},
-					},
-				},
-			}},
-		}
-
-		var opts clients.WriteOpts
-		_, err = testClients.ProxyClient.Write(proxy, opts)
-		Expect(err).NotTo(HaveOccurred())
-
+		createProxy(false, false, true, "contact-form")
 		validateLambda(1, defaults.HttpPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
 	}
 
@@ -254,51 +217,7 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxy := &gloov1.Proxy{
-			Metadata: &core.Metadata{
-				Name:      "proxy",
-				Namespace: "default",
-			},
-			Listeners: []*gloov1.Listener{{
-				Name:        "listener",
-				BindAddress: "::",
-				BindPort:    defaults.HttpPort,
-				ListenerType: &gloov1.Listener_HttpListener{
-					HttpListener: &gloov1.HttpListener{
-						VirtualHosts: []*gloov1.VirtualHost{{
-							Name:    "virt1",
-							Domains: []string{"*"},
-							Routes: []*gloov1.Route{{
-								Action: &gloov1.Route_RouteAction{
-									RouteAction: &gloov1.RouteAction{
-										Destination: &gloov1.RouteAction_Single{
-											Single: &gloov1.Destination{
-												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: upstream.Metadata.Ref(),
-												},
-												DestinationSpec: &gloov1.DestinationSpec{
-													DestinationType: &gloov1.DestinationSpec_Aws{
-														Aws: &aws_plugin.DestinationSpec{
-															LogicalName:           "dumpContext",
-															RequestTransformation: true,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							}},
-						}},
-					},
-				},
-			}},
-		}
-
-		var opts clients.WriteOpts
-		_, err = testClients.ProxyClient.Write(proxy, opts)
-		Expect(err).NotTo(HaveOccurred())
-
+		createProxy(false, true, false, "dumpContext")
 		validateLambda(1, defaults.HttpPort, `\"body\": \"\\\"solo.io\\\"\", \"headers\": `)
 		validateLambda(1, defaults.HttpPort, `\"queryString\": \"param_a=value_1&param_b=value_b\"`)
 		validateLambda(1, defaults.HttpPort, `\"path\": \"/1\"`)
@@ -309,52 +228,7 @@ var _ = Describe("AWS Lambda", func() {
 		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxy := &gloov1.Proxy{
-			Metadata: &core.Metadata{
-				Name:      "proxy",
-				Namespace: "default",
-			},
-			Listeners: []*gloov1.Listener{{
-				Name:        "listener",
-				BindAddress: "::",
-				BindPort:    defaults.HttpPort,
-				ListenerType: &gloov1.Listener_HttpListener{
-					HttpListener: &gloov1.HttpListener{
-						VirtualHosts: []*gloov1.VirtualHost{{
-							Name:    "virt1",
-							Domains: []string{"*"},
-							Routes: []*gloov1.Route{{
-								Action: &gloov1.Route_RouteAction{
-									RouteAction: &gloov1.RouteAction{
-										Destination: &gloov1.RouteAction_Single{
-											Single: &gloov1.Destination{
-												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: upstream.Metadata.Ref(),
-												},
-												DestinationSpec: &gloov1.DestinationSpec{
-													DestinationType: &gloov1.DestinationSpec_Aws{
-														Aws: &aws_plugin.DestinationSpec{
-															LogicalName:            "dumpContext",
-															ResponseTransformation: true,
-															RequestTransformation:  true,
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							}},
-						}},
-					},
-				},
-			}},
-		}
-
-		var opts clients.WriteOpts
-		_, err = testClients.ProxyClient.Write(proxy, opts)
-		Expect(err).NotTo(HaveOccurred())
-
+		createProxy(false, true, true, "dumpContext")
 		validateLambda(1, defaults.HttpPort, `"\"solo.io\""`)
 	}
 
