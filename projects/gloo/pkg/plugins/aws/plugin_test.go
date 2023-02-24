@@ -480,27 +480,46 @@ var _ = Describe("Plugin", func() {
 			return &perRouteCfg
 		}
 
-		It("should prefer unwrapAsAlb to unwrapAsApiGateway when both are set", func() {
-			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+		It("should set route transformer when unwrapAsApiGateway=True && unwrapAsAlb=False", func() {
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = false
 			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 
-			perRouteCfg := getPerRouteConfig(outroute)
-
-			Expect(perRouteCfg.GetUnwrapAsAlb()).To(BeTrue())
-			Expect(perRouteCfg.GetTransformerConfig()).To(BeNil())
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetUnwrapAsAlb()).To(BeTrue())
+			Expect(cfg.GetTransformerConfig()).ToNot(BeNil())
+			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
 		})
 
-		It("should set unwrapAsApiGateway when responseTransformation is true", func() {
+		It("should set route transformer when responseTransformation is true", func() {
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
 			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 
-			perRouteCfg := getPerRouteConfig(outroute)
-			Expect(perRouteCfg.GetTransformerConfig()).NotTo(BeNil())
-			Expect(perRouteCfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).NotTo(BeNil())
+			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
+		})
+
+		It("should not set route transformer when unwrapAsApiGateway=True && unwrapAsAlb=True", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).To(BeNil())
+		})
+
+		It("should not set route transformer when unwrapAsApiGateway=False", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).To(BeNil())
 		})
 
 		Context("should interact well with transform plugin", func() {
