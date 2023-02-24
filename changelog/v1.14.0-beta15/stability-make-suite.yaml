@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7888
+    resolvesIssue: true
+    description: >
+      Update the Make Suite tests to ensure they always pass, even when run in a random order
