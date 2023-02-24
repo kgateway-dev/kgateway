@@ -1,21 +1,14 @@
-package helpers
+package testutils
 
 import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/onsi/ginkgo/v2"
 
 	"k8s.io/apimachinery/pkg/util/sets"
-)
-
-const (
-	// InvalidTestReqsEnvVar is used to define the behavior for running tests locally when the provided requirements
-	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
-	InvalidTestReqsEnvVar = "INVALID_TEST_REQS"
 )
 
 // ValidateRequirementsAndNotifyGinkgo validates that the provided Requirements are met, and if they are not, uses
@@ -139,10 +132,8 @@ func (r RequiredConfiguration) validateDefinedEnv() error {
 
 func (r RequiredConfiguration) validateTruthyEnv() error {
 	for _, env := range r.truthyEnvVar {
-		envValue := os.Getenv(env)
-		envBoolValue, _ := strconv.ParseBool(envValue)
-		if !envBoolValue {
-			return fmt.Errorf("env (%s) needs to be truthy, but is (%s)", env, envValue)
+		if !IsEnvTruthy(env) {
+			return fmt.Errorf("env (%s) needs to be truthy", env)
 		}
 	}
 	return nil
@@ -177,21 +168,21 @@ func TruthyEnv(env string) Requirement {
 func Kubernetes(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.reasons["kubernetes"] = reason
-		TruthyEnv("RUN_KUBE_TESTS")(configuration)
+		TruthyEnv(RunKubeTests)(configuration)
 	}
 }
 
 // Consul returns a Requirement that expects tests to require a Consul instance
 func Consul() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		TruthyEnv("RUN_CONSUL_TESTS")(configuration)
+		TruthyEnv(RunConsulTests)(configuration)
 	}
 }
 
 // Vault returns a Requirement that expects tests to require a Vault instance
 func Vault() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		TruthyEnv("RUN_VAULT_TESTS")(configuration)
+		TruthyEnv(RunVaultTests)(configuration)
 	}
 }
 
