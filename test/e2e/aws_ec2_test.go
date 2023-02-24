@@ -62,7 +62,7 @@ curl http://<instance-public-ip>/
 */
 
 var _ = Describe("AWS EC2 Plugin utils test", func() {
-	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
+	if testutils.ShouldSkipTempDisabledTests() {
 		return
 	}
 	const (

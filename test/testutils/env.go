@@ -36,6 +36,11 @@ const (
 	// This functionality is defined: https://github.com/solo-io/solo-kit/blob/main/test/helpers/fail_handler.go
 	// and for it to be available, a test must have registered the custom fail handler using `RegisterCommonFailHandlers`
 	WaitOnFail = "WAIT_ON_FAIL"
+
+	// SkipTempDisabledTests is used to temporarily disable tests in CI
+	// This should be used sparingly, and if you disable a test, you should create a Github issue
+	// to track re-enabling the test
+	SkipTempDisabledTests = "SKIP_TEMP_DISABLED"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
@@ -44,8 +49,23 @@ func ShouldTearDown() bool {
 	return IsEnvTruthy(TearDown)
 }
 
+// ShouldSkipInstall returns true if any assets that need to be created before a test (for example Gloo being installed)
+// should be skipped. This is typically used in tandem with ShouldTearDown when running consecutive tests and skipping
+// both the tear down and install of Gloo Edge.
 func ShouldSkipInstall() bool {
 	return IsEnvTruthy(SkipInstall)
+}
+
+// ShouldRunKubeTests returns true if any tests which require a Kubernetes cluster should be executed
+// This may guard tests which are run using our old CloudBuilder infrastructure. In the future, all kube tests
+// should be written in our Kube2e suites, which are run with a kubernetes cluster
+func ShouldRunKubeTests() bool {
+	return IsEnvTruthy(RunKubeTests)
+}
+
+// ShouldSkipTempDisabledTests returns true if temporarily disabled tests should be skipped
+func ShouldSkipTempDisabledTests() bool {
+	return IsEnvTruthy(SkipTempDisabledTests)
 }
 
 // IsEnvTruthy returns true if a given environment variable has a truthy value

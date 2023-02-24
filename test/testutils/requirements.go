@@ -168,21 +168,21 @@ func TruthyEnv(env string) Requirement {
 func Kubernetes(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.reasons["kubernetes"] = reason
-		TruthyEnv("RUN_KUBE_TESTS")(configuration)
+		TruthyEnv(RunKubeTests)(configuration)
 	}
 }
 
 // Consul returns a Requirement that expects tests to require a Consul instance
 func Consul() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		TruthyEnv("RUN_CONSUL_TESTS")(configuration)
+		TruthyEnv(RunConsulTests)(configuration)
 	}
 }
 
 // Vault returns a Requirement that expects tests to require a Vault instance
 func Vault() Requirement {
 	return func(configuration *RequiredConfiguration) {
-		TruthyEnv("RUN_VAULT_TESTS")(configuration)
+		TruthyEnv(RunVaultTests)(configuration)
 	}
 }
 
