@@ -89,7 +89,9 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.24.0-patch2
+# DO NOT MERGE until reverted
+# ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.24.0-patch2
+ENVOY_GLOO_IMAGE ?= gcr.io/solo-test-236622/envoy-gloo:4438-response-transformation
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
