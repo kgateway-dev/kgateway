@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -62,7 +64,7 @@ var _ = Describe("Utils", func() {
 
 	Context("kube tests", func() {
 		BeforeEach(func() {
-			if os.Getenv("RUN_KUBE_TESTS") != "1" {
+			if !testutils.ShouldRunKubeTests() {
 				Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 			}
 		})

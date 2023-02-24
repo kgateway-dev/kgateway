@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -16,9 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
-
-	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/rotisserie/eris"
 
@@ -473,139 +469,6 @@ var _ = Describe("Robustness tests", func() {
 
 		})
 
-		Context("xds-relay", func() {
-			const (
-				xdsRelayReplicas = 5
-				envoyReplicas    = 8
-			)
-			var (
-				xdsRelayDeployment = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
-						Name:      "xds-relay",
-						Labels:    map[string]string{"app": "xds-relay"},
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: pointerToInt32(1),
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{"app": "xds-relay"},
-						},
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{"app": "xds-relay"},
-							},
-						},
-					},
-				}
-
-				findEchoAppClusterEndpoints = func(podName, expectedEndpoints string) int {
-					clusters, portFwdCmd, err := cliutils.PortForwardGet(ctx, defaults2.GlooSystem, podName, "19000", "19000", true, "/clusters")
-					if err != nil {
-						fmt.Println(err)
-					}
-					if portFwdCmd.Process != nil {
-						defer portFwdCmd.Process.Release()
-						defer portFwdCmd.Process.Kill()
-					}
-					echoAppClusterEndpoints := regexp.MustCompile(fmt.Sprintf("\ngloo-system-echo-app-for-robustness-test-5678_gloo-system::%s:5678::", expectedEndpoints))
-					matches := echoAppClusterEndpoints.FindAllStringIndex(clusters, -1)
-					fmt.Println(fmt.Sprintf("Number of cluster stats for echo app (i.e., checking for endpoints) on clusters page: %d", len(matches)))
-					return len(matches)
-				}
-			)
-
-			It("works, even if gloo is scaled to zero and envoy is bounced", func() {
-
-				if os.Getenv("USE_XDS_RELAY") != "true" {
-					Skip("skipping test that only passes with xds relay enabled")
-				}
-
-				By("verify that the endpoints have been propagated to Envoy")
-				// we already verify that the initial curl works in the BeforeEach()
-
-				// scale to five replicas, envoy already connected to our initial xds-relay replica so the
-				// other four will have stale caches
-				scaleDeploymentTo(resourceClientset.KubeClients(), xdsRelayDeployment, xdsRelayReplicas)
-
-				By("scale gloo to zero")
-				scaleDeploymentTo(resourceClientset.KubeClients(), glooDeployment, 0)
-
-				By("bounce envoy")
-				scaleDeploymentTo(resourceClientset.KubeClients(), envoyDeployment, 0)
-				// scale to eight replicas to ensure / maximize likelihood that at least one of the new envoys
-				// will connect to an xds-relay replica with a cold cache. xds-relay should disconnect on the cache
-				// miss and envoy will retry until it hits our xds-relay with the warm cache
-				scaleDeploymentTo(resourceClientset.KubeClients(), envoyDeployment, envoyReplicas)
-
-				// this asserts that at least one envoy has the correct endpoints
-				By("verify that the endpoints have been propagated to Envoy by xds relay")
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/1",
-					Method:            "GET",
-					Host:              "app",
-					Service:           gatewayProxy,
-					Port:              gatewayPort,
-					ConnectionTimeout: 1,
-					WithoutStats:      true,
-				}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
-
-				envoyPodNames := findPodNamesByLabel(ctx, defaults2.GlooSystem, "gloo=gateway-proxy")
-				Expect(envoyPodNames).To(HaveLen(envoyReplicas))
-
-				initialEndpointIPs := endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
-				Expect(initialEndpointIPs).To(HaveLen(1))
-
-				// this asserts that at all envoys have the correct endpoints.
-				// envoy may need to retry until it hits xds relay with the warm cache, hence the 45s timeout.
-				for _, envoyPodName := range envoyPodNames {
-					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
-					Eventually(func() int {
-						return findEchoAppClusterEndpoints(envoyPodName, initialEndpointIPs[0])
-					}, "45s", "1s").Should(BeNumerically(">", 0))
-				}
-
-				By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
-				scaleDeploymentTo(resourceClientset.KubeClients(), glooDeployment, 1)
-
-				By("force an update of the service endpoints")
-				scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 0)
-				scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 1)
-
-				Eventually(func() []string {
-					return endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
-				}, 20*time.Second, 1*time.Second).Should(And(
-					HaveLen(len(initialEndpointIPs)),
-					Not(BeEquivalentTo(initialEndpointIPs)),
-				))
-
-				// this asserts that at least one envoy has the correct endpoints
-				By("verify that the new endpoints have been propagated to envoy by xds relay from gloo")
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/1",
-					Method:            "GET",
-					Host:              "app",
-					Service:           gatewayProxy,
-					Port:              gatewayPort,
-					ConnectionTimeout: 1,
-					WithoutStats:      true,
-				}, expectedResponse(appName), 1, 60*time.Second, 1*time.Second)
-
-				newEndpointIPs := endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
-				Expect(newEndpointIPs).To(HaveLen(1))
-
-				// this asserts that at all envoys have the correct endpoints.
-				// should be quicker than before, we already connected to the warm xds-relay
-				// (and all xds relays should be able to reconnect to origin regardless).
-				for _, envoyPodName := range envoyPodNames {
-					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
-					Eventually(func() int {
-						return findEchoAppClusterEndpoints(envoyPodName, newEndpointIPs[0])
-					}, "15s", "1s").Should(BeNumerically(">", 0))
-				}
-			})
-		})
 	})
 
 })

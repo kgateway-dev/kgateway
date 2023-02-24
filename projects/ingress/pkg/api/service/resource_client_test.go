@@ -2,8 +2,8 @@ package service_test
 
 import (
 	"context"
-	"os"
 
+	"github.com/solo-io/gloo/test/testutils"
 	kubev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,7 +22,7 @@ import (
 )
 
 var _ = Describe("ResourceClient", func() {
-	if os.Getenv("RUN_KUBE_TESTS") != "1" {
+	if !testutils.ShouldRunKubeTests() {
 		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		return
 	}
