@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	kubeutils2 "github.com/solo-io/gloo/test/kubeutils"
+	kubeutils2 "github.com/solo-io/gloo/test/testutils"
 
 	"github.com/avast/retry-go"
 
@@ -29,10 +29,6 @@ import (
 )
 
 func TestGateway(t *testing.T) {
-	if !kubeutils2.IsKubeTestType("gateway") {
-		Skip("This test is disabled. To enable, set KUBE2E_TESTS to 'gateway' in your env.")
-	}
-
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
@@ -79,6 +75,13 @@ func StartTestHelper() {
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 }
 
+func TearDownTestHelper() {
+	if kubeutils2.ShouldTearDown() {
+		uninstallGloo()
+	}
+	cancel()
+}
+
 func installGloo() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
@@ -98,13 +101,10 @@ func installGloo() {
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
-func TearDownTestHelper() {
-	if kubeutils2.ShouldTearDown() {
-		Expect(testHelper).ToNot(BeNil())
-		err := testHelper.UninstallGloo()
-		Expect(err).NotTo(HaveOccurred())
-		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
-		Expect(apierrors.IsNotFound(err)).To(BeTrue())
-	}
-	cancel()
+func uninstallGloo() {
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGloo()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }

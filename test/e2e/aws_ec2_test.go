@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -242,8 +244,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	})
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.Kubernetes("Uses a Kubernetes client"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.Kubernetes("Uses a Kubernetes client"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

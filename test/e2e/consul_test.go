@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -43,9 +45,9 @@ var _ = Describe("Consul e2e", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.Consul(),
-			helpers.LinuxOnly("Unknown"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.Consul(),
+			testutils.LinuxOnly("Unknown"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

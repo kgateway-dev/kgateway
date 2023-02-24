@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,7 +32,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 		// be met, you can define those here. By explicitly defining these requirements, we can error loudly
 		// when they are not met. See `helpers.ValidateRequirementsAndNotifyGinkgo` for a more detailed
 		// overview of this feature
-		var testRequirements []helpers.Requirement
+		var testRequirements []testutils.Requirement
 
 		testContext = testContextFactory.NewTestContext(testRequirements...)
 		testContext.BeforeEach()

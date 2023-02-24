@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	testhelpers "github.com/solo-io/gloo/test/helpers"
+	testhelpers "github.com/solo-io/gloo/test/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
