@@ -7,7 +7,7 @@ on:
 
 env:
   VERSION: '1.0.0-ci'
-  GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }} # necessary to pass upgrade tests
+  GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
 
 jobs:
   prepare_env:
