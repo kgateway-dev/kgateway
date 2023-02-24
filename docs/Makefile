@@ -39,6 +39,8 @@ site-common: clean gloo-enterprise-version
 	cat content/static/content/gloo-security-scan.docgen
 	./split-file-by-delimiter.sh content/static/content/gloo-security-scan.docgen \\\*\\\*\\\*
 	./split-file-by-delimiter.sh content/static/content/glooe-security-scan.docgen \\\*\\\*\\\*
+
+	# get enterprise helm values based on contents of _output/gloo-enterprise-version
 	GO111MODULE=on go run cmd/generate_docs.go get-enterprise-helm-values > content/static/content/glooe-values.docgen
 	rm -f opensource.out enterprise.out
 
@@ -90,9 +92,8 @@ install-tools:
 build-site: clean
 	./build-docs.sh
 
-# Generate _output/gloo-enterprise-version.
-# NOTE: file paths in hack/find_latest_enterprise_version.go assume the current working 
-# directory is the root of the project, so we need to navigate up one level first.
+# Generate _output/gloo-enterprise-version based on the latest patch enterprise version
+# corresponding to content in changelog directory.
 .PHONY: gloo-enterprise-version
 gloo-enterprise-version:
 	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version.go
