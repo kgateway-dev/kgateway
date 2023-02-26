@@ -13,8 +13,6 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/log"
-
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
@@ -24,11 +22,6 @@ import (
 )
 
 func TestGloo(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "gloo" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'gloo' in your env.")
-		return
-	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -65,8 +67,8 @@ var _ = Describe("Tracing config loading", func() {
 	Context("Tracing defined on Envoy bootstrap", func() {
 
 		BeforeEach(func() {
-			gloohelpers.ValidateRequirementsAndNotifyGinkgo(
-				gloohelpers.LinuxOnly("Uses 127.0.0.1"),
+			testutils.ValidateRequirementsAndNotifyGinkgo(
+				testutils.LinuxOnly("Uses 127.0.0.1"),
 			)
 		})
 
