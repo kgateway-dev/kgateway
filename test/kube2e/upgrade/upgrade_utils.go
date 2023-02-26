@@ -33,29 +33,33 @@ func (a ByVersion) Less(i, j int) bool {
 func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor(repoName)
+	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
 	if curMinorErr != nil {
 		if curMinorErr.Error() != FirstReleaseError {
 			return nil, nil, curMinorErr
 		}
 	}
-	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
+	// we may get a changelog value that does not have a github release - get the latest release for current minor
+	currentMinorLatestRelease, currentMinorLatestReleaseError := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
+	if currentMinorLatestReleaseError != nil {
+		return nil, nil, currentMinorLatestReleaseError
+	}
+	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
 		return nil, nil, lastMinorErr
 	}
-	return lastMinorLatestPatchVersion, currentMinorLatestPatchVersion, curMinorErr
+	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
 }
 
-func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error) {
+func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
-	fmt.Printf(filename)
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
-	//we can end up in a situation where the path contains the repo_name twice when running in ci - keep going until we find the last use ex: /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
+	// In all cases the home of the project will be one level above test - this handles forks as well as the standard case /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
 	for idx, dir := range fParts {
-		if dir == repoName {
-			splitIdx = idx
+		if dir == "test" {
+			splitIdx = idx - 1
 		}
 	}
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
@@ -103,13 +107,13 @@ func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorP
 	}
 }
 
-func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
+func getLatestReleasedVersion(ctx context.Context, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", "gloo", newLatestPatchForMinorPredicate(versionPrefix), 1)
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
 	if len(releases) == 0 {
 		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
 	}

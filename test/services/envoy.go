@@ -19,10 +19,11 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 
@@ -42,7 +43,7 @@ func NextBindPort() uint32 {
 }
 
 func AdvanceBindPort(p *uint32) uint32 {
-	return atomic.AddUint32(p, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
+	return atomic.AddUint32(p, 1) + uint32(parallel.GetPortOffset())
 }
 
 type EnvoyBootstrapBuilder interface {
@@ -386,7 +387,7 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 		UseDocker:     ef.useDocker,
 		GlooAddr:      gloo,
 		AccessLogAddr: gloo,
-		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000),
+		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(parallel.GetPortOffset()),
 		ApiVersion:    "V3",
 	}
 	ef.instances = append(ef.instances, ei)

@@ -3,10 +3,9 @@ package aws_credentials
 import (
 	"testing"
 
-	testhelpers "github.com/solo-io/gloo/test/helpers"
+	testhelpers "github.com/solo-io/gloo/test/testutils"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -17,8 +16,7 @@ const (
 
 func TestAwsCredentials(t *testing.T) {
 	helpers.RegisterCommonFailHandlers()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "AWS Credentials Suite", []Reporter{junitReporter})
+	RunSpecs(t, "AWS Credentials Suite")
 }
 
 var _ = BeforeSuite(func() {

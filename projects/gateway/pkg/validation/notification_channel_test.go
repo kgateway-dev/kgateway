@@ -5,7 +5,7 @@ import (
 	"errors"
 	"sync"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"google.golang.org/grpc"

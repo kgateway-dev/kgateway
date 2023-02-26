@@ -17,12 +17,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
@@ -34,17 +32,11 @@ const (
 )
 
 func TestIstio(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "istio" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'istio' in your env.")
-		return
-	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Istio Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Istio Suite")
 }
 
 var (

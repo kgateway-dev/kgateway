@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -21,7 +23,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -523,8 +525,8 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.Kubernetes("Uses a Kubernetes client"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.Kubernetes("Uses a Kubernetes client"),
 		)
 	})
 

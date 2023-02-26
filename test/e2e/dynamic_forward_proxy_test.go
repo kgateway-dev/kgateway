@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	defaults2 "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -17,7 +19,7 @@ import (
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -32,7 +34,7 @@ var _ = Describe("dynamic forward proxy", func() {
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext(
-			helpers.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
+			testutils.LinuxOnly("Relies on using an in-memory pipe to ourselves"),
 		)
 
 		testContext.BeforeEach()

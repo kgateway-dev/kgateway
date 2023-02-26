@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	"github.com/avast/retry-go"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/testutils/clusterlock"
@@ -15,8 +14,7 @@ import (
 
 func TestKube(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Generated Kube Types Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Generated Kube Types Suite")
 }
 
 var locker *clusterlock.TestClusterLocker

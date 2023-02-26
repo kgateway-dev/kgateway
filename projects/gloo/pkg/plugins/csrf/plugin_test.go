@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/golang/protobuf/ptypes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/solo-kit/test/matchers"

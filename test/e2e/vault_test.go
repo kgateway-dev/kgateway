@@ -6,18 +6,19 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	vaultapi "github.com/hashicorp/vault/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -30,10 +31,10 @@ var _ = Describe("Vault e2e", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.Vault(),
-			helpers.LinuxOnly("docker image we get the executable from is only built for linux"),
-			helpers.AwsCredentials(),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.Vault(),
+			testutils.LinuxOnly("docker image we get the executable from is only built for linux"),
+			testutils.AwsCredentials(),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

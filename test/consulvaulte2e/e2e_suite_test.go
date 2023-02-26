@@ -4,11 +4,9 @@ import (
 	"os"
 	"testing"
 
-	testhelpers "github.com/solo-io/gloo/test/helpers"
+	testhelpers "github.com/solo-io/gloo/test/testutils"
 
-	"github.com/onsi/ginkgo/reporters"
-
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/test/services"
@@ -49,6 +47,5 @@ func TestE2e(t *testing.T) {
 
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Consul+Vault E2e Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Consul+Vault E2e Suite")
 }

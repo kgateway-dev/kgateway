@@ -49,18 +49,6 @@ func (mr *MockKubeCoreCacheMockRecorder) ConfigMapLister() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigMapLister", reflect.TypeOf((*MockKubeCoreCache)(nil).ConfigMapLister))
 }
 
-// IsClusterCache mocks base method.
-func (m *MockKubeCoreCache) IsClusterCache() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "IsClusterCache")
-}
-
-// IsClusterCache indicates an expected call of IsClusterCache.
-func (mr *MockKubeCoreCacheMockRecorder) IsClusterCache() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsClusterCache", reflect.TypeOf((*MockKubeCoreCache)(nil).IsClusterCache))
-}
-
 // NamespaceLister mocks base method.
 func (m *MockKubeCoreCache) NamespaceLister() v1.NamespaceLister {
 	m.ctrl.T.Helper()

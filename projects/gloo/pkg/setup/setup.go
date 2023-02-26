@@ -18,10 +18,6 @@ func Main(customCtx context.Context) error {
 	return startSetupLoop(customCtx)
 }
 
-func StartGlooInTest(customCtx context.Context) error {
-	return startSetupLoop(customCtx)
-}
-
 func startSetupLoop(ctx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
 		LoggerName:  "gloo",

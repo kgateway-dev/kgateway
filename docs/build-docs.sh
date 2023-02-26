@@ -58,6 +58,7 @@ EOF
 workingDir=$(pwd)
 docsSiteDir=$workingDir/ci
 tempContentDir=$docsSiteDir/temp
+tempChangelogDir=$docsSiteDir/temp_changelogs
 repoDir=$workingDir/gloo-temp
 
 mkdir -p $docsSiteDir
@@ -123,6 +124,11 @@ function generateSiteForVersion() {
   mkdir $repoDir/docs/content
   cp -a $tempContentDir/$version/. $repoDir/docs/content/
 
+  # replace the master's changelog directory with the changelogs for the version we're building
+  rm -r $repoDir/changelog
+  mkdir $repoDir/changelog
+  cp -a $tempChangelogDir/$version/. $repoDir/changelog/
+
   # Remove the file responsible for the "security scan too large" bug if necessary
   guilty_path="./content/reference/security-updates"
   if cat $guilty_path/enterprise/_index.md | grep -q "glooe-security-scan-0"; then
@@ -163,7 +169,7 @@ function getContentForVersion() {
   then
     git checkout "$latestMasterTag"
   else
-    git checkout tags/v"$version"
+    git checkout "$version"
   fi
   # Replace version with "latest" if it's the latest version. This enables URLs with "/latest/..."
   if [[ "$version" ==  "$latestVersion" ]]
@@ -172,6 +178,9 @@ function getContentForVersion() {
   fi
 
   cp -a $repoDir/docs/content/. $tempContentDir/$version/
+
+  mkdir -p $tempChangelogDir/$version
+  cp -a $repoDir/changelog/. $tempChangelogDir/$version/
 }
 
 # We build docs for all active and old version of Gloo, on pull requests (and merges) to master.
