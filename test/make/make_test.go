@@ -135,10 +135,11 @@ var _ = Describe("Make", func() {
 			Expect(err).NotTo(HaveOccurred())
 			gitDesc := strings.TrimSpace(string(out))
 			gitDesc = strings.TrimPrefix(gitDesc, "v")
-			ExpectMakeVarsWithEnvVars([]*EnvVar{}, []*MakeVar{
-				{Version, gitDesc},
+			ExpectMakeVarsWithEnvVars([]*EnvVar{
 				{TaggedVersion, ""},
 				{TestAssetId, ""},
+			}, []*MakeVar{
+				{Version, gitDesc},
 			})
 		})
 
