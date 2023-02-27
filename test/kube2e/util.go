@@ -98,7 +98,7 @@ gloo:
     replicas: 2
     customEnv:
       - name: LEADER_ELECTION_LEASE_DURATION
-        value: 4s
+        value: 2s
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
