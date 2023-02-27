@@ -41,7 +41,9 @@ steps:
   - '-c'
   - |
     ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
-    gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
+    # DO NOT MERGE without reverting
+    # gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
+    gsutil cp gs://solo-public-artifacts.solo.io/envoy/9fcbba0f96213546b91a97bcf99fd36009c31bb4/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
   dir: *dir
   waitFor: ['prepare-workspace']
