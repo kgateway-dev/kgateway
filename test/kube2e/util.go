@@ -122,7 +122,7 @@ func EventuallyReachesConsistentState(installNamespace string) {
 	}
 
 	// Gloo components are configured to log to the Info level by default
-	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
+	logLevelAssertion := assertions.LogLevelAssertion(zapcore.DebugLevel) // sam-heilbron, we set log level to debug
 
 	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
 	// We choose 4 here as a bit of a magic number, but we feel comfortable that if 4 consecutive polls of the metrics
