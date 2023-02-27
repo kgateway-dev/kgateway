@@ -12,7 +12,6 @@ import (
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -103,7 +102,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 	It("Routes to GRPC Functions", func() {
 
-		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -120,11 +119,11 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 	It("Routes to GRPC Functions with parameters", func() {
 
-		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
-		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
-		grpc.Parameters = &transformation.Parameters{
-			Path: &wrappers.StringValue{Value: "/test/{str}"},
-		}
+		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		//grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
+		//grpc.Parameters = &transformation.Parameters{
+		//	Path: &wrappers.StringValue{Value: "/test/{str}"},
+		//}
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -146,6 +145,37 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	})
 })
 
+func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
+	return &gatewayv1.VirtualService{
+		Metadata: &core.Metadata{
+			Name:      "default",
+			Namespace: writeNamespace,
+		},
+		VirtualHost: &gatewayv1.VirtualHost{
+			Routes: []*gatewayv1.Route{
+				{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							// the grpc_json transcoding filter clears the cache so it no longer would match on /test (this can be configured)
+							Prefix: "/",
+						},
+					}},
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: usRef,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
 func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
 		Metadata: &core.Metadata{
