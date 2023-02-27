@@ -15,12 +15,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
@@ -40,16 +38,10 @@ var (
 )
 
 func TestGlooMtls(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "gloomtls" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'gloomtls' in your env.")
-		return
-	}
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Gloo mTLS Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Gloo mTLS Suite")
 }
 
 var _ = BeforeSuite(func() {

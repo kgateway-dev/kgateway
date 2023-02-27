@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/golang/protobuf/proto"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -55,8 +57,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/config"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	fds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	uds_syncer "github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
@@ -188,7 +189,7 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
-	return atomic.AddInt32(&glooPortBase, 1) + int32(config.GinkgoConfig.ParallelNode*1000)
+	return atomic.AddInt32(&glooPortBase, 1) + int32(parallel.GetPortOffset())
 }
 
 type What struct {

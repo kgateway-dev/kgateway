@@ -3,13 +3,32 @@ package secret_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	"github.com/hashicorp/vault/api"
+	"github.com/solo-io/gloo/test/services"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 func TestSecret(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Secret Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Secret Suite")
 }
+
+var (
+	vaultFactory  *services.VaultFactory
+	vaultInstance *services.VaultInstance
+	client        *api.Client
+)
+
+var _ = BeforeSuite(func() {
+	var err error
+	vaultFactory, err = services.NewVaultFactory()
+	Expect(err).NotTo(HaveOccurred())
+	client, err = api.NewClient(api.DefaultConfig())
+	Expect(err).NotTo(HaveOccurred())
+})
+
+var _ = AfterSuite(func() {
+	_ = vaultFactory.Clean()
+})

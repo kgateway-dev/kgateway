@@ -7,6 +7,10 @@ on:
   push:
     branches:
     - 'master'
+    - 'v1.13.x'
+    - 'v1.12.x'
+    - 'v1.11.x'
+    - 'v1.10.x'
   pull_request:
     branches:
       - 'master'
@@ -96,6 +100,11 @@ jobs:
         hugo-version: '0.69.2'
     - name: Check out code into the Go module directory
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
+      uses: actions/checkout@v3
+      with:
+        ref: master
+    - name: Override master checkout if deploying PR test
+      if: ${{ github.event_name == 'pull_request' }}
       uses: actions/checkout@v3
     - name: Detect Community PR
       id: community-pr-check

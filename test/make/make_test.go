@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -135,10 +135,11 @@ var _ = Describe("Make", func() {
 			Expect(err).NotTo(HaveOccurred())
 			gitDesc := strings.TrimSpace(string(out))
 			gitDesc = strings.TrimPrefix(gitDesc, "v")
-			ExpectMakeVarsWithEnvVars([]*EnvVar{}, []*MakeVar{
-				{Version, gitDesc},
+			ExpectMakeVarsWithEnvVars([]*EnvVar{
 				{TaggedVersion, ""},
 				{TestAssetId, ""},
+			}, []*MakeVar{
+				{Version, gitDesc},
 			})
 		})
 

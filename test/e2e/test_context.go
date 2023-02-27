@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -42,9 +44,9 @@ type TestContextFactory struct {
 	EnvoyFactory *services.EnvoyFactory
 }
 
-func (f *TestContextFactory) NewTestContext(testRequirements ...helpers.Requirement) *TestContext {
+func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requirement) *TestContext {
 	// Skip or Fail tests which do not satisfy the provided requirements
-	helpers.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
+	testutils.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
 	return &TestContext{
 		envoyInstance: f.EnvoyFactory.MustEnvoyInstance(),

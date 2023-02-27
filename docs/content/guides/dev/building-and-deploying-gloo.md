@@ -140,7 +140,7 @@ The fastest way to test and debug changes is by using the unit tests in these di
    {{< tabs >}} 
 {{% tab name="ginkgo" %}}
 ```sh
-gingko
+ginkgo
 ```
 {{% /tab %}} 
 {{% tab name="gdb" %}}
@@ -174,7 +174,7 @@ Dynamic breakpoints can be added via gdb without having to rebuild the unit test
 
 Breakpoints can be added statically by editing the source code and adding `runtime.Breakpoint()` at the desired point in the code. Then rebuild and re-run in `gdb`. `gdb` breaks when it reaches that line. Then from that line, you can go up the stack to inspect variables.
 
-Note that adding `runtime.Breakpoint()` in the code will likely cause the Go runtime to abort, because Go does not know how to handle the break signal. Therefore, you can only run the binary in `gbd`, not Go or `gingko`.
+Note that adding `runtime.Breakpoint()` in the code will likely cause the Go runtime to abort, because Go does not know how to handle the break signal. Therefore, you can only run the binary in `gbd`, not Go or `ginkgo`.
 
 ### Testing in deployment
 
