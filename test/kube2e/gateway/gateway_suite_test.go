@@ -93,9 +93,6 @@ func installGloo() {
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 
-	// Explicitly enable strict validation,
-	kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
-
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
 	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)

@@ -13,6 +13,11 @@ settings:
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
+  logLevel: debug
+  validation:
+    allowWarnings: true
+    # Explicitly enable strict validation
+    alwaysAccept: false
 gloo:
   logLevel: debug
   disableLeaderElection: false
@@ -20,7 +25,9 @@ gloo:
     replicas: 2
     customEnv:
       - name: LEADER_ELECTION_LEASE_DURATION
-        value: 2s
+        value: 3s
+      - name: LEADER_ELECTION_RETRY_PERIOD
+        value: 1s
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
