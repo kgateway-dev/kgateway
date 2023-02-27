@@ -500,22 +500,32 @@ var _ = Describe("Validation Server", func() {
 
 			var notifications []*validationgrpc.NotifyOnResyncResponse
 			var l sync.Mutex
-			var desiredErrCode codes.Code
+
+			terminalState := make(chan codes.Code, 1)
 
 			// watch notifications
 			go func() {
 				defer GinkgoRecover()
+				var state codes.Code // ENUM value 0
 				for {
 					notification, err := stream.Recv()
-					if desiredErrCode == 0 {
-						Expect(err).To(BeNil())
-					} else {
+
+					select {
+					case someCode := <-terminalState:
+						state = someCode
+					default:
+
+					}
+					if state != 0 {
 						Expect(err).NotTo(BeNil())
 						st, ok := status.FromError(err)
 						Expect(ok).To(BeTrue())
-						Expect(st.Code()).To(Equal(desiredErrCode))
+						Expect(st.Code()).To(Equal(state))
 						continue
+					} else {
+						Expect(err).To(BeNil())
 					}
+
 					l.Lock()
 					notifications = append(notifications, notification)
 					l.Unlock()
@@ -560,7 +570,7 @@ var _ = Describe("Validation Server", func() {
 			Eventually(getNotifications, time.Second).Should(HaveLen(5))
 
 			// test close
-			desiredErrCode = codes.Unavailable
+			terminalState <- codes.Unavailable
 			srv.Stop()
 
 			// create jitter by changing upstreams
