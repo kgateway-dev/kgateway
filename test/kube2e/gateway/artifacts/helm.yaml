@@ -20,9 +20,12 @@ gateway:
     alwaysAccept: false
 gloo:
   logLevel: debug
-  disableLeaderElection: false
+  # Temporarily disable leader election
+  # Randomizing tests have caused a number of failures, so I'm going to first de-flake them
+  # without the uncertainty of whether leader election is playing a role
+  disableLeaderElection: true
   deployment:
-    replicas: 2
+    replicas: 1
     customEnv:
       - name: LEADER_ELECTION_LEASE_DURATION
         value: 3s
