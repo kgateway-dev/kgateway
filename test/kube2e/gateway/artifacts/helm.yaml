@@ -19,17 +19,18 @@ gateway:
     alwaysAcceptResources: false
 gloo:
   logLevel: debug
+  # TODO: sam-heilbron
   # Temporarily disable leader election
   # Randomizing tests have caused a number of failures, so I'm going to first de-flake them
   # without the uncertainty of whether leader election is playing a role
-  disableLeaderElection: true
+  disableLeaderElection: false
   deployment:
     replicas: 1
     customEnv:
-      - name: LEADER_ELECTION_LEASE_DURATION
-        value: 3s
-      - name: LEADER_ELECTION_RETRY_PERIOD
-        value: 1s
+    - name: LEADER_ELECTION_LEASE_DURATION
+      value: 3s
+    - name: LEADER_ELECTION_RETRY_PERIOD
+      value: 1s
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
