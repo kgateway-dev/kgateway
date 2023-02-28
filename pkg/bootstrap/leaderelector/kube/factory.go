@@ -95,7 +95,7 @@ func getLeaseDuration() time.Duration {
 
 	leaseDurationStr := os.Getenv(leaseDurationEnvName)
 	if leaseDurationStr != "" {
-		if dur, err := time.ParseDuration(leaseDurationStr); err != nil {
+		if dur, err := time.ParseDuration(leaseDurationStr); err == nil {
 			leaseDuration = dur
 		}
 	}
@@ -108,7 +108,7 @@ func getRetryPeriod() time.Duration {
 
 	retryPeriodStr := os.Getenv(retryPeriodEnvName)
 	if retryPeriodStr != "" {
-		if dur, err := time.ParseDuration(retryPeriodStr); err != nil {
+		if dur, err := time.ParseDuration(retryPeriodStr); err == nil {
 			retryPeriod = dur
 		}
 	}
