@@ -69,49 +69,6 @@ func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper
 	}, timeoutInterval, "5s").Should(BeNil())
 }
 
-func GetHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
-	Expect(err).NotTo(HaveOccurred())
-
-	// disabling usage statistics is not important to the functionality of the tests,
-	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
-	// install to a single namespace so we can run multiple invocations of the regression tests against the
-	// same cluster in CI.
-	_, err = values.Write([]byte(`
-global:
-  image:
-    pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
-settings:
-  singleNamespace: true
-  create: true
-  invalidConfigPolicy:
-    replaceInvalidRoutes: true
-    invalidRouteResponseCode: 404
-    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
-gateway:
-  persistProxySpec: true
-gloo:
-  deployment:
-    replicas: 2
-    customEnv:
-      - name: LEADER_ELECTION_LEASE_DURATION
-        value: 2s
-    livenessProbeEnabled: true
-gatewayProxies:
-  gatewayProxy:
-    healthyPanicThreshold: 0
-`))
-	Expect(err).NotTo(HaveOccurred())
-
-	err = values.Close()
-	Expect(err).NotTo(HaveOccurred())
-
-	return values.Name(), func() { _ = os.Remove(values.Name()) }
-}
-
 func EventuallyReachesConsistentState(installNamespace string) {
 	// We port-forward the Gloo deployment stats port to inspect the metrics and log settings
 	glooStatsForwardConfig := assertions.StatsPortFwd{
