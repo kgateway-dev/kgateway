@@ -11,9 +11,9 @@ on:
     - 'v1.12.x'
     - 'v1.11.x'
     - 'v1.10.x'
-  #pull_request:
-  ##  branches:
-   #   - 'master'
+  pull_request:
+    branches:
+    - 'master'
   workflow_run:
     workflows: ["security-scan-scheduled"]
     types:
