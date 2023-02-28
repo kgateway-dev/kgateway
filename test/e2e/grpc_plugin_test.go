@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"io/ioutil"
 	"net/http"
 
@@ -122,10 +124,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	It("Routes to GRPC Functions with parameters", func() {
 
 		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
-		//grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
-		//grpc.Parameters = &transformation.Parameters{
-		//	Path: &wrappers.StringValue{Value: "/test/{str}"},
-		//}
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -138,7 +136,11 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			body, err := ioutil.ReadAll(res.Body)
 			return string(body), err
 		}
+		discoveredUs, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.GetNamespace(), tu.Upstream.Metadata.GetName(), clients.ReadOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
 
+		updateUpstreamDescriptors(discoveredUs)
+		testClients.UpstreamClient.Write(discoveredUs, clients.WriteOpts{OverwriteExisting: true})
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
@@ -216,4 +218,21 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 			},
 		},
 	}
+}
+func updateUpstreamDescriptors(tu *gloov1.Upstream) {
+	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
+	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
+	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto-paths.pb"
+	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	Expect(err).ToNot(HaveOccurred())
+	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
+	t.SetServiceSpec(&options.ServiceSpec{
+		PluginType: &options.ServiceSpec_GrpcJsonTranscoder{
+			GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
+				DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{
+					ProtoDescriptorBin: bytes,
+				},
+				Services: []string{"glootest.TestService"},
+			},
+		}})
 }

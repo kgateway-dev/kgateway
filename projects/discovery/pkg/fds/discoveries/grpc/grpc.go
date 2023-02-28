@@ -60,13 +60,15 @@ type FunctionDiscoveryFactory struct {
 // NewFunctionDiscovery returns a FunctionDiscovery that can be used to discover functions
 func (f *FunctionDiscoveryFactory) NewFunctionDiscovery(u *v1.Upstream, _ fds.AdditionalClients) fds.UpstreamFunctionDiscovery {
 	return &UpstreamFunctionDiscovery{
-		upstream: u,
+		upstream:     u,
+		clientGetter: getClient,
 	}
 }
 
 // UpstreamFunctionDiscovery represents a function discovery for upstream
 type UpstreamFunctionDiscovery struct {
-	upstream *v1.Upstream
+	upstream     *v1.Upstream
+	clientGetter func(ctx context.Context, url *url.URL) (*grpcreflect.Client, func() error, error)
 }
 
 // IsFunctional returns true if the upstream is functional
@@ -78,7 +80,7 @@ func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL
 	log := contextutils.LoggerFrom(ctx)
 	log.Debugf("attempting to detect GRPC for %s", f.upstream.GetMetadata().GetName())
 
-	refClient, closeConn, err := getClient(ctx, url)
+	refClient, closeConn, err := f.clientGetter(ctx, url)
 	if err != nil {
 		return nil, err
 	}

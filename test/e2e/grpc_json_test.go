@@ -237,9 +237,8 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 			HttpGateway: &gatewayv1.HttpGateway{
 				Options: &gloov1.HttpListenerOptions{
 					GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
-						DescriptorSet:          &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
-						Services:               []string{"glootest.TestService"},
-						IgnoredQueryParameters: []string{"gateway_param"},
+						DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
+						Services:      []string{"glootest.TestService"},
 					},
 				},
 			},
@@ -260,8 +259,7 @@ func addGrpcJsonToUpstream(tu *gloov1.Upstream) {
 				DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{
 					ProtoDescriptorBin: bytes,
 				},
-				Services:               []string{"glootest.TestService"},
-				IgnoredQueryParameters: []string{"upstream_param"},
+				Services: []string{"glootest.TestService"},
 			},
 		}})
 }
