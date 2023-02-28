@@ -23,6 +23,7 @@ const (
 
 	leaseDurationEnvName = "LEADER_ELECTION_LEASE_DURATION"
 	retryPeriodEnvName   = "LEADER_ELECTION_RETRY_PERIOD"
+	renewPeriodEnvName   = "LEADER_ELECTION_RENEW_PERIOD"
 )
 
 // kubeElectionFactory is the implementation for coordinating leader election using
@@ -58,7 +59,7 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 		k8sleaderelection.LeaderElectionConfig{
 			Lock:          resourceLock,
 			LeaseDuration: getLeaseDuration(),
-			RenewDeadline: defaultRenewPeriod,
+			RenewDeadline: getRenewPeriod(),
 			RetryPeriod:   getRetryPeriod(),
 			Callbacks: k8sleaderelection.LeaderCallbacks{
 				OnStartedLeading: func(callbackCtx context.Context) {
@@ -91,27 +92,26 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 }
 
 func getLeaseDuration() time.Duration {
-	leaseDuration := defaultLeaseDuration
+	return getDurationFromEnvOrDefault(leaseDurationEnvName, defaultLeaseDuration)
+}
 
-	leaseDurationStr := os.Getenv(leaseDurationEnvName)
-	if leaseDurationStr != "" {
-		if dur, err := time.ParseDuration(leaseDurationStr); err == nil {
-			leaseDuration = dur
-		}
-	}
-
-	return leaseDuration
+func getRenewPeriod() time.Duration {
+	return getDurationFromEnvOrDefault(renewPeriodEnvName, defaultRenewPeriod)
 }
 
 func getRetryPeriod() time.Duration {
-	retryPeriod := defaultRetryPeriod
+	return getDurationFromEnvOrDefault(retryPeriodEnvName, defaultRetryPeriod)
+}
 
-	retryPeriodStr := os.Getenv(retryPeriodEnvName)
-	if retryPeriodStr != "" {
-		if dur, err := time.ParseDuration(retryPeriodStr); err == nil {
-			retryPeriod = dur
+func getDurationFromEnvOrDefault(envName string, defaultDuration time.Duration) time.Duration {
+	duration := defaultDuration
+
+	durationStr := os.Getenv(envName)
+	if durationStr != "" {
+		if dur, err := time.ParseDuration(durationStr); err == nil {
+			duration = dur
 		}
 	}
 
-	return retryPeriod
+	return duration
 }
