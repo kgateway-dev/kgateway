@@ -16,8 +16,7 @@ gateway:
   logLevel: debug
   validation:
     allowWarnings: true
-    # Explicitly enable strict validation
-    alwaysAccept: false
+    alwaysAcceptResources: false
 gloo:
   logLevel: debug
   # Temporarily disable leader election
