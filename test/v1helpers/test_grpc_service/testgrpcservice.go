@@ -97,3 +97,14 @@ func (s *TestGRPCServer) TestMethod(_ context.Context, req *glootest.TestRequest
 	}()
 	return &glootest.TestResponse{Str: req.GetStr()}, nil
 }
+
+// Returns a list of all shelves in the bookstore.
+func (s *TestGRPCServer) TestParameterMethod(_ context.Context, req *glootest.TestRequest) (*glootest.TestResponse, error) {
+	if req == nil {
+		return nil, errors.New("cannot be nil")
+	}
+	go func() {
+		s.C <- req
+	}()
+	return &glootest.TestResponse{Str: req.GetStr()}, nil
+}

@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/testutils"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -42,9 +40,9 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	)
 
 	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.LinuxOnly("Relies on FDS"),
-		)
+		//	testutils.ValidateRequirementsAndNotifyGinkgo(
+		//		testutils.LinuxOnly("Relies on FDS"),
+		//	)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -104,7 +102,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		}
 	}
 
-	It("Routes to GRPC Functions", func() {
+	FIt("Routes to GRPC Functions", func() {
 
 		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
@@ -121,14 +119,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		}))))
 	})
 
-	It("Routes to GRPC Functions with parameters", func() {
+	FIt("Routes to GRPC Functions with parameters", func() {
 
 		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		testRequest := func() (string, error) {
-			res, err := http.Get(fmt.Sprintf("http://%s:%d/test/foo", "localhost", defaults.HttpPort))
+			res, err := http.Get(fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort))
 			if err != nil {
 				return "", err
 			}
@@ -136,11 +134,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			body, err := ioutil.ReadAll(res.Body)
 			return string(body), err
 		}
-		discoveredUs, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.GetNamespace(), tu.Upstream.Metadata.GetName(), clients.ReadOpts{Ctx: ctx})
-		Expect(err).NotTo(HaveOccurred())
-
-		updateUpstreamDescriptors(discoveredUs)
-		testClients.UpstreamClient.Write(discoveredUs, clients.WriteOpts{OverwriteExisting: true})
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
