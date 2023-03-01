@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -17,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -115,7 +115,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}))))
 	})
 
@@ -134,10 +134,13 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			body, err := ioutil.ReadAll(res.Body)
 			return string(body), err
 		}
+		// set up upstream manually to test everything except discovery locally
+		//updateUpstreamDescriptors(tu.Upstream)
+		//_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{OverwriteExisting: true})
+		//Expect(err).NotTo(HaveOccurred())
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
-
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}))))
 	})
 })
@@ -212,10 +215,12 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 		},
 	}
 }
+
+//TODO using this to test locally without discovery, remove before merging
 func updateUpstreamDescriptors(tu *gloov1.Upstream) {
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
-	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto-paths.pb"
+	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
 	bytes, err := ioutil.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
@@ -228,4 +233,6 @@ func updateUpstreamDescriptors(tu *gloov1.Upstream) {
 				Services: []string{"glootest.TestService"},
 			},
 		}})
+	tu.Metadata.ResourceVersion = "2"
+
 }

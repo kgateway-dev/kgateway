@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package glootest;
+option go_package = "glootest/protos";
 
 import "google/api/annotations.proto";
 
@@ -13,7 +14,6 @@ service TestService {
   rpc TestMethod (TestRequest) returns (TestResponse) {
     option (google.api.http) = {
       post: "/test"
-      body: "str"
     };
   }
 }

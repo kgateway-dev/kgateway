@@ -104,7 +104,7 @@ func (s *TestGRPCServer) TestParameterMethod(_ context.Context, req *glootest.Te
 		return nil, errors.New("cannot be nil")
 	}
 	go func() {
-		s.C <- req
+		s.C <- &glootest.TestRequest{Str: req.GetStr()}
 	}()
 	return &glootest.TestResponse{Str: req.GetStr()}, nil
 }

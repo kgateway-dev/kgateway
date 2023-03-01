@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/onsi/gomega/format"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,8 +23,6 @@ import (
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"io/ioutil"
-	"net/http"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -34,7 +36,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		envoyInstance *services.EnvoyInstance
 		tu            *v1helpers.TestUpstream
 	)
-
+	format.MaxLength = 0
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -97,11 +99,11 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}
 		if shouldMatch {
-			EventuallyWithOffset(1, resp, 5, 1).Should(Equal(expectedResp))
-			EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))))
+			EventuallyWithOffset(1, resp, 5, 1).Should(Equal(expectedResp), "Did not get expected response")
+			EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
 		} else {
-			EventuallyWithOffset(1, resp, 5, 1).ShouldNot(Equal(expectedResp))
-			EventuallyWithOffset(1, tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))))
+			EventuallyWithOffset(1, resp, 5, 1).ShouldNot(Equal(expectedResp), "Did not get expected response")
+			EventuallyWithOffset(1, tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
 		}
 	}
 
@@ -206,9 +208,8 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 
 			_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
 			Expect(err).ToNot(HaveOccurred())
-			tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
 			addGrpcJsonToUpstream(tu.Upstream)
-			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
+			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 			vs := getGrpcJsonRawVs(writeNamespace, tu.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
@@ -262,6 +263,7 @@ func addGrpcJsonToUpstream(tu *gloov1.Upstream) {
 				Services: []string{"glootest.TestService"},
 			},
 		}})
+	tu.Metadata.ResourceVersion = "2"
 }
 
 func getGrpcJsonRawVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
