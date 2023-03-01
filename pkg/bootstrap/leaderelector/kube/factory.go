@@ -14,6 +14,18 @@ import (
 
 var _ leaderelector.ElectionFactory = new(kubeElectionFactory)
 
+const (
+	// Define the following values according to the defaults:
+	// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
+	defaultLeaseDuration = 15 * time.Second
+	defaultRetryPeriod   = 2 * time.Second
+	defaultRenewPeriod   = 10 * time.Second
+
+	leaseDurationEnvName = "LEADER_ELECTION_LEASE_DURATION"
+	retryPeriodEnvName   = "LEADER_ELECTION_RETRY_PERIOD"
+	renewPeriodEnvName   = "LEADER_ELECTION_RENEW_PERIOD"
+)
+
 // kubeElectionFactory is the implementation for coordinating leader election using
 // the k8s leader election tool: https://github.com/kubernetes/client-go/tree/master/tools/leaderelection
 type kubeElectionFactory struct {
@@ -45,12 +57,10 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 
 	l, err := k8sleaderelection.NewLeaderElector(
 		k8sleaderelection.LeaderElectionConfig{
-			Lock: resourceLock,
-			// Define the following values according to the defaults:
-			// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
+			Lock:          resourceLock,
 			LeaseDuration: getLeaseDuration(),
-			RenewDeadline: 10 * time.Second,
-			RetryPeriod:   2 * time.Second,
+			RenewDeadline: getRenewPeriod(),
+			RetryPeriod:   getRetryPeriod(),
 			Callbacks: k8sleaderelection.LeaderCallbacks{
 				OnStartedLeading: func(callbackCtx context.Context) {
 					contextutils.LoggerFrom(callbackCtx).Debug("Started Leading")
@@ -66,7 +76,8 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 					config.OnNewLeader(identity)
 				},
 			},
-			Name: config.Id,
+			Name:            config.Id,
+			ReleaseOnCancel: true,
 		},
 	)
 	if err != nil {
@@ -81,15 +92,26 @@ func (f *kubeElectionFactory) StartElection(ctx context.Context, config *leadere
 }
 
 func getLeaseDuration() time.Duration {
-	// https://github.com/kubernetes/client-go/blob/master/tools/leaderelection/leaderelection.go
-	leaseDuration := 15 * time.Second
+	return getDurationFromEnvOrDefault(leaseDurationEnvName, defaultLeaseDuration)
+}
 
-	leaseDurationStr := os.Getenv("LEADER_ELECTION_LEASE_DURATION")
-	if leaseDurationStr != "" {
-		if dur, err := time.ParseDuration(leaseDurationStr); err != nil {
-			leaseDuration = dur
+func getRenewPeriod() time.Duration {
+	return getDurationFromEnvOrDefault(renewPeriodEnvName, defaultRenewPeriod)
+}
+
+func getRetryPeriod() time.Duration {
+	return getDurationFromEnvOrDefault(retryPeriodEnvName, defaultRetryPeriod)
+}
+
+func getDurationFromEnvOrDefault(envName string, defaultDuration time.Duration) time.Duration {
+	duration := defaultDuration
+
+	durationStr := os.Getenv(envName)
+	if durationStr != "" {
+		if dur, err := time.ParseDuration(durationStr); err == nil {
+			duration = dur
 		}
 	}
 
-	return leaseDuration
+	return duration
 }
