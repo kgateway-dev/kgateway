@@ -58,7 +58,6 @@ runs:
     run: ./ci/deploy-to-kind-cluster.sh
   - name: Testing - kube e2e regression tests
     env:
-      GITHUB_TOKEN: ${{ github.token }}
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
     shell: bash
     run: make run-ci-regression-tests
