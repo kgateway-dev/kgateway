@@ -14,6 +14,7 @@ service TestService {
   rpc TestMethod (TestRequest) returns (TestResponse) {
     option (google.api.http) = {
       post: "/test"
+      body: "str"
     };
   }
 }

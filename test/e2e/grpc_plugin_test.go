@@ -40,6 +40,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	)
 
 	BeforeEach(func() {
+		// TODO: uncomment
 		//	testutils.ValidateRequirementsAndNotifyGinkgo(
 		//		testutils.LinuxOnly("Relies on FDS"),
 		//	)
