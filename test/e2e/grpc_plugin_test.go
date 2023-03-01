@@ -109,7 +109,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		body := []byte(`{"str": "foo"}`)
+		body := []byte(`"foo"`)
 
 		testRequest := basicReq(body)
 

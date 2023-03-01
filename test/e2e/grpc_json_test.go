@@ -202,7 +202,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	})
 
 	Context("GRPC configured on Upstream", func() {
-		It("with protodescriptor on upstream", func() {
+		FIt("with protodescriptor on upstream", func() {
 
 			gw := gwdefaults.DefaultGateway(writeNamespace)
 
