@@ -84,7 +84,7 @@ func TearDownTestHelper() {
 
 func installGloo() {
 	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))

@@ -515,7 +515,7 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 
 func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool, additionalInstallArgs []string) {
 	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// construct helm args

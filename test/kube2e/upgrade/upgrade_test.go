@@ -256,7 +256,7 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 
 func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictValidation bool) {
 	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// construct helm args
