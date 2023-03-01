@@ -889,6 +889,17 @@ spec:
                       choiceCount:
                         format: int32
                         type: integer
+                      slowStartConfig:
+                        properties:
+                          aggression:
+                            nullable: true
+                            type: number
+                          minWeightPercent:
+                            nullable: true
+                            type: number
+                          slowStartWindow:
+                            type: string
+                        type: object
                     type: object
                   localityWeightedLbConfig:
                     maxProperties: 0
@@ -912,6 +923,18 @@ spec:
                         type: object
                     type: object
                   roundRobin:
+                    properties:
+                      slowStartConfig:
+                        properties:
+                          aggression:
+                            nullable: true
+                            type: number
+                          minWeightPercent:
+                            nullable: true
+                            type: number
+                          slowStartWindow:
+                            type: string
+                        type: object
                     type: object
                   updateMergeWindow:
                     type: string
