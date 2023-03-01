@@ -2673,6 +2673,10 @@ func (x *OauthSecret) GetClientSecret() string {
 	return ""
 }
 
+// Defines how API keys are validated.
+//
+// When the provided API key token has been successfully validated, it's token will be
+// added to the `AuthorizationRequest` state under the "api_key_value" key name.
 type ApiKeyAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2704,6 +2708,14 @@ type ApiKeyAuth struct {
 	// This configuration can be used to add this data to the headers of successfully authenticated requests.
 	// Each key in the map represents the name of header to be added; the corresponding value determines the key
 	// in the API key metadata structure that will be inspected to determine the value for the header.
+	//
+	// When the provided API key token has been successfully validated, and this field has been configured, then
+	// any extra API key metadata fields that were able to be discovered will be added to the `AuthorizationRequest`
+	// state under the key name that was configured. For example, using the `x-user-name` string as the header name,
+	// and referencing an existing "user-email" API key metadata entry will result in the value of this "user-email"
+	// metadata entry being accessable in other auth modules in the `AuthorizationRequest.State["x-user-name"]` key.
+	// This behavior allows other modules (e.g. OPA) to build more powerful rules to further validate the contents
+	// of the extra API key metadata than what's possible using the standalone API key module.
 	HeadersFromMetadataEntry map[string]*ApiKeyAuth_MetadataEntry `protobuf:"bytes,5,rep,name=headers_from_metadata_entry,json=headersFromMetadataEntry,proto3" json:"headers_from_metadata_entry,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Types that are assignable to StorageBackend:
 	//	*ApiKeyAuth_K8SSecretApikeyStorage
