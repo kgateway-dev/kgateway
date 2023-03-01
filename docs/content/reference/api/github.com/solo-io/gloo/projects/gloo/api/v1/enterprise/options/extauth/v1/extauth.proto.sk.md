@@ -1051,7 +1051,11 @@ These values will be encoded in a basic auth header in order to authenticate the
 ---
 ### ApiKeyAuth
 
+ 
+Defines how API keys are validated.
 
+When the provided API key token has been successfully validated, it's token will be
+added to the `AuthorizationRequest` state under the "api_key_value" key name.
 
 ```yaml
 "labelSelector": map<string, string>
@@ -1070,7 +1074,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here will be overwritten if values are specified in the storage backend. A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |
 | `headerName` | `string` | When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |
 | `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>` | DEPRECATED: use headers_from_metadata_entry. |
-| `headersFromMetadataEntry` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. |
+| `headersFromMetadataEntry` | `map<string, map<string, bool>>` | API key structures might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra fields included in the API key metadata structure. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the API key metadata structure that will be inspected to determine the value for the header. When the provided API key token has been successfully validated, and this field has been configured, then any extra API key metadata fields that were able to be discovered will be added to the `AuthorizationRequest` state under the key name that was configured. For example, using the `x-user-name` string as the header name, and referencing an existing "user-email" API key metadata entry will result in the value of this "user-email" metadata entry being accessable in other auth modules in the `AuthorizationRequest.State["x-user-name"]` key. This behavior allows other modules (e.g. OPA) to build more powerful rules to further validate the contents of the extra API key metadata than what's possible using the standalone API key module. |
 | `k8SSecretApikeyStorage` | [.enterprise.gloo.solo.io.K8sSecretApiKeyStorage](../extauth.proto.sk/#k8ssecretapikeystorage) |  Only one of `k8sSecretApikeyStorage` or `aerospikeApikeyStorage` can be set. |
 | `aerospikeApikeyStorage` | [.enterprise.gloo.solo.io.AerospikeApiKeyStorage](../extauth.proto.sk/#aerospikeapikeystorage) |  Only one of `aerospikeApikeyStorage` or `k8sSecretApikeyStorage` can be set. |
 
