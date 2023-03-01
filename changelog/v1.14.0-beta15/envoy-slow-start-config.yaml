@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7807
+    description: Expose `config.core.v3.Cluster.SlowStartConfig` for `RoundRobin` and `LeastRequest` load balancers.
