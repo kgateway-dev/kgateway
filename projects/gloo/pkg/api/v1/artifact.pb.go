@@ -23,18 +23,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// @solo-kit:resource.short_name=art
+// @solo-kit:resource.plural_name=artifacts
 //
-//@solo-kit:resource.short_name=art
-//@solo-kit:resource.plural_name=artifacts
+// Gloo Artifacts are used by Gloo to store small bits of binary or file data.
 //
-//Gloo Artifacts are used by Gloo to store small bits of binary or file data.
+// Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
+// storage layer.
 //
-//Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
-//storage layer.
+// Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.
 //
-//Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.
-//
-//Supported artifact backends can be selected in Gloo's boostrap options.
+// Supported artifact backends can be selected in Gloo's boostrap options.
 type Artifact struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

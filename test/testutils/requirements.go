@@ -14,9 +14,9 @@ import (
 // ValidateRequirementsAndNotifyGinkgo validates that the provided Requirements are met, and if they are not, uses
 // the InvalidTestReqsEnvVar to determine how to proceed:
 // Options are:
-//	- `run`: Ignore any invalid requirements and execute the tests
-//	- `skip`: Notify Ginkgo that the current spec was skipped
-//	- `fail`: Notify Ginkgo that the current spec has failed [DEFAULT]
+//   - `run`: Ignore any invalid requirements and execute the tests
+//   - `skip`: Notify Ginkgo that the current spec was skipped
+//   - `fail`: Notify Ginkgo that the current spec has failed [DEFAULT]
 func ValidateRequirementsAndNotifyGinkgo(requirements ...Requirement) {
 	err := ValidateRequirements(requirements)
 	if err == nil {

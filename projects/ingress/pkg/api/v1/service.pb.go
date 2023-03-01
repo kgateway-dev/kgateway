@@ -24,8 +24,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//A simple wrapper for a Kubernetes Service Object.
+// A simple wrapper for a Kubernetes Service Object.
 type KubeService struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
