@@ -38,6 +38,7 @@ type ServiceSpec struct {
 	// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 	//
 	// Types that are assignable to PluginType:
+	//
 	//	*ServiceSpec_Rest
 	//	*ServiceSpec_Grpc
 	//	*ServiceSpec_GrpcJsonTranscoder

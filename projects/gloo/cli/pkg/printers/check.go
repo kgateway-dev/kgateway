@@ -89,8 +89,8 @@ func (p P) NewCheckResult() *CheckResult {
 	return nil
 }
 
-//We must sanitze the name for json formatting because the name comes in as "Checking deployments..."
-//and we just require the type "deployments"
+// We must sanitze the name for json formatting because the name comes in as "Checking deployments..."
+// and we just require the type "deployments"
 func sanitizeName(name string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(name, "Checking ", ""), "... ", "")
 }

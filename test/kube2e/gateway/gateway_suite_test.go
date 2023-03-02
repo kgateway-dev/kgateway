@@ -84,7 +84,7 @@ func TearDownTestHelper() {
 
 func installGloo() {
 	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
@@ -92,9 +92,6 @@ func installGloo() {
 
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-
-	// Explicitly enable strict validation,
-	kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs

@@ -1104,14 +1104,14 @@ var _ = Describe("Kube2e: gateway", func() {
 						vsHeaderManipulation := &headers.HeaderManipulation{
 							RequestHeadersToRemove: []string{"header-from-vhost"},
 						}
-						kube2e.ExpectEqualProtoMessages(g, opts.GetHeaderManipulation(), vsHeaderManipulation)
+						g.Expect(opts.GetHeaderManipulation()).To(gloo_matchers.MatchProto(vsHeaderManipulation))
 
 						// since rt1 is delegated to first, it overrides rt2, which was delegated later
 						vhost1Cors := &cors.CorsPolicy{
 							ExposeHeaders: []string{"header-from-extopt1"},
 							AllowOrigin:   []string{"some-origin-1"},
 						}
-						kube2e.ExpectEqualProtoMessages(g, opts.GetCors(), vhost1Cors)
+						g.Expect(opts.GetCors()).To(gloo_matchers.MatchProto(vhost1Cors))
 
 						// options that weren't already set in previously delegated options are set from rt2
 						vhost2Transformations := &glootransformation.Transformations{
@@ -1127,7 +1127,7 @@ var _ = Describe("Kube2e: gateway", func() {
 								},
 							},
 						}
-						kube2e.ExpectEqualProtoMessages(g, opts.GetTransformations(), vhost2Transformations)
+						g.Expect(opts.GetTransformations()).To(gloo_matchers.MatchProto(vhost2Transformations))
 					}
 				}
 
@@ -1264,14 +1264,14 @@ var _ = Describe("Kube2e: gateway", func() {
 							vsHeaderManipulation := &headers.HeaderManipulation{
 								RequestHeadersToRemove: []string{"header-from-vhost"},
 							}
-							kube2e.ExpectEqualProtoMessages(g, opts.GetHeaderManipulation(), vsHeaderManipulation)
+							g.Expect(opts.GetHeaderManipulation()).To(gloo_matchers.MatchProto(vsHeaderManipulation))
 
 							// since rt1 is delegated to first, it overrides rt2, which was delegated later
 							rt1Cors := &cors.CorsPolicy{
 								ExposeHeaders: []string{"header-from-extopt1"},
 								AllowOrigin:   []string{"some-origin-1"},
 							}
-							kube2e.ExpectEqualProtoMessages(g, opts.GetCors(), rt1Cors)
+							g.Expect(opts.GetCors()).To(gloo_matchers.MatchProto(rt1Cors))
 
 							// options that weren't already set in previously delegated options are set from rt2
 							rt2Transformation := &glootransformation.Transformations{
@@ -1287,7 +1287,7 @@ var _ = Describe("Kube2e: gateway", func() {
 									},
 								},
 							}
-							kube2e.ExpectEqualProtoMessages(g, opts.GetTransformations(), rt2Transformation)
+							g.Expect(opts.GetTransformations()).To(gloo_matchers.MatchProto(rt2Transformation))
 						}
 					}
 				}
