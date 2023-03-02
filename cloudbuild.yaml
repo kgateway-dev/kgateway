@@ -13,15 +13,14 @@ steps:
   id: 'publish-artifacts'
 
 - name: 'gcr.io/cloud-builders/gcloud'
+  entrypoint: 'bash'
   args:
-    - 'builds'
-    - 'submit'
-    - '--config'
-    - 'ci/cloudbuild/run-tests.yaml'
-    - '--substitutions'
-    - 'COMMIT_SHA=$COMMIT_SHA,REPO_NAME=$REPO_NAME,TAG_NAME=$TAG_NAME,_PR_NUM=$_PR_NUM'
-  waitFor:
-    - '-'
+    - '-c'
+    - |
+      if [ -z "$TAG_NAME" ]; then
+      gcloud builds submit --config=ci/cloudbuild/run-tests.yaml --substitutions COMMIT_SHA=$COMMIT_SHA,REPO_NAME=$REPO_NAME,TAG_NAME=$TAG_NAME,_PR_NUM=$_PR_NUM;
+      fi
+  waitFor: [ '-' ]
   id: 'run-tests'
 
 timeout: '3600s'
