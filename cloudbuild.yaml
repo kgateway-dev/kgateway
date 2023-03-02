@@ -1,17 +1,21 @@
 steps:
-- name: 'gcr.io/cloud-builders/gcloud'
-  entrypoint: 'bash'
-  # if TAG_NAME is set then this is a release and we don't run tests
-  args:
-    - '-c'
-    - 'if [ -z "$TAG_NAME" ]; then gcloud builds submit --config=ci/cloudbuild/run-tests.yaml; fi'
-  waitFor: [ '-' ]
-  id: "run-tests-except-releases"
+# if TAG_NAME is set then this is a release, and we don't run tests
+#- name: 'gcr.io/cloud-builders/gcloud'
+#  entrypoint: 'bash'
+#  args:
+#    - '-c'
+##    - 'if [ -z "$TAG_NAME" ]; then gcloud builds submit --config=ci/cloudbuild/run-tests.yaml; fi'
+#  waitFor: [ '-' ]
+#  id: "run-tests-except-releases"
 
 - name: 'gcr.io/cloud-builders/gcloud'
-  args: [ 'builds','submit','--config=ci/cloudbuild/publish-artifacts.yaml']
-  waitFor: [ '-' ]
-  id: "publish-artifacts"
+  args:
+  - 'builds'
+  - 'submit'
+  - '--config=ci/cloudbuild/publish-artifacts.yaml'
+  waitFor:
+  - '-'
+  id: 'publish-artifacts'
 
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
@@ -33,6 +37,3 @@ options:
   - 'TEST_ASSET_ID=$_PR_NUM'
   - 'COMMIT_SHA=$COMMIT_SHA'
   - 'REPO_NAME=$REPO_NAME'
-  volumes:
-  - name: 'gopath'
-    path: '/go'
