@@ -29,7 +29,7 @@ steps:
       ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
       gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
       chmod +x /workspace/envoy
-  dir: *dir
+  dir: &dir /workspace/gloo
   waitFor:
   - 'prepare-workspace'
   id: 'get-envoy'
