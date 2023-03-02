@@ -4,8 +4,9 @@ steps:
   args:
   - 'builds'
   - 'submit'
-  - '--config=ci/cloudbuild/publish-artifacts.yaml'
-  - 'substitutions'
+  - '--config'
+  - 'ci/cloudbuild/publish-artifacts.yaml'
+  - '--substitutions'
   - 'COMMIT_SHA=$COMMIT_SHA,REPO_NAME=$REPO_NAME'
   waitFor:
   - '-'
@@ -15,8 +16,9 @@ steps:
   args:
     - 'builds'
     - 'submit'
-    - '--config=ci/cloudbuild/run-tests.yaml'
-    - 'substitutions'
+    - '--config'
+    - 'ci/cloudbuild/run-tests.yaml'
+    - '--substitutions'
     - 'COMMIT_SHA=$COMMIT_SHA,REPO_NAME=$REPO_NAME'
   waitFor:
     - '-'
