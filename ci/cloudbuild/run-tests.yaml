@@ -1,5 +1,14 @@
 steps:
 
+# sam-heilbron - temprarily skip if a PR to demonstrate effectiveness
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'Cancel current build if release'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    $TAGGED_VERSION = "" && gcloud builds cancel $BUILD_ID > /dev/null || true
+
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
   args:
   - '--repo-name'
