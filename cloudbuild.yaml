@@ -1,12 +1,4 @@
 steps:
-# if TAG_NAME is set then this is a release, and we don't run tests
-#- name: 'gcr.io/cloud-builders/gcloud'
-#  entrypoint: 'bash'
-#  args:
-#    - '-c'
-##    - 'if [ -z "$TAG_NAME" ]; then gcloud builds submit --config=ci/cloudbuild/run-tests.yaml; fi'
-#  waitFor: [ '-' ]
-#  id: "run-tests-except-releases"
 
 - name: 'gcr.io/cloud-builders/gcloud'
   args:
