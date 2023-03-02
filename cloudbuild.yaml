@@ -9,6 +9,15 @@ steps:
   - '-'
   id: 'publish-artifacts'
 
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+    - 'builds'
+    - 'submit'
+    - '--config=ci/cloudbuild/run-tests.yaml'
+  waitFor:
+    - '-'
+  id: 'run-tests'
+
 timeout: '3600s'
 
 tags:
@@ -20,3 +29,5 @@ options:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
+  - 'REPO_NAME=$REPO_NAME'
+  - 'COMMIT_SHA=$COMMIT_SHA'
