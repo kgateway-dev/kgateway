@@ -86,7 +86,7 @@ jobs:
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.2
+        go-version: 1.18.6
       id: go
     - name: Setup Hugo
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
