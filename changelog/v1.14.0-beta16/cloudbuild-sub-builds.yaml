@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7859
+    resolvesIssue: false
+    description: >
+      Separate the Cloudbuild job into 2 sub-builds: one for running tests and one for publishing assets

@@ -247,9 +247,7 @@ test-with-coverage: test
 .PHONY: run-tests
 run-tests: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: GINKGO_FLAGS += -skip-package=kube2e
-ifneq ($(RELEASE), "true")
 run-tests: test
-endif
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: install-test-tools  ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
