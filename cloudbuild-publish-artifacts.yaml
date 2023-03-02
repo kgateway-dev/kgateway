@@ -1,0 +1,13 @@
+steps:
+
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
+  args:
+    - '--repo-name'
+    - '$REPO_NAME'
+    - '--repo-sha'
+    - '$COMMIT_SHA'
+    - '--repo-output-dir'
+    - '.'
+  env:
+    - 'GIT_SSH_CONFIG=FALSE'
+  id: 'prepare-workspace'
