@@ -175,7 +175,7 @@ var _ = Describe("Health Checks", func() {
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
-				vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+				vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 

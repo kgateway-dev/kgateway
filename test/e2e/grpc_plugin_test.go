@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/solo-io/gloo/test/testutils"
+	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"io/ioutil"
 	"net/http"
 
@@ -144,6 +145,25 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}))))
 	})
+	FIt("Discovers the old API", func() {
+
+		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+
+		useDeprecatedApi(tu.Upstream)
+		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{OverwriteExisting: true})
+		Expect(err).NotTo(HaveOccurred())
+		body := []byte(`"foo"`)
+
+		testRequest := basicReq(body)
+
+		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
+
+		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
+		}))))
+	})
 })
 
 func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
@@ -217,7 +237,7 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 	}
 }
 
-//TODO using this to test locally without discovery, remove before merging
+// TODO using this to test locally without discovery, remove before merging
 func updateUpstreamDescriptors(tu *gloov1.Upstream) {
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
@@ -234,6 +254,13 @@ func updateUpstreamDescriptors(tu *gloov1.Upstream) {
 				Services: []string{"glootest.TestService"},
 			},
 		}})
+	tu.Metadata.ResourceVersion = "2"
+
+}
+func useDeprecatedApi(tu *gloov1.Upstream) {
+	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
+	t.SetServiceSpec(&options.ServiceSpec{
+		PluginType: &options.ServiceSpec_Grpc{}})
 	tu.Metadata.ResourceVersion = "2"
 
 }
