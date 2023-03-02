@@ -2,12 +2,13 @@ steps:
 
 # sam-heilbron - temprarily skip if a PR to demonstrate effectiveness
 - name: 'gcr.io/cloud-builders/gcloud'
-  id: 'Cancel current build if release'
+  id: 'cancel-if-release'
   entrypoint: 'bash'
   args:
   - '-c'
-  - |
-    if [ -z "$_PR_NUM" ]; gcloud builds cancel $BUILD_ID > /dev/null; fi
+  - 'if [ -z "$_PR_NUM" ]; gcloud builds cancel $BUILD_ID > /dev/null; fi'
+  waitFor:
+  - '-'
 
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
   id: 'prepare-workspace'
