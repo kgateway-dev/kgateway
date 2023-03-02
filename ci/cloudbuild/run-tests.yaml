@@ -17,7 +17,10 @@ steps:
   entrypoint: 'bash'
   args:
   - '-c'
-  - 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"'
+  - |
+    mkdir -p /go/pkg
+    cd /go/pkg
+    gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"
   id: 'untar-mod-cache'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
@@ -47,7 +50,7 @@ steps:
   - 'prepare-workspace'
   id: 'prepare-aws-creds'
 
-- name: gcr.io/cloud-builders/gcloud
+- name: 'gcr.io/cloud-builders/gcloud'
   args:
   - 'config'
   - 'set'
