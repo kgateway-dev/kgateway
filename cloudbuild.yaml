@@ -28,3 +28,8 @@ timeout: '3600s'
 
 tags:
 - 'gloo'
+
+options:
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'TEST_ASSET_ID=$_PR_NUM'
