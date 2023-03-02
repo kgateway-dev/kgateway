@@ -6,7 +6,7 @@ steps:
   entrypoint: 'bash'
   args:
   - '-c'
-  - 'if [ -z "$_PR_NUM" ]; gcloud builds cancel $BUILD_ID > /dev/null || true; fi'
+  - 'if [ -z "$_PR_NUM" ]; then gcloud builds cancel $BUILD_ID > /dev/null || true; fi'
   waitFor:
   - '-'
 
