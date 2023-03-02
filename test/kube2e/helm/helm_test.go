@@ -514,8 +514,9 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 }
 
 func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool, additionalInstallArgs []string) {
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
-	defer cleanupFunc()
+	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
+	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
@@ -529,7 +530,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 	}
 	args = append(args, "-n", testHelper.InstallNamespace,
 		"--create-namespace",
-		"--values", valueOverrideFile)
+		"--values", helmValuesFile)
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}
