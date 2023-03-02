@@ -7,7 +7,7 @@ steps:
   args:
   - '-c'
   - |
-    $TAGGED_VERSION = "" && gcloud builds cancel $BUILD_ID > /dev/null || true
+    $TAG_NAME = "" && gcloud builds cancel $BUILD_ID > /dev/null || true
 
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
   id: 'prepare-workspace'

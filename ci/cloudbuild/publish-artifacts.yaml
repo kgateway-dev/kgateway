@@ -38,6 +38,14 @@ steps:
   waitFor:
   - 'prepare-workspace'
 
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'prepare-gcr-zone'
+  args:
+  - 'config'
+  - 'set'
+  - 'compute/zone'
+  - 'us-central1-a'
+
 # Run make targets to push docker images to quay.io
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
   id: 'docker-push-extended'
@@ -89,7 +97,7 @@ steps:
   - 'GITHUB_TOKEN'
   waitFor:
   - 'gcr-auth'
-  - 'set-gcr-zone'
+  - 'prepare-gcr-zone'
   - 'docker-push-extended'
 
 secrets:
