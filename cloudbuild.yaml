@@ -4,7 +4,7 @@ steps:
   args:
   - 'builds'
   - 'submit'
-  - '--config=cloudbuild-publish-artifacts.yaml'
+  - '--config=ci/cloudbuild/publish-artifacts.yaml'
   waitFor:
   - '-'
   id: 'publish-artifacts'
