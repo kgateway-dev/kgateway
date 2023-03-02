@@ -12,9 +12,11 @@ steps:
     - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
 
-- name: gcr.io/cloud-builders/gsutil
+- name: 'gcr.io/cloud-builders/gsutil'
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"']
+  args:
+  - '-c'
+  - 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"'
   id: 'untar-mod-cache'
 
 # This requires setting up envoy, AWS, helm, and docker
@@ -27,19 +29,21 @@ steps:
       ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
       gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
       chmod +x /workspace/envoy
+  dir: *dir
   waitFor:
   - 'prepare-workspace'
   id: 'get-envoy'
 
 - name: gcr.io/cloud-builders/gcloud
   args:
-    - kms
-    - decrypt
-    - --ciphertext-file=./ci/aws_credentials.enc
-    - --plaintext-file=/workspace/aws_credentials
-    - --location=global
-    - --keyring=build
-    - --key=build-key
+    - 'kms'
+    - 'decrypt'
+    - '--ciphertext-file=./ci/aws_credentials.enc'
+    - '--plaintext-file=/workspace/aws_credentials'
+    - '--location=global'
+    - '--keyring=build'
+    - '--key=build-key'
+  dir: *dir
   waitFor:
   - 'prepare-workspace'
   id: 'setup-aws-creds'
@@ -47,17 +51,27 @@ steps:
 # Docker related setup
 # grab this container immediately in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.1'
-  entrypoint: ls
-  waitFor: ['-']
+  entrypoint: 'ls'
+  waitFor:
+  - '-'
   id: 'grab-ginkgo-container'
 
 - name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  args:
+  - 'config'
+  - 'set'
+  - 'compute/zone'
+  - 'us-central1-a'
   id: 'set-gcr-zone'
 
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
-  waitFor: ['set-gcr-zone']
+- name: 'gcr.io/cloud-builders/gcloud'
+  args:
+  - 'container'
+  - 'clusters'
+  - 'get-credentials'
+  - 'test-cluster-roles'
+  waitFor:
+  - 'set-gcr-zone'
   id: 'get-test-credentials'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.1'
@@ -70,8 +84,13 @@ steps:
     - 'RUN_VAULT_TESTS=1'
     - 'DOCKER_CONFIG=/workspace/.docker/'
     - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
-  args: ['run-tests']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
+  args:
+  - 'run-tests'
+  waitFor:
+  - 'get-envoy'
+  - 'setup-aws-creds'
+  - 'set-gcr-zone'
+  - 'get-test-credentials'
   secretEnv:
   - 'JWT_PRIVATE_KEY'
   id: 'run-tests'
