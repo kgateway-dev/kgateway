@@ -28,11 +28,8 @@ steps:
   entrypoint: 'bash'
   args:
   - '-c'
-  - 'docker login quay.io'
-  - '--username'
-  - 'solo-io+solobot'
-  - '--password'
-  - '$$QUAY_IO_PASSWORD'
+  - |
+    docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD
   secretEnv:
   - 'QUAY_IO_PASSWORD'
   waitFor:
