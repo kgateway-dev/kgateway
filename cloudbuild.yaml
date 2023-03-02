@@ -28,10 +28,3 @@ timeout: '3600s'
 
 tags:
 - 'gloo'
-
-options:
-  machineType: 'N1_HIGHCPU_32'
-  env:
-  - 'DOCKER_CONFIG=/workspace/docker-config'
-  - 'TAGGED_VERSION=$TAG_NAME'
-  - 'TEST_ASSET_ID=$_PR_NUM'

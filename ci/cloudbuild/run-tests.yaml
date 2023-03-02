@@ -10,7 +10,6 @@ steps:
     - '.'
   env:
     - 'GIT_SSH_CONFIG=FALSE'
-  dir: &dir /workspace/gloo
   id: 'prepare-workspace'
 
 - name: 'gcr.io/cloud-builders/gsutil'
@@ -21,6 +20,7 @@ steps:
     mkdir -p /go/pkg
     cd /go/pkg
     gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"
+  dir: &dir /workspace/gloo
   id: 'untar-mod-cache'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
@@ -102,6 +102,9 @@ tags:
 
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'TEST_ASSET_ID=$_PR_NUM'
   volumes:
     - name: 'gopath'
       path: '/go'

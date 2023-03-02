@@ -24,6 +24,10 @@ tags:
 
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+    - 'DOCKER_CONFIG=/workspace/docker-config'
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'TEST_ASSET_ID=$_PR_NUM'
   volumes:
     - name: 'gopath'
       path: '/go'
