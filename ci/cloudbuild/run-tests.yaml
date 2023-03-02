@@ -10,6 +10,7 @@ steps:
     $TAGGED_VERSION = "" && gcloud builds cancel $BUILD_ID > /dev/null || true
 
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
+  id: 'prepare-workspace'
   args:
   - '--repo-name'
   - '$REPO_NAME'
@@ -19,20 +20,21 @@ steps:
   - '.'
   env:
   - 'GIT_SSH_CONFIG=FALSE'
-  id: 'prepare-workspace'
 
 - name: 'gcr.io/cloud-builders/gsutil'
   entrypoint: 'bash'
+  id: 'untar-mod-cache'
+  dir: &dir /workspace/gloo
   args:
   - '-c'
   - |
     mkdir -p /go/pkg
     cd /go/pkg
     gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"
-  dir: &dir /workspace/gloo
-  id: 'untar-mod-cache'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
+  id: 'prepare-envoy'
+  dir: *dir
   entrypoint: 'bash'
   args:
   - '-c'
@@ -42,10 +44,10 @@ steps:
     chmod +x /workspace/envoy
   waitFor:
   - 'prepare-workspace'
-  dir: *dir
-  id: 'prepare-envoy'
 
 - name: 'gcr.io/cloud-builders/gcloud'
+  id: 'prepare-aws-creds'
+  dir: *dir
   args:
   - 'kms'
   - 'decrypt'
@@ -54,20 +56,19 @@ steps:
   - '--location=global'
   - '--keyring=build'
   - '--key=build-key'
-  dir: *dir
   waitFor:
   - 'prepare-workspace'
-  id: 'prepare-aws-creds'
 
 - name: 'gcr.io/cloud-builders/gcloud'
+  id: 'prepare-gcr-zone'
   args:
   - 'config'
   - 'set'
   - 'compute/zone'
   - 'us-central1-a'
-  id: 'prepare-gcr-zone'
 
 - name: 'gcr.io/cloud-builders/gcloud'
+  id: 'prepare-test-credentials'
   args:
   - 'container'
   - 'clusters'
@@ -75,9 +76,10 @@ steps:
   - 'test-cluster-roles'
   waitFor:
   - 'prepare-gcr-zone'
-  id: 'prepare-test-credentials'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.1'
+  id: 'run-tests'
+  dir: *dir
   entrypoint: 'make'
   env:
   - 'ENVOY_BINARY=/workspace/envoy'
@@ -96,8 +98,6 @@ steps:
   - 'prepare-test-credentials'
   secretEnv:
   - 'JWT_PRIVATE_KEY'
-  dir: *dir
-  id: 'run-tests'
 
 secrets:
 - kmsKeyName: 'projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key'
@@ -111,6 +111,9 @@ tags:
 
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'TEST_ASSET_ID=$_PR_NUM'
   volumes:
   - name: 'gopath'
     path: '/go'
