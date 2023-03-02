@@ -1,16 +1,16 @@
 steps:
 
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
+- name: gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1
   args:
-    - '--repo-name'
-    - '$REPO_NAME'
-    - '--repo-sha'
-    - '$COMMIT_SHA'
-    - '--repo-output-dir'
-    - '.'
+    - --repo-name
+    - $REPO_NAME
+    - --repo-sha
+    - $COMMIT_SHA
+    - --repo-output-dir
+    - .
   env:
-    - 'GIT_SSH_CONFIG=FALSE'
-  id: 'prepare-workspace'
+    - GIT_SSH_CONFIG=FALSE
+  id: prepare-workspace
 
 secrets:
   - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
@@ -22,10 +22,11 @@ secrets:
 # Overall build timeout of 60m.
 timeout: 3600s
 
-tags: ['gloo']
+tags:
+- gloo
 
 options:
-  machineType: 'N1_HIGHCPU_32'
+  machineType: N1_HIGHCPU_32
   volumes:
-    - name: 'gopath'
-      path: '/go'
+    - name: gopath
+      path: /go
