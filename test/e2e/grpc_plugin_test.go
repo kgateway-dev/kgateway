@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/testutils"
 	"io/ioutil"
 	"net/http"
 
@@ -29,7 +30,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
+var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 	var (
 		ctx           context.Context
@@ -40,10 +41,9 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	)
 
 	BeforeEach(func() {
-		// TODO: uncomment
-		//	testutils.ValidateRequirementsAndNotifyGinkgo(
-		//		testutils.LinuxOnly("Relies on FDS"),
-		//	)
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.LinuxOnly("Relies on FDS"),
+		)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -103,7 +103,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		}
 	}
 
-	FIt("Routes to GRPC Functions", func() {
+	It("Routes to GRPC Functions", func() {
 
 		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
@@ -120,7 +120,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		}))))
 	})
 
-	FIt("Routes to GRPC Functions with parameters", func() {
+	It("Routes to GRPC Functions with parameters", func() {
 
 		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
