@@ -1,0 +1,19 @@
+settings:
+  singleNamespace: true
+  create: true
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+gateway:
+  persistProxySpec: true
+  logLevel: info
+  validation:
+    allowWarnings: true
+    alwaysAcceptResources: false
+gloo:
+  logLevel: info
+  disableLeaderElection: true
+gatewayProxies:
+  gatewayProxy:
+    healthyPanicThreshold: 0
