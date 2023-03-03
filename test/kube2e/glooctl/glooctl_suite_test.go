@@ -11,7 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
@@ -23,11 +22,6 @@ import (
 )
 
 func TestGlooctl(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "glooctl" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'glooctl' in your env.")
-		return
-	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()

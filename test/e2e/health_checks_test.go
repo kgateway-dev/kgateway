@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -44,8 +46,8 @@ var _ = Describe("Health Checks", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.LinuxOnly("Relies on FDS"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.LinuxOnly("Relies on FDS"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

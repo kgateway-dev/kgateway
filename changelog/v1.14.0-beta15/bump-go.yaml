@@ -1,0 +1,10 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: Updated go to 1.20
+    dependencyOwner: golang
+    dependencyRepo: go
+    dependencyTag: v1.20.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: ginkgo/v2
+    dependencyTag: v2.8.1

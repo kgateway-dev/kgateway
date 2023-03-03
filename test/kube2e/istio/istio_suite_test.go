@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
@@ -33,11 +32,6 @@ const (
 )
 
 func TestIstio(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "istio" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'istio' in your env.")
-		return
-	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
