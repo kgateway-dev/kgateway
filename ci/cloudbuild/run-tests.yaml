@@ -68,25 +68,25 @@ steps:
   waitFor:
   - 'prepare-gcr-zone'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.1'
-  id: 'run-tests'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
+  id: 'prepare-test-tools'
   dir: *dir
-  entrypoint: 'make'
-  env:
-  - 'ENVOY_BINARY=/workspace/envoy'
-  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
-  - 'RUN_KUBE_TESTS=1'
-  - 'RUN_CONSUL_TESTS=1'
-  - 'RUN_VAULT_TESTS=1'
-  - 'DOCKER_CONFIG=/workspace/.docker/'
-  - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
   args:
-  - 'run-tests'
+    - 'install-test-tools'
   waitFor:
   - 'prepare-envoy'
   - 'prepare-aws-creds'
   - 'prepare-gcr-zone'
   - 'prepare-test-credentials'
+
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.1'
+  id: 'run-tests'
+  dir: *dir
+  entrypoint: 'make'
+  args:
+  - 'run-tests'
+  waitFor:
+  - 'prepare-test-tools'
   secretEnv:
   - 'JWT_PRIVATE_KEY'
 
@@ -94,21 +94,10 @@ steps:
   id: 'run-e2e-tests'
   dir: *dir
   entrypoint: 'make'
-  env:
-    - 'ENVOY_BINARY=/workspace/envoy'
-    - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
-    - 'RUN_KUBE_TESTS=1'
-    - 'RUN_CONSUL_TESTS=1'
-    - 'RUN_VAULT_TESTS=1'
-    - 'DOCKER_CONFIG=/workspace/.docker/'
-    - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
   args:
     - 'run-e2e-tests'
   waitFor:
-    - 'prepare-envoy'
-    - 'prepare-aws-creds'
-    - 'prepare-gcr-zone'
-    - 'prepare-test-credentials'
+    - 'prepare-test-tools'
   secretEnv:
     - 'JWT_PRIVATE_KEY'
 
@@ -127,6 +116,13 @@ options:
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
   - 'TEST_ASSET_ID=$_PR_NUM'
+  - 'ENVOY_BINARY=/workspace/envoy'
+  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
+  - 'RUN_KUBE_TESTS=1'
+  - 'RUN_CONSUL_TESTS=1'
+  - 'RUN_VAULT_TESTS=1'
+  - 'DOCKER_CONFIG=/workspace/.docker/'
+  - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
   volumes:
   - name: 'gopath'
     path: '/go'
