@@ -9,7 +9,7 @@ import (
 	"github.com/rotisserie/eris"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -73,7 +73,7 @@ var _ = Describe("Gateway", func() {
 					// Record the config status for virtual services. Use the resource name as a
 					// label on the metric so that a unique time series is tracked for each VS
 					ObservabilityOptions: &gloov1.Settings_ObservabilityOptions{
-						ConfigStatusMetricLabels: map[string]*metrics.Labels{
+						ConfigStatusMetricLabels: map[string]*metrics.MetricLabels{
 							"VirtualService.v1.gateway.solo.io": {
 								LabelToPath: map[string]string{
 									"name": "{.metadata.name}",

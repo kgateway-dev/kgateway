@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	vaultapi "github.com/hashicorp/vault/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

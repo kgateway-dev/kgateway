@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/go-utils/log"
@@ -17,8 +19,7 @@ import (
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
@@ -32,8 +33,7 @@ func TestIngress(t *testing.T) {
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Ingress Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Ingress Suite")
 }
 
 var (
@@ -46,7 +46,7 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.Background())
 	var err error
 	randomNumber := time.Now().Unix() % 10000
-	testHelper, err = kube2e.GetTestHelper(ctx, "ingress-test-"+fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode()))
+	testHelper, err = kube2e.GetTestHelper(ctx, "ingress-test-"+fmt.Sprintf("%d-%d", randomNumber, parallel.GetParallelProcessCount()))
 	Expect(err).NotTo(HaveOccurred())
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true

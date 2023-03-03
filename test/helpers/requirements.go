@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 )
