@@ -2,10 +2,13 @@ package e2e_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/e2e"
+	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
 	"io"
 	"net"
 	"net/http"
@@ -20,8 +23,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -31,44 +33,35 @@ import (
 var _ = Describe("Transformations", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
-		envoyPort     uint32
-		tu            *v1helpers.TestUpstream
-		opts          clients.WriteOpts
-		transform     *transformation.Transformations
+		testClients services.TestClients
+		envoyPort   uint32
+		tu          *v1helpers.TestUpstream
+		opts        clients.WriteOpts
+		transform   *transformation.Transformations
+	)
+
+	var (
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		ns := defaults.GlooSystem
-		ro := &services.RunOptions{
-			NsToWrite: ns,
-			NsToWatch: []string{"default", ns},
-			WhatToRun: services.What{
-				DisableGateway: true,
-				DisableFds:     true,
-				DisableUds:     true,
-			},
-		}
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
+	})
 
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
-		envoyPort = defaults.HttpPort
+	AfterEach(func() {
+		testContext.AfterEach()
+	})
 
-		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
+	JustBeforeEach(func() {
+		testContext.JustBeforeEach()
+	})
 
-		opts = clients.WriteOpts{
-			Ctx: ctx,
-		}
-		_, err = testClients.UpstreamClient.Write(tu.Upstream, opts)
-		Expect(err).NotTo(HaveOccurred())
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
+	})
+
+	BeforeEach(func() {
 		transform = &transformation.Transformations{
 			ResponseTransformation: &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
@@ -87,12 +80,6 @@ var _ = Describe("Transformations", func() {
 				},
 			},
 		}
-	})
-
-	AfterEach(func() {
-		envoyInstance.Clean()
-
-		cancel()
 	})
 
 	ExpectSuccess := func() {
@@ -141,29 +128,27 @@ var _ = Describe("Transformations", func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	It("should should transform json to html response on vhost", func() {
-		WriteVhost(&gloov1.VirtualHost{
-			Options: &gloov1.VirtualHostOptions{
+	FIt("should should transform json to html response on vhost", func() {
+		testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+			vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 				Transformations: transform,
-			},
-			Name:    "virt1",
-			Domains: []string{"*"},
-			Routes: []*gloov1.Route{{
-				Action: &gloov1.Route_RouteAction{
-					RouteAction: &gloov1.RouteAction{
-						Destination: &gloov1.RouteAction_Single{
-							Single: &gloov1.Destination{
-								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: tu.Upstream.Metadata.Ref(),
-								},
-							},
-						},
-					},
-				},
-			}},
+			}
+
+			return vs
 		})
 
-		ExpectSuccess()
+		Eventually(func(g Gomega) {
+			req, err := http.NewRequest(
+				http.MethodPost,
+				fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort),
+				bytes.NewBufferString("{\"body\":\"test\"}"))
+			g.Expect(err).NotTo(HaveOccurred())
+			req.Host = e2e.DefaultHost
+
+			res, err := http.DefaultClient.Do(req)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(res).To(matchers2.HaveExactResponseBody("test"))
+		}, "20s", ".5s").Should(Succeed())
 	})
 
 	It("should should transform json to html response on route", func() {
