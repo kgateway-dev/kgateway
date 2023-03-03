@@ -72,7 +72,7 @@ steps:
   id: 'prepare-test-tools'
   dir: *dir
   args:
-    - 'install-test-tools'
+  - 'install-test-tools'
   waitFor:
   - 'prepare-envoy'
   - 'prepare-aws-creds'
@@ -95,11 +95,11 @@ steps:
   dir: *dir
   entrypoint: 'make'
   args:
-    - 'run-e2e-tests'
+  - 'run-e2e-tests'
   waitFor:
-    - 'prepare-test-tools'
+  - 'prepare-test-tools'
   secretEnv:
-    - 'JWT_PRIVATE_KEY'
+  - 'JWT_PRIVATE_KEY'
 
 secrets:
 - kmsKeyName: 'projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key'
