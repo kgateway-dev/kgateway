@@ -47,7 +47,7 @@ Now that Gloo Edge Enterprise is installed and you have your Wasm image, you are
 
 {{< tabs >}} 
 {{% tab name="From WebAssembly Hub" %}}
-1. Get configuration for your `gateway-proxy` gateway.
+1. Get the configuration for your `gateway-proxy` gateway.
    ```shell
    kubectl get -n gloo-system gateways.gateway.solo.io gateway-proxy -o yaml > gateway-proxy.yaml
    ```
@@ -70,7 +70,7 @@ Now that Gloo Edge Enterprise is installed and you have your Wasm image, you are
    ```
 {{% /tab %}} 
 {{% tab name="From filepath" %}}
-1. Get configuration for your `gateway-proxy` gateway.
+1. Get the configuration for your `gateway-proxy` gateway.
    ```shell
    kubectl get -n gloo-system gateways.gateway.solo.io gateway-proxy -o yaml  > gateway-proxy.yaml
    ```
@@ -105,7 +105,7 @@ Build a Docker image that has the Wasm filter image you previously created and u
    
    CMD ["cp", "filter.wasm", "/wasm-filters/"]
    ```
-2. Build and tag a Docker image from this Dockerfile. Replace your repository URL and preferred image name in the following example command.
+2. Build and tag a Docker image from this Dockerfile. Replace the example values with your repository URL and preferred image name in the following example command.
    ```sh
    docker build . -t localhost:8888/myorg/my-wasm-getter:1.0.0
    ```
@@ -114,7 +114,11 @@ Build a Docker image that has the Wasm filter image you previously created and u
    docker push localhost:8888/myorg/my-wasm-getter:1.0.0
    ```
 4. Edit your `gateway-proxy` deployment to add an init container and mount a shared volume. For a full example, see this [`gateway-proxy-wasm.yaml` file](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/gateway-proxy-wasm.yaml).
-   1. In the `spec.template.spec.volumes` section, add a volume named `wasm-filters` that all the containers in the template can access.
+   1. Get the configuration for the `gateway-proxy` deployment.
+      ```sh
+      kubectl get -n gloo-system deployment gateway-proxy -o yaml > gateway-proxy-wasm.yaml
+      ```
+   2. In the `spec.template.spec.volumes` section, add a volume named `wasm-filters` that all the containers in the template can access.
       ```yaml
             volumes:
             - configMap:
@@ -123,7 +127,7 @@ Build a Docker image that has the Wasm filter image you previously created and u
               name: envoy-config
             - name: wasm-filters
       ```
-   2. In the `spec.template.spec.containers` section, add a mount path to the `wasm-filters` volume that you just configured.
+   3. In the `spec.template.spec.containers` section, add a mount path to the `wasm-filters` volume that you just configured.
       ```yaml
             containers:
               volumeMounts:
@@ -132,7 +136,7 @@ Build a Docker image that has the Wasm filter image you previously created and u
               - mountPath: /wasm-filters
                 name: wasm-filters
       ```
-   3. In the `spec.template.spec` section, add the following init container stanza to refer to the Wasm image that you just built as well as mount the volume.
+   4. In the `spec.template.spec` section, add the following init container stanza, which refers to the Wasm image that you just built and mounts the volume.
       ```yaml
             initContainers:
             - name: wasm-image
@@ -142,7 +146,11 @@ Build a Docker image that has the Wasm filter image you previously created and u
               - mountPath: /wasm-filters
                 name: wasm-filters
       ```
-5. Now that the Wasm filter is in a shared mount filepath accessible by Envoy, get configuration for your `gateway-proxy` gateway.
+   5. Apply the updated `gateway-proxy` deployment.
+      ```sh
+      kubectl apply -n gloo-system -f gateway-proxy-wasm.yaml
+      ```
+5. Now that the Wasm filter is in a shared mount filepath accessible by Envoy, get the configuration for your `gateway-proxy` gateway.
    ```shell
    kubectl get -n gloo-system gateways.gateway.solo.io gateway-proxy -o yaml  > gateway-proxy.yaml
    ```
