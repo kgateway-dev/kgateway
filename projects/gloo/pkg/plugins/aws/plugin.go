@@ -247,8 +247,8 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			// is set to true. This is done in GenerateAWSLambdaRouteConfig
 			requiresUnwrap :=
 				// unwrapAsAlb is handled directly in the aws lambda filter rather than through a transformer.
-				// If both are set, we prioritize unwrapAsAlb.
-				!awsDestination.GetUnwrapAsAlb() && awsDestination.GetUnwrapAsApiGateway()
+				// If both are set, we error in GenerateAWSLambdaRouteConfig.
+				awsDestination.GetUnwrapAsApiGateway()
 
 			if !requiresRequestTransformation && !requiresUnwrap {
 				return nil, nil
@@ -394,8 +394,13 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 		destination.UnwrapAsApiGateway = true
 	}
 
+	// error if unwrapAsAlb and unwrapAsApiGateway are both configured
+	if destination.GetUnwrapAsAlb() && destination.GetUnwrapAsApiGateway() {
+		return nil, errors.Errorf("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set")
+	}
+
 	var transformerConfig *v3.TypedExtensionConfig
-	if !destination.GetUnwrapAsAlb() && destination.GetUnwrapAsApiGateway() {
+	if destination.GetUnwrapAsApiGateway() {
 		transformerConfig = &v3.TypedExtensionConfig{
 			Name: ResponseTransformationName,
 			TypedConfig: &any.Any{
