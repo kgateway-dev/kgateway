@@ -2,8 +2,9 @@ gateway:
   persistProxySpec: true
   logLevel: info
   validation:
-    allowWarnings: true
-    alwaysAcceptResources: false
+    # These tests validate the glooctl properly reports errors and warnings on resources
+    # Therefore, we accept all resources in our webhook
+    alwaysAcceptResources: true
 gloo:
   logLevel: info
   disableLeaderElection: true
