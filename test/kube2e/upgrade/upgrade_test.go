@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -254,8 +255,9 @@ func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
 }
 
 func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictValidation bool) {
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
-	defer cleanupFunc()
+	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
+	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
@@ -267,7 +269,7 @@ func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictVa
 
 	args = append(args, "-n", testHelper.InstallNamespace,
 		"--create-namespace",
-		"--values", valueOverrideFile)
+		"--values", helmValuesFile)
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}

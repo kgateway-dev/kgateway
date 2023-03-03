@@ -81,6 +81,7 @@ type BufferPerRoute struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Override:
+	//
 	//	*BufferPerRoute_Disabled
 	//	*BufferPerRoute_Buffer
 	Override isBufferPerRoute_Override `protobuf_oneof:"override"`
