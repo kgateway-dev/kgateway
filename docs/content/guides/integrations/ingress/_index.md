@@ -202,4 +202,5 @@ EOF
 
 Great! Our ingress is up and running. Check out the [official docs](https://kubernetes.io/docs/concepts/services-networking/ingress) for more information on using Kubernetes Ingress Controllers.
 
-If you want to take advantage of greater routing capabilities of Gloo Edge, you should look at [Gloo Edge in gateway mode]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}), which complements Gloo Edge's Ingress support, i.e., you can use both modes together in a single cluster. 
+For even greater routing capabilities, consider running [Gloo Edge in gateway mode]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) alongside your Gloo Edge ingress installation. Simply set up one Gloo Edge instance in gateway mode and deploy another Gloo Edge instance that can process Kubernetes ingress objects. You can set up both Gloo Edge instances in the same cluster. 
+

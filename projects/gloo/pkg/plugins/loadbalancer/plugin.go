@@ -2,6 +2,7 @@ package loadbalancer
 
 import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -117,18 +118,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if cfg.GetType() != nil {
 		switch lbtype := cfg.GetType().(type) {
 		case *v1.LoadBalancerConfig_RoundRobin_:
-			out.LbPolicy = envoy_config_cluster_v3.Cluster_ROUND_ROBIN
+			configureRoundRobinLb(out, lbtype)
 		case *v1.LoadBalancerConfig_LeastRequest_:
-			out.LbPolicy = envoy_config_cluster_v3.Cluster_LEAST_REQUEST
-			if lbtype.LeastRequest.GetChoiceCount() != 0 {
-				out.LbConfig = &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig_{
-					LeastRequestLbConfig: &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig{
-						ChoiceCount: &wrappers.UInt32Value{
-							Value: lbtype.LeastRequest.GetChoiceCount(),
-						},
-					},
-				}
-			}
+			configureLeastRequestLb(out, lbtype)
 		case *v1.LoadBalancerConfig_Random_:
 			out.LbPolicy = envoy_config_cluster_v3.Cluster_RANDOM
 		case *v1.LoadBalancerConfig_RingHash_:
@@ -140,6 +132,59 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	return nil
+}
+
+func configureRoundRobinLb(out *envoy_config_cluster_v3.Cluster, cfg *v1.LoadBalancerConfig_RoundRobin_) {
+	out.LbPolicy = envoy_config_cluster_v3.Cluster_ROUND_ROBIN
+
+	slowStartConfig := toSlowStartConfig(cfg.RoundRobin.GetSlowStartConfig())
+	if slowStartConfig != nil {
+		out.LbConfig = &envoy_config_cluster_v3.Cluster_RoundRobinLbConfig_{
+			RoundRobinLbConfig: &envoy_config_cluster_v3.Cluster_RoundRobinLbConfig{
+				SlowStartConfig: slowStartConfig,
+			},
+		}
+	}
+}
+
+func configureLeastRequestLb(out *envoy_config_cluster_v3.Cluster, cfg *v1.LoadBalancerConfig_LeastRequest_) {
+	out.LbPolicy = envoy_config_cluster_v3.Cluster_LEAST_REQUEST
+	var choiceCount *wrappers.UInt32Value
+	if cfg.LeastRequest.GetChoiceCount() != 0 {
+		choiceCount = &wrappers.UInt32Value{
+			Value: cfg.LeastRequest.GetChoiceCount(),
+		}
+	}
+
+	slowStartConfig := toSlowStartConfig(cfg.LeastRequest.GetSlowStartConfig())
+	if choiceCount != nil || slowStartConfig != nil {
+		out.LbConfig = &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig_{
+			LeastRequestLbConfig: &envoy_config_cluster_v3.Cluster_LeastRequestLbConfig{
+				ChoiceCount:     choiceCount,
+				SlowStartConfig: slowStartConfig,
+			},
+		}
+	}
+}
+
+func toSlowStartConfig(cfg *v1.LoadBalancerConfig_SlowStartConfig) *envoy_config_cluster_v3.Cluster_SlowStartConfig {
+	if cfg == nil {
+		return nil
+	}
+	out := envoy_config_cluster_v3.Cluster_SlowStartConfig{
+		SlowStartWindow: cfg.GetSlowStartWindow(),
+	}
+	if cfg.GetAggression() != nil {
+		out.Aggression = &envoy_config_core_v3.RuntimeDouble{
+			DefaultValue: cfg.GetAggression().GetValue(),
+		}
+	}
+	if cfg.GetMinWeightPercent() != nil {
+		out.MinWeightPercent = &envoy_type_v3.Percent{
+			Value: cfg.GetMinWeightPercent().GetValue(),
+		}
+	}
+	return &out
 }
 
 func setRingHashLbConfig(out *envoy_config_cluster_v3.Cluster, userConfig *v1.LoadBalancerConfig_RingHashConfig) {

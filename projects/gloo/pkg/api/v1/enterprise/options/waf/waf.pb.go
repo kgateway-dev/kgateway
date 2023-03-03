@@ -211,6 +211,7 @@ type CoreRuleSet struct {
 	// The same rules apply to these options as do to the `RuleSet`s. The file option is better if possible.
 	//
 	// Types that are assignable to CustomSettingsType:
+	//
 	//	*CoreRuleSet_CustomSettingsString
 	//	*CoreRuleSet_CustomSettingsFile
 	CustomSettingsType isCoreRuleSet_CustomSettingsType `protobuf_oneof:"CustomSettingsType"`

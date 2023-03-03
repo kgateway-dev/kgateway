@@ -28,8 +28,8 @@ Name|Version|License
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.6.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.5.0|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.24.1|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.8.1|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.26.0|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [prometheus/client_golang](https://github.com/prometheus/client_golang)|v1.12.1|Apache License 2.0
@@ -46,7 +46,7 @@ Name|Version|License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.19.1|MIT License
 [x/sync](https://golang.org/x/sync)|v0.1.0|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.5.0|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.6.0|BSD 3-clause "New" or "Revised" License
 [google.golang.org/genproto](https://google.golang.org/genproto)|v0.0.0-20221201164419-0e50fba7f41c|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.40.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.28.1|BSD 3-clause "New" or "Revised" License
