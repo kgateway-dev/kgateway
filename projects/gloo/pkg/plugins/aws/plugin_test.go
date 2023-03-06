@@ -502,15 +502,11 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
 		})
 
-		It("should not set route transformer when unwrapAsApiGateway=True && unwrapAsAlb=True", func() {
+		It("should error when unwrapAsApiGateway=True && unwrapAsAlb=True", func() {
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
 			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-			Expect(err).NotTo(HaveOccurred())
-
-			cfg := getPerRouteConfig(outroute)
-			Expect(cfg.GetTransformerConfig()).To(BeNil())
-			Expect(cfg.GetUnwrapAsAlb()).To(BeTrue())
+			Expect(err).To(MatchError("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set"))
 		})
 
 		It("should not set route transformer when unwrapAsApiGateway=False && responseTransformation=False", func() {
@@ -646,17 +642,13 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(2))
 			})
-			It("should produce 1 filter when unwrapping", func() {
+			It("should error when unwrapping", func() {
 				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 				Expect(err).NotTo(HaveOccurred())
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
 				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-				Expect(err).NotTo(HaveOccurred())
-
-				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(filters).To(HaveLen(1))
+				Expect(err).To(MatchError("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set"))
 			})
 		})
 	})
