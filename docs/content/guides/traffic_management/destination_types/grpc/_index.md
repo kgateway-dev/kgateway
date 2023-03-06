@@ -4,362 +4,361 @@ weight: 125
 description: Routing to gRPC services with a gRPC client
 ---
 
-gRPC has become a popular, high-performance framework used by many applications. In this guide, we will show you how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service` and connect to it with a gRPC client. Once we have basic connectivity, we will add in TLS connectivity between the gRPC client and the Gloo Edge proxy (Envoy).
+gRPC is a popular, high-performance framework used by many applications. In this guide, you learn how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service` and connect to it with a gRPC client. Then, you explore how to secure the communication between the gRPC client and the Envoy proxy by using TLS certificates. 
 
-In this guide we are going to:
+In this guide you complete the following tasks: 
 
-1. Deploy a gRPC demo service
-1. Verify that the gRPC descriptors were indeed discovered
-1. Add a Virtual Service that maps to the gRPC API
-1. Verify that everything is working as expected
-1. Add TLS and a domain to the Virtual Service and verify again
+- [Step 1: Deploy the demo gRPC store service and set up routing](#deploy-app)
+- [Step 2: Validate connectivity with a gRPC client](#validate-connectivity)
+- [Step 3: Secure the gRPC app](#secure-app).
 
-Let's get started!
+## Before you begin
 
----
+Make sure to complete the following tasks before you get started with this guide. 
 
-## Prerequisites
+- Create or use an existing [Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}). 
+- [Install Gloo Edge]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+- [Install `grpcurl`](https://github.com/fullstorydev/grpcurl) to act as the gRPC client. 
+- .Install `openssl` to generate self-signed TLS certificates. For example, to install `openssl` on a Mac, run `brew install openssl`. 
 
-To follow along with this guide, you will need to have a [Kubernetes cluster deployed]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) with [Gloo Edge installed]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}). You will also [need the tool](https://github.com/fullstorydev/grpcurl) `grpcurl`, aka curl for gRPC, to act as the gRPC client for testing communications. Finally, we will be using openssl to generate a self-signed certificate for TLS.
-
----
-
-## Deploy the demo gRPC store
+## Step 1: Deploy the demo gRPC store service and set up routing {#deploy-app}
 
 We have a container image on Docker Hub which has a simple Store service for gRPC. We are going to deploy that image and expose it using port 80.
 
-Create a deployment and a service:
-
-```shell
-kubectl create deployment grpcstore-demo --image=docker.io/soloio/grpcstore-demo
-kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
-```
-
-### Verify that gRPC functions were discovered
-
-After a few seconds Gloo Edge should have discovered the service:
-
-```shell
-kubectl get upstream -n gloo-system default-grpcstore-demo-80
-```
-
-We should also enable Gloo Edge FDS, if it is not already (whitelist mode by default), so the proto descriptor is found:
-
-```shell script
-kubectl label upstream -n gloo-system default-grpcstore-demo-80 discovery.solo.io/function_discovery=enabled
-```
-
-FDS should update the discovered upstream:
-
-```shell
-kubectl get upstream -n gloo-system default-grpcstore-demo-80 -o yaml
-```
-
-You should see output similar to this:
-
-```yaml
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  labels:
-    app: grpcstore-demo
-    discovered_by: kubernetesplugin
-  name: default-grpcstore-demo-80
-  namespace: gloo-system
-spec:
-  discoveryMetadata: {}
-  kube:
-    selector:
-      app: grpcstore-demo
-    serviceName: grpcstore-demo
-    serviceNamespace: default
-    servicePort: 80
-    serviceSpec:
-      grpc:
-        descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE … bTkwYnpNPQ== # snipped for brevity
-        grpcServices:
-        - functionNames:
-          - CreateItem
-          - ListItems
-          - DeleteItem
-          - GetItem
-          packageName: solo.examples.v1
-          serviceName: StoreService
-status:
-  reportedBy: gloo
-  state: 1
-
-```
-
-{{% notice note %}}
-The descriptors field above was truncated for brevity.
-{{% /notice %}}
-
-As you can see Gloo Edge's function discovery detected the gRPC functions on that service.
-
-### Enable HTTP/2 for the service
-
-To use use gRPC, you must configure the Envoy proxy to use HTTP/2 for its communications protocol in one of the following ways: 
-
-* Add an annotation to the gRPC service with the field: `gloo.solo.io/h2_service` set to `true`
-* Name the port for the gRPC service one of the following: `grpc`, `http2`, or `h2`
-
-For example, to change the port information for the `grpcstore-demo`:
-```yaml
-spec:
-  clusterIP: 10.101.199.96
-  ports:
-  - name: grpc
-    port: 80
-    protocol: TCP
-    targetPort: 8080
-```
-
-After you annotate or edit the ports for the gRPC service, the Upstream value `useHttp2` is set to `true`.
-
----
-
-## Adding a Virtual Service
-
-Now let's add a Virtual Service to Gloo Edge that will map to the gRPC service listening on port 80. The following yaml describes the Virtual Service:
-
-```yaml
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: grpc
-  namespace: gloo-system
-spec:
-  virtualHost:
-    routes:
-      - matchers:
-          - prefix: /
-        routeAction:
-          single:
-            upstream:
-              name: default-grpcstore-demo-80
-              namespace: gloo-system
-```
-
-The Virtual Service assumes that you are using the namespace `gloo-system` for your Gloo Edge installation. In this initial configuration, we are matching the prefix `/` for all domains. Save the yaml as the file `grpc-vs.yaml` and run the following:
-
-```bash
-kubectl apply -f grpc-vs.yaml
-```
-
-### Validate with gRPC client
-
-The next step is to test connectivity to the service using the tool `grpcurl`. We are going to get the IP address Gloo Edge is using for a proxy, and then issue a request using `grpcurl`. Since we are not using TLS, we will have to use the flag `-plaintext` to allow for unencrypted communications. Later in this guide, we'll show how to add TLS to the configuration.
-
-`grpcurl` expects a port number as part of the request. The Store service has Server Reflection enabled, which means that we do not have to specify a proto source file for `grpcurl` to use with our request. We are going to use the `list` argument to enumerate the services available.
-
-```bash
-grpcurl -plaintext $(glooctl proxy address --port http) list
-```
-
-```console
-grpc.reflection.v1alpha.ServerReflection
-solo.examples.v1.StoreService
-```
-
-Excellent! We were able to communicate with our server and get a list of services. Now let's see what methods are available in `solo.examples.v1.StoreService` using the `describe` argument.
-
-```bash
-grpcurl -plaintext $(glooctl proxy address --port http) describe solo.examples.v1.StoreService
-```
-
-```console
-solo.examples.v1.StoreService is a service:
-service StoreService {
-  rpc CreateItem ( .solo.examples.v1.CreateItemRequest ) returns ( .solo.examples.v1.CreateItemResponse );
-  rpc DeleteItem ( .solo.examples.v1.DeleteItemRequest ) returns ( .solo.examples.v1.DeleteItemResponse );
-  rpc GetItem ( .solo.examples.v1.GetItemRequest ) returns ( .solo.examples.v1.GetItemResponse );
-  rpc ListItems ( .solo.examples.v1.ListItemsRequest ) returns ( .solo.examples.v1.ListItemsResponse );
-```
-
-You can continue to describe the individual methods and messages using the same syntax. Let's try using the `CreateItem` method to add an item to the store.
-
-```bash
-grpcurl -plaintext -d '{"item":{"name":"item1"}}' $(glooctl proxy address --port http) solo.examples.v1.StoreService/CreateItem
-```
-
-```json
-{
-  "item": {
-    "name": "item1"
-  }
-}
-```
-
-We can retrieve all items by using the `ListItems` method:
-
-```bash
-grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
-```
-
-```json
-{
-  "items": [
-    {
-      "name": "item1"
-    }
-  ]
-}
-```
-
-Looks like things are working pretty well. Now let's make them a bit more complicated.
-
----
-
-## Adding TLS and a specific domain
-
-In this section we are going to add a specific domain to expose the service on, and enable encryption on the communication between the client and Envoy.
-
-### Using a specific domain
-
-You may want to narrow the availability of your service to a specific domain. This is done by editing the Virtual Service and adding a `domain` entry to the `virtualHost` configuration. Run the following command:
-
-```bash
-kubectl edit vs grpc -n gloo-system
-```
-
-And update the yaml by adding the highlighted lines:
-
-{{< highlight yaml "hl_lines=3-4" >}}
-spec:
-  virtualHost:
-    domains:
-    - store.example.com
-    routes:
-    - matchers:
-      - prefix: /
-      routeAction:
-        single:
-          upstream:
-            name: default-grpcstore-demo-80
-            namespace: gloo-system
-{{< /highlight >}}
-
-{{% notice warning %}} If using a port number that isn't 443, you will need to include the domain with port appended as well. For more, see https://github.com/solo-io/gloo/issues/3505 {{% /notice %}}
-
-Now if we try to list the items again:
-
-```bash
-grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
-```
-
-We get an error:
-
-```console
-Error invoking method "solo.examples.v1.StoreService/ListItems": failed to query for service descriptor "solo.examples.v1.StoreService": server does not support the reflection API
-```
-
-The error message is not strictly true, but it's the best that Envoy can figure out. gRPC is using HTTP/2 and we did not specify a `authority` header, which is the equivalent of a HOST header in curl. Envoy instead used whatever value was in `$IP` as the HOST name.  Let's update our command to use the `-authority` flag.
-
-```bash
-grpcurl -plaintext -authority store.example.com $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
-```
-
-We once again get the expect response.
-
-```json
-{
-  "items": [
-    {
-      "name": "item1"
-    }
-  ]
-}
-```
-
-{{< notice note >}}
-In our example we are using a public IP address in the form X.X.X.X:80 and specifying the authority header. If we were using a domain in our request instead, e.g. <code>store.example.com:80</code>, we would still need to specify the authority header. Otherwise Envoy will interpret the domain name including the <code>:80</code> on end as the HOST header. Since <code>store.example.com:80</code> does not match <code>store.example.com</code>, you will receive an error. By specifying the authority header explicitly, you will avoid this issue. If you cannot specify the authority header, you can update the domain match on the Virtual Service to use <code>store.example.com*</code>, which will match anything that begins with that domain.
-{{< /notice >}}
-
-### Adding TLS
-
-Now that we have things associated with a specific domain, let's add a certificate. In our example, we are going to create a self-signed certificate, but in a production scenario you should use a certificate from public or private CA.
-
-First, let's generate the certificate using openssl.
-
-```bash
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-   -keyout tls.key -out tls.crt -subj "/CN=store.example.com"
-```
-
-Now we will create the Kubernetes secret to hold this cert:
-
-```bash
-kubectl create secret tls grpc-tls --key tls.key \
-   --cert tls.crt --namespace gloo-system
-```
-
-Lastly, let's configure the Virtual Service to use this cert via the Kubernetes secrets:
-
-```bash
-glooctl edit virtualservice --name grpc --namespace gloo-system \
-   --ssl-secret-name grpc-tls --ssl-secret-namespace gloo-system
-```
-
-Now if we get the `grpc` Virtual Service, we should see the new SSL configuration:
-
-```bash
-glooctl get virtualservice grpc -o kube-yaml
-```
-
-{{< highlight yaml "hl_lines=7-10" >}}
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: grpc
-  namespace: gloo-system
-spec:
-  sslConfig:
-    secretRef:
-      name: grpc-tls
-      namespace: gloo-system
-  virtualHost:
-    domains:
-    - store.example.com
-    routes:
-    - matchers:
-      - prefix: /
-      routeAction:
-        single:
-          upstream:
-            name: default-grpcstore-demo-80
-            namespace: gloo-system
-status:
-  reportedBy: gateway
-  state: 1
-  subresourceStatuses:
-    '*v1.Proxy.gloo-system.gateway-proxy':
-      reportedBy: gloo
-      state: 1
-{{< /highlight >}}
-
-We'll need to update the `grpcurl` command to use the `-insecure` flag instead of the `-plaintext` flag. We also need to update the address to use port 443 instead of 80.
-
-Alright, let's try to connect to our service on port 443 (note the `--port https` flag) and invoke the `ListItem` method.
-
-```bash
-grpcurl -insecure -authority store.example.com $(glooctl proxy address --port https) solo.examples.v1.StoreService/ListItems
-```
-
-```console
-{
-  "items": [
-    {
-      "name": "item1"
-    }
-  ]
-}
-```
-
-Nice! If you happen to be using a certificate that has the correct domain listed and is trusted by the client, you can skip the `-insecure` flag.
-
----
-
-## Summary
-
-In this guide we saw how to present a gRPC Upstream through Gloo Edge and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest/" %}}) through Gloo Edge. You can find out more about using TLS with Gloo Edge in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 
+1. Create the deployment and expose the deployment with a Kubernetes service. 
+   ```shell
+   kubectl create deployment grpcstore-demo --image=docker.io/soloio/grpcstore-demo
+   kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
+   ```
+   
+2. Verify that Gloo Edge automatically discovered the gRPC app and created an upstream for it. 
+   ```shell
+   kubectl get upstream -n gloo-system default-grpcstore-demo-80
+   ```
+   
+3. Enable Gloo Edge function discovery (FDS) so the proto descriptor can be found. The proto descriptor includes the gRPC functions that are available in the store service. 
+   ```shell
+   kubectl label upstream -n gloo-system default-grpcstore-demo-80 discovery.solo.io/function_discovery=enabled
+   ```
+   
+4. Get the upstream for the gRPC store and verify that the proto descriptor was added to the YAMl file. 
+   ```shell
+   kubectl get upstream -n gloo-system default-grpcstore-demo-80 -o yaml
+   ```
+   
+   Example output: 
+   ```yaml
+   apiVersion: gloo.solo.io/v1
+   kind: Upstream
+   metadata:
+     annotations:
+       cloud.google.com/neg: '{"ingress":true}'
+     creationTimestamp: "2023-03-06T16:47:54Z"
+     generation: 4
+     labels:
+       discovered_by: kubernetesplugin
+       discovery.solo.io/function_discovery: enabled
+     name: default-grpcstore-demo-80
+     namespace: gloo-system
+     resourceVersion: "10533"
+     uid: bee3ec08-a2c1-44c5-a632-ec53f0113f8c
+   spec:
+     discoveryMetadata:
+       labels:
+         app: grpcstore-demo
+     kube:
+       selector:
+         app: grpcstore-demo
+       serviceName: grpcstore-demo
+       serviceNamespace: default
+       servicePort: 80
+       serviceSpec:
+         grpcJsonTranscoder:
+           protoDescriptorBin: Cqw...90bzM=  # truncated
+           services:
+           - solo.examples.v1.StoreService
+   status:
+     statuses:
+       gloo-system:
+         reportedBy: gloo
+         state: 1
+   ```
+
+   {{% notice note %}}
+   The descriptors field above was truncated for brevity.
+   {{% /notice %}}
+
+5. Optional: Decode the `spec.kube.serviceSpec.grpcJsonTanscoder` proto descriptor field. Note that the field was truncated in the following command. Make sure to add the entire `spec.kube.serviceSpec.grpcJsonTanscoder` value to this command. 
+   ```
+   echo "Cqw ... 90bzM=" | base64 -d
+   ```
+   
+6. Change the communication protocol that the Envoy proxy uses to talk to the gRPC app. This step is required so that incoming requests from gRPC clients can be forwarded to the gRPC app correctly. You can choose between the following two options: 
+   * Add the `gloo.solo.io/h2_service: true` annotation to the gRPC service. 
+   * Name the port for the gRPC service one of the following: `grpc`, `http2`, or `h2`. 
+
+   1. Get the YAML file for the current gRPC service and save it to a local file. 
+      ```shell
+      kubectl get service grpcstore-demo -o yaml > grpc-service.yaml
+      ```
+      
+   2. Open the file and either add the annotation or port name. The following example changes the name of the grpc service port. 
+      ```yaml
+      spec:
+        clusterIP: 10.101.199.96
+        ports:
+        - name: grpc
+          port: 80
+          protocol: TCP
+          targetPort: 8080
+      ```
+      
+   3. Wait a few seconds and then verify that the `useHttp2: true` value was added to your upstream. 
+      ```
+      kubectl get upstream -n gloo-system default-grpcstore-demo-80 -o yaml
+      ```
+      
+      Example output: 
+      {{< highlight yaml "hl_lines=4" >}}
+      ...
+              services:
+              - solo.examples.v1.StoreService
+        useHttp2: true
+      status:
+        statuses:
+          gloo-system:
+            reportedBy: gloo
+            state: Accepted
+      {{< /highlight >}}
+
+7. Create the virtual service xo that you can route incoming requests to the gRPC store app. The virtual service assumes that you are using the `gloo-system` namespace for your Gloo Edge installation. In this initial configuration, the prefix `/` is matched for all domains. 
+   ```
+   kubectl apply -f- <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: grpc
+     namespace: gloo-system
+   spec:
+     virtualHost:
+       routes:
+         - matchers:
+             - prefix: /
+           routeAction:
+             single:
+               upstream:
+                 name: default-grpcstore-demo-80
+                 namespace: gloo-system
+   EOF
+   ```
+
+## Step 2: Validate connectivity with a gRPC client {#validate-connectivity}
+
+To test connectivity to the gRPC app, you use the `grpcurl` utility. Because the connection to the app is not secured via TLS, you must use the `-plaintext` option in your command to allow unencrypted traffic to the app. You learn how to secure the communication to the app via TLS later in this guide. 
+
+1. Send a request to your gRPC app. The `grpcurl` utility requires a port number to be sent as part of the request. Because the store service has Server Reflection enabled, you do not have to specify a proto source file for `grpcurl` to use with the request. The `list` argument retrieves all the services that are availble in the gRPC app.
+   ```shell
+   grpcurl -plaintext $(glooctl proxy address --port http) list
+   ```
+   
+   Example output: 
+   ```
+   grpc.reflection.v1alpha.ServerReflection
+   solo.examples.v1.StoreService
+   ```
+
+2. Describe the store service to get a list of methods that are available in the app. 
+   ```shell
+   grpcurl -plaintext $(glooctl proxy address --port http) describe solo.examples.v1.StoreService
+   ```
+   
+   Example output: 
+   ```
+   solo.examples.v1.StoreService is a service:
+   service StoreService {
+     rpc CreateItem ( .solo.examples.v1.CreateItemRequest ) returns ( .solo.examples.v1.CreateItemResponse );
+     rpc DeleteItem ( .solo.examples.v1.DeleteItemRequest ) returns ( .solo.examples.v1.DeleteItemResponse );
+     rpc GetItem ( .solo.examples.v1.GetItemRequest ) returns ( .solo.examples.v1.GetItemResponse );
+     rpc ListItems ( .solo.examples.v1.ListItemsRequest ) returns ( .solo.examples.v1.ListItemsResponse );
+   }
+   ```
+   
+3. You can continue to describe the methods and responses that were returned in the previous command. For example, to get the details for the `solo.examples.v1.CreateItemRequest` method, run the following command. 
+   ```shell
+   grpcurl -plaintext $(glooctl proxy address --port http) describe solo.examples.v1.CreateItemRequest
+   ``` 
+   
+   Example output: 
+   ```
+   solo.examples.v1.CreateItemRequest is a message:
+   message CreateItemRequest {
+     .solo.examples.v1.Item item = 1;
+   }
+   ```
+   
+4. Use the `CreateItem` method to add an item to the store app. 
+   ```shell 
+   grpcurl -plaintext -d '{"item":{"name":"item1"}}' $(glooctl proxy address --port http) solo.examples.v1.StoreService/CreateItem
+   ```
+   
+   Example output: 
+   ```json
+   {
+     "item": {
+       "name": "item1"
+     }
+   }
+   ```
+   
+5. Use the `ListItems` to retrieve all the items that are available in the store. 
+   ```shell
+   grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
+   ```
+   
+   Example output: 
+   ```json
+   {
+     "items": [
+       {
+         "name": "item1"
+       }
+     ]
+   }
+   ```
+
+## Step 3: Secure the gRPC app {#secure-app}
+
+Enable encryption between the gRPC client and the Envoy proxy on a specific domain. 
+
+1. Edit the virtual service that you created earlier and add a `domain` entry to the `virtualHost` configuration. Instead of allowing requests from any domain, the gRPC store app now can receive requests from only the `store.example.com` domain. 
+   ```bash
+   kubectl edit vs grpc -n gloo-system
+   ```
+
+   Add the domain as shown in the highlighted lines. 
+
+   {{< highlight yaml "hl_lines=3-4" >}}
+   spec:
+     virtualHost:
+       domains:
+       - store.example.com
+       routes:
+       - matchers:
+         - prefix: /
+         routeAction:
+           single:
+             upstream:
+               name: default-grpcstore-demo-80
+               namespace: gloo-system
+   {{< /highlight >}}
+
+   {{% notice warning %}} If you want to use a port number other than 443, you must append the port to the domain. For more information, see https://github.com/solo-io/gloo/issues/3505. 
+   {{% /notice %}}
+
+2. Send a request to list the items in the store. Because the app is now configured to only receive incoming requests on the `store.example.com` domain, you see an error from the Envoy proxy. The error message is not strictly true, but it's the best that Envoy can figure out as the gRPC request was sent without an `authority` header, which is the equivalent of a host header in curl. Instead, Envoy used the IP address that was returned with the `glooctl proxy address` command as the host name. 
+   ```bash
+   grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
+   ```
+   
+   Example output: 
+   ```
+   Error invoking method "solo.examples.v1.StoreService/ListItems": failed to query for service descriptor "solo.examples.v1.StoreService": server does not support the reflection API
+   ```
+
+3. Add the `authority` flag to the request. This time the request succeeds. 
+   ```shell
+   grpcurl -plaintext -authority store.example.com $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
+   ```
+   
+   Example output: 
+   ```json
+   {
+     "items": [
+       {
+         "name": "item1"
+       }
+     ]
+   }
+   ```
+
+   {{< notice note >}}
+   In this example, the authority header is specified alongside the public IP address of the Envoy proxy in the format X.X.X.X:80. If you wanted to provide the domain and port directly, such as with `store.example.com:80`, you still need to specify the authority header to avoid issues as Envoy uses the domain name and the port as the host header. Because `store.example.com:80` does not match `store.example.com`, you see the same error as if no domain wasa provided. You can avoid this error by specifying the authority header explicitly. If you cannot specify the authority header, you can update the domain match on the Virtual Service to use `store.example.com*` instead.
+   {{< /notice >}}
+   
+4. Create a self-signed TLS certificate for your domain. Note that self-signed certificates are not a recommended security practice for production. If you plan to use a gRPC app in production, create certificates that are signed by a trusted public or private certificate authority. 
+
+   ```shell
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout tls.key -out tls.crt -subj "/CN=store.example.com"
+   ```
+   
+5. Store the certificate in a Kubernetes secret. 
+   ```shell
+   kubectl create secret tls grpc-tls --key tls.key \
+      --cert tls.crt --namespace gloo-system
+   ```
+   
+6. Configure the Virtual Service to use this certificate to authenticate gRPC clients. 
+   ```shell
+   glooctl edit virtualservice --name grpc --namespace gloo-system \
+      --ssl-secret-name grpc-tls --ssl-secret-namespace gloo-system
+   ```
+   
+7. Verify that the SSL configuration was added to the Virtual Service. 
+   ```shell
+   glooctl get virtualservice grpc -o kube-yaml
+   ```
+
+   {{< highlight yaml "hl_lines=7-10" >}}
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: grpc
+     namespace: gloo-system
+   spec:
+     sslConfig:
+       secretRef:
+         name: grpc-tls
+         namespace: gloo-system
+     virtualHost:
+       domains:
+       - store.example.com
+       routes:
+       - matchers:
+         - prefix: /
+         routeAction:
+           single:
+             upstream:
+               name: default-grpcstore-demo-80
+               namespace: gloo-system
+   status:
+     reportedBy: gateway
+     state: 1
+     subresourceStatuses:
+       '*v1.Proxy.gloo-system.gateway-proxy':
+         reportedBy: gloo
+         state: 1
+   {{< /highlight >}}
+   
+8. Send another request. We'll need to update the `grpcurl` command to use the `-insecure` flag instead of the `-plaintext` flag. We also need to update the address to use port 443 (https) instead of 80 (http).
+
+   ```shell
+   grpcurl -insecure -authority store.example.com $(glooctl proxy address --port https) solo.examples.v1.StoreService/ListItems
+   ```
+   
+   Example output: 
+   ```json
+   {
+     "items": [
+       {
+         "name": "item1"
+       }
+     ]
+   }
+   ```
+
+## Summary and next steps
+
+Excellent! In this guide you explored how to connect to a gRPC Upstream from a gRPC client by using Gloo Edge. You also learned how to limit routing to certain domains and how to secure the connection between the gRPC client and your upstream with TLS certificates. 
+
+To learn how to connect to a gRPC upstream through Gloo Edge by using a REST API, check out the [gRPC to REST]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest/" %}}) guide. For more information about how to further secure your Gloo Edge deployment, see the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) guides. 
