@@ -2,10 +2,12 @@ package gloo_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
+
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -37,7 +39,8 @@ var (
 	resourceClientset *kube2e.KubeResourceClientSet
 	snapshotWriter    helpers.SnapshotWriter
 
-	ctx, cancel = context.WithCancel(context.Background())
+	ctx    context.Context
+	cancel context.CancelFunc
 )
 
 var _ = BeforeSuite(func() {
@@ -47,15 +50,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
-	// Define helm overrides
-	valuesOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
-	defer cleanupFunc()
-
-	// Install Gloo
-	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valuesOverrideFile))
-	Expect(err).NotTo(HaveOccurred())
-	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
+	// Allow skipping of install step for running multiple times
+	if !glootestutils.ShouldSkipInstall() {
+		installGloo()
+	}
 
 	cfg, err := kubeutils.GetConfig("", "")
 	Expect(err).NotTo(HaveOccurred())
@@ -66,36 +64,34 @@ var _ = BeforeSuite(func() {
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 })
 
-func getHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+var _ = AfterSuite(func() {
+	if glootestutils.ShouldTearDown() {
+		uninstallGloo()
+	}
+	cancel()
+})
+
+func installGloo() {
+	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
+	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
+
+	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
 	Expect(err).NotTo(HaveOccurred())
 
-	// disabling panic threshold
-	// https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html
-	_, err = values.Write([]byte(`
-gatewayProxies:
-  gatewayProxy:
-    healthyPanicThreshold: 0
-`))
-	Expect(err).NotTo(HaveOccurred())
-
-	err = values.Close()
-	Expect(err).NotTo(HaveOccurred())
-
-	return values.Name(), func() { _ = os.Remove(values.Name()) }
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
-var _ = AfterSuite(func() {
-	if os.Getenv("TEAR_DOWN") == "true" {
-		err := testHelper.UninstallGlooAll()
-		Expect(err).NotTo(HaveOccurred())
+func uninstallGloo() {
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGlooAll()
+	Expect(err).NotTo(HaveOccurred())
 
-		// TODO go-utils should expose `glooctl uninstall --delete-namespace`
-		testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
+	err = testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
+	Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func() error {
-			return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
-		}, "60s", "1s").Should(HaveOccurred())
-		cancel()
-	}
-})
+	Eventually(func() error {
+		return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
+	}, "60s", "1s").Should(HaveOccurred())
+}
