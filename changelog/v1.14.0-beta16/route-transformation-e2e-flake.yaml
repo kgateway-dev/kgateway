@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7770
+    resolvesIssue: false
+    description: >
+      Fix a flake in our Route Transformation e2e tests, by removing our reliance on an internet-connected
+      host. Instead, we follow the paradigm of our other e2e tests and use a local echo server.
