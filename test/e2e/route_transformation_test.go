@@ -71,6 +71,36 @@ var _ = Describe("Transformations", func() {
 			}
 		})
 
+		// EventuallyResponseTransformed returns an Asynchronous Assertion which
+		// validates that a request with a body will return the requested content.
+		// This will only work if the above transformation is applied to the request
+		EventuallyResponseTransformed := func() AsyncAssertion {
+			return Eventually(func(g Gomega) {
+				req, err := http.NewRequest(
+					http.MethodPost,
+					fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort),
+					bytes.NewBufferString("{\"body\":\"test\"}"))
+				g.Expect(err).NotTo(HaveOccurred(), "Can create request object")
+				req.Host = e2e.DefaultHost
+
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).To(testmatchers.HaveExactResponseBody("test"))
+			}, "5s", ".5s")
+		}
+
+		It("should fail if no transform defined", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+					Transformations: nil,
+				}
+
+				return vs
+			})
+
+			EventuallyResponseTransformed().Should(HaveOccurred())
+		})
+
 		It("should should transform json to html response on vhost", func() {
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
@@ -80,18 +110,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(
-					http.MethodPost,
-					fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort),
-					bytes.NewBufferString("{\"body\":\"test\"}"))
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveExactResponseBody("test"))
-			}, "5s", ".5s").Should(Succeed())
+			EventuallyResponseTransformed().Should(Succeed())
 		})
 
 		It("should should transform json to html response on route", func() {
@@ -103,18 +122,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(
-					http.MethodPost,
-					fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort),
-					bytes.NewBufferString("{\"body\":\"test\"}"))
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveExactResponseBody("test"))
-			}, "5s", ".5s").Should(Succeed())
+			EventuallyResponseTransformed().Should(Succeed())
 		})
 
 		It("should should transform json to html response on route", func() {
@@ -137,18 +145,7 @@ var _ = Describe("Transformations", func() {
 				return vsBuilder.Build()
 			})
 
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(
-					http.MethodPost,
-					fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort),
-					bytes.NewBufferString("{\"body\":\"test\"}"))
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveExactResponseBody("test"))
-			}, "5s", ".5s").Should(Succeed())
+			EventuallyResponseTransformed().Should(Succeed())
 
 		})
 
@@ -191,6 +188,32 @@ var _ = Describe("Transformations", func() {
 			}
 		})
 
+		// EventuallyHtmlResponseTransformed returns an Asynchronous Assertion which
+		// validates that a request with a header will return a response header with the same
+		// value, and the body of the response is non-json
+		// This will only work if the above transformation is applied to the request
+		EventuallyHtmlResponseTransformed := func() AsyncAssertion {
+			return Eventually(func(g Gomega) {
+				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/html", defaults.HttpPort), nil)
+				g.Expect(err).NotTo(HaveOccurred())
+				req.Host = e2e.DefaultHost
+				req.Header.Set("x-solo-hdr-1", "test")
+
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body: WithTransform(func(b []byte) error {
+						var body map[string]interface{}
+						return json.Unmarshal(b, &body)
+					}, HaveOccurred()), // attempt to read body as json to confirm that it was not parsed
+					Headers: map[string]interface{}{
+						"x-solo-resp-hdr1": Equal("test"), // inspect response headers to confirm transformation was applied
+					},
+				}))
+			}, "5s", ".5s")
+		}
+
 		It("should error on non-json body when ignoreErrorOnParse/parseBodyBehavior/passthrough is disabled", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().IgnoreErrorOnParse = false
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
@@ -224,25 +247,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/html", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("x-solo-hdr-1", "test")
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-					StatusCode: http.StatusOK,
-					Body: WithTransform(func(b []byte) error {
-						var body map[string]interface{}
-						return json.Unmarshal(b, &body)
-					}, HaveOccurred()), // attempt to read body as json to confirm that it was not parsed
-					Headers: map[string]interface{}{
-						"x-solo-resp-hdr1": Equal("test"), // inspect response headers to confirm transformation was applied
-					},
-				}))
-			}, "5s", ".5s").Should(Succeed())
+			EventuallyHtmlResponseTransformed().Should(Succeed())
 		})
 
 		It("should transform response with non-json body when ParseBodyBehavior is set to DontParse", func() {
@@ -254,25 +259,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/html", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("x-solo-hdr-1", "test")
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-					StatusCode: http.StatusOK,
-					Body: WithTransform(func(b []byte) error {
-						var body map[string]interface{}
-						return json.Unmarshal(b, &body)
-					}, HaveOccurred()), // attempt to read body as json to confirm that it was not parsed
-					Headers: map[string]interface{}{
-						"x-solo-resp-hdr1": Equal("test"), // inspect response headers to confirm transformation was applied
-					},
-				}))
-			}, "5s", ".5s").Should(Succeed())
+			EventuallyHtmlResponseTransformed().Should(Succeed())
 		})
 
 		It("should transform response with non-json body when passthrough is enabled", func() {
@@ -286,25 +273,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/html", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("x-solo-hdr-1", "test")
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
-					StatusCode: http.StatusOK,
-					Body: WithTransform(func(b []byte) error {
-						var body map[string]interface{}
-						return json.Unmarshal(b, &body)
-					}, HaveOccurred()), // attempt to read body as json to confirm that it was not parsed
-					Headers: map[string]interface{}{
-						"x-solo-resp-hdr1": Equal("test"), // inspect response headers to confirm transformation was applied
-					},
-				}))
-			}, "5s", ".5s").Should(Succeed())
+			EventuallyHtmlResponseTransformed().Should(Succeed())
 		})
 	})
 })
