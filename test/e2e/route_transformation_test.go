@@ -94,7 +94,6 @@ var _ = Describe("Transformations", func() {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 					Transformations: nil,
 				}
-
 				return vs
 			})
 
@@ -106,7 +105,6 @@ var _ = Describe("Transformations", func() {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 					Transformations: transform,
 				}
-
 				return vs
 			})
 
@@ -118,7 +116,6 @@ var _ = Describe("Transformations", func() {
 				vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
 					Transformations: transform,
 				}
-
 				return vs
 			})
 
