@@ -225,6 +225,8 @@ spec:
                     type: string
                   serviceSpec:
                     properties:
+                      graphql:
+                        type: object
                       grpc:
                         properties:
                           descriptors:
@@ -751,6 +753,8 @@ spec:
                     type: integer
                   serviceSpec:
                     properties:
+                      graphql:
+                        type: object
                       grpc:
                         properties:
                           descriptors:
@@ -1030,6 +1034,8 @@ spec:
                     type: string
                   serviceSpec:
                     properties:
+                      graphql:
+                        type: object
                       grpc:
                         properties:
                           descriptors:
@@ -1241,6 +1247,8 @@ spec:
                     type: array
                   serviceSpec:
                     properties:
+                      graphql:
+                        type: object
                       grpc:
                         properties:
                           descriptors:

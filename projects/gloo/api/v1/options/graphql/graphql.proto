@@ -1,0 +1,22 @@
+syntax = "proto3";
+package graphql.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/graphql";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+// TODO-JAKE ensure this file gets changed as needed
+
+// Service spec describing GraphQL upstreams. This will usually be filled
+// automatically via function discovery (if the upstream supports introspection).
+// If your upstream service is a GraphQL service, use this service spec (an empty
+// spec is fine), to make sure that traffic to it is routed with
+message ServiceSpec {
+  // Describes a GraphQL service
+  message GraphQLService {
+    // The url for the graphql endpoint, if non is provided then it defaults to the path `/graphql`
+    string url = 1;
+  }
+}
