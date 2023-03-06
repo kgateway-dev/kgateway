@@ -349,7 +349,7 @@ var _ = Describe("Staged Transformation", func() {
 						},
 					},
 				})
-				vsBuilder.WithRouteOptions("test", &gloov1.RouteOptions{
+				vsBuilder.WithRouteOptions(e2e.DefaultRouteName, &gloov1.RouteOptions{
 					StagedTransformations: &transformation.TransformationStages{
 						Regular: &transformation.RequestResponseTransformations{
 							ResponseTransforms: []*transformation.ResponseMatch{{
