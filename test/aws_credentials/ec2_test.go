@@ -2,8 +2,8 @@ package aws_credentials
 
 import (
 	"context"
-	"os"
 
+	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -17,14 +17,14 @@ import (
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 var _ = Describe("", func() {
-	if os.Getenv("SKIP_TEMP_DISABLED") == "1" {
+	if testutils.ShouldSkipTempDisabledTests() {
 		return
 	}
 	var (

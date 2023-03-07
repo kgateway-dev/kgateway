@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -19,7 +21,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/duration"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
@@ -44,8 +46,8 @@ var _ = Describe("Health Checks", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.ValidateRequirementsAndNotifyGinkgo(
-			helpers.LinuxOnly("Relies on FDS"),
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.LinuxOnly("Relies on FDS"),
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())

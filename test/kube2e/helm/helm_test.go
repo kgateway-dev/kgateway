@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
@@ -514,8 +514,9 @@ func makeUnstructuredFromTemplateFile(fixtureName string, values interface{}) *u
 }
 
 func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease string, strictValidation bool, additionalInstallArgs []string) {
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
-	defer cleanupFunc()
+	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
+	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// construct helm args
 	var args = []string{"install", testHelper.HelmChartName}
@@ -529,7 +530,7 @@ func installGloo(testHelper *helper.SoloTestHelper, chartUri string, fromRelease
 	}
 	args = append(args, "-n", testHelper.InstallNamespace,
 		"--create-namespace",
-		"--values", valueOverrideFile)
+		"--values", helmValuesFile)
 	if strictValidation {
 		args = append(args, strictValidationArgs...)
 	}

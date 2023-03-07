@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -93,6 +93,7 @@ func EventuallyWithOffsetStatisticsMatchAssertions(offset int, statsPortFwd Stat
 // IntStatisticReachesConsistentValueAssertion returns an assertion that a prometheus stats has reached a consistent value
 // It optionally returns the value of that statistic as well
 // Arguments:
+//
 //	prometheusStat (string) - The name of the statistic we will be evaluating
 //	inARow (int) - We periodically poll the statistic value from a metrics endpoint. InARow represents
 //				   the number of consecutive times the statistic must be the same for it to be considered "consistent"

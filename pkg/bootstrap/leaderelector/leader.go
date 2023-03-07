@@ -40,10 +40,12 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 	}
 
 	doPerformAction := func() {
+		contextutils.LoggerFrom(ctx).Info("performing leader startup action")
+
 		action := a.GetAction()
 		if action == nil {
 			// this case is the result of developer error
-			contextutils.LoggerFrom(ctx).Warnw("leader startup action not defined")
+			contextutils.LoggerFrom(ctx).Warn("leader startup action not defined")
 			return
 		}
 		err := action()
