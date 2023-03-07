@@ -11,7 +11,7 @@ import (
 
 	"io/ioutil"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
@@ -304,9 +304,10 @@ func mustWriteTestFile(contents string) string {
 }
 
 // each of these two key pairs were generated as follows:
-// openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-//   -keyout privateKey1.key -out privateKey1Cert.crt \
-//   -subj "/CN=petstore.example.com"
+//
+//	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+//	  -keyout privateKey1.key -out privateKey1Cert.crt \
+//	  -subj "/CN=petstore.example.com"
 var privateKey1 = `
 -----BEGIN PRIVATE KEY-----
 MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDKtfsD/lq/htGu

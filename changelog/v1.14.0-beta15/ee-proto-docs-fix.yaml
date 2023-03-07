@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: true
+    issueLink: https://github.com/solo-io/gloo/issues/7887
+    description: enterprise proto docs are now based on the corect minor version (as opposed to _always_ latest)

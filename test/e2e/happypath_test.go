@@ -10,12 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -428,8 +430,8 @@ var _ = Describe("Happy path", func() {
 
 			Describe("kubernetes happy path", func() {
 				BeforeEach(func() {
-					testhelpers.ValidateRequirementsAndNotifyGinkgo(
-						testhelpers.Kubernetes("Uses a Kubernetes cluster"),
+					testutils.ValidateRequirementsAndNotifyGinkgo(
+						testutils.Kubernetes("Uses a Kubernetes cluster"),
 					)
 				})
 

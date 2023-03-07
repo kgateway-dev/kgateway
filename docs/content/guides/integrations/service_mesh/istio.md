@@ -35,13 +35,15 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm repo update
    ```
       
-3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. 
+3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. You can optionally add the `global.istioSDS.enabled` option to your overrides file to automatically renew the certificate that the sidecar uses before it expires. 
    ```yaml
    global:
      istioIntegration:
        labelInstallNamespace: true
        whitelistDiscovery: true
        enableIstioSidecarOnGateway: true
+     istioSDS:
+       enabled: true
    gatewayProxies:
      gatewayProxy:
        podTemplate: 

@@ -16,8 +16,7 @@ import (
 	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/proto"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -109,7 +108,7 @@ var _ = Describe("Helm Test", func() {
 			}
 		}
 		BeforeEach(func() {
-			// Ensure that tests do not shares manifests by accident
+			// Ensure that tests do not share manifests by accident
 			testManifest = nil
 		})
 
