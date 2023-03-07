@@ -85,6 +85,7 @@ type TestGRPCServer struct {
 	C             chan *glootest.TestRequest
 	Port          uint32
 	HealthChecker healthchecker.HealthChecker
+	glootest.UnimplementedTestServiceServer
 }
 
 // Returns a list of all shelves in the bookstore.

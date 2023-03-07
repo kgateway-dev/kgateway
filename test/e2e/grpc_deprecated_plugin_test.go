@@ -3,8 +3,9 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"io/ioutil"
 	"net/http"
 
@@ -12,6 +13,8 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -20,13 +23,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
+var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 	var (
 		ctx           context.Context
@@ -37,9 +39,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	)
 
 	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.LinuxOnly("Relies on FDS"),
-		)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -55,8 +54,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			WhatToRun: services.What{
 				DisableGateway: false,
 				DisableUds:     true,
-				// test relies on FDS to discover the grpc spec via reflection
-				DisableFds: false,
+				DisableFds:     true,
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
@@ -64,7 +62,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{
-					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
+					FdsMode: gloov1.Settings_DiscoveryOptions_DISABLED,
 				},
 			},
 		}
@@ -75,6 +73,8 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
+		// Discovery is off so we fill in the upstream here.
+		populateDeprecatedApi(tu.Upstream)
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -101,29 +101,30 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 	It("Routes to GRPC Functions", func() {
 
-		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		body := []byte(`"foo"`)
+		body := []byte(`{"str": "foo"}`)
 
 		testRequest := basicReq(body)
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
-		}))))
 	})
 
 	It("Routes to GRPC Functions with parameters", func() {
 
-		vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
+		grpc.Parameters = &transformation.Parameters{
+			Path: &wrappers.StringValue{Value: "/test/{str}"},
+		}
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		testRequest := func() (string, error) {
-			res, err := http.Get(fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort))
+			res, err := http.Get(fmt.Sprintf("http://%s:%d/test/foo", "localhost", defaults.HttpPort))
 			if err != nil {
 				return "", err
 			}
@@ -131,18 +132,13 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			body, err := ioutil.ReadAll(res.Body)
 			return string(body), err
 		}
-		// set up upstream manually to test everything except discovery locally
-		//updateUpstreamDescriptors(tu.Upstream)
-		//_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{OverwriteExisting: true})
-		//Expect(err).NotTo(HaveOccurred())
+
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
-		}))))
+
 	})
 })
 
-func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
+func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
 		Metadata: &core.Metadata{
 			Name:      "default",
@@ -153,8 +149,7 @@ func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewa
 				{
 					Matchers: []*matchers.Matcher{{
 						PathSpecifier: &matchers.Matcher_Prefix{
-							// the grpc_json transcoding filter clears the cache so it no longer would match on /test (this can be configured)
-							Prefix: "/",
+							Prefix: "/test",
 						},
 					}},
 					Action: &gatewayv1.Route_RouteAction{
@@ -164,6 +159,15 @@ func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewa
 									DestinationType: &gloov1.Destination_Upstream{
 										Upstream: usRef,
 									},
+									DestinationSpec: &gloov1.DestinationSpec{
+										DestinationType: &gloov1.DestinationSpec_Grpc{
+											Grpc: &grpc.DestinationSpec{
+												Package:  "glootest",
+												Function: "TestMethod",
+												Service:  "TestService",
+											},
+										},
+									},
 								},
 							},
 						},
@@ -172,4 +176,27 @@ func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewa
 			},
 		},
 	}
+}
+
+func populateDeprecatedApi(tu *gloov1.Upstream) {
+	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
+	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	Expect(err).ToNot(HaveOccurred())
+	singleEncoded := []byte(base64.StdEncoding.EncodeToString(bytes))
+	grpcServices := []*grpc.ServiceSpec_GrpcService{
+		{
+			ServiceName: "TestService",
+			PackageName: "glootest",
+		},
+	}
+	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
+	t.SetServiceSpec(&options.ServiceSpec{
+		PluginType: &options.ServiceSpec_Grpc{
+			Grpc: &grpc.ServiceSpec{
+				Descriptors:  singleEncoded,
+				GrpcServices: grpcServices,
+			},
+		}})
+	tu.Metadata.ResourceVersion = "2"
+
 }

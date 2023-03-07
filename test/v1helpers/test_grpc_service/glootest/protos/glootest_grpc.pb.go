@@ -54,6 +54,7 @@ func (c *testServiceClient) TestMethod(ctx context.Context, in *TestRequest, opt
 type TestServiceServer interface {
 	TestParameterMethod(context.Context, *TestRequest) (*TestResponse, error)
 	TestMethod(context.Context, *TestRequest) (*TestResponse, error)
+	mustEmbedUnimplementedTestServiceServer()
 }
 
 // UnimplementedTestServiceServer must be embedded to have forward compatible implementations.
@@ -65,6 +66,14 @@ func (UnimplementedTestServiceServer) TestParameterMethod(context.Context, *Test
 }
 func (UnimplementedTestServiceServer) TestMethod(context.Context, *TestRequest) (*TestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestMethod not implemented")
+}
+func (UnimplementedTestServiceServer) mustEmbedUnimplementedTestServiceServer() {}
+
+// UnsafeTestServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to TestServiceServer will
+// result in compilation errors.
+type UnsafeTestServiceServer interface {
+	mustEmbedUnimplementedTestServiceServer()
 }
 
 func RegisterTestServiceServer(s grpc.ServiceRegistrar, srv TestServiceServer) {

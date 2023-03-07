@@ -2,9 +2,7 @@ package grpc
 
 import (
 	"context"
-	"encoding/base64"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -166,8 +164,6 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	}
 
 	descriptors := &descriptor.FileDescriptorSet{}
-	//service representation used by old API
-	var grpcServices []*grpc_plugins.ServiceSpec_GrpcService
 	// grpcJsonTranscoder API uses list of services
 	var servicesDiscovered []string
 	for _, s := range services {
@@ -184,24 +180,6 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 
 		descriptors.File = append(descriptors.GetFile(), files...)
 
-		parts := strings.Split(s, ".")
-		serviceName := parts[len(parts)-1]
-		servicePackage := strings.Join(parts[:len(parts)-1], ".")
-		grpcService := &grpc_plugins.ServiceSpec_GrpcService{
-			PackageName: servicePackage,
-			ServiceName: serviceName,
-		}
-		// find the service in the file and get its functions
-		for _, svc := range root.GetServices() {
-			if svc.GetName() == serviceName {
-				methods := svc.GetMethods()
-				for _, method := range methods {
-					methodName := method.GetName()
-					grpcService.FunctionNames = append(grpcService.GetFunctionNames(), methodName)
-				}
-			}
-		}
-		grpcServices = append(grpcServices, grpcService)
 		servicesDiscovered = append(servicesDiscovered, s)
 	}
 
@@ -209,24 +187,13 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	if err != nil {
 		return errors.Wrap(err, "marshalling proto descriptors")
 	}
-
-	encodedDescriptors := []byte(base64.StdEncoding.EncodeToString(rawDescriptors))
-
 	return updatecb(func(out *v1.Upstream) error {
 		svcSpec := getGrpcspec(out)
-		if svcSpec != nil {
-			svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
-			svcSpec.Services = servicesDiscovered
-			return nil
-		}
-		oldSpec := getDeprecatedGrpcspec(out)
-		if oldSpec == nil {
+		if svcSpec == nil {
 			return errors.New("not a GRPC upstream")
 		}
-		// TODO(yuval-k): ideally GrpcServices should be google.protobuf.FileDescriptorSet
-		//  but that doesn't work with gogoproto.equal_all.
-		oldSpec.GrpcServices = grpcServices
-		oldSpec.Descriptors = encodedDescriptors
+		svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
+		svcSpec.Services = servicesDiscovered
 		return nil
 	})
 }
