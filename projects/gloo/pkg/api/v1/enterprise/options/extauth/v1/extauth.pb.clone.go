@@ -2942,6 +2942,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 			}
 		}
 
+	case *ExtAuthConfig_Config_HmacAuth:
+
+		if h, ok := interface{}(m.GetHmacAuth()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
+				HmacAuth: h.Clone().(*HmacAuth),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
+				HmacAuth: proto.Clone(m.GetHmacAuth()).(*HmacAuth),
+			}
+		}
+
 	}
 
 	return target

@@ -4920,6 +4920,21 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ExtAuthConfig_Config_HmacAuth:
+		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_HmacAuth); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHmacAuth()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHmacAuth()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHmacAuth(), target.GetHmacAuth()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.AuthConfig != target.AuthConfig {
