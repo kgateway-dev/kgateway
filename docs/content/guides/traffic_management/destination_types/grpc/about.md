@@ -41,10 +41,10 @@ For more information about how to set up the REST to gRPC mapping, see []().
 
 To configure your Gloo Edge proxy to accept incoming REST requests for your gRPC app and to correctly translate the REST request into a gRPC request, you must provide a proto descriptor that contains all your gRPC to REST transcoding rules. Proto descriptors are generated based on the `google.api.http` annotations that you added to your gRPC methods by using the `protoc` tool. 
 
-To configure your Gloo Edge proxy to translate incoming REST requests to gRPC, the proxy requires the proto descriptors to be present on the gRPC upstream. You have the following options to add proto descriptors to your upstream: 
+To configure your Gloo Edge proxy to translate incoming REST requests to gRPC, the proxy requires the proto descriptor binary to be present on the gRPC upstream. You have the following options to add proto descriptors to your upstream: 
 
 - **Automatic discovery with FDS**: You can enable the Gloo Edge Function Discovery Service (FDS) to automatically discover proto descriptors in your gRPC service and to add them to the upstream. 
 - **Manual**: If you do not or cannot enable Gloo Edge FDS, you can manually generate proto descriptors, encode them, and add them to the upstream. Note that proto descriptors are overwritten when you enable FDS. 
 
-With the proto descriptors, Gloo Edge can accept incoming REST requests, map fields to the gRPC request by using the gRPC to REST mappings in the proto descriptors, and forward the request as a gRPC request to your upstream service.  
+With the proto descriptor binary, Gloo Edge can accept incoming REST requests, map fields to the gRPC request by using the gRPC to REST mappings in the proto descriptors, and forward the request as a gRPC request to your upstream service.  
 
