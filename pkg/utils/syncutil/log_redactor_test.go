@@ -187,6 +187,16 @@ var _ = Describe("Log Redactor", func() {
 			},
 		},
 		},
+	}), Entry("doesn't hide anything for HMAC configs", "irrelevant-here", &xdsproto.ExtAuthConfig{
+		Configs: []*xdsproto.ExtAuthConfig_Config{{
+			AuthConfig: &xdsproto.ExtAuthConfig_Config_HmacAuth{
+				HmacAuth: &xdsproto.HmacAuth{
+					MessageType: &xdsproto.HmacAuth_MessageType{
+						Type: "header",
+					},
+				},
+			},
+		}},
 	}),
 	)
 })
