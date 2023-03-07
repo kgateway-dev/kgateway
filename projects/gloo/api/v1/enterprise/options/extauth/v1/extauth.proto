@@ -57,6 +57,7 @@ message AuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 11;
             PassThroughAuth pass_through_auth = 12;
+            HmacAuth hmac_auth = 13;
         }
     }
 
@@ -264,6 +265,19 @@ message BasicAuth {
     }
     Apr apr = 2;
 }
+
+
+message HmacAuth {
+    // your client secret as registered with the issuer
+    core.solo.io.ResourceRef client_secret_ref = 1;
+    message MessageType{
+        string type = 1;
+    };
+
+    // Which approach to use to turn the request into a hashable string
+    MessageType message_type = 2;
+}
+
 
 // Deprecated: Prefer OAuth2
 message OAuth {
@@ -1643,6 +1657,7 @@ message ExtAuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 12;
             PassThroughAuth pass_through_auth = 13;
+            HmacAuth hmac_auth = 14;
         }
     }
 
