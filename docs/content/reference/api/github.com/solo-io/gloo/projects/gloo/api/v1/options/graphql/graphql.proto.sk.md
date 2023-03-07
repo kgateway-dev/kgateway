@@ -12,7 +12,7 @@ weight: 5
 
 
 - [ServiceSpec](#servicespec)
-- [GraphQLService](#graphqlservice)
+- [Endpoint](#endpoint)
   
 
 
@@ -33,20 +33,22 @@ If your upstream service is a GraphQL service, use this service spec (an empty
 spec is fine), to make sure that traffic to it is routed with
 
 ```yaml
+"endpoint": .graphql.options.gloo.solo.io.ServiceSpec.Endpoint
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `endpoint` | [.graphql.options.gloo.solo.io.ServiceSpec.Endpoint](../graphql.proto.sk/#endpoint) | Endpoint provides the endpoint information, and how to call the GraphQL Server. Currently you can only call the endpoint using a POST method sending a data form as GraphQL. |
 
 
 
 
 ---
-### GraphQLService
+### Endpoint
 
  
-Describes a GraphQL service
+Describes a GraphQL Endpoint information
 
 ```yaml
 "url": string
@@ -55,7 +57,7 @@ Describes a GraphQL service
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `url` | `string` | The url for the graphql endpoint, if non is provided then it defaults to the path `/graphql`. |
+| `url` | `string` | The url for the graphql endpoint. ie: myurl.com/graphql. |
 
 
 

@@ -33,16 +33,22 @@ func (m *ServiceSpec) Clone() proto.Message {
 	}
 	target = &ServiceSpec{}
 
+	if h, ok := interface{}(m.GetEndpoint()).(clone.Cloner); ok {
+		target.Endpoint = h.Clone().(*ServiceSpec_Endpoint)
+	} else {
+		target.Endpoint = proto.Clone(m.GetEndpoint()).(*ServiceSpec_Endpoint)
+	}
+
 	return target
 }
 
 // Clone function
-func (m *ServiceSpec_GraphQLService) Clone() proto.Message {
-	var target *ServiceSpec_GraphQLService
+func (m *ServiceSpec_Endpoint) Clone() proto.Message {
+	var target *ServiceSpec_Endpoint
 	if m == nil {
 		return target
 	}
-	target = &ServiceSpec_GraphQLService{}
+	target = &ServiceSpec_Endpoint{}
 
 	target.Url = m.GetUrl()
 

@@ -38,11 +38,31 @@ func (m *ServiceSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if h, ok := interface{}(m.GetEndpoint()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Endpoint")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEndpoint(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Endpoint")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
 // Hash function
-func (m *ServiceSpec_GraphQLService) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ServiceSpec_Endpoint) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -50,7 +70,7 @@ func (m *ServiceSpec_GraphQLService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("graphql.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/graphql.ServiceSpec_GraphQLService")); err != nil {
+	if _, err = hasher.Write([]byte("graphql.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/graphql.ServiceSpec_Endpoint")); err != nil {
 		return 0, err
 	}
 

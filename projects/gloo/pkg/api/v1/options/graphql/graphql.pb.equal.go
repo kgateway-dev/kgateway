@@ -46,18 +46,28 @@ func (m *ServiceSpec) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetEndpoint()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEndpoint()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEndpoint(), target.GetEndpoint()) {
+			return false
+		}
+	}
+
 	return true
 }
 
 // Equal function
-func (m *ServiceSpec_GraphQLService) Equal(that interface{}) bool {
+func (m *ServiceSpec_Endpoint) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ServiceSpec_GraphQLService)
+	target, ok := that.(*ServiceSpec_Endpoint)
 	if !ok {
-		that2, ok := that.(ServiceSpec_GraphQLService)
+		that2, ok := that.(ServiceSpec_Endpoint)
 		if ok {
 			target = &that2
 		} else {

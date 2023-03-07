@@ -7,16 +7,18 @@ import "extproto/ext.proto";
 option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
-// TODO-JAKE ensure this file gets changed as needed
 
 // Service spec describing GraphQL upstreams. This will usually be filled
 // automatically via function discovery (if the upstream supports introspection).
 // If your upstream service is a GraphQL service, use this service spec (an empty
 // spec is fine), to make sure that traffic to it is routed with
 message ServiceSpec {
-  // Describes a GraphQL service
-  message GraphQLService {
-    // The url for the graphql endpoint, if non is provided then it defaults to the path `/graphql`
+  // Endpoint provides the endpoint information, and how to call the GraphQL Server.
+  // Currently you can only call the endpoint using a POST method sending a data form as GraphQL.
+  Endpoint endpoint = 1;
+  // Describes a GraphQL Endpoint information
+  message Endpoint {
+    // The url for the graphql endpoint. ie: myurl.com/graphql
     string url = 1;
   }
 }
