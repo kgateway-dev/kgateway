@@ -1657,7 +1657,6 @@ message ExtAuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 12;
             PassThroughAuth pass_through_auth = 13;
-            HmacAuth hmac_auth = 14;
         }
     }
 
