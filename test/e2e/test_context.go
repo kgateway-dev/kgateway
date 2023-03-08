@@ -244,3 +244,19 @@ func (c *TestContext) PatchDefaultUpstream(mutator func(us *gloov1.Upstream) *gl
 	)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
+
+// GetHttpRequestBuilder returns an HttpRequestBuilder to easily build http requests used in e2e tests
+func (c *TestContext) GetHttpRequestBuilder() *testutils.HttpRequestBuilder {
+	return testutils.NewHttpRequestBuilder().
+		WithHostname("localhost").
+		WithPort(defaults.HttpPort). // When running Envoy locally, we port-forward this port to accept http traffic locally
+		WithHost(DefaultHost)        // The default Virtual Service routes traffic only with a particular Host header
+}
+
+// GetHttpsRequestBuilder returns an HttpRequestBuilder to easily build https requests used in e2e tests
+func (c *TestContext) GetHttpsRequestBuilder() *testutils.HttpRequestBuilder {
+	return testutils.NewHttpsRequestBuilder().
+		WithHostname("localhost").
+		WithPort(defaults.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
+		WithHost(DefaultHost)         // The default Virtual Service routes traffic only with a particular Host header
+}
