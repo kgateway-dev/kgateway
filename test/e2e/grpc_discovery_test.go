@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -85,18 +85,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		cancel()
 	})
 
-	basicReq := func(b []byte) func() (string, error) {
-		return func() (string, error) {
+	basicReq := func(b []byte, expected string) func() {
+		return func() {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(b)
 			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), "application/json", &buf)
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).Should(testmatchers.HaveExactResponseBody(expected))
 		}
 	}
 
@@ -108,9 +104,9 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 		body := []byte(`"foo"`)
 
-		testRequest := basicReq(body)
+		testRequest := basicReq(body, `{"str":"foo"}`)
 
-		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
+		Eventually(testRequest, 30, 1).Should(Succeed())
 
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
@@ -123,16 +119,12 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		testRequest := func() (string, error) {
+		testRequest := func() {
 			res, err := http.Get(fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort))
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).Should(testmatchers.HaveExactResponseBody(`{"str":"foo"`))
 		}
-		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
+		Eventually(testRequest, 30, 1).Should(Succeed())
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}))))

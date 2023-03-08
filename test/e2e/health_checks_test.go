@@ -180,7 +180,7 @@ var _ = Describe("Health Checks", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// ensure that a request fails the health check but is handled by the upstream anyway
-				testRequest := basicReq([]byte(`{"str": "foo"}`))
+				testRequest := basicReq([]byte(`"foo"`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 				Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{

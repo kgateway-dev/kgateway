@@ -27,6 +27,7 @@ import (
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 )
 
 var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
@@ -77,33 +78,23 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		cancel()
 	})
 
-	basicReq := func(b []byte, path string) func() (string, error) {
-		return func() (string, error) {
-			// send a request with a body
-			var buf bytes.Buffer
-			buf.Write(b)
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/%s", "localhost", defaults.HttpPort, path), "application/json", &buf)
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
-		}
-	}
-
 	testRequest := func(path string, shouldMatch bool) {
 		body := []byte(`"foo"`) // this is valid JSON because of the quotes
-		resp := basicReq(body, path)
+		resp := func() (*http.Response, error) {
+			// send a request with a body
+			var buf bytes.Buffer
+			buf.Write(body)
+			return http.Post(fmt.Sprintf("http://%s:%d/%s", "localhost", defaults.HttpPort, path), "application/json", &buf)
+		}
 		expectedResp := `{"str":"foo"}`
 		expectedFields := Fields{
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}
 		if shouldMatch {
-			EventuallyWithOffset(1, resp, 5, 1).Should(Equal(expectedResp), "Did not get expected response")
+			EventuallyWithOffset(1, resp, 5, 1).Should(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
 			EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
 		} else {
-			EventuallyWithOffset(1, resp, 5, 1).ShouldNot(Equal(expectedResp), "Did not get expected response")
+			EventuallyWithOffset(1, resp, 5, 1).ShouldNot(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
 			EventuallyWithOffset(1, tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
 		}
 	}
