@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/onsi/gomega/format"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"

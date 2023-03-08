@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/7487
-    resolvesIssue: false
-    description: >
-      Stop setting HttpRule for grpc methods that already have options set from the proto. This ensures Gloo will respect values that are set in protos.

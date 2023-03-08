@@ -201,7 +201,7 @@ var _ = Describe("Health Checks", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+			vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -321,14 +321,14 @@ var _ = Describe("Health Checks", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+			vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("Fail all but one GRPC health check", func() {
 			liveService := tu.FailGrpcHealthCheck()
-			body := []byte(`{"str": "foo"}`)
+			body := []byte(`"foo"`)
 			testRequest := basicReq(body)
 
 			numRequests := 5
