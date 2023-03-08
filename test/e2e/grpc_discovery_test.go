@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"net/http"
+
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/solo-io/gloo/test/testutils"
 
