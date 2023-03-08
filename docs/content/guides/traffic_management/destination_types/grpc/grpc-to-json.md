@@ -281,9 +281,17 @@ In this example:
 
 ## Map an `Update` method
 
-### HTTP mapping
+The `Update` method is typically used to update the properties for a specific resource. After the resource is updated, the updated resource is returned to the client. 
 
-### Example for updating a resource 
+### HTTP mapping
+* The Update method must allow partial updates for a given resource and is mapped to the HTTP PATCH request. Other updates, such as moving a resource to another parent cannot be implemented with an Update method. Instead, a custom method must be used. 
+* If a resource only allows a full resource update, the Update method must be mapped to an HTTP PUT request. 
+* The resource that you want to update must be provided in the URL path. 
+* The properties that you want to update on the resource must be provided in the HTTP request body. 
+* All remaining request message fields that are not provided in the URL path are mapped to the URL query parameters. 
+* After the update is processed, the updated resource is returned to the client in the HTTP response body. 
+
+### Example for updating a resource
 
 ```
 rpc UpdateBook(UpdateBookRequest) returns (Book) {
@@ -313,16 +321,39 @@ message Book {
 ```
 
 In this example: 
-* The UpdateBook gRPC method is mapped to an HTTP PATCH request.
-* `/shelves/{shelf}/books/{book.id}` is the URL path for the request. `{shelf}` represents the ID of the shelf where the book is stored. `{book.id}` retrieves the ID of the book resource. This ID represents the book that you want to update.  
-* `body: book` specifies the remaining fields for the book resource that are provided in the request body and that represent the fields that you want to update in the book. In this example, `
- 
+* The UpdateBook gRPC method is mapped to an HTTP PATCH request because it allows partial updates.
+* `/shelves/{shelf}/books/{book.id}` is the URL path for the request. `{shelf}` represents the ID of the shelf where the book is stored. `{book.id}` represents the ID of the book that you want to update.
+* `body: book` specifies that all remaining request fields that are not provided by the URL path template must be mapped from the HTTP request body. In this example, fields such as the author or title must be provided in the HTTP request body. 
 
+|HTTP | gRPC|
+|-----|-----|
+|`curl -X PATCH http://{$DOMAIN_NAME}/shelves/1/books/2 -d {"id":"2","author":"57", "title": "The last ride"}`| `UpdateBook(shelf: "1" book: Book(id: "2" author: "57" title: "The last ride"))`|
 
 
 ## Map a `Delete` method
 
+The `Delete` method is used to delete a specific resource. 
+
 ### HTTP mapping
+
+* The Delete method must be mapped to an HTTP DELETE request. 
+* The resource to delete should be provided as part of the URL path. 
+* All remaining request parameters should be mapped to URL query parameters. 
+* No request body can be provided. 
+* The Delete method immediately removes 
+* 
+* The Delete method takes a resource name and zero or more parameters, and deletes or schedules for deletion the specified resource. The Delete method should return google.protobuf.Empty.
+
+An API should not rely on any information returned by a Delete method, as it cannot be invoked repeatedly.
+
+HTTP mapping:
+
+
+All remaining request message fields shall map to the URL query parameters.
+
+If the Delete method immediately removes the resource, it should return an empty response.
+If the Delete method initiates a long-running operation, it should return the long-running operation.
+If the Delete method only marks the resource as being deleted, it should return the updated resource.
 
 ### Example for deleting a resource
 
