@@ -9,9 +9,11 @@ Set up and verify rate limiting in Gloo Edge. For more information about how rat
 ## Before you begin
 
 1. [Create your environment]({{< versioned_link_path fromRoot="/installation/platform_configuration/" >}}), such as a Kubernetes cluster in a cloud provider.
-2. [Install Gloo Edge Open Source]({{< versioned_link_path fromRoot="/installation/gateway/" >}}) (Envoy API rate limiting only) or [Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) (all supported rate limiting) in your environment.
-3. Install a test app such as Pet Store from the [Hello World tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
-4. Optional: [Configure your rate limiting server]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/enterprise/" >}}) to change the defaults, such as to update the query behavior or to use a different backing database.
+2. Install Gloo Edge.
+   * [Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}): You can use all supported rate limiting APIs, including Envoy, Set-Style, and Gloo Edge. The [Envoy-based rate limit server](https://github.com/envoyproxy/ratelimit) is automatically included in your installation.
+   * [Gloo Edge Open Source]({{< versioned_link_path fromRoot="/installation/gateway/" >}}): You can use only the Envoy API rate limiting. Additionally, you must [build your own rate limit server](https://github.com/envoyproxy/ratelimit).
+3. Install a test app, such as Pet Store from the [Hello World tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
+4. Optional (Enterprise-only): [Configure your rate limiting server]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/enterprise/" >}}) to change the defaults, such as to update the query behavior or to use a different backing database.
 
 ## Step 1: Decide which rate limiting API to use {#api}
 
@@ -23,17 +25,35 @@ Depending on the type of Gloo Edge that you installed, you have multiple options
 | [Set-Style API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}}) | Gloo Edge Enterprise | Like the Envoy API, the set-style API is based on descriptors (`setDescriptors`) and actions (`setActions`). Unlike the Envoy API, the set-style descriptors are unordered and can be used in combination with other descriptors. For example, you might set up a wildcard matching rule to rate limit requests with:<ul><li>An `x-type: a` header.</li><li>An `x-number: 1` header.</li><li>Any `x-color` header (`x-color: *`).</li></ul>At scale, this approach is more flexible than the Envoy API approach. You can also use Envoy and set-style APIs together. |
 | [Gloo Edge API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}}) | Gloo Edge Enterprise | For simple rate limiting per route or host, you can use the Gloo Edge rate limiting API. In this approach, you do not have to set up complicated descriptors and actions. Instead, you simply specify the requests per unit and time unit for each route or host directly within the virtual service resource. You can also have different rate limiting behavior for authorized versus anonymous requests.|
 
-## Step 2: Implement rate limiting {#implement}
+## Step 2: Configure rate limiting behavior {#configure}
+
+The way that you configure rate limiting behavior varies based on the rate limiting API that you chose in the previous step.
+
+Refer to the separate guides for examples on how to configure rate limiting behavior. Then, return to this guide and continue to the next step to see how to implement the configuration in your Gloo Edge resources.
+
+* [Envoy API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" >}})
+* [Set-Style API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}})
+* [Gloo Edge API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}})
+
+## Step 3: Implement rate limiting {#implement}
 
 Depending on the rate limiting API that you chose to use, you have several options on how to implement rate limiting in your Gloo Edge routing, host, and settings resources.
 
+* [Envoy or Set-Style API](#implement-envoy-set)
+* [Gloo Edge API](#implement-gloo-edge)
+
+{{% notice note %}}
+For testing purposes, the following examples across all rate limiting API styles apply a limit of one request per minute. You can update the examples with the descriptors and actions that you configured in the previous section.
+{{% /notice %}}
 ### Envoy or Set-Style API {#implement-envoy-set}
 
 Choose between two implementation approaches:
-* **Enterprise-only**: [In the `RateLimitConfig` resource](#implement-rlc). You can configure descriptors and actions together in a `RateLimitConfig` resource. This approach is more flexible at scale, and less likely to cause errors in configuring your resources.
+* **Enterprise-only**: [In the `RateLimitConfig` resource](#implement-rlc). The Gloo Edge `RateLimitConfig` custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is more flexible at scale, and less likely to cause errors in configuring your resources.
 * **Open Source or Enterprise**: [In separate Gloo Edge resources](#implement-separate). You configure descriptors in the Gloo Edge `Settings` for the entire cluster. Then, you configure the actions directly in each `VirtualService` that you want to rate limit. This approach is not as flexible at scale. Also, because you have to edit the `Settings` and `VirtualServices` resources more extensively, you might be likelier to make a configuration error or encounter merge conflicts if multiple people edit a configuration at once. If you use Gloo Edge Open Source, you must take this implementation approach.
 
 ### In the `RateLimitConfig` resource {#implement-rlc}
+
+The Gloo Edge `RateLimitConfig` custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is available only with a Gloo Edge Enterprise license. 
 
 1. Define the descriptors and actions in the `RateLimitConfig` resource. For more information, see [RateLimitConfigs (Enterprise)]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/crds/" >}}).
    ```yaml
@@ -49,7 +69,7 @@ Choose between two implementation approaches:
        - key: generic_key
          value: counter
          rateLimit:
-           requestsPerUnit: 10
+           requestsPerUnit: 1
            unit: MINUTE
        rateLimits:
        - actions:
@@ -120,23 +140,155 @@ spec:
 ```
 {{% /tab %}} 
       {{< /tabs >}}
-3. To fill in the descriptor and action values, continue to [Configure rate limiting behavior](#configure).
-
+3. Apply the updated virtual service.
+   ```sh
+   kubectl apply -n gloo-system -f vs.yaml
+   ```
+4. Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
+   ```
+   kubectl describe vs default -n gloo-system
+   ```
 ### In separate resources {#implement-separate}
 
+You can configure descriptors in the Gloo Edge `Settings` for the entire cluster. Then, you configure the actions directly in each `VirtualService` that you want to rate limit. If you have an Enterprise license, consider using a [`RateLimitConfig` resource instead](#implement-rlc). If you have an Open Source license, you must take this approach for Envoy API rate limiting.
+
 1. Define the rate limit descriptors in the `Settings` resource.
-2. Define the actions in each `VirtualService` resource.
-3. To fill in the descriptor and action values, continue to [Configure rate limiting behavior](#configure).
-
-
+   1. Create a file with your rate limit descriptors.
+      ```yaml
+      cat > settings-rl-patch.yaml - <<EOF
+      spec:
+        ratelimit:
+          descriptors:
+            - key: generic_key
+              value: "per-minute"
+              rateLimit:
+                requestsPerUnit: 1
+                unit: MINUTE
+      EOF
+      ```
+   2. Patch the default settings in the `gloo-system` namespace.
+      ```sh
+      kubectl patch -n gloo-system settings default --type merge --patch "$(cat settings-rl-patch.yaml)"
+      ```
+2. Define the actions in each `VirtualService` resource. You can apply actions at the virtual host level to apply to all routes or per route.
+   1. Create a file with your rate limit actions.
+      {{< tabs >}} 
+{{% tab name="All routes in the virtual host" %}}
+```yaml
+cat > vs-host-patch.yaml - <<EOF
+    options:
+      ratelimit:
+        rateLimits:
+          - actions:
+              - genericKey:
+                  descriptorValue: "per-minute"
+EOF
+```
+{{% /tab %}} 
+{{% tab name="Per route" %}}
+```yaml
+cat > vs-route-patch.yaml - <<EOF
+        options:
+          ratelimit:
+            rateLimits:
+              - actions:
+                  - genericKey:
+                      descriptorValue: "per-minute"
+EOF
+```
+{{% /tab %}} 
+      {{< /tabs >}}
+   2. Patch the virtual service that you want to rate limit.
+      {{< tabs >}} 
+{{% tab name="All routes in the virtual host" %}}
+```sh
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-host-patch.yaml)"
+```
+{{% /tab %}} 
+{{% tab name="Per route" %}}  
+```sh
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-patch.yaml)"
+```
+{{% /tab %}} 
+      {{< /tabs >}} 
+3. Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
+   ```
+   kubectl describe vs default -n gloo-system
+   ```
 ### Gloo Edge API {#implement-gloo-edge}
 
+To apply basic Gloo Edge rate limiting, update the virtual service. You can apply rate limiting at the virtual host level to apply to all routes or per route. This approach is a simple way to meet your basic rate limiting needs, and is available only with a Gloo Edge Enterprise license.
 
+1. Create a file with your basic Gloo Edge rate limiting configuration.
+   {{< tabs >}} 
+{{% tab name="All routes in the virtual host" %}}
+```yaml
+cat > vs-host-patch.yaml - <<EOF
+    options:
+      ratelimitBasic:
+        anonymous_limits:
+          requests_per_unit: 1
+          unit: MINUTE
+        authorized_limits:
+          requests_per_unit: 1000
+          unit: SECOND
+EOF
+```
+{{% /tab %}} 
+{{% tab name="Per route" %}}
+```yaml
+cat > vs-route-patch.yaml - <<EOF
+        options:
+          ratelimitBasic:
+            anonymous_limits:
+              requests_per_unit: 1
+              unit: MINUTE
+            authorized_limits:
+              requests_per_unit: 1000
+              unit: SECOND
+EOF
+```
+{{% /tab %}} 
+   {{< /tabs >}}
+2. Patch the virtual service that you want to rate limit.
+   {{< tabs >}} 
+{{% tab name="All routes in the virtual host" %}}
+```sh
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-host-patch.yaml)"
+```
+{{% /tab %}} 
+{{% tab name="Per route" %}}  
+```sh
+kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-patch.yaml)"
+```
+{{% /tab %}} 
+    {{< /tabs >}} 
+3. Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
+   ```
+   kubectl describe vs default -n gloo-system
+   ```
+## Step 4: Verify rate limiting with a sample app {#verify}
 
-## Step 3: Configure rate limiting behavior {#configure}
+The examples in this guide limited requests to 1 per minute. Depending on how you configured rate limiting, you might need to change the verification requests, such as by adding headers that you rate limit on.
 
-## Step 4: Verify rate limting with a sample app {#verify}
-
+1. Verify that you can reach your test app by sending a request.
+   ```sh
+   curl -v $(glooctl proxy url)/all-pets
+   ```
+   Example response:
+   ```
+   HTTP/1.1 200 OK
+   ...
+   [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+   ```
+2. Repeat the request. Because the previous rate limiting resource that you set up limits the requests to 1 time per minute, the request is rate limited.
+   ```sh
+   curl -v $(glooctl proxy url)/all-pets
+   ```
+   Example response:
+   ```
+   HTTP/1.1 429 Too Many Requests
+   ```
 ## Next steps
 
 Now that you know the basic steps to set up rate limiting, you might explore the following options.

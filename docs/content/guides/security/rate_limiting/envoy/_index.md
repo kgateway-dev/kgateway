@@ -29,33 +29,20 @@ weight: 10
 
 ## Overview
 
-In this document, we show how to use Gloo Edge with 
-[Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/config/filter/http/rate_limit/v2/rate_limit.proto). 
-We make the distinction here that this is "Envoy's" rate-limit API because Gloo Edge 
-[offers a much simpler rate-limit API]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" %}}) 
-as an alternative.
+Learn how to use Gloo Edge with [Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter.html#).
 
 {{% notice note %}}
-Gloo Edge Enterprise includes a rate limit server based on the implementation [here](https://github.com/envoyproxy/ratelimit). 
-It is already installed when doing `glooctl install gateway enterprise --license-key=...` or 
-using the [Helm install]({{< versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" >}}). 
-To get your trial license key, go to <https://www.solo.io/gloo-trial>.
+To learn about other rate limiting options, install your environment, and set up the components that you need for rate limiting, see [Rate limiting setup]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
 
-<br /> 
+<br>
 
-Open source Gloo Edge can take advantage of Envoy rate limiting, but requires users to build their own rate limit server to 
-implement the behavior described below. 
+This guide only includes Envoy-style rate limiting examples, and assumes that you already set up the environment and refer back to the setup guide to test rate limiting.
 {{% /notice %}}
 
-Two steps are needed to configure Gloo Edge to leverage the full Envoy Rate Limiter on your routes: 
+The Envoy API uses two components to define how rate limiting works. For more information on where to define these components in your Gloo Edge custom resources, see [Implement rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/#implement" >}}).
 
-1. In the Gloo Edge Settings manifest, you need to configure all of your 
-[rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration). 
-Descriptors describe your requests and are used to define the rate limits themselves.
-2. For each Virtual Service, you need to configure 
-[Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/route/route_components.proto#envoy-api-msg-route-ratelimit-action) 
-at the Virtual Service level, for each route, or both. 
-These actions define the relationship between a request and its generated descriptors.
+1. [Rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration): Descriptors describe your requests and are used to define the rate limits themselves.
+2. [Rate limiting actions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-ratelimit-action): Actions define the relationship between a request and its generated descriptors. 
 
 ### Descriptors
 
@@ -79,19 +66,112 @@ to increment for a particular request.
 You can specify more than one rate limit action, and the request is throttled if any one of the actions triggers 
 the rate limiting service to signal throttling, i.e., the rate limiting actions are effectively OR'd together.
 
+### Configuration examples
+
+Throughout the rest of this guide, you can review copiable example configuration files as follows:
+* Generic descriptor and action: Review the YAML configuration stanza for the descriptor and action components. This view helps you see only the configuration that matters for rate limiting. You must add these configuration stanzas to the appropriate Gloo Edge custom resources.
+* Example Settings and VirtualService: The configuration stanza for the descriptor is shown in an example Gloo Edge Settings resource. The configuration stanza for the action is shown in an example Gloo Edge VirtualService resource. If you have Gloo Edge Open Source, you must use this approach (and not the RateLimitConfig).
+* Example RateLimitConfig and VirtualService: The configuration stanzas for both the descriptors and actions are combined in a Gloo Edge RateLimitConfig resource. Then, the VirtualService is updated to refer to the RateLimitConfig. Available with Gloo Edge Enterprise only, this approach is more flexible at scale, and less likely to cause errors in configuring your resources.
+
+In Envoy, the rate limit configuration YAML is typically written in snake case (`example_config`). However, in Gloo Edge and Kubernetes, configuration YAML is typically written in camel case (`exampleConfig`). The examples throughout use camel case.
+
+For steps on how to use these configurations to implement rate limiting, see the [Rate limiting setup guide]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
+
 ## Simple Examples
 
-Let's go through a series of simple rate limiting examples to understand the basic options for defining rate limiting 
-descriptors and actions. Then, we'll go through more complex examples that use nested tuples of keys, to express more 
-realistic use cases. 
+Go through a series of simple rate limiting examples to understand the basic options for defining rate limiting descriptors and actions. Later, you can review more complex examples that use nested tuples of keys, to express more realistic use cases. 
 
 ### Generic Key
 
-A generic key is a specific string literal that will be used to match an action to a descriptor. For instance, we could
-use these descriptors in the Gloo Edge settings:
+A generic key is a specific string literal that is used to match an action to a descriptor. The example defines a limit of 2 requests per second for any request that triggers an action on the generic key called `per-second`. 
 
+{{% notice note %}}
+{{< readfile file="static/content/rl-setup-note" markdown="true">}}
+{{% /notice %}}
+
+{{< tabs >}} 
+{{% tab name="Generic descriptor and action" %}}
+Descriptor:
 ```yaml
+descriptors:
+  - key: generic_key
+    value: "per-second"
+    rateLimit:
+      requestsPerUnit: 2
+      unit: SECOND  
+```
+
+Action:
+```yaml
+- actions:
+    - genericKey:
+        descriptorValue: "per-second"
+```
+{{% /tab %}} 
+{{% tab name="Example Settings and VirtualService files" %}}
+Descriptor added to Settings:
+```yaml
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  annotations:
+    meta.helm.sh/release-name: gloo
+    meta.helm.sh/release-namespace: gloo-system
+  labels:
+    app: gloo
+    app.kubernetes.io/managed-by: Helm
+    gloo: settings
+  name: default
+  namespace: gloo-system
 spec:
+  consoleOptions:
+    apiExplorerEnabled: true
+    readOnly: false
+  discovery:
+    fdsMode: WHITELIST
+  discoveryNamespace: gloo-system
+  extauth:
+    extauthzServerRef:
+      name: extauth
+      namespace: gloo-system
+    transportApiVersion: V3
+    userIdHeader: x-user-id
+  gateway:
+    enableGatewayController: true
+    isolateVirtualHostsBySslConfig: false
+    readGatewaysFromAllNamespaces: false
+    validation:
+      allowWarnings: true
+      alwaysAccept: true
+      disableTransformationValidation: false
+      proxyValidationServerAddr: gloo:9988
+      serverEnabled: true
+      validationServerGrpcMaxSizeBytes: 104857600
+      warnRouteShortCircuiting: false
+  gloo:
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    enableRestEds: false
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+        should run `glooctl check` to find and fix config errors.
+      invalidRouteResponseCode: 404
+      replaceInvalidRoutes: false
+    proxyDebugBindAddr: 0.0.0.0:9966
+    restXdsBindAddr: 0.0.0.0:9976
+    xdsBindAddr: 0.0.0.0:9977
+  graphqlOptions:
+    schemaChangeValidationOptions:
+      processingRules: []
+      rejectBreakingChanges: false
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  ratelimitServer:
+    rateLimitBeforeAuth: false
+    ratelimitServerRef:
+      name: rate-limit
+      namespace: gloo-system
   ratelimit:
     descriptors:
       - key: generic_key
@@ -99,51 +179,143 @@ spec:
         rateLimit:
           requestsPerUnit: 2
           unit: SECOND  
+  refreshRate: 60s
 ```
 
-{{% notice note %}}
-To apply this as a patch, write it to a file called `patch.yaml`, then apply the patch with the following command: 
-`kubectl patch -n gloo-system settings default --type merge --patch "$(cat patch.yaml)"`.
-
-<br />
-
-This assumes you are trying to patch the default settings resource in the gloo-system namespace. All of the other examples
-on this page for can be applied in the same way. 
-{{% /notice %}}
-
-This defines a limit of 2 requests per second for any request that triggers an action on the generic key called `per-second`. 
-We could define that action on a virtual service like so:
-
-{{< highlight yaml "hl_lines=18-23" >}}
+Action added to VirtualService, applying to all routes on the virtual host:
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: example
+  name: default
   namespace: gloo-system
 spec:
   virtualHost:
     domains:
-      - '*'
+    - '*'
     routes:
-      - matchers:
-          - prefix: /
-        routeAction:
-          single:
-            upstream:
-              name: default-example-80
-              namespace: gloo-system
-        options:
-          ratelimit:
-            rateLimits:
-              - actions:
-                  - genericKey:
-                      descriptorValue: "per-second"
-{{< /highlight >}}
+    - matchers:
+      - exact: /all-pets
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+    options:
+      rateLimitConfigs:
+        refs:
+        - name: my-rate-limit-policy
+          namespace: gloo-system
+```
 
-{{% notice note %}}
-In Envoy, the rate limit config is typically written with snake case keys ("example_config") in the YAML, whereas in Gloo Edge and Kubernetes
-YAML keys typically use camel case ("exampleConfig"). We'll use camel case notation when writing YAML keys in Gloo Edge config here. 
-{{% /notice %}}
+Action added to VirtualService, applying to the specific `/all-pets` route:
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /all-pets
+      options:
+        prefixRewrite: /api/pets
+        rateLimitConfigs:
+          refs:
+          - name: my-rate-limit-policy
+            namespace: gloo-system
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+```
+
+{{% /tab %}}
+{{% tab name="Example RateLimitConfig and VirtualService files" %}}
+Descriptor and action configured in RateLimitConfig:
+```yaml
+apiVersion: ratelimit.solo.io/v1alpha1
+kind: RateLimitConfig
+metadata:
+  name: my-rate-limit-policy
+  namespace: gloo-system
+spec:
+  raw:
+    descriptors:
+      - key: generic_key
+        value: "per-second"
+        rateLimit:
+          requestsPerUnit: 2
+          unit: SECOND  
+    rateLimits:
+    - actions:
+      - genericKey:
+          descriptorValue: "per-second"
+```
+
+VirtualService uses the RateLimitConfig for all routes on the virtual host:
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /all-pets
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+    options:
+      rateLimitConfigs:
+        refs:
+        - name: my-rate-limit-policy
+          namespace: gloo-system
+```
+
+VirtualService uses the RateLimitConfig for the specific `/all-pets` route:
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /all-pets
+      options:
+        prefixRewrite: /api/pets
+        rateLimitConfigs:
+          refs:
+          - name: my-rate-limit-policy
+            namespace: gloo-system
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+```
+{{% /tab %}} 
+{{< /tabs >}}
 
 ### Header Values
 

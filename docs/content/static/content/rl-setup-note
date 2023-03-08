@@ -1,0 +1,1 @@
+The following example provides configuration files that you can use. To learn more about rate limiting options, different implementation paths for your configuration, and verification steps, see the [Rate limiting setup guide](https://docs.solo.io/gloo-edge/master/guides/security/rate_limiting/setup/).
