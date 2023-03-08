@@ -27,10 +27,6 @@ gloo:
       # Therefore, we set values to lower thresholds than the defaults
       - name: LEADER_ELECTION_LEASE_DURATION
         value: 4s
-      - name: LEADER_ELECTION_RENEW_PERIOD
-        value: 3s
-      - name: LEADER_ELECTION_RETRY_PERIOD
-        value: 1s
     livenessProbeEnabled: true
 gatewayProxies:
   gatewayProxy:
