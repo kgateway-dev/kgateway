@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -280,13 +281,11 @@ var _ = Describe("Transformations", func() {
 		}, "10s", "0.5s").ShouldNot(BeNil())
 	}
 
-	FormRequestWithUrlAndHeaders := func(url string, headers map[string]string) *http.Request {
+	FormRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
 		// form request
 		req, err := http.NewRequest("GET", url, nil)
 		Expect(err).NotTo(HaveOccurred())
-		for k, v := range headers {
-			req.Header.Set(k, v)
-		}
+		req.Header = headers
 		return req
 	}
 
@@ -325,8 +324,8 @@ var _ = Describe("Transformations", func() {
 	GetHtmlRequest := func() *http.Request {
 		// note that the Httpbin html endpoint returns a non-json body
 		url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
-		headers := map[string]string{
-			"x-solo-hdr-1": "test",
+		headers := map[string][]string{
+			"x-solo-hdr-1": {"test"},
 		}
 		req := FormRequestWithUrlAndHeaders(url, headers)
 		return req
@@ -414,6 +413,98 @@ var _ = Describe("Transformations", func() {
 			var body map[string]interface{}
 			err := json.NewDecoder(res.Body).Decode(&body)
 			Expect(err).To(HaveOccurred())
+		})
+	})
+
+	Context("requestTransformation", func() {
+		var (
+			us *gloov1.Upstream
+			vh *gloov1.VirtualHost
+		)
+
+		BeforeEach(func() {
+			// create upstream that will return an html body at the /html endpoint
+			us = GetHttpbinEchoUpstream()
+			writeUpstream(us)
+
+			// create a virtual host with a route to the upstream
+			vh = GetTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
+
+			// add a transformation to the virtual host
+			transform = &transformation.Transformations{
+				RequestTransformation: &transformation.Transformation{
+					TransformationType: &transformation.Transformation_HeaderBodyTransform{
+						HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+							AddRequestMetadata: true,
+						},
+					},
+				},
+			}
+
+			vh.Options = &gloov1.VirtualHostOptions{
+				Transformations: transform,
+			}
+		})
+
+		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
+			WriteVhost(vh)
+
+			// execute request -- expect a 200 response
+			url := fmt.Sprintf("http://%s:%d/anything?foo=bar&multiple=1&multiple=2", "localhost", envoyPort)
+			headers := map[string][]string{}
+			req := FormRequestWithUrlAndHeaders(url, headers)
+			res := GetSuccessfulResponse(req)
+
+			// log response body
+			body, err := ioutil.ReadAll(res.Body)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(body))
+
+			// parse the response body as JSON
+			var bodyJson map[string]interface{}
+			err = json.Unmarshal(body, &bodyJson)
+			Expect(err).NotTo(HaveOccurred())
+			bodyJson = bodyJson["json"].(map[string]interface{})
+
+			// inspect the response body to confirm that the queryStringParameters were added to the metadata
+			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["foo"]).To(Equal("bar"))
+			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["multiple"]).To(Equal("2"))
+
+			// inspect the response body to confirm that the multiValueQueryStringParameters were added to the metadata
+			Expect(bodyJson["multiValueQueryStringParameters"].(map[string]interface{})["multiple"].([]interface{})[0]).To(Equal("1"))
+			Expect(bodyJson["multiValueQueryStringParameters"].(map[string]interface{})["multiple"].([]interface{})[1]).To(Equal("2"))
+		})
+
+		It("should handle headers and multiValueHeaders", func() {
+			WriteVhost(vh)
+
+			// execute request -- expect a 200 response
+			url := fmt.Sprintf("http://%s:%d/anything", "localhost", envoyPort)
+			headers := map[string][]string{
+				"x-solo-test-header": {"test"},
+				"foo":                {"bar", "baz"},
+			}
+			req := FormRequestWithUrlAndHeaders(url, headers)
+			res := GetSuccessfulResponse(req)
+
+			// log response body
+			body, err := ioutil.ReadAll(res.Body)
+			Expect(err).NotTo(HaveOccurred())
+			fmt.Println(string(body))
+
+			// parse the response body as JSON
+			var bodyJson map[string]interface{}
+			err = json.Unmarshal(body, &bodyJson)
+			Expect(err).NotTo(HaveOccurred())
+			bodyJson = bodyJson["json"].(map[string]interface{})
+
+			// inspect the response body to confirm that the headers were added to the metadata
+			Expect(bodyJson["headers"].(map[string]interface{})["x-solo-test-header"]).To(Equal("test"))
+			Expect(bodyJson["headers"].(map[string]interface{})["foo"]).To(Equal("baz"))
+
+			// inspect the response body to confirm that the multiValueHeaders were added to the metadata
+			Expect(bodyJson["multiValueHeaders"].(map[string]interface{})["foo"].([]interface{})[0]).To(Equal("bar"))
+			Expect(bodyJson["multiValueHeaders"].(map[string]interface{})["foo"].([]interface{})[1]).To(Equal("baz"))
 		})
 	})
 })
