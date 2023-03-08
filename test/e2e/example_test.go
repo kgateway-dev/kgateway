@@ -125,8 +125,8 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				WithName("my-custom-vs").
 				WithNamespace(writeNamespace).
 				WithDomain("custom-domain.com").
-				WithRoutePrefixMatcher("test", "/endpoint").
-				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/endpoint").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
 				Build()
 
 			// By including the new resource in the ResourcesToCreate variable, the TestContext
@@ -169,7 +169,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 			By("Patch the VS to only handle traffic prefixed with /new")
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vsBuilder := helpers.BuilderFromVirtualService(vs)
-				vsBuilder.WithRoutePrefixMatcher("test", "/new")
+				vsBuilder.WithRoutePrefixMatcher(e2e.DefaultRouteName, "/new")
 				return vsBuilder.Build()
 			})
 

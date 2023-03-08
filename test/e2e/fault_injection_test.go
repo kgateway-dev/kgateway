@@ -12,11 +12,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/helpers"
-
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
@@ -45,68 +43,49 @@ var _ = Describe("Fault Injection", func() {
 
 	Context("Envoy Abort Fault", func() {
 
-		BeforeEach(func() {
-			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
-				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteOptions("test", &gloov1.RouteOptions{
+		It("works", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
 					Faults: &fault.RouteFaults{
 						Abort: &fault.RouteAbort{
 							HttpStatus: uint32(503),
 							Percentage: float32(100),
 						},
 					},
-				}).
-				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
-				Build()
+				}
+				return vs
+			})
 
-			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vs,
-			}
-		})
-
-		It("works", func() {
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
 
-			Eventually(func(g Gomega) (*http.Response, error) {
-				return http.DefaultClient.Do(req)
-			}, "5s", ".5s").Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusServiceUnavailable,
-				Body:       "fault filter abort",
-			}))
-
+			Eventually(func(g Gomega) {
+				res, err := http.DefaultClient.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusServiceUnavailable,
+					Body:       "fault filter abort",
+				}))
+			}, "5s", ".5s").Should(Succeed())
 		})
 	})
 
 	Context("Envoy Delay Fault", func() {
 
-		BeforeEach(func() {
-			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
-				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteOptions("test", &gloov1.RouteOptions{
+		It("works", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
 					Faults: &fault.RouteFaults{
 						Delay: &fault.RouteDelay{
 							FixedDelay: prototime.DurationToProto(time.Second * 3),
 							Percentage: float32(100),
 						},
 					},
-				}).
-				WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
-				Build()
+				}
+				return vs
+			})
 
-			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vs,
-			}
-		})
-
-		It("works", func() {
 			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
 			Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
