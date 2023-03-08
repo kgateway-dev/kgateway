@@ -4,12 +4,16 @@ weight: 60
 description: 
 ---
 
-Review examples for how to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of this guide. 
+Review examples for how to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of the []() guide. 
 
 On this page: 
-- Mappings for standard gRPC methods
+- [Map a `List` method](#list)
+- [Map a `Get` method](#get)
+- [Map a `Create` method](#create)
+- [Map a `Update` method](#update)
+- [Map a `Delete` method](#delete)
 
-## Map a `List` method
+## Map a `List` method {#list}
 
 The `List` method is typically used to retrieve or search for a list of resources. 
 
@@ -49,7 +53,7 @@ The code example implements the following HTTP to gRPC transcoding.
 |`curl -X GET http://{$DOMAIN_NAME}/shelves`|`ListShelves()`|
 
 
-## Map a `Get` method
+## Map a `Get` method {#get}
 
 The `Get` method is typically used to retrieve a specific resource. 
 
@@ -146,7 +150,56 @@ The code example implements the following HTTP to gRPC transcoding.
 |`curl -X GET http://{$DOMAIN_NAME}/shelves/1/book/2`|`GetBook(shelf: "1" book: "2" )`|
 |`curl -X GET http://{$DOMAIN_NAME}/shelves/1/book/?revision=3`|`GetBook(shelf: "1" book: "2" revision: "3" )`|
 
-## Map a `Create` method
+
+### Example with additional URL path bindings (NOT IMPLEMENTED)
+
+```
+rpc GetBook(GetBookRequest) returns (Book) {
+    option (google.api.http) = {
+      get: "/shelves/{shelf}/books/{book}"
+      additional_bindings {
+        get: "/authors/{author}/books/{book}"
+      }
+    };
+  }
+
+message GetBookRequest {
+  // The ID of the shelf from which to retrieve a book.
+  int64 shelf = 1;
+  // The ID of the book to retrieve.
+  int64 book = 2;
+  // The ID of the author. 
+  int64 author = 3;
+}
+
+message Book {
+  // A unique book id.
+  int64 id = 1;
+  // An author of the book.
+  string author = 2;
+  // A book title.
+  string title = 3;
+  // Quotes from the book.
+  repeated string quotes = 4;
+  // The book revision.
+  int64 revision = 5; 
+}
+```
+
+In this example: 
+* The GetBook gRPC method is mapped to an HTTP GET request.
+* `/shelves/{shelf}/books/{book}` is the URL path for the request. `{shelf}` represents the ID of the shelf from which to retrieve the book. `{book}` is the ID of the book that you want to retrieve from the shelf. 
+* `/authors/{author}/books/{book}` is another URL path that a client can use for the request. `{author}` represents the ID of the author that wrote the book. `{book}` is the ID of the book that you want to retrieve from the author.  
+* If the book is found, the details of the book are returned as specified in `message Book`. For example, information such as the ID, author, and title is returned in the HTTP response body. 
+
+The code example implements the following HTTP to gRPC transcoding. 
+
+|HTTP|gRPC|
+|--|--|
+|`curl -X GET http://{$DOMAIN_NAME}/shelves/1/book/2`|`GetBook(shelf: "1" book: "2" )`|
+|`curl -X GET http://{$DOMAIN_NAME}/authors/57/book/2`|`GetBook(author: "57" book: "2" )`|
+
+## Map a `Create` method {#create}
 
 The `Create` method is typically used to create a new resource under a specified parent. The newly created resource is then returned to the client. 
 
@@ -275,11 +328,13 @@ In this example:
 * `body: book` specifies that all remaining request fields that are not provided by the URL path template must be mapped from the HTTP request body. In this example, `{shelf}` is provided as part of the URL. However the details for the book as defined in `message Book` are provided in the HTTP request body. 
 * After the book is created, the details of the book as defined in `message Book` are returned in the HTTP response body.
 
+The code example implements the following HTTP to gRPC transcoding.
+
 |HTTP | gRPC|
 |-----|-----|
 |`curl -X PUT http://{$DOMAIN_NAME}/shelves/1/books -d {"id":"50","author":"12345", "title": "The long ride"}`| `CreateBook(shelf: "1" book: Book(id: "50" author: "1234" title: "The long ride"))`|
 
-## Map an `Update` method
+## Map an `Update` method {#update}
 
 The `Update` method is typically used to update the properties for a specific resource. After the resource is updated, the updated resource is returned to the client. 
 
@@ -325,12 +380,14 @@ In this example:
 * `/shelves/{shelf}/books/{book.id}` is the URL path for the request. `{shelf}` represents the ID of the shelf where the book is stored. `{book.id}` represents the ID of the book that you want to update.
 * `body: book` specifies that all remaining request fields that are not provided by the URL path template must be mapped from the HTTP request body. In this example, fields such as the author or title must be provided in the HTTP request body. 
 
+The code example implements the following HTTP to gRPC transcoding.
+
 |HTTP | gRPC|
 |-----|-----|
 |`curl -X PATCH http://{$DOMAIN_NAME}/shelves/1/books/2 -d {"id":"2","author":"57", "title": "The last ride"}`| `UpdateBook(shelf: "1" book: Book(id: "2" author: "57" title: "The last ride"))`|
 
 
-## Map a `Delete` method
+## Map a `Delete` method {#delete}
 
 The `Delete` method is used to delete a specific resource. 
 
@@ -340,20 +397,8 @@ The `Delete` method is used to delete a specific resource.
 * The resource to delete should be provided as part of the URL path. 
 * All remaining request parameters should be mapped to URL query parameters. 
 * No request body can be provided. 
-* The Delete method immediately removes 
-* 
-* The Delete method takes a resource name and zero or more parameters, and deletes or schedules for deletion the specified resource. The Delete method should return google.protobuf.Empty.
-
-An API should not rely on any information returned by a Delete method, as it cannot be invoked repeatedly.
-
-HTTP mapping:
-
-
-All remaining request message fields shall map to the URL query parameters.
-
-If the Delete method immediately removes the resource, it should return an empty response.
-If the Delete method initiates a long-running operation, it should return the long-running operation.
-If the Delete method only marks the resource as being deleted, it should return the updated resource.
+* The Delete method immediately removes the resource. 
+* The Delete method should return an empty response (`google.protobuf.Empty`). 
 
 ### Example for deleting a resource
 
@@ -373,55 +418,18 @@ message DeleteBookRequest {
 ```
 
 In this example: 
-* The DeleteBook gRPC method is mapped to an HTTP DELETE request
-* `/shelves/{shelf}/books/{book}` is the URL path for the request. `{shelf}` represents the ID of the shelf from which to delete the book. `{book}` is the ID of the book that you want to delete from the shelf. Gloo Edge adds both values to the DeleteBookRequest. 
+* The DeleteBook gRPC method is mapped to an HTTP DELETE request.
+* `/shelves/{shelf}/books/{book}` is the URL path for the request. `{shelf}` represents the ID of the shelf from which to delete the book. `{book}` is the ID of the book that you want to delete from the shelf. Both values are mapped to the `shelf` and `book` parameters in the DeleteBookRequest. 
+* `google.protobuf.Empty` specifies that an empty HTTP response body is returned to the client. 
 
+The code example implements the following HTTP to gRPC transcoding.
 
-## Get resource options
-
-```
-rpc BookstoreOptions(GetShelfRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      custom {
-        kind: "OPTIONS"
-        path: "/shelves/{shelf}"
-      }
-    };
-  }
-
-message GetShelfRequest {
-  // The ID of the shelf resource to retrieve.
-  int64 shelf = 1;
-}
-```
+|HTTP | gRPC|
+|-----|-----|
+|`curl -X DELETE http://{$DOMAIN_NAME}/shelves/1/books/2`| `DeleteBook(shelf: "1" book: "2"`|
 
 
 
-## Multiple HTTP path bindings
-
-```
-       rpc GetMessage(GetMessageRequest) returns (Message) {
-         option (google.api.http) = {
-           get: "/v1/messages/{message_id}"
-           additional_bindings {
-             get: "/v1/users/{user_id}/messages/{message_id}"
-           }
-         };
-       }
-     }
-     message GetMessageRequest {
-       string message_id = 1;
-       string user_id = 2;
-     }
-```
-
- This enables a HTTP JSON to RPC mapping as below:
-
- |HTTP | gRPC|
- |-----|-----|
- |`GET /v1/messages/123456` | `GetMessage(message_id: "123456")`|
- |`GET /v1/users/me/messages/123456` | `GetMessage(user_id: "me" message_id:
- "123456")`|
 
 
 
