@@ -1,10 +1,10 @@
 ---
-title: Set up routing for gRPC services
-weight: 125
+title: Set up routing to gRPC services
+weight: 20
 description: Routing to gRPC services with a gRPC client
 ---
 
-gRPC is a popular, high-performance framework used by many applications. In this guide, you learn how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service` and connect to it with a gRPC client. Then, you explore how to secure the communication between the gRPC client and the Envoy proxy by using TLS certificates. 
+In this guide, you learn how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service`, and connect to it with a gRPC client. Then, you explore how to secure the communication between the gRPC client and the Envoy proxy by using TLS certificates. 
 
 In this guide you complete the following tasks: 
 
@@ -19,7 +19,7 @@ Make sure to complete the following tasks before you get started with this guide
 - Create or use an existing [Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}). 
 - [Install Gloo Edge]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 - [Install `grpcurl`](https://github.com/fullstorydev/grpcurl) to act as the gRPC client. 
-- .Install `openssl` to generate self-signed TLS certificates. For example, to install `openssl` on a Mac, run `brew install openssl`. 
+- Install `openssl` to generate self-signed TLS certificates. For example, to install `openssl` on a Mac, run `brew install openssl`. 
 
 ## Step 1: Deploy the demo gRPC store service and set up routing {#deploy-app}
 
@@ -36,7 +36,7 @@ We have a container image on Docker Hub which has a simple Store service for gRP
    kubectl get upstream -n gloo-system default-grpcstore-demo-80
    ```
    
-3. Enable Gloo Edge function discovery (FDS) so the proto descriptor can be found. The proto descriptor includes the gRPC functions that are available in the store service. 
+3. Enable Gloo Edge function discovery (FDS) so the proto descriptor can be found. The proto descriptor binary includes the gRPC functions that are available in the store service as well as any HTTP mappings that were added for HTTP to gRPC transcoding.
    ```shell
    kubectl label upstream -n gloo-system default-grpcstore-demo-80 discovery.solo.io/function_discovery=enabled
    ```
@@ -89,11 +89,11 @@ We have a container image on Docker Hub which has a simple Store service for gRP
    {{% /notice %}}
 
 5. Optional: Decode the `spec.kube.serviceSpec.grpcJsonTanscoder` proto descriptor field. Note that the field was truncated in the following command. Make sure to add the entire `spec.kube.serviceSpec.grpcJsonTanscoder` value to this command. 
-   ```
+   ```shell
    echo "Cqw ... 90bzM=" | base64 -d
    ```
    
-6. Change the communication protocol that the Envoy proxy uses to talk to the gRPC app. This step is required so that incoming requests from gRPC clients can be forwarded to the gRPC app correctly. You can choose between the following two options: 
+6. Change the communication protocol that the Envoy proxy uses to HTTP/2. This step is required so that incoming requests from gRPC clients can be forwarded to the gRPC app. You can choose between the following two options: 
    * Add the `gloo.solo.io/h2_service: true` annotation to the gRPC service. 
    * Name the port for the gRPC service one of the following: `grpc`, `http2`, or `h2`. 
 
@@ -131,7 +131,7 @@ We have a container image on Docker Hub which has a simple Store service for gRP
             state: Accepted
       {{< /highlight >}}
 
-7. Create the virtual service xo that you can route incoming requests to the gRPC store app. The virtual service assumes that you are using the `gloo-system` namespace for your Gloo Edge installation. In this initial configuration, the prefix `/` is matched for all domains. 
+7. Create the virtual service so that you can route incoming requests to the gRPC store app. The virtual service assumes that you are using the `gloo-system` namespace for your Gloo Edge installation. In this initial configuration, the prefix `/` is matched for all domains. 
    ```
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -361,4 +361,4 @@ Enable encryption between the gRPC client and the Envoy proxy on a specific doma
 
 Excellent! In this guide you explored how to connect to a gRPC Upstream from a gRPC client by using Gloo Edge. You also learned how to limit routing to certain domains and how to secure the connection between the gRPC client and your upstream with TLS certificates. 
 
-To learn how to connect to a gRPC upstream through Gloo Edge by using a REST API, check out the [gRPC to REST]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest/" %}}) guide. For more information about how to further secure your Gloo Edge deployment, see the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) guides. 
+To learn how to connect to a gRPC upstream through Gloo Edge by using a REST API, check out the [Set up gRPC to HTTP transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding" %}}) guide. For more information about how to further secure your Gloo Edge deployment, see the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) guides. 
