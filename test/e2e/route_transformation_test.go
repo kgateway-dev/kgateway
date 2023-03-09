@@ -422,6 +422,20 @@ var _ = Describe("Transformations", func() {
 			vh *gloov1.VirtualHost
 		)
 
+		extractJsonResponse := func(res *http.Response) map[string]interface{} {
+			// read response body
+			body, err := ioutil.ReadAll(res.Body)
+			Expect(err).NotTo(HaveOccurred())
+
+			// parse the response body as JSON
+			var bodyJson map[string]interface{}
+			err = json.Unmarshal(body, &bodyJson)
+			Expect(err).NotTo(HaveOccurred())
+			// the response from the httpbin /anything endpoint is nested under the "json" key
+			return bodyJson["json"].(map[string]interface{})
+
+		}
+
 		BeforeEach(func() {
 			// create upstream that will return an html body at the /html endpoint
 			us = GetHttpbinEchoUpstream()
@@ -455,16 +469,7 @@ var _ = Describe("Transformations", func() {
 			req := FormRequestWithUrlAndHeaders(url, headers)
 			res := GetSuccessfulResponse(req)
 
-			// read response body
-			body, err := ioutil.ReadAll(res.Body)
-			Expect(err).NotTo(HaveOccurred())
-
-			// parse the response body as JSON
-			var bodyJson map[string]interface{}
-			err = json.Unmarshal(body, &bodyJson)
-			Expect(err).NotTo(HaveOccurred())
-			// the response from the httpbin /anything endpoint is nested under the "json" key
-			bodyJson = bodyJson["json"].(map[string]interface{})
+			bodyJson := extractJsonResponse(res)
 
 			// inspect the response body to confirm that the queryStringParameters were added to the metadata
 			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["foo"]).To(Equal("bar"))
@@ -488,15 +493,7 @@ var _ = Describe("Transformations", func() {
 			req := FormRequestWithUrlAndHeaders(url, headers)
 			res := GetSuccessfulResponse(req)
 
-			// read response body
-			body, err := ioutil.ReadAll(res.Body)
-			Expect(err).NotTo(HaveOccurred())
-
-			// parse the response body as JSON
-			var bodyJson map[string]interface{}
-			err = json.Unmarshal(body, &bodyJson)
-			Expect(err).NotTo(HaveOccurred())
-			bodyJson = bodyJson["json"].(map[string]interface{})
+			bodyJson := extractJsonResponse(res)
 
 			// inspect the response body to confirm that the headers were added to the metadata
 			Expect(bodyJson["headers"].(map[string]interface{})["x-solo-test-header"]).To(Equal("test"))
