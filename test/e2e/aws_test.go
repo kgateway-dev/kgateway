@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -117,7 +117,7 @@ var _ = Describe("AWS Lambda", func() {
 				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
 			}
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				return "", err
 			}
@@ -518,7 +518,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			defer res.Body.Close()
-			body, err = ioutil.ReadAll(res.Body)
+			body, err = io.ReadAll(res.Body)
 			Expect(err).NotTo(HaveOccurred())
 			return nil
 		}
@@ -704,7 +704,7 @@ var _ = Describe("AWS Lambda", func() {
 			signedJwt, err := tokenToSign.SignedString(privateKey)
 			Expect(err).NotTo(HaveOccurred())
 
-			tmpFile, err = ioutil.TempFile("/tmp", "")
+			tmpFile, err = os.CreateTemp("/tmp", "")
 			Expect(err).NotTo(HaveOccurred())
 			defer tmpFile.Close()
 
