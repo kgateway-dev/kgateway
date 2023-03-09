@@ -9,9 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	installcmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
-
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -81,7 +80,7 @@ var _ = Describe("Debug", func() {
 
 	Context("yaml dumper", func() {
 		var (
-			kubeCli        *install.MockKubectl
+			kubeCli        *testutil.MockKubectl
 			expectedOutput []string
 			importantKinds = append(append([]string{}, installcmd.GlooNamespacedKinds...), installcmd.GlooCrdNames...)
 		)
@@ -107,7 +106,7 @@ var _ = Describe("Debug", func() {
 			// don't really care what the returned data is, just want len(cmd) lines returned
 			expectedOutput = strings.Split(strings.Repeat("dummy-data-ignore_", len(cmds)), "_")
 
-			kubeCli = install.NewMockKubectl(cmds, expectedOutput)
+			kubeCli = testutil.NewMockKubectl(cmds, expectedOutput)
 
 			err = DumpYaml(tempFile.Name(), "test-namespace", kubeCli)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to dump yaml without returning an error")
