@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7914
+    resolvesIssue: true
+    description: >
+      Add connect matcher, add CONNECT upgrade type to hcm and route
