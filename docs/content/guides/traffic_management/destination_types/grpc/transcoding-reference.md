@@ -1,5 +1,5 @@
 ---
-title: HTTP to gRPC transcoding reference
+title: Transcoding reference
 weight: 60
 description: 
 ---
