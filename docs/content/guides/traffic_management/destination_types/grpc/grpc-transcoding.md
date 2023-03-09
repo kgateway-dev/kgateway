@@ -4,77 +4,54 @@ weight: 135
 description: Routing gRPC services to a REST API using provided descriptors
 ---
 
-You can enable gRPC transcoding for Gloo Edge so that the proxy can accept incoming HTTP requests and transform them into gRPC requests before they are forwarded to the gRPC service. To set up gRPC transcoding, proto descriptors must exist on a gRPC upstream. 
+You can enable gRPC transcoding for Gloo Edge so that the proxy can accept incoming HTTP requests and transform them into gRPC requests before they are forwarded to the gRPC service. 
 
 In this guide, you learn how to: 
-- Annotate your proto files with HTTP rules.
+- Deploy a gRPC demo service and transform its gRPC API to a REST API by using Gloo Edge.
+- Annotate your gRPC proto files with HTTP rules.
 - Generate and encode proto descriptors.
 - Add proto descriptors to an upstream. 
+- Set up routing to the gRPC app by using a Virtual Service. 
 - Verify HTTP to gRPC request transcoding. 
 
-For more information about this process, see [gRPC transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/about/#grpc-transcoding" %}}). 
+## Before you begin
 
-## Overview
+Make sure to complete the following tasks before you get started with this guide. 
 
-In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo Edge.
+- Create or use an existing [Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}). 
+- [Install Gloo Edge version 1.14 or later]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+- [Install `grpcurl`](https://github.com/fullstorydev/grpcurl) to act as the gRPC client. 
+- Install `openssl` to generate self-signed TLS certificates. For example, to install `openssl` on a Mac, run `brew install openssl`. 
 
-To understand the details of the binary protobuf, a protobuf descriptor is needed. Since we are manually controlling the HTTP mappings for our gRPC service, we will have to generate this descriptor and provide it to Gloo Edge.
+## Step 1: Deploy the demo gRPC bookstore
 
-In this guide we are going to:
+1. Clone the Gloo Edge GitHub repository. 
+   ```shell
+   git clone https://github.com/solo-io/gloo.git
+   ```
+   
+2. Navigate to the Bookstore sample app. 
+   ```shell
+   cd gloo/docs/examples/grpc-json-transcoding/bookstore
+   ```
+   
+3. Deploy the Bookstore app in your cluster. 
+   ```shell
+   kubectl apply -f Bookstore.yaml
+   ```
+   
+   Example output: 
+   ```
+   deployment.apps/bookstore created
+   service/bookstore created
+   ```
+   
+4. Verify that the app is running. 
+   ```shell
+   kubectl get pods | grep bookstore
+   ```
 
-1. Deploy a gRPC demo service
-1. Generate the gRPC descriptors for this service
-1. Configure our gateway to handle transcoding for this service
-1. Add a Virtual Service creating a REST API that maps to the gRPC API
-1. Verify that everything is working as expected
 
-Let's get started!
-
-## Prereqs
-
-- Gloo Edge installed with version 1.5.0-beta19 or later.
-- Protoc installed (guide tested with version 3.6.1)
-
-## Deploy the demo gRPC bookstore
-
-Using `kubectl`, apply the following deployment and service:
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: bookstore
-  name: bookstore
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: bookstore
-  template:
-    metadata:
-      labels:
-        app: bookstore
-    spec:
-      containers:
-      - image: "soloio/bookstore:v0.1"
-        imagePullPolicy: IfNotPresent
-        name: bookstore
-        ports:
-        - containerPort: 8080
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: bookstore
-  name: bookstore
-spec:
-  ports:
-  - name: grpc
-    port: 8080
-    protocol: TCP
-  selector:
-    app: bookstore
 ```
 
 The source code for this service lives in the Gloo Edge repo at `docs/examples/grpc-json-transcoding/bookstore`. In the following step, we demonstrate how we can get the proto descriptor set from the source and use that to configure Envoy for gRPC to JSON transcoding.
@@ -192,4 +169,5 @@ Learn more about how Gloo Edge handles [gRPC for web clients]({{% versioned_link
 
 
 In our gRPC to REST [introduction]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}}), we explored why users might want to use gRPC to JSON transcoding to expose their gRPC services as REST APIs. As shown in that guide, Gloo Edge has its own API for gRPC to JSON transcoding that automatically annotates your proto methods with HTTP mappings as a convenience. For some use cases, it may make more sense to control [these HTTP mappings](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule) with more granularity by using the [underlying envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) directly. In this guide, we will explore how to do that with Gloo Edge.
+
 
