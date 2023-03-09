@@ -1,7 +1,7 @@
 ---
 title: Transcode gRPC requests to HTTP
 weight: 30
-description: Routing gRPC services to a REST API using provided descriptors
+description: Explore gRPC transcoding and learn how to annotate your proto files with HTTP rules. You can then configure Gloo edge to accept incoming HTTP requests and transform them into gRPC requests.
 ---
 
 You can enable gRPC transcoding for Gloo Edge so that the proxy can accept incoming HTTP requests and transform them into gRPC requests before they are forwarded to the gRPC service. 
