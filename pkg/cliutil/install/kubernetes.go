@@ -6,9 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
-
-	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 )
@@ -40,45 +37,6 @@ func (k *CmdKubectl) Kubectl(stdin io.Reader, args ...string) error {
 
 func (k *CmdKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
 	return KubectlOut(stdin, args...)
-}
-
-type MockKubectl struct {
-	Expected        []string
-	Next            int
-	StdoutLines     []string
-	StdoutLineIndex int
-}
-
-var _ KubeCli = &MockKubectl{}
-
-func NewMockKubectl(cmds []string, stdoutLines []string) *MockKubectl {
-	return &MockKubectl{
-		Expected:    cmds,
-		Next:        0,
-		StdoutLines: stdoutLines,
-	}
-}
-
-func (k *MockKubectl) Kubectl(stdin io.Reader, args ...string) error {
-	// If this fails then the CLI tried to run commands we didn't account for in the mock
-	Expect(k.Next < len(k.Expected)).To(BeTrue())
-	Expect(stdin).To(BeNil())
-	cmd := strings.Join(args, " ")
-	Expect(cmd).To(BeEquivalentTo(k.Expected[k.Next]))
-	k.Next = k.Next + 1
-	return nil
-}
-
-func (k *MockKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error) {
-	Expect(k.Next < len(k.Expected)).To(BeTrue(), "MockKubectl did not have a next command for KubectlOut")
-	Expect(stdin).To(BeNil(), "Should have passed nil to MockKubectl.KubectlOut")
-	cmd := strings.Join(args, " ")
-	Expect(cmd).To(BeEquivalentTo(k.Expected[k.Next]), "Wrong next command for MockKubectl.KubectlOut")
-	k.Next = k.Next + 1
-	Expect(k.StdoutLineIndex < len(k.StdoutLines)).To(BeTrue(), "Mock kubectl has run out of stdout lines on command "+cmd)
-	stdOutLine := k.StdoutLines[k.StdoutLineIndex]
-	k.StdoutLineIndex = k.StdoutLineIndex + 1
-	return []byte(stdOutLine), nil
 }
 
 var verbose bool
