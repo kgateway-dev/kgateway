@@ -142,6 +142,12 @@ func (m *LoadBalancerConfig_RoundRobin) Clone() proto.Message {
 	}
 	target = &LoadBalancerConfig_RoundRobin{}
 
+	if h, ok := interface{}(m.GetSlowStartConfig()).(clone.Cloner); ok {
+		target.SlowStartConfig = h.Clone().(*LoadBalancerConfig_SlowStartConfig)
+	} else {
+		target.SlowStartConfig = proto.Clone(m.GetSlowStartConfig()).(*LoadBalancerConfig_SlowStartConfig)
+	}
+
 	return target
 }
 
@@ -154,6 +160,12 @@ func (m *LoadBalancerConfig_LeastRequest) Clone() proto.Message {
 	target = &LoadBalancerConfig_LeastRequest{}
 
 	target.ChoiceCount = m.GetChoiceCount()
+
+	if h, ok := interface{}(m.GetSlowStartConfig()).(clone.Cloner); ok {
+		target.SlowStartConfig = h.Clone().(*LoadBalancerConfig_SlowStartConfig)
+	} else {
+		target.SlowStartConfig = proto.Clone(m.GetSlowStartConfig()).(*LoadBalancerConfig_SlowStartConfig)
+	}
 
 	return target
 }
@@ -208,6 +220,35 @@ func (m *LoadBalancerConfig_Maglev) Clone() proto.Message {
 		return target
 	}
 	target = &LoadBalancerConfig_Maglev{}
+
+	return target
+}
+
+// Clone function
+func (m *LoadBalancerConfig_SlowStartConfig) Clone() proto.Message {
+	var target *LoadBalancerConfig_SlowStartConfig
+	if m == nil {
+		return target
+	}
+	target = &LoadBalancerConfig_SlowStartConfig{}
+
+	if h, ok := interface{}(m.GetSlowStartWindow()).(clone.Cloner); ok {
+		target.SlowStartWindow = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.SlowStartWindow = proto.Clone(m.GetSlowStartWindow()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetAggression()).(clone.Cloner); ok {
+		target.Aggression = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	} else {
+		target.Aggression = proto.Clone(m.GetAggression()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	}
+
+	if h, ok := interface{}(m.GetMinWeightPercent()).(clone.Cloner); ok {
+		target.MinWeightPercent = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	} else {
+		target.MinWeightPercent = proto.Clone(m.GetMinWeightPercent()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	}
 
 	return target
 }
