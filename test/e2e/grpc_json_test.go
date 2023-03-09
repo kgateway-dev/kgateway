@@ -94,12 +94,17 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			EventuallyWithOffset(1, func(g Gomega) {
 				g.Expect(resp).Should(testmatchers.HaveExactResponseBody(expectedResp), "Did not get expected response")
 			}, 5, 1)
-			EventuallyWithOffset(1, tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
+			EventuallyWithOffset(1, func(g Gomega) {
+				g.Expect(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
+			})
+			//tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
 		} else {
 			EventuallyWithOffset(1, func(g Gomega) {
 				g.Expect(resp).ShouldNot(testmatchers.HaveExactResponseBody(expectedResp), "Got unexpected response")
 			}, 5, 1)
-			EventuallyWithOffset(1, tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream did not record expected request")
+			EventuallyWithOffset(1, func(g Gomega) {
+				g.Expect(tu.C).ShouldNot(Receive(PointTo(MatchFields(IgnoreExtras, expectedFields))), "Upstream recorded unexpected request")
+			})
 		}
 	}
 
