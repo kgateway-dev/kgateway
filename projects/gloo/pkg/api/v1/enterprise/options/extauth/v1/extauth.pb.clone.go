@@ -320,10 +320,17 @@ func (m *HmacAuth) Clone() proto.Message {
 	}
 	target = &HmacAuth{}
 
-	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
-		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
-	} else {
-		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	if m.GetClientSecretRef() != nil {
+		target.ClientSecretRef = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetClientSecretRef()))
+		for idx, v := range m.GetClientSecretRef() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClientSecretRef[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.ClientSecretRef[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
 	}
 
 	if h, ok := interface{}(m.GetMessageType()).(clone.Cloner); ok {

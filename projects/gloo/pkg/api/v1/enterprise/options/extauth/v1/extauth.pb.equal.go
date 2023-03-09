@@ -545,14 +545,21 @@ func (m *HmacAuth) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetClientSecretRef()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetClientSecretRef()) {
-			return false
+	if len(m.GetClientSecretRef()) != len(target.GetClientSecretRef()) {
+		return false
+	}
+	for idx, v := range m.GetClientSecretRef() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClientSecretRef()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClientSecretRef()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetClientSecretRef(), target.GetClientSecretRef()) {
-			return false
-		}
+
 	}
 
 	if h, ok := interface{}(m.GetMessageType()).(equality.Equalizer); ok {

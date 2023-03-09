@@ -453,14 +453,14 @@ This is used with custom auth servers.
 
 
 ```yaml
-"clientSecretRef": .core.solo.io.ResourceRef
+"clientSecretRef": []core.solo.io.ResourceRef
 "messageType": .enterprise.gloo.solo.io.HmacAuth.MessageType
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
+| `clientSecretRef` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
 | `messageType` | [.enterprise.gloo.solo.io.HmacAuth.MessageType](../extauth.proto.sk/#messagetype) | Which approach to use to turn the request into a hashable string. |
 
 

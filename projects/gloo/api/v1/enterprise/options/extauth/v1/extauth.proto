@@ -269,7 +269,7 @@ message BasicAuth {
 
 message HmacAuth {
     // your client secret as registered with the issuer
-    core.solo.io.ResourceRef client_secret_ref = 1;
+    repeated core.solo.io.ResourceRef client_secret_ref = 1;
     message MessageType{
         string type = 1;
     };

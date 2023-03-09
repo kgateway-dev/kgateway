@@ -175,12 +175,14 @@ spec:
                     hmacAuth:
                       properties:
                         clientSecretRef:
-                          properties:
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                          type: object
+                          items:
+                            properties:
+                              name:
+                                type: string
+                              namespace:
+                                type: string
+                            type: object
+                          type: array
                         messageType:
                           properties:
                             type:
