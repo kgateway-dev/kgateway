@@ -1,5 +1,5 @@
 ---
-title: Transcode gRPC requests to HTTP
+title: Transcode HTTP requests to gRPC
 weight: 30
 description: Explore gRPC transcoding and learn how to annotate your proto files with HTTP rules. You can then configure Gloo edge to accept incoming HTTP requests and transform them into gRPC requests.
 ---
