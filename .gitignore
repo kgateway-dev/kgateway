@@ -35,3 +35,6 @@ junit.xml
 
 # e2e tests
 *.test
+
+# python pickle files
+*.p
