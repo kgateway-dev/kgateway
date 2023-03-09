@@ -4,7 +4,7 @@ weight: 40
 description: Find examples for how to annotate your proto files with HTTP rule mappings so that Gloo Edge can correctly transform incoming HTTP requests. 
 ---
 
-Review examples for how to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of the []() guide. 
+Review examples for how to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of the [Transcode HTTP requests to gRPC]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding/">}}) guide. 
 
 On this page: 
 - [Map a `List` method](#list)
