@@ -4,7 +4,7 @@ weight: 5
 description: Set up and verify your rate limiting environment
 ---
 
-Set up and verify rate limiting in Gloo Edge. For more information about how rate limiting works, see [Rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}).
+Learn about different setup options for rate limiting in Gloo Edge. For more information about how rate limiting works, see [Rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}).
 
 ## Before you begin
 
@@ -15,7 +15,7 @@ Set up and verify rate limiting in Gloo Edge. For more information about how rat
 3. Install a test app, such as Pet Store from the [Hello World tutorial]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}).
 4. Optional (Enterprise-only): [Configure your rate limiting server]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/enterprise/" >}}) to change the defaults, such as to update the query behavior or to use a different backing database.
 
-## Step 1: Decide which rate limiting API to use {#api}
+## Decide which rate limiting API to use {#api}
 
 Depending on the type of Gloo Edge that you installed, you have multiple options for rate limiting.
 
@@ -25,17 +25,7 @@ Depending on the type of Gloo Edge that you installed, you have multiple options
 | [Set-Style API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}}) | Gloo Edge Enterprise | Like the Envoy API, the set-style API is based on descriptors (`setDescriptors`) and actions (`setActions`). Unlike the Envoy API, the set-style descriptors are unordered and can be used in combination with other descriptors. For example, you might set up a wildcard matching rule to rate limit requests with:<ul><li>An `x-type: a` header.</li><li>An `x-number: 1` header.</li><li>Any `x-color` header (`x-color: *`).</li></ul>At scale, this approach is more flexible than the Envoy API approach. You can also use Envoy and set-style APIs together. |
 | [Gloo Edge API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}}) | Gloo Edge Enterprise | For simple rate limiting per route or host, you can use the Gloo Edge rate limiting API. In this approach, you do not have to set up complicated descriptors and actions. Instead, you simply specify the requests per unit and time unit for each route or host directly within the virtual service resource. You can also have different rate limiting behavior for authorized versus anonymous requests.|
 
-## Step 2: Configure rate limiting behavior {#configure}
-
-The way that you configure rate limiting behavior varies based on the rate limiting API that you chose in the previous step.
-
-Refer to the separate guides for examples on how to configure rate limiting behavior. Then, return to this guide and continue to the next step to see how to implement the configuration in your Gloo Edge resources.
-
-* [Envoy API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" >}})
-* [Set-Style API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/set/" >}})
-* [Gloo Edge API]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" >}})
-
-## Step 3: Implement rate limiting {#implement}
+## Implement rate limiting {#implement}
 
 Depending on the rate limiting API that you chose to use, you have several options on how to implement rate limiting in your Gloo Edge routing, host, and settings resources.
 
@@ -267,7 +257,10 @@ kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-p
    ```
    kubectl describe vs default -n gloo-system
    ```
-## Step 4: Verify rate limiting with a sample app {#verify}
+
+<!-- hiding as we're putting this in the actual examples
+
+## Verify rate limiting with a sample app {#verify}
 
 The examples in this guide limited requests to 1 per minute. Depending on how you configured rate limiting, you might need to change the verification requests, such as by adding headers that you rate limit on.
 
@@ -289,6 +282,9 @@ The examples in this guide limited requests to 1 per minute. Depending on how yo
    ```
    HTTP/1.1 429 Too Many Requests
    ```
+
+-->
+
 ## Next steps
 
 Now that you know the basic steps to set up rate limiting, you might explore the following options.

@@ -83,240 +83,62 @@ Go through a series of simple rate limiting examples to understand the basic opt
 
 ### Generic Key
 
-A generic key is a specific string literal that is used to match an action to a descriptor. The example defines a limit of 2 requests per second for any request that triggers an action on the generic key called `per-second`. 
+A generic key is a specific string literal that is used to match an action to a descriptor. 
 
-{{% notice note %}}
-{{< readfile file="static/content/rl-setup-note" markdown="true">}}
-{{% /notice %}}
-
-{{< tabs >}} 
-{{% tab name="Generic descriptor and action" %}}
-Descriptor:
-```yaml
-descriptors:
-  - key: generic_key
-    value: "per-second"
-    rateLimit:
-      requestsPerUnit: 2
-      unit: SECOND  
-```
-
-Action:
-```yaml
-- actions:
-    - genericKey:
-        descriptorValue: "per-second"
-```
+1. {{< readfile file="static/content/rl-setup-before-you-begin" markdown="true">}}
+2. Prepare the descriptor that describes your rate limit rule. The following example defines a limit of 1 request per minute for any request that triggers an action on the generic key called `per-minute`. 
+   ```yaml
+   descriptors:
+     - key: generic_key
+       value: "per-minute"
+       rateLimit:
+         requestsPerUnit: 1
+         unit: MINUTE  
+   ```
+3. Prepare the action that matches the descriptor you just created. The following action matches on the `generic_key` descriptor key, as well as the `"per-minute"` descriptor key's value.
+   ```yaml
+   - actions:
+       - genericKey:
+           descriptorValue: "per-minute"
+   ```
+4. {{< readfile file="static/content/rl-setup-implement" markdown="true">}}
+   {{< tabs >}} 
+{{% tab name="Refer to RateLimitConfig (Enterprise-only)" %}}
+1. {{< readfile file="static/content/rl-setup-rlc-step" markdown="true">}}
+2. {{< readfile file="static/content/rl-setup-rlc-vs-ov" markdown="true">}}
+   * {{< readfile file="static/content/rl-setup-rlc-vs-host" markdown="true">}}
+   * {{< readfile file="static/content/rl-setup-rlc-vs-route" markdown="true">}}
 {{% /tab %}} 
-{{% tab name="Example Settings and VirtualService files" %}}
-Descriptor added to Settings:
-```yaml
-apiVersion: gloo.solo.io/v1
-kind: Settings
-metadata:
-  annotations:
-    meta.helm.sh/release-name: gloo
-    meta.helm.sh/release-namespace: gloo-system
-  labels:
-    app: gloo
-    app.kubernetes.io/managed-by: Helm
-    gloo: settings
-  name: default
-  namespace: gloo-system
-spec:
-  consoleOptions:
-    apiExplorerEnabled: true
-    readOnly: false
-  discovery:
-    fdsMode: WHITELIST
-  discoveryNamespace: gloo-system
-  extauth:
-    extauthzServerRef:
-      name: extauth
-      namespace: gloo-system
-    transportApiVersion: V3
-    userIdHeader: x-user-id
-  gateway:
-    enableGatewayController: true
-    isolateVirtualHostsBySslConfig: false
-    readGatewaysFromAllNamespaces: false
-    validation:
-      allowWarnings: true
-      alwaysAccept: true
-      disableTransformationValidation: false
-      proxyValidationServerAddr: gloo:9988
-      serverEnabled: true
-      validationServerGrpcMaxSizeBytes: 104857600
-      warnRouteShortCircuiting: false
-  gloo:
-    disableKubernetesDestinations: false
-    disableProxyGarbageCollection: false
-    enableRestEds: false
-    invalidConfigPolicy:
-      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
-        should run `glooctl check` to find and fix config errors.
-      invalidRouteResponseCode: 404
-      replaceInvalidRoutes: false
-    proxyDebugBindAddr: 0.0.0.0:9966
-    restXdsBindAddr: 0.0.0.0:9976
-    xdsBindAddr: 0.0.0.0:9977
-  graphqlOptions:
-    schemaChangeValidationOptions:
-      processingRules: []
-      rejectBreakingChanges: false
-  kubernetesArtifactSource: {}
-  kubernetesConfigSource: {}
-  kubernetesSecretSource: {}
-  ratelimitServer:
-    rateLimitBeforeAuth: false
-    ratelimitServerRef:
-      name: rate-limit
-      namespace: gloo-system
-  ratelimit:
-    descriptors:
-      - key: generic_key
-        value: "per-second"
-        rateLimit:
-          requestsPerUnit: 2
-          unit: SECOND  
-  refreshRate: 60s
-```
-
-Action added to VirtualService, applying to all routes on the virtual host:
-```yaml
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: default
-  namespace: gloo-system
-spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matchers:
-      - exact: /all-pets
-      options:
-        prefixRewrite: /api/pets
-      routeAction:
-        single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
-    options:
-      rateLimitConfigs:
-        refs:
-        - name: my-rate-limit-policy
-          namespace: gloo-system
-```
-
-Action added to VirtualService, applying to the specific `/all-pets` route:
-```yaml
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: default
-  namespace: gloo-system
-spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matchers:
-      - exact: /all-pets
-      options:
-        prefixRewrite: /api/pets
-        rateLimitConfigs:
-          refs:
-          - name: my-rate-limit-policy
-            namespace: gloo-system
-      routeAction:
-        single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
-```
-
-{{% /tab %}}
-{{% tab name="Example RateLimitConfig and VirtualService files" %}}
-Descriptor and action configured in RateLimitConfig:
-```yaml
-apiVersion: ratelimit.solo.io/v1alpha1
-kind: RateLimitConfig
-metadata:
-  name: my-rate-limit-policy
-  namespace: gloo-system
-spec:
-  raw:
-    descriptors:
-      - key: generic_key
-        value: "per-second"
-        rateLimit:
-          requestsPerUnit: 2
-          unit: SECOND  
-    rateLimits:
-    - actions:
-      - genericKey:
-          descriptorValue: "per-second"
-```
-
-VirtualService uses the RateLimitConfig for all routes on the virtual host:
-```yaml
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: default
-  namespace: gloo-system
-spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matchers:
-      - exact: /all-pets
-      options:
-        prefixRewrite: /api/pets
-      routeAction:
-        single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
-    options:
-      rateLimitConfigs:
-        refs:
-        - name: my-rate-limit-policy
-          namespace: gloo-system
-```
-
-VirtualService uses the RateLimitConfig for the specific `/all-pets` route:
-```yaml
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: default
-  namespace: gloo-system
-spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matchers:
-      - exact: /all-pets
-      options:
-        prefixRewrite: /api/pets
-        rateLimitConfigs:
-          refs:
-          - name: my-rate-limit-policy
-            namespace: gloo-system
-      routeAction:
-        single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
-```
+{{% tab name="Enter directly in resources" %}}
+1. {{< readfile file="static/content/rl-setup-separate-settings" markdown="true">}}
+2. {{< readfile file="static/content/rl-setup-separate-vs-ov" markdown="true">}}
+   * {{< readfile file="static/content/rl-setup-separate-vs-host" markdown="true">}}
+   * {{< readfile file="static/content/rl-setup-separate-vs-route" markdown="true">}}
 {{% /tab %}} 
-{{< /tabs >}}
-
+   {{< /tabs >}}
+5. {{< readfile file="static/content/rl-setup-check-vs" markdown="true">}}
+   ```
+   kubectl describe vs default -n gloo-system
+   ```
+6. Verify that your rate limit works.
+   1. Verify that you can reach your test app by sending a request.
+      ```sh
+      curl -v $(glooctl proxy url)/all-pets
+      ```
+      Example response:
+      ```
+      HTTP/1.1 200 OK
+      ...
+      [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+      ```
+   2. Repeat the request. Because the rate limiting rule that you set up limits the requests to 1 time per minute, the request is rate limited.
+      ```sh
+      curl -v $(glooctl proxy url)/all-pets
+      ```
+      Example response:
+      ```
+      HTTP/1.1 429 Too Many Requests
+      ```
 ### Header Values
 
 It may be desirable to create actions based on the value of a header, which is dynamic based on the request, rather than 
