@@ -1,7 +1,7 @@
 ---
 title: About the gRPC API
 weight: 10
-description: 
+description: Learn about the gRPC protocol, its benefits, and how gRPC transcoding works. 
 ---
 
 The gRPC API in Gloo Edge allows you to expose gRPC services in your cluster so that client requests can be routed to your gRPC services. Gloo Edge also supports HTTP to gRPC transcoding that lets you transform incoming HTTP requests into gRPC messages. 
