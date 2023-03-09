@@ -95,7 +95,7 @@ var _ = Describe("Transformations", func() {
 		cancel()
 	})
 
-	ExpectSuccess := func() {
+	expectSuccess := func() {
 
 		body := []byte("{\"body\":\"test\"}")
 
@@ -118,7 +118,7 @@ var _ = Describe("Transformations", func() {
 		}, "20s", ".5s").Should(Equal("test"))
 	}
 
-	WriteVhost := func(vs *gloov1.VirtualHost) {
+	writeVhost := func(vs *gloov1.VirtualHost) {
 		proxycli := testClients.ProxyClient
 		proxy := &gloov1.Proxy{
 			Metadata: &core.Metadata{
@@ -142,7 +142,7 @@ var _ = Describe("Transformations", func() {
 	}
 
 	It("should should transform json to html response on vhost", func() {
-		WriteVhost(&gloov1.VirtualHost{
+		writeVhost(&gloov1.VirtualHost{
 			Options: &gloov1.VirtualHostOptions{
 				Transformations: transform,
 			},
@@ -163,11 +163,11 @@ var _ = Describe("Transformations", func() {
 			}},
 		})
 
-		ExpectSuccess()
+		expectSuccess()
 	})
 
 	It("should should transform json to html response on route", func() {
-		WriteVhost(&gloov1.VirtualHost{
+		writeVhost(&gloov1.VirtualHost{
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
@@ -188,11 +188,11 @@ var _ = Describe("Transformations", func() {
 			}},
 		})
 
-		ExpectSuccess()
+		expectSuccess()
 	})
 
 	It("should should transform json to html response on route", func() {
-		WriteVhost(&gloov1.VirtualHost{
+		writeVhost(&gloov1.VirtualHost{
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
@@ -221,10 +221,10 @@ var _ = Describe("Transformations", func() {
 			}},
 		})
 
-		ExpectSuccess()
+		expectSuccess()
 	})
 
-	GetTrivialVirtualHostWithUpstreamRef := func(usRef *core.ResourceRef) *gloov1.VirtualHost {
+	getTrivialVirtualHostWithUpstreamRef := func(usRef *core.ResourceRef) *gloov1.VirtualHost {
 		return &gloov1.VirtualHost{
 			Name:    "virt1",
 			Domains: []string{"*"},
@@ -249,7 +249,7 @@ var _ = Describe("Transformations", func() {
 		}
 	}
 
-	GetHttpbinEchoUpstream := func() *gloov1.Upstream {
+	getHttpbinEchoUpstream := func() *gloov1.Upstream {
 		return &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "httpbin",
@@ -280,7 +280,7 @@ var _ = Describe("Transformations", func() {
 		}, "10s", "0.5s").ShouldNot(BeNil())
 	}
 
-	FormRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
+	formRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
 		// form request
 		req, err := http.NewRequest("GET", url, nil)
 		Expect(err).NotTo(HaveOccurred())
@@ -288,7 +288,7 @@ var _ = Describe("Transformations", func() {
 		return req
 	}
 
-	GetSuccessfulResponse := func(req *http.Request) *http.Response {
+	getSuccessfulResponse := func(req *http.Request) *http.Response {
 		client := &http.Client{Timeout: time.Second}
 		var (
 			res *http.Response
@@ -305,7 +305,7 @@ var _ = Describe("Transformations", func() {
 		return res
 	}
 
-	ExpectUnsuccessfulResponse := func(req *http.Request) {
+	expectUnsuccessfulResponse := func(req *http.Request) {
 		client := &http.Client{Timeout: time.Second}
 		var (
 			res *http.Response
@@ -320,13 +320,13 @@ var _ = Describe("Transformations", func() {
 		}, "10s", "1s").Should(Succeed())
 	}
 
-	GetHtmlRequest := func() *http.Request {
+	getHtmlRequest := func() *http.Request {
 		// note that the Httpbin html endpoint returns a non-json body
 		url := fmt.Sprintf("http://%s:%d/html", "localhost", envoyPort)
 		headers := map[string][]string{
 			"x-solo-hdr-1": {"test"},
 		}
-		req := FormRequestWithUrlAndHeaders(url, headers)
+		req := formRequestWithUrlAndHeaders(url, headers)
 		return req
 	}
 
@@ -338,11 +338,11 @@ var _ = Describe("Transformations", func() {
 		)
 		BeforeEach(func() {
 			// create upstream that will return an html body at the /html endpoint
-			us = GetHttpbinEchoUpstream()
+			us = getHttpbinEchoUpstream()
 			writeUpstream(us)
 
 			// create a virtual host with a route to the upstream
-			vh = GetTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
+			vh = getTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
 
 			// add a transformation to the virtual host
 			transform = &transformation.Transformations{
@@ -364,17 +364,17 @@ var _ = Describe("Transformations", func() {
 			}
 		})
 		It("should error on non-json body when ignoreErrorOnParse/parseBodyBehavior/passthrough is disabled", func() {
-			WriteVhost(vh)
+			writeVhost(vh)
 
 			// execute request -- expect a 400 response
-			ExpectUnsuccessfulResponse(GetHtmlRequest())
+			expectUnsuccessfulResponse(getHtmlRequest())
 		})
 		It("should transform response with non-json body when ignoreErrorOnParse is enabled", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().IgnoreErrorOnParse = true
-			WriteVhost(vh)
+			writeVhost(vh)
 
 			// execute request -- expect a 200 response
-			res := GetSuccessfulResponse(GetHtmlRequest())
+			res := getSuccessfulResponse(getHtmlRequest())
 
 			// inspect response headers to confirm transformation was applied
 			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
@@ -385,10 +385,10 @@ var _ = Describe("Transformations", func() {
 		})
 		It("should transform response with non-json body when ParseBodyBehavior is set to DontParse", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = envoy_transform.TransformationTemplate_DontParse
-			WriteVhost(vh)
+			writeVhost(vh)
 
 			// execute request -- expect a 200 response
-			res := GetSuccessfulResponse(GetHtmlRequest())
+			res := getSuccessfulResponse(getHtmlRequest())
 
 			// inspect response headers to confirm transformation was applied
 			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
@@ -401,10 +401,10 @@ var _ = Describe("Transformations", func() {
 			transform.ResponseTransformation.GetTransformationTemplate().BodyTransformation = &envoy_transform.TransformationTemplate_Passthrough{
 				Passthrough: &envoy_transform.Passthrough{},
 			}
-			WriteVhost(vh)
+			writeVhost(vh)
 
 			// execute request -- expect a 200 response
-			res := GetSuccessfulResponse(GetHtmlRequest())
+			res := getSuccessfulResponse(getHtmlRequest())
 
 			// inspect response headers to confirm transformation was applied
 			Expect(res.Header.Get("x-solo-resp-hdr1")).To(Equal("test"))
@@ -437,11 +437,11 @@ var _ = Describe("Transformations", func() {
 
 		BeforeEach(func() {
 			// create upstream that will return an html body at the /html endpoint
-			us = GetHttpbinEchoUpstream()
+			us = getHttpbinEchoUpstream()
 			writeUpstream(us)
 
 			// create a virtual host with a route to the upstream
-			vh = GetTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
+			vh = getTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
 
 			// add a transformation to the virtual host
 			transform = &transformation.Transformations{
@@ -460,13 +460,13 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
-			WriteVhost(vh)
+			writeVhost(vh)
 
 			// execute request -- expect a 200 response
 			url := fmt.Sprintf("http://%s:%d/anything?foo=bar&multiple=1&multiple=2", "localhost", envoyPort)
 			headers := map[string][]string{}
-			req := FormRequestWithUrlAndHeaders(url, headers)
-			res := GetSuccessfulResponse(req)
+			req := formRequestWithUrlAndHeaders(url, headers)
+			res := getSuccessfulResponse(req)
 
 			bodyJson := extractJsonResponse(res)
 
@@ -481,7 +481,7 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should handle headers and multiValueHeaders", func() {
-			WriteVhost(vh)
+			writeVhost(vh)
 
 			// execute request -- expect a 200 response
 			url := fmt.Sprintf("http://%s:%d/anything", "localhost", envoyPort)
@@ -489,8 +489,8 @@ var _ = Describe("Transformations", func() {
 				"x-solo-test-header": {"test"},
 				"foo":                {"bar", "baz"},
 			}
-			req := FormRequestWithUrlAndHeaders(url, headers)
-			res := GetSuccessfulResponse(req)
+			req := formRequestWithUrlAndHeaders(url, headers)
+			res := getSuccessfulResponse(req)
 
 			bodyJson := extractJsonResponse(res)
 
