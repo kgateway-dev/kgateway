@@ -10,7 +10,7 @@ The gRPC API in Gloo Edge allows you to expose gRPC services in your cluster so 
 The gRPC API was changed in Gloo Edge 1.14. To learn more about the changes, see [Changes to the gRPC API in Gloo Edge 1.14](#api-changes-1.14). 
 {{% /notice %}}
 
-## About the gRPC protocol
+## gRPC framework
 
 gRPC is a popular open source high performance Remote Procedure Call (RPC) framework that can run in any environment and is commonly used to connect microservices within and across data centers. With gRPC, you get the following advantages: 
 
