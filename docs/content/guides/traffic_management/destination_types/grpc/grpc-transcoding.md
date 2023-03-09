@@ -1,6 +1,6 @@
 ---
 title: Transcode gRPC requests to HTTP
-weight: 135
+weight: 30
 description: Routing gRPC services to a REST API using provided descriptors
 ---
 
@@ -60,10 +60,6 @@ The instructions in this guide assume that you did not or do not want to enable 
    kubectl get upstream -n gloo-system default-bookstore-8080 -o yaml
    ```
    
-   
-{{% notice note %}}
-The instructions in this guide assume that you did not or do not want to enable the Gloo Edge Function Discovery Service (FDS) to automatically generate proto descriptors for you and put them on the gRPC upstream. If you want to enable FDS, run `kubectl label upstream -n gloo-system default-bookstore-8080 discovery.solo.io/function_discovery=enable`. You can then jump to [Step 4](#grpc-routing) directly. 
-{{% /notice %}}
 
 ## Step 2: Generate proto descriptors {#generate-proto-descriptors}
 
