@@ -102,9 +102,9 @@ var _ = Describe("AWS Lambda", func() {
 			// form request with multi-value query params
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/1?param_a=value_1&param_a=value_2&param_b=value_b", "localhost", envoyPort), &buf)
 			// put multi-value headers in the request
-			req.Header.Add("x-header-a", "value_1")
-			req.Header.Add("x-header-a", "value_2")
-			req.Header.Add("x-header-b", "value_b")
+			req.Header.Add("x-header-a", "header_value_1")
+			req.Header.Add("x-header-a", "header_value_2")
+			req.Header.Add("x-header-b", "header_value_b")
 
 			// execute request
 			res, err := httpClient.Do(req)
@@ -320,7 +320,7 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambda(1, defaults.HttpPort, `\"queryString\": \"param_a=value_1&param_a=value_2&param_b=value_b\"`)
 		validateLambda(1, defaults.HttpPort, `\"path\": \"/1\"`)
 		validateLambda(1, defaults.HttpPort, `\"httpMethod\": \"POST\"`)
-		validateLambda(1, defaults.HttpPort, `\"multiValueHeaders\": {\"x-header-a\": [\"value_1\", \"value_2\"]}`)
+		validateLambda(1, defaults.HttpPort, `\"multiValueHeaders\": {\"x-header-a\": [\"header_value_1\", \"header_value_2\"]}`)
 		validateLambda(1, defaults.HttpPort, `\"queryStringParameters\": {\"param_a\": \"value_2\", \"param_b\": \"value_b\"}}`)
 		validateLambda(1, defaults.HttpPort, `\"multiValueQueryStringParameters\": {\"param_a\": [\"value_1\", \"value_2\"]}`)
 	}
