@@ -8,5 +8,4 @@ gRPC is a popular open source high performance Remote Procedure Call (RPC) frame
 
 Learn how you can configure Gloo Edge to route requests to gRPC upstreams. 
 
-
-{{< children description="true" >}}
+{{% children description="true" %}}
