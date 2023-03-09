@@ -1,13 +1,13 @@
 ---
 title: About the gRPC API
 weight: 10
-description: Learn about the gRPC protocol, its benefits, and how gRPC transcoding works. 
+description: Learn about the gRPC framework, its benefits, and how gRPC transcoding works. 
 ---
 
 The gRPC API in Gloo Edge allows you to expose gRPC services in your cluster so that client requests can be routed to your gRPC services. Gloo Edge also supports HTTP to gRPC transcoding that lets you transform incoming HTTP requests into gRPC messages. 
 
 {{% notice note %}}
-The gRPC API was changed in Gloo Edge 1.14. To learn more about the changes, see [Changes to the gRPC API in Gloo Edge 1.14](#api-changes-1.14). 
+The gRPC API was changed in Gloo Edge 1.14. To learn more about the changes, see [Changes to the gRPC API in Gloo Edge 1.14](#api-changes-1-14). 
 {{% /notice %}}
 
 ## gRPC framework
@@ -33,7 +33,7 @@ Gloo Edge allows you to add HTTP rules and mappings to your gRPC API, and to aut
 
 ### HTTP rules and mappings
 
-To map gRPC to HTTP methods, you add an HTTP rule to your proto file. An HTTP rule describes how a component of a gRPC request is mapped to an HTTP URL path, URL query parameter, or request body. The HTTP rule also describes how gRPC response messages are mapped to the HTTP response body. 
+To map HTTP to gRPC methods, you add an HTTP rule to your proto file. An HTTP rule describes how a component of a gRPC request is mapped to an HTTP URL path, URL query parameter, or request body. The HTTP rule also describes how gRPC response messages are mapped to the HTTP response body. 
 
 To define an HTTP rule in your proto file, you add the `google.api.http` annotation to your gRPC method as shown in the followimg example. 
 
@@ -55,7 +55,7 @@ To define an HTTP rule in your proto file, you add the `google.api.http` annotat
 
 With this code, you can achieve the following HTTP to gRPC mapping: 
 | HTTP | gRPC |
-| -----|-----|
+| ---| ---|
 |`curl -X GET http://{DOMAIN_NAME}/v1/messages/123456`  | `GetMessage(name: "messages/123456")`|
 
 To learn more about HTTP to gRPC transcoding and find other examples, see the [Transcoding reference]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/transcoding-reference">}}). 
@@ -69,16 +69,16 @@ Depending on your setup, Gloo Edge provides the following options to discover th
 - **Automatic discovery with FDS**: You can enable the Gloo Edge Function Discovery Service (FDS) to automatically discover gRPC functions and HTTP mappings in your proto files and to generate proto descriptors from them. The proto descriptors are automatically added to the gRPC upstream. 
 - **Manual discovery without FDS**: If you do not or cannot enable Gloo Edge FDS, you can manually generate proto descriptors, encode them to base64, and add them to the upstream. This way, you manually configure the [Envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) that handles the HTTP to gRPC transcoding. Note that any proto descriptors that you added to the upstream are overwritten when you enable FDS. 
 
-After the proto descriptor binary is discovered from the upstream, Gloo Edge is configured to accept incoming HTTP requests and translate these requests to gRPC requests so that they can be processed by the gRPC upstream. 
+After the proto descriptor binary is discovered, Gloo Edge is configured to accept incoming HTTP requests and translate these requests to gRPC requests so that they can be processed by the gRPC upstream. 
 
  
-## Changes to the gRPC API in Gloo Edge 1.14 {#api-changes-1.14}
+## Changes to the gRPC API in Gloo Edge 1.14 {#api-changes-1-14}
  
-The following changes were introduced to the gRPC API in Gloo Edge 1.14
+The following changes were introduced to the gRPC API in Gloo Edge 1.14:
 
 **Before Gloo Edge 1.14**: 
 * You did not have to provide HTTP mappings in the gRPC proto files. Instead, Gloo Edge used the functions that were available in the proto file and the HTTP mapping that you provided in the Virtual Service to derive the proto descriptors. Proto descriptors were then automatically added to the gRPC upstream. 
-* If you manually generated the proto descriptors, you had the option to add them to the gateway resource instead of the gRPC upstream. 
+* In the case you disabled FDS and you manually generated the proto descriptors, you had the option to add the proto descriptors to the gateway resource instead of the gRPC upstream. 
 
 **With Gloo Edge 1.14**: 
 * HTTP mappings must always be provided in the proto itself. Gloo Edge supports automatic and manual discovery of proto descriptors as described in [HTTP mapping discovery](#http-mapping-discovery). 
