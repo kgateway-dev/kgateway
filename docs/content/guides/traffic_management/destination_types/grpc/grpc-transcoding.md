@@ -1,7 +1,7 @@
 ---
 title: Transcode HTTP requests to gRPC
 weight: 30
-description: Explore gRPC transcoding and learn how to annotate your proto files with HTTP rules. You can then configure Gloo edge to accept incoming HTTP requests and transform them into gRPC requests.
+description: Explore gRPC transcoding and learn how to annotate your proto files with HTTP rules. You can then configure Gloo Edge to accept incoming HTTP requests and transform them into gRPC requests.
 ---
 
 You can enable gRPC transcoding for Gloo Edge so that the proxy can accept incoming HTTP requests and transform them into gRPC requests before they are forwarded to the gRPC service. 
@@ -28,6 +28,8 @@ The instructions in this guide assume that you did not or do not want to enable 
 {{% /notice %}}
 
 ## Step 1: Deploy the demo gRPC Bookstore app {#deploy-app}
+
+To explore gRPC transcoding, you can use the Bookstore demo app in the Gloo Edge GitHub repository. 
 
 1. Clone the Gloo Edge GitHub repository. 
    ```shell
@@ -66,11 +68,11 @@ The instructions in this guide assume that you did not or do not want to enable 
 Proto descriptors are created by using the `protoc` tool and are based on the functions and the HTTP mappings that you added to your proto files. 
 
 {{% notice note %}}
-The instructions in this guide assume that you did not enable the Gloo Edge Function Discovery Service (FDS) to automatically generate proto descriptors and put them on the gRPC upstream. If you rather enable FDS so that you can skip [Step 2](#generate-proto-descriptors) and [Step 3](#add-descriptors-to-upstream) in this guide, and go to [Step 4](#grpc-routing) directly, run the following command: `kubectl label upstream -n gloo-system default-bookstore-8080 discovery.solo.io/function_discovery=enable`. 
+The instructions in this guide assume that you did not enable the Gloo Edge Function Discovery Service (FDS) to automatically generate proto descriptors and put them on the gRPC upstream. If you want to enable FDS, you can skip [Step 2](#generate-proto-descriptors) and [Step 3](#add-descriptors-to-upstream) in this guide, and go to [Step 4](#grpc-routing) directly. To enable FDS, run the following command: `kubectl label upstream -n gloo-system default-bookstore-8080 discovery.solo.io/function_discovery=enable`. 
 {{% /notice %}}
 
 
-1. Explore HTTP mappings for the Bookstore app. The demo app has HTTP mappings and rules already added as `google.api.http` annotations to the `bookstore.proto` file. To learn more about HTTP mappings and find examples for how to annotate your proto files, see the [Transcoding reference]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/transcoding-reference/" %}}). 
+1. Explore HTTP mappings of the Bookstore app. The demo app has HTTP mappings and rules already added as `google.api.http` annotations to the `bookstore.proto` file. To learn more about HTTP mappings and find examples for how to annotate your proto files, see the [Transcoding reference]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/transcoding-reference/" %}}). 
    ```shell
    cat bookstore.proto
    ```
@@ -94,7 +96,7 @@ The instructions in this guide assume that you did not enable the Gloo Edge Func
 
 ## Step 3: Add the proto descriptor binary to the gRPC upstream {#add-descriptors-to-upstream}
 
-Now that you created the proto descriptors, you must encode the file to base64 and add it to the upstream YAML configuration. After the proto descriptor binary is added, Gloo Edge can translate incoming HTTP requests to gRPC requests. 
+Now that you created the proto descriptors, you must encode the file to base64 and add it to the upstream YAML configuration. After the proto descriptor binary is added, Gloo Edge can translate incoming HTTP requests to gRPC requests. Note that you can skip this step if you enabled the Gloo Edge FDS feature. 
 
 1. Navigate to the `gloo` root directory. 
 2. From the root directory, encode the proto descriptor binary to base64. 
@@ -109,7 +111,7 @@ Now that you created the proto descriptors, you must encode the file to base64 a
       ```
       
    2. Add the proto descriptor binary in the `serviceSpec` section. You must also add `main.Bookstore` as the service that is running inside the gRPC app. 
-      {{< highlight yaml "hl_lines=27-31" >}}
+      {{< highlight yaml "hl_lines=26-30" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -154,7 +156,7 @@ status:
       ```
       
 {{% notice note %}}
-Adding the proto descriptor binary to the upstream is the recommended gRPC transcoding practice. However, Gloo Edge 1.13 and earlier supported adding the proto descriptors to the gateway resource instead of the upstream. If you prefer adding the proto descriptors to the gateway, refer to the [Gloo Edge 1.13 docs](https://docs.solo.io/gloo-edge/v1.13.x/guides/traffic_management/destination_types/grpc_to_rest_advanced/) for instructions on how to do that. 
+Adding the proto descriptor binary to the upstream is the recommended gRPC transcoding practice. However, you can choose to add the proto descriptors to the gateway resource instead of the upstream. For instructions on how to do that, refer to the [Gloo Edge 1.13 docs](https://docs.solo.io/gloo-edge/v1.13.x/guides/traffic_management/destination_types/grpc_to_rest_advanced/). 
 {{% /notice %}}
 
 
@@ -226,7 +228,7 @@ To test that Gloo Edge can successfully transform incoming HTTP requests to gRPC
 
 ## Summary and next steps
 
-Congratulations! You successfully enabled Gloo Edge to accept HTTP requests for your gRPC service and transform the HTTP request to gRPC requests so that the gRPC upstream can process it. You also explored how HTTP mappings are added to a gRPC API and what tools you can use to generate proto descriptors for your upstreams. This allows you to enjoy the benefits of using gRPC for your microservices while also having a traditional REST API that internet-facing clients can use, but without the need to maintain two sets of code. 
+Congratulations! You successfully enabled Gloo Edge to accept HTTP requests for your gRPC service and transform the HTTP request to gRPC requests so that the gRPC upstream can process it. You also explored how HTTP mappings are added to a gRPC API and what tools you can use to generate proto descriptors for your upstreams. This allows you to enjoy the benefits of using gRPC for your microservices while also having a traditional REST API that internet-facing clients can use without the need to maintain two sets of code. 
 
 You can explore more HTTP mappings in the [Transcoding reference]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/transcoding-reference/" %}}). Gloo Edge also supports the gRPC-Web protocol to allow browser clients that use HTTP/1 or HTTP/2 to access a gRPC service. For more information, see [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}). 
 
