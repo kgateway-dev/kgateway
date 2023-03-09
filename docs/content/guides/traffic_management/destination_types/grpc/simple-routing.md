@@ -1,7 +1,7 @@
 ---
 title: Set up routing to gRPC services
 weight: 20
-description: Routing to gRPC services with a gRPC client
+description: Use a demo app to explore how to set up routing to a gRPC upstream. 
 ---
 
 In this guide, you learn how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service`, and connect to it with a gRPC client. Then, you explore how to secure the communication between the gRPC client and the Envoy proxy by using TLS certificates. 
