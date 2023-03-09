@@ -455,19 +455,20 @@ var _ = Describe("Transformations", func() {
 			req := FormRequestWithUrlAndHeaders(url, headers)
 			res := GetSuccessfulResponse(req)
 
-			// log response body
+			// read response body
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(body))
 
 			// parse the response body as JSON
 			var bodyJson map[string]interface{}
 			err = json.Unmarshal(body, &bodyJson)
 			Expect(err).NotTo(HaveOccurred())
+			// the response from the httpbin /anything endpoint is nested under the "json" key
 			bodyJson = bodyJson["json"].(map[string]interface{})
 
 			// inspect the response body to confirm that the queryStringParameters were added to the metadata
 			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["foo"]).To(Equal("bar"))
+			// we expect the value of a multi-value query string parameter to be the last defined
 			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["multiple"]).To(Equal("2"))
 
 			// inspect the response body to confirm that the multiValueQueryStringParameters were added to the metadata
@@ -487,10 +488,9 @@ var _ = Describe("Transformations", func() {
 			req := FormRequestWithUrlAndHeaders(url, headers)
 			res := GetSuccessfulResponse(req)
 
-			// log response body
+			// read response body
 			body, err := ioutil.ReadAll(res.Body)
 			Expect(err).NotTo(HaveOccurred())
-			fmt.Println(string(body))
 
 			// parse the response body as JSON
 			var bodyJson map[string]interface{}
