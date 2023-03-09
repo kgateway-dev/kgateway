@@ -4,9 +4,15 @@ weight: 135
 description: Routing gRPC services to a REST API using provided descriptors
 ---
 
+You can enable gRPC transcoding for Gloo Edge so that the proxy can accept incoming HTTP requests and transform them into gRPC requests before they are forwarded to the gRPC service. To set up gRPC transcoding, proto descriptors must exist on a gRPC upstream. 
 
+In this guide, you learn how to: 
+- Annotate your proto files with HTTP rules.
+- Generate and encode proto descriptors.
+- Add proto descriptors to an upstream. 
+- Verify HTTP to gRPC request transcoding. 
 
-In our gRPC to REST [introduction]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}}), we explored why users might want to use gRPC to JSON transcoding to expose their gRPC services as REST APIs. As shown in that guide, Gloo Edge has its own API for gRPC to JSON transcoding that automatically annotates your proto methods with HTTP mappings as a convenience. For some use cases, it may make more sense to control [these HTTP mappings](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule) with more granularity by using the [underlying envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) directly. In this guide, we will explore how to do that with Gloo Edge.
+For more information about this process, see [gRPC transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/about/#grpc-transcoding" %}}). 
 
 ## Overview
 
@@ -178,3 +184,12 @@ In this guide we have deployed a gRPC micro-service and created an external REST
 ### Next Steps
 
 Learn more about how Gloo Edge handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}).
+
+
+
+
+-----
+
+
+In our gRPC to REST [introduction]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}}), we explored why users might want to use gRPC to JSON transcoding to expose their gRPC services as REST APIs. As shown in that guide, Gloo Edge has its own API for gRPC to JSON transcoding that automatically annotates your proto methods with HTTP mappings as a convenience. For some use cases, it may make more sense to control [these HTTP mappings](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule) with more granularity by using the [underlying envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) directly. In this guide, we will explore how to do that with Gloo Edge.
+
