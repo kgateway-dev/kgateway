@@ -66,10 +66,10 @@ Adding HTTP mappings to your proto files does not automatically set up Gloo Edge
 
 Depending on your setup, Gloo Edge provides the following options to discover the proto descriptors: 
 
-- **Automatic discovery with FDS**: You can enable the Gloo Edge Function Discovery Service (FDS) to automatically discover proto descriptors in your gRPC service and to add them to the upstream. 
-- **Manual discovery without FDS**: If you do not or cannot enable Gloo Edge FDS, you can manually generate proto descriptors, encode them, and add them to the upstream. Note that proto descriptors are overwritten when you enable FDS. 
+- **Automatic discovery with FDS**: You can enable the Gloo Edge Function Discovery Service (FDS) to automatically discover gRPC functions and HTTP mappings in your proto files and to generate proto descriptors from them. The proto descriptors are automatically added to the gRPC upstream. 
+- **Manual discovery without FDS**: If you do not or cannot enable Gloo Edge FDS, you can manually generate proto descriptors, encode them to base64, and add them to the upstream. This way, you manually configure the [Envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) that handles the HTTP to gRPC transcoding. Note that any proto descriptors that you added to the upstream are overwritten when you enable FDS. 
 
-After the proto descriptor binary is discovered, Gloo Edge can accept incoming HTTP requests and translate these requests to gRPC requests so that they can be processed by the gRPC upstream. 
+After the proto descriptor binary is discovered from the upstream, Gloo Edge is configured to accept incoming HTTP requests and translate these requests to gRPC requests so that they can be processed by the gRPC upstream. 
 
  
 ## Changes to the gRPC API in Gloo Edge 1.14 {#api-changes-1.14}
@@ -83,6 +83,8 @@ The following changes were introduced to the gRPC API in Gloo Edge 1.14
 **With Gloo Edge 1.14**: 
 * HTTP mappings must always be provided in the proto itself. Gloo Edge supports automatic and manual discovery of proto descriptors as described in [HTTP mapping discovery](#http-mapping-discovery). 
 * The option to add the proto descriptors to the gateway resources instead of an upstream is still supported. However, to control each individual gRPC service separately, it is recommended to add the proto descriptors to the upstream directly. 
+
+
 
 
 
