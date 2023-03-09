@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/test/setup"
 	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/chartutil"
 
@@ -50,11 +50,29 @@ const (
 	yamlJoiner = "\n---\n"
 )
 
+// copied over from solo-kit to avoid a dependency on ginkgo
+func kubectlOut(args ...string) (string, error) {
+	cmd := exec.Command("kubectl", args...)
+	cmd.Env = os.Environ()
+	// disable DEBUG=1 from getting through to kube
+	for i, pair := range cmd.Env {
+		if strings.HasPrefix(pair, "DEBUG") {
+			cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+			break
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("%s (%v)", out, err)
+	}
+	return string(out), err
+}
+
 func waitKnativeApiserviceReady() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	for {
-		stdout, err := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+		stdout, err := kubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
 		if err != nil {
 			contextutils.CliLogErrorw(ctx, "error getting apiserverice", "err", err)
 		}
