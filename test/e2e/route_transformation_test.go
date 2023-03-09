@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -424,7 +423,7 @@ var _ = Describe("Transformations", func() {
 
 		extractJsonResponse := func(res *http.Response) map[string]interface{} {
 			// read response body
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			Expect(err).NotTo(HaveOccurred())
 
 			// parse the response body as JSON
