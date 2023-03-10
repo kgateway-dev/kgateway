@@ -10,8 +10,6 @@ import (
 
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
-	"github.com/solo-io/gloo/test/testutils"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,16 +29,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	)
 
 	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.LinuxOnly("Relies on FDS"),
-		)
-		testContext = testContextFactory.NewTestContext(testutils.LinuxOnly("Relies on FDS"))
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
+		testContext = testContextFactory.NewTestContext()
+		//testContext = testContextFactory.NewTestContext(testutils.LinuxOnly("Relies on FDS"))
 		testContext.SetUpstreamGenerator(func(ctx context.Context, addr string) *v1helpers.TestUpstream {
 			return v1helpers.NewTestGRPCUpstream(ctx, addr, 1)
 		})
 		testContext.BeforeEach()
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
 		testContext.SetRunServices(services.What{
 			DisableGateway: false,
@@ -58,7 +54,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			},
 		})
 	})
-	JustAfterEach(func() {
+	JustBeforeEach(func() {
 		testContext.JustBeforeEach()
 	})
 	AfterEach(func() {
@@ -68,11 +64,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	basicReq := func(b []byte, expected string) func(g Gomega) {
 		return func(g Gomega) {
 			// send a request with a body
-			var buf bytes.Buffer
-			buf.Write(b)
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), "application/json", &buf)
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), bytes.NewBuffer(b))
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(res).Should(testmatchers.HaveExactResponseBody(expected))
+			req.Host = e2e.DefaultHost
+			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveExactResponseBody(expected))
 		}
 	}
 
@@ -91,9 +86,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	It("Routes to GRPC Functions with parameters", func() {
 
 		testRequest := func(g Gomega) {
-			res, err := http.Get(fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort))
+
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort), nil)
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(res).Should(testmatchers.HaveExactResponseBody(`{"str":"foo"`))
+			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveExactResponseBody(`{"str":"foo"`))
 		}
 		Eventually(testRequest, 30, 1).Should(Succeed())
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
