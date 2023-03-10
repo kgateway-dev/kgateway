@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -207,8 +210,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 
 			_, err := testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
 			Expect(err).ToNot(HaveOccurred())
-			addGrpcJsonToUpstream(tu.Upstream)
-			_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), addGrpcJsonToUpstream, testClients.UpstreamClient.BaseClient())
 			Expect(err).NotTo(HaveOccurred())
 			vs := getGrpcJsonRawVs(writeNamespace, tu.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
@@ -246,9 +248,10 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 		ProxyNames: []string{"gateway-proxy"},
 	}
 }
-func addGrpcJsonToUpstream(tu *gloov1.Upstream) {
+func addGrpcJsonToUpstream(res resources.Resource) resources.Resource {
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
+	tu := res.(*gloov1.Upstream)
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
 	bytes, err := ioutil.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
@@ -262,7 +265,7 @@ func addGrpcJsonToUpstream(tu *gloov1.Upstream) {
 				Services: []string{"glootest.TestService"},
 			},
 		}})
-	tu.Metadata.ResourceVersion = "2"
+	return tu
 }
 
 func getGrpcJsonRawVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
