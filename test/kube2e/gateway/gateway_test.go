@@ -1970,11 +1970,10 @@ var _ = Describe("Kube2e: gateway", func() {
 				resourceYaml, expectedErr string
 			}
 
-			testValidation := func(yaml, expectedErr string, testCase string) {
+			testValidation := func(yaml, expectedErr string) {
 				out, err := install.KubectlApplyOut([]byte(yaml))
 
 				testValidationDidError := func() {
-					fmt.Printf("test case: %s\n", testCase)
 					ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
 					ExpectWithOffset(1, err).To(HaveOccurred())
 				}
@@ -2092,7 +2091,7 @@ spec:
 					}
 
 					for _, tc := range testCases {
-						testValidation(tc.resourceYaml, tc.expectedErr, "gateway.rejects bad resources")
+						testValidation(tc.resourceYaml, tc.expectedErr)
 					}
 				})
 
@@ -2136,7 +2135,7 @@ spec:
 						expectedErr: "addr cannot be empty for host\n",
 					}}
 					for _, tc := range testCases {
-						testValidation(tc.resourceYaml, tc.expectedErr, "gloo.rejects bad resources")
+						testValidation(tc.resourceYaml, tc.expectedErr)
 					}
 				})
 
