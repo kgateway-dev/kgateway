@@ -6,6 +6,10 @@ description: Find examples for how to annotate your proto files with HTTP rule m
 
 Review examples for how to annotate your proto files to add HTTP mappings. These HTTP mappings are used by Gloo Edge to transcode HTTP/ JSON requests to gRPC requests so that they can be forwarded to your gRPC upstream. The examples in this doc are based on the Bookstore app that you deploy as part of the [Transcode HTTP requests to gRPC]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding/">}}) guide. 
 
+{{% notice tip %}}
+To find more examples for how to add HTTP mappings to proto files and their syntax, refer to [Transcoding HTTP/JSON to gRPC](https://cloud.google.com/endpoints/docs/grpc/transcoding) in the Google Cloud documentation. 
+{{% /notice %}}
+
 On this page: 
 - [Map a `List` method](#list)
 - [Map a `Get` method](#get)
@@ -106,99 +110,6 @@ The code example implements the following HTTP to gRPC transcoding.
 |`curl -X GET http://{$DOMAIN_NAME}/authors/1`|`GetAuthor(author: "1")`|
 
 
-### Example with query parameters (NOT IMPLEMENTED)
-
-```
-rpc GetBook(GetBookRequest) returns (Book) {
-    option (google.api.http) = {
-      get: "/shelves/{shelf}/books/{book}"
-    };
-  }
-  
-message GetBookRequest {
-  // The ID of the shelf from which to retrieve a book.
-  int64 shelf = 1;
-  // The ID of the book to retrieve.
-  int64 book = 2;
-  // The revision of the book to retrieve. This field is mapped to a query parameter. 
-  int64 revision = 3;
-}
-
-message Book {
-  // A unique book id.
-  int64 id = 1;
-  // An author of the book.
-  string author = 2;
-  // A book title.
-  string title = 3;
-  // Quotes from the book.
-  repeated string quotes = 4;
-  // The book revision.
-  int64 revision = 5; 
-}
-```
-
-In this example: 
-* The GetBook gRPC method is mapped to an HTTP GET request.
-* `/shelves/{shelf}/books/{book}` is the URL path for the HTTP request. `{shelf}` represents the ID of the shelf from which to retrieve the book. `{book}` is the ID of the book that you want to retrieve from the shelf. Because the GetBookRequest specifies the `revision` as an additional parameter that is not provided as part of the URL path, clients can pass in the revision of the book as an optional query parameter. 
-* If the book is found, the details of the book are returned as specified in `message Book`. For example, information such as the ID, author, and title is returned in the HTTP response body. 
-
-The code example implements the following HTTP to gRPC transcoding. 
-
-|HTTP|gRPC|
-|--|--|
-|`curl -X GET http://{$DOMAIN_NAME}/shelves/1/book/2`|`GetBook(shelf: "1" book: "2" )`|
-|`curl -X GET http://{$DOMAIN_NAME}/shelves/1/book/2?revision=3`|`GetBook(shelf: "1" book: "2" revision: "3" )`|
-
-
-### Example with additional URL path bindings (NOT IMPLEMENTED)
-
-```
-rpc GetBook(GetBookRequest) returns (Book) {
-    option (google.api.http) = {
-      get: "/shelves/{shelf}/books/{book}"
-      additional_bindings {
-        get: "/authors/{author}/books/{book}"
-      }
-    };
-  }
-
-message GetBookRequest {
-  // The ID of the shelf from which to retrieve a book.
-  int64 shelf = 1;
-  // The ID of the book to retrieve.
-  int64 book = 2;
-  // The ID of the author. 
-  int64 author = 3;
-}
-
-message Book {
-  // A unique book id.
-  int64 id = 1;
-  // An author of the book.
-  string author = 2;
-  // A book title.
-  string title = 3;
-  // Quotes from the book.
-  repeated string quotes = 4;
-  // The book revision.
-  int64 revision = 5; 
-}
-```
-
-In this example: 
-* The GetBook gRPC method is mapped to an HTTP GET request.
-* `/shelves/{shelf}/books/{book}` is the URL path for the HTTP request. `{shelf}` represents the ID of the shelf from which to retrieve the book. `{book}` is the ID of the book that you want to retrieve from the shelf. 
-* `/authors/{author}/books/{book}` is another URL path that a client can use for the HTTP request. `{author}` represents the ID of the author that wrote the book. `{book}` is the ID of the book that you want to retrieve from the author.  
-* If the book is found, the details of the book are returned as specified in `message Book`. For example, information such as the ID, author, and title is returned in the HTTP response body. 
-
-The code example implements the following HTTP to gRPC transcoding. 
-
-|HTTP|gRPC|
-|--|--|
-|`curl -X GET http://{$DOMAIN_NAME}/shelves/1/book/2`|`GetBook(shelf: "1" book: "2" )`|
-|`curl -X GET http://{$DOMAIN_NAME}/authors/57/book/2`|`GetBook(author: "57" book: "2" )`|
-
 ## Map a `Create` method {#create}
 
 The `Create` method is typically used to create a new resource under a specified parent. The newly created resource is then returned to the client. 
@@ -246,52 +157,6 @@ The code example implements the following HTTP to gRPC transcoding.
 |--|--|
 |`curl -X POST http://{$DOMAIN_NAME}/shelf -d {"id":"1234","theme":"drama"}`|`CreateShelf(id: "1234" theme: "drama")`|
 
-### Example to create a resource with a wildcard body (NOT IMPLEMENTED)
-
-```
-rpc CreateAuthor(CreateAuthorRequest) returns (Author) {
-    option (google.api.http) = {
-      put: "/authors/{author_id}"
-      body: "*"
-    };
-  }
-
-message CreateAuthorRequest {
-  // A unique shelf id.
-  int64 author_id = 1;
-  // The gender of the author.
-  Gender gender = 2; 
-  // The first name of the author.
-  string first_name =3;
-  // The last name of the author.
-  string last_name = 4; 
-}
-
-message Author {
-  // A unique author id.
-  int64 id = 1;
-  enum Gender {
-    UNKNOWN = 0;
-    MALE = 1;
-    FEMALE = 2;
-  };
-  Gender gender = 2;
-  string first_name = 3;
-  string last_name = 4 [json_name = "lname"];
-}
-```
-
-In this example: 
-* The CreateAuthor gRPC method is mapped to an HTTP POST request.
-* `/authors/{author_id}` is the URL path for the HTTP request. The `{author_id}` portion of the URL path instructs Gloo Edge to take the value that is provided in `{author_id}` and put it in the `author_id` parameter in the CreateShelfRequest.
-* `body: "*"` specifies that all remaining request fields that are not provided by the URL path template must be mapped from the HTTP request body. In this example, `{author_id}` is provided as part of the URL, and the values for `gender`, `first_name` and `last_name` must be mapped from the HTTP request body. 
-* After the author resource is created, the details of the author are returned in the HTTP response body as defined in `message Author` . 
-
-The code example implements the following HTTP to gRPC transcoding.
-
-|HTTP | gRPC|
-|-----|-----|
-|`curl -X POST http://{$DOMAIN_NAME}/authors/12345 -d {"gender":"2","first_name":"Max", "lname": "Smith"}`| `CreateAuthor(author_id: "12345" gender: "2" first_name: "Max" last_name: "Smith")`|
 
 ### Example to create a resource with HTTP PUT
 
