@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/testutils"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/e2e"
@@ -24,15 +25,13 @@ import (
 var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 	var (
-		tu          *v1helpers.TestUpstream
 		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
-		testContext = testContextFactory.NewTestContext()
-		//testContext = testContextFactory.NewTestContext(testutils.LinuxOnly("Relies on FDS"))
+		testContext = testContextFactory.NewTestContext(testutils.LinuxOnly("Relies on FDS"))
 		testContext.SetUpstreamGenerator(func(ctx context.Context, addr string) *v1helpers.TestUpstream {
 			return v1helpers.NewTestGRPCUpstream(ctx, addr, 1)
 		})
@@ -78,7 +77,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 		Eventually(testRequest, 30, 1).Should(Succeed())
 
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+		Eventually(testContext.TestUpstream().C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}))))
 	})
@@ -93,7 +92,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveExactResponseBody(`{"str":"foo"}`))
 		}
 		Eventually(testRequest, 30, 1).Should(Succeed())
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+		Eventually(testContext.TestUpstream().C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 			"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 		}))))
 	})
