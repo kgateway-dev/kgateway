@@ -88,6 +88,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		testRequest := func(g Gomega) {
 
 			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort), nil)
+			req.Host = e2e.DefaultHost
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveExactResponseBody(`{"str":"foo"`))
 		}
