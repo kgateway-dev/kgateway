@@ -32,11 +32,7 @@ weight: 10
 Learn how to use Gloo Edge with [Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter.html#).
 
 {{% notice note %}}
-To learn about other rate limiting options, install your environment, and set up the components that you need for rate limiting, see [Rate limiting setup]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
-
-<br>
-
-This guide only includes Envoy-style rate limiting examples, and assumes that you already set up the environment and refer back to the setup guide to test rate limiting.
+This guide only includes Envoy-style rate limiting examples. To learn about other rate limiting options, install your environment, and set up the components that you need for rate limiting, see [Rate limiting setup]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
 {{% /notice %}}
 
 The Envoy API uses two components to define how rate limiting works. For more information on where to define these components in your Gloo Edge custom resources, see [Implement rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/#implement" >}}).
@@ -66,17 +62,6 @@ to increment for a particular request.
 You can specify more than one rate limit action, and the request is throttled if any one of the actions triggers 
 the rate limiting service to signal throttling, i.e., the rate limiting actions are effectively OR'd together.
 
-### Configuration examples
-
-Throughout the rest of this guide, you can review copiable example configuration files as follows:
-* Generic descriptor and action: Review the YAML configuration stanza for the descriptor and action components. This view helps you see only the configuration that matters for rate limiting. You must add these configuration stanzas to the appropriate Gloo Edge custom resources.
-* Example Settings and VirtualService: The configuration stanza for the descriptor is shown in an example Gloo Edge Settings resource. The configuration stanza for the action is shown in an example Gloo Edge VirtualService resource. If you have Gloo Edge Open Source, you must use this approach (and not the RateLimitConfig).
-* Example RateLimitConfig and VirtualService: The configuration stanzas for both the descriptors and actions are combined in a Gloo Edge RateLimitConfig resource. Then, the VirtualService is updated to refer to the RateLimitConfig. Available with Gloo Edge Enterprise only, this approach is more flexible at scale, and less likely to cause errors in configuring your resources.
-
-In Envoy, the rate limit configuration YAML is typically written in snake case (`example_config`). However, in Gloo Edge and Kubernetes, configuration YAML is typically written in camel case (`exampleConfig`). The examples throughout use camel case.
-
-For steps on how to use these configurations to implement rate limiting, see the [Rate limiting setup guide]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
-
 ## Simple Examples
 
 Go through a series of simple rate limiting examples to understand the basic options for defining rate limiting descriptors and actions. Later, you can review more complex examples that use nested tuples of keys, to express more realistic use cases. 
@@ -104,16 +89,22 @@ A generic key is a specific string literal that is used to match an action to a 
 4. {{< readfile file="static/content/rl-setup-implement" markdown="true">}}
    {{< tabs >}} 
 {{% tab name="Refer to RateLimitConfig (Enterprise-only)" %}}
-1. {{< readfile file="static/content/rl-setup-rlc-step" markdown="true">}}
+1. {{< readfile file="static/content/rl-setup-rlc-step" markdown="true">}} 
+   * [RateLimitConfig `rlc.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/rlc.yaml)
 2. {{< readfile file="static/content/rl-setup-rlc-vs-ov" markdown="true">}}
    * {{< readfile file="static/content/rl-setup-rlc-vs-host" markdown="true">}}
+     * [VirtualService `rlc-vs-host.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/rlc-vs-host.yaml#L20-L24)
    * {{< readfile file="static/content/rl-setup-rlc-vs-route" markdown="true">}}
+     * [VirtualService `rlc-vs-route.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/rlc-vs-route.yaml#L15-L18)
 {{% /tab %}} 
 {{% tab name="Enter directly in resources" %}}
 1. {{< readfile file="static/content/rl-setup-separate-settings" markdown="true">}}
+   * [Settings `settings.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/settings.yaml#L62-L68)
 2. {{< readfile file="static/content/rl-setup-separate-vs-ov" markdown="true">}}
    * {{< readfile file="static/content/rl-setup-separate-vs-host" markdown="true">}}
+     * [VirtualService `vs-host.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/vs-host.yaml#L20-L25)
    * {{< readfile file="static/content/rl-setup-separate-vs-route" markdown="true">}}
+     * [VirtualService `vs-route.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/vs-route.yaml#L15-L19)
 {{% /tab %}} 
    {{< /tabs >}}
 5. {{< readfile file="static/content/rl-setup-check-vs" markdown="true">}}
