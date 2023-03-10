@@ -1,0 +1,1 @@
+Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
