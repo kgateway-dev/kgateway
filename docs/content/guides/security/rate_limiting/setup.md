@@ -38,14 +38,14 @@ For testing purposes, the following examples across all rate limiting API styles
 ### Envoy or Set-Style API {#implement-envoy-set}
 
 Choose between two implementation approaches:
-* **Enterprise-only**: [In the `RateLimitConfig` resource](#implement-rlc). The Gloo Edge `RateLimitConfig` custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is more flexible at scale, and less likely to cause errors in configuring your resources.
-* **Open Source or Enterprise**: [In separate Gloo Edge resources](#implement-separate). You configure descriptors in the Gloo Edge `Settings` for the entire cluster. Then, you configure the actions directly in each `VirtualService` that you want to rate limit. This approach is not as flexible at scale. Also, because you have to edit the `Settings` and `VirtualServices` resources more extensively, you might be likelier to make a configuration error or encounter merge conflicts if multiple people edit a configuration at once. If you use Gloo Edge Open Source, you must take this implementation approach.
+* **Enterprise-only**: [In the RateLimitConfig resource](#implement-rlc). The Gloo Edge RateLimitConfig custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is more flexible at scale, and less likely to cause errors in configuring your resources.
+* **Open Source or Enterprise**: [In separate Gloo Edge resources](#implement-separate). You configure descriptors in the Gloo Edge Settings for the entire cluster. Then, you configure the actions directly in each VirtualService that you want to rate limit. This approach is not as flexible at scale. Also, because you have to edit the Settings and `VirtualServices` resources more extensively, you might be likelier to make a configuration error or encounter merge conflicts if multiple people edit a configuration at once. If you use Gloo Edge Open Source, you must take this implementation approach.
 
-### In the `RateLimitConfig` resource {#implement-rlc}
+### In the RateLimitConfig resource {#implement-rlc}
 
-The Gloo Edge `RateLimitConfig` custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is available only with a Gloo Edge Enterprise license. 
+The Gloo Edge RateLimitConfig custom resource is a flexible way to keep together and reuse your rate limiting descriptors and actions across virtual services. This approach is available only with a Gloo Edge Enterprise license. 
 
-1. Define the descriptors and actions in the `RateLimitConfig` resource. For more information, see [RateLimitConfigs (Enterprise)]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/crds/" >}}).
+1. Define the descriptors and actions in the RateLimitConfig resource. For more information, see [RateLimitConfigs (Enterprise)]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/crds/" >}}).
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: ratelimit.solo.io/v1alpha1
@@ -67,7 +67,7 @@ The Gloo Edge `RateLimitConfig` custom resource is a flexible way to keep togeth
              descriptorValue: counter
    EOF
    ```
-2. Refer to the `RateLimitConfig` in each `VirtualService` that you want to rate limit. The following example updates the `default` virtual service that you created when you installed the sample Pet Store app.
+2. Refer to the RateLimitConfig in each VirtualService that you want to rate limit. The following example updates the `default` virtual service that you created when you installed the sample Pet Store app.
    1. Get the virtual service configuration file.
       ```sh
       kubectl get vs default -n gloo-system -o yaml > vs.yaml
@@ -134,15 +134,15 @@ spec:
    ```sh
    kubectl apply -n gloo-system -f vs.yaml
    ```
-4. Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
+4. {{< readfile file="static/content/rl-setup-check-vs" markdown="true">}}
    ```
    kubectl describe vs default -n gloo-system
    ```
 ### In separate resources {#implement-separate}
 
-You can configure descriptors in the Gloo Edge `Settings` for the entire cluster. Then, you configure the actions directly in each `VirtualService` that you want to rate limit. If you have an Enterprise license, consider using a [`RateLimitConfig` resource instead](#implement-rlc). If you have an Open Source license, you must take this approach for Envoy API rate limiting.
+You can configure descriptors in the Gloo Edge Settings for the entire cluster. Then, you configure the actions directly in each VirtualService that you want to rate limit. If you have an Enterprise license, consider using a [RateLimitConfig resource instead](#implement-rlc). If you have an Open Source license, you must take this approach for Envoy API rate limiting.
 
-1. Define the rate limit descriptors in the `Settings` resource.
+1. Define the rate limit descriptors in the Settings resource.
    1. Create a file with your rate limit descriptors.
       ```yaml
       cat > settings-rl-patch.yaml - <<EOF
@@ -160,7 +160,7 @@ You can configure descriptors in the Gloo Edge `Settings` for the entire cluster
       ```sh
       kubectl patch -n gloo-system settings default --type merge --patch "$(cat settings-rl-patch.yaml)"
       ```
-2. Define the actions in each `VirtualService` resource. You can apply actions at the virtual host level to apply to all routes or per route.
+2. Define the actions in each VirtualService resource. You can apply actions at the virtual host level to apply to all routes or per route.
    1. Create a file with your rate limit actions.
       {{< tabs >}} 
 {{% tab name="All routes in the virtual host" %}}
@@ -201,7 +201,7 @@ kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-p
 ```
 {{% /tab %}} 
       {{< /tabs >}} 
-3. Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
+3. {{< readfile file="static/content/rl-setup-check-vs" markdown="true">}}
    ```
    kubectl describe vs default -n gloo-system
    ```
@@ -253,7 +253,7 @@ kubectl patch -n gloo-system vs default --type merge --patch "$(cat > vs-route-p
 ```
 {{% /tab %}} 
     {{< /tabs >}} 
-3. Verify that the virtual service status is `Accepted`. If not, review the error message and update the virtual service. For example, you might have a missing resource, such as an upstream.
+3. {{< readfile file="static/content/rl-setup-check-vs" markdown="true">}}
    ```
    kubectl describe vs default -n gloo-system
    ```
