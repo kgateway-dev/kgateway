@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add clarification to test being run to better detect future failures
+    issueLink: https://github.com/solo-io/solo-projects/issues/4626
+    resolvesIssue: false
