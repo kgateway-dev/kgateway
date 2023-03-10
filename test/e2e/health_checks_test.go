@@ -209,7 +209,7 @@ var _ = Describe("Health Checks", func() {
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			body := []byte(`{"str": "foo"}`)
+			body := []byte(`"foo"`)
 
 			testRequest := basicReq(body)
 
