@@ -64,7 +64,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	basicReq := func(b []byte, expected string) func(g Gomega) {
 		return func(g Gomega) {
 			// send a request with a body
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), bytes.NewBuffer(b))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(b))
 			g.Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveExactResponseBody(expected))
