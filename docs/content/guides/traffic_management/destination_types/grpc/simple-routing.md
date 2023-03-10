@@ -17,7 +17,7 @@ The following tasks are included in this guide:
 Make sure to complete the following tasks before you get started with this guide. 
 
 - Create or use an existing [Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}). 
-- [Install Gloo Edge]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+- [Install Gloo Edge 1.14 or later]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 - [Install `grpcurl`](https://github.com/fullstorydev/grpcurl) to act as the gRPC client. 
 - Install `openssl` to generate self-signed TLS certificates. For example, to install `openssl` on a Mac, run `brew install openssl`. 
 
@@ -340,7 +340,7 @@ Enable encryption between the gRPC client and the Envoy proxy on a specific doma
          state: 1
    {{< /highlight >}}
    
-8. Send another request. We'll need to update the `grpcurl` command to use the `-insecure` flag instead of the `-plaintext` flag. We also need to update the address to use port 443 (https) instead of 80 (http).
+8. Send another request. Update the `grpcurl` command to use the `-insecure` flag instead of the `-plaintext` flag. You also need to change the port from 80 (http) to 443 (https). Note that if you have a certificate that is trusted by the `grpcurl` client, you can skip the `-insecure` flag. 
 
    ```shell
    grpcurl -insecure -authority store.example.com $(glooctl proxy address --port https) solo.examples.v1.StoreService/ListItems
