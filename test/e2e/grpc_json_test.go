@@ -79,12 +79,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	})
 
 	testRequest := func(path string, shouldMatch bool) {
-		body := []byte(`"foo"`) // this is valid JSON because of the quotes
+		body := "foo" // this is valid JSON because of the quotes
 		resp := func() (*http.Response, error) {
 			// send a request with a body
-			var buf bytes.Buffer
-			buf.Write(body)
-			return http.Post(fmt.Sprintf("http://%s:%d/%s", "localhost", defaults.HttpPort, path), "application/json", &buf)
+			return http.Post(fmt.Sprintf("http://%s:%d/%s", "localhost", defaults.HttpPort, path), "application/json", bytes.NewBufferString(body))
 		}
 		expectedResp := `{"str":"foo"}`
 		expectedFields := Fields{

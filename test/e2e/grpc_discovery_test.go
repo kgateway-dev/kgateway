@@ -30,8 +30,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	)
 
 	BeforeEach(func() {
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 		testContext = testContextFactory.NewTestContext(testutils.LinuxOnly("Relies on FDS"))
 		testContext.SetUpstreamGenerator(func(ctx context.Context, addr string) *v1helpers.TestUpstream {
 			return v1helpers.NewTestGRPCUpstream(ctx, addr, 1)
@@ -61,10 +59,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		testContext.AfterEach()
 	})
 
-	basicReq := func(b []byte, expected string) func(g Gomega) {
+	basicReq := func(body string, expected string) func(g Gomega) {
 		return func(g Gomega) {
-			// send a request with a body
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(b))
+			// send a POST request with grpc parameters in the body
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(body))
 			g.Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveExactResponseBody(expected))
@@ -73,7 +71,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 	It("Routes to GRPC Functions", func() {
 
-		body := []byte(`"foo"`)
+		body := "foo"
 		testRequest := basicReq(body, `{"str":"foo"}`)
 
 		Eventually(testRequest, 30, 1).Should(Succeed())
@@ -83,10 +81,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		}))))
 	})
 
-	It("Routes to GRPC Functions with parameters", func() {
+	It("Routes to GRPC Functions with parameters in URL", func() {
 
 		testRequest := func(g Gomega) {
-
+			// GET request with parameters in URL
 			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/t/foo", "localhost", defaults.HttpPort), nil)
 			g.Expect(err).NotTo(HaveOccurred())
 			req.Host = e2e.DefaultHost
