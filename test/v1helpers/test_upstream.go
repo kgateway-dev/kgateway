@@ -30,6 +30,25 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
+// TestUpstream is a testing utility (used in in-memory e2e tests) to compose the following concepts:
+//  1. Running an application with a custom response message (see: runTestServer)
+//  2. Configuring an Upstream object to route to that application (see: newTestUpstream)
+//  3. Utility methods for asserting that traffic was successfully routed to the application (see: Assertion Utilities)
+type TestUpstream struct {
+	Upstream    *gloov1.Upstream
+	C           <-chan *ReceivedRequest
+	Address     string
+	Port        uint32
+	GrpcServers []*testgrpcservice.TestGRPCServer
+}
+
+func (tu *TestUpstream) FailGrpcHealthCheck() *testgrpcservice.TestGRPCServer {
+	for _, v := range tu.GrpcServers[:len(tu.GrpcServers)-1] {
+		v.HealthChecker.Fail()
+	}
+	return tu.GrpcServers[len(tu.GrpcServers)-1]
+}
+
 type ReceivedRequest struct {
 	Method      string
 	Headers     map[string][]string
@@ -47,6 +66,10 @@ const (
 )
 
 type UpstreamTlsRequired int
+
+// Test Upstream Factory Utilities
+//
+// Below are a collection of methods that can be used to create a TestUpstream with a certain behavior
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, "", NO_TLS)
@@ -99,25 +122,12 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 	return us
 }
 
-type TestUpstream struct {
-	Upstream    *gloov1.Upstream
-	C           <-chan *ReceivedRequest
-	Address     string
-	Port        uint32
-	GrpcServers []*testgrpcservice.TestGRPCServer
-}
+var testUpstreamId = 0
 
-func (tu *TestUpstream) FailGrpcHealthCheck() *testgrpcservice.TestGRPCServer {
-	for _, v := range tu.GrpcServers[:len(tu.GrpcServers)-1] {
-		v.HealthChecker.Fail()
-	}
-	return tu.GrpcServers[len(tu.GrpcServers)-1]
-}
-
-var id = 0
-
+// newTestUpstream creates a static Upstream that can route traffic to a set of ports for a given address
+// It contains a unique name (since tests may run in parallel), with a suffix id that increases each invocation
 func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequest) *TestUpstream {
-	id += 1
+	testUpstreamId += 1
 	hosts := make([]*static_plugin_gloo.Host, len(ports))
 	for i, port := range ports {
 		hosts[i] = &static_plugin_gloo.Host{
@@ -127,7 +137,7 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 	}
 	u := &gloov1.Upstream{
 		Metadata: &core.Metadata{
-			Name:      fmt.Sprintf("local-test-upstream-%d", id),
+			Name:      fmt.Sprintf("local-test-upstream-%d", testUpstreamId),
 			Namespace: "default",
 		},
 		UpstreamType: &gloov1.Upstream_Static{
@@ -144,6 +154,8 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 	}
 }
 
+// runTestServer starts a local server listening on a random port, that responds to requests with the provided `reply`.
+// It returns the port that the server is running on, and a channel which will contain requests received by this server
 func runTestServer(ctx context.Context, reply string, tlsServer UpstreamTlsRequired) (uint32, <-chan *ReceivedRequest) {
 	return runTestServerWithHealthReply(ctx, reply, "OK", tlsServer)
 }
@@ -253,6 +265,11 @@ func getListener(tlsServer UpstreamTlsRequired) (net.Listener, error) {
 	return listener, nil
 }
 
+// Assertion Utilities
+//
+// Below are a collection of methods that can be used to assert that a configured TestUpstream successfully
+// received traffic. ExpectCurlWithOffset`is the preferred utility, and includes a comment outlining how to use it
+
 func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 	TestUpstreamReachableWithOffset(2, envoyPort, tu, rootca)
 }
@@ -322,6 +339,10 @@ type CurlResponse struct {
 	Message string
 }
 
+// ExpectCurlWithOffset is the preferred utility for asserting that a request to a port was received and
+// returned the expectedResponse. It provides the same functionality as the above methods, but groups parameters
+// into a CurlRequest and CurlResponse object, which helps us avoid frequently updating the method parameters
+// whenever new properties are required (telescoping constructor anti-pattern:
 func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse CurlResponse) {
 
 	EventuallyWithOffset(offset+1, func(g Gomega) {

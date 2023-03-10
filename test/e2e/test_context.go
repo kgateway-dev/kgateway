@@ -25,7 +25,8 @@ import (
 
 const (
 	writeNamespace            = defaults.GlooSystem
-	defaultVirtualServiceName = "vs-test"
+	DefaultVirtualServiceName = "vs-test"
+	DefaultRouteName          = "route-test"
 	defaultGatewayName        = gatewaydefaults.GatewayProxyName
 	proxyName                 = gatewaydefaults.GatewayProxyName
 	// DefaultHost defines the Host header that should be used to route traffic to the
@@ -87,11 +88,11 @@ func (c *TestContext) BeforeEach() {
 	}
 
 	vsToTestUpstream := helpers.NewVirtualServiceBuilder().
-		WithName(defaultVirtualServiceName).
+		WithName(DefaultVirtualServiceName).
 		WithNamespace(writeNamespace).
 		WithDomain(DefaultHost).
-		WithRoutePrefixMatcher("test", "/").
-		WithRouteActionToUpstream("test", c.testUpstream.Upstream).
+		WithRoutePrefixMatcher(DefaultRouteName, "/").
+		WithRouteActionToUpstream(DefaultRouteName, c.testUpstream.Upstream).
 		Build()
 
 	// The set of resources that these tests will generate
@@ -202,7 +203,7 @@ func (c *TestContext) PatchDefaultVirtualService(mutator func(vs *v1.VirtualServ
 		1,
 		c.ctx,
 		&core.ResourceRef{
-			Name:      defaultVirtualServiceName,
+			Name:      DefaultVirtualServiceName,
 			Namespace: writeNamespace,
 		},
 		func(resource resources.Resource) resources.Resource {
