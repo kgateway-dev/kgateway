@@ -82,7 +82,9 @@ The following changes were introduced to the gRPC API in Gloo Edge 1.14:
 
 **With Gloo Edge 1.14**: 
 * HTTP mappings must always be provided in the proto itself. Gloo Edge supports automatic and manual discovery of proto descriptors as described in [HTTP mapping discovery](#http-mapping-discovery). 
-* The option to add the proto descriptors to the gateway resources instead of an upstream is still supported. However, to control each individual gRPC service separately, it is recommended to add the proto descriptors to the upstream directly. 
+* If you added your HTTP mappings to the virtual service in an earlier release of Gloo Edge, Gloo Edge does not automatically discover these mappings anymore to automatically derive the proto descriptors. If you plan to upgrade to Gloo Edge 1.14, make sure that you add your HTTP mappings to the proto file directly. 
+* The feature in the gRPC API to add proto descriptor binaries to the gateway resource instead of an upstream remains unchanged. If you have existing gateway resources with proto descriptors they continue to function. While this feature is still supported, it is recommended to add the proto descriptors to the upstream directly to control each individual gRPC service separately. 
+
 
 
 
