@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/testutils"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/e2e"
 
