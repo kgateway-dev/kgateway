@@ -37,8 +37,8 @@ This guide only includes Envoy-style rate limiting examples. To learn about othe
 
 The Envoy API uses two components to define how rate limiting works. For more information on where to define these components in your Gloo Edge custom resources, see [Implement rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/#implement" >}}).
 
-1. [Rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration): Descriptors describe your requests and are used to define the rate limits themselves.
-2. [Rate limiting actions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-ratelimit-action): Actions define the relationship between a request and its generated descriptors. 
+1. [Rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration) describe your requests and are used to define the rate limits themselves.
+2. [Rate limiting actions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-ratelimit-action) define the relationship between a request and its generated descriptors. 
 
 ### Descriptors
 
