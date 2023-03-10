@@ -16,13 +16,13 @@ gRPC is a popular open source high performance Remote Procedure Call (RPC) frame
 
 * Automatic generation of client and server stubs.
 * Efficient binary protocols with Google's protobufs.
-* Cross-language support as client and server libraries are available in many languages.
+* Cross-language support, as client and server libraries are available in many languages.
 * Support for HTTP transcoding to support firewalls and load balancers.
 * Integrated with common observability tools, such as Prometheus.
 
 ## gRPC transcoding
 
-While gRPC works great for internal microservice communication, most internet-facing clients use the HTTP/ REST API to send and receive requests. To enable your Gloo Edge proxy to receive HTTP requests and transform them into gRPC requests, gRPC transcoding is used. With gRPC transcoding, you get the following benefits
+While gRPC works great for internal microservice communication, most internet-facing clients use the HTTP REST API to send and receive requests. To enable your Gloo Edge proxy to receive HTTP requests and transform them into gRPC requests, gRPC transcoding is used. With gRPC transcoding, you get the following benefits
 
 * Build one service that supports both gRPC and REST API requests and responses. 
 * Provide a more web-friendly API to clients.
@@ -53,9 +53,10 @@ To define an HTTP rule in your proto file, you add the `google.api.http` annotat
      }
 {{< /highlight >}}
 
-With this code, you can achieve the following HTTP to gRPC mapping: 
+With this code, you can achieve the following HTTP to gRPC mapping:
+
 | HTTP | gRPC |
-| ---| ---|
+| --- | --- |
 |`curl -X GET http://{DOMAIN_NAME}/v1/messages/123456`  | `GetMessage(name: "messages/123456")`|
 
 To learn more about HTTP to gRPC transcoding and find other examples, see the [Transcoding reference]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/transcoding-reference">}}). 
@@ -78,7 +79,7 @@ The following changes were introduced to the gRPC API in Gloo Edge 1.14:
 
 **Before Gloo Edge 1.14**: 
 * You did not have to provide HTTP mappings in the gRPC proto files. Instead, Gloo Edge used the functions that were available in the proto file and the HTTP mapping that you provided in the Virtual Service to derive the proto descriptors. Proto descriptors were then automatically added to the gRPC upstream. 
-* In the case you disabled FDS and you manually generated the proto descriptors, you had the option to add the proto descriptors to the gateway resource instead of the gRPC upstream. 
+* When you disabled FDS and manually generated the proto descriptors, you had the option to add the proto descriptors to the gateway resource instead of the gRPC upstream. 
 
 **With Gloo Edge 1.14**: 
 * HTTP mappings must always be provided in the proto itself. Gloo Edge supports automatic and manual discovery of proto descriptors as described in [HTTP mapping discovery](#http-mapping-discovery). 

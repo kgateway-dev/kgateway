@@ -47,48 +47,49 @@ Use the gRPC Store app to explore how to set up routing to gRPC services.
    ```
    
    Example output: 
-   {{< highlight yaml "hl_lines=25-29" >}}
-   apiVersion: gloo.solo.io/v1
-   kind: Upstream
-   metadata:
-     annotations:
-       cloud.google.com/neg: '{"ingress":true}'
-     creationTimestamp: "2023-03-06T16:47:54Z"
-     generation: 4
-     labels:
-       discovered_by: kubernetesplugin
-       discovery.solo.io/function_discovery: enabled
-     name: default-grpcstore-demo-80
-     namespace: gloo-system
-     resourceVersion: "10533"
-     uid: bee3ec08-a2c1-44c5-a632-ec53f0113f8c
-   spec:
-     discoveryMetadata:
-       labels:
-         app: grpcstore-demo
-     kube:
-       selector:
-         app: grpcstore-demo
-       serviceName: grpcstore-demo
-       serviceNamespace: default
-       servicePort: 80
-       serviceSpec:
-         grpcJsonTranscoder:
-           protoDescriptorBin: Cqw...90bzM=  # truncated
-           services:
-           - solo.examples.v1.StoreService
-   status:
-     statuses:
-       gloo-system:
-         reportedBy: gloo
-         state: 1
-   {{< /highlight >}}
 
    {{% notice note %}}
-   The proto descriptors field was truncated for brevity.
+   The proto descriptor fields are truncated for brevity.
    {{% /notice %}}
 
-5. Optional: Decode the `spec.kube.serviceSpec.grpcJsonTanscoder` proto descriptor field. Note that the field was truncated in this command. Make sure to add the entire `spec.kube.serviceSpec.grpcJsonTanscoder` value to this command. 
+   {{< highlight yaml "hl_lines=25-29" >}}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  annotations:
+    cloud.google.com/neg: '{"ingress":true}'
+  creationTimestamp: "2023-03-06T16:47:54Z"
+  generation: 4
+  labels:
+    discovered_by: kubernetesplugin
+    discovery.solo.io/function_discovery: enabled
+  name: default-grpcstore-demo-80
+  namespace: gloo-system
+  resourceVersion: "10533"
+  uid: bee3ec08-a2c1-44c5-a632-ec53f0113f8c
+spec:
+  discoveryMetadata:
+    labels:
+      app: grpcstore-demo
+  kube:
+    selector:
+      app: grpcstore-demo
+    serviceName: grpcstore-demo
+    serviceNamespace: default
+    servicePort: 80
+    serviceSpec:
+      grpcJsonTranscoder:
+        protoDescriptorBin: Cqw...90bzM=  # truncated
+        services:
+        - solo.examples.v1.StoreService
+status:
+  statuses:
+    gloo-system:
+      reportedBy: gloo
+      state: 1
+   {{< /highlight >}}
+
+5. Optional: Decode the `spec.kube.serviceSpec.grpcJsonTanscoder` proto descriptor field. Note that the field is truncated in the example command. Make sure to add the entire `spec.kube.serviceSpec.grpcJsonTanscoder` value to this command. 
    ```shell
    echo "Cqw ... 90bzM=" | base64 -d
    ```
@@ -102,7 +103,7 @@ Use the gRPC Store app to explore how to set up routing to gRPC services.
       kubectl get service grpcstore-demo -o yaml > grpc-service.yaml
       ```
       
-   2. Open the file and either add the annotation or port name. The following example changes the name of the grpc service port. 
+   2. Open the file and either add the annotation or port name. The following example changes the name of the `grpc` service port. 
       ```yaml
       spec:
         clusterIP: 10.101.199.96
@@ -255,7 +256,7 @@ Enable encryption between the gRPC client and the Envoy proxy on a specific doma
    {{% notice warning %}} If you want to use a port number other than 443, you must append the port to the domain. For more information, see https://github.com/solo-io/gloo/issues/3505. 
    {{% /notice %}}
 
-2. Send a request to list the items in the store. Because the app is now configured to only receive incoming requests on the `store.example.com` domain, you see an error from the Envoy proxy. The error message is not strictly true, but it's the best that Envoy can figure out as the gRPC request was sent without an `authority` header, which is the equivalent of a host header in `curl`. Instead, Envoy used the IP address that was returned with the `glooctl proxy address` command as the host name. 
+2. Send a request to list the items in the store. Because the app is now configured to only receive incoming requests on the `store.example.com` domain, you see an error from the Envoy proxy. Note that the error message is not strictly true, but rather is the best that Envoy can figure out because the gRPC request was sent without an `authority` header (the equivalent of an HTTP host header in `curl`). Instead, Envoy used the IP address that was returned with the `glooctl proxy address` command as the host name. 
    ```bash
    grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
    ```
@@ -282,7 +283,7 @@ Enable encryption between the gRPC client and the Envoy proxy on a specific doma
    ```
 
    {{< notice note >}}
-   In this example, the authority header is specified alongside the public IP address of the Envoy proxy in the format X.X.X.X:80. If you wanted to provide the domain and port directly, such as with `store.example.com:80`, you still need to specify the authority header to avoid issues as Envoy uses the domain name and the port as the host header. Because `store.example.com:80` does not match `store.example.com`, you see the same error as if no domain was provided. You can avoid this error by specifying the authority header explicitly. If you cannot specify the authority header, you can update the domain match on the Virtual Service to use `store.example.com*` instead.
+   In this example, the authority header is specified alongside the public IP address of the Envoy proxy in the format <code>X.X.X.X:80</code>. If you wanted to provide the domain and port directly, such as with <code>store.example.com:80</code>, you still need to specify the authority header to avoid issues as Envoy uses the domain name and the port as the host header. Because <code>store.example.com:80</code> does not match <code>store.example.com</code>, you see the same error as if no domain was provided. You can avoid this error by specifying the authority header explicitly. If you cannot specify the authority header, you can update the domain match on the Virtual Service to use <code>store.example.com*</code> instead.
    {{< /notice >}}
    
 4. Create a self-signed TLS certificate for your domain. Note that self-signed certificates are not a recommended security practice for production. If you plan to use a gRPC app in production, create certificates that are signed by a trusted public or private certificate authority. 
@@ -359,6 +360,6 @@ Enable encryption between the gRPC client and the Envoy proxy on a specific doma
 
 ## Summary and next steps
 
-Excellent! In this guide you explored how to connect to a gRPC Upstream from a gRPC client by using Gloo Edge. You also learned how to limit routing to certain domains and how to secure the connection between the gRPC client and your upstream with TLS certificates. 
+Excellent! In this guide, you explored how to connect to a gRPC Upstream from a gRPC client by using Gloo Edge. You also learned how to limit routing to certain domains and how to secure the connection between the gRPC client and your upstream with TLS certificates. 
 
 To learn how to connect to a gRPC upstream through Gloo Edge by using a REST API, check out the [Transcode HTTP requests to gRPC]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc/grpc-transcoding" %}}) guide. For more information about how to further secure your Gloo Edge deployment, see the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) guides. 
