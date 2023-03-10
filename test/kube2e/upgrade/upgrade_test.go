@@ -21,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/testutils/helper"
@@ -63,6 +64,9 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			AfterEach(func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
+			//It("Used for local testing to check base case upgrades", func() {
+			//	baseUpgradeTest(ctx, crdDir, lastPatchMostRecentMinorVersion.String(), testHelper, chartUri, strictValidation)
+			//})
 			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
@@ -136,6 +140,18 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 // ===================================
 // Repeated Test Code
 // ===================================
+// Based case test for local runs to help narrow down failures
+func baseUpgradeTest(ctx context.Context, crdDir string, startingVersion string, testHelper *helper.SoloTestHelper, chartUri string, targetReleasedVersion string, strictValidation bool) {
+	By(fmt.Sprintf("should start with gloo version %s", startingVersion))
+	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(startingVersion))
+
+	// upgrade to the gloo version being tested
+	upgradeGloo(testHelper, chartUri, crdDir, targetReleasedVersion, strictValidation, nil)
+
+	By("should have upgraded to the gloo version being tested")
+	Expect(getGlooServerVersion(ctx, testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
+}
+
 func updateSettingsWithoutErrors(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string,
 	targetReleasedVersion string, strictValidation bool) {
 
@@ -230,6 +246,20 @@ func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClient
 // ===================================
 // Util methods
 // ===================================
+func getGlooServerVersion(ctx context.Context, namespace string) (v string) {
+	glooVersion, err := version.GetClientServerVersions(ctx, version.NewKube(namespace, ""))
+	Expect(err).To(BeNil())
+	Expect(len(glooVersion.GetServer())).To(Equal(1))
+	for _, container := range glooVersion.GetServer()[0].GetKubernetes().GetContainers() {
+		if v == "" {
+			v = container.OssTag
+		} else {
+			Expect(container.OssTag).To(Equal(v))
+		}
+	}
+	return v
+}
+
 func installGloo(testHelper *helper.SoloTestHelper, fromRelease string, strictValidation bool) {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
