@@ -55,6 +55,9 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 	JustBeforeEach(func() {
 		testContext.JustBeforeEach()
 	})
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
+	})
 	AfterEach(func() {
 		testContext.AfterEach()
 	})
