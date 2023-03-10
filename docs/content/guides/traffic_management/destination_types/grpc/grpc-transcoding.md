@@ -166,7 +166,7 @@ To route HTTP requests to your gRPC upstream, you must set up a gRPC route with 
 
 1. Create a virtual service that allows routing to the gRPC upstream. 
    ```shell
-   kubectl apply -ff <<EOF
+   kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
