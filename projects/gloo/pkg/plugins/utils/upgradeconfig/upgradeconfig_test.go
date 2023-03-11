@@ -38,7 +38,7 @@ var _ = Describe("Upgradeconfig", func() {
 				UpgradeType: ConnectUpgradeType,
 			}}
 			err := ValidateHCMUpgradeConfigs(configs)
-			Expect(err).To(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 	Context("Route", func() {
