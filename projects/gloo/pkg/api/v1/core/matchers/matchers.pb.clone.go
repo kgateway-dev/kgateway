@@ -96,6 +96,18 @@ func (m *Matcher) Clone() proto.Message {
 			Regex: m.GetRegex(),
 		}
 
+	case *Matcher_ConnectMatcher_:
+
+		if h, ok := interface{}(m.GetConnectMatcher()).(clone.Cloner); ok {
+			target.PathSpecifier = &Matcher_ConnectMatcher_{
+				ConnectMatcher: h.Clone().(*Matcher_ConnectMatcher),
+			}
+		} else {
+			target.PathSpecifier = &Matcher_ConnectMatcher_{
+				ConnectMatcher: proto.Clone(m.GetConnectMatcher()).(*Matcher_ConnectMatcher),
+			}
+		}
+
 	}
 
 	return target
@@ -133,6 +145,17 @@ func (m *QueryParameterMatcher) Clone() proto.Message {
 	target.Value = m.GetValue()
 
 	target.Regex = m.GetRegex()
+
+	return target
+}
+
+// Clone function
+func (m *Matcher_ConnectMatcher) Clone() proto.Message {
+	var target *Matcher_ConnectMatcher
+	if m == nil {
+		return target
+	}
+	target = &Matcher_ConnectMatcher{}
 
 	return target
 }
