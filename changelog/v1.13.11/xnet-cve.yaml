@@ -11,4 +11,13 @@ changelog:
     dependencyOwner: golang.org/x
     dependencyRepo: tools
     dependencyTag: v0.7.0
-
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7951
+    resolvesIssue: true
+    description:
+      Update dependencies to resolve vulnerabilities in Gloo images
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7931
+    resolvesIssue: true
+    description:
+      Update alpine version used in Gloo image
