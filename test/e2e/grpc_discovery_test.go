@@ -74,7 +74,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 
 	It("Routes to GRPC Functions", func() {
 
-		body := "foo"
+		body := `"foo"`
 		testRequest := basicReq(body, `{"str":"foo"}`)
 
 		Eventually(testRequest, 30, 1).Should(Succeed())
