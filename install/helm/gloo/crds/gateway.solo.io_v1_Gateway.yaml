@@ -202,6 +202,8 @@ spec:
                                     caseSensitive:
                                       nullable: true
                                       type: boolean
+                                    connectMatcher:
+                                      type: object
                                     exact:
                                       type: string
                                     headers:
@@ -893,6 +895,12 @@ spec:
                           upgrades:
                             items:
                               properties:
+                                connect:
+                                  properties:
+                                    enabled:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
                                 websocket:
                                   properties:
                                     enabled:
@@ -1410,6 +1418,12 @@ spec:
                           upgrades:
                             items:
                               properties:
+                                connect:
+                                  properties:
+                                    enabled:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
                                 websocket:
                                   properties:
                                     enabled:
@@ -1728,6 +1742,8 @@ spec:
                                               caseSensitive:
                                                 nullable: true
                                                 type: boolean
+                                              connectMatcher:
+                                                type: object
                                               exact:
                                                 type: string
                                               headers:
@@ -2419,6 +2435,12 @@ spec:
                                     upgrades:
                                       items:
                                         properties:
+                                          connect:
+                                            properties:
+                                              enabled:
+                                                nullable: true
+                                                type: boolean
+                                            type: object
                                           websocket:
                                             properties:
                                               enabled:
@@ -3100,6 +3122,8 @@ spec:
                                                                       caseSensitive:
                                                                         nullable: true
                                                                         type: boolean
+                                                                      connectMatcher:
+                                                                        type: object
                                                                       exact:
                                                                         type: string
                                                                       headers:
@@ -3436,6 +3460,8 @@ spec:
                                                                       caseSensitive:
                                                                         nullable: true
                                                                         type: boolean
+                                                                      connectMatcher:
+                                                                        type: object
                                                                       exact:
                                                                         type: string
                                                                       headers:
@@ -4848,6 +4874,8 @@ spec:
                                                             caseSensitive:
                                                               nullable: true
                                                               type: boolean
+                                                            connectMatcher:
+                                                              type: object
                                                             exact:
                                                               type: string
                                                             headers:
@@ -5184,6 +5212,8 @@ spec:
                                                             caseSensitive:
                                                               nullable: true
                                                               type: boolean
+                                                            connectMatcher:
+                                                              type: object
                                                             exact:
                                                               type: string
                                                             headers:
