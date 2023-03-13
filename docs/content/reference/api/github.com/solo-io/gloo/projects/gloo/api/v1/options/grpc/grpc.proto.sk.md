@@ -32,6 +32,7 @@ Service spec describing GRPC upstreams. This will usually be filled
 automatically via function discovery (if the upstream supports reflection).
 If your upstream service is a GRPC service, use this service spec (an empty
 spec is fine), to make sure that traffic to it is routed with http2.
+Deprecated: prefer using GrpcJsonTranscoder
 
 ```yaml
 "descriptors": bytes
@@ -74,7 +75,7 @@ Describes a grpc service
 
  
 This is only for upstream with Grpc service spec.
-Deprecated: prefer providing descriptors in manualGrpcConfig
+Deprecated: prefer providing descriptors on Upstream in GrpcJsonTranscoder
 
 ```yaml
 "package": string

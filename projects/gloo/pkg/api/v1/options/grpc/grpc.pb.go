@@ -28,6 +28,7 @@ const (
 // automatically via function discovery (if the upstream supports reflection).
 // If your upstream service is a GRPC service, use this service spec (an empty
 // spec is fine), to make sure that traffic to it is routed with http2.
+// Deprecated: prefer using GrpcJsonTranscoder
 type ServiceSpec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -90,7 +91,7 @@ func (x *ServiceSpec) GetGrpcServices() []*ServiceSpec_GrpcService {
 }
 
 // This is only for upstream with Grpc service spec.
-// Deprecated: prefer providing descriptors in manualGrpcConfig
+// Deprecated: prefer providing descriptors on Upstream in GrpcJsonTranscoder
 type DestinationSpec struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
