@@ -666,15 +666,24 @@ var _ = Describe("upgrades", func() {
 							},
 						},
 					},
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Connect{
+							Connect: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &wrappers.BoolValue{Value: true},
+							},
+						},
+					},
 				},
 			},
 			Action: &v1.Route_RouteAction{},
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
-		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(1))
+		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(2))
 		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
 		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(Equal(true))
+		Expect(routeAction.GetUpgradeConfigs()[1].UpgradeType).To(Equal("CONNECT"))
+		Expect(routeAction.GetUpgradeConfigs()[1].Enabled.Value).To(Equal(true))
 	})
 	It("fails on double config", func() {
 		p := NewPlugin()

@@ -49,6 +49,18 @@ func (m *ProtocolUpgradeConfig) Clone() proto.Message {
 			}
 		}
 
+	case *ProtocolUpgradeConfig_Connect:
+
+		if h, ok := interface{}(m.GetConnect()).(clone.Cloner); ok {
+			target.UpgradeType = &ProtocolUpgradeConfig_Connect{
+				Connect: h.Clone().(*ProtocolUpgradeConfig_ProtocolUpgradeSpec),
+			}
+		} else {
+			target.UpgradeType = &ProtocolUpgradeConfig_Connect{
+				Connect: proto.Clone(m.GetConnect()).(*ProtocolUpgradeConfig_ProtocolUpgradeSpec),
+			}
+		}
+
 	}
 
 	return target

@@ -31,6 +31,15 @@ var _ = Describe("Upgradeconfig", func() {
 			err := ValidateHCMUpgradeConfigs(configs)
 			Expect(err).To(HaveOccurred())
 		})
+		It("should allow websocket and connect upgrade", func() {
+			configs := []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
+				UpgradeType: WebSocketUpgradeType,
+			}, {
+				UpgradeType: ConnectUpgradeType,
+			}}
+			err := ValidateHCMUpgradeConfigs(configs)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 	Context("Route", func() {
 		It("should not error on empty list", func() {

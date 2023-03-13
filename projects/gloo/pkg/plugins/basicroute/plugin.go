@@ -270,6 +270,11 @@ func applyUpgrades(in *v1.Route, out *envoy_config_route_v3.Route) error {
 				UpgradeType: upgradeconfig.WebSocketUpgradeType,
 				Enabled:     config.GetWebsocket().GetEnabled(),
 			}
+		case *protocol_upgrade.ProtocolUpgradeConfig_Connect:
+			routeAction.Route.GetUpgradeConfigs()[i] = &envoy_config_route_v3.RouteAction_UpgradeConfig{
+				UpgradeType: upgradeconfig.ConnectUpgradeType,
+				Enabled:     config.GetConnect().GetEnabled(),
+			}
 		default:
 			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 		}
