@@ -363,6 +363,8 @@ spec:
                                           caseSensitive:
                                             nullable: true
                                             type: boolean
+                                          connectMatcher:
+                                            type: object
                                           exact:
                                             type: string
                                           headers:
@@ -699,6 +701,8 @@ spec:
                                           caseSensitive:
                                             nullable: true
                                             type: boolean
+                                          connectMatcher:
+                                            type: object
                                           exact:
                                             type: string
                                           headers:

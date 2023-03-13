@@ -261,6 +261,11 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			}
 
 			webSocketUpgradeSpecified = true
+		case *protocol_upgrade.ProtocolUpgradeConfig_Connect:
+			out.GetUpgradeConfigs()[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
+				UpgradeType: upgradeconfig.ConnectUpgradeType,
+				Enabled:     config.GetConnect().GetEnabled(),
+			}
 		default:
 			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 		}
