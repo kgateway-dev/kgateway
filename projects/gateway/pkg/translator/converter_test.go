@@ -106,6 +106,29 @@ var _ = Describe("Route converter", func() {
 			nil,
 		),
 
+		Entry("route has an connect matcher",
+			&v1.Route{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_ConnectMatcher_{
+						ConnectMatcher: &matchers.Matcher_ConnectMatcher{},
+					},
+				}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &core.ResourceRef{
+								Name:      "any",
+								Namespace: "ns",
+							},
+						},
+					},
+				},
+			},
+			translator.MissingPrefixErr,
+			nil,
+			nil,
+		),
+
 		Entry("route has multiple path prefix matchers",
 			&v1.Route{
 				Matchers: []*matchers.Matcher{
