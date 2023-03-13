@@ -123,6 +123,11 @@ replace (
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 
+	// We're using Go 1.16
+	// unsafe.Slice was added as part of Go 1.17
+	// Without this pin, we would see: undefined: unsafe.Slice
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20221010170243-090e33056c14
+
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
