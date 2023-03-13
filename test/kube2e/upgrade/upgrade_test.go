@@ -71,7 +71,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
-				addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
+				addSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 		})
 		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
@@ -88,7 +88,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 					updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 				})
 				It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
-					addSecondGatewayProxySeparateNamespaceTest(crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
+					addSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 				})
 			}
 		})
@@ -174,7 +174,7 @@ func updateSettingsWithoutErrors(ctx context.Context, crdDir string, testHelper 
 	Expect(settings.GetGateway().GetValidation().GetValidationServerGrpcMaxSizeBytes().GetValue()).To(Equal(int32(5000000)))
 }
 
-func addSecondGatewayProxySeparateNamespaceTest(crdDir string, testHelper *helper.SoloTestHelper, chartUri string,
+func addSecondGatewayProxySeparateNamespaceTest(ctx context.Context, crdDir string, testHelper *helper.SoloTestHelper, chartUri string,
 	targetReleasedVersion string, strictValidation bool) {
 	const externalNamespace = "other-ns"
 	requiredSettings := map[string]string{
@@ -194,7 +194,6 @@ func addSecondGatewayProxySeparateNamespaceTest(crdDir string, testHelper *helpe
 	}
 
 	runAndCleanCommand("kubectl", "create", "ns", externalNamespace)
-	defer runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
 
 	upgradeGloo(testHelper, chartUri, targetReleasedVersion, crdDir, strictValidation, settings)
 
@@ -212,6 +211,13 @@ func addSecondGatewayProxySeparateNamespaceTest(crdDir string, testHelper *helpe
 		return exec_utils.RunCommandOutput(testHelper.RootDir, false,
 			"kubectl", "get", "serviceaccount", "-n", externalNamespace)
 	}, "10s", "1s").Should(ContainSubstring("gateway-proxy"))
+
+	// Ensures namespace is cleaned up before continuing
+	runAndCleanCommand("kubectl", "delete", "ns", externalNamespace)
+	Eventually(func() bool {
+		_, err := kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, externalNamespace, metav1.GetOptions{})
+		return apierrors.IsNotFound(err)
+	}, "60s", "1s").Should(BeTrue())
 }
 
 func updateValidationWebhookTests(ctx context.Context, crdDir string, kubeClientset kubernetes.Interface, testHelper *helper.SoloTestHelper,
@@ -383,7 +389,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 		}
 	}
 	Expect(err).To(BeNil())
-	cmd.Process.Kill()
+	cmd.Process.Kill() // This is *almost certainly* the reason a namespace deletion was able to hang without alerting us
 	cmd.Process.Release()
 	return b
 }
