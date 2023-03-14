@@ -266,18 +266,18 @@ message BasicAuth {
     Apr apr = 2;
 }
 
-
+// HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages
 message HmacAuth {
-    // your client secret as registered with the issuer
+    // list of client secrets as registered with the issuer
     repeated core.solo.io.ResourceRef client_secret_ref = 1;
 
     // Which approach to use to turn the request into a hashable string
-    oneof message_type{
-        HmacHeadersType headers = 2;
+    oneof hmac_implementation{
+        HmacParametersInHeaders parameters_in_headers = 2;
     }
 }
-// Config
-message HmacHeadersType {}
+// Extract the HMAC parameters from the HTTP headers and use SHA-1 hashing
+message HmacParametersInHeaders {}
 
 // Deprecated: Prefer OAuth2
 message OAuth {

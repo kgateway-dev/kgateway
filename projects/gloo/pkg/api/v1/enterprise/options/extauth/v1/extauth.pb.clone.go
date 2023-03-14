@@ -333,17 +333,17 @@ func (m *HmacAuth) Clone() proto.Message {
 		}
 	}
 
-	switch m.MessageType.(type) {
+	switch m.HmacImplementation.(type) {
 
-	case *HmacAuth_Headers:
+	case *HmacAuth_ParametersInHeaders:
 
-		if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
-			target.MessageType = &HmacAuth_Headers{
-				Headers: h.Clone().(*HmacHeadersType),
+		if h, ok := interface{}(m.GetParametersInHeaders()).(clone.Cloner); ok {
+			target.HmacImplementation = &HmacAuth_ParametersInHeaders{
+				ParametersInHeaders: h.Clone().(*HmacParametersInHeaders),
 			}
 		} else {
-			target.MessageType = &HmacAuth_Headers{
-				Headers: proto.Clone(m.GetHeaders()).(*HmacHeadersType),
+			target.HmacImplementation = &HmacAuth_ParametersInHeaders{
+				ParametersInHeaders: proto.Clone(m.GetParametersInHeaders()).(*HmacParametersInHeaders),
 			}
 		}
 
@@ -353,12 +353,12 @@ func (m *HmacAuth) Clone() proto.Message {
 }
 
 // Clone function
-func (m *HmacHeadersType) Clone() proto.Message {
-	var target *HmacHeadersType
+func (m *HmacParametersInHeaders) Clone() proto.Message {
+	var target *HmacParametersInHeaders
 	if m == nil {
 		return target
 	}
-	target = &HmacHeadersType{}
+	target = &HmacParametersInHeaders{}
 
 	return target
 }

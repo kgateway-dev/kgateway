@@ -183,7 +183,7 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        headers:
+                        parametersInHeaders:
                           type: object
                       type: object
                     jwt:

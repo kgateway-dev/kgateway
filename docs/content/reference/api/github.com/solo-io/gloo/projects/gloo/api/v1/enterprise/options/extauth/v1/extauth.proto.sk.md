@@ -27,7 +27,7 @@ weight: 5
 - [Apr](#apr)
 - [SaltedHashedPassword](#saltedhashedpassword)
 - [HmacAuth](#hmacauth)
-- [HmacHeadersType](#hmacheaderstype)
+- [HmacParametersInHeaders](#hmacparametersinheaders)
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
 - [RedisOptions](#redisoptions)
@@ -450,27 +450,28 @@ This is used with custom auth servers.
 ---
 ### HmacAuth
 
-
+ 
+HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages
 
 ```yaml
 "clientSecretRef": []core.solo.io.ResourceRef
-"headers": .enterprise.gloo.solo.io.HmacHeadersType
+"parametersInHeaders": .enterprise.gloo.solo.io.HmacParametersInHeaders
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientSecretRef` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
-| `headers` | [.enterprise.gloo.solo.io.HmacHeadersType](../extauth.proto.sk/#hmacheaderstype) |  |
+| `clientSecretRef` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | list of client secrets as registered with the issuer. |
+| `parametersInHeaders` | [.enterprise.gloo.solo.io.HmacParametersInHeaders](../extauth.proto.sk/#hmacparametersinheaders) |  |
 
 
 
 
 ---
-### HmacHeadersType
+### HmacParametersInHeaders
 
  
-Config
+Extract the HMAC parameters from the HTTP headers and use SHA-1 hashing
 
 ```yaml
 

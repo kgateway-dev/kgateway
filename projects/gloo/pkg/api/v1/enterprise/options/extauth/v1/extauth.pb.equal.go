@@ -562,26 +562,26 @@ func (m *HmacAuth) Equal(that interface{}) bool {
 
 	}
 
-	switch m.MessageType.(type) {
+	switch m.HmacImplementation.(type) {
 
-	case *HmacAuth_Headers:
-		if _, ok := target.MessageType.(*HmacAuth_Headers); !ok {
+	case *HmacAuth_ParametersInHeaders:
+		if _, ok := target.HmacImplementation.(*HmacAuth_ParametersInHeaders); !ok {
 			return false
 		}
 
-		if h, ok := interface{}(m.GetHeaders()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetHeaders()) {
+		if h, ok := interface{}(m.GetParametersInHeaders()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetParametersInHeaders()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(m.GetHeaders(), target.GetHeaders()) {
+			if !proto.Equal(m.GetParametersInHeaders(), target.GetParametersInHeaders()) {
 				return false
 			}
 		}
 
 	default:
 		// m is nil but target is not nil
-		if m.MessageType != target.MessageType {
+		if m.HmacImplementation != target.HmacImplementation {
 			return false
 		}
 	}
@@ -590,14 +590,14 @@ func (m *HmacAuth) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *HmacHeadersType) Equal(that interface{}) bool {
+func (m *HmacParametersInHeaders) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*HmacHeadersType)
+	target, ok := that.(*HmacParametersInHeaders)
 	if !ok {
-		that2, ok := that.(HmacHeadersType)
+		that2, ok := that.(HmacParametersInHeaders)
 		if ok {
 			target = &that2
 		} else {
