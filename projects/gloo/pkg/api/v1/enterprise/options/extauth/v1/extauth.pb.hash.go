@@ -612,24 +612,46 @@ func (m *HmacAuth) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetMessageType()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("MessageType")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetMessageType(), nil); err != nil {
-			return 0, err
+	switch m.MessageType.(type) {
+
+	case *HmacAuth_Headers:
+
+		if h, ok := interface{}(m.GetHeaders()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Headers")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
 		} else {
-			if _, err = hasher.Write([]byte("MessageType")); err != nil {
+			if fieldValue, err := hashstructure.Hash(m.GetHeaders(), nil); err != nil {
 				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Headers")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
 			}
 		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *HmacHeadersType) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.HmacHeadersType")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -3590,26 +3612,6 @@ func (m *BasicAuth_Apr_SaltedHashedPassword) Hash(hasher hash.Hash64) (uint64, e
 	}
 
 	if _, err = hasher.Write([]byte(m.GetHashedPassword())); err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *HmacAuth_MessageType) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.HmacAuth_MessageType")); err != nil {
-		return 0, err
-	}
-
-	if _, err = hasher.Write([]byte(m.GetType())); err != nil {
 		return 0, err
 	}
 

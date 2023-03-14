@@ -562,14 +562,52 @@ func (m *HmacAuth) Equal(that interface{}) bool {
 
 	}
 
-	if h, ok := interface{}(m.GetMessageType()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetMessageType()) {
+	switch m.MessageType.(type) {
+
+	case *HmacAuth_Headers:
+		if _, ok := target.MessageType.(*HmacAuth_Headers); !ok {
 			return false
 		}
-	} else {
-		if !proto.Equal(m.GetMessageType(), target.GetMessageType()) {
+
+		if h, ok := interface{}(m.GetHeaders()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeaders()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHeaders(), target.GetHeaders()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.MessageType != target.MessageType {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HmacHeadersType) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HmacHeadersType)
+	if !ok {
+		that2, ok := that.(HmacHeadersType)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true
@@ -3251,34 +3289,6 @@ func (m *BasicAuth_Apr_SaltedHashedPassword) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetHashedPassword(), target.GetHashedPassword()) != 0 {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *HmacAuth_MessageType) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*HmacAuth_MessageType)
-	if !ok {
-		that2, ok := that.(HmacAuth_MessageType)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetType(), target.GetType()) != 0 {
 		return false
 	}
 

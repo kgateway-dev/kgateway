@@ -333,11 +333,32 @@ func (m *HmacAuth) Clone() proto.Message {
 		}
 	}
 
-	if h, ok := interface{}(m.GetMessageType()).(clone.Cloner); ok {
-		target.MessageType = h.Clone().(*HmacAuth_MessageType)
-	} else {
-		target.MessageType = proto.Clone(m.GetMessageType()).(*HmacAuth_MessageType)
+	switch m.MessageType.(type) {
+
+	case *HmacAuth_Headers:
+
+		if h, ok := interface{}(m.GetHeaders()).(clone.Cloner); ok {
+			target.MessageType = &HmacAuth_Headers{
+				Headers: h.Clone().(*HmacHeadersType),
+			}
+		} else {
+			target.MessageType = &HmacAuth_Headers{
+				Headers: proto.Clone(m.GetHeaders()).(*HmacHeadersType),
+			}
+		}
+
 	}
+
+	return target
+}
+
+// Clone function
+func (m *HmacHeadersType) Clone() proto.Message {
+	var target *HmacHeadersType
+	if m == nil {
+		return target
+	}
+	target = &HmacHeadersType{}
 
 	return target
 }
@@ -1958,19 +1979,6 @@ func (m *BasicAuth_Apr_SaltedHashedPassword) Clone() proto.Message {
 	target.Salt = m.GetSalt()
 
 	target.HashedPassword = m.GetHashedPassword()
-
-	return target
-}
-
-// Clone function
-func (m *HmacAuth_MessageType) Clone() proto.Message {
-	var target *HmacAuth_MessageType
-	if m == nil {
-		return target
-	}
-	target = &HmacAuth_MessageType{}
-
-	target.Type = m.GetType()
 
 	return target
 }

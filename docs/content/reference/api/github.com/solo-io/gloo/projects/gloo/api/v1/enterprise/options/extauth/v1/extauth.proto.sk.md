@@ -27,7 +27,7 @@ weight: 5
 - [Apr](#apr)
 - [SaltedHashedPassword](#saltedhashedpassword)
 - [HmacAuth](#hmacauth)
-- [MessageType](#messagetype)
+- [HmacHeadersType](#hmacheaderstype)
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
 - [RedisOptions](#redisoptions)
@@ -454,31 +454,30 @@ This is used with custom auth servers.
 
 ```yaml
 "clientSecretRef": []core.solo.io.ResourceRef
-"messageType": .enterprise.gloo.solo.io.HmacAuth.MessageType
+"headers": .enterprise.gloo.solo.io.HmacHeadersType
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `clientSecretRef` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
-| `messageType` | [.enterprise.gloo.solo.io.HmacAuth.MessageType](../extauth.proto.sk/#messagetype) | Which approach to use to turn the request into a hashable string. |
+| `headers` | [.enterprise.gloo.solo.io.HmacHeadersType](../extauth.proto.sk/#hmacheaderstype) |  |
 
 
 
 
 ---
-### MessageType
+### HmacHeadersType
 
-
+ 
+Config
 
 ```yaml
-"type": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `type` | `string` |  |
 
 
 

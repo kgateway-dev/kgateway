@@ -254,6 +254,9 @@ apis:
   enterprise.gloo.solo.io.HmacAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacAuth
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.HmacHeadersType:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacHeadersType
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.HttpService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HttpService
     package: enterprise.gloo.solo.io

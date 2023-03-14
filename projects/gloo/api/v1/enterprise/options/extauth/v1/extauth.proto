@@ -270,14 +270,14 @@ message BasicAuth {
 message HmacAuth {
     // your client secret as registered with the issuer
     repeated core.solo.io.ResourceRef client_secret_ref = 1;
-    message MessageType{
-        string type = 1;
-    };
 
     // Which approach to use to turn the request into a hashable string
-    MessageType message_type = 2;
+    oneof message_type{
+        HmacHeadersType headers = 2;
+    }
 }
-
+// Config
+message HmacHeadersType {}
 
 // Deprecated: Prefer OAuth2
 message OAuth {

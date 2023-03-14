@@ -183,10 +183,7 @@ spec:
                                 type: string
                             type: object
                           type: array
-                        messageType:
-                          properties:
-                            type:
-                              type: string
+                        headers:
                           type: object
                       type: object
                     jwt:
