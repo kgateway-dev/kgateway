@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHeaders(t *testing.T) {
+func TestIstioIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Istio Integration Suite")
 }

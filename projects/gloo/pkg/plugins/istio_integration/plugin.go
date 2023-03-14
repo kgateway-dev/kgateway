@@ -4,13 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 )
 
 var (
@@ -23,20 +19,10 @@ const (
 
 // Handles transformations required to integrate with Istio
 type plugin struct {
-	usClient v1.UpstreamClient
 }
 
-func NewPlugin(ctx context.Context, upstreams factory.ResourceClientFactory) *plugin {
-	client, err := v1.NewUpstreamClient(ctx, upstreams)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Warn(
-			"Unable to initialize the Istio integration plugin. Host rewrites for services that are part of the mesh will not be applied and Istio may not handle them correctly. ",
-			err)
-		return nil
-	}
-	return &plugin{
-		usClient: client,
-	}
+func NewPlugin(ctx context.Context) *plugin {
+	return &plugin{}
 }
 
 func (p *plugin) Name() string {
@@ -58,7 +44,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		// If this use case expands we would need to figure out Istio's expected hostname format for each type of destination.
 		return nil
 	}
-	hostInMesh, err := GetHostFromDestination(dest, p.usClient)
+	hostInMesh, err := GetHostFromDestination(dest, params.Snapshot.Upstreams)
 	if err != nil {
 		return err
 	}
@@ -82,10 +68,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 // Return the hostname to rewrite: serviceName.namespace if the destination is a kubernetes upstream or kube destination
 // Return an empty string for another type of destination
 // Return an error if the destination is a gloo upstream and we cannot look it up
-func GetHostFromDestination(dest *v1.RouteAction_Single, usClient v1.UpstreamClient) (string, error) {
+func GetHostFromDestination(dest *v1.RouteAction_Single, upstreams v1.UpstreamList) (string, error) {
 	var name, namespace string
 	if single, ok := dest.Single.GetDestinationType().(*v1.Destination_Upstream); ok {
-		us, err := usClient.Read(single.Upstream.GetNamespace(), single.Upstream.GetName(), clients.ReadOpts{})
+		us, err := upstreams.Find(single.Upstream.GetNamespace(), single.Upstream.GetName())
 		if err != nil {
 			return "", err
 		}
