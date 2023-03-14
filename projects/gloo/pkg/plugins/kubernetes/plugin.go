@@ -86,11 +86,15 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			sn = sl.Services(kube.Kube.GetServiceNamespace())
 		}
 	}
+	// Here sn should not be nil since p.kubeCoreCache.NamespacedServiceLister should return
+	// kubelisters.ServiceNamespaceLister or kubelisters.ServiceLister. But for safe, we keep the old
+	// implementation in case that sn unexpectedly is neither ServiceNamespaceLister nor ServiceLister
 	if sn != nil {
 		if _, err := sn.Get(kube.Kube.GetServiceName()); err == nil {
 			return nil
 		}
 	} else {
+		// we don't expect the old impelmentation to be used, but that we are keeping it as a fallback just in case
 		svcs, err := lister.List(labels.NewSelector())
 		if err != nil {
 			return err
