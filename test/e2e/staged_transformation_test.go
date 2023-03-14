@@ -117,9 +117,8 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("test")
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
+				res, err := http.DefaultClient.Do(newRequestWithBody("test"))
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -162,9 +161,8 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("")
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
+				res, err := http.DefaultClient.Do(newRequestWithBody(""))
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -201,10 +199,9 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("test")
 			// send a request, expect that the response body is base64 encoded
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
+				res, err := http.DefaultClient.Do(newRequestWithBody("test"))
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -242,9 +239,8 @@ var _ = Describe("Staged Transformation", func() {
 			// send a request, expect that the response body is base64 decoded
 			body := "test"
 			encodedBody := base64.StdEncoding.EncodeToString([]byte(body))
-			req := newRequestWithBody(encodedBody)
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
+				res, err := http.DefaultClient.Do(newRequestWithBody(encodedBody))
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -279,10 +275,9 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("123456789")
 			// send a request, expect that the response body contains only the first 4 characters
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
+				res, err := http.DefaultClient.Do(newRequestWithBody("123456789"))
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -316,10 +311,10 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("")
-			req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
-
 			Eventually(func(g Gomega) {
+				req := newRequestWithBody("")
+				req.Header.Add("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
+
 				res, err := http.DefaultClient.Do(req)
 				g.Expect(err).NotTo(HaveOccurred())
 				g.Expect(res).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
@@ -349,7 +344,7 @@ var _ = Describe("Staged Transformation", func() {
 						},
 					},
 				})
-				vsBuilder.WithRouteOptions("test", &gloov1.RouteOptions{
+				vsBuilder.WithRouteOptions(e2e.DefaultRouteName, &gloov1.RouteOptions{
 					StagedTransformations: &transformation.TransformationStages{
 						Regular: &transformation.RequestResponseTransformations{
 							ResponseTransforms: []*transformation.ResponseMatch{{
@@ -370,9 +365,8 @@ var _ = Describe("Staged Transformation", func() {
 				return vsBuilder.Build()
 			})
 
-			req := newRequestWithBody("")
 			Eventually(func(g Gomega) {
-				response, err := http.DefaultClient.Do(req)
+				response, err := http.DefaultClient.Do(newRequestWithBody(""))
 				g.Expect(err).NotTo(HaveOccurred())
 				// Only route level transformations should be applied here due to the nature of envoy choosing
 				// the most specific config (weighted cluster > route > vhost)
