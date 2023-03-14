@@ -117,9 +117,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 	istioEnabled := found && strings.ToLower(lookupResult) == "true"
 	if istioEnabled {
 		istioPlugin := istio_integration.NewPlugin(opts.WatchOpts.Ctx)
-		if istioPlugin != nil {
-			glooPlugins = append(glooPlugins, istioPlugin)
-		}
+		glooPlugins = append(glooPlugins, istioPlugin)
 	}
 	return glooPlugins
 }
