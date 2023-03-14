@@ -1006,7 +1006,7 @@ type HmacAuth struct {
 
 	// list of client secrets as registered with the issuer
 	ClientSecretRef []*core.ResourceRef `protobuf:"bytes,1,rep,name=client_secret_ref,json=clientSecretRef,proto3" json:"client_secret_ref,omitempty"`
-	// Which approach to use to turn the request into a hashable string
+	// Algorithm to use to turn the request into a hashable string
 	//
 	// Types that are assignable to HmacImplementation:
 	//

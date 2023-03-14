@@ -190,9 +190,7 @@ var _ = Describe("Log Redactor", func() {
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_HmacAuth{
 				HmacAuth: &xdsproto.HmacAuth{
-					MessageType: &xdsproto.HmacAuth_MessageType{
-						Type: "header",
-					},
+					HmacImplementation: &xdsproto.HmacAuth_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
 				},
 			},
 		}},

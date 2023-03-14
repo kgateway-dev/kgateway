@@ -271,7 +271,7 @@ message HmacAuth {
     // list of client secrets as registered with the issuer
     repeated core.solo.io.ResourceRef client_secret_ref = 1;
 
-    // Which approach to use to turn the request into a hashable string
+    // Algorithm to use to turn the request into a hashable string
     oneof hmac_implementation{
         HmacParametersInHeaders parameters_in_headers = 2;
     }
