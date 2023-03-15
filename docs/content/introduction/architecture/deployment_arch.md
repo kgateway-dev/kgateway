@@ -61,7 +61,7 @@ A variation of the previous deployment pattern of sharding the gateway is by exp
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/bounded-context.png" %}})
 
-In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo Edge API specifically supports this (though API delegation). 
+In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo Edge API specifically supports this (through API delegation).
 
 ---
 
