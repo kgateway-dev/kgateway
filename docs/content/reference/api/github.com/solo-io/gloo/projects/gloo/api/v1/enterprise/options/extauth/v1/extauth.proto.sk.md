@@ -1262,6 +1262,7 @@ For the Aerospike backend, this data is stored as bins on the key's record
 "apiKey": string
 "labels": []string
 "metadata": map<string, bool>
+"uuid": string
 
 ```
 
@@ -1270,6 +1271,7 @@ For the Aerospike backend, this data is stored as bins on the key's record
 | `apiKey` | `string` | The string value of the API key. |
 | `labels` | `[]string` | A list of labels (key=value) for the apikey secret. These labels are used by the storage driver to facilitate lookups by label. |
 | `metadata` | `map<string, bool>` | additional data the client needs associated with this API key. |
+| `uuid` | `string` | Optional: Unique identifier for the API key. |
 
 
 
