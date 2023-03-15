@@ -7,6 +7,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	errors "github.com/rotisserie/eris"
 	"k8s.io/apimachinery/pkg/labels"
+	kubelisters "k8s.io/client-go/listers/core/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
@@ -79,13 +80,30 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			upstreamRef.String(), kube.Kube.GetServiceName(), kube.Kube.GetServiceNamespace())
 	}
 
-	svcs, err := lister.List(labels.NewSelector())
-	if err != nil {
-		return err
+	var sn kubelisters.ServiceNamespaceLister
+	if sn, ok = lister.(kubelisters.ServiceNamespaceLister); !ok {
+		if sl, ok := lister.(kubelisters.ServiceLister); ok {
+			sn = sl.Services(kube.Kube.GetServiceNamespace())
+		}
 	}
-	for _, s := range svcs {
-		if s.Name == kube.Kube.GetServiceName() {
+	// Here sn should not be nil since p.kubeCoreCache.NamespacedServiceLister should return
+	// kubelisters.ServiceNamespaceLister or kubelisters.ServiceLister. But for safe, we keep the old
+	// implementation in case that sn unexpectedly is neither ServiceNamespaceLister nor ServiceLister
+	if sn != nil {
+		if _, err := sn.Get(kube.Kube.GetServiceName()); err == nil {
 			return nil
+		}
+	} else {
+		// we don't expect the old impelmentation to be used, but that we are keeping it as a fallback just in case
+		svcs, err := lister.List(labels.NewSelector())
+		if err != nil {
+			return err
+		}
+
+		for _, s := range svcs {
+			if s.Name == kube.Kube.GetServiceName() {
+				return nil
+			}
 		}
 	}
 
