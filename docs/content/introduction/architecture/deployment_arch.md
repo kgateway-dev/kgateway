@@ -77,7 +77,7 @@ A service mesh doesn't inherently solve (nor should it) API-level challenges. Th
 
 ## Ingress for multi-tenant clusters like OpenShift
 
-OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenent SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster. 
+OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenant SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/multi-tenant-openshift.png" %}})
 
