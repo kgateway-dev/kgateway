@@ -1644,6 +1644,19 @@ message ExtAuthConfig {
         // If true, Gloo will use the service account to check group membership
         bool check_groups_with_service_account = 3;
     }
+    message HmacAuthConfig {
+        // list of username/password pairs taken from secrets during gloo-ee translation
+        repeated HmacPassword hmacPasswords = 1;
+        // Algorithm to use to turn the request into a hashable string
+        oneof hmac_implementation{
+            HmacParametersInHeaders parameters_in_headers = 2;
+        }
+
+    }
+    message HmacPassword {
+        string username = 1;
+        string password = 2;
+    }
     message Config {
 
         reserved 1, 2;
@@ -1669,7 +1682,7 @@ message ExtAuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 12;
             PassThroughAuth pass_through_auth = 13;
-            HmacAuth hmac_auth = 15;
+            HmacAuthConfig hmac_auth = 15;
         }
     }
 

@@ -4755,6 +4755,103 @@ func (m *ExtAuthConfig_LdapServiceAccountConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ExtAuthConfig_HmacAuthConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_HmacAuthConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_HmacAuthConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetHmacPasswords()) != len(target.GetHmacPasswords()) {
+		return false
+	}
+	for idx, v := range m.GetHmacPasswords() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHmacPasswords()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHmacPasswords()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.HmacImplementation.(type) {
+
+	case *ExtAuthConfig_HmacAuthConfig_ParametersInHeaders:
+		if _, ok := target.HmacImplementation.(*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetParametersInHeaders()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetParametersInHeaders()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetParametersInHeaders(), target.GetParametersInHeaders()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.HmacImplementation != target.HmacImplementation {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_HmacPassword) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_HmacPassword)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_HmacPassword)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetUsername(), target.GetUsername()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetPassword(), target.GetPassword()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

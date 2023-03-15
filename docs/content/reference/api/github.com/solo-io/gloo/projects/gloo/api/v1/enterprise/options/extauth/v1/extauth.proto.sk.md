@@ -89,6 +89,8 @@ weight: 5
 - [OpaAuthConfig](#opaauthconfig)
 - [LdapConfig](#ldapconfig)
 - [LdapServiceAccountConfig](#ldapserviceaccountconfig)
+- [HmacAuthConfig](#hmacauthconfig)
+- [HmacPassword](#hmacpassword)
 - [Config](#config)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
 - [ApiKeyCreateResponse](#apikeycreateresponse)
@@ -2040,6 +2042,44 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ---
+### HmacAuthConfig
+
+
+
+```yaml
+"hmacPasswords": []enterprise.gloo.solo.io.ExtAuthConfig.HmacPassword
+"parametersInHeaders": .enterprise.gloo.solo.io.HmacParametersInHeaders
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `hmacPasswords` | [[]enterprise.gloo.solo.io.ExtAuthConfig.HmacPassword](../extauth.proto.sk/#hmacpassword) | list of username/password pairs taken from secrets during gloo-ee translation. |
+| `parametersInHeaders` | [.enterprise.gloo.solo.io.HmacParametersInHeaders](../extauth.proto.sk/#hmacparametersinheaders) |  |
+
+
+
+
+---
+### HmacPassword
+
+
+
+```yaml
+"username": string
+"password": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `username` | `string` |  |
+| `password` | `string` |  |
+
+
+
+
+---
 ### Config
 
 
@@ -2056,7 +2096,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "ldapInternal": .enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig
 "jwt": .google.protobuf.Empty
 "passThroughAuth": .enterprise.gloo.solo.io.PassThroughAuth
-"hmacAuth": .enterprise.gloo.solo.io.HmacAuth
+"hmacAuth": .enterprise.gloo.solo.io.ExtAuthConfig.HmacAuthConfig
 
 ```
 
@@ -2073,7 +2113,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `ldapInternal` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig](../extauth.proto.sk/#ldapconfig) | Used for LDAP configurations that need service account credentials saved in a secret. Only one of `ldapInternal`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, or `hmacAuth` can be set. |
 | `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour. Only one of `jwt`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `passThroughAuth`, or `hmacAuth` can be set. |
 | `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, or `hmacAuth` can be set. |
-| `hmacAuth` | [.enterprise.gloo.solo.io.HmacAuth](../extauth.proto.sk/#hmacauth) |  Only one of `hmacAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, or `passThroughAuth` can be set. |
+| `hmacAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.HmacAuthConfig](../extauth.proto.sk/#hmacauthconfig) |  Only one of `hmacAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, or `passThroughAuth` can be set. |
 
 
 

@@ -2822,6 +2822,61 @@ func (m *ExtAuthConfig_LdapServiceAccountConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_HmacAuthConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_HmacAuthConfig{}
+
+	if m.GetHmacPasswords() != nil {
+		target.HmacPasswords = make([]*ExtAuthConfig_HmacPassword, len(m.GetHmacPasswords()))
+		for idx, v := range m.GetHmacPasswords() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HmacPasswords[idx] = h.Clone().(*ExtAuthConfig_HmacPassword)
+			} else {
+				target.HmacPasswords[idx] = proto.Clone(v).(*ExtAuthConfig_HmacPassword)
+			}
+
+		}
+	}
+
+	switch m.HmacImplementation.(type) {
+
+	case *ExtAuthConfig_HmacAuthConfig_ParametersInHeaders:
+
+		if h, ok := interface{}(m.GetParametersInHeaders()).(clone.Cloner); ok {
+			target.HmacImplementation = &ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{
+				ParametersInHeaders: h.Clone().(*HmacParametersInHeaders),
+			}
+		} else {
+			target.HmacImplementation = &ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{
+				ParametersInHeaders: proto.Clone(m.GetParametersInHeaders()).(*HmacParametersInHeaders),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_HmacPassword) Clone() proto.Message {
+	var target *ExtAuthConfig_HmacPassword
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_HmacPassword{}
+
+	target.Username = m.GetUsername()
+
+	target.Password = m.GetPassword()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_Config) Clone() proto.Message {
 	var target *ExtAuthConfig_Config
 	if m == nil {
@@ -2961,11 +3016,11 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetHmacAuth()).(clone.Cloner); ok {
 			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
-				HmacAuth: h.Clone().(*HmacAuth),
+				HmacAuth: h.Clone().(*ExtAuthConfig_HmacAuthConfig),
 			}
 		} else {
 			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
-				HmacAuth: proto.Clone(m.GetHmacAuth()).(*HmacAuth),
+				HmacAuth: proto.Clone(m.GetHmacAuth()).(*ExtAuthConfig_HmacAuthConfig),
 			}
 		}
 
