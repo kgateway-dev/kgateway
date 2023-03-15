@@ -90,7 +90,6 @@ weight: 5
 - [LdapConfig](#ldapconfig)
 - [LdapServiceAccountConfig](#ldapserviceaccountconfig)
 - [HmacAuthConfig](#hmacauthconfig)
-- [HmacPassword](#hmacpassword)
 - [Config](#config)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
 - [ApiKeyCreateResponse](#apikeycreateresponse)
@@ -2047,34 +2046,15 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ```yaml
-"hmacPasswords": []enterprise.gloo.solo.io.ExtAuthConfig.HmacPassword
+"hmacPasswords": map<string, string>
 "parametersInHeaders": .enterprise.gloo.solo.io.HmacParametersInHeaders
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `hmacPasswords` | [[]enterprise.gloo.solo.io.ExtAuthConfig.HmacPassword](../extauth.proto.sk/#hmacpassword) | list of username/password pairs taken from secrets during gloo-ee translation. |
+| `hmacPasswords` | `map<string, string>` | list of username/password pairs taken from secrets during gloo-ee translation. |
 | `parametersInHeaders` | [.enterprise.gloo.solo.io.HmacParametersInHeaders](../extauth.proto.sk/#hmacparametersinheaders) |  |
-
-
-
-
----
-### HmacPassword
-
-
-
-```yaml
-"username": string
-"password": string
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `username` | `string` |  |
-| `password` | `string` |  |
 
 
 

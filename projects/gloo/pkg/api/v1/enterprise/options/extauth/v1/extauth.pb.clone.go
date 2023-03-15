@@ -2830,14 +2830,10 @@ func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
 	target = &ExtAuthConfig_HmacAuthConfig{}
 
 	if m.GetHmacPasswords() != nil {
-		target.HmacPasswords = make([]*ExtAuthConfig_HmacPassword, len(m.GetHmacPasswords()))
-		for idx, v := range m.GetHmacPasswords() {
+		target.HmacPasswords = make(map[string]string, len(m.GetHmacPasswords()))
+		for k, v := range m.GetHmacPasswords() {
 
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.HmacPasswords[idx] = h.Clone().(*ExtAuthConfig_HmacPassword)
-			} else {
-				target.HmacPasswords[idx] = proto.Clone(v).(*ExtAuthConfig_HmacPassword)
-			}
+			target.HmacPasswords[k] = v
 
 		}
 	}
@@ -2857,21 +2853,6 @@ func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
 		}
 
 	}
-
-	return target
-}
-
-// Clone function
-func (m *ExtAuthConfig_HmacPassword) Clone() proto.Message {
-	var target *ExtAuthConfig_HmacPassword
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_HmacPassword{}
-
-	target.Username = m.GetUsername()
-
-	target.Password = m.GetPassword()
 
 	return target
 }

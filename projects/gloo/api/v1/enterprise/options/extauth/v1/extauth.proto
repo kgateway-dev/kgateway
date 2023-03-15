@@ -1646,16 +1646,12 @@ message ExtAuthConfig {
     }
     message HmacAuthConfig {
         // list of username/password pairs taken from secrets during gloo-ee translation
-        repeated HmacPassword hmacPasswords = 1;
+        map<string, string> HmacPasswords = 1;
         // Algorithm to use to turn the request into a hashable string
         oneof hmac_implementation{
             HmacParametersInHeaders parameters_in_headers = 2;
         }
 
-    }
-    message HmacPassword {
-        string username = 1;
-        string password = 2;
     }
     message Config {
 
