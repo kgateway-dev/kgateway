@@ -81,11 +81,9 @@ require (
 	go.opencensus.io v0.23.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
-	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
-	golang.org/x/text v0.4.0 // indirect
-	golang.org/x/tools v0.1.12
+	golang.org/x/mod v0.9.0
+	golang.org/x/sync v0.1.0
+	golang.org/x/tools v0.7.0
 	google.golang.org/genproto v0.0.0-20211129164237-f09f9a12af12
 	google.golang.org/grpc v1.42.0
 	google.golang.org/protobuf v1.27.1
@@ -124,6 +122,11 @@ replace (
 	github.com/pseudomuto/protoc-gen-doc => github.com/pseudomuto/protoc-gen-doc v1.0.0
 	// Required for proper serialization of CRDs
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
+
+	// We're using Go 1.16
+	// unsafe.Slice was added as part of Go 1.17
+	// Without this pin, we would see: undefined: unsafe.Slice
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
 
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
