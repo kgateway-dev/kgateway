@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7472
+    description: >
+      Add ext-auth definition/configuration for HMAC Authentication
+    resolvesIssue: false
