@@ -186,11 +186,13 @@ var _ = Describe("Log Redactor", func() {
 			},
 		},
 		},
-	}), Entry("doesn't hide anything for HMAC configs", "irrelevant-here", &xdsproto.ExtAuthConfig{
+	}), Entry("hides the hmac secrets from logs", "hmacsecret", &xdsproto.ExtAuthConfig{
+		// TODO this should hide the credentials
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_HmacAuth{
-				HmacAuth: &xdsproto.HmacAuth{
-					HmacImplementation: &xdsproto.HmacAuth_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
+				HmacAuth: &xdsproto.ExtAuthConfig_HmacAuthConfig{
+					HmacPasswords:      map[string]string{"hmacsecretuser": "hmacsecretpass"},
+					HmacImplementation: &xdsproto.ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
 				},
 			},
 		}},
