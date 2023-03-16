@@ -168,6 +168,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	err := pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
+			logger := contextutils.LoggerFrom(params.Ctx)
 			// local variable to avoid side effects for calls that are not to aws upstreams
 			dest := spec.GetDestinationSpec()
 			tryingNonExplicitAWSDest := dest == nil && p.settings.GetFallbackToFirstFunction().GetValue()
@@ -176,7 +177,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			// check for this and update the local variable to not cause destination side effects until the end when we
 			// are sure that this is pointing to a valid aws upstream
 			if tryingNonExplicitAWSDest {
-				contextutils.LoggerFrom(params.Ctx).Debug("no destinationSpec set with fallbackToFirstFunction enabled, processing as aws route")
+				logger.Debug("no destinationSpec set with fallbackToFirstFunction enabled, processing as aws route")
 				dest = &v1.DestinationSpec{
 					DestinationType: &v1.DestinationSpec_Aws{
 						Aws: &aws.DestinationSpec{},
@@ -195,9 +196,14 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				return nil, nil
 			}
 
+			// warn user if they are using deprecated responseTransformation
+			if awsDestinationSpec.Aws.GetResponseTransformation() {
+				logger.Warn("field responseTransformation is deprecated; consider using unwrapAsApiGateway")
+			}
+
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {
-				contextutils.LoggerFrom(params.Ctx).Error(err)
+				logger.Error(err)
 				return nil, err
 			}
 
@@ -212,7 +218,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				// error as we have a route that `thinks` its pointing to an aws upstream
 				// but the upstream does not believe that it is an aws upstream
 				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
-				contextutils.LoggerFrom(params.Ctx).Error(err)
+				logger.Error(err)
 				return nil, err
 			}
 
