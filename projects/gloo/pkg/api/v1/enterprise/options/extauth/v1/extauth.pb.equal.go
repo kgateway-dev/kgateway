@@ -545,21 +545,28 @@ func (m *HmacAuth) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetClientSecretRef()) != len(target.GetClientSecretRef()) {
-		return false
-	}
-	for idx, v := range m.GetClientSecretRef() {
+	switch m.SecretStorage.(type) {
 
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetClientSecretRef()[idx]) {
+	case *HmacAuth_SecretRefs:
+		if _, ok := target.SecretStorage.(*HmacAuth_SecretRefs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSecretRefs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretRefs()) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetClientSecretRef()[idx]) {
+			if !proto.Equal(m.GetSecretRefs(), target.GetSecretRefs()) {
 				return false
 			}
 		}
 
+	default:
+		// m is nil but target is not nil
+		if m.SecretStorage != target.SecretStorage {
+			return false
+		}
 	}
 
 	switch m.HmacImplementation.(type) {
@@ -584,6 +591,47 @@ func (m *HmacAuth) Equal(that interface{}) bool {
 		if m.HmacImplementation != target.HmacImplementation {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SecretRefList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SecretRefList)
+	if !ok {
+		that2, ok := that.(SecretRefList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSecretRefs()) != len(target.GetSecretRefs()) {
+		return false
+	}
+	for idx, v := range m.GetSecretRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSecretRefs()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true
@@ -4775,15 +4823,28 @@ func (m *ExtAuthConfig_HmacAuthConfig) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetHmacPasswords()) != len(target.GetHmacPasswords()) {
-		return false
-	}
-	for k, v := range m.GetHmacPasswords() {
+	switch m.SecretStorage.(type) {
 
-		if strings.Compare(v, target.GetHmacPasswords()[k]) != 0 {
+	case *ExtAuthConfig_HmacAuthConfig_SecretList:
+		if _, ok := target.SecretStorage.(*ExtAuthConfig_HmacAuthConfig_SecretList); !ok {
 			return false
 		}
 
+		if h, ok := interface{}(m.GetSecretList()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretList()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSecretList(), target.GetSecretList()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.SecretStorage != target.SecretStorage {
+			return false
+		}
 	}
 
 	switch m.HmacImplementation.(type) {
@@ -4808,6 +4869,41 @@ func (m *ExtAuthConfig_HmacAuthConfig) Equal(that interface{}) bool {
 		if m.HmacImplementation != target.HmacImplementation {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_InMemorySecretList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_InMemorySecretList)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_InMemorySecretList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSecretList()) != len(target.GetSecretList()) {
+		return false
+	}
+	for k, v := range m.GetSecretList() {
+
+		if strings.Compare(v, target.GetSecretList()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true

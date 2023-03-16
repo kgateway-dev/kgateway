@@ -174,16 +174,19 @@ spec:
                       type: object
                     hmacAuth:
                       properties:
-                        clientSecretRef:
-                          items:
-                            properties:
-                              name:
-                                type: string
-                              namespace:
-                                type: string
-                            type: object
-                          type: array
                         parametersInHeaders:
+                          type: object
+                        secretRefs:
+                          properties:
+                            secretRefs:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              type: array
                           type: object
                       type: object
                     jwt:

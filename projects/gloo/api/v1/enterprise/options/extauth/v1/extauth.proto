@@ -267,14 +267,20 @@ message BasicAuth {
 }
 
 // HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages
+// It conforms to https://www.ietf.org/rfc/rfc2104.txt
 message HmacAuth {
-    // list of client secrets as registered with the issuer
-    repeated core.solo.io.ResourceRef client_secret_ref = 1;
-
+    // Configuration for how secrets are stored.
+    oneof secret_storage {
+        SecretRefList secret_refs = 1;
+    }
     // Algorithm to use to turn the request into a hashable string
     oneof hmac_implementation{
         HmacParametersInHeaders parameters_in_headers = 2;
     }
+}
+message SecretRefList {
+    // list of secrets as registered with the issuer
+    repeated core.solo.io.ResourceRef secret_refs = 1;
 }
 // Extract the HMAC parameters from the HTTP headers and use SHA-1 hashing
 message HmacParametersInHeaders {}
@@ -1645,13 +1651,18 @@ message ExtAuthConfig {
         bool check_groups_with_service_account = 3;
     }
     message HmacAuthConfig {
-        // list of username/password pairs taken from secrets during gloo-ee translation
-        map<string, string> HmacPasswords = 1 [(extproto.sensitive) = true];
+        oneof secret_storage {
+            InMemorySecretList secret_list = 1;
+        }
         // Algorithm to use to turn the request into a hashable string
         oneof hmac_implementation{
             HmacParametersInHeaders parameters_in_headers = 2;
         }
 
+    }
+    message InMemorySecretList {
+        // list of username/password pairs taken from secrets during gloo-ee translation
+        map<string, string> secret_list = 1 [(extproto.sensitive) = true];
     }
     message Config {
 

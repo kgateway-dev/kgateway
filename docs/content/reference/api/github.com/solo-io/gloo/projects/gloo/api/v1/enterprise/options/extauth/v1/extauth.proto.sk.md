@@ -27,6 +27,7 @@ weight: 5
 - [Apr](#apr)
 - [SaltedHashedPassword](#saltedhashedpassword)
 - [HmacAuth](#hmacauth)
+- [SecretRefList](#secretreflist)
 - [HmacParametersInHeaders](#hmacparametersinheaders)
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
@@ -90,6 +91,7 @@ weight: 5
 - [LdapConfig](#ldapconfig)
 - [LdapServiceAccountConfig](#ldapserviceaccountconfig)
 - [HmacAuthConfig](#hmacauthconfig)
+- [InMemorySecretList](#inmemorysecretlist)
 - [Config](#config)
 - [ApiKeyCreateRequest](#apikeycreaterequest)
 - [ApiKeyCreateResponse](#apikeycreateresponse)
@@ -453,17 +455,35 @@ This is used with custom auth servers.
 
  
 HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages
+It conforms to https://www.ietf.org/rfc/rfc2104.txt
 
 ```yaml
-"clientSecretRef": []core.solo.io.ResourceRef
+"secretRefs": .enterprise.gloo.solo.io.SecretRefList
 "parametersInHeaders": .enterprise.gloo.solo.io.HmacParametersInHeaders
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `clientSecretRef` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | list of client secrets as registered with the issuer. |
+| `secretRefs` | [.enterprise.gloo.solo.io.SecretRefList](../extauth.proto.sk/#secretreflist) |  |
 | `parametersInHeaders` | [.enterprise.gloo.solo.io.HmacParametersInHeaders](../extauth.proto.sk/#hmacparametersinheaders) |  |
+
+
+
+
+---
+### SecretRefList
+
+
+
+```yaml
+"secretRefs": []core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `secretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | list of secrets as registered with the issuer. |
 
 
 
@@ -2046,15 +2066,32 @@ These values will be encoded in a basic auth header in order to authenticate the
 
 
 ```yaml
-"hmacPasswords": map<string, string>
+"secretList": .enterprise.gloo.solo.io.ExtAuthConfig.InMemorySecretList
 "parametersInHeaders": .enterprise.gloo.solo.io.HmacParametersInHeaders
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `hmacPasswords` | `map<string, string>` | list of username/password pairs taken from secrets during gloo-ee translation. |
+| `secretList` | [.enterprise.gloo.solo.io.ExtAuthConfig.InMemorySecretList](../extauth.proto.sk/#inmemorysecretlist) |  |
 | `parametersInHeaders` | [.enterprise.gloo.solo.io.HmacParametersInHeaders](../extauth.proto.sk/#hmacparametersinheaders) |  |
+
+
+
+
+---
+### InMemorySecretList
+
+
+
+```yaml
+"secretList": map<string, string>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `secretList` | `map<string, string>` | list of username/password pairs taken from secrets during gloo-ee translation. |
 
 
 

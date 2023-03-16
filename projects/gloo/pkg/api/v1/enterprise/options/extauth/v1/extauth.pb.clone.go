@@ -320,17 +320,20 @@ func (m *HmacAuth) Clone() proto.Message {
 	}
 	target = &HmacAuth{}
 
-	if m.GetClientSecretRef() != nil {
-		target.ClientSecretRef = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetClientSecretRef()))
-		for idx, v := range m.GetClientSecretRef() {
+	switch m.SecretStorage.(type) {
 
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClientSecretRef[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
-			} else {
-				target.ClientSecretRef[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	case *HmacAuth_SecretRefs:
+
+		if h, ok := interface{}(m.GetSecretRefs()).(clone.Cloner); ok {
+			target.SecretStorage = &HmacAuth_SecretRefs{
+				SecretRefs: h.Clone().(*SecretRefList),
 			}
-
+		} else {
+			target.SecretStorage = &HmacAuth_SecretRefs{
+				SecretRefs: proto.Clone(m.GetSecretRefs()).(*SecretRefList),
+			}
 		}
+
 	}
 
 	switch m.HmacImplementation.(type) {
@@ -347,6 +350,30 @@ func (m *HmacAuth) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *SecretRefList) Clone() proto.Message {
+	var target *SecretRefList
+	if m == nil {
+		return target
+	}
+	target = &SecretRefList{}
+
+	if m.GetSecretRefs() != nil {
+		target.SecretRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetSecretRefs()))
+		for idx, v := range m.GetSecretRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SecretRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.SecretRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
 	}
 
 	return target
@@ -2829,13 +2856,20 @@ func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
 	}
 	target = &ExtAuthConfig_HmacAuthConfig{}
 
-	if m.GetHmacPasswords() != nil {
-		target.HmacPasswords = make(map[string]string, len(m.GetHmacPasswords()))
-		for k, v := range m.GetHmacPasswords() {
+	switch m.SecretStorage.(type) {
 
-			target.HmacPasswords[k] = v
+	case *ExtAuthConfig_HmacAuthConfig_SecretList:
 
+		if h, ok := interface{}(m.GetSecretList()).(clone.Cloner); ok {
+			target.SecretStorage = &ExtAuthConfig_HmacAuthConfig_SecretList{
+				SecretList: h.Clone().(*ExtAuthConfig_InMemorySecretList),
+			}
+		} else {
+			target.SecretStorage = &ExtAuthConfig_HmacAuthConfig_SecretList{
+				SecretList: proto.Clone(m.GetSecretList()).(*ExtAuthConfig_InMemorySecretList),
+			}
 		}
+
 	}
 
 	switch m.HmacImplementation.(type) {
@@ -2852,6 +2886,26 @@ func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_InMemorySecretList) Clone() proto.Message {
+	var target *ExtAuthConfig_InMemorySecretList
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_InMemorySecretList{}
+
+	if m.GetSecretList() != nil {
+		target.SecretList = make(map[string]string, len(m.GetSecretList()))
+		for k, v := range m.GetSecretList() {
+
+			target.SecretList[k] = v
+
+		}
 	}
 
 	return target
