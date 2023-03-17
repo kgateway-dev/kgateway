@@ -103,11 +103,11 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | ----- | ---- | ----------- | 
 | `logicalName` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |
 | `invocationStyle` | [.aws.options.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk/#invocationstyle) | Can be either Sync or Async. |
-| `requestTransformation` | `bool` | Include headers, querystring, request path, and request method in the event payload sent to aws lambda. |
-| `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda. |
-| `unwrapAsAlb` | `bool` | Unwrap the response as if the proxy was an ALB. Intended to ease migration when previously using alb to invoke Lambdas. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided. If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway. |
-| `unwrapAsApiGateway` | `bool` | Enterprise-Only Unwrap the response as if the proxy was an AWS API Gateway. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided. If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway. |
-| `wrapAsApiGateway` | `bool` | Enterprise-Only Wrap the request into AWS API Gateway event format. Intended to ease migration when previously using API Gateway to invoke Lambdas. |
+| `requestTransformation` | `bool` | Include headers, querystring, request path, and request method in the event payload sent to aws lambda. Only one of `requestTransformation` or `wrapAsApiGateway` should be provided. |
+| `responseTransformation` | `bool` | Deprecated. Use unwrapAsApiGateway. |
+| `unwrapAsAlb` | `bool` | Unwrap the response as if the proxy was an ALB. Intended to ease migration when previously using ALB to invoke Lambdas. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided. |
+| `unwrapAsApiGateway` | `bool` | Unwrap the response as if the proxy was an AWS API Gateway. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided. |
+| `wrapAsApiGateway` | `bool` | Enterprise-Only Wrap the request into AWS API Gateway event format. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `requestTransformation` or `wrapAsApiGateway` should be provided. |
 
 
 
