@@ -75,10 +75,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
+		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
 		// Discovery is off so we fill in the upstream here.
 		helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), populateDeprecatedApi, testClients.UpstreamClient.BaseClient())
-		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
