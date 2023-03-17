@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"io/ioutil"
 	"net/http"
 
@@ -75,7 +76,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
 		// Discovery is off so we fill in the upstream here.
-		populateDeprecatedApi(tu.Upstream)
+		helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), populateDeprecatedApi, testClients.UpstreamClient.BaseClient())
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -179,7 +180,8 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 	}
 }
 
-func populateDeprecatedApi(tu *gloov1.Upstream) {
+func populateDeprecatedApi(res resources.Resource) resources.Resource {
+	tu := res.(*gloov1.Upstream)
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
 	bytes, err := ioutil.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
@@ -198,6 +200,5 @@ func populateDeprecatedApi(tu *gloov1.Upstream) {
 				GrpcServices: grpcServices,
 			},
 		}})
-	tu.Metadata.ResourceVersion = "2"
-
+	return tu
 }

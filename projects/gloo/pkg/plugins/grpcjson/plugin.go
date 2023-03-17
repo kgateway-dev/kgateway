@@ -94,6 +94,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
 	p.upstreamFilters = append(p.upstreamFilters, grpcJsonFilter)
+	// GRPC transcoding always requires http2
 	if out.GetHttp2ProtocolOptions() == nil {
 		out.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
