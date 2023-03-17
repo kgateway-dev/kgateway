@@ -192,7 +192,7 @@ var _ = Describe("Log Redactor", func() {
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_HmacAuth{
 				HmacAuth: &xdsproto.ExtAuthConfig_HmacAuthConfig{
 					SecretStorage:      &xdsproto.ExtAuthConfig_HmacAuthConfig_SecretList{SecretList: &xdsproto.ExtAuthConfig_InMemorySecretList{SecretList: map[string]string{"hmacsecretuser": "hmacsecretpass"}}},
-					HmacImplementation: &xdsproto.ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
+					ImplementationType: &xdsproto.ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
 				},
 			},
 		}},

@@ -998,7 +998,7 @@ func (x *BasicAuth) GetApr() *BasicAuth_Apr {
 	return nil
 }
 
-// HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages
+// HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages.
 // It conforms to https://www.ietf.org/rfc/rfc2104.txt
 type HmacAuth struct {
 	state         protoimpl.MessageState
@@ -1013,10 +1013,10 @@ type HmacAuth struct {
 	SecretStorage isHmacAuth_SecretStorage `protobuf_oneof:"secret_storage"`
 	// Algorithm to use to turn the request into a hashable string
 	//
-	// Types that are assignable to HmacImplementation:
+	// Types that are assignable to ImplementationType:
 	//
 	//	*HmacAuth_ParametersInHeaders
-	HmacImplementation isHmacAuth_HmacImplementation `protobuf_oneof:"hmac_implementation"`
+	ImplementationType isHmacAuth_ImplementationType `protobuf_oneof:"implementation_type"`
 }
 
 func (x *HmacAuth) Reset() {
@@ -1065,15 +1065,15 @@ func (x *HmacAuth) GetSecretRefs() *SecretRefList {
 	return nil
 }
 
-func (m *HmacAuth) GetHmacImplementation() isHmacAuth_HmacImplementation {
+func (m *HmacAuth) GetImplementationType() isHmacAuth_ImplementationType {
 	if m != nil {
-		return m.HmacImplementation
+		return m.ImplementationType
 	}
 	return nil
 }
 
 func (x *HmacAuth) GetParametersInHeaders() *HmacParametersInHeaders {
-	if x, ok := x.GetHmacImplementation().(*HmacAuth_ParametersInHeaders); ok {
+	if x, ok := x.GetImplementationType().(*HmacAuth_ParametersInHeaders); ok {
 		return x.ParametersInHeaders
 	}
 	return nil
@@ -1089,15 +1089,15 @@ type HmacAuth_SecretRefs struct {
 
 func (*HmacAuth_SecretRefs) isHmacAuth_SecretStorage() {}
 
-type isHmacAuth_HmacImplementation interface {
-	isHmacAuth_HmacImplementation()
+type isHmacAuth_ImplementationType interface {
+	isHmacAuth_ImplementationType()
 }
 
 type HmacAuth_ParametersInHeaders struct {
 	ParametersInHeaders *HmacParametersInHeaders `protobuf:"bytes,2,opt,name=parameters_in_headers,json=parametersInHeaders,proto3,oneof"`
 }
 
-func (*HmacAuth_ParametersInHeaders) isHmacAuth_HmacImplementation() {}
+func (*HmacAuth_ParametersInHeaders) isHmacAuth_ImplementationType() {}
 
 type SecretRefList struct {
 	state         protoimpl.MessageState
@@ -7329,10 +7329,10 @@ type ExtAuthConfig_HmacAuthConfig struct {
 	SecretStorage isExtAuthConfig_HmacAuthConfig_SecretStorage `protobuf_oneof:"secret_storage"`
 	// Algorithm to use to turn the request into a hashable string
 	//
-	// Types that are assignable to HmacImplementation:
+	// Types that are assignable to ImplementationType:
 	//
 	//	*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders
-	HmacImplementation isExtAuthConfig_HmacAuthConfig_HmacImplementation `protobuf_oneof:"hmac_implementation"`
+	ImplementationType isExtAuthConfig_HmacAuthConfig_ImplementationType `protobuf_oneof:"implementation_type"`
 }
 
 func (x *ExtAuthConfig_HmacAuthConfig) Reset() {
@@ -7381,15 +7381,15 @@ func (x *ExtAuthConfig_HmacAuthConfig) GetSecretList() *ExtAuthConfig_InMemorySe
 	return nil
 }
 
-func (m *ExtAuthConfig_HmacAuthConfig) GetHmacImplementation() isExtAuthConfig_HmacAuthConfig_HmacImplementation {
+func (m *ExtAuthConfig_HmacAuthConfig) GetImplementationType() isExtAuthConfig_HmacAuthConfig_ImplementationType {
 	if m != nil {
-		return m.HmacImplementation
+		return m.ImplementationType
 	}
 	return nil
 }
 
 func (x *ExtAuthConfig_HmacAuthConfig) GetParametersInHeaders() *HmacParametersInHeaders {
-	if x, ok := x.GetHmacImplementation().(*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders); ok {
+	if x, ok := x.GetImplementationType().(*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders); ok {
 		return x.ParametersInHeaders
 	}
 	return nil
@@ -7405,15 +7405,15 @@ type ExtAuthConfig_HmacAuthConfig_SecretList struct {
 
 func (*ExtAuthConfig_HmacAuthConfig_SecretList) isExtAuthConfig_HmacAuthConfig_SecretStorage() {}
 
-type isExtAuthConfig_HmacAuthConfig_HmacImplementation interface {
-	isExtAuthConfig_HmacAuthConfig_HmacImplementation()
+type isExtAuthConfig_HmacAuthConfig_ImplementationType interface {
+	isExtAuthConfig_HmacAuthConfig_ImplementationType()
 }
 
 type ExtAuthConfig_HmacAuthConfig_ParametersInHeaders struct {
 	ParametersInHeaders *HmacParametersInHeaders `protobuf:"bytes,2,opt,name=parameters_in_headers,json=parametersInHeaders,proto3,oneof"`
 }
 
-func (*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders) isExtAuthConfig_HmacAuthConfig_HmacImplementation() {
+func (*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders) isExtAuthConfig_HmacAuthConfig_ImplementationType() {
 }
 
 type ExtAuthConfig_InMemorySecretList struct {
@@ -8384,8 +8384,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth
 	0x65, 0x72, 0x73, 0x48, 0x01, 0x52, 0x13, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x65, 0x74, 0x65, 0x72,
 	0x73, 0x49, 0x6e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x42, 0x10, 0x0a, 0x0e, 0x73, 0x65,
 	0x63, 0x72, 0x65, 0x74, 0x5f, 0x73, 0x74, 0x6f, 0x72, 0x61, 0x67, 0x65, 0x42, 0x15, 0x0a, 0x13,
-	0x68, 0x6d, 0x61, 0x63, 0x5f, 0x69, 0x6d, 0x70, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x22, 0x4b, 0x0a, 0x0d, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x52, 0x65, 0x66,
+	0x69, 0x6d, 0x70, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x74,
+	0x79, 0x70, 0x65, 0x22, 0x4b, 0x0a, 0x0d, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x52, 0x65, 0x66,
 	0x4c, 0x69, 0x73, 0x74, 0x12, 0x3a, 0x0a, 0x0b, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x72,
 	0x65, 0x66, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x63, 0x6f, 0x72, 0x65,
 	0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63,
@@ -9587,8 +9587,8 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth
 	0x49, 0x6e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73, 0x48, 0x01, 0x52, 0x13, 0x70, 0x61, 0x72,
 	0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73, 0x49, 0x6e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x73,
 	0x42, 0x10, 0x0a, 0x0e, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x73, 0x74, 0x6f, 0x72, 0x61,
-	0x67, 0x65, 0x42, 0x15, 0x0a, 0x13, 0x68, 0x6d, 0x61, 0x63, 0x5f, 0x69, 0x6d, 0x70, 0x6c, 0x65,
-	0x6d, 0x65, 0x6e, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0xc5, 0x01, 0x0a, 0x12, 0x49, 0x6e,
+	0x67, 0x65, 0x42, 0x15, 0x0a, 0x13, 0x69, 0x6d, 0x70, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x1a, 0xc5, 0x01, 0x0a, 0x12, 0x49, 0x6e,
 	0x4d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4c, 0x69, 0x73, 0x74,
 	0x12, 0x70, 0x0a, 0x0b, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18,
 	0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x49, 0x2e, 0x65, 0x6e, 0x74, 0x65, 0x72, 0x70, 0x72, 0x69,

@@ -614,7 +614,7 @@ func (m *HmacAuth) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	switch m.HmacImplementation.(type) {
+	switch m.ImplementationType.(type) {
 
 	case *HmacAuth_ParametersInHeaders:
 
@@ -5301,7 +5301,7 @@ func (m *ExtAuthConfig_HmacAuthConfig) Hash(hasher hash.Hash64) (uint64, error) 
 
 	}
 
-	switch m.HmacImplementation.(type) {
+	switch m.ImplementationType.(type) {
 
 	case *ExtAuthConfig_HmacAuthConfig_ParametersInHeaders:
 

@@ -454,7 +454,7 @@ This is used with custom auth servers.
 ### HmacAuth
 
  
-HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages
+HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages.
 It conforms to https://www.ietf.org/rfc/rfc2104.txt
 
 ```yaml
