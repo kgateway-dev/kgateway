@@ -2101,6 +2101,10 @@ func (m *ApiKey) Equal(that interface{}) bool {
 
 	}
 
+	if strings.Compare(m.GetUuid(), target.GetUuid()) != 0 {
+		return false
+	}
+
 	return true
 }
 

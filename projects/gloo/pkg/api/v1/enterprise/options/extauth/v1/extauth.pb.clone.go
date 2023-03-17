@@ -1257,6 +1257,8 @@ func (m *ApiKey) Clone() proto.Message {
 		}
 	}
 
+	target.Uuid = m.GetUuid()
+
 	return target
 }
 
