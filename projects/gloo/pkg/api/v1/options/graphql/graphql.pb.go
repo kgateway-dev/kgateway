@@ -32,7 +32,7 @@ type ServiceSpec struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Endpoint provides the endpoint information, and how to call the GraphQL Server.
-	// This endpoint must be called via HTTP POST sneding form data as mentioned in [the GraphQL Docs](https://graphql.org/learn/serving-over-http/#post-request).
+	// This endpoint must be called via HTTP POST sending form data as mentioned in [the GraphQL Docs](https://graphql.org/learn/serving-over-http/#post-request).
 	Endpoint *ServiceSpec_Endpoint `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 }
 
@@ -81,7 +81,7 @@ type ServiceSpec_Endpoint struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The url for the graphql endpoint. ie: myurl.com/graphql
+	// The url for the graphql endpoint. Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 }
 
