@@ -32,7 +32,7 @@ type ServiceSpec struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Endpoint provides the endpoint information, and how to call the GraphQL Server.
-	// Currently you can only call the endpoint using a POST method sending a data form as GraphQL.
+	// This endpoint must be called via HTTP POST sneding form data as mentioned in [the GraphQL Docs](https://graphql.org/learn/serving-over-http/#post-request).
 	Endpoint *ServiceSpec_Endpoint `protobuf:"bytes,1,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 }
 

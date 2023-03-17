@@ -39,7 +39,7 @@ spec is fine), to make sure that traffic to it is routed with
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `endpoint` | [.graphql.options.gloo.solo.io.ServiceSpec.Endpoint](../graphql.proto.sk/#endpoint) | Endpoint provides the endpoint information, and how to call the GraphQL Server. Currently you can only call the endpoint using a POST method sending a data form as GraphQL. |
+| `endpoint` | [.graphql.options.gloo.solo.io.ServiceSpec.Endpoint](../graphql.proto.sk/#endpoint) | Endpoint provides the endpoint information, and how to call the GraphQL Server. This endpoint must be called via HTTP POST sneding form data as mentioned in [the GraphQL Docs](https://graphql.org/learn/serving-over-http/#post-request). |
 
 
 
