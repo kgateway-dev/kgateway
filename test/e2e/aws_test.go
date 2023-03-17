@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	errors "github.com/rotisserie/eris"
@@ -28,6 +27,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
+	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -96,7 +98,6 @@ var _ = Describe("AWS Lambda", func() {
 		requestUrl                      *url.URL
 		expectedStatus                  *int
 	}
-	// validateLambda := func(offset int, envoyPort uint32, requestBody string, requestHeaders http.Header, expectedHeaders http.Header, substrings ...string) {
 	validateLambda := func(params lambdaValidationParams) {
 
 		body := []byte("\"solo.io\"")
@@ -116,7 +117,7 @@ var _ = Describe("AWS Lambda", func() {
 			expectedStatus = *params.expectedStatus
 		}
 
-		EventuallyWithOffset(params.offset, func() error {
+		EventuallyWithOffset(params.offset, func(g Gomega) error {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(body)
@@ -136,74 +137,29 @@ var _ = Describe("AWS Lambda", func() {
 			if err != nil {
 				return err
 			}
-			fmt.Println(res)
-
-			if params.expectedHeaders != nil {
-				type missingOrMalformed struct {
-					key           string
-					expectedValue []string
-					returnedValue []string
-				}
-				missingHeaders := []missingOrMalformed{}
-			headerLoop:
-				for k, v := range params.expectedHeaders {
-					resHdrValues := res.Header.Values(k)
-					appendMissing := func() {
-						missingHeaders = append(missingHeaders, missingOrMalformed{
-							key:           k,
-							expectedValue: v,
-							returnedValue: resHdrValues,
-						})
-					}
-					if len(resHdrValues) != len(v) {
-						appendMissing()
-						continue headerLoop
-					}
-
-					// get set of returned header values
-					returnedValuesSet := map[string]struct{}{}
-					for i := 0; i < len(resHdrValues); i++ {
-						returnedValuesSet[resHdrValues[i]] = struct{}{}
-					}
-
-					// make sure each expected header value exists in the returned values
-					for i := 0; i < len(v); i++ {
-						if _, ok := returnedValuesSet[v[i]]; !ok {
-							appendMissing()
-							continue headerLoop
-						}
-					}
-				}
-
-				if len(missingHeaders) > 0 {
-					return errors.Errorf("missing or malformed expected headers: %v", missingHeaders)
-				}
-			}
 
 			defer res.Body.Close()
-			if res.StatusCode != expectedStatus {
-				return errors.Errorf("%v does not match expected status %v", res.StatusCode, expectedStatus)
-			}
 
-			body, err := io.ReadAll(res.Body)
-			if err != nil {
-				return err
+			bodyMatchers := make([]types.GomegaMatcher, 0, len(params.expectedSubstrings))
+			for i := range params.expectedSubstrings {
+				bodyMatchers = append(bodyMatchers, ContainSubstring(params.expectedSubstrings[i]))
 			}
-
-			strBody := string(body)
-			missingSubstrings := make([]string, 0, 10)
-			for i := 0; i < len(params.expectedSubstrings); i++ {
-				if strings.Contains(strBody, params.expectedSubstrings[i]) {
-					continue
+			headerMatchers := make([]types.GomegaMatcher, 0, len(params.expectedHeaders))
+			for k, v := range params.expectedHeaders {
+				vals := make([]interface{}, len(v))
+				for i := range v {
+					vals[i] = v[i]
 				}
-				missingSubstrings = append(missingSubstrings, params.expectedSubstrings[i])
+				headerMatchers = append(headerMatchers, WithTransform(transforms.WithHeaderValues(k), ContainElements(vals...)))
 			}
-			if len(missingSubstrings) > 0 {
-				fmt.Println(strBody)
-				return errors.Errorf("missing expected substrings: %s", strings.Join(missingSubstrings, ";"))
-			}
+			g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				StatusCode: expectedStatus,
+				Body:       And(bodyMatchers...),
+				Custom:     And(headerMatchers...),
+			}))
+
 			return nil
-		}, "5s", "1s").ShouldNot(HaveOccurred())
+		}, "5m", "1s").Should(Succeed())
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(lambdaValidationParams{
