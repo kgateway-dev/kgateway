@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.23.3-patch3
+    description: Not strictly nessecary but will quiet down some checks that detect alpine versions rather than sub ssl versions.
