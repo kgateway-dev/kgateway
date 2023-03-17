@@ -521,8 +521,6 @@ var _ = Describe("AWS Lambda", func() {
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
 			It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
-
-			It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 		})
 		Context("With gateway translation", func() {
 			BeforeEach(func() {
