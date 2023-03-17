@@ -117,7 +117,7 @@ var _ = Describe("AWS Lambda", func() {
 			expectedStatus = *params.expectedStatus
 		}
 
-		EventuallyWithOffset(params.offset, func(g Gomega) error {
+		EventuallyWithOffset(params.offset, func(g Gomega) {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(body)
@@ -134,9 +134,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			res, err := httpClient.Do(&req)
-			if err != nil {
-				return err
-			}
+			g.Expect(err).NotTo(HaveOccurred())
 
 			defer res.Body.Close()
 
@@ -158,7 +156,6 @@ var _ = Describe("AWS Lambda", func() {
 				Custom:     And(headerMatchers...),
 			}))
 
-			return nil
 		}, "5m", "1s").Should(Succeed())
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
