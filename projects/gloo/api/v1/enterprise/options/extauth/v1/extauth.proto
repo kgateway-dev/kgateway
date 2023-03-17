@@ -977,6 +977,8 @@ message ApiKey {
     repeated string labels = 3;
     // additional data the client needs associated with this API key
     map<string, string> metadata = 4;
+    // Optional: Unique identifier for the API key
+    string uuid = 5;
 }
 
 // DEPRECATED: use ApiKey
