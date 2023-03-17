@@ -138,8 +138,8 @@ var _ = Describe("AWS Lambda", func() {
 
 			g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedStatus,
-				Body:       testmatchers.MatchMultipleSubstrings(params.expectedSubstrings),
-				Custom:     testmatchers.MatchMultiValueHeaders(params.expectedHeaders),
+				Body:       testmatchers.ContainSubstrings(params.expectedSubstrings),
+				Custom:     testmatchers.ContainHeaders(params.expectedHeaders),
 			}))
 
 		}, "5m", "1s").Should(Succeed())
