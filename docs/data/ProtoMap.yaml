@@ -251,6 +251,12 @@ apis:
   enterprise.gloo.solo.io.HeaderConfiguration:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderConfiguration
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.HmacAuth:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacAuth
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.HmacParametersInHeaders:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacParametersInHeaders
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.HttpService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HttpService
     package: enterprise.gloo.solo.io
@@ -307,6 +313,9 @@ apis:
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.RedisOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RedisOptions
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.SecretRefList:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#SecretRefList
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Settings
