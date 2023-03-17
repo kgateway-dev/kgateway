@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
+
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/test/testutils"
 
@@ -84,34 +87,130 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	validateLambda := func(offset int, envoyPort uint32, substring string) {
+	type lambdaValidationParams struct {
+		offset                          int
+		envoyPort                       uint32
+		requestBody                     string
+		expectedSubstrings              []string
+		requestHeaders, expectedHeaders http.Header
+		requestUrl                      *url.URL
+		expectedStatus                  *int
+	}
+	// validateLambda := func(offset int, envoyPort uint32, requestBody string, requestHeaders http.Header, expectedHeaders http.Header, substrings ...string) {
+	validateLambda := func(params lambdaValidationParams) {
 
 		body := []byte("\"solo.io\"")
+		if params.requestBody != "" {
+			body = []byte(params.requestBody)
+		}
+		headers := http.Header{"Content-Type": {"application/octet-stream"}}
+		if params.requestHeaders != nil {
+			headers = params.requestHeaders
+		}
+		u := &url.URL{Scheme: "http", Host: fmt.Sprintf("localhost:%d", params.envoyPort), Path: "/1", RawQuery: "param_a=value_1&param_b=value_b"}
+		if params.requestUrl != nil {
+			u = params.requestUrl
+		}
+		expectedStatus := http.StatusOK
+		if params.expectedStatus != nil {
+			expectedStatus = *params.expectedStatus
+		}
 
-		EventuallyWithOffset(offset, func() (string, error) {
+		EventuallyWithOffset(params.offset, func() error {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(body)
 
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/1?param_a=value_1&param_b=value_b", "localhost", envoyPort), "application/octet-stream", &buf)
-			if err != nil {
-				return "", err
+			httpClient := &http.Client{
+				Timeout: time.Minute * 5,
 			}
+
+			req := http.Request{
+				Method: http.MethodPost,
+				URL:    u,
+				Header: headers,
+				Body:   io.NopCloser(&buf),
+			}
+
+			res, err := httpClient.Do(&req)
+			if err != nil {
+				return err
+			}
+			fmt.Println(res)
+
+			if params.expectedHeaders != nil {
+				type missingOrMalformed struct {
+					key           string
+					expectedValue []string
+					returnedValue []string
+				}
+				missingHeaders := []missingOrMalformed{}
+			headerLoop:
+				for k, v := range params.expectedHeaders {
+					resHdrValues := res.Header.Values(k)
+					appendMissing := func() {
+						missingHeaders = append(missingHeaders, missingOrMalformed{
+							key:           k,
+							expectedValue: v,
+							returnedValue: resHdrValues,
+						})
+					}
+					if len(resHdrValues) != len(v) {
+						appendMissing()
+						continue headerLoop
+					}
+
+					// get set of returned header values
+					returnedValuesSet := map[string]struct{}{}
+					for i := 0; i < len(resHdrValues); i++ {
+						returnedValuesSet[resHdrValues[i]] = struct{}{}
+					}
+
+					// make sure each expected header value exists in the returned values
+					for i := 0; i < len(v); i++ {
+						if _, ok := returnedValuesSet[v[i]]; !ok {
+							appendMissing()
+							continue headerLoop
+						}
+					}
+				}
+
+				if len(missingHeaders) > 0 {
+					return errors.Errorf("missing or malformed expected headers: %v", missingHeaders)
+				}
+			}
+
 			defer res.Body.Close()
-			if res.StatusCode != http.StatusOK {
-				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+			if res.StatusCode != expectedStatus {
+				return errors.Errorf("%v does not match expected status %v", res.StatusCode, expectedStatus)
 			}
 
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
-				return "", err
+				return err
 			}
 
-			return string(body), nil
-		}, "5m", "1s").Should(ContainSubstring(substring))
+			strBody := string(body)
+			missingSubstrings := make([]string, 0, 10)
+			for i := 0; i < len(params.expectedSubstrings); i++ {
+				if strings.Contains(strBody, params.expectedSubstrings[i]) {
+					continue
+				}
+				missingSubstrings = append(missingSubstrings, params.expectedSubstrings[i])
+			}
+			if len(missingSubstrings) > 0 {
+				fmt.Println(strBody)
+				return errors.Errorf("missing expected substrings: %s", strings.Join(missingSubstrings, ";"))
+			}
+			return nil
+		}, "5s", "1s").ShouldNot(HaveOccurred())
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
-		validateLambda(2, envoyPort, "SOLO.IO")
+		validateLambda(lambdaValidationParams{
+			offset:             2,
+			envoyPort:          envoyPort,
+			expectedSubstrings: []string{"SOLO.IO"},
+		})
 	}
 
 	addUpstream := func() {
@@ -212,7 +311,11 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, false, true, "contact-form")
-		validateLambda(1, defaults.HttpPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
+		validateLambda(lambdaValidationParams{
+			offset:             1,
+			envoyPort:          defaults.HttpPort,
+			expectedSubstrings: []string{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`},
+		})
 	}
 
 	testProxyWithRequestTransform := func() {
@@ -220,10 +323,30 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, true, false, "dumpContext")
-		validateLambda(1, defaults.HttpPort, `\"body\": \"\\\"solo.io\\\"\", \"headers\": `)
-		validateLambda(1, defaults.HttpPort, `\"queryString\": \"param_a=value_1&param_b=value_b\"`)
-		validateLambda(1, defaults.HttpPort, `\"path\": \"/1\"`)
-		validateLambda(1, defaults.HttpPort, `\"httpMethod\": \"POST\"`)
+		validateLambda(lambdaValidationParams{
+			offset:    1,
+			envoyPort: defaults.HttpPort,
+			expectedSubstrings: []string{`\"body\": \"\\\"solo.io\\\"\", \"headers\": `,
+				`\"queryString\": \"param_a=value_1&param_b=value_b\"`,
+				`\"path\": \"/1\"`,
+				`\"httpMethod\": \"POST\"`},
+		})
+	}
+
+	testProxyWithUnwrapAsApiGateway := func() {
+		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		createProxy(true, false, false, "echo")
+		expectedStatus := 201
+		validateLambda(lambdaValidationParams{
+			offset:             1,
+			envoyPort:          defaults.HttpPort,
+			requestBody:        `{"headers":{"Content-Type":"application/test"}, "body":"solo.io", "multiValueHeaders":{"x-header":["value-1", "value-2"]}, "statusCode":201}`,
+			expectedSubstrings: []string{"solo.io"},
+			expectedHeaders:    http.Header{"Content-Type": {"application/test"}, "X-Header": {"value-1,value-2"}},
+			expectedStatus:     &expectedStatus,
+		})
 	}
 
 	testProxyWithRequestAndResponseTransforms := func() {
@@ -231,7 +354,11 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, true, true, "dumpContext")
-		validateLambda(1, defaults.HttpPort, `"\"solo.io\""`)
+		validateLambda(lambdaValidationParams{
+			offset:             1,
+			envoyPort:          defaults.HttpPort,
+			expectedSubstrings: []string{`"\"solo.io\""`},
+		})
 	}
 
 	testLambdaWithVirtualService := func() {
@@ -374,7 +501,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			defer res.Body.Close()
-			body, err = ioutil.ReadAll(res.Body)
+			body, err = io.ReadAll(res.Body)
 			Expect(err).NotTo(HaveOccurred())
 			return nil
 		}
@@ -450,7 +577,11 @@ var _ = Describe("AWS Lambda", func() {
 
 			It("should be able to call lambda with response transform", testProxyWithResponseTransform)
 
+			It("should be able to call lambda with unwrapAsApiGateway", testProxyWithUnwrapAsApiGateway)
+
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
+
+			It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 
 			It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 		})
@@ -505,7 +636,7 @@ var _ = Describe("AWS Lambda", func() {
 
 			It("should be able to call lambda", testProxy)
 
-			It("should be able lambda with response transform", testProxyWithResponseTransform)
+			It("should be able to call lambda with response transform", testProxyWithResponseTransform)
 
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
@@ -560,7 +691,7 @@ var _ = Describe("AWS Lambda", func() {
 			signedJwt, err := tokenToSign.SignedString(privateKey)
 			Expect(err).NotTo(HaveOccurred())
 
-			tmpFile, err = ioutil.TempFile("/tmp", "")
+			tmpFile, err = os.CreateTemp("/tmp", "")
 			Expect(err).NotTo(HaveOccurred())
 			defer tmpFile.Close()
 
@@ -663,7 +794,7 @@ var _ = Describe("AWS Lambda", func() {
 			 */
 			It("should be able to call lambda", testProxy)
 
-			It("should be able lambda with response transform", testProxyWithResponseTransform)
+			It("should be able to call lambda with response transform", testProxyWithResponseTransform)
 
 			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
 
