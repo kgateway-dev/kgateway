@@ -52,3 +52,6 @@ test-report.json
 # At time we run Gloo Edge locally and store configuration in a local directory named `data`
 # These should be ignored, as often times `source_data` is the configuration we check into the repo
 data
+
+# python pickle files
+*.p
