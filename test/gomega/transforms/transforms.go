@@ -3,7 +3,7 @@ package transforms
 import (
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -20,7 +20,7 @@ func WithDecompressorTransform() func(b []byte) string {
 			return invalidDecompressorResponse
 		}
 		defer reader.Close()
-		body, err := ioutil.ReadAll(reader)
+		body, err := io.ReadAll(reader)
 		if err != nil {
 			return invalidDecompressorResponse
 		}
