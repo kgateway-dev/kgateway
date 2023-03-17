@@ -313,6 +313,84 @@ func (m *BasicAuth) Clone() proto.Message {
 }
 
 // Clone function
+func (m *HmacAuth) Clone() proto.Message {
+	var target *HmacAuth
+	if m == nil {
+		return target
+	}
+	target = &HmacAuth{}
+
+	switch m.SecretStorage.(type) {
+
+	case *HmacAuth_SecretRefs:
+
+		if h, ok := interface{}(m.GetSecretRefs()).(clone.Cloner); ok {
+			target.SecretStorage = &HmacAuth_SecretRefs{
+				SecretRefs: h.Clone().(*SecretRefList),
+			}
+		} else {
+			target.SecretStorage = &HmacAuth_SecretRefs{
+				SecretRefs: proto.Clone(m.GetSecretRefs()).(*SecretRefList),
+			}
+		}
+
+	}
+
+	switch m.ImplementationType.(type) {
+
+	case *HmacAuth_ParametersInHeaders:
+
+		if h, ok := interface{}(m.GetParametersInHeaders()).(clone.Cloner); ok {
+			target.ImplementationType = &HmacAuth_ParametersInHeaders{
+				ParametersInHeaders: h.Clone().(*HmacParametersInHeaders),
+			}
+		} else {
+			target.ImplementationType = &HmacAuth_ParametersInHeaders{
+				ParametersInHeaders: proto.Clone(m.GetParametersInHeaders()).(*HmacParametersInHeaders),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *SecretRefList) Clone() proto.Message {
+	var target *SecretRefList
+	if m == nil {
+		return target
+	}
+	target = &SecretRefList{}
+
+	if m.GetSecretRefs() != nil {
+		target.SecretRefs = make([]*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef, len(m.GetSecretRefs()))
+		for idx, v := range m.GetSecretRefs() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SecretRefs[idx] = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			} else {
+				target.SecretRefs[idx] = proto.Clone(v).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *HmacParametersInHeaders) Clone() proto.Message {
+	var target *HmacParametersInHeaders
+	if m == nil {
+		return target
+	}
+	target = &HmacParametersInHeaders{}
+
+	return target
+}
+
+// Clone function
 func (m *OAuth) Clone() proto.Message {
 	var target *OAuth
 	if m == nil {
@@ -1802,6 +1880,18 @@ func (m *AuthConfig_Config) Clone() proto.Message {
 			}
 		}
 
+	case *AuthConfig_Config_HmacAuth:
+
+		if h, ok := interface{}(m.GetHmacAuth()).(clone.Cloner); ok {
+			target.AuthConfig = &AuthConfig_Config_HmacAuth{
+				HmacAuth: h.Clone().(*HmacAuth),
+			}
+		} else {
+			target.AuthConfig = &AuthConfig_Config_HmacAuth{
+				HmacAuth: proto.Clone(m.GetHmacAuth()).(*HmacAuth),
+			}
+		}
+
 	}
 
 	return target
@@ -2761,6 +2851,69 @@ func (m *ExtAuthConfig_LdapServiceAccountConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_HmacAuthConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_HmacAuthConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_HmacAuthConfig{}
+
+	switch m.SecretStorage.(type) {
+
+	case *ExtAuthConfig_HmacAuthConfig_SecretList:
+
+		if h, ok := interface{}(m.GetSecretList()).(clone.Cloner); ok {
+			target.SecretStorage = &ExtAuthConfig_HmacAuthConfig_SecretList{
+				SecretList: h.Clone().(*ExtAuthConfig_InMemorySecretList),
+			}
+		} else {
+			target.SecretStorage = &ExtAuthConfig_HmacAuthConfig_SecretList{
+				SecretList: proto.Clone(m.GetSecretList()).(*ExtAuthConfig_InMemorySecretList),
+			}
+		}
+
+	}
+
+	switch m.ImplementationType.(type) {
+
+	case *ExtAuthConfig_HmacAuthConfig_ParametersInHeaders:
+
+		if h, ok := interface{}(m.GetParametersInHeaders()).(clone.Cloner); ok {
+			target.ImplementationType = &ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{
+				ParametersInHeaders: h.Clone().(*HmacParametersInHeaders),
+			}
+		} else {
+			target.ImplementationType = &ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{
+				ParametersInHeaders: proto.Clone(m.GetParametersInHeaders()).(*HmacParametersInHeaders),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_InMemorySecretList) Clone() proto.Message {
+	var target *ExtAuthConfig_InMemorySecretList
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_InMemorySecretList{}
+
+	if m.GetSecretList() != nil {
+		target.SecretList = make(map[string]string, len(m.GetSecretList()))
+		for k, v := range m.GetSecretList() {
+
+			target.SecretList[k] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_Config) Clone() proto.Message {
 	var target *ExtAuthConfig_Config
 	if m == nil {
@@ -2893,6 +3046,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 		} else {
 			target.AuthConfig = &ExtAuthConfig_Config_PassThroughAuth{
 				PassThroughAuth: proto.Clone(m.GetPassThroughAuth()).(*PassThroughAuth),
+			}
+		}
+
+	case *ExtAuthConfig_Config_HmacAuth:
+
+		if h, ok := interface{}(m.GetHmacAuth()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
+				HmacAuth: h.Clone().(*ExtAuthConfig_HmacAuthConfig),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
+				HmacAuth: proto.Clone(m.GetHmacAuth()).(*ExtAuthConfig_HmacAuthConfig),
 			}
 		}
 
