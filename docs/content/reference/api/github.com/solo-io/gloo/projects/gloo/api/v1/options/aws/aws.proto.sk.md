@@ -11,14 +11,10 @@ weight: 5
 #### Types:
 
 
-- [weight: 5](#weight-5)
-  - [Package: `aws.options.gloo.solo.io`](#package-awsoptionsgloosoloio)
-    - [Types:](#types)
-      - [Source File: github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto](#source-file-githubcomsolo-ioglooprojectsglooapiv1optionsawsawsproto)
-  - [UpstreamSpec](#upstreamspec)
-  - [LambdaFunctionSpec](#lambdafunctionspec)
-  - [DestinationSpec](#destinationspec)
-  - [InvocationStyle](#invocationstyle)
+- [UpstreamSpec](#upstreamspec)
+- [LambdaFunctionSpec](#lambdafunctionspec)
+- [DestinationSpec](#destinationspec)
+- [InvocationStyle](#invocationstyle)
   
 
 
@@ -107,7 +103,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | ----- | ---- | ----------- | 
 | `logicalName` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |
 | `invocationStyle` | [.aws.options.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk/#invocationstyle) | Can be either Sync or Async. |
-| `requestTransformation` | `bool` | Include headers, querystring, request path, and request method in the event payload sent to aws lambda. Only one of `requestTransformation` or `wrapAsApiGateway` should be provided. |
+| `requestTransformation` | `bool` | Include headers, multi-value headers, querystring, querystring parameters, multi-value querystring parameters, request path, and request method in the event payload sent to aws lambda Only one of `requestTransformation` or `wrapAsApiGateway` should be provided. |
 | `responseTransformation` | `bool` | Deprecated. Use unwrapAsApiGateway. |
 | `unwrapAsAlb` | `bool` | Unwrap the response as if the proxy was an ALB. Intended to ease migration when previously using ALB to invoke Lambdas. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided. |
 | `unwrapAsApiGateway` | `bool` | Unwrap the response as if the proxy was an AWS API Gateway. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided. |
