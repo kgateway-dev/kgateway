@@ -78,6 +78,21 @@ func (m *ServiceSpec) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ServiceSpec_GrpcJsonTranscoder:
+		if _, ok := target.PluginType.(*ServiceSpec_GrpcJsonTranscoder); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetGrpcJsonTranscoder()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetGrpcJsonTranscoder()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetGrpcJsonTranscoder(), target.GetGrpcJsonTranscoder()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.PluginType != target.PluginType {
