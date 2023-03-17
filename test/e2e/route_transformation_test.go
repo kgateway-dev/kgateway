@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"time"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -276,33 +278,11 @@ var _ = Describe("Transformations", func() {
 
 	Context("requestTransformation", func() {
 		var (
-			us *gloov1.Upstream
-			vh *gloov1.VirtualHost
+			transform *transformation.Transformations
 		)
 
-		extractJsonResponse := func(res *http.Response) map[string]interface{} {
-			// read response body
-			body, err := io.ReadAll(res.Body)
-			Expect(err).NotTo(HaveOccurred())
-
-			// parse the response body as JSON
-			var bodyJson map[string]interface{}
-			err = json.Unmarshal(body, &bodyJson)
-			Expect(err).NotTo(HaveOccurred())
-			// the response from the httpbin /anything endpoint is nested under the "json" key
-			return bodyJson["json"].(map[string]interface{})
-
-		}
-
-		BeforeEach(func() {
-			// create upstream that will return an html body at the /html endpoint
-			us = getHttpbinEchoUpstream()
-			writeUpstream(us)
-
-			// create a virtual host with a route to the upstream
-			vh = getTrivialVirtualHostWithUpstreamRef(us.Metadata.Ref())
-
-			// add a transformation to the virtual host
+		// patches the default virtual service to include a header/body request transform
+		addRequestTransformation := func() {
 			transform = &transformation.Transformations{
 				RequestTransformation: &transformation.Transformation{
 					TransformationType: &transformation.Transformation_HeaderBodyTransform{
@@ -313,53 +293,113 @@ var _ = Describe("Transformations", func() {
 				},
 			}
 
-			vh.Options = &gloov1.VirtualHostOptions{
-				Transformations: transform,
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+					Transformations: transform,
+				}
+				return vs
+			})
+		}
+
+		// form a request with the given headers
+		// note that the Host header is set to the default host
+		formRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
+			// form request
+			req, err := http.NewRequest("GET", url, nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Header = headers
+			req.Host = e2e.DefaultHost
+			return req
+		}
+
+		// send the given request and assert that the response matches the given expected response
+		eventuallyRequestMatches := func(req *http.Request, expectedResponse *testmatchers.HttpResponse) AsyncAssertion {
+			return Eventually(func(g Gomega) {
+				// send request
+				client := &http.Client{Timeout: 10 * time.Second}
+				res, err := client.Do(req)
+				Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(res).To(testmatchers.HaveHttpResponse(expectedResponse))
+			}, "10s", ".5s")
+		}
+
+		// used to extract the JSON response body from the httpbin /anything endpoint
+		extractJson := func(b []byte) map[string]interface{} {
+			// parse the response body as JSON
+			var bodyJson map[string]interface{}
+			err := json.Unmarshal(b, &bodyJson)
+			if err != nil {
+				return nil
 			}
+
+			// the response from the httpbin /anything endpoint is nested under the "json" key
+			// if bodyJson["json"] is nil, throw an error
+			if bodyJson["json"] == nil {
+				return nil
+			}
+
+			return bodyJson["json"].(map[string]interface{})
+		}
+
+		BeforeEach(func() {
+			// create an upstream for the httpbin service
+			httpbinUpstream := v1helpers.NewTestUpstream("httpbin.org", []uint32{80}, nil)
+
+			// create a virtual host with a route to the upstream
+			vsToHtmlUpstream := helpers.NewVirtualServiceBuilder().
+				WithName(e2e.DefaultVirtualServiceName).
+				WithNamespace(writeNamespace).
+				WithDomain(e2e.DefaultHost).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, httpbinUpstream.Upstream).
+				Build()
+
+			testContext.ResourcesToCreate().Upstreams = gloov1.UpstreamList{httpbinUpstream.Upstream}
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{vsToHtmlUpstream}
 		})
 
 		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
-			writeVhost(vh)
+			addRequestTransformation()
 
-			// execute request -- expect a 200 response
-			url := fmt.Sprintf("http://%s:%d/anything?foo=bar&multiple=1&multiple=2", "localhost", envoyPort)
-			headers := map[string][]string{}
-			req := formRequestWithUrlAndHeaders(url, headers)
-			res := getSuccessfulResponse(req)
+			// form request
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/anything?foo=bar&multiple=1&multiple=2", defaults.HttpPort), nil)
+			// form matcher
+			matcher := &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body: WithTransform(extractJson,
+					And(
+						HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
+						HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "2")),
+						HaveKeyWithValue("multiValueQueryStringParameters", HaveKeyWithValue("multiple", ConsistOf("1", "2"))),
+					),
+				),
+			}
 
-			bodyJson := extractJsonResponse(res)
-
-			// inspect the response body to confirm that the queryStringParameters were added to the metadata
-			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["foo"]).To(Equal("bar"))
-			// we expect the value of a multi-value query string parameter to be the last defined
-			Expect(bodyJson["queryStringParameters"].(map[string]interface{})["multiple"]).To(Equal("2"))
-
-			// inspect the response body to confirm that the multiValueQueryStringParameters were added to the metadata
-			Expect(bodyJson["multiValueQueryStringParameters"].(map[string]interface{})["multiple"].([]interface{})[0]).To(Equal("1"))
-			Expect(bodyJson["multiValueQueryStringParameters"].(map[string]interface{})["multiple"].([]interface{})[1]).To(Equal("2"))
+			eventuallyRequestMatches(req, matcher).Should(Succeed())
 		})
 
 		It("should handle headers and multiValueHeaders", func() {
-			writeVhost(vh)
+			addRequestTransformation()
 
-			// execute request -- expect a 200 response
-			url := fmt.Sprintf("http://%s:%d/anything", "localhost", envoyPort)
-			headers := map[string][]string{
-				"x-solo-test-header": {"test"},
-				"foo":                {"bar", "baz"},
+			// form request
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/anything", defaults.HttpPort), map[string][]string{
+				"foo":      {"bar"},
+				"multiple": {"1", "2"},
+			})
+			// form matcher
+			matcher := &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body: WithTransform(extractJson,
+					And(
+						HaveKeyWithValue("headers", HaveKeyWithValue("foo", "bar")),
+						HaveKeyWithValue("headers", HaveKeyWithValue("multiple", "2")),
+						HaveKeyWithValue("multiValueHeaders", HaveKeyWithValue("multiple", ConsistOf("1", "2"))),
+					),
+				),
 			}
-			req := formRequestWithUrlAndHeaders(url, headers)
-			res := getSuccessfulResponse(req)
 
-			bodyJson := extractJsonResponse(res)
-
-			// inspect the response body to confirm that the headers were added to the metadata
-			Expect(bodyJson["headers"].(map[string]interface{})["x-solo-test-header"]).To(Equal("test"))
-			Expect(bodyJson["headers"].(map[string]interface{})["foo"]).To(Equal("baz"))
-
-			// inspect the response body to confirm that the multiValueHeaders were added to the metadata
-			Expect(bodyJson["multiValueHeaders"].(map[string]interface{})["foo"].([]interface{})[0]).To(Equal("bar"))
-			Expect(bodyJson["multiValueHeaders"].(map[string]interface{})["foo"].([]interface{})[1]).To(Equal("baz"))
+			eventuallyRequestMatches(req, matcher).Should(Succeed())
 		})
 	})
 })

@@ -73,27 +73,27 @@ type UpstreamTlsRequired int
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, "", NO_TLS)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	return NewTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpUpstreamWithTls(ctx context.Context, addr string, tlsServer UpstreamTlsRequired) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, "", tlsServer)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	return NewTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, reply, NO_TLS)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	return NewTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply, healthReply string) *TestUpstream {
 	backendPort, responses := runTestServerWithHealthReply(ctx, reply, healthReply, NO_TLS)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	return NewTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpsUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
 	backendPort, responses := runTestServer(ctx, reply, TLS)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	return NewTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUpstream {
@@ -116,7 +116,7 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 		ports = append(ports, v.Port)
 	}
 
-	us := newTestUpstream(addr, ports, received)
+	us := NewTestUpstream(addr, ports, received)
 	us.Upstream.UseHttp2 = &wrappers.BoolValue{Value: true}
 	us.GrpcServers = grpcServices
 	return us
@@ -124,9 +124,9 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 
 var testUpstreamId = 0
 
-// newTestUpstream creates a static Upstream that can route traffic to a set of ports for a given address
+// NewTestUpstream creates a static Upstream that can route traffic to a set of ports for a given address
 // It contains a unique name (since tests may run in parallel), with a suffix id that increases each invocation
-func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequest) *TestUpstream {
+func NewTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequest) *TestUpstream {
 	testUpstreamId += 1
 	hosts := make([]*static_plugin_gloo.Host, len(ports))
 	for i, port := range ports {
