@@ -27,9 +27,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/types"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
-	"github.com/solo-io/gloo/test/gomega/transforms"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -138,22 +136,10 @@ var _ = Describe("AWS Lambda", func() {
 
 			defer res.Body.Close()
 
-			bodyMatchers := make([]types.GomegaMatcher, 0, len(params.expectedSubstrings))
-			for i := range params.expectedSubstrings {
-				bodyMatchers = append(bodyMatchers, ContainSubstring(params.expectedSubstrings[i]))
-			}
-			headerMatchers := make([]types.GomegaMatcher, 0, len(params.expectedHeaders))
-			for k, v := range params.expectedHeaders {
-				vals := make([]interface{}, len(v))
-				for i := range v {
-					vals[i] = v[i]
-				}
-				headerMatchers = append(headerMatchers, WithTransform(transforms.WithHeaderValues(k), ContainElements(vals...)))
-			}
 			g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedStatus,
-				Body:       And(bodyMatchers...),
-				Custom:     And(headerMatchers...),
+				Body:       testmatchers.MatchMultipleSubstrings(params.expectedSubstrings),
+				Custom:     testmatchers.MatchMultiValueHeaders(params.expectedHeaders),
 			}))
 
 		}, "5m", "1s").Should(Succeed())
