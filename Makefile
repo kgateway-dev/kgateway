@@ -91,7 +91,7 @@ endif
 
 # Note: We must update this to a released envoy-gloo image before merging this PR
 # Additionally, build-bot will fail until this image is updated to a released version
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:2e51c7f372767488785965d6eb55a1359edf2311
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.1-patch3
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
