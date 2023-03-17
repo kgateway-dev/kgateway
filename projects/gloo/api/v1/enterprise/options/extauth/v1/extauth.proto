@@ -57,6 +57,7 @@ message AuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 11;
             PassThroughAuth pass_through_auth = 12;
+            HmacAuth hmac_auth = 13;
         }
     }
 
@@ -264,6 +265,25 @@ message BasicAuth {
     }
     Apr apr = 2;
 }
+
+// HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages.
+// It conforms to https://www.ietf.org/rfc/rfc2104.txt
+message HmacAuth {
+    // Configuration for how secrets are stored.
+    oneof secret_storage {
+        SecretRefList secret_refs = 1;
+    }
+    // Algorithm to use to turn the request into a hashable string
+    oneof implementation_type{
+        HmacParametersInHeaders parameters_in_headers = 2;
+    }
+}
+message SecretRefList {
+    // list of secrets as registered with the issuer
+    repeated core.solo.io.ResourceRef secret_refs = 1;
+}
+// Extract the HMAC parameters from the HTTP headers and use SHA-1 hashing
+message HmacParametersInHeaders {}
 
 // Deprecated: Prefer OAuth2
 message OAuth {
@@ -1632,6 +1652,20 @@ message ExtAuthConfig {
         // If true, Gloo will use the service account to check group membership
         bool check_groups_with_service_account = 3;
     }
+    message HmacAuthConfig {
+        oneof secret_storage {
+            InMemorySecretList secret_list = 1;
+        }
+        // Algorithm to use to turn the request into a hashable string
+        oneof implementation_type{
+            HmacParametersInHeaders parameters_in_headers = 2;
+        }
+
+    }
+    message InMemorySecretList {
+        // list of username/password pairs taken from secrets during gloo-ee translation
+        map<string, string> secret_list = 1 [(extproto.sensitive) = true];
+    }
     message Config {
 
         reserved 1, 2;
@@ -1657,6 +1691,7 @@ message ExtAuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 12;
             PassThroughAuth pass_through_auth = 13;
+            HmacAuthConfig hmac_auth = 15;
         }
     }
 
