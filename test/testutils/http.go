@@ -43,14 +43,6 @@ func DefaultRequestBuilder() *HttpRequestBuilder {
 	}
 }
 
-func NewHttpRequestBuilder() *HttpRequestBuilder {
-	return DefaultRequestBuilder().WithScheme("http")
-}
-
-func NewHttpsRequestBuilder() *HttpRequestBuilder {
-	return DefaultRequestBuilder().WithScheme("https")
-}
-
 func (h *HttpRequestBuilder) WithContext(ctx context.Context) *HttpRequestBuilder {
 	h.ctx = ctx
 	return h
