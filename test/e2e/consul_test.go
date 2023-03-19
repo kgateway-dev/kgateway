@@ -33,7 +33,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Consul e2e", func() {
+var _ = Describe("Consul e2e", Ordered, func() {
 
 	var (
 		ctx                  context.Context

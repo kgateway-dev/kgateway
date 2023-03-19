@@ -191,7 +191,7 @@ type Secret_Header struct {
 }
 
 type Secret_Credentials struct {
-	// Secrets to authenticate as a service user
+	// Secrets to represent user/secret pairs. Used to authenticate to LDAP service accounts and hold shared secrets for HMAC auth.
 	Credentials *AccountCredentialsSecret `protobuf:"bytes,9,opt,name=credentials,proto3,oneof"`
 }
 
@@ -508,6 +508,8 @@ func (x *HeaderSecret) GetHeaders() map[string]string {
 	return nil
 }
 
+// Secret to represent any kind of a username/secretname and password/secret combination
+// Used by LDAP auth to store service account credentials and by HMAC auth to keep shared secrets.
 type AccountCredentialsSecret struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

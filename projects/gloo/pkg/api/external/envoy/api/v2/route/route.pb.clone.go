@@ -443,6 +443,18 @@ func (m *RouteMatch) Clone() proto.Message {
 			Regex: m.GetRegex(),
 		}
 
+	case *RouteMatch_ConnectMatcher_:
+
+		if h, ok := interface{}(m.GetConnectMatcher()).(clone.Cloner); ok {
+			target.PathSpecifier = &RouteMatch_ConnectMatcher_{
+				ConnectMatcher: h.Clone().(*RouteMatch_ConnectMatcher),
+			}
+		} else {
+			target.PathSpecifier = &RouteMatch_ConnectMatcher_{
+				ConnectMatcher: proto.Clone(m.GetConnectMatcher()).(*RouteMatch_ConnectMatcher),
+			}
+		}
+
 	}
 
 	return target
@@ -1119,6 +1131,17 @@ func (m *WeightedCluster_ClusterWeight) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *RouteMatch_ConnectMatcher) Clone() proto.Message {
+	var target *RouteMatch_ConnectMatcher
+	if m == nil {
+		return target
+	}
+	target = &RouteMatch_ConnectMatcher{}
 
 	return target
 }

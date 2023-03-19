@@ -256,7 +256,7 @@ func isEnterpriseAWSConfiguredOnRoute(in *v1.Route) bool {
 	}
 
 	for _, awsDestinationSpec := range awsDestinationSpecs {
-		if awsDestinationSpec.GetUnwrapAsApiGateway() {
+		if awsDestinationSpec.GetWrapAsApiGateway() {
 			// this is an enterprise only feature
 			return true
 		}

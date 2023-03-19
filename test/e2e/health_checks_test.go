@@ -9,6 +9,9 @@ import (
 	"regexp"
 	"time"
 
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -27,6 +30,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/test/services"
@@ -175,12 +179,12 @@ var _ = Describe("Health Checks", func() {
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
-				vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+				vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 				_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// ensure that a request fails the health check but is handled by the upstream anyway
-				testRequest := basicReq([]byte(`{"str": "foo"}`))
+				testRequest := basicReq([]byte(`"foo"`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
 				Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
@@ -201,11 +205,11 @@ var _ = Describe("Health Checks", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+			vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			body := []byte(`{"str": "foo"}`)
+			body := []byte(`"foo"`)
 
 			testRequest := basicReq(body)
 
@@ -321,14 +325,14 @@ var _ = Describe("Health Checks", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+			vs := getGrpcTranscoderVs(writeNamespace, tu.Upstream.Metadata.Ref())
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("Fail all but one GRPC health check", func() {
 			liveService := tu.FailGrpcHealthCheck()
-			body := []byte(`{"str": "foo"}`)
+			body := []byte(`"foo"`)
 			testRequest := basicReq(body)
 
 			numRequests := 5
@@ -349,3 +353,35 @@ var _ = Describe("Health Checks", func() {
 	})
 
 })
+
+func getGrpcTranscoderVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
+	return &gatewayv1.VirtualService{
+		Metadata: &core.Metadata{
+			Name:      "default",
+			Namespace: writeNamespace,
+		},
+		VirtualHost: &gatewayv1.VirtualHost{
+			Routes: []*gatewayv1.Route{
+				{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							// the grpc_json transcoding filter clears the cache so it no longer would match on /test (this can be configured)
+							Prefix: "/",
+						},
+					}},
+					Action: &gatewayv1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: usRef,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}

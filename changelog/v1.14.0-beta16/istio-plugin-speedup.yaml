@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7960
+    resolvesIssue: false
+    description: Speed up the istio integration plugin translation time by reading from the input snapshot instead of using an upstream client.

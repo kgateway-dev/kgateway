@@ -25,7 +25,8 @@ import (
 
 const (
 	writeNamespace            = defaults.GlooSystem
-	defaultVirtualServiceName = "vs-test"
+	DefaultVirtualServiceName = "vs-test"
+	DefaultRouteName          = "route-test"
 	defaultGatewayName        = gatewaydefaults.GatewayProxyName
 	proxyName                 = gatewaydefaults.GatewayProxyName
 	// DefaultHost defines the Host header that should be used to route traffic to the
@@ -49,7 +50,8 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requir
 	testutils.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
 	return &TestContext{
-		envoyInstance: f.EnvoyFactory.MustEnvoyInstance(),
+		envoyInstance:         f.EnvoyFactory.MustEnvoyInstance(),
+		testUpstreamGenerator: v1helpers.NewTestHttpUpstream,
 	}
 }
 
@@ -65,7 +67,8 @@ type TestContext struct {
 	runOptions  *services.RunOptions
 	testClients services.TestClients
 
-	testUpstream *v1helpers.TestUpstream
+	testUpstream          *v1helpers.TestUpstream
+	testUpstreamGenerator func(ctx context.Context, addr string) *v1helpers.TestUpstream
 
 	resourcesToCreate *gloosnapshot.ApiSnapshot
 }
@@ -74,7 +77,7 @@ func (c *TestContext) BeforeEach() {
 	ginkgo.By("TestContext.BeforeEach: Setting up default configuration")
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	c.testUpstream = v1helpers.NewTestHttpUpstream(c.ctx, c.EnvoyInstance().LocalAddr())
+	c.testUpstream = c.testUpstreamGenerator(c.ctx, c.EnvoyInstance().LocalAddr())
 
 	c.runOptions = &services.RunOptions{
 		NsToWrite: writeNamespace,
@@ -87,11 +90,11 @@ func (c *TestContext) BeforeEach() {
 	}
 
 	vsToTestUpstream := helpers.NewVirtualServiceBuilder().
-		WithName(defaultVirtualServiceName).
+		WithName(DefaultVirtualServiceName).
 		WithNamespace(writeNamespace).
 		WithDomain(DefaultHost).
-		WithRoutePrefixMatcher("test", "/").
-		WithRouteActionToUpstream("test", c.testUpstream.Upstream).
+		WithRoutePrefixMatcher(DefaultRouteName, "/").
+		WithRouteActionToUpstream(DefaultRouteName, c.testUpstream.Upstream).
 		Build()
 
 	// The set of resources that these tests will generate
@@ -202,7 +205,7 @@ func (c *TestContext) PatchDefaultVirtualService(mutator func(vs *v1.VirtualServ
 		1,
 		c.ctx,
 		&core.ResourceRef{
-			Name:      defaultVirtualServiceName,
+			Name:      DefaultVirtualServiceName,
 			Namespace: writeNamespace,
 		},
 		func(resource resources.Resource) resources.Resource {
@@ -243,6 +246,12 @@ func (c *TestContext) PatchDefaultUpstream(mutator func(us *gloov1.Upstream) *gl
 		c.testClients.UpstreamClient.BaseClient(),
 	)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
+// SetUpstreamGenerator Use a different function to create a test upstream call before testContext.BeforeEach()
+// Used for example with helpers.NewTestGrpcUpstream which has the side effect of also starting a grpc service
+func (c *TestContext) SetUpstreamGenerator(generator func(ctx context.Context, addr string) *v1helpers.TestUpstream) {
+	c.testUpstreamGenerator = generator
 }
 
 // GetHttpRequestBuilder returns an HttpRequestBuilder to easily build http requests used in e2e tests
