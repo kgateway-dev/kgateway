@@ -83,8 +83,13 @@ func (h *HttpRequestBuilder) WithHost(host string) *HttpRequestBuilder {
 	return h
 }
 
-func (h *HttpRequestBuilder) WithHeaders(headers map[string]string) *HttpRequestBuilder {
-	h.headers = headers
+func (h *HttpRequestBuilder) WithContentType(contentType string) *HttpRequestBuilder {
+	h.headers["Content-Type"] = contentType
+	return h
+}
+
+func (h *HttpRequestBuilder) WithHeader(key, value string) *HttpRequestBuilder {
+	h.headers[key] = value
 	return h
 }
 

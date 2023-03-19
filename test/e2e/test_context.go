@@ -259,6 +259,7 @@ func (c *TestContext) GetHttpRequestBuilder() *testutils.HttpRequestBuilder {
 	return testutils.DefaultRequestBuilder().
 		WithScheme("http").
 		WithHostname("localhost").
+		WithContentType("application/octet-stream").
 		WithPort(defaults.HttpPort). // When running Envoy locally, we port-forward this port to accept http traffic locally
 		WithHost(DefaultHost)        // The default Virtual Service routes traffic only with a particular Host header
 }
@@ -268,6 +269,7 @@ func (c *TestContext) GetHttpsRequestBuilder() *testutils.HttpRequestBuilder {
 	return testutils.DefaultRequestBuilder().
 		WithScheme("https").
 		WithHostname("localhost").
+		WithContentType("application/octet-stream").
 		WithPort(defaults.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
 		WithHost(DefaultHost)         // The default Virtual Service routes traffic only with a particular Host header
 }

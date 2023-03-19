@@ -125,15 +125,14 @@ var _ = Describe("Example E2E Test For Developers", func() {
 		})
 
 		It("can route traffic", func() {
-			req := testContext.GetHttpRequestBuilder().
-				WithHost("custom-domain.com"). // to match the customVS.domains definition
-				Build()
+			requestBuilder := testContext.GetHttpRequestBuilder().
+				WithHost("custom-domain.com") // to match the customVS.domains definition
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "2s", ".5s").Should(Succeed())
 		})
 	})
@@ -141,13 +140,13 @@ var _ = Describe("Example E2E Test For Developers", func() {
 	Context("Modifying resources directly in a test", func() {
 
 		It("can route traffic", func() {
-			req := testContext.GetHttpRequestBuilder().WithPath("test").Build()
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPath("test")
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200")
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "2s", ".5s").Should(Succeed(), "traffic to /test consistently returns a 200")
 
 			By("Patch the VS to only handle traffic prefixed with /new")
@@ -158,10 +157,10 @@ var _ = Describe("Example E2E Test For Developers", func() {
 			})
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 404")
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "2s", ".5s").Should(Succeed(), "traffic to /test consistently returns a 404")
 		})
 
