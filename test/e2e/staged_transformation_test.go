@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"encoding/base64"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -104,9 +105,7 @@ var _ = Describe("Staged Transformation", func() {
 
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString("test")
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       "early-transformed",
 				}))
@@ -149,9 +148,7 @@ var _ = Describe("Staged Transformation", func() {
 
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString("")
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       BeEmpty(),
 					// The default Header matcher only works with single headers, so we supply a custom matcher in this case
@@ -191,9 +188,7 @@ var _ = Describe("Staged Transformation", func() {
 			// send a request, expect that the response body is base64 encoded
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString("test")
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       base64.StdEncoding.EncodeToString([]byte("test")),
 				}))
@@ -231,9 +226,7 @@ var _ = Describe("Staged Transformation", func() {
 			encodedBody := base64.StdEncoding.EncodeToString([]byte(body))
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString(encodedBody)
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       body,
 				}))
@@ -269,9 +262,7 @@ var _ = Describe("Staged Transformation", func() {
 			// send a request, expect that the response body contains only the first 4 characters
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString("123456789")
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       "1234",
 				}))
@@ -307,9 +298,7 @@ var _ = Describe("Staged Transformation", func() {
 				WithPostBodyString("").
 				WithHeader("x-custom-header", base64.StdEncoding.EncodeToString([]byte("test1.test2")))
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					"X-New-Custom-Header": ContainSubstring("test2"),
 				}))
 			}, "15s", ".5s").Should(Succeed())
@@ -359,13 +348,11 @@ var _ = Describe("Staged Transformation", func() {
 
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString("")
 			Eventually(func(g Gomega) {
-				response, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
 				// Only route level transformations should be applied here due to the nature of envoy choosing
 				// the most specific config (weighted cluster > route > vhost)
 				// This behaviour can be overridden (in the control plane) by using `inheritableTransformations` to merge
 				// transformations down to the route level.
-				g.Expect(response).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					"x-solo-2": Equal("route header"),
 					"x-solo-1": BeEmpty(),
 				}))
@@ -435,9 +422,7 @@ var _ = Describe("Staged Transformation", func() {
 			// send a request and expect it transformed!
 			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(requestBuilder.Build())
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusForbidden,
 					Body:       "early-transformed",
 				}))

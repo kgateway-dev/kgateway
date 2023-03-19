@@ -5,10 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/onsi/ginkgo/v2"
-	"github.com/onsi/gomega"
 	"io"
 	"net/http"
+
+	"github.com/onsi/ginkgo/v2"
+	"github.com/onsi/gomega"
 )
 
 // HttpRequestBuilder simplifies the process of generating http requests in tests
@@ -39,7 +40,7 @@ func DefaultRequestBuilder() *HttpRequestBuilder {
 		path:     "",
 		body:     nil,
 		host:     "",
-		headers:  nil,
+		headers:  make(map[string]string),
 	}
 }
 

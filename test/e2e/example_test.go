@@ -62,18 +62,15 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 			Eventually(func(g Gomega) {
 				req := testContext.GetHttpRequestBuilder().
-					WithHost(fmt.Sprintf("bad-prefix-%s", e2e.DefaultHost)).
+					WithHost("invalid-host").
 					Build()
 				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed(), "GET with invalid host returns a 404")
 
+			requestBody := "some custom data"
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString(requestBody)
 			Eventually(func(g Gomega) {
-				requestBody := "some custom data"
-				req := testContext.GetHttpRequestBuilder().
-					WithPostBodyString(requestBody).
-					Build()
-
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
 			}, "5s", ".5s").Should(Succeed(), "POST with request body should return same body in response")
 		})
 
@@ -126,7 +123,8 @@ var _ = Describe("Example E2E Test For Developers", func() {
 
 		It("can route traffic", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().
-				WithHost("custom-domain.com") // to match the customVS.domains definition
+				WithHost("custom-domain.com"). // to match the customVS.domains definition
+				WithPath("endpoint")           // to match the customVS.route prefix match definition
 
 			Eventually(func(g Gomega) {
 				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
