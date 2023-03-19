@@ -23,7 +23,7 @@ type HttpRequestBuilder struct {
 	port     uint32
 	path     string
 
-	body io.Reader
+	body string
 
 	host    string
 	headers map[string]string
@@ -38,7 +38,7 @@ func DefaultRequestBuilder() *HttpRequestBuilder {
 		hostname: "localhost",
 		port:     0,
 		path:     "",
-		body:     nil,
+		body:     "",
 		host:     "",
 		headers:  make(map[string]string),
 	}
@@ -69,11 +69,7 @@ func (h *HttpRequestBuilder) WithPath(path string) *HttpRequestBuilder {
 	return h
 }
 
-func (h *HttpRequestBuilder) WithPostBodyString(body string) *HttpRequestBuilder {
-	return h.WithPostBody(bytes.NewBufferString(body))
-}
-
-func (h *HttpRequestBuilder) WithPostBody(body io.Reader) *HttpRequestBuilder {
+func (h *HttpRequestBuilder) WithPostBody(body string) *HttpRequestBuilder {
 	h.method = http.MethodPost
 	h.body = body
 	return h
@@ -115,11 +111,17 @@ func (h *HttpRequestBuilder) Build() *http.Request {
 		ginkgo.Fail(err.Error())
 	}
 
+	// We instantiate a new buffer each time we build a request
+	var requestBody io.Reader
+	if h.body != "" {
+		requestBody = bytes.NewBufferString(h.body)
+	}
+
 	request, err := http.NewRequestWithContext(
 		h.ctx,
 		h.method,
 		fmt.Sprintf("%s://%s:%d/%s", h.scheme, h.hostname, h.port, h.path),
-		h.body)
+		requestBody)
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "generating http request")
 
 	request.Host = h.host

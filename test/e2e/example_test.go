@@ -68,7 +68,7 @@ var _ = Describe("Example E2E Test For Developers", func() {
 			}, "5s", ".5s").Should(Succeed(), "GET with invalid host returns a 404")
 
 			requestBody := "some custom data"
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBodyString(requestBody)
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(requestBody)
 			Eventually(func(g Gomega) {
 				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
 			}, "5s", ".5s").Should(Succeed(), "POST with request body should return same body in response")
