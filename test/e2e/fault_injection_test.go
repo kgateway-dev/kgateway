@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
@@ -56,14 +54,9 @@ var _ = Describe("Fault Injection", func() {
 				return vs
 			})
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
-
+			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusServiceUnavailable,
 					Body:       "fault filter abort",
 				}))
@@ -86,13 +79,10 @@ var _ = Describe("Fault Injection", func() {
 				return vs
 			})
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
-
+			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
 				start := time.Now()
-				response, err := http.DefaultClient.Do(req)
+				response, err := http.DefaultClient.Do(requestBuilder.Build())
 				elapsed := time.Now().Sub(start)
 
 				g.Expect(err).NotTo(HaveOccurred())
