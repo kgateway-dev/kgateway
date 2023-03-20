@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
@@ -26,7 +27,7 @@ type HttpRequestBuilder struct {
 	body string
 
 	host    string
-	headers map[string]string
+	headers map[string][]string
 }
 
 // DefaultRequestBuilder returns an HttpRequestBuilder with some default values
@@ -40,7 +41,7 @@ func DefaultRequestBuilder() *HttpRequestBuilder {
 		path:     "",
 		body:     "",
 		host:     "",
-		headers:  make(map[string]string),
+		headers:  make(map[string][]string),
 	}
 }
 
@@ -86,17 +87,25 @@ func (h *HttpRequestBuilder) WithHost(host string) *HttpRequestBuilder {
 }
 
 func (h *HttpRequestBuilder) WithContentType(contentType string) *HttpRequestBuilder {
-	h.headers["Content-Type"] = contentType
-	return h
+	return h.WithHeader("Content-Type", contentType)
 }
 
 func (h *HttpRequestBuilder) WithAcceptEncoding(acceptEncoding string) *HttpRequestBuilder {
-	h.headers["Accept-Encoding"] = acceptEncoding
-	return h
+	return h.WithHeader("Accept-Encoding", acceptEncoding)
 }
 
+const headerDelimiter = ","
+
+// WithHeader accepts a list of header values, separated by the headerDelimiter
+// To set a single value for a header, call:
+//
+//	WithHeader(headerName, value1)
+//
+// To set multiple values for a header, call:
+//
+//	WithHeader(headerName, value1,value2)
 func (h *HttpRequestBuilder) WithHeader(key, value string) *HttpRequestBuilder {
-	h.headers[key] = value
+	h.headers[key] = strings.Split(value, headerDelimiter)
 	return h
 }
 
@@ -135,9 +144,7 @@ func (h *HttpRequestBuilder) Build() *http.Request {
 	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "generating http request")
 
 	request.Host = h.host
-	for headerName, headerValue := range h.headers {
-		request.Header.Set(headerName, headerValue)
-	}
+	request.Header = h.headers
 
 	return request
 }
