@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
-
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -23,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 var _ = Describe("dynamic forward proxy", func() {
@@ -51,22 +48,6 @@ var _ = Describe("dynamic forward proxy", func() {
 	JustAfterEach(func() {
 		testContext.JustAfterEach()
 	})
-
-	eventuallyRequestMatches := func(dest string, updateReq func(r *http.Request), expectedBody interface{}) {
-		By("Prepare request")
-		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/get", "localhost", defaults.HttpPort), nil)
-		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		req.Host = e2e.DefaultHost
-		updateReq(req)
-
-		By("Make request")
-		EventuallyWithOffset(1, func(g Gomega) {
-			g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-				Body:       expectedBody,
-			}))
-		}, "10s", ".1s").Should(Succeed())
-	}
 
 	Context("without transformation", func() {
 
@@ -101,10 +82,15 @@ var _ = Describe("dynamic forward proxy", func() {
 
 		// simpler e2e test without transformation to validate basic behavior
 		It("should proxy http if dynamic forward proxy header provided on request", func() {
-			destEcho := `postman-echo.com`
-			eventuallyRequestMatches(destEcho, func(r *http.Request) {
-				r.Header.Set("x-rewrite-me", destEcho)
-			}, ContainSubstring(`"host": "postman-echo.com"`))
+			requestBuilder := testContext.GetHttpRequestBuilder().
+				WithHeader("x-rewrite-me", "postman-echo.com")
+
+			EventuallyWithOffset(1, func(g Gomega) {
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       ContainSubstring(`"host": "postman-echo.com"`),
+				}))
+			}, "10s", ".1s").Should(Succeed())
 		})
 	})
 
@@ -159,10 +145,14 @@ var _ = Describe("dynamic forward proxy", func() {
 		// This is an important test since the most common use case here will be to grab information from the
 		// request using a transformation and use that to determine the upstream destination to route to
 		It("should proxy http", func() {
-			destEcho := `postman-echo.com`
-			eventuallyRequestMatches(destEcho, func(r *http.Request) {
-				// nothing to modify
-			}, ContainSubstring(`"host": "postman-echo.com"`))
+			requestBuilder := testContext.GetHttpRequestBuilder()
+
+			EventuallyWithOffset(1, func(g Gomega) {
+				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       ContainSubstring(`"host": "postman-echo.com"`),
+				}))
+			}, "10s", ".1s").Should(Succeed())
 		})
 	})
 
