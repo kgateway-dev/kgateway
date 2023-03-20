@@ -8,6 +8,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -17,7 +19,6 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -33,9 +34,9 @@ var _ = Describe("Proxy Protocol", func() {
 	var (
 		testContext *e2e.TestContext
 
-		secret        *gloov1.Secret
-		requestScheme string
-		rootCACert    string
+		secret         *gloov1.Secret
+		requestBuilder *testutils.HttpRequestBuilder
+		rootCACert     string
 	)
 
 	BeforeEach(func() {
@@ -73,29 +74,12 @@ var _ = Describe("Proxy Protocol", func() {
 		testContext.JustAfterEach()
 	})
 
-	EventuallyGatewayReturnsOk := func(client *http.Client) {
-		requestPort := defaults.HttpPort
-		if requestScheme == "https" {
-			requestPort = defaults.HttpsPort
-		}
-
-		EventuallyWithOffset(1, func(g Gomega) {
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s://%s:%d/1", requestScheme, "localhost", requestPort), nil)
-			g.Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
-
-			res, err := client.Do(req)
-			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(res).To(testmatchers.HaveOkResponse())
-		}, "15s", "1s").Should(Succeed())
-	}
-
 	Context("HttpGateway", func() {
 
 		Context("without TLS", func() {
 
 			BeforeEach(func() {
-				requestScheme = "http"
+				requestBuilder = testContext.GetHttpRequestBuilder()
 				rootCACert = ""
 
 				testContext.ResourcesToCreate().Gateways = gatewayv1.GatewayList{
@@ -111,7 +95,10 @@ var _ = Describe("Proxy Protocol", func() {
 
 				It("works", func() {
 					client := getHttpClientWithoutProxyProtocol(rootCACert)
-					EventuallyGatewayReturnsOk(client)
+
+					Eventually(func(g Gomega) {
+						g.Expect(client.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponse())
+					}, "15s", "1s").Should(Succeed())
 				})
 
 			})
@@ -124,7 +111,10 @@ var _ = Describe("Proxy Protocol", func() {
 
 				It("works", func() {
 					client := getHttpClientWithProxyProtocol(rootCACert, proxyProtocolBytes)
-					EventuallyGatewayReturnsOk(client)
+
+					Eventually(func(g Gomega) {
+						g.Expect(client.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponse())
+					}, "15s", "1s").Should(Succeed())
 				})
 
 			})
@@ -134,15 +124,15 @@ var _ = Describe("Proxy Protocol", func() {
 		Context("with TLS", func() {
 
 			BeforeEach(func() {
-				requestScheme = "https"
+				requestBuilder = testContext.GetHttpsRequestBuilder()
 				rootCACert = gloohelpers.Certificate()
 
 				secureVsToTestUpstream := gloohelpers.NewVirtualServiceBuilder().
-					WithName("vs-test").
+					WithName(e2e.DefaultVirtualServiceName).
 					WithNamespace(writeNamespace).
 					WithDomain(e2e.DefaultHost).
-					WithRoutePrefixMatcher("test", "/").
-					WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
+					WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
+					WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
 					WithSslConfig(&ssl.SslConfig{
 						SslSecrets: &ssl.SslConfig_SecretRef{
 							SecretRef: secret.Metadata.Ref(),
@@ -166,7 +156,10 @@ var _ = Describe("Proxy Protocol", func() {
 
 				It("works", func() {
 					client := getHttpClientWithoutProxyProtocol(rootCACert)
-					EventuallyGatewayReturnsOk(client)
+
+					Eventually(func(g Gomega) {
+						g.Expect(client.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponse())
+					}, "15s", "1s").Should(Succeed())
 				})
 
 			})
@@ -179,7 +172,10 @@ var _ = Describe("Proxy Protocol", func() {
 
 				It("works", func() {
 					client := getHttpClientWithProxyProtocol(rootCACert, proxyProtocolBytes)
-					EventuallyGatewayReturnsOk(client)
+
+					Eventually(func(g Gomega) {
+						g.Expect(client.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponse())
+					}, "15s", "1s").Should(Succeed())
 				})
 
 			})
@@ -190,11 +186,11 @@ var _ = Describe("Proxy Protocol", func() {
 					testContext.ResourcesToCreate().Gateways[0].UseProxyProto = &wrappers.BoolValue{Value: true}
 
 					secureVsToTestUpstream := gloohelpers.NewVirtualServiceBuilder().
-						WithName("vs-test").
+						WithName(e2e.DefaultVirtualServiceName).
 						WithNamespace(writeNamespace).
 						WithDomain(e2e.DefaultHost).
-						WithRoutePrefixMatcher("test", "/").
-						WithRouteActionToUpstream("test", testContext.TestUpstream().Upstream).
+						WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
+						WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
 						WithSslConfig(&ssl.SslConfig{
 							SslSecrets: &ssl.SslConfig_SecretRef{
 								SecretRef: secret.Metadata.Ref(),
@@ -210,7 +206,10 @@ var _ = Describe("Proxy Protocol", func() {
 
 				It("works", func() {
 					client := getHttpClientWithProxyProtocol(rootCACert, proxyProtocolBytes)
-					EventuallyGatewayReturnsOk(client)
+
+					Eventually(func(g Gomega) {
+						g.Expect(client.Do(requestBuilder.Build())).To(testmatchers.HaveOkResponse())
+					}, "15s", "1s").Should(Succeed())
 				})
 
 			})
