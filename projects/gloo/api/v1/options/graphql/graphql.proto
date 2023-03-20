@@ -8,10 +8,11 @@ option (extproto.equal_all) = true;
 option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
-// Service spec describing GraphQL upstreams. This will usually be filled
+// Only supported in enterprise with the GraphQL addon. 
+// This is the service spec describing GraphQL upstreams. This will usually be filled
 // automatically via function discovery (if the upstream supports introspection).
 // If your upstream service is a GraphQL service, use this service spec (an empty
-// spec is fine), to make sure that traffic to it is routed with
+// spec is fine), to make sure that traffic to it is routed with.
 message ServiceSpec {
   // Endpoint provides the endpoint information, and how to call the GraphQL Server.
   // This endpoint must be called via HTTP POST sending form data as mentioned in [the GraphQL Docs](https://graphql.org/learn/serving-over-http/#post-request).

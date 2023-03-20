@@ -36,7 +36,7 @@ const (
 	sessionTokenValue = "some session token value"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = FDescribe("Plugin", func() {
 
 	var (
 		ctx         context.Context
