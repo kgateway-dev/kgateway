@@ -50,7 +50,8 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requir
 	testutils.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
 	return &TestContext{
-		envoyInstance: f.EnvoyFactory.MustEnvoyInstance(),
+		envoyInstance:         f.EnvoyFactory.MustEnvoyInstance(),
+		testUpstreamGenerator: v1helpers.NewTestHttpUpstream,
 	}
 }
 
@@ -66,7 +67,8 @@ type TestContext struct {
 	runOptions  *services.RunOptions
 	testClients services.TestClients
 
-	testUpstream *v1helpers.TestUpstream
+	testUpstream          *v1helpers.TestUpstream
+	testUpstreamGenerator func(ctx context.Context, addr string) *v1helpers.TestUpstream
 
 	resourcesToCreate *gloosnapshot.ApiSnapshot
 }
@@ -75,7 +77,7 @@ func (c *TestContext) BeforeEach() {
 	ginkgo.By("TestContext.BeforeEach: Setting up default configuration")
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	c.testUpstream = v1helpers.NewTestHttpUpstream(c.ctx, c.EnvoyInstance().LocalAddr())
+	c.testUpstream = c.testUpstreamGenerator(c.ctx, c.EnvoyInstance().LocalAddr())
 
 	c.runOptions = &services.RunOptions{
 		NsToWrite: writeNamespace,
@@ -244,4 +246,10 @@ func (c *TestContext) PatchDefaultUpstream(mutator func(us *gloov1.Upstream) *gl
 		c.testClients.UpstreamClient.BaseClient(),
 	)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
+// Use a different function to create a test upstream call before testContext.BeforeEach()
+// Used for example with helpers.NewTestGrpcUpstream which has the side effect of also starting a grpc service
+func (c *TestContext) SetUpstreamGenerator(generator func(ctx context.Context, addr string) *v1helpers.TestUpstream) {
+	c.testUpstreamGenerator = generator
 }
