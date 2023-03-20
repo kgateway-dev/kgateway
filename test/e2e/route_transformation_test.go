@@ -300,7 +300,7 @@ var _ = Describe("Transformations", func() {
 			}, "10s", ".5s")
 		}
 
-		// used to extract the JSON response body from the httpbin /anything endpoint
+		// used to extract the JSON response body from the echo upstream
 		extractJson := func(b []byte) map[string]interface{} {
 			// parse the response body as JSON
 			var bodyJson map[string]interface{}
@@ -309,29 +309,23 @@ var _ = Describe("Transformations", func() {
 				return nil
 			}
 
-			// the response from the httpbin /anything endpoint is nested under the "json" key
-			// if bodyJson["json"] is nil, throw an error
-			if bodyJson["json"] == nil {
-				return nil
-			}
-
-			return bodyJson["json"].(map[string]interface{})
+			return bodyJson
 		}
 
 		BeforeEach(func() {
 			// create an upstream for the httpbin service
-			httpbinUpstream := v1helpers.NewTestUpstream("httpbin.org", []uint32{80}, nil)
+			echoUpstream := v1helpers.NewTestHttpUpstreamWithReply(testContext.Ctx(), testContext.EnvoyInstance().LocalAddr(), "")
 
 			// create a virtual host with a route to the upstream
-			vsToHtmlUpstream := helpers.NewVirtualServiceBuilder().
+			vsToEchoUpstream := helpers.NewVirtualServiceBuilder().
 				WithName(e2e.DefaultVirtualServiceName).
 				WithNamespace(writeNamespace).
 				WithDomain(e2e.DefaultHost).
 				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
-				WithRouteActionToUpstream(e2e.DefaultRouteName, httpbinUpstream.Upstream).
+				WithRouteActionToUpstream(e2e.DefaultRouteName, echoUpstream.Upstream).
 				Build()
 
-			vsToHtmlUpstream.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+			vsToEchoUpstream.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 				StagedTransformations: &transformation.TransformationStages{
 					Regular: &transformation.RequestResponseTransformations{
 						RequestTransforms: []*transformation.RequestMatch{
@@ -349,13 +343,13 @@ var _ = Describe("Transformations", func() {
 				},
 			}
 
-			testContext.ResourcesToCreate().Upstreams = gloov1.UpstreamList{httpbinUpstream.Upstream}
-			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{vsToHtmlUpstream}
+			testContext.ResourcesToCreate().Upstreams = gloov1.UpstreamList{echoUpstream.Upstream}
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{vsToEchoUpstream}
 		})
 
 		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
 			// form request
-			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/anything?foo=bar&multiple=1&multiple=2", defaults.HttpPort), nil)
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2", defaults.HttpPort), nil)
 			// form matcher
 			matcher := &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -373,7 +367,7 @@ var _ = Describe("Transformations", func() {
 
 		It("should handle headers and multiValueHeaders", func() {
 			// form request
-			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/anything", defaults.HttpPort), map[string][]string{
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), map[string][]string{
 				"foo":      {"bar"},
 				"multiple": {"1", "2"},
 			})
