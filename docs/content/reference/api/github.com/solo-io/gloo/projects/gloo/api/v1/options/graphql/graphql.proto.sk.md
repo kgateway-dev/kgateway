@@ -27,10 +27,11 @@ weight: 5
 ### ServiceSpec
 
  
-Service spec describing GraphQL upstreams. This will usually be filled
+Only supported in enterprise with the GraphQL addon. 
+This is the service spec describing GraphQL upstreams. This will usually be filled
 automatically via function discovery (if the upstream supports introspection).
 If your upstream service is a GraphQL service, use this service spec (an empty
-spec is fine), to make sure that traffic to it is routed with
+spec is fine).
 
 ```yaml
 "endpoint": .graphql.options.gloo.solo.io.ServiceSpec.Endpoint
