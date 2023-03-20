@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
 
@@ -281,7 +282,7 @@ var _ = Describe("Transformations", func() {
 		// note that the Host header is set to the default host
 		formRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
 			// form request
-			req, err := http.NewRequest("GET", url, nil)
+			req, err := http.NewRequest(http.MethodGet, url, nil)
 			Expect(err).NotTo(HaveOccurred())
 			req.Header = headers
 			req.Host = e2e.DefaultHost
@@ -294,56 +295,39 @@ var _ = Describe("Transformations", func() {
 				// send request
 				client := &http.Client{Timeout: 10 * time.Second}
 				res, err := client.Do(req)
-				Expect(err).NotTo(HaveOccurred())
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(res).To(testmatchers.HaveHttpResponse(expectedResponse))
 			}, "10s", ".5s")
 		}
 
-		// used to extract the JSON response body from the echo upstream
-		extractJson := func(b []byte) map[string]interface{} {
-			// parse the response body as JSON
-			var bodyJson map[string]interface{}
-			err := json.Unmarshal(b, &bodyJson)
-			if err != nil {
-				return nil
-			}
-
-			return bodyJson
-		}
-
 		BeforeEach(func() {
-			// create an upstream for the httpbin service
-			echoUpstream := v1helpers.NewTestHttpUpstreamWithReply(testContext.Ctx(), testContext.EnvoyInstance().LocalAddr(), "")
-
 			// create a virtual host with a route to the upstream
 			vsToEchoUpstream := helpers.NewVirtualServiceBuilder().
 				WithName(e2e.DefaultVirtualServiceName).
 				WithNamespace(writeNamespace).
 				WithDomain(e2e.DefaultHost).
 				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
-				WithRouteActionToUpstream(e2e.DefaultRouteName, echoUpstream.Upstream).
-				Build()
-
-			vsToEchoUpstream.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
-				StagedTransformations: &transformation.TransformationStages{
-					Regular: &transformation.RequestResponseTransformations{
-						RequestTransforms: []*transformation.RequestMatch{
-							{
-								RequestTransformation: &transformation.Transformation{
-									TransformationType: &transformation.Transformation_HeaderBodyTransform{
-										HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
-											AddRequestMetadata: true,
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Regular: &transformation.RequestResponseTransformations{
+							RequestTransforms: []*transformation.RequestMatch{
+								{
+									RequestTransformation: &transformation.Transformation{
+										TransformationType: &transformation.Transformation_HeaderBodyTransform{
+											HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+												AddRequestMetadata: true,
+											},
 										},
 									},
 								},
 							},
 						},
 					},
-				},
-			}
+				}).
+				Build()
 
-			testContext.ResourcesToCreate().Upstreams = gloov1.UpstreamList{echoUpstream.Upstream}
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{vsToEchoUpstream}
 		})
 
@@ -353,7 +337,7 @@ var _ = Describe("Transformations", func() {
 			// form matcher
 			matcher := &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Body: WithTransform(extractJson,
+				Body: WithTransform(transforms.WithJsonBody(),
 					And(
 						HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
 						HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "2")),
@@ -374,7 +358,7 @@ var _ = Describe("Transformations", func() {
 			// form matcher
 			matcher := &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
-				Body: WithTransform(extractJson,
+				Body: WithTransform(transforms.WithJsonBody(),
 					And(
 						HaveKeyWithValue("headers", HaveKeyWithValue("foo", "bar")),
 						HaveKeyWithValue("headers", HaveKeyWithValue("multiple", "2")),
