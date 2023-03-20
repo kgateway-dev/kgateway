@@ -58,11 +58,11 @@ var _ = Describe("dynamic forward proxy", func() {
 			}
 
 			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
+				WithName(e2e.DefaultVirtualServiceName).
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteAction("test", &gloov1.RouteAction{
+				WithDomain(e2e.DefaultHost).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
+				WithRouteAction(e2e.DefaultRouteName, &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_DynamicForwardProxy{
 						DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
 							HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
@@ -83,9 +83,10 @@ var _ = Describe("dynamic forward proxy", func() {
 		// simpler e2e test without transformation to validate basic behavior
 		It("should proxy http if dynamic forward proxy header provided on request", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().
+				WithPath("get").
 				WithHeader("x-rewrite-me", "postman-echo.com")
 
-			EventuallyWithOffset(1, func(g Gomega) {
+			Eventually(func(g Gomega) {
 				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       ContainSubstring(`"host": "postman-echo.com"`),
@@ -102,18 +103,18 @@ var _ = Describe("dynamic forward proxy", func() {
 				DynamicForwardProxy: &dynamic_forward_proxy.FilterConfig{}, // pick up system defaults to resolve DNS
 			}
 			vs := helpers.NewVirtualServiceBuilder().
-				WithName("vs-test").
+				WithName(e2e.DefaultVirtualServiceName).
 				WithNamespace(writeNamespace).
-				WithDomain("test.com").
-				WithRoutePrefixMatcher("test", "/").
-				WithRouteAction("test", &gloov1.RouteAction{
+				WithDomain(e2e.DefaultHost).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
+				WithRouteAction(e2e.DefaultRouteName, &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_DynamicForwardProxy{
 						DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
 							HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
 						},
 					},
 				}).
-				WithRouteOptions("test", &gloov1.RouteOptions{
+				WithRouteOptions(e2e.DefaultRouteName, &gloov1.RouteOptions{
 					StagedTransformations: &transformation.TransformationStages{
 						Early: &transformation.RequestResponseTransformations{
 							RequestTransforms: []*transformation.RequestMatch{{
@@ -145,9 +146,9 @@ var _ = Describe("dynamic forward proxy", func() {
 		// This is an important test since the most common use case here will be to grab information from the
 		// request using a transformation and use that to determine the upstream destination to route to
 		It("should proxy http", func() {
-			requestBuilder := testContext.GetHttpRequestBuilder()
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPath("get")
 
-			EventuallyWithOffset(1, func(g Gomega) {
+			Eventually(func(g Gomega) {
 				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       ContainSubstring(`"host": "postman-echo.com"`),
