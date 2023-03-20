@@ -57,20 +57,20 @@ var _ = Describe("Example E2E Test For Developers", func() {
 		It("can route traffic", func() {
 			Eventually(func(g Gomega) {
 				req := testContext.GetHttpRequestBuilder().Build()
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed(), "GET with valid host returns a 200")
 
 			Eventually(func(g Gomega) {
 				req := testContext.GetHttpRequestBuilder().
 					WithHost("invalid-host").
 					Build()
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
+				g.Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed(), "GET with invalid host returns a 404")
 
 			requestBody := "some custom data"
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(requestBody)
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
 			}, "5s", ".5s").Should(Succeed(), "POST with request body should return same body in response")
 		})
 
@@ -127,10 +127,10 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				WithPath("endpoint")           // to match the customVS.route prefix match definition
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "2s", ".5s").Should(Succeed())
 		})
 	})
@@ -141,10 +141,10 @@ var _ = Describe("Example E2E Test For Developers", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPath("test")
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200")
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "2s", ".5s").Should(Succeed(), "traffic to /test consistently returns a 200")
 
 			By("Patch the VS to only handle traffic prefixed with /new")
@@ -155,10 +155,10 @@ var _ = Describe("Example E2E Test For Developers", func() {
 			})
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 404")
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
 			}, "2s", ".5s").Should(Succeed(), "traffic to /test consistently returns a 404")
 		})
 

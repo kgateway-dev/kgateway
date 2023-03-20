@@ -1,11 +1,6 @@
 package e2e_test
 
 import (
-	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
-	"net"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -221,68 +216,12 @@ var _ = Describe("Proxy Protocol", func() {
 })
 
 func getHttpClientWithoutProxyProtocol(rootCACert string) *http.Client {
-	client, err := getHttpClient(rootCACert, nil)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return client
+	return testutils.DefaultClientBuilder().WithTLS(rootCACert).Build()
 }
 
 func getHttpClientWithProxyProtocol(rootCACert string, proxyProtocolBytes []byte) *http.Client {
-	client, err := getHttpClient(rootCACert, proxyProtocolBytes)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-	return client
-}
-
-func getHttpClient(rootCACert string, proxyProtocolBytes []byte) (*http.Client, error) {
-
-	var (
-		client          http.Client
-		tlsClientConfig *tls.Config
-		dialContext     func(ctx context.Context, network, addr string) (net.Conn, error)
-	)
-
-	// If the rootCACert is provided, configure the client to use TLS
-	if rootCACert != "" {
-		caCertPool := x509.NewCertPool()
-		ok := caCertPool.AppendCertsFromPEM([]byte(rootCACert))
-		if !ok {
-			return nil, fmt.Errorf("ca cert is not OK")
-		}
-
-		tlsClientConfig = &tls.Config{
-			InsecureSkipVerify: false,
-			ServerName:         "gateway-proxy",
-			RootCAs:            caCertPool,
-		}
-	}
-
-	// If the proxyProtocolBytes are provided, configure the dialContext to prepend
-	// the bytes at the beginning of the connection
-	if len(proxyProtocolBytes) > 0 {
-		dialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			var zeroDialer net.Dialer
-			c, err := zeroDialer.DialContext(ctx, network, addr)
-			if err != nil {
-				return nil, err
-			}
-
-			// inject proxy protocol bytes
-			// example: []byte("PROXY TCP4 1.2.3.4 1.2.3.5 443 443\r\n")
-			_, err = c.Write(proxyProtocolBytes)
-			if err != nil {
-				_ = c.Close()
-				return nil, err
-			}
-
-			return c, nil
-		}
-
-	}
-
-	client.Transport = &http.Transport{
-		TLSClientConfig: tlsClientConfig,
-		DialContext:     dialContext,
-	}
-
-	return &client, nil
-
+	return testutils.DefaultClientBuilder().
+		WithTLS(rootCACert).
+		WithProxyProtocolBytes(proxyProtocolBytes).
+		Build()
 }
