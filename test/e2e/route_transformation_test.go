@@ -277,30 +277,6 @@ var _ = Describe("Transformations", func() {
 	})
 
 	Context("requestTransformation", func() {
-		var (
-			transform *transformation.Transformations
-		)
-
-		// patches the default virtual service to include a header/body request transform
-		addRequestTransformation := func() {
-			transform = &transformation.Transformations{
-				RequestTransformation: &transformation.Transformation{
-					TransformationType: &transformation.Transformation_HeaderBodyTransform{
-						HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
-							AddRequestMetadata: true,
-						},
-					},
-				},
-			}
-
-			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
-					Transformations: transform,
-				}
-				return vs
-			})
-		}
-
 		// form a request with the given headers
 		// note that the Host header is set to the default host
 		formRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
@@ -355,13 +331,29 @@ var _ = Describe("Transformations", func() {
 				WithRouteActionToUpstream(e2e.DefaultRouteName, httpbinUpstream.Upstream).
 				Build()
 
+			vsToHtmlUpstream.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+				StagedTransformations: &transformation.TransformationStages{
+					Regular: &transformation.RequestResponseTransformations{
+						RequestTransforms: []*transformation.RequestMatch{
+							{
+								RequestTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_HeaderBodyTransform{
+										HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+											AddRequestMetadata: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
 			testContext.ResourcesToCreate().Upstreams = gloov1.UpstreamList{httpbinUpstream.Upstream}
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{vsToHtmlUpstream}
 		})
 
 		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
-			addRequestTransformation()
-
 			// form request
 			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/anything?foo=bar&multiple=1&multiple=2", defaults.HttpPort), nil)
 			// form matcher
@@ -380,8 +372,6 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should handle headers and multiValueHeaders", func() {
-			addRequestTransformation()
-
 			// form request
 			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/anything", defaults.HttpPort), map[string][]string{
 				"foo":      {"bar"},
