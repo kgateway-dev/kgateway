@@ -75,10 +75,14 @@ func (h *HttpRequestBuilder) WithPath(path string) *HttpRequestBuilder {
 	return h
 }
 
-func (h *HttpRequestBuilder) WithPostBody(body string) *HttpRequestBuilder {
-	h.method = http.MethodPost
+func (h *HttpRequestBuilder) WithBody(body string) *HttpRequestBuilder {
 	h.body = body
 	return h
+}
+
+// WithPostBody is syntactic sugar for updating the Method and Body for a POST request simultaneously
+func (h *HttpRequestBuilder) WithPostBody(body string) *HttpRequestBuilder {
+	return h.WithBody(body).WithMethod(http.MethodPost)
 }
 
 func (h *HttpRequestBuilder) WithHost(host string) *HttpRequestBuilder {

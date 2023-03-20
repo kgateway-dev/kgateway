@@ -12,7 +12,7 @@ import (
 )
 
 var DefaultHttpClient = &http.Client{
-	Timeout: time.Second * 10,
+	Timeout: time.Second * 1,
 }
 
 type HttpClientBuilder struct {
@@ -24,7 +24,7 @@ type HttpClientBuilder struct {
 
 func DefaultClientBuilder() *HttpClientBuilder {
 	return &HttpClientBuilder{
-		timeout: time.Second * 10,
+		timeout: DefaultHttpClient.Timeout,
 	}
 }
 
