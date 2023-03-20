@@ -90,6 +90,11 @@ func (h *HttpRequestBuilder) WithContentType(contentType string) *HttpRequestBui
 	return h
 }
 
+func (h *HttpRequestBuilder) WithAcceptEncoding(acceptEncoding string) *HttpRequestBuilder {
+	h.headers["Accept-Encoding"] = acceptEncoding
+	return h
+}
+
 func (h *HttpRequestBuilder) WithHeader(key, value string) *HttpRequestBuilder {
 	h.headers[key] = value
 	return h
