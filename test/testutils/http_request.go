@@ -103,11 +103,11 @@ const headerDelimiter = ","
 // WithHeader accepts a list of header values, separated by the headerDelimiter
 // To set a single value for a header, call:
 //
-//	WithHeader(headerName, value1)
+//	WithHeader(`headerName`, `value1`)
 //
 // To set multiple values for a header, call:
 //
-//	WithHeader(headerName, value1,value2)
+//	WithHeader(`headerName`, `value1,value2`)
 func (h *HttpRequestBuilder) WithHeader(key, value string) *HttpRequestBuilder {
 	h.headers[key] = strings.Split(value, headerDelimiter)
 	return h
