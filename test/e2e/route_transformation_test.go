@@ -349,6 +349,44 @@ var _ = Describe("Transformations", func() {
 			eventuallyRequestMatches(req, matcher).Should(Succeed())
 		})
 
+		It("should handle 3 and 4 values in multiValueQueryStringParameters", func() {
+			By("populating MultiValueQueryStringParameters with 3 values", func() {
+				// form request
+				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3", defaults.HttpPort), nil)
+				// form matcher
+				matcher := &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body: WithTransform(transforms.WithJsonBody(),
+						And(
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "3")),
+							HaveKeyWithValue("multiValueQueryStringParameters", HaveKeyWithValue("multiple", ConsistOf("1", "2", "3"))),
+						),
+					),
+				}
+
+				eventuallyRequestMatches(req, matcher).Should(Succeed())
+			})
+
+			By("populating MultiValueQueryStringParameters with 4 values", func() {
+				// form request
+				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3&multiple=4", defaults.HttpPort), nil)
+				// form matcher
+				matcher := &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body: WithTransform(transforms.WithJsonBody(),
+						And(
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "4")), // last value
+							HaveKeyWithValue("multiValueQueryStringParameters", HaveKeyWithValue("multiple", ConsistOf("1", "2", "3", "4"))),
+						),
+					),
+				}
+
+				eventuallyRequestMatches(req, matcher).Should(Succeed())
+			})
+		})
+
 		It("should handle headers and multiValueHeaders", func() {
 			// form request
 			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), map[string][]string{

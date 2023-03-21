@@ -42,10 +42,7 @@ func WithJsonBody() func(b []byte) map[string]interface{} {
 	return func(b []byte) map[string]interface{} {
 		// parse the response body as JSON
 		var bodyJson map[string]interface{}
-		err := json.Unmarshal(b, &bodyJson)
-		if err != nil {
-			return nil
-		}
+		json.Unmarshal(b, &bodyJson)
 
 		return bodyJson
 	}
