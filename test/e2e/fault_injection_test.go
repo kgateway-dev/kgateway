@@ -81,10 +81,12 @@ var _ = Describe("Fault Injection", func() {
 				return vs
 			})
 
+			// We need a client with a longer timeout than efault to allow for the fixed delay
+			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
 			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
 				start := time.Now()
-				response, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
+				response, err := httpClient.Do(requestBuilder.Build())
 				elapsed := time.Now().Sub(start)
 
 				g.Expect(err).NotTo(HaveOccurred())
