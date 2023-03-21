@@ -448,7 +448,7 @@ substring extends to the end of the input string.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `addRequestMetadata` | `bool` | When transforming a request, setting this to true will additionally add "queryString", "httpMethod" and "path" to the body. |
+| `addRequestMetadata` | `bool` | When transforming a request, setting this to true will additionally add "queryString", "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path", and "multiValueHeaders" to the body. |
 
 
 

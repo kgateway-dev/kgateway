@@ -3,6 +3,7 @@ package transforms
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"io"
 	"net/http"
 )
@@ -32,5 +33,17 @@ func WithDecompressorTransform() func(b []byte) string {
 func WithHeaderValues(header string) func(response *http.Response) []string {
 	return func(response *http.Response) []string {
 		return response.Header.Values(header)
+	}
+}
+
+// WithJsonBody returns a Gomega Transform that extracts the JSON body from the
+// response and returns it as a map[string]interface{}
+func WithJsonBody() func(b []byte) map[string]interface{} {
+	return func(b []byte) map[string]interface{} {
+		// parse the response body as JSON
+		var bodyJson map[string]interface{}
+		json.Unmarshal(b, &bodyJson)
+
+		return bodyJson
 	}
 }

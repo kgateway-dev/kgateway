@@ -63,7 +63,13 @@ var _ = Describe("AWS Lambda", func() {
 		envoyInstance *services.EnvoyInstance
 		secret        *gloov1.Secret
 		upstream      *gloov1.Upstream
+		httpClient    *http.Client
 	)
+
+	BeforeEach(func() {
+		httpClient = http.DefaultClient
+		httpClient.Timeout = 10 * time.Second
+	})
 
 	setupEnvoy := func(justGloo bool) {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -130,6 +136,10 @@ var _ = Describe("AWS Lambda", func() {
 				Header: headers,
 				Body:   io.NopCloser(&buf),
 			}
+
+			req.Header.Add("x-header-a", "header_value_1")
+			req.Header.Add("x-header-a", "header_value_2")
+			req.Header.Add("x-header-b", "header_value_b")
 
 			res, err := httpClient.Do(&req)
 			g.Expect(err).NotTo(HaveOccurred())
@@ -278,10 +288,11 @@ var _ = Describe("AWS Lambda", func() {
 
 		createProxy(true, false, false, "echo")
 		expectedStatus := 201
+		// need querystring, multivaluequerystring
 		validateLambda(lambdaValidationParams{
 			offset:             1,
 			envoyPort:          defaults.HttpPort,
-			requestBody:        `{"headers":{"Content-Type":"application/test"}, "body":"solo.io", "multiValueHeaders":{"x-header":["value-1", "value-2"]}, "statusCode":201}`,
+			requestBody:        `{"headers":{"Content-Type":"application/test"}, "body":"solo.io", "multiValueHeaders":{"x-header":["value-1", "value-2"]}, "statusCode":201, "queryStringParameters":{"param_a":"value_2", "param_b":"value_b"}, "multiValueQueryStringParameters":{"param_a":["value_1", "value_2"]}}`,
 			expectedSubstrings: []string{"solo.io"},
 			expectedHeaders:    http.Header{"Content-Type": {"application/test"}, "X-Header": {"value-1,value-2"}},
 			expectedStatus:     &expectedStatus,
@@ -430,7 +441,7 @@ var _ = Describe("AWS Lambda", func() {
 			Expect(err).NotTo(HaveOccurred())
 			req.Header.Set("Content-Type", "application/octet-stream")
 			req.Host = "test"
-			res, err = http.DefaultClient.Do(req)
+			res, err = httpClient.Do(req)
 			if err != nil {
 				return err
 			}
@@ -449,7 +460,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(res.Header).To(HaveKeyWithValue("Foo", ContainElement("bar")))
 		// see that the AWS request transform applied - this means that the lambda will get a json body
 		// and will return its error response - not a string
-		Expect(string(body)).To(MatchJSON(`{"body":"\"test\"","headers":{":authority":"test",":method":"POST",":path":"/transforms-req-test?foo=bar",":scheme":"http","accept-encoding":"gzip","content-length":"6","content-type":"application/octet-stream","user-agent":"Go-http-client/1.1","x-forwarded-proto":"http"},"httpMethod":"POST","path":"/transforms-req-test","queryString":"foo=bar"}`))
+		Expect(string(body)).To(MatchJSON(`{"body":"\"test\"","headers":{":authority":"test",":method":"POST",":path":"/transforms-req-test?foo=bar",":scheme":"http","accept-encoding":"gzip","content-length":"6","content-type":"application/octet-stream","user-agent":"Go-http-client/1.1","x-forwarded-proto":"http"},"httpMethod":"POST","multiValueHeaders":{},"multiValueQueryStringParameters":{},"path":"/transforms-req-test","queryString":"foo=bar","queryStringParameters":{"foo":"bar"}}`))
 
 		By("sending a request with response transformation")
 		path = "transforms-resp-test"

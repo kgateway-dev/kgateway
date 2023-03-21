@@ -74,8 +74,7 @@ message DestinationSpec {
         SYNC = 0;
         ASYNC = 1;
     }
-
-    // Include headers, querystring, request path, and request method in the event payload sent to aws lambda.
+    // Include headers, multi-value headers, querystring, querystring parameters, multi-value querystring parameters,  request path, and request method in the event payload sent to aws lambda
     // Only one of `requestTransformation` or `wrapAsApiGateway` should be provided.
     bool request_transformation = 6;
 

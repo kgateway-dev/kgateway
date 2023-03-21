@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"time"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
 
@@ -271,6 +274,138 @@ var _ = Describe("Transformations", func() {
 			})
 
 			EventuallyHtmlResponseTransformed().Should(Succeed())
+		})
+	})
+
+	Context("requestTransformation", func() {
+		// form a request with the given headers
+		// note that the Host header is set to the default host
+		formRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
+			// form request
+			req, err := http.NewRequest(http.MethodGet, url, nil)
+			Expect(err).NotTo(HaveOccurred())
+			req.Header = headers
+			req.Host = e2e.DefaultHost
+			return req
+		}
+
+		// send the given request and assert that the response matches the given expected response
+		eventuallyRequestMatches := func(req *http.Request, expectedResponse *testmatchers.HttpResponse) AsyncAssertion {
+			return Eventually(func(g Gomega) {
+				// send request
+				client := &http.Client{Timeout: 10 * time.Second}
+				res, err := client.Do(req)
+				g.Expect(err).NotTo(HaveOccurred())
+
+				g.Expect(res).To(testmatchers.HaveHttpResponse(expectedResponse))
+			}, "10s", ".5s")
+		}
+
+		BeforeEach(func() {
+			// create a virtual host with a route to the upstream
+			vsToEchoUpstream := helpers.NewVirtualServiceBuilder().
+				WithName(e2e.DefaultVirtualServiceName).
+				WithNamespace(writeNamespace).
+				WithDomain(e2e.DefaultHost).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Regular: &transformation.RequestResponseTransformations{
+							RequestTransforms: []*transformation.RequestMatch{
+								{
+									RequestTransformation: &transformation.Transformation{
+										TransformationType: &transformation.Transformation_HeaderBodyTransform{
+											HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+												AddRequestMetadata: true,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}).
+				Build()
+
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{vsToEchoUpstream}
+		})
+
+		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
+			// form request
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2", defaults.HttpPort), nil)
+			// form matcher
+			matcher := &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body: WithTransform(transforms.WithJsonBody(),
+					And(
+						HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
+						HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "2")),
+						HaveKeyWithValue("multiValueQueryStringParameters", HaveKeyWithValue("multiple", ConsistOf("1", "2"))),
+					),
+				),
+			}
+
+			eventuallyRequestMatches(req, matcher).Should(Succeed())
+		})
+
+		It("should handle 3 and 4 values in multiValueQueryStringParameters", func() {
+			By("populating MultiValueQueryStringParameters with 3 values", func() {
+				// form request
+				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3", defaults.HttpPort), nil)
+				// form matcher
+				matcher := &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body: WithTransform(transforms.WithJsonBody(),
+						And(
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "3")),
+							HaveKeyWithValue("multiValueQueryStringParameters", HaveKeyWithValue("multiple", ConsistOf("1", "2", "3"))),
+						),
+					),
+				}
+
+				eventuallyRequestMatches(req, matcher).Should(Succeed())
+			})
+
+			By("populating MultiValueQueryStringParameters with 4 values", func() {
+				// form request
+				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3&multiple=4", defaults.HttpPort), nil)
+				// form matcher
+				matcher := &testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body: WithTransform(transforms.WithJsonBody(),
+						And(
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")),
+							HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("multiple", "4")), // last value
+							HaveKeyWithValue("multiValueQueryStringParameters", HaveKeyWithValue("multiple", ConsistOf("1", "2", "3", "4"))),
+						),
+					),
+				}
+
+				eventuallyRequestMatches(req, matcher).Should(Succeed())
+			})
+		})
+
+		It("should handle headers and multiValueHeaders", func() {
+			// form request
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), map[string][]string{
+				"foo":      {"bar"},
+				"multiple": {"1", "2"},
+			})
+			// form matcher
+			matcher := &testmatchers.HttpResponse{
+				StatusCode: http.StatusOK,
+				Body: WithTransform(transforms.WithJsonBody(),
+					And(
+						HaveKeyWithValue("headers", HaveKeyWithValue("foo", "bar")),
+						HaveKeyWithValue("headers", HaveKeyWithValue("multiple", "2")),
+						HaveKeyWithValue("multiValueHeaders", HaveKeyWithValue("multiple", ConsistOf("1", "2"))),
+					),
+				),
+			}
+
+			eventuallyRequestMatches(req, matcher).Should(Succeed())
 		})
 	})
 })

@@ -269,7 +269,7 @@ type DestinationSpec struct {
 	LogicalName string `protobuf:"bytes,1,opt,name=logical_name,json=logicalName,proto3" json:"logical_name,omitempty"`
 	// Can be either Sync or Async.
 	InvocationStyle DestinationSpec_InvocationStyle `protobuf:"varint,2,opt,name=invocation_style,json=invocationStyle,proto3,enum=aws.options.gloo.solo.io.DestinationSpec_InvocationStyle" json:"invocation_style,omitempty"`
-	// Include headers, querystring, request path, and request method in the event payload sent to aws lambda.
+	// Include headers, multi-value headers, querystring, querystring parameters, multi-value querystring parameters,  request path, and request method in the event payload sent to aws lambda
 	// Only one of `requestTransformation` or `wrapAsApiGateway` should be provided.
 	RequestTransformation bool `protobuf:"varint,6,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
 	// Deprecated. Use unwrapAsApiGateway
