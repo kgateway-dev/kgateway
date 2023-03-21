@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -91,7 +93,7 @@ var _ = Describe("CORS", func() {
 				WithHeader("Access-Control-Request-Method", http.MethodGet).
 				WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
 					requestACHOrigin:  Equal(allowedOrigins[0]),
 				}))
@@ -99,7 +101,7 @@ var _ = Describe("CORS", func() {
 
 			disallowedOriginRequestBuilder := allowedOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					requestACHMethods: BeEmpty(),
 				}))
 			}).Should(Succeed(), "Request with disallowed origin")

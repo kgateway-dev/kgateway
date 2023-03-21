@@ -11,10 +11,13 @@ import (
 	"github.com/onsi/ginkgo/v2"
 )
 
+// DefaultHttpClient should be used in tests because it configures a timeout which the http.DefaultClient
+// does not have
 var DefaultHttpClient = &http.Client{
 	Timeout: time.Second * 1,
 }
 
+// HttpClientBuilder simplifies the process of generating an http client in tests
 type HttpClientBuilder struct {
 	timeout time.Duration
 
@@ -22,6 +25,7 @@ type HttpClientBuilder struct {
 	proxyProtocolBytes []byte
 }
 
+// DefaultClientBuilder returns an HttpClientBuilder with some default values
 func DefaultClientBuilder() *HttpClientBuilder {
 	return &HttpClientBuilder{
 		timeout: DefaultHttpClient.Timeout,

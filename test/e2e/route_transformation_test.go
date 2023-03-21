@@ -1,15 +1,14 @@
 package e2e_test
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/helpers"
@@ -75,17 +74,9 @@ var _ = Describe("Transformations", func() {
 		// validates that a request with a body will return the requested content.
 		// This will only work if the above transformation is applied to the request
 		EventuallyResponseTransformed := func() AsyncAssertion {
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody("{\"body\":\"test\"}")
 			return Eventually(func(g Gomega) {
-				req, err := http.NewRequest(
-					http.MethodPost,
-					fmt.Sprintf("http://localhost:%d/1", defaults.HttpPort),
-					bytes.NewBufferString("{\"body\":\"test\"}"))
-				g.Expect(err).NotTo(HaveOccurred(), "Can create request object")
-				req.Host = e2e.DefaultHost
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveExactResponseBody("test"))
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(testmatchers.HaveExactResponseBody("test"))
 			}, "5s", ".5s")
 		}
 
@@ -190,15 +181,12 @@ var _ = Describe("Transformations", func() {
 		// value, and the body of the response is non-json
 		// This will only work if the above transformation is applied to the request
 		EventuallyHtmlResponseTransformed := func() AsyncAssertion {
-			return Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/html", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("x-solo-hdr-1", "test")
+			htmlRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithPath("html").
+				WithHeader("x-solo-hdr-1", "test")
 
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+			return Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(htmlRequestBuilder.Build())).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body: WithTransform(func(b []byte) error {
 						var body map[string]interface{}
@@ -220,15 +208,11 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
+			htmlRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithPath("html").
+				WithHeader("x-solo-hdr-1", "test")
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/html", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("x-solo-hdr-1", "test")
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(htmlRequestBuilder.Build())).To(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 					StatusCode: http.StatusBadRequest,
 					Body:       gstruct.Ignore(), // We don't care about the body, which will contain an error message
 				}))

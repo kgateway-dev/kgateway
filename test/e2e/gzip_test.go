@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/solo-io/gloo/test/testutils"
 
 	"net/http"
 
@@ -61,7 +62,7 @@ var _ = Describe("gzip", func() {
 				WithAcceptEncoding("gzip").
 				WithPostBody(jsonStr)
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(jsonRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(jsonStr))
+				g.Expect(testutils.DefaultHttpClient.Do(jsonRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(jsonStr))
 			}, "5s", ".1s").Should(Succeed(), "json shorter than default content length is not compressed")
 		})
 	})
@@ -96,13 +97,13 @@ var _ = Describe("gzip", func() {
 			shortJsonStr := `{"value":"Hello, world!"}` // len(short json) < 30
 			shortRequestBuilder := jsonRequestBuilder.WithPostBody(shortJsonStr)
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(shortRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(shortJsonStr))
+				g.Expect(testutils.DefaultHttpClient.Do(shortRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(shortJsonStr))
 			}).Should(Succeed(), "json shorter than content length should not be compressed")
 
 			longJsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
 			longRequestBuilder := jsonRequestBuilder.WithPostBody(longJsonStr)
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(longRequestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(longRequestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       WithTransform(transforms.WithDecompressorTransform(), Equal(longJsonStr)),
 				}))

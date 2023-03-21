@@ -87,7 +87,7 @@ var _ = Describe("dynamic forward proxy", func() {
 				WithHeader("x-rewrite-me", "postman-echo.com")
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       ContainSubstring(`"host": "postman-echo.com"`),
 				}))
@@ -149,7 +149,7 @@ var _ = Describe("dynamic forward proxy", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPath("get")
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       ContainSubstring(`"host": "postman-echo.com"`),
 				}))

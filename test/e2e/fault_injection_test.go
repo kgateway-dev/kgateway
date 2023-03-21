@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/solo-io/gloo/test/e2e"
@@ -56,7 +58,7 @@ var _ = Describe("Fault Injection", func() {
 
 			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(requestBuilder.Build())).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusServiceUnavailable,
 					Body:       "fault filter abort",
 				}))
@@ -82,7 +84,7 @@ var _ = Describe("Fault Injection", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
 				start := time.Now()
-				response, err := http.DefaultClient.Do(requestBuilder.Build())
+				response, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
 				elapsed := time.Now().Sub(start)
 
 				g.Expect(err).NotTo(HaveOccurred())

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -65,7 +67,7 @@ var _ = Describe("buffer", func() {
 					WithPostBody(`{"value":"test"}`).
 					WithContentType("application/json")
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
 				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 
@@ -93,7 +95,7 @@ var _ = Describe("buffer", func() {
 					WithPostBody(`{"value":"test"}`).
 					WithContentType("application/json")
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 						Body:       "Payload Too Large",
 						StatusCode: http.StatusRequestEntityTooLarge,
 					}))
@@ -146,7 +148,7 @@ var _ = Describe("buffer", func() {
 					WithPostBody(`{"value":"test"}`).
 					WithContentType("application/json")
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
 				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 
@@ -195,7 +197,7 @@ var _ = Describe("buffer", func() {
 					WithPostBody(`{"value":"test"}`).
 					WithContentType("application/json")
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 						Body:       "Payload Too Large",
 						StatusCode: http.StatusRequestEntityTooLarge,
 					}))
@@ -249,7 +251,7 @@ var _ = Describe("buffer", func() {
 					WithPostBody(`{"value":"test"}`).
 					WithContentType("application/json")
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
 				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 
@@ -298,7 +300,7 @@ var _ = Describe("buffer", func() {
 					WithPostBody(`{"value":"test"}`).
 					WithContentType("application/json")
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 						Body:       "Payload Too Large",
 						StatusCode: http.StatusRequestEntityTooLarge,
 					}))
