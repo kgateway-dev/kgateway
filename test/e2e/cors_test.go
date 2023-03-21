@@ -87,7 +87,7 @@ var _ = Describe("CORS", func() {
 			}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
 
 			allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
-				WithMethod(http.MethodOptions).
+				WithOptionsMethod().
 				WithPath("cors").
 				WithHeader("Origin", allowedOrigins[0]).
 				WithHeader("Access-Control-Request-Method", http.MethodGet).

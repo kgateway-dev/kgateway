@@ -131,7 +131,7 @@ var _ = Describe("Access Log", func() {
 			It("can create string access logs", func() {
 				requestBuilder := testContext.GetHttpRequestBuilder().
 					WithPath("1").
-					WithMethod(http.MethodPost)
+					WithPostMethod()
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
@@ -183,7 +183,7 @@ var _ = Describe("Access Log", func() {
 			It("can create json access logs", func() {
 				requestBuilder := testContext.GetHttpRequestBuilder().
 					WithPath("1").
-					WithMethod(http.MethodPost)
+					WithPostMethod()
 				Eventually(func(g Gomega) {
 					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
@@ -240,7 +240,7 @@ var _ = Describe("Access Log", func() {
 		It("Can filter by status code", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().
 				WithPath("1").
-				WithMethod(http.MethodPost)
+				WithPostMethod()
 			Eventually(func(g Gomega) {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
@@ -251,7 +251,7 @@ var _ = Describe("Access Log", func() {
 
 			badHostRequestBuilder := testContext.GetHttpRequestBuilder().
 				WithPath("BAD/HOST").
-				WithMethod(http.MethodPost).
+				WithPostMethod().
 				WithHost("") // We can get a 404 by not setting the Host header.
 			Eventually(func(g Gomega) {
 				g.Expect(testutils.DefaultHttpClient.Do(badHostRequestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))

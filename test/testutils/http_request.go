@@ -50,8 +50,13 @@ func (h *HttpRequestBuilder) WithContext(ctx context.Context) *HttpRequestBuilde
 	return h
 }
 
-func (h *HttpRequestBuilder) WithMethod(method string) *HttpRequestBuilder {
-	h.method = method
+func (h *HttpRequestBuilder) WithPostMethod() *HttpRequestBuilder {
+	h.method = http.MethodPost
+	return h
+}
+
+func (h *HttpRequestBuilder) WithOptionsMethod() *HttpRequestBuilder {
+	h.method = http.MethodOptions
 	return h
 }
 
@@ -82,7 +87,7 @@ func (h *HttpRequestBuilder) WithBody(body string) *HttpRequestBuilder {
 
 // WithPostBody is syntactic sugar for updating the Method and Body for a POST request simultaneously
 func (h *HttpRequestBuilder) WithPostBody(body string) *HttpRequestBuilder {
-	return h.WithBody(body).WithMethod(http.MethodPost)
+	return h.WithBody(body).WithPostMethod()
 }
 
 func (h *HttpRequestBuilder) WithHost(host string) *HttpRequestBuilder {
