@@ -58,7 +58,7 @@ Describes a GraphQL Endpoint information
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `url` | `string` | The url for the graphql endpoint. Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql. |
+| `url` | `string` | The url for the graphql endpoint. Automation via Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql. |
 
 
 

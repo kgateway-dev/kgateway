@@ -19,7 +19,7 @@ message ServiceSpec {
   Endpoint endpoint = 1;
   // Describes a GraphQL Endpoint information
   message Endpoint {
-    // The url for the graphql endpoint. Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql
+    // The url for the graphql endpoint. Automation via Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql
     string url = 1;
   }
 }

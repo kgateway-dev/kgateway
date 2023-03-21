@@ -82,7 +82,7 @@ type ServiceSpec_Endpoint struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The url for the graphql endpoint. Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql
+	// The url for the graphql endpoint. Automation via Discovery only supports `http://<host>/graphql` ie: http://myurl.com/graphql
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 }
 
