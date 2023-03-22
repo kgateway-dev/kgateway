@@ -557,7 +557,7 @@ var _ = Describe("RBAC Test", func() {
 				})
 			})
 
-			FContext("certgen job", func() {
+			Context("certgen job", func() {
 				Context("Cluster scope", func() {
 					It("role", func() {
 						prepareMakefile("global.glooRbac.namespaced=false")
