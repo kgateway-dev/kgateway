@@ -1,11 +1,12 @@
 package matchers
 
 import (
+	"net/http"
+
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/test/gomega/transforms"
-	"net/http"
 )
 
 // ContainHeaders produces a matcher that will only match if all provided headers
