@@ -2,7 +2,10 @@ package e2e_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/testutils"
 
@@ -274,12 +277,7 @@ var _ = Describe("Transformations", func() {
 		// send the given request and assert that the response matches the given expected response
 		eventuallyRequestMatches := func(req *http.Request, expectedResponse *testmatchers.HttpResponse) AsyncAssertion {
 			return Eventually(func(g Gomega) {
-				// send request
-				client := &http.Client{Timeout: 10 * time.Second}
-				res, err := client.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				g.Expect(res).To(testmatchers.HaveHttpResponse(expectedResponse))
+				g.Expect(testutils.DefaultHttpClient.Do(req)).To(testmatchers.HaveHttpResponse(expectedResponse))
 			}, "10s", ".5s")
 		}
 
