@@ -35,14 +35,16 @@ ServiceSpec configuration is opaque to Gloo and handled by Service Options.
 "rest": .rest.options.gloo.solo.io.ServiceSpec
 "grpc": .grpc.options.gloo.solo.io.ServiceSpec
 "grpcJsonTranscoder": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder
+"graphql": .graphql.options.gloo.solo.io.ServiceSpec
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `rest` | [.rest.options.gloo.solo.io.ServiceSpec](../rest/rest.proto.sk/#servicespec) |  Only one of `rest`, `grpc`, or `grpcJsonTranscoder` can be set. |
-| `grpc` | [.grpc.options.gloo.solo.io.ServiceSpec](../grpc/grpc.proto.sk/#servicespec) |  Only one of `grpc`, `rest`, or `grpcJsonTranscoder` can be set. |
-| `grpcJsonTranscoder` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder](../grpc_json/grpc_json.proto.sk/#grpcjsontranscoder) |  Only one of `grpcJsonTranscoder`, `rest`, or `grpc` can be set. |
+| `rest` | [.rest.options.gloo.solo.io.ServiceSpec](../rest/rest.proto.sk/#servicespec) |  Only one of `rest`, `grpc`, `grpcJsonTranscoder`, or `graphql` can be set. |
+| `grpc` | [.grpc.options.gloo.solo.io.ServiceSpec](../grpc/grpc.proto.sk/#servicespec) |  Only one of `grpc`, `rest`, `grpcJsonTranscoder`, or `graphql` can be set. |
+| `grpcJsonTranscoder` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder](../grpc_json/grpc_json.proto.sk/#grpcjsontranscoder) |  Only one of `grpcJsonTranscoder`, `rest`, `grpc`, or `graphql` can be set. |
+| `graphql` | [.graphql.options.gloo.solo.io.ServiceSpec](../graphql/graphql.proto.sk/#servicespec) |  Only one of `graphql`, `rest`, `grpc`, or `grpcJsonTranscoder` can be set. |
 
 
 
