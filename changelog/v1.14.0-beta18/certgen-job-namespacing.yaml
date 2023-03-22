@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5960
+    description: >
+      Setting `global.glooRbac.namespaced=true` now also constrains the certgen jobs access permissions to secrets from 
+      the entire cluster to just those in the gloo install namespace
