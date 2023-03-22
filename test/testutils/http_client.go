@@ -47,6 +47,19 @@ func (c *HttpClientBuilder) WithTLS(rootCaCert string) *HttpClientBuilder {
 	return c
 }
 
+func (c *HttpClientBuilder) Clone() *HttpClientBuilder {
+	if c == nil {
+		return nil
+	}
+	clone := new(HttpClientBuilder)
+
+	clone.timeout = c.timeout
+	clone.rootCaCert = c.rootCaCert
+	clone.proxyProtocolBytes = nil
+	clone.proxyProtocolBytes = append(clone.proxyProtocolBytes, c.proxyProtocolBytes...)
+	return clone
+}
+
 func (c *HttpClientBuilder) Build() *http.Client {
 	var (
 		client          http.Client

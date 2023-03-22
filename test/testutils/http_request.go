@@ -131,6 +131,27 @@ func (h *HttpRequestBuilder) errorIfInvalid() error {
 	return nil
 }
 
+func (h *HttpRequestBuilder) Clone() *HttpRequestBuilder {
+	if h == nil {
+		return nil
+	}
+	clone := new(HttpRequestBuilder)
+
+	clone.ctx = h.ctx
+	clone.method = h.method
+	clone.scheme = h.scheme
+	clone.hostname = h.hostname
+	clone.port = h.port
+	clone.path = h.path
+	clone.body = h.body
+	clone.host = h.host
+	clone.headers = make(map[string][]string)
+	for key, value := range h.headers {
+		clone.headers[key] = value
+	}
+	return clone
+}
+
 func (h *HttpRequestBuilder) Build() *http.Request {
 	if err := h.errorIfInvalid(); err != nil {
 		// We error loudly here
