@@ -56,18 +56,16 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 	}
 
 	go func(electionCtx context.Context) {
-		for {
-			select {
-			case <-electionCtx.Done():
-				return
-			case <-a.identity.Elected():
-				// channel is closed, signaling leadership
-				doPerformAction()
-				return
-
-			default:
-				// receiving from other channels would block
-			}
+		// blocking select on multiple channels
+		// if either compeltes we are either done or a leader so dont have to busy loop
+		select {
+		case <-electionCtx.Done():
+			return
+		case <-a.identity.Elected():
+			// channel is closed, signaling leadership
+			doPerformAction()
+			return
 		}
+
 	}(ctx)
 }
