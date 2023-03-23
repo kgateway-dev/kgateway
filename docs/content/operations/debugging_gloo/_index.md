@@ -265,6 +265,16 @@ gloo:
       envoyLogLevel: error
 ```
 
+Additionally, you can change the logging level for other services such as `rate-limit` as the given Helm values example below:
+
+```yaml
+global:
+  extensions:
+    rateLimit:
+      deployment:
+        loglevel: error
+```
+
 ### All else fails
 
 Again, if all else fails, you can capture the state of Gloo Edge configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
