@@ -40,12 +40,13 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 	}
 
 	doPerformAction := func() {
-		contextutils.LoggerFrom(ctx).Info("performing leader startup action")
+		contextutils.LoggerFrom(ctx).Debug("performing leader startup action")
 
 		action := a.GetAction()
 		if action == nil {
-			// this case is the result of developer error
-			contextutils.LoggerFrom(ctx).Warn("leader startup action not defined")
+			// This can happen at the beginning of a process, where the leader is immediately elected
+			// and no startup action is required to be performed
+			contextutils.LoggerFrom(ctx).Debug("leader startup action not defined")
 			return
 		}
 		err := action()
@@ -55,18 +56,16 @@ func (a *LeaderStartupAction) WatchElectionResults(ctx context.Context) {
 	}
 
 	go func(electionCtx context.Context) {
-		for {
-			select {
-			case <-electionCtx.Done():
-				return
-			case <-a.identity.Elected():
-				// channel is closed, signaling leadership
-				doPerformAction()
-				return
-
-			default:
-				// receiving from other channels would block
-			}
+		// blocking select on multiple channels
+		// if either compeltes we are either done or a leader so dont have to busy loop
+		select {
+		case <-electionCtx.Done():
+			return
+		case <-a.identity.Elected():
+			// channel is closed, signaling leadership
+			doPerformAction()
+			return
 		}
+
 	}(ctx)
 }
