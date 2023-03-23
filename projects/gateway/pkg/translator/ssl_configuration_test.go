@@ -12,7 +12,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 )
 
-var _ = FDescribe("Ssl Configuration", func() {
+var _ = Describe("Ssl Configuration", func() {
 
 	Context("GroupVirtualServicesBySslConfig", func() {
 
@@ -48,13 +48,14 @@ var _ = FDescribe("Ssl Configuration", func() {
 			It("does not merge the configurations", func() {
 				sslConfig, virtualServicesBySsl := GroupVirtualServicesBySslConfig(v1.VirtualServiceList{vsEast, vsWest})
 
-				Expect(sslConfig).To(HaveLen(2))
-				Expect(virtualServicesBySsl).To(HaveLen(2))
+				Expect(sslConfig).To(HaveLen(2), "ssl configs should not be merged")
+				Expect(sslConfig).To(ContainElements(vsEast.GetSslConfig(), vsWest.GetSslConfig()))
+				Expect(virtualServicesBySsl).To(HaveLen(2), "2 unique sslConfigs in map")
 			})
 
 		})
 
-		FWhen("2 virtual services differ only by SNI", func() {
+		When("2 virtual services differ only by SNI", func() {
 
 			var (
 				vsEast, vsWest *v1.VirtualService
@@ -93,11 +94,15 @@ var _ = FDescribe("Ssl Configuration", func() {
 				sslConfig, virtualServicesBySslConfig := GroupVirtualServicesBySslConfig(v1.VirtualServiceList{vsEast, vsWest})
 
 				Expect(sslConfig).To(HaveLen(1), "ssl configs should be merged")
-				Expect(virtualServicesBySslConfig).To(HaveLen(1))
+				joinedSniDomains := append(vsEast.GetSslConfig().GetSniDomains(), vsWest.GetSslConfig().GetSniDomains()...)
+				Expect(sslConfig[0].GetSniDomains()).To(ContainElements(joinedSniDomains), "sni domains should be joined")
+
+				Expect(virtualServicesBySslConfig).To(HaveLen(1), "only 1 unique sslConfig in map")
 
 				for ssl, virtualServicesBySsl := range virtualServicesBySslConfig {
-					Expect(ssl).NotTo(BeNil())                  // todo comeback to
-					Expect(virtualServicesBySsl).To(HaveLen(2)) // we should have vs-east and vs-west
+					joinedSniDomains := append(vsEast.GetSslConfig().GetSniDomains(), vsWest.GetSslConfig().GetSniDomains()...)
+					Expect(ssl.GetSniDomains()).To(ContainElements(joinedSniDomains))
+					Expect(virtualServicesBySsl).To(HaveLen(2))
 				}
 			})
 
