@@ -27,13 +27,13 @@ func GroupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*s
 			} else {
 				matchingCfg.SniDomains = merge(matchingCfg.GetSniDomains(), sslConfig.GetSniDomains()...)
 			}
-			groupedVirtualServices[sslConfigHash] = []*v1.VirtualService{virtualService}
+			groupedVirtualServices[sslConfigHash] = append(groupedVirtualServices[sslConfigHash], virtualService)
 
 		} else {
 			// there is no existing sslConfig, create a new entry
 			ptrToCopy := proto.Clone(sslConfig).(*ssl.SslConfig)
 			mergedSslConfig[sslConfigHash] = ptrToCopy
-			groupedVirtualServices[sslConfigHash] = append(groupedVirtualServices[sslConfigHash], virtualService)
+			groupedVirtualServices[sslConfigHash] = []*v1.VirtualService{virtualService}
 		}
 	}
 
