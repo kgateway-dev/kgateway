@@ -11,8 +11,6 @@ import (
 
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
-
-	"github.com/solo-io/gloo/test/gomega/transforms"
 )
 
 var (
@@ -58,30 +56,6 @@ func HaveOkResponseWithHeaders(headers map[string]interface{}) types.GomegaMatch
 		Body:       gomega.BeEmpty(),
 		Headers:    headers,
 	})
-}
-
-// ContainHeaders produces a matcher that will only match if all provided headers
-// are completely accounted for, including multi-value headers.
-func ContainHeaders(headers http.Header) types.GomegaMatcher {
-	headerMatchers := make([]types.GomegaMatcher, 0, len(headers))
-	for k, v := range headers {
-		vals := make([]interface{}, len(v))
-		for i := range v {
-			vals[i] = v[i]
-		}
-		headerMatchers = append(headerMatchers, gomega.WithTransform(transforms.WithHeaderValues(k), gomega.ContainElements(vals...)))
-	}
-	return gomega.And(headerMatchers...)
-}
-
-// ContainSubstrings produces a matcher that will match if all provided strings
-// occur within the targeted string
-func ContainSubstrings(substrings []string) types.GomegaMatcher {
-	substringMatchers := make([]types.GomegaMatcher, 0, len(substrings))
-	for i := range substrings {
-		substringMatchers = append(substringMatchers, gomega.ContainSubstring(substrings[i]))
-	}
-	return gomega.And(substringMatchers...)
 }
 
 // HttpResponse defines the set of properties that we can validate from an http.Response

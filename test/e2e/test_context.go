@@ -248,8 +248,28 @@ func (c *TestContext) PatchDefaultUpstream(mutator func(us *gloov1.Upstream) *gl
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
-// Use a different function to create a test upstream call before testContext.BeforeEach()
+// SetUpstreamGenerator Use a different function to create a test upstream call before testContext.BeforeEach()
 // Used for example with helpers.NewTestGrpcUpstream which has the side effect of also starting a grpc service
 func (c *TestContext) SetUpstreamGenerator(generator func(ctx context.Context, addr string) *v1helpers.TestUpstream) {
 	c.testUpstreamGenerator = generator
+}
+
+// GetHttpRequestBuilder returns an HttpRequestBuilder to easily build http requests used in e2e tests
+func (c *TestContext) GetHttpRequestBuilder() *testutils.HttpRequestBuilder {
+	return testutils.DefaultRequestBuilder().
+		WithScheme("http").
+		WithHostname("localhost").
+		WithContentType("application/octet-stream").
+		WithPort(defaults.HttpPort). // When running Envoy locally, we port-forward this port to accept http traffic locally
+		WithHost(DefaultHost)        // The default Virtual Service routes traffic only with a particular Host header
+}
+
+// GetHttpsRequestBuilder returns an HttpRequestBuilder to easily build https requests used in e2e tests
+func (c *TestContext) GetHttpsRequestBuilder() *testutils.HttpRequestBuilder {
+	return testutils.DefaultRequestBuilder().
+		WithScheme("https").
+		WithHostname("localhost").
+		WithContentType("application/octet-stream").
+		WithPort(defaults.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
+		WithHost(DefaultHost)         // The default Virtual Service routes traffic only with a particular Host header
 }

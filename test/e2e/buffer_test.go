@@ -1,10 +1,10 @@
 package e2e_test
 
 import (
-	"bytes"
-	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
@@ -12,12 +12,10 @@ import (
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
@@ -45,20 +43,6 @@ var _ = Describe("buffer", func() {
 		testContext.JustAfterEach()
 	})
 
-	testRequest := func() func() (*http.Response, error) {
-		return func() (*http.Response, error) {
-			var json = []byte(`{"value":"test"}`)
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			req.Header.Set("Content-Type", "application/json")
-			req.Host = e2e.DefaultHost
-			if err != nil {
-				return nil, err
-			}
-
-			return http.DefaultClient.Do(req)
-		}
-	}
-
 	Context("filter defined on listener", func() {
 
 		Context("Large buffer ", func() {
@@ -79,7 +63,12 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPostBody(`{"value":"test"}`).
+					WithContentType("application/json")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 
 		})
@@ -102,10 +91,15 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-					Body:       "Payload Too Large",
-					StatusCode: http.StatusRequestEntityTooLarge,
-				}))
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPostBody(`{"value":"test"}`).
+					WithContentType("application/json")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+						Body:       "Payload Too Large",
+						StatusCode: http.StatusRequestEntityTooLarge,
+					}))
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 		})
 	})
@@ -150,7 +144,12 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPostBody(`{"value":"test"}`).
+					WithContentType("application/json")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 
 		})
@@ -194,10 +193,15 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-					Body:       "Payload Too Large",
-					StatusCode: http.StatusRequestEntityTooLarge,
-				}))
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPostBody(`{"value":"test"}`).
+					WithContentType("application/json")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+						Body:       "Payload Too Large",
+						StatusCode: http.StatusRequestEntityTooLarge,
+					}))
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 		})
 	})
@@ -243,7 +247,12 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("valid buffer size should succeed", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPostBody(`{"value":"test"}`).
+					WithContentType("application/json")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody("{\"value\":\"test\"}"))
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 
 		})
@@ -287,10 +296,15 @@ var _ = Describe("buffer", func() {
 			})
 
 			It("empty buffer should fail", func() {
-				Eventually(testRequest(), 10*time.Second, 1*time.Second).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
-					Body:       "Payload Too Large",
-					StatusCode: http.StatusRequestEntityTooLarge,
-				}))
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPostBody(`{"value":"test"}`).
+					WithContentType("application/json")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+						Body:       "Payload Too Large",
+						StatusCode: http.StatusRequestEntityTooLarge,
+					}))
+				}, 10*time.Second, 1*time.Second).Should(Succeed())
 			})
 		})
 	})

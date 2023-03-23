@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -13,11 +15,13 @@ import (
 
 // LogLevelAssertion returns an Assertion to verify that the dynamic log level matches the provided value
 func LogLevelAssertion(logLevel zapcore.Level) types.AsyncAssertion {
-	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/logging", stats.DefaultPort), nil)
-	Expect(err).NotTo(HaveOccurred())
+	loggingRequest := testutils.DefaultRequestBuilder().
+		WithPort(stats.DefaultPort).
+		WithPath("logging").
+		Build()
 
 	return Eventually(func(g Gomega) {
-		g.Expect(http.DefaultClient.Do(request)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+		g.Expect(http.DefaultClient.Do(loggingRequest)).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusOK,
 			Body:       fmt.Sprintf("{\"level\":\"%s\"}\n", logLevel.String()),
 		}))
