@@ -208,6 +208,25 @@ func (b *virtualServiceBuilder) errorIfInvalid() error {
 	return nil
 }
 
+func (b *virtualServiceBuilder) Clone() *virtualServiceBuilder {
+	if b == nil {
+		return nil
+	}
+	clone := new(virtualServiceBuilder)
+
+	clone.name = b.name
+	clone.namespace = b.namespace
+	clone.domains = nil
+	clone.domains = append(clone.domains, b.domains...)
+	clone.virtualHostOptions = b.virtualHostOptions.Clone().(*gloov1.VirtualHostOptions)
+	clone.routesByName = make(map[string]*v1.Route)
+	for key, value := range b.routesByName {
+		clone.routesByName[key] = value.Clone().(*v1.Route)
+	}
+	clone.sslConfig = b.sslConfig.Clone().(*ssl.SslConfig)
+	return clone
+}
+
 func (b *virtualServiceBuilder) Build() *v1.VirtualService {
 	if err := b.errorIfInvalid(); err != nil {
 		// We error loudly here
