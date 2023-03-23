@@ -1,12 +1,10 @@
 package e2e_test
 
 import (
-	"bytes"
-
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/solo-io/gloo/test/testutils"
 
-	"fmt"
 	"net/http"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -15,8 +13,6 @@ import (
 	"github.com/solo-io/gloo/test/e2e"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloogzip "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
@@ -60,19 +56,14 @@ var _ = Describe("gzip", func() {
 		})
 
 		It("should return uncompressed json", func() {
-			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
+			jsonRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithContentType("application/json").
+				WithAcceptEncoding("gzip").
+				WithPostBody(jsonStr)
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(jsonStr))
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("Accept-Encoding", "gzip")
-				req.Header.Set("Content-Type", "application/json")
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(matchers.HaveExactResponseBody(jsonStr))
-			}, "5s", ".1s").Should(Succeed())
+				g.Expect(testutils.DefaultHttpClient.Do(jsonRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(jsonStr))
+			}, "5s", ".1s").Should(Succeed(), "json shorter than default content length is not compressed")
 		})
 	})
 
@@ -99,37 +90,24 @@ var _ = Describe("gzip", func() {
 		})
 
 		It("should return compressed json", func() {
-			// json needs to be longer than default content length to trigger
-			// len(short json) < 30
-			shortJsonStr := `{"value":"Hello, world!"}`
+			jsonRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithContentType("application/json").
+				WithAcceptEncoding("gzip")
+
+			shortJsonStr := `{"value":"Hello, world!"}` // len(short json) < 30
+			shortRequestBuilder := jsonRequestBuilder.WithPostBody(shortJsonStr)
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(shortJsonStr))
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("Accept-Encoding", "gzip")
-				req.Header.Set("Content-Type", "application/json")
+				g.Expect(testutils.DefaultHttpClient.Do(shortRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(shortJsonStr))
+			}).Should(Succeed(), "json shorter than content length should not be compressed")
 
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(matchers.HaveExactResponseBody(shortJsonStr))
-			}).Should(Succeed())
-
-			// raw json should be compressed
 			longJsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
+			longRequestBuilder := jsonRequestBuilder.WithPostBody(longJsonStr)
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBufferString(longJsonStr))
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				req.Header.Set("Accept-Encoding", "gzip")
-				req.Header.Set("Content-Type", "application/json")
-
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(longRequestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusOK,
 					Body:       WithTransform(transforms.WithDecompressorTransform(), Equal(longJsonStr)),
 				}))
-			}).Should(Succeed())
+			}).Should(Succeed(), "json longer than content length should be compressed")
 		})
 	})
 })

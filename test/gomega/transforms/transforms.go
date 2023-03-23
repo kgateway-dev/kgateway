@@ -30,6 +30,8 @@ func WithDecompressorTransform() func(b []byte) string {
 	}
 }
 
+// WithHeaderValues returns a Gomega Transform that extracts the header
+// values from the http Response, for the provided header name
 func WithHeaderValues(header string) func(response *http.Response) []string {
 	return func(response *http.Response) []string {
 		return response.Header.Values(header)
