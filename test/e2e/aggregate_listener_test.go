@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"net/http"
 
-	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/testutils"
 
@@ -107,23 +106,23 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			DescribeTable("routes requests",
-				func(host, path string, responseMatcher types.GomegaMatcher) {
+				func(host, path string, statusCode int) {
 					httpRequestBuilder := testContext.GetHttpRequestBuilder().
 						WithHost(host).
 						WithPath(path)
 
 					Eventually(func(g Gomega) {
-						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(responseMatcher)
+						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
 					}, "10s", "1s").Should(Succeed())
 				},
 				Entry("east host",
 					"east.com",
 					"east/1",
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 				Entry("west host",
 					"west.com",
 					"west/1",
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 			)
 		})
 
@@ -142,23 +141,23 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			DescribeTable("routes requests",
-				func(host, path string, responseMatcher types.GomegaMatcher) {
+				func(host, path string, statusCode int) {
 					httpRequestBuilder := testContext.GetHttpRequestBuilder().
 						WithHost(host).
 						WithPath(path)
 
 					Eventually(func(g Gomega) {
-						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(responseMatcher)
+						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
 					}, "10s", "1s").Should(Succeed())
 				},
 				Entry("east host",
 					"east.com",
 					"east/1",
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 				Entry("west host",
 					"west.com",
 					"west/1",
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 			)
 		})
 
@@ -277,7 +276,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			DescribeTable("routes requests",
-				func(serverName, host, path, cert string, responseMatcher types.GomegaMatcher) {
+				func(serverName, host, path, cert string, statusCode int) {
 					httpClient := testutils.DefaultClientBuilder().
 						WithTLSRootCa(cert).
 						WithTLSServerName(serverName).
@@ -288,7 +287,7 @@ var _ = Describe("Aggregate Listener", func() {
 						WithPath(path)
 
 					Eventually(func(g Gomega) {
-						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(responseMatcher)
+						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
 					}, "10s", "1s").Should(Succeed())
 				},
 				// This test demonstrates the flaw with HttpListeners:
@@ -303,19 +302,19 @@ var _ = Describe("Aggregate Listener", func() {
 					"east.com",
 					"east/1",
 					eastCert,
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 				Entry("northwest host with east cert",
 					"east.com",
 					"northwest.com",
 					"northwest/1",
 					eastCert,
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 				Entry("southwest host with east cert",
 					"east.com",
 					"southwest.com",
 					"southwest/1",
 					eastCert,
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 			)
 
 		})
@@ -337,7 +336,7 @@ var _ = Describe("Aggregate Listener", func() {
 			})
 
 			DescribeTable("routes requests",
-				func(serverName, host, path, cert string, responseMatcher types.GomegaMatcher) {
+				func(serverName, host, path, cert string, statusCode int) {
 					httpClient := testutils.DefaultClientBuilder().
 						WithTLSRootCa(cert).
 						WithTLSServerName(serverName).
@@ -348,7 +347,7 @@ var _ = Describe("Aggregate Listener", func() {
 						WithPath(path)
 
 					Eventually(func(g Gomega) {
-						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(responseMatcher)
+						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
 					}, "10s", "1s").Should(Succeed())
 				},
 				// This test demonstrates the solution with AggregateListeners:
@@ -358,31 +357,31 @@ var _ = Describe("Aggregate Listener", func() {
 					"east.com",
 					"east/1",
 					eastCert,
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 				Entry("northwest host with east cert",
 					"east.com",
 					"northwest.com",
 					"northwest/1",
 					eastCert,
-					matchers.HaveStatusCode(http.StatusNotFound)),
+					http.StatusNotFound),
 				Entry("southwest host with east cert",
 					"east.com",
 					"southwest.com",
 					"southwest/1",
 					eastCert,
-					matchers.HaveStatusCode(http.StatusNotFound)),
+					http.StatusNotFound),
 				Entry("northwest host with west cert",
 					"northwest.com",
 					"northwest.com",
 					"northwest/1",
 					westCert,
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 				Entry("southwest host with west cert",
 					"southwest.com",
 					"southwest.com",
 					"southwest/1",
 					westCert,
-					matchers.HaveOkResponse()),
+					http.StatusOK),
 			)
 		})
 
