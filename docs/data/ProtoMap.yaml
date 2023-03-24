@@ -1109,6 +1109,9 @@ apis:
   graphql.gloo.solo.io.StitchedSchema:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#StitchedSchema
     package: graphql.gloo.solo.io
+  graphql.options.gloo.solo.io.ServiceSpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/graphql/graphql.proto.sk/#ServiceSpec
+    package: graphql.options.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec
     package: grpc.options.gloo.solo.io

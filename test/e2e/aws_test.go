@@ -144,8 +144,6 @@ var _ = Describe("AWS Lambda", func() {
 			res, err := httpClient.Do(&req)
 			g.Expect(err).NotTo(HaveOccurred())
 
-			defer res.Body.Close()
-
 			g.Expect(res).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedStatus,
 				Body:       testmatchers.ContainSubstrings(params.expectedSubstrings),

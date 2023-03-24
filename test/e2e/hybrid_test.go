@@ -1,10 +1,9 @@
 package e2e_test
 
 import (
-	"fmt"
-	"net/http"
-
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
@@ -12,7 +11,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 )
 
@@ -38,14 +36,6 @@ var _ = Describe("Hybrid Gateway", func() {
 	JustAfterEach(func() {
 		testContext.JustAfterEach()
 	})
-
-	buildHttpRequestToHybridGateway := func() *http.Request {
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HybridPort), nil)
-		Expect(err).NotTo(HaveOccurred())
-		req.Host = e2e.DefaultHost
-
-		return req
-	}
 
 	Context("catchall match for http", func() {
 
@@ -83,11 +73,10 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request works as expected", func() {
-			req := buildHttpRequestToHybridGateway()
-
-			Eventually(func() (*http.Response, error) {
-				return http.DefaultClient.Do(req)
-			}, "5s", "0.5s").Should(matchers.HaveOkResponse())
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+			}, "5s", "0.5s").Should(Succeed())
 		})
 
 	})
@@ -127,11 +116,10 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request works as expected", func() {
-			req := buildHttpRequestToHybridGateway()
-
-			Eventually(func() (*http.Response, error) {
-				return http.DefaultClient.Do(req)
-			}, "5s", "0.5s").Should(matchers.HaveOkResponse())
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+			}, "5s", "0.5s").Should(Succeed())
 		})
 
 	})
@@ -166,13 +154,11 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request fails", func() {
-			req := buildHttpRequestToHybridGateway()
-
-			Consistently(func() error {
-				_, err := http.DefaultClient.Do(req)
-				return err
-			}, "3s", "0.5s").Should(HaveOccurred())
-
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			Consistently(func(g Gomega) {
+				_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
+				g.Expect(err).Should(HaveOccurred())
+			}, "3s", "0.5s").Should(Succeed())
 		})
 
 	})

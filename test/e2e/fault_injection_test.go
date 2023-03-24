@@ -1,9 +1,10 @@
 package e2e_test
 
 import (
-	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
@@ -14,7 +15,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
@@ -56,14 +56,9 @@ var _ = Describe("Fault Injection", func() {
 				return vs
 			})
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
-
+			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
-				res, err := http.DefaultClient.Do(req)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(res).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 					StatusCode: http.StatusServiceUnavailable,
 					Body:       "fault filter abort",
 				}))
@@ -86,13 +81,12 @@ var _ = Describe("Fault Injection", func() {
 				return vs
 			})
 
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
-
+			// We need a client with a longer timeout than efault to allow for the fixed delay
+			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
+			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
 				start := time.Now()
-				response, err := http.DefaultClient.Do(req)
+				response, err := httpClient.Do(requestBuilder.Build())
 				elapsed := time.Now().Sub(start)
 
 				g.Expect(err).NotTo(HaveOccurred())
