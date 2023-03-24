@@ -75,6 +75,10 @@ func (c *HttpClientBuilder) Build() *http.Client {
 		dialContext     func(ctx context.Context, network, addr string) (net.Conn, error)
 	)
 
+	if c.timeout.Seconds() == 0 {
+		ginkgo.Fail("No timeout set on client")
+	}
+
 	// If the rootCACert is provided, configure the client to use TLS
 	if c.rootCaCert != "" {
 		caCertPool := x509.NewCertPool()
@@ -117,6 +121,7 @@ func (c *HttpClientBuilder) Build() *http.Client {
 		TLSClientConfig: tlsClientConfig,
 		DialContext:     dialContext,
 	}
+	client.Timeout = c.timeout
 
 	return &client
 }

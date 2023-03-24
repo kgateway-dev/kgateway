@@ -1,8 +1,9 @@
 package testutils_test
 
 import (
-	"github.com/solo-io/go-utils/testutils"
 	"testing"
+
+	"github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 )
