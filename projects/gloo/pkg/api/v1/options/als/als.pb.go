@@ -10,6 +10,9 @@
 package als
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -19,8 +22,6 @@ import (
 	_ "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -230,6 +231,7 @@ type AccessLog struct {
 	// type of Access Logging service to implement
 	//
 	// Types that are assignable to OutputDestination:
+	//
 	//	*AccessLog_FileSink
 	//	*AccessLog_GrpcService
 	OutputDestination isAccessLog_OutputDestination `protobuf_oneof:"OutputDestination"`
@@ -324,6 +326,7 @@ type FileSink struct {
 	// the format which the logs should be outputted by
 	//
 	// Types that are assignable to OutputFormat:
+	//
 	//	*FileSink_StringFormat
 	//	*FileSink_JsonFormat
 	OutputFormat isFileSink_OutputFormat `protobuf_oneof:"output_format"`
@@ -419,6 +422,7 @@ type GrpcService struct {
 	// The static cluster defined in bootstrap config to route to
 	//
 	// Types that are assignable to ServiceRef:
+	//
 	//	*GrpcService_StaticClusterName
 	ServiceRef                      isGrpcService_ServiceRef `protobuf_oneof:"service_ref"`
 	AdditionalRequestHeadersToLog   []string                 `protobuf:"bytes,4,rep,name=additional_request_headers_to_log,json=additionalRequestHeadersToLog,proto3" json:"additional_request_headers_to_log,omitempty"`
@@ -516,6 +520,7 @@ type AccessLogFilter struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to FilterSpecifier:
+	//
 	//	*AccessLogFilter_StatusCodeFilter
 	//	*AccessLogFilter_DurationFilter
 	//	*AccessLogFilter_NotHealthCheckFilter
@@ -955,7 +960,7 @@ type RuntimeFilter struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Runtime key to get an optional overridden numerator for use in the
-	// ``percent_sampled`` field. If found in runtime, this value will replace the
+	// “percent_sampled“ field. If found in runtime, this value will replace the
 	// default numerator.
 	RuntimeKey string `protobuf:"bytes,1,opt,name=runtime_key,json=runtimeKey,proto3" json:"runtime_key,omitempty"`
 	// The default sampling percentage. If not specified, defaults to 0% with
@@ -967,9 +972,9 @@ type RuntimeFilter struct {
 	// is present, the filter will consistently sample across multiple hosts based
 	// on the runtime key value and the value extracted from
 	// :ref:`x-request-id<config_http_conn_man_headers_x-request-id>`. If it is
-	// missing, or ``use_independent_randomness`` is set to true, the filter will
+	// missing, or “use_independent_randomness“ is set to true, the filter will
 	// randomly sample based on the runtime key value alone.
-	// ``use_independent_randomness`` can be used for logging kill switches within
+	// “use_independent_randomness“ can be used for logging kill switches within
 	// complex nested :ref:`AndFilter
 	// <envoy_v3_api_msg_config.accesslog.v3.AndFilter>` and :ref:`OrFilter
 	// <envoy_v3_api_msg_config.accesslog.v3.OrFilter>` blocks that are easier to

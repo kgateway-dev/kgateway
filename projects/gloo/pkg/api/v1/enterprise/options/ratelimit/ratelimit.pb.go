@@ -7,6 +7,9 @@
 package ratelimit
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	duration "github.com/golang/protobuf/ptypes/duration"
 	_ "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
@@ -14,8 +17,6 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -168,18 +169,18 @@ func (x *Settings) GetRateLimitBeforeAuth() bool {
 // Sample configuration below:
 //
 // descriptors:
-//- key: account_id
-//  descriptors:
-//  - key: plan
-//    value: BASIC
-//    rateLimit:
-//      requestsPerUnit: 1
-//      unit: MINUTE
-//  - key: plan
-//    value: PLUS
-//    rateLimit:
-//      requestsPerUnit: 20
-//      unit: MINUTE
+//   - key: account_id
+//     descriptors:
+//   - key: plan
+//     value: BASIC
+//     rateLimit:
+//     requestsPerUnit: 1
+//     unit: MINUTE
+//   - key: plan
+//     value: PLUS
+//     rateLimit:
+//     requestsPerUnit: 20
+//     unit: MINUTE
 type ServiceSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

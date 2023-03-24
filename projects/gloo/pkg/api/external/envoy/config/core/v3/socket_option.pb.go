@@ -7,13 +7,14 @@
 package v3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -91,6 +92,7 @@ type SocketOption struct {
 	// The numeric name as passed to setsockopt
 	Name int64 `protobuf:"varint,3,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to Value:
+	//
 	//	*SocketOption_IntValue
 	//	*SocketOption_BufValue
 	Value isSocketOption_Value `protobuf_oneof:"value"`

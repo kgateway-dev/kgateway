@@ -7,6 +7,9 @@
 package v1
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	aws "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -20,8 +23,6 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -169,6 +170,7 @@ type Settings struct {
 	// This setting determines where Gloo controllers will store its resources
 	//
 	// Types that are assignable to ConfigSource:
+	//
 	//	*Settings_KubernetesConfigSource
 	//	*Settings_DirectoryConfigSource
 	//	*Settings_ConsulKvSource
@@ -176,6 +178,7 @@ type Settings struct {
 	// Determines where Gloo will read/write secrets from/to.
 	//
 	// Types that are assignable to SecretSource:
+	//
 	//	*Settings_KubernetesSecretSource
 	//	*Settings_VaultSecretSource
 	//	*Settings_DirectorySecretSource
@@ -183,6 +186,7 @@ type Settings struct {
 	// Where to read artifacts from.
 	//
 	// Types that are assignable to ArtifactSource:
+	//
 	//	*Settings_KubernetesArtifactSource
 	//	*Settings_DirectoryArtifactSource
 	//	*Settings_ConsulKvArtifactSource
@@ -1295,6 +1299,7 @@ type Settings_VaultSecrets struct {
 	// Support for multiple authentication methods
 	//
 	// Types that are assignable to AuthMethod:
+	//
 	//	*Settings_VaultSecrets_AccessToken
 	//	*Settings_VaultSecrets_Aws
 	AuthMethod isSettings_VaultSecrets_AuthMethod `protobuf_oneof:"auth_method"`
@@ -2698,6 +2703,7 @@ type GlooOptions_AWSOptions struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to CredentialsFetcher:
+	//
 	//	*GlooOptions_AWSOptions_EnableCredentialsDiscovey
 	//	*GlooOptions_AWSOptions_ServiceAccountCredentials
 	CredentialsFetcher isGlooOptions_AWSOptions_CredentialsFetcher `protobuf_oneof:"credentials_fetcher"`
@@ -2813,8 +2819,8 @@ type GlooOptions_AWSOptions_ServiceAccountCredentials struct {
 	// https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 	//
 	// If the following environment values are not present in the gateway-proxy, this option cannot be used.
-	//   1. AWS_WEB_IDENTITY_TOKEN_FILE
-	//   2. AWS_ROLE_ARN
+	//  1. AWS_WEB_IDENTITY_TOKEN_FILE
+	//  2. AWS_ROLE_ARN
 	//
 	// The role which will be assumed by the credentials will be the one specified by AWS_ROLE_ARN, however, this
 	// can also be overwritten in the AWS Upstream spec via the role_arn field

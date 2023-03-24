@@ -7,6 +7,9 @@
 package core
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	any1 "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
@@ -19,8 +22,6 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -135,6 +136,7 @@ type HealthCheck struct {
 	// Reuse health check connection between health checks. Default is true.
 	ReuseConnection *wrappers.BoolValue `protobuf:"bytes,7,opt,name=reuse_connection,json=reuseConnection,proto3" json:"reuse_connection,omitempty"`
 	// Types that are assignable to HealthChecker:
+	//
 	//	*HealthCheck_HttpHealthCheck_
 	//	*HealthCheck_TcpHealthCheck_
 	//	*HealthCheck_GrpcHealthCheck_
@@ -381,6 +383,7 @@ type HealthCheck_Payload struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Payload:
+	//
 	//	*HealthCheck_Payload_Text
 	Payload isHealthCheck_Payload_Payload `protobuf_oneof:"payload"`
 }
@@ -642,7 +645,7 @@ type HealthCheck_RedisHealthCheck struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// If set, optionally perform ``EXISTS <key>`` instead of ``PING``. A return value
+	// If set, optionally perform “EXISTS <key>“ instead of “PING“. A return value
 	// from Redis of 0 (does not exist) is considered a passing healthcheck. A return value other
 	// than 0 is considered a failure. This allows the user to mark a Redis instance for maintenance
 	// by setting the specified key to any value and waiting for traffic to drain.
@@ -767,6 +770,7 @@ type HealthCheck_CustomHealthCheck struct {
 	// being instantiated. See :api:`envoy/config/health_checker` for reference.
 	//
 	// Types that are assignable to ConfigType:
+	//
 	//	*HealthCheck_CustomHealthCheck_Config
 	//	*HealthCheck_CustomHealthCheck_TypedConfig
 	ConfigType isHealthCheck_CustomHealthCheck_ConfigType `protobuf_oneof:"config_type"`

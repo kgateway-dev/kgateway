@@ -7,6 +7,9 @@
 package hcm
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -16,8 +19,6 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -356,6 +357,7 @@ type HttpConnectionManagerSettings struct {
 	AllowChunkedLength *wrappers.BoolValue `protobuf:"bytes,34,opt,name=allow_chunked_length,json=allowChunkedLength,proto3" json:"allow_chunked_length,omitempty"`
 	EnableTrailers     *wrappers.BoolValue `protobuf:"bytes,35,opt,name=enable_trailers,json=enableTrailers,proto3" json:"enable_trailers,omitempty"`
 	// Types that are assignable to HeaderFormat:
+	//
 	//	*HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat
 	//	*HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat
 	HeaderFormat                isHttpConnectionManagerSettings_HeaderFormat               `protobuf_oneof:"header_format"`

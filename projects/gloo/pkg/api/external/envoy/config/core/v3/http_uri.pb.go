@@ -7,14 +7,15 @@
 package v3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -36,8 +37,7 @@ type HttpUri struct {
 	//
 	// .. code-block:: yaml
 	//
-	//    uri: https://www.googleapis.com/oauth2/v1/certs
-	//
+	//	uri: https://www.googleapis.com/oauth2/v1/certs
 	Uri string `protobuf:"bytes,1,opt,name=uri,proto3" json:"uri,omitempty"`
 	// Specify how `uri` is to be fetched. Today, this requires an explicit
 	// cluster, but in the future we may support dynamic cluster creation or
@@ -45,6 +45,7 @@ type HttpUri struct {
 	// <https://github.com/envoyproxy/envoy/issues/1606>`_.
 	//
 	// Types that are assignable to HttpUpstreamType:
+	//
 	//	*HttpUri_Cluster
 	HttpUpstreamType isHttpUri_HttpUpstreamType `protobuf_oneof:"http_upstream_type"`
 	// Sets the maximum duration in milliseconds that a response can take to arrive upon request.
@@ -123,8 +124,7 @@ type HttpUri_Cluster struct {
 	//
 	// .. code-block:: yaml
 	//
-	//    cluster: jwks_cluster
-	//
+	//	cluster: jwks_cluster
 	Cluster string `protobuf:"bytes,2,opt,name=cluster,proto3,oneof"`
 }
 

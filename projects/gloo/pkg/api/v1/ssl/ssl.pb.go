@@ -7,14 +7,15 @@
 package ssl
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -91,6 +92,7 @@ type SslConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to SslSecrets:
+	//
 	//	*SslConfig_SecretRef
 	//	*SslConfig_SslFiles
 	//	*SslConfig_Sds
@@ -324,6 +326,7 @@ type UpstreamSslConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to SslSecrets:
+	//
 	//	*UpstreamSslConfig_SecretRef
 	//	*UpstreamSslConfig_SslFiles
 	//	*UpstreamSslConfig_Sds
@@ -448,7 +451,7 @@ type UpstreamSslConfig_SecretRef struct {
 }
 
 type UpstreamSslConfig_SslFiles struct {
-	//  SSLFiles reference paths to certificates which are local to the proxy
+	// SSLFiles reference paths to certificates which are local to the proxy
 	SslFiles *SSLFiles `protobuf:"bytes,2,opt,name=ssl_files,json=sslFiles,proto3,oneof"`
 }
 
@@ -471,6 +474,7 @@ type SDSConfig struct {
 	// Target uri for the sds channel. currently only a unix domain socket is supported.
 	TargetUri string `protobuf:"bytes,1,opt,name=target_uri,json=targetUri,proto3" json:"target_uri,omitempty"`
 	// Types that are assignable to SdsBuilder:
+	//
 	//	*SDSConfig_CallCredentials
 	//	*SDSConfig_ClusterName
 	SdsBuilder isSDSConfig_SdsBuilder `protobuf_oneof:"sds_builder"`

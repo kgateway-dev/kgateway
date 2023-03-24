@@ -7,14 +7,15 @@
 package advanced_http
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -74,14 +75,14 @@ func (HealthCheckResult) EnumDescriptor() ([]byte, []int) {
 }
 
 // Same as envoy's default HTTP health checker, but with some additions:
-// - allows a custom path and method on the health check request per endpoint.
-//   The http path to use can be overridden using endpoint metadata. The endpoint-specific
-//   path should be in the "io.solo.health_checkers.advanced_http" namespace, under a string
-//   value named "path". The same can be done for the method by setting a string value
-//   named "method".
-// - allows for health check responses to leverage the response body rather than just
-//   the http status code returned. The response body can be parsed as json and complex
-//   assertions can be made on fields parsed from the json or plaintext response body.
+//   - allows a custom path and method on the health check request per endpoint.
+//     The http path to use can be overridden using endpoint metadata. The endpoint-specific
+//     path should be in the "io.solo.health_checkers.advanced_http" namespace, under a string
+//     value named "path". The same can be done for the method by setting a string value
+//     named "method".
+//   - allows for health check responses to leverage the response body rather than just
+//     the http status code returned. The response body can be parsed as json and complex
+//     assertions can be made on fields parsed from the json or plaintext response body.
 type AdvancedHttp struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -279,6 +280,7 @@ type ResponseMatch struct {
 	// The source of the extraction
 	//
 	// Types that are assignable to Source:
+	//
 	//	*ResponseMatch_Header
 	//	*ResponseMatch_Body
 	Source isResponseMatch_Source `protobuf_oneof:"source"`
@@ -435,6 +437,7 @@ type JsonKey_PathSegment struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Segment:
+	//
 	//	*JsonKey_PathSegment_Key
 	Segment isJsonKey_PathSegment_Segment `protobuf_oneof:"segment"`
 }

@@ -7,13 +7,14 @@
 package protocol
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -99,8 +100,9 @@ type HttpProtocolOptions struct {
 	// If not specified, this defaults to 1 hour. To disable idle timeouts explicitly set this to 0.
 	//
 	// .. warning::
-	//   Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
-	//   FIN packets, etc.
+	//
+	//	Disabling this timeout has a highly likelihood of yielding connection leaks due to lost TCP
+	//	FIN packets, etc.
 	IdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 	// The maximum number of headers. If unconfigured, the default
 	// maximum number of request headers allowed is 100. Requests that exceed this limit will receive
@@ -184,6 +186,7 @@ type Http1ProtocolOptions struct {
 	// Note: Trailers must also be enabled at the gateway level in order for this option to take effect.
 	EnableTrailers bool `protobuf:"varint,1,opt,name=enable_trailers,json=enableTrailers,proto3" json:"enable_trailers,omitempty"`
 	// Types that are assignable to HeaderFormat:
+	//
 	//	*Http1ProtocolOptions_ProperCaseHeaderKeyFormat
 	//	*Http1ProtocolOptions_PreserveCaseHeaderKeyFormat
 	HeaderFormat isHttp1ProtocolOptions_HeaderFormat `protobuf_oneof:"header_format"`

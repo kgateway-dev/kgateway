@@ -8,6 +8,9 @@ package enterprise
 
 import (
 	context "context"
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	v1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	v2 "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2"
@@ -17,8 +20,6 @@ import (
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -28,9 +29,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
-//@solo-kit:xds-service=RateLimitDiscoveryService
-//@solo-kit:resource.no_references
+// @solo-kit:xds-service=RateLimitDiscoveryService
+// @solo-kit:resource.no_references
 type RateLimitConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -7,12 +7,13 @@
 package advanced_http
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -206,6 +207,7 @@ type ResponseMatch struct {
 	// The source of the extraction
 	//
 	// Types that are assignable to Source:
+	//
 	//	*ResponseMatch_Header
 	//	*ResponseMatch_Body
 	Source isResponseMatch_Source `protobuf_oneof:"source"`
@@ -362,6 +364,7 @@ type JsonKey_PathSegment struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Segment:
+	//
 	//	*JsonKey_PathSegment_Key
 	Segment isJsonKey_PathSegment_Segment `protobuf_oneof:"segment"`
 }

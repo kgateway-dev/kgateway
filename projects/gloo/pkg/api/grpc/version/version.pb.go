@@ -7,12 +7,13 @@
 package version
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -90,6 +91,7 @@ type ServerVersion struct {
 	// Currently only kubernetes is supported
 	//
 	// Types that are assignable to VersionType:
+	//
 	//	*ServerVersion_Kubernetes
 	VersionType isServerVersion_VersionType `protobuf_oneof:"version_type"`
 }

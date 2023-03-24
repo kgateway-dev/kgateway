@@ -7,14 +7,15 @@
 package v3
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -34,6 +35,7 @@ type OpenTelemetryConfig struct {
 	// The cluster to use for submitting traces to the OpenTelemetry agent.
 	//
 	// Types that are assignable to CollectorCluster:
+	//
 	//	*OpenTelemetryConfig_CollectorUpstreamRef
 	//	*OpenTelemetryConfig_ClusterName
 	CollectorCluster isOpenTelemetryConfig_CollectorCluster `protobuf_oneof:"collector_cluster"`

@@ -7,6 +7,9 @@
 package dynamic_forward_proxy
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -15,8 +18,6 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -253,21 +254,21 @@ type DnsCacheConfig struct {
 	//
 	// .. note:
 	//
-	//   The TTL is only checked at the time of DNS refresh, as specified by *dns_refresh_rate*. This
-	//   means that if the configured TTL is shorter than the refresh rate the host may not be removed
-	//   immediately.
+	//	 The TTL is only checked at the time of DNS refresh, as specified by *dns_refresh_rate*. This
+	//	 means that if the configured TTL is shorter than the refresh rate the host may not be removed
+	//	 immediately.
 	//
-	//  .. note:
+	//	.. note:
 	//
-	//   The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage.
+	//	 The TTL has no relation to DNS TTL and is only used to control Envoy's resource usage.
 	HostTtl *duration.Duration `protobuf:"bytes,4,opt,name=host_ttl,json=hostTtl,proto3" json:"host_ttl,omitempty"`
 	// The maximum number of hosts that the cache will hold. If not specified defaults to 1024.
 	//
 	// .. note:
 	//
-	//   The implementation is approximate and enforced independently on each worker thread, thus
-	//   it is possible for the maximum hosts in the cache to go slightly above the configured
-	//   value depending on timing. This is similar to how other circuit breakers work.
+	//	The implementation is approximate and enforced independently on each worker thread, thus
+	//	it is possible for the maximum hosts in the cache to go slightly above the configured
+	//	value depending on timing. This is similar to how other circuit breakers work.
 	MaxHosts *wrappers.UInt32Value `protobuf:"bytes,5,opt,name=max_hosts,json=maxHosts,proto3" json:"max_hosts,omitempty"`
 	// If the DNS failure refresh rate is specified,
 	// this is used as the cache's DNS refresh rate when DNS requests are failing. If this setting is
@@ -277,6 +278,7 @@ type DnsCacheConfig struct {
 	// Envoy will use dns cache circuit breakers with default settings even if this value is not set.
 	DnsCacheCircuitBreaker *DnsCacheCircuitBreakers `protobuf:"bytes,7,opt,name=dns_cache_circuit_breaker,json=dnsCacheCircuitBreaker,proto3" json:"dns_cache_circuit_breaker,omitempty"`
 	// Types that are assignable to DnsCacheType:
+	//
 	//	*DnsCacheConfig_CaresDns
 	//	*DnsCacheConfig_AppleDns
 	DnsCacheType isDnsCacheConfig_DnsCacheType `protobuf_oneof:"DnsCacheType"`
@@ -485,6 +487,7 @@ type PerRouteConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to HostRewriteSpecifier:
+	//
 	//	*PerRouteConfig_HostRewrite
 	//	*PerRouteConfig_AutoHostRewriteHeader
 	HostRewriteSpecifier isPerRouteConfig_HostRewriteSpecifier `protobuf_oneof:"host_rewrite_specifier"`
@@ -573,7 +576,7 @@ type PerRouteConfig_AutoHostRewriteHeader struct {
 	//
 	// .. note::
 	//
-	//   If the header appears multiple times only the first value is used.
+	//	If the header appears multiple times only the first value is used.
 	AutoHostRewriteHeader string `protobuf:"bytes,2,opt,name=auto_host_rewrite_header,json=autoHostRewriteHeader,proto3,oneof"`
 }
 
