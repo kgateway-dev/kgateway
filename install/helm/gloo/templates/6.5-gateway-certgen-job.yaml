@@ -83,13 +83,10 @@ metadata:
 
 ---
 
-kind: {{ include "gloo.roleKind" . }}Binding
+kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
-{{- end }}
   labels:
     app: gloo
     gloo: rbac
@@ -101,19 +98,16 @@ subjects:
   name: certgen
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.roleKind" . }}
+  kind: ClusterRole
   name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 
 ---
 
-kind: {{ include "gloo.roleKind" . }}
+kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-  namespace: {{ .Release.Namespace }}
-{{- end }}
   labels:
     app: gloo
     gloo: rbac
