@@ -20,8 +20,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/v1helpers"
-
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -177,7 +175,6 @@ var _ = Describe("Aggregate Listener", func() {
 		)
 
 		BeforeEach(func() {
-			simpleRouteName := "simple-route"
 			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			eastTLSSecret := &gloov1.Secret{
@@ -208,8 +205,8 @@ var _ = Describe("Aggregate Listener", func() {
 			vsEast := vsBuilder.Clone().
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/east").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/east").
 				WithSslConfig(&ssl.SslConfig{
 					SniDomains: []string{"east.com"},
 					SslSecrets: &ssl.SslConfig_SecretRef{
@@ -220,8 +217,8 @@ var _ = Describe("Aggregate Listener", func() {
 			vsNorthWest := vsBuilder.Clone().
 				WithName("vs-northwest").
 				WithDomain("northwest.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/northwest").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/northwest").
 				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
@@ -235,8 +232,8 @@ var _ = Describe("Aggregate Listener", func() {
 			vsSouthWest := vsBuilder.Clone().
 				WithName("vs-southwest").
 				WithDomain("southwest.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/southwest").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/southwest").
 				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
@@ -389,38 +386,21 @@ var _ = Describe("Aggregate Listener", func() {
 
 	Context("Insecure HybridGateway (Matched)", func() {
 
-		TestUpstreamReachable := func(host, path string) {
-			v1helpers.ExpectCurlWithOffset(
-				1,
-				v1helpers.CurlRequest{
-					RootCA: nil,
-					Port:   defaults.HybridPort,
-					Host:   host,
-					Path:   path,
-					Body:   []byte("solo.io test"),
-				},
-				v1helpers.CurlResponse{
-					Status:  http.StatusOK,
-					Message: "solo.io test",
-				})
-		}
-
 		BeforeEach(func() {
-			simpleRouteName := "simple-route"
 			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
-			vsEast := vsBuilder.
+			vsEast := vsBuilder.Clone().
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/east").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/east").
 				Build()
 
-			vsWest := vsBuilder.
+			vsWest := vsBuilder.Clone().
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/west").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/west").
 				Build()
 
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
@@ -447,10 +427,26 @@ var _ = Describe("Aggregate Listener", func() {
 				}).Should(Succeed())
 			})
 
-			It("routes requests to all routes on gateway", func() {
-				TestUpstreamReachable("east.com", "/east/1")
-				TestUpstreamReachable("west.com", "/west/1")
-			})
+			DescribeTable("routes requests",
+				func(host, path string, statusCode int) {
+					httpRequestBuilder := testContext.GetHttpRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
+				Entry("east host",
+					"east.com",
+					"east/1",
+					http.StatusOK),
+				Entry("west host",
+					"west.com",
+					"west/1",
+					http.StatusOK),
+			)
 
 		})
 
@@ -468,10 +464,26 @@ var _ = Describe("Aggregate Listener", func() {
 				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
 			})
 
-			It("routes requests to all routes on gateway", func() {
-				TestUpstreamReachable("east.com", "/east/1")
-				TestUpstreamReachable("west.com", "/west/1")
-			})
+			DescribeTable("routes requests",
+				func(host, path string, statusCode int) {
+					httpRequestBuilder := testContext.GetHttpRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
+				Entry("east host",
+					"east.com",
+					"east/1",
+					http.StatusOK),
+				Entry("west host",
+					"west.com",
+					"west/1",
+					http.StatusOK),
+			)
 
 		})
 
@@ -480,36 +492,17 @@ var _ = Describe("Aggregate Listener", func() {
 	Context("Secure HybridGateway (Matched)", func() {
 
 		var (
-			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			eastCert, eastPK = gloohelpers.GetCerts(gloohelpers.Params{
+				Hosts: "east.com",
+				IsCA:  false,
+			})
 			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
-				Hosts: "other-host",
+				Hosts: "west.com,northwest.com,southwest.com",
 				IsCA:  false,
 			})
 		)
 
-		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
-			expectedResponseBody := ""
-			if responseStatus == http.StatusOK {
-				expectedResponseBody = "solo.io test"
-			}
-
-			v1helpers.ExpectCurlWithOffset(
-				1,
-				v1helpers.CurlRequest{
-					RootCA: &cert,
-					Port:   defaults.HybridPort,
-					Host:   host,
-					Path:   path,
-					Body:   []byte("solo.io test"),
-				},
-				v1helpers.CurlResponse{
-					Status:  responseStatus,
-					Message: expectedResponseBody,
-				})
-		}
-
 		BeforeEach(func() {
-			simpleRouteName := "simple-route"
 			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			eastTLSSecret := &gloov1.Secret{
@@ -537,28 +530,43 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 			}
 
-			vsEast := vsBuilder.
+			vsEast := vsBuilder.Clone().
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/east").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/east").
 				WithSslConfig(&ssl.SslConfig{
+					SniDomains: []string{"east.com"},
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
 					},
 				}).
 				Build()
-
-			vsWest := vsBuilder.
-				WithName("vs-west").
-				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/west").
+			vsNorthWest := vsBuilder.Clone().
+				WithName("vs-northwest").
+				WithDomain("northwest.com").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/northwest").
 				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
 					},
-					SniDomains: []string{"west.com"},
+					SniDomains: []string{"northwest.com"},
+					SslSecrets: &ssl.SslConfig_SecretRef{
+						SecretRef: westTLSSecret.GetMetadata().Ref(),
+					},
+				}).
+				Build()
+			vsSouthWest := vsBuilder.Clone().
+				WithName("vs-southwest").
+				WithDomain("southwest.com").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/southwest").
+				WithSslConfig(&ssl.SslConfig{
+					OneWayTls: &wrappers.BoolValue{
+						Value: false,
+					},
+					SniDomains: []string{"southwest.com"},
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: westTLSSecret.GetMetadata().Ref(),
 					},
@@ -569,7 +577,7 @@ var _ = Describe("Aggregate Listener", func() {
 				gatewaydefaults.DefaultHybridSslGateway(writeNamespace),
 			}
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vsEast, vsWest,
+				vsEast, vsNorthWest, vsSouthWest,
 			}
 			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
 				eastTLSSecret, westTLSSecret,
@@ -592,7 +600,22 @@ var _ = Describe("Aggregate Listener", func() {
 				}).Should(Succeed())
 			})
 
-			It("routes requests to all routes on gateway", func() {
+			DescribeTable("routes requests",
+				func(serverName, host, path, cert string, statusCode int) {
+					httpClient := testutils.DefaultClientBuilder().
+						WithTLSRootCa(cert).
+						WithTLSServerName(serverName).
+						Build()
+
+					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
 				// This test demonstrates the flaw with HybridListeners:
 				//	The West VirtualService should only be exposing routes if the westCert is provided,
 				//	but in this test we can successfully execute requests against the west routes,
@@ -600,9 +623,25 @@ var _ = Describe("Aggregate Listener", func() {
 				//
 				// This is due to the fact that a HybridListener creates an aggregate set of RouteConfiguration
 				// and then produces duplicate FilterChains, based on all available SslConfig's from VirtualServices
-				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
-				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusOK)
-			})
+				Entry("east host with east cert",
+					"east.com",
+					"east.com",
+					"east/1",
+					eastCert,
+					http.StatusOK),
+				Entry("northwest host with east cert",
+					"east.com",
+					"northwest.com",
+					"northwest/1",
+					eastCert,
+					http.StatusOK),
+				Entry("southwest host with east cert",
+					"east.com",
+					"southwest.com",
+					"southwest/1",
+					eastCert,
+					http.StatusOK),
+			)
 
 		})
 
@@ -622,12 +661,55 @@ var _ = Describe("Aggregate Listener", func() {
 				}).Should(Succeed())
 			})
 
-			It("routes requests to all routes on gateway", func() {
+			DescribeTable("routes requests",
+				func(serverName, host, path, cert string, statusCode int) {
+					httpClient := testutils.DefaultClientBuilder().
+						WithTLSRootCa(cert).
+						WithTLSServerName(serverName).
+						Build()
+
+					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
 				// This test demonstrates the solution with AggregateListeners:
 				//	The West VirtualService is no longer routable with the eastCert.
-				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
-				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusNotFound)
-			})
+				Entry("east host with east cert",
+					"east.com",
+					"east.com",
+					"east/1",
+					eastCert,
+					http.StatusOK),
+				Entry("northwest host with east cert",
+					"east.com",
+					"northwest.com",
+					"northwest/1",
+					eastCert,
+					http.StatusNotFound),
+				Entry("southwest host with east cert",
+					"east.com",
+					"southwest.com",
+					"southwest/1",
+					eastCert,
+					http.StatusNotFound),
+				Entry("northwest host with west cert",
+					"northwest.com",
+					"northwest.com",
+					"northwest/1",
+					westCert,
+					http.StatusOK),
+				Entry("southwest host with west cert",
+					"southwest.com",
+					"southwest.com",
+					"southwest/1",
+					westCert,
+					http.StatusOK),
+			)
 
 		})
 
@@ -635,38 +717,21 @@ var _ = Describe("Aggregate Listener", func() {
 
 	Context("Insecure HybridGateway (Delegated)", func() {
 
-		TestUpstreamReachable := func(host, path string) {
-			v1helpers.ExpectCurlWithOffset(
-				1,
-				v1helpers.CurlRequest{
-					RootCA: nil,
-					Port:   defaults.HybridPort,
-					Host:   host,
-					Path:   path,
-					Body:   []byte("solo.io test"),
-				},
-				v1helpers.CurlResponse{
-					Status:  http.StatusOK,
-					Message: "solo.io test",
-				})
-		}
-
 		BeforeEach(func() {
-			simpleRouteName := "simple-route"
 			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
-			vsEast := vsBuilder.
+			vsEast := vsBuilder.Clone().
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/east").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/east").
 				Build()
 
-			vsWest := vsBuilder.
+			vsWest := vsBuilder.Clone().
 				WithName("vs-west").
 				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/west").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/west").
 				Build()
 
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
@@ -694,10 +759,26 @@ var _ = Describe("Aggregate Listener", func() {
 				Expect(proxy.GetListeners()[0].GetHybridListener()).NotTo(BeNil())
 			})
 
-			It("routes requests to all routes on gateway", func() {
-				TestUpstreamReachable("east.com", "/east/1")
-				TestUpstreamReachable("west.com", "/west/1")
-			})
+			DescribeTable("routes requests",
+				func(host, path string, statusCode int) {
+					httpRequestBuilder := testContext.GetHttpRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
+				Entry("east host",
+					"east.com",
+					"east/1",
+					http.StatusOK),
+				Entry("west host",
+					"west.com",
+					"west/1",
+					http.StatusOK),
+			)
 
 		})
 
@@ -715,10 +796,26 @@ var _ = Describe("Aggregate Listener", func() {
 				Expect(proxy.GetListeners()[0].GetAggregateListener()).NotTo(BeNil())
 			})
 
-			It("routes requests to all routes on gateway", func() {
-				TestUpstreamReachable("east.com", "/east/1")
-				TestUpstreamReachable("west.com", "/west/1")
-			})
+			DescribeTable("routes requests",
+				func(host, path string, statusCode int) {
+					httpRequestBuilder := testContext.GetHttpRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
+				Entry("east host",
+					"east.com",
+					"east/1",
+					http.StatusOK),
+				Entry("west host",
+					"west.com",
+					"west/1",
+					http.StatusOK),
+			)
 
 		})
 
@@ -727,36 +824,17 @@ var _ = Describe("Aggregate Listener", func() {
 	Context("Secure HybridGateway (Delegated)", func() {
 
 		var (
-			eastCert, eastPK = gloohelpers.Certificate(), gloohelpers.PrivateKey()
+			eastCert, eastPK = gloohelpers.GetCerts(gloohelpers.Params{
+				Hosts: "east.com",
+				IsCA:  false,
+			})
 			westCert, westPK = gloohelpers.GetCerts(gloohelpers.Params{
-				Hosts: "other-host",
+				Hosts: "west.com,northwest.com,southwest.com",
 				IsCA:  false,
 			})
 		)
 
-		TestUpstreamReturns := func(host, path, cert string, responseStatus int) {
-			expectedResponseBody := ""
-			if responseStatus == http.StatusOK {
-				expectedResponseBody = "solo.io test"
-			}
-
-			v1helpers.ExpectCurlWithOffset(
-				1,
-				v1helpers.CurlRequest{
-					RootCA: &cert,
-					Port:   defaults.HybridPort,
-					Host:   host,
-					Path:   path,
-					Body:   []byte("solo.io test"),
-				},
-				v1helpers.CurlResponse{
-					Status:  responseStatus,
-					Message: expectedResponseBody,
-				})
-		}
-
 		BeforeEach(func() {
-			simpleRouteName := "simple-route"
 			vsBuilder := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace)
 
 			eastTLSSecret := &gloov1.Secret{
@@ -784,28 +862,43 @@ var _ = Describe("Aggregate Listener", func() {
 				},
 			}
 
-			vsEast := vsBuilder.
+			vsEast := vsBuilder.Clone().
 				WithName("vs-east").
 				WithDomain("east.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/east").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/east").
 				WithSslConfig(&ssl.SslConfig{
+					SniDomains: []string{"east.com"},
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: eastTLSSecret.GetMetadata().Ref(),
 					},
 				}).
 				Build()
-
-			vsWest := vsBuilder.
-				WithName("vs-west").
-				WithDomain("west.com").
-				WithRouteActionToUpstream(simpleRouteName, testContext.TestUpstream().Upstream).
-				WithRoutePrefixMatcher(simpleRouteName, "/west").
+			vsNorthWest := vsBuilder.Clone().
+				WithName("vs-northwest").
+				WithDomain("northwest.com").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/northwest").
 				WithSslConfig(&ssl.SslConfig{
 					OneWayTls: &wrappers.BoolValue{
 						Value: false,
 					},
-					SniDomains: []string{"west.com"},
+					SniDomains: []string{"northwest.com"},
+					SslSecrets: &ssl.SslConfig_SecretRef{
+						SecretRef: westTLSSecret.GetMetadata().Ref(),
+					},
+				}).
+				Build()
+			vsSouthWest := vsBuilder.Clone().
+				WithName("vs-southwest").
+				WithDomain("southwest.com").
+				WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+				WithRoutePrefixMatcher(e2e.DefaultRouteName, "/southwest").
+				WithSslConfig(&ssl.SslConfig{
+					OneWayTls: &wrappers.BoolValue{
+						Value: false,
+					},
+					SniDomains: []string{"southwest.com"},
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: westTLSSecret.GetMetadata().Ref(),
 					},
@@ -825,7 +918,7 @@ var _ = Describe("Aggregate Listener", func() {
 				gatewaydefaults.DefaultMatchableHttpGateway(writeNamespace, nonEmptySslConfig),
 			}
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
-				vsEast, vsWest,
+				vsEast, vsNorthWest, vsSouthWest,
 			}
 			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
 				eastTLSSecret, westTLSSecret,
@@ -848,7 +941,22 @@ var _ = Describe("Aggregate Listener", func() {
 				}).Should(Succeed())
 			})
 
-			It("routes requests to all routes on gateway", func() {
+			DescribeTable("routes requests",
+				func(serverName, host, path, cert string, statusCode int) {
+					httpClient := testutils.DefaultClientBuilder().
+						WithTLSRootCa(cert).
+						WithTLSServerName(serverName).
+						Build()
+
+					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
 				// This test demonstrates the flaw with HybridListeners:
 				//	The West VirtualService should only be exposing routes if the westCert is provided,
 				//	but in this test we can successfully execute requests against the west routes,
@@ -856,9 +964,25 @@ var _ = Describe("Aggregate Listener", func() {
 				//
 				// This is due to the fact that a HybridListener creates an aggregate set of RouteConfiguration
 				// and then produces duplicate FilterChains, based on all available SslConfig's from VirtualServices
-				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
-				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusOK)
-			})
+				Entry("east host with east cert",
+					"east.com",
+					"east.com",
+					"east/1",
+					eastCert,
+					http.StatusOK),
+				Entry("northwest host with east cert",
+					"east.com",
+					"northwest.com",
+					"northwest/1",
+					eastCert,
+					http.StatusOK),
+				Entry("southwest host with east cert",
+					"east.com",
+					"southwest.com",
+					"southwest/1",
+					eastCert,
+					http.StatusOK),
+			)
 
 		})
 
@@ -878,12 +1002,55 @@ var _ = Describe("Aggregate Listener", func() {
 				}).Should(Succeed())
 			})
 
-			It("routes requests to all routes on gateway", func() {
+			DescribeTable("routes requests",
+				func(serverName, host, path, cert string, statusCode int) {
+					httpClient := testutils.DefaultClientBuilder().
+						WithTLSRootCa(cert).
+						WithTLSServerName(serverName).
+						Build()
+
+					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
+						WithHost(host).
+						WithPath(path).
+						WithPort(defaults.HybridPort)
+
+					Eventually(func(g Gomega) {
+						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
+					}, "10s", "1s").Should(Succeed())
+				},
 				// This test demonstrates the solution with AggregateListeners:
 				//	The West VirtualService is no longer routable with the eastCert.
-				TestUpstreamReturns("east.com", "/east/1", eastCert, http.StatusOK)
-				TestUpstreamReturns("west.com", "/west/1", eastCert, http.StatusNotFound)
-			})
+				Entry("east host with east cert",
+					"east.com",
+					"east.com",
+					"east/1",
+					eastCert,
+					http.StatusOK),
+				Entry("northwest host with east cert",
+					"east.com",
+					"northwest.com",
+					"northwest/1",
+					eastCert,
+					http.StatusNotFound),
+				Entry("southwest host with east cert",
+					"east.com",
+					"southwest.com",
+					"southwest/1",
+					eastCert,
+					http.StatusNotFound),
+				Entry("northwest host with west cert",
+					"northwest.com",
+					"northwest.com",
+					"northwest/1",
+					westCert,
+					http.StatusOK),
+				Entry("southwest host with west cert",
+					"southwest.com",
+					"southwest.com",
+					"southwest/1",
+					westCert,
+					http.StatusOK),
+			)
 
 		})
 
