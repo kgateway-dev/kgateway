@@ -567,7 +567,7 @@ var _ = Describe("RBAC Test", func() {
 								APIVersion: "rbac.authorization.k8s.io/v1",
 							},
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "gloo-gateway-secret-create-vwc-update-gloo-system",
+								Name: "gloo-gateway-secret-create-gloo-system",
 								Labels: map[string]string{
 									"app":  "gloo",
 									"gloo": "rbac",
@@ -577,17 +577,11 @@ var _ = Describe("RBAC Test", func() {
 									"helm.sh/hook":        "pre-install,pre-upgrade",
 								},
 							},
-							Rules: []rbacv1.PolicyRule{{
-								Verbs:           []string{"create", "get", "update"},
-								APIGroups:       []string{""},
-								Resources:       []string{"secrets"},
-								ResourceNames:   nil,
-								NonResourceURLs: nil,
-							},
+							Rules: []rbacv1.PolicyRule{
 								{
-									Verbs:           []string{"get", "update"},
-									APIGroups:       []string{"admissionregistration.k8s.io"},
-									Resources:       []string{"validatingwebhookconfigurations"},
+									Verbs:           []string{"create", "get", "update"},
+									APIGroups:       []string{""},
+									Resources:       []string{"secrets"},
 									ResourceNames:   nil,
 									NonResourceURLs: nil,
 								}},
@@ -602,7 +596,7 @@ var _ = Describe("RBAC Test", func() {
 								APIVersion: "rbac.authorization.k8s.io/v1",
 							},
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "gloo-gateway-secret-create-vwc-update-gloo-system",
+								Name: "gloo-gateway-secret-create-gloo-system",
 								Labels: map[string]string{
 									"app":  "gloo",
 									"gloo": "rbac",
@@ -621,7 +615,7 @@ var _ = Describe("RBAC Test", func() {
 							RoleRef: rbacv1.RoleRef{
 								APIGroup: "rbac.authorization.k8s.io",
 								Kind:     "ClusterRole",
-								Name:     "gloo-gateway-secret-create-vwc-update-gloo-system",
+								Name:     "gloo-gateway-secret-create-gloo-system",
 							},
 						})
 					})
@@ -635,7 +629,7 @@ var _ = Describe("RBAC Test", func() {
 								APIVersion: "rbac.authorization.k8s.io/v1",
 							},
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "gloo-gateway-secret-create-vwc-update",
+								Name:      "gloo-gateway-secret-create",
 								Namespace: "gloo-system",
 								Labels: map[string]string{
 									"app":  "gloo",
@@ -652,14 +646,7 @@ var _ = Describe("RBAC Test", func() {
 								Resources:       []string{"secrets"},
 								ResourceNames:   nil,
 								NonResourceURLs: nil,
-							},
-								{
-									Verbs:           []string{"get", "update"},
-									APIGroups:       []string{"admissionregistration.k8s.io"},
-									Resources:       []string{"validatingwebhookconfigurations"},
-									ResourceNames:   nil,
-									NonResourceURLs: nil,
-								}},
+							}},
 						})
 					})
 					It("role binding", func() {
@@ -670,7 +657,7 @@ var _ = Describe("RBAC Test", func() {
 								APIVersion: "rbac.authorization.k8s.io/v1",
 							},
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      "gloo-gateway-secret-create-vwc-update",
+								Name:      "gloo-gateway-secret-create",
 								Namespace: "gloo-system",
 								Labels: map[string]string{
 									"app":  "gloo",
@@ -690,7 +677,7 @@ var _ = Describe("RBAC Test", func() {
 							RoleRef: rbacv1.RoleRef{
 								APIGroup: "rbac.authorization.k8s.io",
 								Kind:     "Role",
-								Name:     "gloo-gateway-secret-create-vwc-update",
+								Name:     "gloo-gateway-secret-create",
 							},
 						})
 					})
