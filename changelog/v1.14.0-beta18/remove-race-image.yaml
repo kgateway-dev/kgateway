@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4649
+  resolvesIssue: true
+  description: >-
+    Improve PR build times by removing race image builds
