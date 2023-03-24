@@ -7,13 +7,12 @@
 package protocol_upgrade
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -29,7 +28,6 @@ type ProtocolUpgradeConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to UpgradeType:
-	//
 	//	*ProtocolUpgradeConfig_Websocket
 	//	*ProtocolUpgradeConfig_Connect
 	UpgradeType isProtocolUpgradeConfig_UpgradeType `protobuf_oneof:"upgrade_type"`

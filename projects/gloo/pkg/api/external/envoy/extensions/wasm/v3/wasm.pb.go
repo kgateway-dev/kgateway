@@ -9,15 +9,14 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	any1 "github.com/golang/protobuf/ptypes/any"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -151,7 +150,6 @@ type PluginConfig struct {
 	// Configuration for finding or starting VM.
 	//
 	// Types that are assignable to Vm:
-	//
 	//	*PluginConfig_VmConfig
 	Vm isPluginConfig_Vm `protobuf_oneof:"vm"`
 	// Filter/service configuration used to configure or reconfigure a plugin

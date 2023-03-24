@@ -7,13 +7,12 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -23,17 +22,18 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// @solo-kit:resource.short_name=art
-// @solo-kit:resource.plural_name=artifacts
 //
-// Gloo Artifacts are used by Gloo to store small bits of binary or file data.
+//@solo-kit:resource.short_name=art
+//@solo-kit:resource.plural_name=artifacts
 //
-// Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
-// storage layer.
+//Gloo Artifacts are used by Gloo to store small bits of binary or file data.
 //
-// Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.
+//Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
+//storage layer.
 //
-// Supported artifact backends can be selected in Gloo's boostrap options.
+//Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.
+//
+//Supported artifact backends can be selected in Gloo's boostrap options.
 type Artifact struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

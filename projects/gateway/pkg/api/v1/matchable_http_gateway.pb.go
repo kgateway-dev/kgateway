@@ -7,15 +7,14 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -25,13 +24,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A MatchableHttpGateway describes a single FilterChain configured with:
-// - The HttpConnectionManager NetworkFilter
-// - A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
 //
-// A Gateway CR may select one or more MatchableHttpGateways on a single listener.
-// This enables separate teams to own Listener configuration (Gateway CR)
-// and FilterChain configuration (MatchableHttpGateway CR)
+//A MatchableHttpGateway describes a single FilterChain configured with:
+//- The HttpConnectionManager NetworkFilter
+//- A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
+//
+//A Gateway CR may select one or more MatchableHttpGateways on a single listener.
+//This enables separate teams to own Listener configuration (Gateway CR)
+//and FilterChain configuration (MatchableHttpGateway CR)
 type MatchableHttpGateway struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -121,8 +121,8 @@ type MatchableHttpGateway_Matcher struct {
 	// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
 	SourcePrefixRanges []*v3.CidrRange `protobuf:"bytes,1,rep,name=source_prefix_ranges,json=sourcePrefixRanges,proto3" json:"source_prefix_ranges,omitempty"`
 	// Ssl configuration applied to the FilterChain:
-	//   - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch)
-	//   - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket
+	//  - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch)
+	//  - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket
 	SslConfig *ssl.SslConfig `protobuf:"bytes,2,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
 }
 

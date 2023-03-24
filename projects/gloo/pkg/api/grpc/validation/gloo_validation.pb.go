@@ -8,9 +8,6 @@ package validation
 
 import (
 	context "context"
-	reflect "reflect"
-	sync "sync"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -19,6 +16,8 @@ import (
 	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -377,7 +376,6 @@ type GlooValidationServiceRequest struct {
 	// For deletions, we pass in the resource refs rather than the full resources.
 	//
 	// Types that are assignable to Resources:
-	//
 	//	*GlooValidationServiceRequest_ModifiedResources
 	//	*GlooValidationServiceRequest_DeletedResources
 	Resources isGlooValidationServiceRequest_Resources `protobuf_oneof:"resources"`
@@ -829,6 +827,7 @@ func (*NotifyOnResyncResponse) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_rawDescGZIP(), []int{7}
 }
 
+//
 // The Proxy Report should contain one report for each sub-resource of the Proxy
 // E.g., each listener will have a corresponding report. Within each listener report is
 // a route report corresponding to each route on the listener.
@@ -889,7 +888,6 @@ type ListenerReport struct {
 	// errors on top-level config of the listener
 	Errors []*ListenerReport_Error `protobuf:"bytes,2,rep,name=errors,proto3" json:"errors,omitempty"`
 	// Types that are assignable to ListenerTypeReport:
-	//
 	//	*ListenerReport_HttpListenerReport
 	//	*ListenerReport_TcpListenerReport
 	//	*ListenerReport_HybridListenerReport
@@ -1330,7 +1328,6 @@ type MatchedListenerReport struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ListenerReportType:
-	//
 	//	*MatchedListenerReport_HttpListenerReport
 	//	*MatchedListenerReport_TcpListenerReport
 	ListenerReportType isMatchedListenerReport_ListenerReportType `protobuf_oneof:"ListenerReportType"`

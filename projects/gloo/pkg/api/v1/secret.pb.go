@@ -7,14 +7,13 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -24,23 +23,23 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Certain features such as the AWS Lambda option require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
 //
-// Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer. Gloo can monitor secrets stored in the following secret storage services:
+//Certain features such as the AWS Lambda option require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
 //
-// - Kubernetes Secrets
-// - Hashicorp Vault
-// - Plaintext files (recommended only for testing)
-// - Secrets must adhere to a structure, specified by the option that requires them.
+//Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer. Gloo can monitor secrets stored in the following secret storage services:
 //
-// Gloo's secret backend can be configured in Gloo's bootstrap options
+//- Kubernetes Secrets
+//- Hashicorp Vault
+//- Plaintext files (recommended only for testing)
+//- Secrets must adhere to a structure, specified by the option that requires them.
+//
+//Gloo's secret backend can be configured in Gloo's bootstrap options
 type Secret struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Kind:
-	//
 	//	*Secret_Aws
 	//	*Secret_Azure
 	//	*Secret_Tls
@@ -222,63 +221,56 @@ func (*Secret_Credentials) isSecret_Kind() {}
 
 func (*Secret_Extensions) isSecret_Kind() {}
 
-// There are two ways of providing AWS secrets:
 //
-// - Method 1: `glooctl create secret aws`
 //
-// ```
+//There are two ways of providing AWS secrets:
 //
-//	glooctl create secret aws --name aws-secret-from-glooctl \
-//	    --namespace default \
-//	    --access-key $ACC \
-//	    --secret-key $SEC
+//- Method 1: `glooctl create secret aws`
 //
 // ```
+// glooctl create secret aws --name aws-secret-from-glooctl \
+//     --namespace default \
+//     --access-key $ACC \
+//     --secret-key $SEC
+// ```
 //
-// will produce a Kubernetes resource similar to this (note the `aws` field and `resource_kind` annotation):
+//will produce a Kubernetes resource similar to this (note the `aws` field and `resource_kind` annotation):
 //
 // ```
 // apiVersion: v1
 // data:
-//
-//	aws: base64EncodedStringForMachineConsumption
-//
+//   aws: base64EncodedStringForMachineConsumption
 // kind: Secret
 // metadata:
-//
-//	annotations:
-//	  resource_kind: '*v1.Secret'
-//	creationTimestamp: "2019-08-23T15:10:20Z"
-//	name: aws-secret-from-glooctl
-//	namespace: default
-//	resourceVersion: "592637"
-//	selfLink: /api/v1/namespaces/default/secrets/secret-e2e
-//	uid: 1f8c147f-c5b8-11e9-bbf3-42010a8001bc
-//
+//   annotations:
+//     resource_kind: '*v1.Secret'
+//   creationTimestamp: "2019-08-23T15:10:20Z"
+//   name: aws-secret-from-glooctl
+//   namespace: default
+//   resourceVersion: "592637"
+//   selfLink: /api/v1/namespaces/default/secrets/secret-e2e
+//   uid: 1f8c147f-c5b8-11e9-bbf3-42010a8001bc
 // type: Opaque
 // ```
 //
 // - Method 2: `kubectl apply -f resource-file.yaml`
 //   - If using a git-ops flow, or otherwise creating secrets from yaml files, you may prefer to provide AWS credentials
-//     using the format below, with `aws_access_key_id` and `aws_secret_access_key` fields.
+//   using the format below, with `aws_access_key_id` and `aws_secret_access_key` fields.
 //   - This circumvents the need for the annotation, which are not supported by some tools such as
-//     [godaddy/kubernetes-external-secrets](https://github.com/godaddy/kubernetes-external-secrets)
+//   [godaddy/kubernetes-external-secrets](https://github.com/godaddy/kubernetes-external-secrets)
 //
 // ```yaml
 // # a sample aws secret resource-file.yaml
 // apiVersion: v1
 // data:
-//
-//	aws_access_key_id: some-id
-//	aws_secret_access_key: some-secret
-//
+//   aws_access_key_id: some-id
+//   aws_secret_access_key: some-secret
 // kind: Secret
 // metadata:
-//
-//	name: aws-secret-abcd
-//	namespace: default
-//
+//   name: aws-secret-abcd
+//   namespace: default
 // ```
+//
 type AwsSecret struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -508,8 +500,9 @@ func (x *HeaderSecret) GetHeaders() map[string]string {
 	return nil
 }
 
-// Secret to represent any kind of a username/secretname and password/secret combination
-// Used by LDAP auth to store service account credentials and by HMAC auth to keep shared secrets.
+//
+//Secret to represent any kind of a username/secretname and password/secret combination
+//Used by LDAP auth to store service account credentials and by HMAC auth to keep shared secrets.
 type AccountCredentialsSecret struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

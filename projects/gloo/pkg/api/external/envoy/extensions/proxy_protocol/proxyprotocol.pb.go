@@ -7,13 +7,12 @@
 package proxy_protocol
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -34,10 +33,11 @@ type CustomProxyProtocol struct {
 	//
 	// .. attention::
 	//
-	//	This breaks conformance with the specification.
-	//	Only enable if ALL traffic to the listener comes from a trusted source.
-	//	For more information on the security implications of this feature, see
-	//	https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt
+	//   This breaks conformance with the specification.
+	//   Only enable if ALL traffic to the listener comes from a trusted source.
+	//   For more information on the security implications of this feature, see
+	//   https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt
+	//
 	AllowRequestsWithoutProxyProtocol bool `protobuf:"varint,2,opt,name=allow_requests_without_proxy_protocol,json=allowRequestsWithoutProxyProtocol,proto3" json:"allow_requests_without_proxy_protocol,omitempty"`
 }
 

@@ -98,7 +98,7 @@ subjects:
   name: certgen
   namespace: {{ .Release.Namespace }}
 roleRef:
-  kind: {{ include "gloo.roleKind" . }}
+  kind: ClusterRole
   name: gloo-gateway-vwc-update{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 

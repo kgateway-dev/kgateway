@@ -7,15 +7,14 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -32,7 +31,6 @@ type RegexMatcher struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to EngineType:
-	//
 	//	*RegexMatcher_GoogleRe2
 	EngineType isRegexMatcher_EngineType `protobuf_oneof:"engine_type"`
 	// The regex match string. The string must be supported by the configured engine.
@@ -127,7 +125,7 @@ type RegexMatchAndSubstitute struct {
 	// defined by the chosen regular expression engine. Google's `RE2
 	// <https://github.com/google/re2>`_ regular expression engine uses a
 	// backslash followed by the capture group number to denote a numbered
-	// capture group. E.g., “\1“ refers to capture group 1, and “\2“ refers
+	// capture group. E.g., ``\1`` refers to capture group 1, and ``\2`` refers
 	// to capture group 2.
 	Substitution string `protobuf:"bytes,2,opt,name=substitution,proto3" json:"substitution,omitempty"`
 }

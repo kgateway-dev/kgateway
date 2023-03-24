@@ -7,14 +7,13 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/udpa/annotations"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -31,21 +30,22 @@ const (
 //
 // .. code-block:: yaml
 //
-//	filter_metadata:
-//	  envoy.xxx:
-//	    prop:
-//	      foo: bar
-//	      xyz:
-//	        hello: envoy
+//    filter_metadata:
+//      envoy.xxx:
+//        prop:
+//          foo: bar
+//          xyz:
+//            hello: envoy
 //
 // The following MetadataKey will retrieve a string value "bar" from the Metadata.
 //
 // .. code-block:: yaml
 //
-//	key: envoy.xxx
-//	path:
-//	- key: prop
-//	- key: foo
+//    key: envoy.xxx
+//    path:
+//    - key: prop
+//    - key: foo
+//
 type MetadataKey struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -55,7 +55,7 @@ type MetadataKey struct {
 	// Typically, it represents a builtin subsystem or custom extension.
 	Key string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	// The path to retrieve the Value from the Struct. It can be a prefix or a full path,
-	// e.g. “[prop, xyz]“ for a struct or “[prop, foo]“ for a string in the example,
+	// e.g. ``[prop, xyz]`` for a struct or ``[prop, foo]`` for a string in the example,
 	// which depends on the particular scenario.
 	//
 	// Note: Due to that only the key type segment is supported, the path can not specify a list
@@ -116,7 +116,6 @@ type MetadataKind struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Kind:
-	//
 	//	*MetadataKind_Request_
 	//	*MetadataKind_Route_
 	//	*MetadataKind_Cluster_
@@ -231,7 +230,6 @@ type MetadataKey_PathSegment struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Segment:
-	//
 	//	*MetadataKey_PathSegment_Key
 	Segment isMetadataKey_PathSegment_Segment `protobuf_oneof:"segment"`
 }

@@ -7,9 +7,6 @@
 package v3
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/annotations"
@@ -18,6 +15,8 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -99,7 +98,6 @@ type ZipkinConfig struct {
 	// The cluster that hosts the Zipkin collectors.
 	//
 	// Types that are assignable to CollectorCluster:
-	//
 	//	*ZipkinConfig_CollectorUpstreamRef
 	//	*ZipkinConfig_ClusterName
 	CollectorCluster isZipkinConfig_CollectorCluster `protobuf_oneof:"collector_cluster"`
@@ -113,7 +111,7 @@ type ZipkinConfig struct {
 	// Determines whether client and server spans will share the same span context.
 	// The default value is true.
 	SharedSpanContext *wrappers.BoolValue `protobuf:"bytes,4,opt,name=shared_span_context,json=sharedSpanContext,proto3" json:"shared_span_context,omitempty"`
-	// Determines the selected collector endpoint version. By default, the “HTTP_JSON_V1“ will be
+	// Determines the selected collector endpoint version. By default, the ``HTTP_JSON_V1`` will be
 	// used.
 	CollectorEndpointVersion ZipkinConfig_CollectorEndpointVersion `protobuf:"varint,5,opt,name=collector_endpoint_version,json=collectorEndpointVersion,proto3,enum=solo.io.envoy.config.trace.v3.ZipkinConfig_CollectorEndpointVersion" json:"collector_endpoint_version,omitempty"`
 }
