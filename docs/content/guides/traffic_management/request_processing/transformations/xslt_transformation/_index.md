@@ -1,8 +1,12 @@
 ---
-title: SOAP/XSLT transformation
+title: SOAP/XSLT transformation (Enterprise)
 weight: 10
 description: Transforming the request body from SOAP/XML to a JSON.
 ---
+
+{{% notice note %}}
+This feature requires a Gloo Edge Enterprise license. 
+{{% /notice %}}
 
 ## Introduction
 
