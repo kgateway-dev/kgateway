@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8004
+    resolvesIssue: false
+    description: >
+      Remove the reduntant log level for gateway that is not used by anything internally
