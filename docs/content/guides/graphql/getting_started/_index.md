@@ -1,3 +1,9 @@
+---
+title: Getting started
+weight: 10
+description: Get started with enabling GraphQL in Gloo Edge and resolving GraphQL queries to upstream services.
+---
+
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
