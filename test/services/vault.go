@@ -2,6 +2,8 @@ package services
 
 import (
 	"fmt"
+	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/testutils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,6 +21,11 @@ const defaultVaultDockerImage = "vault:1.12.2"
 const defaultAddress = "127.0.0.1:8200"
 const DefaultVaultToken = "root"
 const defaultAWSArn = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
+
+const (
+	DefaultHost = "127.0.0.1"
+	DefaultPort = 8200
+)
 
 type VaultFactory struct {
 	vaultPath string
@@ -109,8 +116,16 @@ type VaultInstance struct {
 	session   *gexec.Session
 	token     string
 	address   string
+	hostname  string
+	port      uint32
 	useTls    bool
 	customCfg string
+}
+
+func (vf *VaultFactory) MustVaultInstance() *VaultInstance {
+	vaultInstance, err := vf.NewVaultInstance()
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	return vaultInstance
 }
 
 func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
@@ -124,17 +139,14 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 		vaultpath: vf.vaultPath,
 		tmpdir:    tmpdir,
 		useTls:    vf.useTls,
+		token:     DefaultVaultToken,
+		hostname:  DefaultHost,
+		port:      DefaultPort,
+		address:   defaultAddress,
 	}, nil
-
 }
 
 func (i *VaultInstance) Run() error {
-	return i.RunWithAddress(defaultAddress)
-}
-
-func (i *VaultInstance) RunWithAddress(address string) error {
-	i.token = DefaultVaultToken
-	i.address = address
 	devCmd := "-dev"
 	if i.useTls {
 		devCmd = "-dev-tls"
@@ -158,7 +170,6 @@ func (i *VaultInstance) RunWithAddress(address string) error {
 	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
 	i.session = session
-	i.address = address
 
 	return nil
 }
@@ -213,11 +224,32 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) 
 	return nil
 }
 
+func (i *VaultInstance) WriteSecret(secret *v1.Secret) error {
+	// TODO
+	// subsittue values for secret content
+
+	body := `{"data":{"metadata":{"name":"test-secret", "namespace":"gloo-system"},"oauth":{"clientSecret":"foo"}}}`
+	path := "/v1/secret/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test-secret"
+
+	requestBuilder := testutils.DefaultRequestBuilder().
+		WithPostBody(body).
+		WithPath(path).
+		WithHostname(i.hostname).
+		WithPort(i.port).
+		WithHeader("X-Vault-Token", i.token)
+
+	_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
+	return err
+}
+
 func (i *VaultInstance) Binary() string {
 	return i.vaultpath
 }
 
-func (i *VaultInstance) Clean() error {
+func (i *VaultInstance) Clean() {
+	if i == nil {
+		return
+	}
 	if i.session != nil {
 		i.session.Kill()
 	}
@@ -225,9 +257,8 @@ func (i *VaultInstance) Clean() error {
 		i.cmd.Process.Kill()
 	}
 	if i.tmpdir != "" {
-		return os.RemoveAll(i.tmpdir)
+		_ = os.RemoveAll(i.tmpdir)
 	}
-	return nil
 }
 
 func (i *VaultInstance) Exec(args ...string) (string, error) {

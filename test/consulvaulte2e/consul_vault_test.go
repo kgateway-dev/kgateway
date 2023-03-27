@@ -176,10 +176,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			err = consulInstance.Clean()
 			Expect(err).NotTo(HaveOccurred())
 		}
-		if vaultInstance != nil {
-			err = vaultInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
+		vaultInstance.Clean()
 		envoyInstance.Clean()
 
 		os.RemoveAll(settingsDir)

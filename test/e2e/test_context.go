@@ -43,16 +43,25 @@ var (
 
 type TestContextFactory struct {
 	EnvoyFactory *services.EnvoyFactory
+	VaultFactory *services.VaultFactory
 }
 
 func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requirement) *TestContext {
 	// Skip or Fail tests which do not satisfy the provided requirements
 	testutils.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
-	return &TestContext{
+	testContext := &TestContext{
 		envoyInstance:         f.EnvoyFactory.MustEnvoyInstance(),
 		testUpstreamGenerator: v1helpers.NewTestHttpUpstream,
 	}
+
+	if f.VaultFactory != nil {
+		// If a VaultFactory is defined, generate the VaultInstance
+		// This is optional as most tests do not use one
+		testContext.vaultInstance = f.VaultFactory.MustVaultInstance()
+	}
+
+	return testContext
 }
 
 // TestContext represents the aggregate set of configuration needed to run a single e2e test
@@ -71,6 +80,9 @@ type TestContext struct {
 	testUpstreamGenerator func(ctx context.Context, addr string) *v1helpers.TestUpstream
 
 	resourcesToCreate *gloosnapshot.ApiSnapshot
+
+	// Vault is an optional service to run, and one that is rarely used in tests
+	vaultInstance *services.VaultInstance
 }
 
 func (c *TestContext) BeforeEach() {
@@ -118,11 +130,22 @@ func (c *TestContext) AfterEach() {
 	// Stop Envoy
 	c.envoyInstance.Clean()
 
+	if c.vaultInstance != nil {
+		c.vaultInstance.Clean()
+	}
+
 	c.cancel()
 }
 
 func (c *TestContext) JustBeforeEach() {
 	ginkgo.By("TestContext.JustBeforeEach: Running Gloo and Envoy, writing resource snapshot to storage")
+
+	// Run Vault (Optional)
+	if c.vaultInstance != nil {
+		err := c.vaultInstance.Run()
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	}
+
 	// Run Gloo
 	c.testClients = services.RunGlooGatewayUdsFds(c.ctx, c.runOptions)
 
@@ -178,6 +201,11 @@ func (c *TestContext) ResourcesToCreate() *gloosnapshot.ApiSnapshot {
 // It contains utility methods to easily inspect the live configuration and statistics for the instance
 func (c *TestContext) EnvoyInstance() *services.EnvoyInstance {
 	return c.envoyInstance
+}
+
+// VaultInstance returns the wrapper for the running instance of Vault that this test is using
+func (c *TestContext) VaultInstance() *services.VaultInstance {
+	return c.vaultInstance
 }
 
 // TestUpstream returns the TestUpstream object that the TestContext built
@@ -261,7 +289,7 @@ func (c *TestContext) GetHttpRequestBuilder() *testutils.HttpRequestBuilder {
 		WithHostname("localhost").
 		WithContentType("application/octet-stream").
 		WithPort(defaults.HttpPort). // When running Envoy locally, we port-forward this port to accept http traffic locally
-		WithHost(DefaultHost)        // The default Virtual Service routes traffic only with a particular Host header
+		WithHost(DefaultHost) // The default Virtual Service routes traffic only with a particular Host header
 }
 
 // GetHttpsRequestBuilder returns an HttpRequestBuilder to easily build https requests used in e2e tests
@@ -271,5 +299,5 @@ func (c *TestContext) GetHttpsRequestBuilder() *testutils.HttpRequestBuilder {
 		WithHostname("localhost").
 		WithContentType("application/octet-stream").
 		WithPort(defaults.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
-		WithHost(DefaultHost)         // The default Virtual Service routes traffic only with a particular Host header
+		WithHost(DefaultHost) // The default Virtual Service routes traffic only with a particular Host header
 }

@@ -32,10 +32,8 @@ var _ = Describe("Create", func() {
 	})
 
 	AfterEach(func() {
-		if vaultInstance != nil {
-			err := vaultInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
+		vaultInstance.Clean()
+
 		helpers.UseDefaultClients()
 	})
 
