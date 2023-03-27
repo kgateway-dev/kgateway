@@ -33,16 +33,4 @@ kubectl patch settings -n gloo-system default --type=merge --patch '{"spec":{"di
 
 Note that this setting enables discovery for all upstreams. To enable discovery for only specified upstreams, see the [Function Discovery Service (FDS) guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#function-discovery-service-fds" %}}).
 
-
-
-
-
-## Next steps
-
-Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
-* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/graphql/graphql_ui/" %}})
-* [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/graphql/automatic_discovery/" %}})
-* [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/graphql/resolver_config/" %}})
-* [Beta: Stitch GraphQL schemas]({{% versioned_link_path fromRoot="/guides/graphql/stitching/" %}})
-* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/graphql/observability/" %}})
-* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})
+**Up next**: [Explore basic GraphQL service discovery with the Pet Store sample application.]({{% versioned_link_path fromRoot="/guides/graphql/getting_started/simple_discovery" %}})

@@ -121,3 +121,4 @@ This JSON output is filtered only for the desired data, as compared to the unfil
 ```
 Data filtering is one advantage of using GraphQL instead of querying the upstream directly. Because the GraphQL query is issued for only the name of the pets, GraphQL is able to filter out any data in the response that is irrelevant to the query, and return only the data that is specifically requested.
 
+**Up next**: [Explore local GraphQL resolution with the Bookinfo sample application.]({{% versioned_link_path fromRoot="/guides/graphql/getting_started/local_executor" %}})

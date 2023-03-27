@@ -106,3 +106,5 @@ In the previous section, you used local execution to resolve GraphQL queries to 
    curl -X POST -d '{"query":"{todo(id:\"b\"){id,text,done}}"}' "$(glooctl proxy url)/graphql"
    curl -X POST -d '{"query":"{todoList{id,text,done}}"}' "$(glooctl proxy url)/graphql"
    ```
+
+**Up next**: [Protect the GraphQL API that you created in the previous sections by using an API key.]({{% versioned_link_path fromRoot="/guides/graphql/getting_started/secure_api" %}})

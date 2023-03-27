@@ -1,7 +1,7 @@
 ---
 title: "Optional: Secure the GraphQL API"
 weight: 50
-description: Get started with GraphQL in Gloo Edge.
+description: Protect the GraphQL API that you created in the previous sections by using an API key.
 ---
 
 Protect the GraphQL API that you created in the previous sections by using an API key. Note that you can also use any other authorization mechanism provided by Gloo Edge to secure your GraphQL endpoint.
@@ -74,3 +74,13 @@ Protect the GraphQL API that you created in the previous sections by using an AP
    ```json
    {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
    ```
+
+## Next steps
+
+Now that you've tried out GraphQL with Gloo Edge, check out the following pages to configure your own services for GraphQL integration.
+* [Visualize your GraphQL services in the UI]({{% versioned_link_path fromRoot="/guides/graphql/graphql_ui/" %}})
+* [Explore automatic schema generation with GraphQL service discovery]({{% versioned_link_path fromRoot="/guides/graphql/automatic_discovery/" %}})
+* [Manually configure resolvers and schema for your GraphQL API]({{% versioned_link_path fromRoot="/guides/graphql/resolver_config/" %}})
+* [Stitch GraphQL schemas]({{% versioned_link_path fromRoot="/guides/graphql/stitching/" %}})
+* [Monitor your GraphQL services]({{% versioned_link_path fromRoot="/guides/graphql/observability/" %}})
+* [Gloo Edge API reference for GraphQL]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/" %}})

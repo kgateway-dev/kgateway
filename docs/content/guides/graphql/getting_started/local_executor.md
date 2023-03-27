@@ -1,10 +1,10 @@
 ---
 title: Local GraphQL resolution
 weight: 30
-description: Explore GraphQL resolution with the Bookinfo sample application.
+description: Explore local GraphQL resolution with the Bookinfo sample application.
 ---
 
-Next, explore GraphQL resolution with the Bookinfo sample application.
+Next, explore local GraphQL resolution with the Bookinfo sample application.
 
 In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backend. Today Gloo Edge supports REST and gRPC resolvers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
 
@@ -100,3 +100,5 @@ Note that this example uses _local execution_, which means the Envoy server exec
    ```json
    {"data":{"productsForHome":[{"id":"0","title":"The Comedy of Errors","author":"William Shakespeare","pages":200,"year":1595}]}}
    ```
+
+**Up next**: [Explore remote GraphQL resolution with an example GraphQL server upstream.]({{% versioned_link_path fromRoot="/guides/graphql/getting_started/remote_executor" %}})
