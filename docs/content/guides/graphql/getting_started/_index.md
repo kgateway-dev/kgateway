@@ -1,0 +1,7 @@
+Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
+
+{{% notice note %}}
+This feature is available only in Gloo Edge Enterprise version 1.11.0 and later.
+{{% /notice %}}
+
+{{% children description="true" %}}
