@@ -8,7 +8,7 @@ Explore remote GraphQL resolution with an example GraphQL server upstream.
 
 In the previous section, you used local execution to resolve GraphQL queries to an upstream service. In this example, you deploy an example GraphQL server upstream, which uses _remote execution_. Remote execution means that Envoy proxies the requests to the GraphQL server without executing the request first, and the GraphQL upstream both exceutes the query and provides the requested data. Additionally, Envoy validates the schema of the GraphQL server.
 
-1. Deploy the following `todos` sample application to the default namespace, which you will expose behind a GraphQL server embedded in Envoy. If you are using an `arm64` or M1 chipset, please use `gcr.io/solo-public/graphql-todo:0.0.3-arm64` as the image name.
+1. Deploy the following `todos` sample application to the default namespace, which you will expose behind a GraphQL server embedded in Envoy. If you use an `arm64` or M1 chipset, use `gcr.io/solo-public/graphql-todo:0.0.3-arm64` as the image name instead.
    ```sh
    kubectl apply -f - <<EOF
    apiVersion: apps/v1
