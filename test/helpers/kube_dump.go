@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
-
-	errors "github.com/rotisserie/eris"
 )
 
 var dumpCommands = func(namespace string) []string {
@@ -20,8 +22,19 @@ var dumpCommands = func(namespace string) []string {
 	}
 }
 
-// dump all data from the kube cluster
-func KubeDump(namespaces ...string) (string, error) {
+func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
+	return func() {
+		outDir := setupOutDir()
+		recordKubeState(fileAtPath(outDir + "kube-state.log"))
+		recordDockerState(fileAtPath(outDir + "docker-state.log"))
+		recordProcessState(fileAtPath(outDir + "process-state.log"))
+		recordKubeDump(fileAtPath(outDir+"kube-dump.log"), namespaces...)
+	}
+}
+
+func recordKubeDump(f *os.File, namespaces ...string) {
+	defer f.Close()
+
 	b := &bytes.Buffer{}
 	b.WriteString("** Begin Kubernetes Dump ** \n")
 	for _, ns := range namespaces {
@@ -30,46 +43,39 @@ func KubeDump(namespaces ...string) (string, error) {
 			cmd.Stdout = b
 			cmd.Stderr = b
 			if err := cmd.Run(); err != nil {
-				return "", errors.Errorf("command %v failed: %v", command, b.String())
+				b.WriteString(fmt.Sprintf(
+					"command %s failed: %v", command, b.String(),
+				))
 			}
 		}
 	}
 	b.WriteString("** End Kubernetes Dump ** \n")
-	return b.String(), nil
+	f.WriteString(b.String())
 }
 
-func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
-	return func() {
-		PrintKubeState()
-		PrintDockerState()
-		PrintProcessState()
-		dump, err := KubeDump(namespaces...)
-		if err != nil {
-			fmt.Fprintf(out, "getting kube dump failed: %v", err)
-		}
-		fmt.Fprintf(out, dump)
-	}
-}
+func recordKubeState(f *os.File) {
+	defer f.Close()
 
-func PrintKubeState() {
 	kubeCli := &install.CmdKubectl{}
 	kubeState, err := kubeCli.KubectlOut(nil, "get", "all", "-A")
 	if err != nil {
-		fmt.Println("*** Unable to get kube state ***")
+		f.WriteString("*** Unable to get kube state ***\n")
 		return
 	}
 	kubeEndpointsState, err := kubeCli.KubectlOut(nil, "get", "endpoints", "-A")
 	if err != nil {
-		fmt.Println("*** Unable to get kube state ***")
+		f.WriteString("*** Unable to get kube state ***\n")
 		return
 	}
-	fmt.Println("*** Kube state ***")
-	fmt.Println(string(kubeState))
-	fmt.Println(string(kubeEndpointsState))
-	fmt.Println("*** End Kube state ***")
+	f.WriteString("*** Kube state ***\n")
+	f.WriteString(string(kubeState) + "\n")
+	f.WriteString(string(kubeEndpointsState) + "\n")
+	f.WriteString("*** End Kube state ***\n")
 }
 
-func PrintDockerState() {
+func recordDockerState(f *os.File) {
+	defer f.Close()
+
 	dockerCmd := exec.Command("docker", "ps")
 
 	dockerState := &bytes.Buffer{}
@@ -78,15 +84,17 @@ func PrintDockerState() {
 	dockerCmd.Stderr = dockerState
 	err := dockerCmd.Run()
 	if err != nil {
-		fmt.Println("*** Unable to get docker state ***")
+		f.WriteString("*** Unable to get docker state ***\n")
 		return
 	}
-	fmt.Println("*** Docker state ***")
-	fmt.Println(dockerState.String())
-	fmt.Println("*** End Docker state ***")
+	f.WriteString("*** Docker state ***\n")
+	f.WriteString(dockerState.String() + "\n")
+	f.WriteString("*** End Docker state ***\n")
 }
 
-func PrintProcessState() {
+func recordProcessState(f *os.File) {
+	defer f.Close()
+
 	psCmd := exec.Command("ps", "-auxf")
 
 	psState := &bytes.Buffer{}
@@ -95,10 +103,57 @@ func PrintProcessState() {
 	psCmd.Stderr = psState
 	err := psCmd.Run()
 	if err != nil {
-		fmt.Println("*** Unable to get process state ***")
+		f.WriteString("unable to get process state\n")
 		return
 	}
-	fmt.Println("*** Process state ***")
-	fmt.Println(psState.String())
-	fmt.Println("*** End Process state ***")
+	f.WriteString("*** Process state ***\n")
+	f.WriteString(psState.String() + "\n")
+	f.WriteString("*** End Process state ***\n")
+}
+
+// originatingPackage returns the name of the root package that called this function.
+func originatingPackage() string {
+	pc, _, _, _ := runtime.Caller(1)
+	funcName := runtime.FuncForPC(pc).Name()
+	lastSlash := strings.LastIndexByte(funcName, '/')
+	if lastSlash < 0 {
+		lastSlash = 0
+	}
+	lastDot := strings.LastIndexByte(funcName[lastSlash:], '.') + lastSlash
+	originatingPackage := funcName[:lastDot]
+	// callingFunc := funcName[lastDot+1:]  // calling function, if someone were to want it:
+	return originatingPackage
+}
+
+// basepath returns the file system folder where go.mod is stored
+func basepath() string {
+	_, b, _, _ := runtime.Caller(0)
+	basepath := filepath.Dir(b)
+	return basepath
+}
+
+// setupOutDir forcibly deletes/creates the output directory, then return the path to it
+func setupOutDir() string {
+	outDir := basepath() + "/_output/test-failure-dump/" + originatingPackage()
+
+	err := os.RemoveAll(outDir)
+	if err != nil {
+		fmt.Printf("error removing log directory: %f\n", err)
+	}
+	err = os.MkdirAll(outDir, os.ModePerm)
+	if err != nil {
+		fmt.Printf("error creating log directory: %f\n", err)
+	}
+
+	fmt.Println("kube dump artifacts will be stored at: " + outDir)
+	return outDir
+}
+
+// fileAtPath creates a file at the given path, and returns the file object
+func fileAtPath(path string) *os.File {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		fmt.Printf("unable to openfile: %f\n", err)
+	}
+	return f
 }

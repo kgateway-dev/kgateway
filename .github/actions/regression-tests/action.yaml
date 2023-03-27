@@ -63,13 +63,6 @@ runs:
     shell: bash
     run: testspace push --verbose "**/junit.xml"
     if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-  - name: Debug Info
-    if: failure()
-    shell: bash
-    run: |
-      # see what's in the cluster if we failed
-      kubectl get all -A
-      kubectl get configmaps -A
   - name: save results
     if: ${{ failure() }}
     shell: bash
@@ -80,4 +73,10 @@ runs:
     with:
       name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}
       path: test-out.json
+      if-no-files-found: warn
+  - uses: actions/upload-artifact@v3
+    if: ${{ failure() }}
+    with:
+      name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}-kube-dump
+      path: "**/test-failure-dump"
       if-no-files-found: warn
