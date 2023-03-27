@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    descrption: Backport upgrade tests changes
+    issueLink: https://github.com/solo-io/solo-projects/issues/4611
+    resolvesIssue: false

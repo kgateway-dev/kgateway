@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v32/github"
 	errors "github.com/rotisserie/eris"
@@ -32,28 +33,33 @@ func (a ByVersion) Less(i, j int) bool {
 func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor(repoName)
+	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
 	if curMinorErr != nil {
 		if curMinorErr.Error() != FirstReleaseError {
 			return nil, nil, curMinorErr
 		}
 	}
-	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
+	// we may get a changelog value that does not have a github release - get the latest release for current minor
+	currentMinorLatestRelease, currentMinorLatestReleaseError := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
+	if currentMinorLatestReleaseError != nil {
+		return nil, nil, currentMinorLatestReleaseError
+	}
+	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
 		return nil, nil, lastMinorErr
 	}
-	return lastMinorLatestPatchVersion, currentMinorLatestPatchVersion, curMinorErr
+	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
 }
 
-func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error) {
+func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
 	fParts := strings.Split(filename, string(os.PathSeparator))
 	splitIdx := 0
-	//we can end up in a situation where the path contains the repo_name twice when running in ci - keep going until we find the last use ex: /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
+	// In all cases the home of the project will be one level above test - this handles forks as well as the standard case /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
 	for idx, dir := range fParts {
-		if dir == repoName {
-			splitIdx = idx
+		if dir == "test" {
+			splitIdx = idx - 1
 		}
 	}
 	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
@@ -84,43 +90,36 @@ func getLastReleaseOfCurrentMinor(repoName string) (*versionutils.Version, error
 	return versions[len(versions)-2], nil
 }
 
-func getLatestReleasedVersion(ctx context.Context, majorVersion, minorVersion int) (*versionutils.Version, error) {
+type latestPatchForMinorPredicate struct {
+	versionPrefix string
+}
+
+func (s *latestPatchForMinorPredicate) Apply(release *github.RepositoryRelease) bool {
+	return strings.HasPrefix(*release.Name, s.versionPrefix) &&
+		!release.GetPrerelease() && // we don't want a prerelease version
+		!strings.Contains(release.GetBody(), "This release build failed") && // we don't want a failed build
+		release.GetPublishedAt().Before(time.Now().In(time.UTC).Add(time.Duration(-60)*time.Minute))
+}
+
+func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorPredicate {
+	return &latestPatchForMinorPredicate{
+		versionPrefix: versionPrefix,
+	}
+}
+
+func getLatestReleasedVersion(ctx context.Context, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
 	client, err := githubutils.GetClient(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to create github client")
 	}
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
-
-	// inexact version requested may be prerelease and not have assets
-	// We do assume that within a minor version we use monotonically increasing patch numbers
-	// We also assume that the first release that is not strict semver is technically the largest
-	for i := 0; i < 5; i++ {
-		// Get the next page of
-		listOpts := github.ListOptions{Page: i, PerPage: 10} // max per request
-		releases, _, err := client.Repositories.ListReleases(ctx, "solo-io", "gloo", &listOpts)
-		if err != nil {
-			return nil, errors.Wrapf(err, "error listing releases")
-		}
-
-		for _, release := range releases {
-			v, err := versionutils.ParseVersion(*release.Name)
-			if err != nil {
-				continue
-			}
-
-			// either a major-minor was specified something of the form v%d.%d
-			// or are searching for latest stable and have found the most recent
-			// experimental and are now searching for a conforming release
-			if versionPrefix != "" {
-				// take the first valid from this version
-				// as we assume increasing ordering
-				if strings.HasPrefix(v.String(), versionPrefix) {
-					return v, nil
-				}
-				continue
-			}
-		}
+	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
+	if len(releases) == 0 {
+		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
 	}
-
-	return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
+	v, err := versionutils.ParseVersion(*releases[0].Name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error parsing release name")
+	}
+	return v, nil
 }
