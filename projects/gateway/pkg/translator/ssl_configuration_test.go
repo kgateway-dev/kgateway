@@ -71,6 +71,8 @@ var _ = Describe("Ssl Configuration", func() {
 							Value: true,
 						},
 						SniDomains: []string{
+							"north.com",
+							"south.com",
 							"east.com",
 						},
 					}).
@@ -84,6 +86,7 @@ var _ = Describe("Ssl Configuration", func() {
 							Value: true,
 						},
 						SniDomains: []string{
+							"north.com",
 							"west.com",
 						},
 					}).
@@ -94,13 +97,12 @@ var _ = Describe("Ssl Configuration", func() {
 				sslConfig, virtualServicesBySslConfig := GroupVirtualServicesBySslConfig(v1.VirtualServiceList{vsEast, vsWest})
 
 				Expect(sslConfig).To(HaveLen(1), "ssl configs should be merged")
-				joinedSniDomains := append(vsEast.GetSslConfig().GetSniDomains(), vsWest.GetSslConfig().GetSniDomains()...)
+				joinedSniDomains := []string{"north.com", "east.com", "west.com", "south.com"}
 				Expect(sslConfig[0].GetSniDomains()).To(ContainElements(joinedSniDomains), "sni domains should be joined")
 
 				Expect(virtualServicesBySslConfig).To(HaveLen(1), "only 1 unique sslConfig in map")
 
 				for ssl, virtualServicesBySsl := range virtualServicesBySslConfig {
-					joinedSniDomains := append(vsEast.GetSslConfig().GetSniDomains(), vsWest.GetSslConfig().GetSniDomains()...)
 					Expect(ssl.GetSniDomains()).To(ContainElements(joinedSniDomains))
 					Expect(virtualServicesBySsl).To(HaveLen(2))
 				}
