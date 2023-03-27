@@ -10,7 +10,7 @@ The following sections describe the configuration for local or remote query reso
 
 ## Define REST and gRPC resolvers for local execution
 
-If your upstream does not define GraphQL resolvers, you can define resolvers in you `GraphQLApi` resource. In this case, Gloo Edge uses _local execution_, which means the Envoy server executes GraphQL queries locally by using the defined resolvers. Then, it proxies the executed requests to the upstreams that provide the data requested in the queries.
+If your upstream does not define GraphQL resolvers, you can define resolvers in your `GraphQLApi` resource. In this case, Gloo Edge uses _local execution_, which means the Envoy server executes GraphQL queries locally by using the defined resolvers. Then, it proxies the executed requests to the upstreams that provide the data requested in the queries.
 
 ### REST resolvers
 
