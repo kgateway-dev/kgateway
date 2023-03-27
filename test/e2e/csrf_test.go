@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -284,7 +286,7 @@ func buildRequestFromOrigin(origin string) func() (*http.Response, error) {
 		req.Host = e2e.DefaultHost
 		req.Header.Set("Origin", origin)
 
-		return http.DefaultClient.Do(req)
+		return testutils.DefaultHttpClient.Do(req)
 	}
 }
 

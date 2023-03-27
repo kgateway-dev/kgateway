@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7991
+    resolvesIssue: true
+    description: Fix a panic in our custom ContainHeader matcher by handling the nil case
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7577
+    resolvesIssue: false
+    description: |
+      Expand utilities for our e2e tests to reduce the chance of developers introducing flakes or
+      inconsistencies between tests.

@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 
@@ -12,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
 )
@@ -57,36 +55,23 @@ var _ = Describe("Example E2E Test For Developers", func() {
 		// and sent to Envoy to handle traffic
 
 		It("can route traffic", func() {
-			By("GET returns 200")
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
+				req := testContext.GetHttpRequestBuilder().Build()
+				g.Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveOkResponse())
+			}, "5s", ".5s").Should(Succeed(), "GET with valid host returns a 200")
 
-				// The default Virtual Service routes traffic only with a particular Host header
-				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
-			}, "5s", ".5s").Should(Succeed())
-
-			By("GET returns 404")
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
+				req := testContext.GetHttpRequestBuilder().
+					WithHost("invalid-host").
+					Build()
+				g.Expect(testutils.DefaultHttpClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
+			}, "5s", ".5s").Should(Succeed(), "GET with invalid host returns a 404")
 
-				// The default Virtual Service routes traffic only with a particular Host header
-				req.Host = fmt.Sprintf("bad-prefix-%s", e2e.DefaultHost)
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
-			}, "5s", ".5s").Should(Succeed())
-
-			By("POST returns 200")
+			requestBody := "some custom data"
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(requestBody)
 			Eventually(func(g Gomega) {
-				requestBody := "some custom data"
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), bytes.NewBufferString(requestBody))
-				g.Expect(err).NotTo(HaveOccurred())
-
-				// The default Virtual Service routes traffic only with a particular Host header
-				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
-			}, "5s", ".5s").Should(Succeed())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
+			}, "5s", ".5s").Should(Succeed(), "POST with request body should return same body in response")
 		})
 
 		It("can access envoy config dump", func() {
@@ -137,34 +122,30 @@ var _ = Describe("Example E2E Test For Developers", func() {
 		})
 
 		It("can route traffic", func() {
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/endpoint", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = "custom-domain.com" // to match the customVS.domains definition
+			requestBuilder := testContext.GetHttpRequestBuilder().
+				WithHost("custom-domain.com"). // to match the customVS.domains definition
+				WithPath("endpoint")           // to match the customVS.route prefix match definition
 
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", ".5s").Should(Succeed())
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "2s", ".5s").Should(Succeed())
-
 		})
 	})
 
 	Context("Modifying resources directly in a test", func() {
 
 		It("can route traffic", func() {
-			req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPath("test")
 
-			By("Route traffic to /test returns a 200")
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
-			}, "5s", ".5s").Should(Succeed())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 200")
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
-			}, "2s", ".5s").Should(Succeed())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+			}, "2s", ".5s").Should(Succeed(), "traffic to /test consistently returns a 200")
 
 			By("Patch the VS to only handle traffic prefixed with /new")
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
@@ -173,13 +154,12 @@ var _ = Describe("Example E2E Test For Developers", func() {
 				return vsBuilder.Build()
 			})
 
-			By("Route traffic to /test returns a 404")
 			Eventually(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
-			}, "5s", ".5s").Should(Succeed())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
+			}, "5s", ".5s").Should(Succeed(), "traffic to /test eventually returns a 404")
 			Consistently(func(g Gomega) {
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
-			}, "2s", ".5s").Should(Succeed())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
+			}, "2s", ".5s").Should(Succeed(), "traffic to /test consistently returns a 404")
 		})
 
 	})

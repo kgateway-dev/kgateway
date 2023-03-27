@@ -138,6 +138,7 @@ The `clearRouteCache` attribute is a boolean value that determines whether the r
 The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="transformation.options.gloo.solo.io.Transformation" >}} and specify transformations that will be applied to requests and responses respectively. The format can take one of two forms:
 
 - `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
+  - If `addRequestMetadata` is true, `queryString`, `queryStringParameters`, `multiValueQueryStringParameters`, `httpMethod`, `path`, and `multiValueHeaders` will additionally be present in the body.
 - `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
 
 #### Transformation templates

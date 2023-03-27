@@ -63,7 +63,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 | `oauth` | [.enterprise.gloo.solo.io.OauthSecret](../enterprise/options/extauth/v1/extauth.proto.sk/#oauthsecret) | Enterprise-only: OAuth secret configuration. Only one of `oauth`, `aws`, `azure`, `tls`, `apiKey`, `header`, `credentials`, or `extensions` can be set. |
 | `apiKey` | [.enterprise.gloo.solo.io.ApiKey](../enterprise/options/extauth/v1/extauth.proto.sk/#apikey) | Enterprise-only: ApiKey secret configuration. Only one of `apiKey`, `aws`, `azure`, `tls`, `oauth`, `header`, `credentials`, or `extensions` can be set. |
 | `header` | [.gloo.solo.io.HeaderSecret](../secret.proto.sk/#headersecret) | Secrets for use in header payloads (e.g. in the Envoy healthcheck API). Only one of `header`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `credentials`, or `extensions` can be set. |
-| `credentials` | [.gloo.solo.io.AccountCredentialsSecret](../secret.proto.sk/#accountcredentialssecret) | Secrets to authenticate as a service user. Only one of `credentials`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, or `extensions` can be set. |
+| `credentials` | [.gloo.solo.io.AccountCredentialsSecret](../secret.proto.sk/#accountcredentialssecret) | Secrets to represent user/secret pairs. Used to authenticate to LDAP service accounts and hold shared secrets for HMAC auth. Only one of `credentials`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, or `extensions` can be set. |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. Only one of `extensions`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, or `credentials` can be set. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 
@@ -196,7 +196,9 @@ metadata:
 ---
 ### AccountCredentialsSecret
 
-
+ 
+Secret to represent any kind of a username/secretname and password/secret combination
+Used by LDAP auth to store service account credentials and by HMAC auth to keep shared secrets.
 
 ```yaml
 "username": string

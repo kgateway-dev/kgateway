@@ -38,55 +38,49 @@ var _ = Describe("Leader Startup Action", func() {
 
 	AfterEach(func() {
 		cancel()
-
-		select {
-		case <-electedChan:
-			// channel is closed, do nothing
-		default:
-			// channel is still open, close it
-			close(electedChan)
-		}
-	})
-
-	It("StartupAction not executed, if not elected", func() {
-		startupAction.WatchElectionResults(ctx)
-
-		Consistently(func(g Gomega) {
-			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(0)))
-		}).ShouldNot(HaveOccurred())
 	})
 
 	It("StartupAction executed once, if elected", func() {
 		startupAction.WatchElectionResults(ctx)
+
+		// StartupAction not executed, if not elected
+		Consistently(func(g Gomega) {
+			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(0)))
+		}, "1s", ".1s").ShouldNot(HaveOccurred())
 
 		// signal election
 		close(electedChan)
 
 		Eventually(func(g Gomega) {
 			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(1)))
-		}).ShouldNot(HaveOccurred())
+		}, "1s", ".1s").ShouldNot(HaveOccurred())
 		Consistently(func(g Gomega) {
 			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(1)))
-		}).ShouldNot(HaveOccurred())
+		}, "1s", ".1s").ShouldNot(HaveOccurred())
 
 	})
 
 	It("StartupAction not executed after context cancelled", func() {
 		startupAction.WatchElectionResults(ctx)
 
+		// StartupAction not executed, if not elected
+		Consistently(func(g Gomega) {
+			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(0)))
+		}, "1s", ".1s").ShouldNot(HaveOccurred())
+
 		// Cancelling the context should stop the election watch
 		cancel()
 
 		Consistently(func(g Gomega) {
 			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(0)))
-		}).ShouldNot(HaveOccurred())
+		}, "1s", ".1s").ShouldNot(HaveOccurred())
 
 		// signal election
 		close(electedChan)
 
 		Consistently(func(g Gomega) {
 			g.Expect(atomic.LoadUint64(&startupOps)).To(Equal(uint64(0)))
-		}).ShouldNot(HaveOccurred())
+		}, "1s", ".1s").ShouldNot(HaveOccurred())
 
 	})
 })

@@ -1,9 +1,10 @@
 package e2e_test
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 const (
@@ -53,11 +53,12 @@ var _ = Describe("CORS", func() {
 
 		var (
 			allowedOrigins = []string{allowedOrigin}
-			allowedMethods = []string{"GET", "POST"}
+			allowedMethods = []string{http.MethodGet, http.MethodGet}
 		)
 
 		BeforeEach(func() {
-			vsWithCors := gloohelpers.NewVirtualServiceBuilder().WithNamespace(writeNamespace).
+			vsWithCors := gloohelpers.NewVirtualServiceBuilder().
+				WithNamespace(writeNamespace).
 				WithName("vs-cors").
 				WithDomain(e2e.DefaultHost).
 				WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
@@ -76,8 +77,6 @@ var _ = Describe("CORS", func() {
 		})
 
 		It("should run with cors", func() {
-
-			By("Envoy config contains CORS filer")
 			Eventually(func(g Gomega) {
 				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
@@ -85,40 +84,27 @@ var _ = Describe("CORS", func() {
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
 				g.Expect(cfg).To(MatchRegexp(corsActiveConfigString))
 				g.Expect(cfg).To(MatchRegexp(allowedOrigin))
-			}, "10s", ".1s").ShouldNot(HaveOccurred())
+			}, "10s", ".1s").ShouldNot(HaveOccurred(), "Envoy config contains CORS filer")
 
-			By("Request with allowed origin")
-			reqWithAllowedOrigin, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			reqWithAllowedOrigin.Host = e2e.DefaultHost
-			reqWithAllowedOrigin.Header.Set("Origin", allowedOrigins[0])
-			reqWithAllowedOrigin.Header.Set("Access-Control-Request-Method", http.MethodGet)
-			reqWithAllowedOrigin.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
-
+			allowedOriginRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithOptionsMethod().
+				WithPath("cors").
+				WithHeader("Origin", allowedOrigins[0]).
+				WithHeader("Access-Control-Request-Method", http.MethodGet).
+				WithHeader("Access-Control-Request-Headers", "X-Requested-With")
 			Eventually(func(g Gomega) {
-				resp, err := http.DefaultClient.Do(reqWithAllowedOrigin)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(testutils.DefaultHttpClient.Do(allowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					requestACHMethods: MatchRegexp(strings.Join(allowedMethods, ",")),
 					requestACHOrigin:  Equal(allowedOrigins[0]),
 				}))
-			}).Should(Succeed())
+			}).Should(Succeed(), "Request with allowed origin")
 
-			By("Request with disallowed origin")
-			reqWithDisallowedOrigin, err := http.NewRequest("OPTIONS", fmt.Sprintf("http://%s:%d/cors", testContext.EnvoyInstance().LocalAddr(), defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			reqWithDisallowedOrigin.Host = e2e.DefaultHost
-			reqWithDisallowedOrigin.Header.Set("Origin", unAllowedOrigin)
-			reqWithDisallowedOrigin.Header.Set("Access-Control-Request-Method", http.MethodGet)
-			reqWithDisallowedOrigin.Header.Set("Access-Control-Request-Headers", "X-Requested-With")
-
+			disallowedOriginRequestBuilder := allowedOriginRequestBuilder.WithHeader("Origin", unAllowedOrigin)
 			Eventually(func(g Gomega) {
-				resp, err := http.DefaultClient.Do(reqWithDisallowedOrigin)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(resp).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
+				g.Expect(testutils.DefaultHttpClient.Do(disallowedOriginRequestBuilder.Build())).Should(matchers.HaveOkResponseWithHeaders(map[string]interface{}{
 					requestACHMethods: BeEmpty(),
 				}))
-			}).Should(Succeed())
+			}).Should(Succeed(), "Request with disallowed origin")
 		})
 
 	})
@@ -139,14 +125,13 @@ var _ = Describe("CORS", func() {
 		})
 
 		It("should run without cors", func() {
-			By("Envoy config does not contain CORS filer")
 			Eventually(func(g Gomega) {
 				cfg, err := testContext.EnvoyInstance().ConfigDump()
 				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(cfg).To(MatchRegexp(corsFilterString))
 				g.Expect(cfg).NotTo(MatchRegexp(corsActiveConfigString))
-			}).Should(Succeed())
+			}).Should(Succeed(), "Envoy config does not contain CORS filer")
 		})
 	})
 

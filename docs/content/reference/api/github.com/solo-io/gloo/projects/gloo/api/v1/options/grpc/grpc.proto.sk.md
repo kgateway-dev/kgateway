@@ -32,6 +32,7 @@ Service spec describing GRPC upstreams. This will usually be filled
 automatically via function discovery (if the upstream supports reflection).
 If your upstream service is a GRPC service, use this service spec (an empty
 spec is fine), to make sure that traffic to it is routed with http2.
+Deprecated: prefer using GrpcJsonTranscoder
 
 ```yaml
 "descriptors": bytes
@@ -41,8 +42,8 @@ spec is fine), to make sure that traffic to it is routed with http2.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. |
-| `grpcServices` | [[]grpc.options.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. For a grpc upstream where you don't need to use Gloo's function routing, this can be an empty list. These services must be present in the descriptors. |
+| `descriptors` | `bytes` | Descriptors that contain information of the services listed below. this is a serialized google.protobuf.FileDescriptorSet. These will be discovered if FDS is enabled and may be modified by Gloo. |
+| `grpcServices` | [[]grpc.options.gloo.solo.io.ServiceSpec.GrpcService](../grpc.proto.sk/#grpcservice) | List of services used by this upstream. These services must be present in the descriptors. |
 
 
 
@@ -74,6 +75,7 @@ Describes a grpc service
 
  
 This is only for upstream with Grpc service spec.
+Deprecated: prefer providing descriptors on Upstream in GrpcJsonTranscoder
 
 ```yaml
 "package": string

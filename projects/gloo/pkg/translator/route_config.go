@@ -621,6 +621,10 @@ func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_c
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
 			Prefix: path.Prefix,
 		}
+	case *matchers.Matcher_ConnectMatcher_:
+		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_ConnectMatcher_{
+			ConnectMatcher: &envoy_config_route_v3.RouteMatch_ConnectMatcher{},
+		}
 	}
 }
 
