@@ -32,7 +32,7 @@ You can install with static manifests or helm. For this example we will use the 
 
 ```shell
 kubectl create namespace cert-manager
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.14.3/cert-manager-legacy.yaml
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
 ```
 
 ---
@@ -66,7 +66,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/p
 
 ### Configure access to AWS
 
-We'll need to allow cert manager access to configure DNS records in AWS. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the access requirements for cert-manager. 
+We'll need to allow cert manager access to configure DNS records in AWS. See cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager. 
 
 Once you have configured access, we will need to add the access keys as a kubernetes secret, so that cert manager can access them:
 
