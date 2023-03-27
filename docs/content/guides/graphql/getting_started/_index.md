@@ -7,7 +7,7 @@ description: Get started with enabling GraphQL in Gloo Edge and resolving GraphQ
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
-This feature is available only in Gloo Edge Enterprise version 1.11.0 and later.
+This feature is available only in Gloo Edge Enterprise, _local execution_ is supported in versions 1.11.0 and later, while _remote execution_ is supported in versions 1.14.0 and later.
 {{% /notice %}}
 
 {{% children description="true" %}}

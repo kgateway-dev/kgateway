@@ -6,7 +6,7 @@ description: Explore local GraphQL resolution with the Bookinfo sample applicati
 
 Next, explore local GraphQL resolution with the Bookinfo sample application.
 
-In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backend. Today Gloo Edge supports REST and gRPC resolvers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
+In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backend when using _local execution_. Today Gloo Edge supports _local execution_ with REST and gRPC resolvers, and _remote execution_ for GraphQL servers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
 
 Note that this example uses _local execution_, which means the Envoy server executes GraphQL queries locally before it proxies them to the Bookinfo upstreams that provide the data requested in the queries.
 
