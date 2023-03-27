@@ -5,4 +5,3 @@ changelog:
     dependencyTag: 3.15.7
     description: Bump alpine to fix CVE-2022-4450
     issueLink: https://github.com/solo-io/gloo/issues/8005
-    resolvesIssue: false
