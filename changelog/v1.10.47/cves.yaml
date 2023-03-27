@@ -5,9 +5,3 @@ changelog:
     dependencyTag: 3.17.2
     description: Bump alpine to fix CVE-2022-4450
     issueLink: https://github.com/solo-io/gloo/issues/8005
-  - type: DEPENDENCY_BUMP
-    dependencyOwner: golang.org
-    dependencyRepo: x/net
-    dependencyTag: v0.0.0-20220906165146-f3363e06e74c
-    resolvesIssue: false
-    issueLink: https://github.com/solo-io/gloo/issues/7178
