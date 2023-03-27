@@ -127,6 +127,10 @@ spec:
 
 ## Remote executor configuration for existing GraphQL server upstreams
 
+{{% notice note %}}
+Remote execution is supported only in versions 1.14.0 and later.
+{{% /notice %}}
+
 When your upstream service is already a GraphQL server that includes its own resolvers, use a `remote` executor in the corresponding `GraphQLApi` resource. The remote executor tells the `GraphQLApi` to use the resolver in the upstream to resolve requests for remote execution. You do not need to define another resolver within the `GraphQLApi`.
 
 ```yaml

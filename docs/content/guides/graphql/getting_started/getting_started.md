@@ -7,7 +7,7 @@ description: Install GraphQL in Gloo Edge and enable API spec discovery for upst
 Set up API gateway and GraphQL server functionality for your apps in the same process by using Gloo Edge.
 
 {{% notice note %}}
-This feature is available only in Gloo Edge Enterprise, _local execution_ is supported in versions 1.11.0 and later, while _remote execution_ is supported in versions 1.14.0 and later.
+This feature is available only in Gloo Edge Enterprise. Local execution is supported in versions only in versions 1.11.0 and later, and remote execution is supported only in versions 1.14.0 and later.
 {{% /notice %}}
 
 ## Step 1: Install GraphQL in Gloo Edge
