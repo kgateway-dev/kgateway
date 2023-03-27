@@ -1,0 +1,18 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.23.3-patch2
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org/x
+    dependencyRepo: mod
+    dependencyTag: v0.9.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org/x
+    dependencyRepo: tools
+    dependencyTag: v0.7.0
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7951
+    resolvesIssue: true
+    description:
+      Update dependencies to resolve vulnerabilities in Gloo images

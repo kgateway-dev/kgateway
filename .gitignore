@@ -38,3 +38,6 @@ junit.xml
 *.test
 # swp files
 *.swp
+
+# python pickle files
+*.p
