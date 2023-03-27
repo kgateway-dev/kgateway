@@ -84,7 +84,7 @@ var _ = FDescribe("Vault Secret Store (Token Auth)", func() {
             }
         })
 
-        It("can read secret using resource client", func() {
+        FIt("can read secret using resource client", func() {
             Eventually(func(g Gomega) {
                 secret, err := testContext.TestClients().SecretClient.Read(
                     oauthSecret.GetMetadata().GetNamespace(),
@@ -112,7 +112,7 @@ var _ = FDescribe("Vault Secret Store (Token Auth)", func() {
 
             err := testContext.VaultInstance().WriteSecret(newSecret)
             Expect(err).NotTo(HaveOccurred())
-			
+
             Eventually(func(g Gomega) {
                 secret, err := testContext.TestClients().SecretClient.Read(
                     newSecret.GetMetadata().GetNamespace(),

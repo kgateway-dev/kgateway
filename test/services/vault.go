@@ -18,7 +18,6 @@ import (
 )
 
 const defaultVaultDockerImage = "vault:1.12.2"
-const defaultAddress = "127.0.0.1:8200"
 const DefaultVaultToken = "root"
 const defaultAWSArn = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
 
@@ -115,7 +114,6 @@ type VaultInstance struct {
 	cmd       *exec.Cmd
 	session   *gexec.Session
 	token     string
-	address   string
 	hostname  string
 	port      uint32
 	useTls    bool
@@ -142,7 +140,6 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 		token:     DefaultVaultToken,
 		hostname:  DefaultHost,
 		port:      DefaultPort,
-		address:   defaultAddress,
 	}, nil
 }
 
@@ -157,7 +154,7 @@ func (i *VaultInstance) Run() error {
 		// https://www.vaultproject.io/docs/concepts/dev-server
 		devCmd,
 		fmt.Sprintf("-dev-root-token-id=%s", i.token),
-		fmt.Sprintf("-dev-listen-address=%s", i.address),
+		fmt.Sprintf("-dev-listen-address=%s", i.Host()),
 	)
 	cmd.Dir = i.tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
@@ -183,7 +180,11 @@ func (i *VaultInstance) Address() string {
 	if i.useTls {
 		scheme = "https"
 	}
-	return fmt.Sprintf("%s://%s", scheme, i.address)
+	return fmt.Sprintf("%s://%s", scheme, i.Host())
+}
+
+func (i *VaultInstance) Host() string {
+	return fmt.Sprintf("%s:%d", i.hostname, i.port)
 }
 
 func (i *VaultInstance) EnableSecretEngine(secretEngine string) error {
