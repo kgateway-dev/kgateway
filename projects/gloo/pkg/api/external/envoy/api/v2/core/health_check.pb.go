@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any "github.com/golang/protobuf/ptypes/any"
+	any1 "github.com/golang/protobuf/ptypes/any"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -813,7 +813,7 @@ func (x *HealthCheck_CustomHealthCheck) GetConfig() *_struct.Struct {
 	return nil
 }
 
-func (x *HealthCheck_CustomHealthCheck) GetTypedConfig() *any.Any {
+func (x *HealthCheck_CustomHealthCheck) GetTypedConfig() *any1.Any {
 	if x, ok := x.GetConfigType().(*HealthCheck_CustomHealthCheck_TypedConfig); ok {
 		return x.TypedConfig
 	}
@@ -829,7 +829,7 @@ type HealthCheck_CustomHealthCheck_Config struct {
 }
 
 type HealthCheck_CustomHealthCheck_TypedConfig struct {
-	TypedConfig *any.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
+	TypedConfig *any1.Any `protobuf:"bytes,3,opt,name=typed_config,json=typedConfig,proto3,oneof"`
 }
 
 func (*HealthCheck_CustomHealthCheck_Config) isHealthCheck_CustomHealthCheck_ConfigType() {}
@@ -1075,7 +1075,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_api_v2_core_he
 	(*_type.Int64Range)(nil),                 // 12: solo.io.envoy.type.Int64Range
 	(*advanced_http.ResponseAssertions)(nil), // 13: advancedhttp.options.gloo.solo.io.ResponseAssertions
 	(*_struct.Struct)(nil),                   // 14: google.protobuf.Struct
-	(*any.Any)(nil),                          // 15: google.protobuf.Any
+	(*any1.Any)(nil),                         // 15: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_api_v2_core_health_check_proto_depIdxs = []int32{
 	8,  // 0: solo.io.envoy.api.v2.core.HealthCheck.timeout:type_name -> google.protobuf.Duration

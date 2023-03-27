@@ -13,7 +13,7 @@ import (
 	sync "sync"
 
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	any "github.com/golang/protobuf/ptypes/any"
+	any1 "github.com/golang/protobuf/ptypes/any"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -48,7 +48,7 @@ type VmConfig struct {
 	// (proxy_on_start). `google.protobuf.Struct` is serialized as JSON before
 	// passing it to the plugin. `google.protobuf.BytesValue` and
 	// `google.protobuf.StringValue` are passed directly without the wrapper.
-	Configuration *any.Any `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
+	Configuration *any1.Any `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
 	// Allow the wasm file to include pre-compiled code on VMs which support it.
 	// Warning: this should only be enable for trusted sources as the precompiled code is not
 	// verified.
@@ -112,7 +112,7 @@ func (x *VmConfig) GetCode() *v3.AsyncDataSource {
 	return nil
 }
 
-func (x *VmConfig) GetConfiguration() *any.Any {
+func (x *VmConfig) GetConfiguration() *any1.Any {
 	if x != nil {
 		return x.Configuration
 	}
@@ -158,7 +158,7 @@ type PluginConfig struct {
 	// `google.protobuf.Struct` is serialized as JSON before
 	// passing it to the plugin. `google.protobuf.BytesValue` and
 	// `google.protobuf.StringValue` are passed directly without the wrapper.
-	Configuration *any.Any `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
+	Configuration *any1.Any `protobuf:"bytes,4,opt,name=configuration,proto3" json:"configuration,omitempty"`
 	// If there is a fatal error on the VM (e.g. exception, abort(), on_start or on_configure return false),
 	// then all plugins associated with the VM will either fail closed (by default), e.g. by returning an HTTP 503 error,
 	// or fail open (if 'fail_open' is set to true) by bypassing the filter. Note: when on_start or on_configure return false
@@ -227,7 +227,7 @@ func (x *PluginConfig) GetVmConfig() *VmConfig {
 	return nil
 }
 
-func (x *PluginConfig) GetConfiguration() *any.Any {
+func (x *PluginConfig) GetConfiguration() *any1.Any {
 	if x != nil {
 		return x.Configuration
 	}
@@ -402,7 +402,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_was
 	(*PluginConfig)(nil),       // 1: solo.io.envoy.extensions.wasm.v3.PluginConfig
 	(*WasmService)(nil),        // 2: solo.io.envoy.extensions.wasm.v3.WasmService
 	(*v3.AsyncDataSource)(nil), // 3: solo.io.envoy.config.core.v3.AsyncDataSource
-	(*any.Any)(nil),            // 4: google.protobuf.Any
+	(*any1.Any)(nil),           // 4: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_extensions_wasm_v3_wasm_proto_depIdxs = []int32{
 	3, // 0: solo.io.envoy.extensions.wasm.v3.VmConfig.code:type_name -> solo.io.envoy.config.core.v3.AsyncDataSource
