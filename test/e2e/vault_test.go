@@ -116,9 +116,9 @@ var _ = Describe("Vault e2e", func() {
 				Expect(sec).NotTo(BeEmpty())
 			})
 		})
-		Context("aws auth", func() {
+		FContext("aws auth", func() {
 			BeforeEach(func() {
-				Skip("until AWS creds are in cloudbuild")
+				//Skip("until AWS creds are in cloudbuild")
 
 				vaultFactoryConfig = &services.VaultFactoryConfig{}
 				startVault()
