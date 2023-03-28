@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4636
+    resolvesIssue: false
+    description: |
+      Update vault e2e tests to use test framework to make it easier for them to be expanded
+      in the near future. Also, enable AWS tests, which previously had been disabled in CI.
