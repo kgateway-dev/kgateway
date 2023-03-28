@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adds info about remote execution to the graphql docs.
+    issueLink: https://github.com/solo-io/gloo/issues/7980
