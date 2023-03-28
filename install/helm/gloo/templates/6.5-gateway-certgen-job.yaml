@@ -86,7 +86,7 @@ metadata:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  name: gloo-gateway-vwc-update{{ include "gloo.rbacNameSuffix" . }}
   labels:
     app: gloo
     gloo: rbac
@@ -99,7 +99,31 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  name: gloo-gateway-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+kind: {{ include "gloo.roleKind" . }}Binding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
+subjects:
+  - kind: ServiceAccount
+    name: certgen
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: {{ include "gloo.roleKind" . }}
+  name: gloo-gateway-secret-create{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 
 ---
@@ -107,7 +131,7 @@ roleRef:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  name: gloo-gateway-vwc-update{{ include "gloo.rbacNameSuffix" . }}
   labels:
     app: gloo
     gloo: rbac
@@ -115,12 +139,29 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 rules:
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["create", "get", "update"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingwebhookconfigurations"]
   verbs: ["get", "update"]
+
+---
+
+kind: {{ include "gloo.roleKind" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create{{ include "gloo.rbacNameSuffix" . }}
+{{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+{{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "update"]
 
 ---
 
