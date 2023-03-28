@@ -20,12 +20,12 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-const defaultVaultDockerImage = "vault:1.12.2"
-const DefaultVaultToken = "root"
-
 const (
 	DefaultHost = "127.0.0.1"
 	DefaultPort = 8200
+
+	DefaultVaultToken       = "root"
+	defaultVaultDockerImage = "vault:1.12.2"
 )
 
 type VaultFactory struct {
@@ -34,19 +34,8 @@ type VaultFactory struct {
 	useTls    bool
 }
 
-type VaultFactoryConfig struct {
-	PathPrefix string
-	UseTls     bool
-}
-
 func NewVaultFactory() (*VaultFactory, error) {
-	return NewVaultFactoryForConfig(&VaultFactoryConfig{})
-}
 
-func NewVaultFactoryForConfig(cfg *VaultFactoryConfig) (*VaultFactory, error) {
-	if cfg == nil {
-		cfg = &VaultFactoryConfig{}
-	}
 	path := os.Getenv("VAULT_BINARY")
 
 	if path != "" {
@@ -95,7 +84,6 @@ docker rm -f $CID
 	return &VaultFactory{
 		vaultPath: filepath.Join(tmpdir, "vault"),
 		tmpdir:    tmpdir,
-		useTls:    cfg.UseTls,
 	}, nil
 }
 
@@ -138,7 +126,7 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	return &VaultInstance{
 		vaultpath: vf.vaultPath,
 		tmpdir:    tmpdir,
-		useTls:    vf.useTls,
+		useTls:    false, // this is not used currently
 		token:     DefaultVaultToken,
 		hostname:  DefaultHost,
 		port:      DefaultPort,
