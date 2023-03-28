@@ -34,14 +34,14 @@ jobs:
         if [[ ${{ github.event_name == 'release' }} = true ]]; then
           RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
         fi
-        echo "::set-output name=value::$(echo $RELEASE_TAG_NAME)"
+        echo "value=$RELEASE_TAG_NAME" >> $GITHUB_OUTPUT
     - id: release-branch
       run: |
         RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
         if [[ ${{ github.event_name == 'release' }} = true ]]; then
           RELEASE_BRANCH=${{ github.event.release.target_commitish }}
         fi
-        echo "::set-output name=value::$(echo $RELEASE_BRANCH)"
+        echo "value=$RELEASE_BRANCH" >> $GITHUB_OUTPUT
   push-to-solo-apis-branch:
     needs: prepare-env
     env:
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.4.1
+        uses: styfle/cancel-workflow-action@0.11.0
         with:
           access_token: ${{ github.token }}
       - name: Free disk space
