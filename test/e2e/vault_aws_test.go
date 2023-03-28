@@ -21,6 +21,8 @@ const (
 	// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
 	vaultAwsRole   = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
 	vaultAwsRegion = "us-east-1"
+
+	vaultRole = "vault-role"
 )
 
 var _ = Describe("Vault Secret Store (AWS Auth)", func() {
@@ -43,7 +45,7 @@ var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 			Address: testContext.VaultInstance().Address(),
 			AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 				Aws: &gloov1.Settings_VaultAwsAuth{
-					VaultRole:       vaultAwsRole,
+					VaultRole:       vaultRole,
 					Region:          vaultAwsRegion,
 					AccessKeyId:     v.AccessKeyID,
 					SecretAccessKey: v.SecretAccessKey,
@@ -68,7 +70,7 @@ var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 		testContext.JustBeforeEach()
 
 		// We need to turn on Vault Auth after it has started running
-		err := testContext.VaultInstance().EnableAWSAuthMethod(vaultSecretSettings)
+		err := testContext.VaultInstance().EnableAWSAuthMethod(vaultSecretSettings, vaultAwsRole)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

@@ -194,7 +194,7 @@ func (i *VaultInstance) EnableSecretEngine(secretEngine string) error {
 	return err
 }
 
-func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) error {
+func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
 	if err != nil {
@@ -219,7 +219,7 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) 
 	}
 
 	// Configure the Vault role to align with the provided AWS role
-	_, err = i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", settings.GetAws().GetVaultRole()), "policies=admin")
+	_, err = i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", awsAuthRole), "policies=admin")
 	if err != nil {
 		return err
 	}
