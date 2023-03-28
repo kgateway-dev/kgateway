@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5960
+    description: >
+      Setting `global.glooRbac.namespaced=true` now also constrains the certgen jobs access permissions to secrets from 
+      the entire cluster to just those in the gloo install namespace. Also the original role 
+      (`gloo-gateway-secret-create-vwc-update`) was split into two separate roles 
+      (`gloo-gateway-secret-create` and `gloo-gateway-vwc-update`) as `gloo-gateway-vwc-update` needs to access cluster scoped 
+      validatingWebhookConfigs. `gloo-gateway-secret-create-vwc-update` no longer exists.

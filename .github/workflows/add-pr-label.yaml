@@ -14,7 +14,8 @@ jobs:
         shell: bash
         run: |
           echo "Pull Request is from a fork. Setting IS_COMMUNITY_PR to true"
-          echo "::set-output name=IS_COMMUNITY_PR::true"
+          echo "IS_COMMUNITY_PR=true" >> $GITHUB_OUTPUT
+
       - name: Add PR label
         uses: christianvuerings/add-labels@v1
         if: ${{ !steps.community-pr-check.outputs.IS_COMMUNITY_PR }}
