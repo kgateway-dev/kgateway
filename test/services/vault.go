@@ -1,14 +1,17 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/testutils"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/log"
@@ -19,7 +22,6 @@ import (
 
 const defaultVaultDockerImage = "vault:1.12.2"
 const DefaultVaultToken = "root"
-const defaultAWSArn = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
 
 const (
 	DefaultHost = "127.0.0.1"
@@ -217,7 +219,7 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) 
 	}
 
 	// Configure the Vault role to align with the provided AWS role
-	_, err = i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", defaultAWSArn), "policies=admin")
+	_, err = i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", settings.GetAws().GetVaultRole()), "policies=admin")
 	if err != nil {
 		return err
 	}
@@ -226,21 +228,32 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets) 
 }
 
 func (i *VaultInstance) WriteSecret(secret *v1.Secret) error {
-	// TODO
-	// subsittue values for secret content
-
-	body := `{"data":{"metadata":{"name":"test-secret", "namespace":"gloo-system"},"oauth":{"clientSecret":"foo"}}}`
-	path := "/v1/secret/data/gloo/gloo.solo.io/v1/Secret/gloo-system/test-secret"
-
 	requestBuilder := testutils.DefaultRequestBuilder().
-		WithPostBody(body).
-		WithPath(path).
+		WithPostBody(i.getVaultSecretPayload(secret)).
+		WithPath(i.getVaultSecretPath(secret)).
 		WithHostname(i.hostname).
 		WithPort(i.port).
 		WithHeader("X-Vault-Token", i.token)
 
 	_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
 	return err
+}
+
+func (i *VaultInstance) getVaultSecretPayload(secret *v1.Secret) string {
+	values := make(map[string]interface{})
+	data, err := protoutils.MarshalMap(secret)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "can marshal secret into map")
+	values["data"] = data
+
+	vaultSecretBytes, err := json.Marshal(values)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "can unmarshal map into bytes")
+
+	return string(vaultSecretBytes)
+}
+
+func (i *VaultInstance) getVaultSecretPath(secret *v1.Secret) string {
+	return fmt.Sprintf("v1/secret/data/gloo/gloo.solo.io/v1/Secret/%s/%s",
+		secret.GetMetadata().GetNamespace(), secret.GetMetadata().GetName())
 }
 
 func (i *VaultInstance) Binary() string {

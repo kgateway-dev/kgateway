@@ -37,12 +37,14 @@ var _ = BeforeSuite(func() {
 
 	testContextFactory = &e2e.TestContextFactory{
 		EnvoyFactory: envoyFactory,
+		VaultFactory: vaultFactory,
 	}
 })
 
 var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
+	_ = vaultFactory.Clean()
 })
 
 func TestE2e(t *testing.T) {
