@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 )
 
 var _ = Describe("Create", func() {
 
-	if os.Getenv("RUN_VAULT_TESTS") != "1" {
+	if !glootestutils.IsEnvTruthy(glootestutils.RunVaultTests) {
 		log.Print("This test downloads and runs vault and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
 		return
 	}

@@ -250,6 +250,7 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets, 
 	return nil
 }
 
+// WriteSecret persists a Secret in Vault
 func (i *VaultInstance) WriteSecret(secret *v1.Secret) error {
 	requestBuilder := testutils.DefaultRequestBuilder().
 		WithPostBody(i.getVaultSecretPayload(secret)).
@@ -262,6 +263,8 @@ func (i *VaultInstance) WriteSecret(secret *v1.Secret) error {
 	return err
 }
 
+// getVaultSecretPayload converts a Gloo secret into a string representing the data that will be pushed to Vault
+// Mirrors the functionality in: https://github.com/solo-io/solo-kit/blob/9b38e31e4ba879b94dd5ebd925471d0c8f363565/pkg/api/v1/clients/vault/resource_client.go#L47
 func (i *VaultInstance) getVaultSecretPayload(secret *v1.Secret) string {
 	values := make(map[string]interface{})
 	data, err := protoutils.MarshalMap(secret)
@@ -274,6 +277,8 @@ func (i *VaultInstance) getVaultSecretPayload(secret *v1.Secret) string {
 	return string(vaultSecretBytes)
 }
 
+// getVaultSecretPath returns the path where a Gloo secret will be persisted in Vault
+// Mirrors the functionality in: https://github.com/solo-io/solo-kit/blob/9b38e31e4ba879b94dd5ebd925471d0c8f363565/pkg/api/v1/clients/vault/resource_client.go#L335
 func (i *VaultInstance) getVaultSecretPath(secret *v1.Secret) string {
 	return fmt.Sprintf("v1/secret/data/gloo/gloo.solo.io/v1/Secret/%s/%s",
 		secret.GetMetadata().GetNamespace(), secret.GetMetadata().GetName())
