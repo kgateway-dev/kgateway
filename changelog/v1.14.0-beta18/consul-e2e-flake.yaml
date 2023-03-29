@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7932
+    resolvesIssue: true
+    description: Fix a flake in our consul_test which would cause inconsistent behavior in CI.
