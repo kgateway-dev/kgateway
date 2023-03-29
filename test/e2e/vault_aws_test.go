@@ -17,7 +17,7 @@ import (
 const (
 	// These tests run using the following AWS ARN for the Vault Role
 	// If you want to run these tests locally, ensure that your local AWS credentials match,
-	// or adjust the configured role
+	// or use another role
 	// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
 	vaultAwsRole   = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
 	vaultAwsRegion = "us-east-1"
