@@ -10,5 +10,5 @@ import (
 
 func TestHelpers(t *testing.T) {
 	testutils.RegisterCommonFailHandlers()
-	RunSpecs(t, "Helpres Suite")
+	RunSpecs(t, "Helpers Suite")
 }
