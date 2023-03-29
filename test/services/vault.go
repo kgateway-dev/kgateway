@@ -34,10 +34,12 @@ type VaultFactory struct {
 	useTls    bool
 }
 
+// NewVaultFactory returns a VaultFactory
+// TODO (sam-heilbron):
+// TODO This factory supports a number of mechanisms to run vault (binary path as env var, lookup vault, docker)
+// TODO We should just decide what pattern(s) we want to support and simplify this service to match
 func NewVaultFactory() (*VaultFactory, error) {
-
 	path := os.Getenv("VAULT_BINARY")
-
 	if path != "" {
 		return &VaultFactory{
 			vaultPath: path,
@@ -126,7 +128,7 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	return &VaultInstance{
 		vaultpath: vf.vaultPath,
 		tmpdir:    tmpdir,
-		useTls:    false, // this is not used currently
+		useTls:    false, // this is not used currently but we know we will need to support it soon
 		token:     DefaultVaultToken,
 		hostname:  DefaultHost,
 		port:      DefaultPort,
