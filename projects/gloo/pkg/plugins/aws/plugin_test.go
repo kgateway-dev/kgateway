@@ -470,6 +470,55 @@ var _ = Describe("Plugin", func() {
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
 		})
 
+		getPerRouteConfig := func(outroute *envoy_config_route_v3.Route) *AWSLambdaPerRoute {
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			pfc := outroute.GetTypedPerFilterConfig()[FilterName]
+			var perRouteCfg AWSLambdaPerRoute
+			err := pfc.UnmarshalTo(&perRouteCfg)
+			Expect(err).NotTo(HaveOccurred())
+			return &perRouteCfg
+		}
+
+		It("should set route transformer when unwrapAsApiGateway=True && unwrapAsAlb=False", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = false
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetUnwrapAsAlb()).To(BeFalse())
+			Expect(cfg.GetTransformerConfig()).ToNot(BeNil())
+			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
+		})
+
+		It("should set route transformer when responseTransformation is true", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).NotTo(BeNil())
+			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
+		})
+
+		It("should error when unwrapAsApiGateway=True && unwrapAsAlb=True", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).To(MatchError("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set"))
+		})
+
+		It("should not set route transformer when unwrapAsApiGateway=False && responseTransformation=False", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = false
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).To(BeNil())
+		})
+
 		Context("should interact well with transform plugin", func() {
 
 			var (
@@ -477,7 +526,7 @@ var _ = Describe("Plugin", func() {
 			)
 
 			BeforeEach(func() {
-				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().RequestTransformation = true
 				route.Options = &v1.RouteOptions{
 					StagedTransformations: &v1transformation.TransformationStages{
 						Regular: &v1transformation.RequestResponseTransformations{
@@ -585,7 +634,7 @@ var _ = Describe("Plugin", func() {
 			It("should produce 2 filters when not unwrapping", func() {
 				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 				Expect(err).NotTo(HaveOccurred())
-				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().RequestTransformation = true
 				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -593,17 +642,13 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(2))
 			})
-			It("should produce 1 filter when unwrapping", func() {
+			It("should error when unwrapping", func() {
 				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 				Expect(err).NotTo(HaveOccurred())
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
 				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
 				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-				Expect(err).NotTo(HaveOccurred())
-
-				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(filters).To(HaveLen(1))
+				Expect(err).To(MatchError("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set"))
 			})
 		})
 	})

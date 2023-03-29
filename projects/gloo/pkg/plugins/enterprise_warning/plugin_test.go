@@ -369,7 +369,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 
 	Context("aws", func() {
 
-		It("will not err if aws.UnwrapAsApiGateway is not configured on single destination route", func() {
+		It("will not err if aws.WrapAsApiGateway is not configured on single destination route", func() {
 			p := NewPlugin()
 
 			route := &v1.Route{
@@ -386,8 +386,8 @@ var _ = Describe("enterprise_warning plugin", func() {
 								DestinationSpec: &v1.DestinationSpec{
 									DestinationType: &v1.DestinationSpec_Aws{
 										Aws: &awsapi.DestinationSpec{
-											LogicalName:        "funcName",
-											UnwrapAsApiGateway: false,
+											LogicalName:      "funcName",
+											WrapAsApiGateway: false,
 										},
 									},
 								},
@@ -401,7 +401,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("will err if aws.UnwrapAsApiGateway is configured on single destination route", func() {
+		It("will err if aws.WrapAsApiGateway is configured on single destination route", func() {
 			p := NewPlugin()
 
 			route := &v1.Route{
@@ -418,8 +418,8 @@ var _ = Describe("enterprise_warning plugin", func() {
 								DestinationSpec: &v1.DestinationSpec{
 									DestinationType: &v1.DestinationSpec_Aws{
 										Aws: &awsapi.DestinationSpec{
-											LogicalName:        "funcName",
-											UnwrapAsApiGateway: true,
+											LogicalName:      "funcName",
+											WrapAsApiGateway: true,
 										},
 									},
 								},
@@ -433,7 +433,7 @@ var _ = Describe("enterprise_warning plugin", func() {
 			ExpectEnterpriseOnlyErr(err)
 		})
 
-		It("will err if aws.UnwrapAsApiGateway is configured on multi destination route", func() {
+		It("will err if aws.WrapAsApiGateway is configured on multi destination route", func() {
 			p := NewPlugin()
 
 			route := &v1.Route{
@@ -455,8 +455,8 @@ var _ = Describe("enterprise_warning plugin", func() {
 										DestinationSpec: &v1.DestinationSpec{
 											DestinationType: &v1.DestinationSpec_Aws{
 												Aws: &awsapi.DestinationSpec{
-													LogicalName:        "funcName",
-													UnwrapAsApiGateway: true,
+													LogicalName:      "funcName",
+													WrapAsApiGateway: true,
 												},
 											},
 										},

@@ -991,7 +991,8 @@ type HeaderBodyTransform struct {
 	unknownFields protoimpl.UnknownFields
 
 	// When transforming a request, setting this to true will additionally add "queryString",
-	// "httpMethod" and "path" to the body
+	// "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path",
+	// and "multiValueHeaders" to the body
 	AddRequestMetadata bool `protobuf:"varint,1,opt,name=add_request_metadata,json=addRequestMetadata,proto3" json:"add_request_metadata,omitempty"`
 }
 

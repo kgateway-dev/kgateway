@@ -389,9 +389,9 @@ the given name. Use this option when you want to include request header values i
 transformations.
 - base64_encode(string): encodes the input string to base64.
 - base64_decode(string): decodes the input string from base64.
-- substring(string, start_pos, substring_len): returns a substring of the 
+- substring(string, start_pos, substring_len): returns a substring of the
 input string, starting at `start_pos` and extending for `substring_len`
-characters. If no `substring_len` is provided or `substring_len` is <= 0, the 
+characters. If no `substring_len` is provided or `substring_len` is <= 0, the
 substring extends to the end of the input string.
 
 ```yaml
@@ -448,7 +448,7 @@ substring extends to the end of the input string.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `addRequestMetadata` | `bool` | When transforming a request, setting this to true will additionally add "queryString", "httpMethod" and "path" to the body. |
+| `addRequestMetadata` | `bool` | When transforming a request, setting this to true will additionally add "queryString", "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path", and "multiValueHeaders" to the body. |
 
 
 

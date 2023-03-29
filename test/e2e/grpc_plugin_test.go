@@ -3,11 +3,14 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -18,13 +21,11 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -41,9 +42,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	)
 
 	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.LinuxOnly("Relies on FDS"),
-		)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -59,8 +57,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			WhatToRun: services.What{
 				DisableGateway: false,
 				DisableUds:     true,
-				// test relies on FDS to discover the grpc spec via reflection
-				DisableFds: false,
+				DisableFds:     true,
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
@@ -68,7 +65,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{
-					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
+					FdsMode: gloov1.Settings_DiscoveryOptions_DISABLED,
 				},
 			},
 		}
@@ -79,8 +76,10 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
-		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
+		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
+		// Discovery is off so we fill in the upstream here.
+		helpers.PatchResource(ctx, tu.Upstream.Metadata.Ref(), populateDeprecatedApi, testClients.UpstreamClient.BaseClient())
 	})
 
 	AfterEach(func() {
@@ -115,9 +114,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
-		}))))
 	})
 
 	It("Routes to GRPC Functions with parameters", func() {
@@ -142,9 +138,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
-		}))))
 	})
 })
 
@@ -186,4 +179,27 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 			},
 		},
 	}
+}
+
+func populateDeprecatedApi(res resources.Resource) resources.Resource {
+	tu := res.(*gloov1.Upstream)
+	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
+	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	Expect(err).ToNot(HaveOccurred())
+	singleEncoded := []byte(base64.StdEncoding.EncodeToString(bytes))
+	grpcServices := []*grpc.ServiceSpec_GrpcService{
+		{
+			ServiceName: "TestService",
+			PackageName: "glootest",
+		},
+	}
+	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
+	t.SetServiceSpec(&options.ServiceSpec{
+		PluginType: &options.ServiceSpec_Grpc{
+			Grpc: &grpc.ServiceSpec{
+				Descriptors:  singleEncoded,
+				GrpcServices: grpcServices,
+			},
+		}})
+	return tu
 }

@@ -172,6 +172,23 @@ spec:
                         realm:
                           type: string
                       type: object
+                    hmacAuth:
+                      properties:
+                        parametersInHeaders:
+                          type: object
+                        secretRefs:
+                          properties:
+                            secretRefs:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
+                      type: object
                     jwt:
                       maxProperties: 0
                       type: object
