@@ -346,10 +346,6 @@ replace (
 	k8s.io/client-go => k8s.io/client-go v0.25.8
 	k8s.io/code-generator => k8s.io/code-generator v0.25.8
 	k8s.io/component-base => k8s.io/component-base v0.25.8
-
-	// klog is likely unused, but if it is we want to use this fork
-	// see https://github.com/solo-io/gloo/pull/1880
-	k8s.io/klog => github.com/stefanprodan/klog v0.0.0-20190418165334-9cbb78b20423
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65
 	k8s.io/kubectl => k8s.io/kubectl v0.25.8
 	k8s.io/metrics => k8s.io/metrics v0.25.8
