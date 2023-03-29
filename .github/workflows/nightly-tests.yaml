@@ -26,7 +26,7 @@ jobs:
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
         kube-version: [ { node: 'v1.23.17', kubectl: 'v1.23.17', kind: 'v0.17.0', helm: 'v3.11.2' },
-                        { node: 'v1.25.8', kubectl: 'v1.25.8',  kind: 'v0.17.0', helm: 'v3.11.2' }]
+                        { node: 'v1.25.3', kubectl: 'v1.25.8',  kind: 'v0.17.0', helm: 'v3.11.2' }]
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/regression-tests
