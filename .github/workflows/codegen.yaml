@@ -40,7 +40,7 @@ jobs:
         with:
           version: '3.6.1'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/cache@v1
+      - uses: actions/cache@v3
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
