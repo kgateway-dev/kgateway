@@ -344,7 +344,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			It("works with ssl", func() {
 				caFile := kube2e.ToFile(helpers.Certificate())
-				//noinspection GoUnhandledErrorResult
+				//goland:noinspection GoUnhandledErrorResult
 				defer os.Remove(caFile)
 
 				err := setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testrunner:/tmp/ca.crt")

@@ -95,7 +95,7 @@ var _ = Describe("Consul e2e", Ordered, func() {
 			if err != nil {
 				return "", err
 			}
-			//noinspection GoUnhandledErrorResult
+			//goland:noinspection GoUnhandledErrorResult
 			defer response.Body.Close()
 
 			body, err := ioutil.ReadAll(response.Body)
