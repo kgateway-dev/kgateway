@@ -48,7 +48,7 @@ runs:
       version: ${{ matrix.kube-version.kubectl }}
   - uses: azure/setup-helm@v1
     with:
-      version: v3.6.0
+      version: ${{ matrix.kube-version.helm }}
   - name: Setup test env
     shell: bash
     env:
