@@ -15,7 +15,9 @@ import (
 // does not have
 //
 // Please note that when the server response time exceeds the client timeout, you may hit the following error:
-// 	"Client.Timeout exceeded while awaiting headers"
+//
+//	"Client.Timeout exceeded while awaiting headers"
+//
 // The solution would be to increase the client timeout defined below. We chose 2 seconds as a reasonable
 // default which allows tests to pass consistently.
 var DefaultHttpClient = &http.Client{
