@@ -86,7 +86,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Vault
 		vaultInstance, err = vaultFactory.NewVaultInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = vaultInstance.Run()
+		err = vaultInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInstance.EnableSecretEngine(customSecretEngine)
 		Expect(err).NotTo(HaveOccurred())
@@ -176,7 +176,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			err = consulInstance.Clean()
 			Expect(err).NotTo(HaveOccurred())
 		}
-		vaultInstance.Clean()
 		envoyInstance.Clean()
 
 		os.RemoveAll(settingsDir)

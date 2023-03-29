@@ -1,6 +1,7 @@
 package secret_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -12,18 +13,26 @@ import (
 )
 
 var _ = Describe("Create", func() {
+
 	if os.Getenv("RUN_VAULT_TESTS") != "1" {
 		log.Print("This test downloads and runs vault and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
 		return
 	}
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+
 		helpers.UseDefaultClients()
 		var err error
 		// Start Vault
 		vaultInstance, err = vaultFactory.NewVaultInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = vaultInstance.Run()
+		err = vaultInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Connect the client to the vaultInstance
@@ -32,9 +41,9 @@ var _ = Describe("Create", func() {
 	})
 
 	AfterEach(func() {
-		vaultInstance.Clean()
-
 		helpers.UseDefaultClients()
+
+		cancel()
 	})
 
 	Context("vault storage backend", func() {
