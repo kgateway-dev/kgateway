@@ -9,9 +9,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 )
 
-// groupVirtualServicesBySslConfig returning a stable order of sslConfigs
+// GroupVirtualServicesBySslConfig returning a stable order of sslConfigs
 // and a map of sslconfigs to their associated Virtual service lists to use on.
-func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*ssl.SslConfig, map[*ssl.SslConfig][]*v1.VirtualService) {
+func GroupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*ssl.SslConfig, map[*ssl.SslConfig][]*v1.VirtualService) {
 	mergedSslConfig := map[string]*ssl.SslConfig{}
 	groupedVirtualServices := map[string][]*v1.VirtualService{}
 
@@ -27,13 +27,13 @@ func groupVirtualServicesBySslConfig(virtualServices []*v1.VirtualService) ([]*s
 			} else {
 				matchingCfg.SniDomains = merge(matchingCfg.GetSniDomains(), sslConfig.GetSniDomains()...)
 			}
-			groupedVirtualServices[sslConfigHash] = []*v1.VirtualService{virtualService}
+			groupedVirtualServices[sslConfigHash] = append(groupedVirtualServices[sslConfigHash], virtualService)
 
 		} else {
 			// there is no existing sslConfig, create a new entry
 			ptrToCopy := proto.Clone(sslConfig).(*ssl.SslConfig)
 			mergedSslConfig[sslConfigHash] = ptrToCopy
-			groupedVirtualServices[sslConfigHash] = append(groupedVirtualServices[sslConfigHash], virtualService)
+			groupedVirtualServices[sslConfigHash] = []*v1.VirtualService{virtualService}
 		}
 	}
 

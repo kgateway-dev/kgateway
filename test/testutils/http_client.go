@@ -22,13 +22,15 @@ type HttpClientBuilder struct {
 	timeout time.Duration
 
 	rootCaCert         string
+	serverName         string
 	proxyProtocolBytes []byte
 }
 
 // DefaultClientBuilder returns an HttpClientBuilder with some default values
 func DefaultClientBuilder() *HttpClientBuilder {
 	return &HttpClientBuilder{
-		timeout: DefaultHttpClient.Timeout,
+		timeout:    DefaultHttpClient.Timeout,
+		serverName: "gateway-proxy",
 	}
 }
 
@@ -42,8 +44,13 @@ func (c *HttpClientBuilder) WithProxyProtocolBytes(bytes []byte) *HttpClientBuil
 	return c
 }
 
-func (c *HttpClientBuilder) WithTLS(rootCaCert string) *HttpClientBuilder {
+func (c *HttpClientBuilder) WithTLSRootCa(rootCaCert string) *HttpClientBuilder {
 	c.rootCaCert = rootCaCert
+	return c
+}
+
+func (c *HttpClientBuilder) WithTLSServerName(serverName string) *HttpClientBuilder {
+	c.serverName = serverName
 	return c
 }
 
@@ -55,6 +62,7 @@ func (c *HttpClientBuilder) Clone() *HttpClientBuilder {
 
 	clone.timeout = c.timeout
 	clone.rootCaCert = c.rootCaCert
+	clone.serverName = c.serverName
 	clone.proxyProtocolBytes = nil
 	clone.proxyProtocolBytes = append(clone.proxyProtocolBytes, c.proxyProtocolBytes...)
 	return clone
@@ -67,6 +75,10 @@ func (c *HttpClientBuilder) Build() *http.Client {
 		dialContext     func(ctx context.Context, network, addr string) (net.Conn, error)
 	)
 
+	if c.timeout.Seconds() == 0 {
+		ginkgo.Fail("No timeout set on client")
+	}
+
 	// If the rootCACert is provided, configure the client to use TLS
 	if c.rootCaCert != "" {
 		caCertPool := x509.NewCertPool()
@@ -77,7 +89,7 @@ func (c *HttpClientBuilder) Build() *http.Client {
 
 		tlsClientConfig = &tls.Config{
 			InsecureSkipVerify: false,
-			ServerName:         "gateway-proxy",
+			ServerName:         c.serverName,
 			RootCAs:            caCertPool,
 		}
 	}
@@ -109,6 +121,7 @@ func (c *HttpClientBuilder) Build() *http.Client {
 		TLSClientConfig: tlsClientConfig,
 		DialContext:     dialContext,
 	}
+	client.Timeout = c.timeout
 
 	return &client
 }
