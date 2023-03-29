@@ -44,7 +44,7 @@ jobs:
           wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.deb
           sudo dpkg -i trivy_${TRIVY_VERSION}_Linux-64bit.deb
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
         id: go

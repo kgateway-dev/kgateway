@@ -89,7 +89,7 @@ jobs:
         df -h
     - name: Set up Go
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
       id: go
