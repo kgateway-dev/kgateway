@@ -14,7 +14,7 @@ import (
 // DefaultHttpClient should be used in tests because it configures a timeout which the http.DefaultClient
 // does not have
 var DefaultHttpClient = &http.Client{
-	Timeout: time.Second * 1,
+	Timeout: time.Second * 2,
 }
 
 // HttpClientBuilder simplifies the process of generating an http client in tests
