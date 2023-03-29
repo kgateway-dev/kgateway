@@ -42,7 +42,8 @@ var (
 )
 
 type TestContextFactory struct {
-	EnvoyFactory *services.EnvoyFactory
+	EnvoyFactory  *services.EnvoyFactory
+	ConsulFactory *services.ConsulFactory
 }
 
 func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requirement) *TestContext {
@@ -52,6 +53,16 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requir
 	return &TestContext{
 		envoyInstance:         f.EnvoyFactory.MustEnvoyInstance(),
 		testUpstreamGenerator: v1helpers.NewTestHttpUpstream,
+	}
+}
+
+func (f *TestContextFactory) NewTestContextWithConsul(testRequirements ...testutils.Requirement) *TestContextWithConsul {
+	requirementsWithVault := append(testRequirements, testutils.Consul())
+	testContext := f.NewTestContext(requirementsWithVault...)
+
+	return &TestContextWithConsul{
+		TestContext:    testContext,
+		consulInstance: f.ConsulFactory.MustConsulInstance(),
 	}
 }
 
@@ -272,4 +283,29 @@ func (c *TestContext) GetHttpsRequestBuilder() *testutils.HttpRequestBuilder {
 		WithContentType("application/octet-stream").
 		WithPort(defaults.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
 		WithHost(DefaultHost)         // The default Virtual Service routes traffic only with a particular Host header
+}
+
+// TestContextWithConsul represents the aggregate set of configuration needed to run a single e2e test
+// using Consul as a service registry to route traffic to. This is used rarely in tests, so we intentionally try to separate the
+// consul logic from the core TestContext to avoid adding complexity
+type TestContextWithConsul struct {
+	*TestContext
+
+	consulInstance *services.ConsulInstance
+}
+
+// ConsulInstance returns the wrapper for the running instance of Vault that this test is using
+func (c *TestContextWithConsul) ConsulInstance() *services.ConsulInstance {
+	return c.consulInstance
+}
+
+// RunConsul starts running the ConsulInstance and blocks until it has successfully started
+func (c *TestContextWithConsul) RunConsul() {
+	ginkgo.By("TestContextWithConsul: Running Consul")
+
+	// The ConsulInstance will be cleaned up when the provided context is cancelled
+	// By running Consul with the TestContext.Ctxt, we can be sure that when the TestContext
+	// completes, Consul will be cleaned up
+	err := c.ConsulInstance().Run(c.Ctx())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }

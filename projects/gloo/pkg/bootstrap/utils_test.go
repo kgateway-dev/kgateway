@@ -160,10 +160,7 @@ var _ = Describe("Utils", func() {
 		})
 
 		AfterEach(func() {
-			if consulInstance != nil {
-				err := consulInstance.Clean()
-				Expect(err).NotTo(HaveOccurred())
-			}
+			consulInstance.Clean()
 		})
 
 		Context("artifacts as consul key value", func() {

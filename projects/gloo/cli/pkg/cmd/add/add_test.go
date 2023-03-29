@@ -33,10 +33,8 @@ var _ = Describe("Add", func() {
 	})
 
 	AfterEach(func() {
-		if consulInstance != nil {
-			err := consulInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
+		consulInstance.Clean()
+
 		helpers.UseDefaultClients()
 	})
 
