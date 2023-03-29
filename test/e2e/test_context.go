@@ -300,19 +300,13 @@ func (v *TestContextWithVault) VaultInstance() *services.VaultInstance {
 	return v.vaultInstance
 }
 
-func (v *TestContextWithVault) JustBeforeEach() {
-	ginkgo.By("TestContextWithVault.JustBeforeEach: Running Vault")
+// RunVault starts running the VaultInstance and blocks until it has successfully started
+func (v *TestContextWithVault) RunVault() {
+	ginkgo.By("TestContextWithVault: Running Vault")
 
-	err := v.VaultInstance().Run()
+	// The VaultInstance will be cleaned up when the provided context is cancelled
+	// By running Vault with the TestContext.Ctxt, we can be sure that when the TestContext
+	// completes, Vault will be cleaned up
+	err := v.VaultInstance().Run(v.Ctx())
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-	v.TestContext.JustBeforeEach()
-}
-
-func (v *TestContextWithVault) AfterEach() {
-	ginkgo.By("TestContextWithVault.AfterEach: Stopping Vault")
-
-	v.VaultInstance().Clean()
-
-	v.TestContext.AfterEach()
 }

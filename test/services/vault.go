@@ -1,13 +1,17 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	errors "github.com/rotisserie/eris"
 
 	"github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/testutils"
@@ -135,7 +139,13 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 	}, nil
 }
 
-func (i *VaultInstance) Run() error {
+func (i *VaultInstance) Run(ctx context.Context) error {
+	go func() {
+		// Ensure the VaultInstance is cleaned up when the Run context is completed
+		<-ctx.Done()
+		i.Clean()
+	}()
+
 	devCmd := "-dev"
 	if i.useTls {
 		devCmd = "-dev-tls"
@@ -156,11 +166,34 @@ func (i *VaultInstance) Run() error {
 		return err
 	}
 
-	time.Sleep(time.Millisecond * 1500)
 	i.cmd = cmd
 	i.session = session
 
-	return nil
+	return i.waitForVaultToBeRunning()
+}
+
+func (i *VaultInstance) waitForVaultToBeRunning() error {
+	pingInterval := time.Tick(time.Millisecond * 100)
+	pingDuration := time.Second * 5
+	pingEndpoint := fmt.Sprintf("%s:%d", i.hostname, i.port)
+
+	ctx, cancel := context.WithTimeout(context.Background(), pingDuration)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Errorf("timed out waiting for vault on %s", pingEndpoint)
+
+		case <-pingInterval:
+			conn, _ := net.Dial("tcp", pingEndpoint)
+			if conn != nil {
+				conn.Close()
+				return nil
+			}
+			continue
+		}
+	}
 }
 
 func (i *VaultInstance) Token() string {

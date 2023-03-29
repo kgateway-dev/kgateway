@@ -36,6 +36,7 @@ var _ = Describe("Vault Secret Store (Token Auth)", func() {
 			},
 		})
 
+		testContext.RunVault()
 	})
 
 	AfterEach(func() {
@@ -64,7 +65,7 @@ var _ = Describe("Vault Secret Store (Token Auth)", func() {
 				},
 				Kind: &gloov1.Secret_Oauth{
 					Oauth: &v1.OauthSecret{
-						ClientSecret: "test",
+						ClientSecret: "original-secret",
 					},
 				},
 			}
@@ -83,7 +84,7 @@ var _ = Describe("Vault Secret Store (Token Auth)", func() {
 						Ctx: testContext.Ctx(),
 					})
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(secret.GetOauth().GetClientSecret()).To(Equal("test"))
+				g.Expect(secret.GetOauth().GetClientSecret()).To(Equal("original-secret"))
 			}, "5s", ".5s").Should(Succeed())
 		})
 

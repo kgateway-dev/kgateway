@@ -507,11 +507,7 @@ func (ei *EnvoyInstance) runWithAll(eic EnvoyInstanceConfig, bootstrapBuilder En
 	}
 	ei.cmd = cmd
 
-	err = ei.waitForEnvoyToBeRunning()
-	if err != nil {
-		return err
-	}
-	return nil
+	return ei.waitForEnvoyToBeRunning()
 }
 
 func (ei *EnvoyInstance) Binary() string {
@@ -596,8 +592,8 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 }
 
 func (ei *EnvoyInstance) waitForEnvoyToBeRunning() error {
-	pingInterval := time.Tick(time.Second)
-	pingDuration := time.Second * 15
+	pingInterval := time.Tick(time.Millisecond * 100)
+	pingDuration := time.Second * 10
 	pingEndpoint := fmt.Sprintf("localhost:%d", ei.AdminPort)
 
 	ctx, cancel := context.WithTimeout(context.Background(), pingDuration)

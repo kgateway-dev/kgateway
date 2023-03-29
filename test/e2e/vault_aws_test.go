@@ -16,7 +16,7 @@ import (
 
 const (
 	// These tests run using the following AWS ARN for the Vault Role
-	// If you want to run these tests locally, ensure that your local credentials match,
+	// If you want to run these tests locally, ensure that your local AWS credentials match,
 	// or adjust the configured role
 	// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
 	vaultAwsRole   = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
@@ -60,6 +60,12 @@ var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 				VaultSecretSource: vaultSecretSettings,
 			},
 		})
+
+		testContext.RunVault()
+
+		// We need to turn on Vault AWS Auth after it has started running
+		err = testContext.VaultInstance().EnableAWSAuthMethod(vaultSecretSettings, vaultAwsRole)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -68,10 +74,6 @@ var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 
 	JustBeforeEach(func() {
 		testContext.JustBeforeEach()
-
-		// We need to turn on Vault Auth after it has started running
-		err := testContext.VaultInstance().EnableAWSAuthMethod(vaultSecretSettings, vaultAwsRole)
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	JustAfterEach(func() {
