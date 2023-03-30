@@ -1,30 +1,37 @@
 package add_test
 
 import (
+	"context"
 	"log"
-	"os"
 
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	testutils2 "github.com/solo-io/gloo/test/testutils"
 )
 
 var _ = Describe("Add", func() {
-	if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+	if !testutils2.IsEnvTruthy(testutils2.RunConsulTests) {
 		log.Print("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 		return
 	}
 
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
 	BeforeEach(func() {
 		helpers.UseDefaultClients()
-		var err error
-		// Start Consul
-		consulInstance, err = consulFactory.NewConsulInstance()
+
+		ctx, cancel = context.WithCancel(context.Background())
+
+		consulInstance = consulFactory.MustConsulInstance()
+		err := consulInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
-		err = consulInstance.Run()
-		Expect(err).NotTo(HaveOccurred())
+
 		// wait for consul to start
 		Eventually(func() error {
 			_, err := client.KV().Put(&api.KVPair{Key: "test"}, nil)
@@ -33,9 +40,9 @@ var _ = Describe("Add", func() {
 	})
 
 	AfterEach(func() {
-		consulInstance.Clean()
-
 		helpers.UseDefaultClients()
+
+		cancel()
 	})
 
 	Context("consul storage backend", func() {
