@@ -595,10 +595,8 @@ package-chart: generate-helm-files
 
 .PHONY: push-chart-to-registry
 push-chart-to-registry: generate-helm-files
-	mkdir -p $(HELM_REPOSITORY_CACHE)
-	cp $(DOCKER_CONFIG)/config.json $(HELM_REPOSITORY_CACHE)/config.json
-	HELM_EXPERIMENTAL_OCI=1 helm chart save $(HELM_DIR) gcr.io/solo-public/gloo-helm:$(VERSION)
-	HELM_EXPERIMENTAL_OCI=1 helm chart push gcr.io/solo-public/gloo-helm:$(VERSION)
+	helm package $(HELM_DIR)
+	helm push --registry-config $(DOCKER_CONFIG)/config.json gloo-$(VERSION).tgz oci://gcr.io/solo-public/gloo-helm
 
 .PHONY: fetch-package-and-save-helm
 fetch-package-and-save-helm: generate-helm-files
