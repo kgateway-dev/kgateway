@@ -231,7 +231,7 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 	return i.ReloadConfig()
 }
 
-// While it may be tempting to just reload all config using `consul reload` or marshalling new json and
+// RegisterLiveService While it may be tempting to just reload all config using `consul reload` or marshalling new json and
 // sending SIGHUP to the process (per https://www.consul.io/commands/reload), it is preferable to live update
 // using the consul APIs as this is a more realistic flow and doesn't fire our watches too actively (which can
 // both make debugging hard and hide bugs)

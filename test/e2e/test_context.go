@@ -57,8 +57,8 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requir
 }
 
 func (f *TestContextFactory) NewTestContextWithConsul(testRequirements ...testutils.Requirement) *TestContextWithConsul {
-	requirementsWithVault := append(testRequirements, testutils.Consul())
-	testContext := f.NewTestContext(requirementsWithVault...)
+	requirementsWithConsul := append(testRequirements, testutils.Consul())
+	testContext := f.NewTestContext(requirementsWithConsul...)
 
 	return &TestContextWithConsul{
 		TestContext:    testContext,
