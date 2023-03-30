@@ -476,10 +476,17 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 }
 
 func getConsulRunOpts(settings *gloov1.Settings) bootstrap.Consul {
-	client, err := api.NewClient(api.DefaultConfig())
+	if settings.GetConsul() == nil {
+		// If the developer hasn't configured Consul settings, we don't want to try to create a consul client
+		return bootstrap.Consul{
+			ConsulWatcher: nil,
+		}
+	}
+
+	consulClient, err := api.NewClient(api.DefaultConfig())
 	Expect(err).NotTo(HaveOccurred())
 
-	consulWatcher, err := consul.NewConsulWatcher(client,
+	consulWatcher, err := consul.NewConsulWatcher(consulClient,
 		settings.GetConsul().GetServiceDiscovery().GetDataCenters(),
 		settings.GetConsulDiscovery().GetServiceTagsAllowlist())
 	Expect(err).NotTo(HaveOccurred())
