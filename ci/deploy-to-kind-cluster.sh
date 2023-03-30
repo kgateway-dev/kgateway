@@ -29,7 +29,7 @@ fi
 KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, use 'gateway'.
 # The version of istio to install for glooctl tests
 # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
-ISTIO_VERSION="${ISTIO_VERSION:-1.11.4}"
+ISTIO_VERSION="${ISTIO_VERSION:-1.17.1}"
 
 # if user is running arm, these are configurations for the registry
 REGISTRY_NAME='kind-registry'
