@@ -3,43 +3,34 @@ package e2e_test
 import (
 	"context"
 	"errors"
-	"fmt"
+	"time"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/gomega/matchers"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"time"
 
 	"github.com/solo-io/gloo/test/testutils"
 
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 
 	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/rotisserie/eris"
-	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Consul e2e", func() {
+var _ = Describe("Consul e2e", func() {
 
-	Context("Consul Service Registry (TestContext)", func() {
+	Context("Consul Service Registry", func() {
 
 		var (
 			svc1, svc2, svc3 *v1helpers.TestUpstream
@@ -54,7 +45,7 @@ var _ = FDescribe("Consul e2e", func() {
 				Consul: &gloov1.Settings_ConsulConfiguration{
 					DnsAddress: consul2.DefaultDnsAddress,
 					DnsPollingInterval: &duration.Duration{
-						Seconds: 1, // sam-heilbron, perhpas we increase this?
+						Seconds: 1,
 					},
 					ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{
 						DataCenters: nil, // Use all available data-centers
@@ -116,7 +107,7 @@ var _ = FDescribe("Consul e2e", func() {
 			testContext.JustAfterEach()
 		})
 
-		FIt("works as expected", func() {
+		It("works as expected", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder()
 
 			Eventually(func(g Gomega) {
@@ -137,282 +128,98 @@ var _ = FDescribe("Consul e2e", func() {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-1"))
 			}, "20s", ".1s").Should(Succeed(), "Eventually requests should only go to service with tag `1`")
 		})
-	})
 
-	Context("Consul Service Registry", func() {
-
-		var (
-			ctx                  context.Context
-			cancel               context.CancelFunc
-			consulInstance       *services.ConsulInstance
-			err                  error
-			serviceTagsAllowlist []string
-			consulWatcher        consul.ConsulWatcher
-		)
-
-		BeforeEach(func() {
-			testutils.ValidateRequirementsAndNotifyGinkgo(
-				testutils.Consul(),
-				//testutils.LinuxOnly("Unknown"),
-			)
-
-			ctx, cancel = context.WithCancel(context.Background())
-
-			defaults.HttpPort = services.NextBindPort()
-			defaults.HttpsPort = services.NextBindPort()
-
-			// Start Consul
-			consulInstance, err = consulFactory.NewConsulInstance()
-			Expect(err).NotTo(HaveOccurred())
-			err = consulInstance.Run(ctx)
-			Expect(err).NotTo(HaveOccurred())
-
-			// init consul client
-			client, err := api.NewClient(api.DefaultConfig())
-			Expect(err).NotTo(HaveOccurred())
-
-			serviceTagsAllowlist = []string{"1", "2"}
-
-			consulWatcher, err = consul.NewConsulWatcher(client, nil, serviceTagsAllowlist)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		AfterEach(func() {
-			cancel()
-		})
-
-		Context("with envoy and gloo", func() {
-
-			var (
-				testClients      services.TestClients
-				envoyInstance    *services.EnvoyInstance
-				envoyPort        uint32
-				svc1, svc2, svc3 *v1helpers.TestUpstream
-				ro               *services.RunOptions
-			)
-
-			queryService := func() (string, error) {
-				response, err := http.Get(fmt.Sprintf("http://localhost:%d", envoyPort))
-				if err != nil {
-					return "", err
-				}
-				//noinspection GoUnhandledErrorResult
-				defer response.Body.Close()
-
-				body, err := ioutil.ReadAll(response.Body)
-				if err != nil {
-					return "", err
-				}
-				if response.StatusCode != 200 {
-					return "", eris.Errorf("bad status code: %v (%v)", response.StatusCode, string(body))
-				}
-				return string(body), nil
-			}
+		Context("Using Hostname address (as opposed to IPs addresses)", func() {
 
 			BeforeEach(func() {
-				ro = &services.RunOptions{
-					NsToWrite: writeNamespace,
-					NsToWatch: []string{"default", writeNamespace},
-					WhatToRun: services.What{
-						DisableGateway: true,
-						DisableUds:     true,
-						DisableFds:     true,
-					},
-					Settings: &gloov1.Settings{
-						ConsulDiscovery: &gloov1.Settings_ConsulUpstreamDiscoveryConfiguration{
-							ServiceTagsAllowlist: serviceTagsAllowlist,
+				// These tests only seem to pass on a Linux machine, I have not investigated why
+				testutils.ValidateRequirementsAndNotifyGinkgo(testutils.LinuxOnly("Unknown"))
+
+				err := testContext.ConsulInstance().RegisterService("my-svc", "my-svc-1", "my-svc.service.dc1.consul", []string{"svc", "1"}, svc1.Port)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("resolves consul services", func() {
+				requestBuilder := testContext.GetHttpRequestBuilder()
+
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-1"))
+				}, "20s", ".1s").Should(Succeed(), "Eventually requests should only go to service with tag `1`")
+				Consistently(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-1"))
+				}, "2s", ".2s").Should(Succeed(), "Consistently requests should only go to service with tag `1`")
+			})
+		})
+
+		Context("EDS only updates", func() {
+
+			var (
+				defaultConsulSettings = &gloov1.Settings{
+					Consul: &gloov1.Settings_ConsulConfiguration{
+						DnsAddress: consul2.DefaultDnsAddress,
+						DnsPollingInterval: &duration.Duration{
+							Seconds: 1,
+						},
+						ServiceDiscovery: &gloov1.Settings_ConsulConfiguration_ServiceDiscoveryOptions{
+							DataCenters: nil, // Use all available data-centers
 						},
 					},
-					ConsulClient:     consulWatcher,
-					ConsulDnsAddress: consul2.DefaultDnsAddress,
+					ConsulDiscovery: &gloov1.Settings_ConsulUpstreamDiscoveryConfiguration{
+						ServiceTagsAllowlist: []string{"1", "2"},
+					},
 				}
-				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			})
+			)
 
-			JustBeforeEach(func() {
-				// Start Envoy
-				envoyPort = defaults.HttpPort
-				envoyInstance, err = envoyFactory.NewEnvoyInstance()
-				Expect(err).NotTo(HaveOccurred())
-				err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
-				Expect(err).NotTo(HaveOccurred())
+			runTest := func() {
 
-				// Run two simple web applications locally
-				svc1 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-1")
-				svc2 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-2")
-				svc3 = v1helpers.NewTestHttpUpstreamWithReply(ctx, envoyInstance.LocalAddr(), "svc-3")
+				By("requests only go to endpoints behind test upstream 1")
+				requestBuilder := testContext.GetHttpRequestBuilder()
 
-				// Register services with consul
-				err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc1.Port)
-				Expect(err).NotTo(HaveOccurred())
-				err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "2"}, svc2.Port)
-				Expect(err).NotTo(HaveOccurred())
-				//we should not discover this service as it will be filtered out
-				err = consulInstance.RegisterService("my-svc-1", "my-svc-3", envoyInstance.GlooAddr, []string{"svc", "3"}, svc3.Port)
-				Expect(err).NotTo(HaveOccurred())
-			})
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-1"))
+				}, "20s", ".1s").Should(Succeed(), "Eventually requests should only go to service with tag `1`")
+				Consistently(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-1"))
+				}, "2s", ".2s").Should(Succeed(), "Consistently requests should only go to service with tag `1`")
 
-			AfterEach(func() {
-				envoyInstance.Clean()
-			})
-
-			It("works as expected", func() {
-				_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
+				// update service one to point to test upstream 2 port
+				err := testContext.ConsulInstance().RegisterService("my-svc", "my-svc-1", testContext.EnvoyInstance().GlooAddr, []string{"svc", "1"}, svc2.Port)
 				Expect(err).NotTo(HaveOccurred())
 
-				// Wait for proxy to be accepted
-				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				By("requests only go to endpoints behind test upstream 2")
+
+				// ensure EDS picked up this endpoint-only change
+				// test upstream 1 endpoint is now stale; should only get requests to endpoints for test upstream 2 for svc1
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-2"))
+				}, "20s", ".1s").Should(Succeed(), "Eventually requests should only go to service with tag `2`")
+				Consistently(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveExactResponseBody("svc-2"))
+				}, "2s", ".2s").Should(Succeed(), "Consistently requests should only go to service with tag `1`")
+			}
+
+			Context("non-blocking EDS queries", func() {
+
+				BeforeEach(func() {
+					defaultConsulSettings.ConsulDiscovery.EdsBlockingQueries = &wrapperspb.BoolValue{Value: false}
+					testContext.SetRunSettings(defaultConsulSettings)
 				})
 
-				By("requests only go to service with tag '1'")
-
-				// Wait for the endpoints to be registered
-				Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-					_, err := queryService()
-					if err != nil {
-						return svc1.C, err
-					}
-					return svc1.C, nil
-				}, "20s", "0.2s").Should(Receive())
-				// Service 2 does not match the tags on the route, so we should get only requests from service 1
-				Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-					_, err := queryService()
-					if err != nil {
-						return svc1.C, err
-					}
-					return svc1.C, nil
-				}, "2s", "0.2s").Should(Receive())
-
-				err = consulInstance.RegisterService("my-svc", "my-svc-2", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
-				Expect(err).NotTo(HaveOccurred())
-
-				By("requests are load balanced between the two services")
-
-				// svc2 first to ensure we also still route to svc1 after registering svc2
-				Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-					_, err := queryService()
-					if err != nil {
-						return svc2.C, err
-					}
-					return svc2.C, nil
-				}, "10s", "0.2s").Should(Receive())
-				Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-					_, err := queryService()
-					if err != nil {
-						return svc1.C, err
-					}
-					return svc1.C, nil
-				}, "10s", "0.2s").Should(Receive())
-
+				It("works as expected", func() {
+					runTest()
+				})
 			})
 
-			// note: seems to fail on mac. can investigate further.
-			// we get a 503 instead of 200
-			It("resolves consul services with hostname addresses (as opposed to IPs addresses)", func() {
-				err = consulInstance.RegisterService("my-svc", "my-svc-1", "my-svc.service.dc1.consul", []string{"svc", "1"}, svc1.Port)
-				Expect(err).NotTo(HaveOccurred())
+			Context("blocking EDS queries", func() {
 
-				_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
-				Expect(err).NotTo(HaveOccurred())
-
-				// Wait for proxy to be accepted
-				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-					return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				BeforeEach(func() {
+					defaultConsulSettings.ConsulDiscovery.EdsBlockingQueries = &wrapperspb.BoolValue{Value: true}
+					testContext.SetRunSettings(defaultConsulSettings)
 				})
 
-				// Wait for endpoints to be discovered
-				Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-					_, err := queryService()
-					if err != nil {
-						return svc1.C, err
-					}
-					return svc1.C, nil
-				}, "20s", "0.2s").Should(Receive())
-
-				By("requests only go to service with tag '1'")
-
-				// Service 2 does not match the tags on the route, so we should get only requests from service 1
-				Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-					_, err := queryService()
-					if err != nil {
-						return svc1.C, err
-					}
-					return svc1.C, nil
-				}, "2s", "0.2s").Should(Receive())
-			})
-
-			Context("test eds only updates", func() {
-
-				runTest := func() {
-					_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
-					Expect(err).NotTo(HaveOccurred())
-
-					// Wait for proxy to be accepted
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-					})
-
-					By("requests only go to endpoints behind test upstream 1")
-
-					// Wait for the endpoints to be registered
-					Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-						_, err := queryService()
-						if err != nil {
-							return svc1.C, err
-						}
-						return svc1.C, nil
-					}, "20s", "0.2s").Should(Receive())
-					// Service 2 does not match the tags on the route, so we should get only requests from service 1 with test upstream 1 endpoint
-					Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-						_, err := queryService()
-						if err != nil {
-							return svc1.C, err
-						}
-						return svc1.C, nil
-					}, "2s", "0.2s").Should(Receive())
-
-					// update service one to point to test upstream 2 port
-					err = consulInstance.RegisterService("my-svc", "my-svc-1", envoyInstance.GlooAddr, []string{"svc", "1"}, svc2.Port)
-					Expect(err).NotTo(HaveOccurred())
-
-					By("requests only go to endpoints behind test upstream 2")
-
-					// ensure EDS picked up this endpoint-only change
-					Eventually(func() (<-chan *v1helpers.ReceivedRequest, error) {
-						_, err := queryService()
-						if err != nil {
-							return svc2.C, err
-						}
-						return svc2.C, nil
-					}, "20s", "0.2s").Should(Receive())
-					// test upstream 1 endpoint is now stale; should only get requests to endpoints for test upstream 2 for svc1
-					Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
-						_, err := queryService()
-						if err != nil {
-							return svc2.C, err
-						}
-						return svc2.C, nil
-					}, "2s", "0.2s").Should(Receive())
-				}
-
-				Context("non-blocking EDS queries", func() {
-					It("works as expected", func() {
-						runTest()
-					})
+				It("works as expected", func() {
+					runTest()
 				})
-
-				Context("blocking EDS queries", func() {
-
-					BeforeEach(func() {
-						ro.Settings.ConsulDiscovery.EdsBlockingQueries = &wrapperspb.BoolValue{Value: true}
-					})
-
-					It("works as expected", func() {
-						runTest()
-					})
-				})
-
 			})
 
 		})
@@ -630,41 +437,3 @@ var _ = FDescribe("Consul e2e", func() {
 	})
 
 })
-
-func getProxyWithConsulRoute(ns string, bindPort uint32) *gloov1.Proxy {
-	return &gloov1.Proxy{
-		Metadata: &core.Metadata{
-			Name:      gatewaydefaults.GatewayProxyName,
-			Namespace: ns,
-		},
-		Listeners: []*gloov1.Listener{{
-			Name:        "listener",
-			BindAddress: net.IPv4zero.String(),
-			BindPort:    bindPort,
-			ListenerType: &gloov1.Listener_HttpListener{
-				HttpListener: &gloov1.HttpListener{
-					VirtualHosts: []*gloov1.VirtualHost{{
-						Name:    "vh-1",
-						Domains: []string{"*"},
-						Routes: []*gloov1.Route{{
-							Action: &gloov1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Consul{
-												Consul: &gloov1.ConsulServiceDestination{
-													ServiceName: "my-svc",
-													Tags:        []string{"svc", "1"},
-												},
-											},
-										},
-									},
-								},
-							},
-						}},
-					}},
-				},
-			},
-		}},
-	}
-}
