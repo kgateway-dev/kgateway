@@ -243,9 +243,9 @@ var _ = Describe("Consul e2e", func() {
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
 
-			consulInstance, err := consulFactory.NewConsulInstance()
-			Expect(err).NotTo(HaveOccurred())
-			err = consulInstance.Run(ctx)
+			consulInstance = consulFactory.MustConsulInstance()
+
+			err := consulInstance.Run(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
 			// init consul client
