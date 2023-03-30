@@ -2008,7 +2008,7 @@ spec:
   virtualHoost: {}
 `,
 							// This is handled by validation schemas now
-							expectedErr: `ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`,
+							expectedErr: `Error from server (BadRequest): error when creating "STDIN": VirtualService in version "v1" cannot be handled as a VirtualService: strict decoding error: unknown field "spec.virtualHoost"`,
 						},
 						{
 							resourceYaml: `
