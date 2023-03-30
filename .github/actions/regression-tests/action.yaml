@@ -26,18 +26,11 @@ runs:
 
       echo "After clearing disk space:"
       df -h
-  - uses: actions/checkout@v3
   - name: Set up Go
     uses: actions/setup-go@v4
     with:
       go-version-file: go.mod
     id: go
-  - uses: actions/cache@v3
-    with:
-      path: ~/go/pkg/mod
-      key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-      restore-keys: |
-        ${{ runner.os }}-go-
   - uses: engineerd/setup-kind@v0.5.0
     with:
       # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
