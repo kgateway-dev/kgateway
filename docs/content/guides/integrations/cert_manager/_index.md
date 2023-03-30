@@ -37,7 +37,7 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 
 ### Add a Service
 
-Add a service that will get exposed via Gloo Edge. In this document we will use the petclinic spring application. 
+Deploy the following `petclinic` Spring application to expose in Gloo Edge.
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
@@ -47,9 +47,11 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/p
 
 ## Utilizing the ACME DNS-01 Challenge
 
-We'll need to allow cert manager access to configure DNS records in AWS.
+Start by allowing cert manager to configure DNS records in AWS.
 
-This documentation describe the use of an **AWS key pair** for test and development purposes, and it also shows the use of **IAM roles for service accounts (IRSA)** for production use.
+Choose between the following options:
+* Development and testing environments: Use an [**AWS key pair**](#using-an-aws-key-pair).
+* Production environments: Use [**IAM roles for service accounts (IRSA)**](#using-aws-irsa).
 
 See cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager, especially for cross-account case not covered in this page. 
 
@@ -69,11 +71,11 @@ export RS='{ "Changes": [{"Action": "UPSERT", "ResourceRecordSet":{"ResourceReco
 aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_ZONE_ID --change-batch "$RS"
 ```
 
-### Using AWS key pair
+### Using an AWS key pair
 
 #### Provide AWS account details to cert-manager
 
-We will need to add the access keys as a kubernetes secret, so that cert-manager can access them:
+Add the access keys as a Kubernetes secret, so that cert-manager can access them:
 
 ```shell
 export ACCESS_KEY_ID=...
@@ -111,13 +113,13 @@ EOF
 
 ### Using AWS IRSA
 
-A more production approach should use IAM roles for service accounts (IRSA).
+For production-level setups, use IAM roles for service accounts (IRSA) to give cert manager the necessary access.
 
-Make sure it is enable in your EKS cluster before going throught this tutorial. See more on [AWS website](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+**Before you begin**: Make sure that IRSA is enabled in your EKS cluster. For more information, see the [AWS IRSA documentation](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
 
 #### Create role and policy
 
-For convenience, let's create some variables :
+For convenience, save the following information in environment variables:
 
 ```shell
 export AWS_ACCOUNT=$(aws sts get-caller-identity --query Account | tr -d '"')
@@ -128,7 +130,7 @@ export ROUTE53_ZONE_ID=$(aws route53 list-hosted-zones|jq -r '.HostedZones[]|sel
 export EKS_HASH=$(aws eks describe-cluster --name ${EKS_CLUSTER_NAME} --query cluster.identity.oidc.issuer | cut -d '/' -f5 | tr -d '"')
 ```
 
-Now, we can create a policy with the minimum rights needed and attach it to a role :
+Create a policy with the minimum-required access.
 
 ```shell
 cat <<EOF > policy.json
@@ -162,7 +164,7 @@ aws iam create-policy \
     --policy-document file://policy.json
 ```
 
-And attach this policy to a role :
+And attach this policy to a role.
 
 ```shell
 cat <<EOF > trust-policy.json
@@ -191,13 +193,13 @@ aws iam attach-role-policy --policy-arn arn:aws:iam::${AWS_ACCOUNT}:policy/AwsCe
 export IAM_ROLE_ARN=$(aws iam get-role --role-name EksCertManagerRole --query Role.Arn | tr -d '"')
 ```
 
-The cert-manager service account can then be annotated to use this role to manage route53 records :
+Annotate the `cert-manager` service account to use this role to manage `route53` records.
 
 ```bash
 kubectl annotate sa -n cert-manager cert-manager "eks.amazonaws.com/role-arn"="${IAM_ROLE_ARN}"
 ```
 
-To be able to read the ServiceAccount token, it is necessary to modify the cert-manager deployment to define new file system permissions (it can also be done using cert-manager helm chart).
+To enable the cert-manager deployment to read the ServiceAccount token, modify the cert-manager deployment to define new file system permissions with the following command. You can also make these changes by upgrading the Helm chart that you used to deployed cert-manager, which persists the changes across upgrades.
 
 ```
 kubectl patch deployment -n cert-manager cert-manager --type "json" -p '[{"op":"add","path":"/spec/template/spec/securityContext/fsGroup","value":1001}]
