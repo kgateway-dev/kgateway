@@ -172,8 +172,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	})
 
 	AfterEach(func() {
-		consulInstance.Clean()
-		vaultInstance.Clean()
 		envoyInstance.Clean()
 
 		os.RemoveAll(settingsDir)
