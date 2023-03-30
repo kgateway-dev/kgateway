@@ -265,14 +265,14 @@ gloo:
       envoyLogLevel: error
 ```
 
-Additionally, you can change the logging level for other services such as `rate-limit` as the given Helm values example below:
+Additionally, you can change the logging level for other services, such as the `rate-limit` service in the following Helm values example:
 
 ```yaml
 global:
   extensions:
     rateLimit:
       deployment:
-        loglevel: error
+        logLevel: error
 ```
 
 ### All else fails
