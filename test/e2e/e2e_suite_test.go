@@ -19,6 +19,7 @@ import (
 var (
 	envoyFactory  *services.EnvoyFactory
 	consulFactory *services.ConsulFactory
+	vaultFactory  *services.VaultFactory
 
 	testContextFactory *e2e.TestContextFactory
 
@@ -31,9 +32,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
+	vaultFactory, err = services.NewVaultFactory()
+	Expect(err).NotTo(HaveOccurred())
 
 	testContextFactory = &e2e.TestContextFactory{
 		EnvoyFactory:  envoyFactory,
+		VaultFactory:  vaultFactory,
 		ConsulFactory: consulFactory,
 	}
 })
@@ -41,6 +45,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	_ = envoyFactory.Clean()
 	_ = consulFactory.Clean()
+	_ = vaultFactory.Clean()
 })
 
 func TestE2e(t *testing.T) {
@@ -50,5 +55,5 @@ func TestE2e(t *testing.T) {
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
 	contextutils.SetLogLevel(zapcore.DebugLevel)
-	RunSpecs(t, "E2e Suite")
+	RunSpecs(t, "E2E Suite")
 }
