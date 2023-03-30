@@ -65,7 +65,9 @@ var _ = Describe("dynamic forward proxy", func() {
 				WithRouteAction(e2e.DefaultRouteName, &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_DynamicForwardProxy{
 						DynamicForwardProxy: &dynamic_forward_proxy.PerRouteConfig{
-							HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{AutoHostRewriteHeader: "x-rewrite-me"},
+							HostRewriteSpecifier: &dynamic_forward_proxy.PerRouteConfig_AutoHostRewriteHeader{
+								AutoHostRewriteHeader: "x-rewrite-me",
+							},
 						},
 					},
 				}).

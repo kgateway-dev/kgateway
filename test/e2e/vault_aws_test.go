@@ -1,42 +1,71 @@
 package e2e_test
 
 import (
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Vault Secret Store (Token Auth)", func() {
+const (
+	// These tests run using the following AWS ARN for the Vault Role
+	// If you want to run these tests locally, ensure that your local AWS credentials match,
+	// or use another role
+	// https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html
+	vaultAwsRole   = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
+	vaultAwsRegion = "us-east-1"
+
+	vaultRole = "vault-role"
+)
+
+var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 
 	var (
+		vaultSecretSettings *gloov1.Settings_VaultSecrets
+
 		testContext *e2e.TestContextWithVault
 	)
 
 	BeforeEach(func() {
-		testContext = testContextFactory.NewTestContextWithVault()
+		testContext = testContextFactory.NewTestContextWithVault(testutils.AwsCredentials())
 		testContext.BeforeEach()
+
+		localAwsCredentials := credentials.NewSharedCredentials("", "")
+		v, err := localAwsCredentials.Get()
+		Expect(err).NotTo(HaveOccurred(), "can load AWS shared credentials")
+
+		vaultSecretSettings = &gloov1.Settings_VaultSecrets{
+			Address: testContext.VaultInstance().Address(),
+			AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
+				Aws: &gloov1.Settings_VaultAwsAuth{
+					VaultRole:       vaultRole,
+					Region:          vaultAwsRegion,
+					AccessKeyId:     v.AccessKeyID,
+					SecretAccessKey: v.SecretAccessKey,
+				},
+			},
+			PathPrefix: bootstrap.DefaultPathPrefix,
+			RootKey:    bootstrap.DefaultRootKey,
+		}
 
 		testContext.SetRunSettings(&gloov1.Settings{
 			SecretSource: &gloov1.Settings_VaultSecretSource{
-				VaultSecretSource: &gloov1.Settings_VaultSecrets{
-					Address: testContext.VaultInstance().Address(),
-					AuthMethod: &gloov1.Settings_VaultSecrets_AccessToken{
-						AccessToken: services.DefaultVaultToken,
-					},
-					PathPrefix: bootstrap.DefaultPathPrefix,
-					RootKey:    bootstrap.DefaultRootKey,
-				},
+				VaultSecretSource: vaultSecretSettings,
 			},
 		})
 
 		testContext.RunVault()
+
+		// We need to turn on Vault AWS Auth after it has started running
+		err = testContext.VaultInstance().EnableAWSAuthMethod(vaultSecretSettings, vaultAwsRole)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -65,7 +94,7 @@ var _ = Describe("Vault Secret Store (Token Auth)", func() {
 				},
 				Kind: &gloov1.Secret_Oauth{
 					Oauth: &v1.OauthSecret{
-						ClientSecret: "original-secret",
+						ClientSecret: "test",
 					},
 				},
 			}
@@ -84,7 +113,7 @@ var _ = Describe("Vault Secret Store (Token Auth)", func() {
 						Ctx: testContext.Ctx(),
 					})
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(secret.GetOauth().GetClientSecret()).To(Equal("original-secret"))
+				g.Expect(secret.GetOauth().GetClientSecret()).To(Equal("test"))
 			}, "5s", ".5s").Should(Succeed())
 		})
 

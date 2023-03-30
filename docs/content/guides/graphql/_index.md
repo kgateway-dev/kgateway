@@ -26,4 +26,4 @@ For more information, check out the [GraphQL blog post](https://www.solo.io/blog
 
 Check out the following pages to set up GraphQL in your Gloo Edge environment.
 
-{{% children description="true" depth="2" %}}
+{{% children description="true" %}}

@@ -32,15 +32,7 @@ You can install with static manifests or helm. For this example we will use the 
 
 ```shell
 kubectl create namespace cert-manager
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-```
-
-### Add a Service
-
-Deploy the following `petclinic` Spring application to expose in Gloo Edge.
-
-```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
 ```
 
 ---
@@ -53,7 +45,7 @@ Choose between the following options:
 * Development and testing environments: Use an [**AWS key pair**](#using-an-aws-key-pair).
 * Production environments: Use [**IAM roles for service accounts (IRSA)**](#using-aws-irsa).
 
-See cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager, especially for cross-account case not covered in this page. 
+For more details on the access requirements for cert-manager, especially for cross-account cases that are not covered in this guide, see the cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/). 
 
 
 In this example we used the domain name `test-123456789.solo.io`. We'll create an `A` record that maps to the IP address of the 
