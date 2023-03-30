@@ -6,7 +6,7 @@
 {{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) -}}
 {{- if $spec.kind.deployment}}
 {{- if $spec.podDisruptionBudget }}
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: {{ $name | kebabcase }}-pdb

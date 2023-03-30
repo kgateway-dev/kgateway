@@ -2058,7 +2058,7 @@ spec:
 						})
 
 						pdb := makeUnstructured(`
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -2082,7 +2082,7 @@ spec:
 						})
 
 						pdb := makeUnstructured(`
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -2107,7 +2107,7 @@ spec:
 						})
 
 						pdbFormat := `
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: %s-pdb
