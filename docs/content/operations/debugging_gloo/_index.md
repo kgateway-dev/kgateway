@@ -258,8 +258,6 @@ gloo:
     logLevel: error
   discovery:
     logLevel: error
-  gateway:
-    logLevel: error
   gatewayProxies:
     gatewayProxy:
       envoyLogLevel: error
