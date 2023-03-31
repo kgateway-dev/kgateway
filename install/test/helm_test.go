@@ -4316,7 +4316,7 @@ spec:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-gateway-secret-create-vwc-update-` + namespace + `
+    name: gloo-gateway-secret-create-` + namespace + `
     labels:
         app: gloo
         gloo: rbac
@@ -4327,9 +4327,6 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["create", "get", "update"]
-- apiGroups: ["admissionregistration.k8s.io"]
-  resources: ["validatingwebhookconfigurations"]
-  verbs: ["get", "update"]
 `)
 						testManifest.ExpectUnstructured(clusterRole.GetKind(), clusterRole.GetNamespace(), clusterRole.GetName()).To(BeEquivalentTo(clusterRole))
 
@@ -4338,7 +4335,7 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-secret-create-vwc-update-` + namespace + `
+  name: gloo-gateway-secret-create-` + namespace + `
   labels:
     app: gloo
     gloo: rbac
@@ -4351,7 +4348,7 @@ subjects:
   namespace: ` + namespace + `
 roleRef:
   kind: ClusterRole
-  name: gloo-gateway-secret-create-vwc-update-` + namespace + `
+  name: gloo-gateway-secret-create-` + namespace + `
   apiGroup: rbac.authorization.k8s.io
 ---
 `)

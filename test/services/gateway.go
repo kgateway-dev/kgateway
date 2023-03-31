@@ -415,6 +415,20 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		}
 		validationOpts.AlwaysAcceptResources = settings.GetGateway().GetValidation().GetAlwaysAccept().GetValue()
 	}
+
+	// By default in e2e tests, we persist secrets in memory
+	var secretFactory factory.ResourceClientFactory = f
+
+	if settings.GetVaultSecretSource() != nil {
+		// The test author has configured the secret source to be Vault, instead of an in memory cache
+		// As a result, we need to construct a client to communicate with that vault instance
+		vaultSecretSource := settings.GetVaultSecretSource()
+
+		vaultClient, err := bootstrap.VaultClientForSettings(vaultSecretSource)
+		Expect(err).NotTo(HaveOccurred())
+		secretFactory = bootstrap.NewVaultSecretClientFactory(vaultClient, vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
+	}
+
 	return bootstrap.Opts{
 		Settings:                settings,
 		WriteNamespace:          settings.GetDiscoveryNamespace(),
@@ -422,7 +436,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		Upstreams:               f,
 		UpstreamGroups:          f,
 		Proxies:                 f,
-		Secrets:                 f,
+		Secrets:                 secretFactory,
 		Artifacts:               f,
 		AuthConfigs:             f,
 		RateLimitConfigs:        f,

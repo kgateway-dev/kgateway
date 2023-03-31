@@ -1,0 +1,10 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7739
+    resolvesIssue: false
+    description: >
+      In the Settings object, you can configure `gateway.isolateVirtualHostsBySslConfig` to ensure that
+      VirtualHosts, secured with SslConfig, are published to unique filter chains. We attempt to merge VirtualServices
+      which share the same SslConfiguration. There was a bug in the merge logic that caused VirtualServices to be
+      dropped from the Proxy, and only the last matching VirtualService would remain, if you were using 
+      `isolateVirtualHostsBySslConfig=true`.

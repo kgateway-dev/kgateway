@@ -97,7 +97,6 @@ config:
   # This is the canonical URL that all clients MUST use to refer to dex. If a
   # path is provided, dex's HTTP service will listen at a non-root URL.
   issuer: http://dex.gloo-system.svc.cluster.local:32000
-
   # Instead of reading from an external storage, use this list of clients.
   staticClients:
   - id: gloo

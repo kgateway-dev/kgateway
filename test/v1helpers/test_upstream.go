@@ -363,6 +363,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 				RootCAs:            caCertPool,
 				InsecureSkipVerify: true,
 			}
+
 			client.Transport = &http.Transport{
 				TLSClientConfig: tlsConfig,
 			}

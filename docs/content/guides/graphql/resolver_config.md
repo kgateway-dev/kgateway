@@ -4,9 +4,15 @@ weight: 40
 description: Manually configure resolvers and schema for your GraphQL API.
 ---
 
-You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. The following sections describe the configuration for REST or gRPC resolvers, schema definitions for the types of data to return to GraphQL queries, and an in-depth example.
+You can deploy your own GraphQL API, which might not leverage automatic service discovery and registration. To manually configure GraphQL resolvers, you create a Gloo Edge GraphQL API CRD. 
 
-## REST resolvers
+The following sections describe the configuration for local or remote query resolution, schema definitions for the types of data to return to GraphQL queries, and an in-depth example.
+
+## Define REST and gRPC resolvers for local execution
+
+If your upstream does not define GraphQL resolvers, you can define resolvers in your `GraphQLApi` resource. In this case, Gloo Edge uses _local execution_, which means the Envoy server executes GraphQL queries locally by using the defined resolvers. Then, it proxies the executed requests to the upstreams that provide the data requested in the queries.
+
+### REST resolvers
 
 Configure a REST resolver as a section within your `GraphQLApi` YAML file.
 
@@ -67,7 +73,7 @@ spec:
         ...
 ```
 
-## gRPC resolvers
+### gRPC resolvers
 
 Configure a gRPC resolver as a section within your `GraphQLApi` YAML file.
 
@@ -119,9 +125,13 @@ spec:
         ...
 ```
 
-## Executor configuration for existing GraphQL API upstreams
+## Remote executor configuration for existing GraphQL server upstreams
 
-When your upstream service is already a GraphQL API, use a `remote` executor in the corresponding `GraphQLApi` resource. The remote executor tells the `GraphQLApi` to use the resolver in the upstream to resolve requests. You do not need to define another resolver within the `GraphQLApi`.
+{{% notice note %}}
+Remote execution is supported only in versions 1.14.0 and later.
+{{% /notice %}}
+
+When your upstream service is already a GraphQL server that includes its own resolvers, use a `remote` executor in the corresponding `GraphQLApi` resource. The remote executor tells the `GraphQLApi` to use the resolver in the upstream to resolve requests for remote execution. You do not need to define another resolver within the `GraphQLApi`.
 
 ```yaml
 ...
