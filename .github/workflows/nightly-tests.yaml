@@ -121,7 +121,7 @@ jobs:
           fi
 
           echo "Setting PREAMBLE as $preamble"
-          echo "::set-output name=preamble::$(echo $preamble)"
+          echo "preamble=$preamble" >> $GITHUB_OUTPUT
       - uses: actions/setup-go@v2
         with:
           go-version: 1.20.1

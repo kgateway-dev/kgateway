@@ -1974,8 +1974,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				out, err := install.KubectlApplyOut([]byte(yaml))
 
 				testValidationDidError := func() {
-					ExpectWithOffset(1, err).To(HaveOccurred())
 					ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
+					ExpectWithOffset(1, err).To(HaveOccurred())
 				}
 
 				testValidationDidSucceed := func() {

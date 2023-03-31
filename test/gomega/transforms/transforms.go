@@ -3,7 +3,8 @@ package transforms
 import (
 	"bytes"
 	"compress/gzip"
-	"io/ioutil"
+	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -20,7 +21,7 @@ func WithDecompressorTransform() func(b []byte) string {
 			return invalidDecompressorResponse
 		}
 		defer reader.Close()
-		body, err := ioutil.ReadAll(reader)
+		body, err := io.ReadAll(reader)
 		if err != nil {
 			return invalidDecompressorResponse
 		}
@@ -29,8 +30,22 @@ func WithDecompressorTransform() func(b []byte) string {
 	}
 }
 
+// WithHeaderValues returns a Gomega Transform that extracts the header
+// values from the http Response, for the provided header name
 func WithHeaderValues(header string) func(response *http.Response) []string {
 	return func(response *http.Response) []string {
 		return response.Header.Values(header)
+	}
+}
+
+// WithJsonBody returns a Gomega Transform that extracts the JSON body from the
+// response and returns it as a map[string]interface{}
+func WithJsonBody() func(b []byte) map[string]interface{} {
+	return func(b []byte) map[string]interface{} {
+		// parse the response body as JSON
+		var bodyJson map[string]interface{}
+		json.Unmarshal(b, &bodyJson)
+
+		return bodyJson
 	}
 }

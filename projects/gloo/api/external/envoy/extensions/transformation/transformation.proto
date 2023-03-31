@@ -48,7 +48,7 @@ message TransformationRule {
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
     Transformation response_transformation = 2;
-    // Apply a transformation in the onStreamComplete callback 
+    // Apply a transformation in the onStreamComplete callback
     // (for modifying headers and dynamic metadata for access logs)
     Transformation on_stream_completion_transformation = 4;
   }
@@ -287,9 +287,9 @@ message TransformationTemplate {
 // transformations.
 // - base64_encode(string): encodes the input string to base64.
 // - base64_decode(string): decodes the input string from base64.
-// - substring(string, start_pos, substring_len): returns a substring of the 
+// - substring(string, start_pos, substring_len): returns a substring of the
 // input string, starting at `start_pos` and extending for `substring_len`
-// characters. If no `substring_len` is provided or `substring_len` is <= 0, the 
+// characters. If no `substring_len` is provided or `substring_len` is <= 0, the
 // substring extends to the end of the input string.
 message InjaTemplate { string text = 1; }
 
@@ -299,6 +299,7 @@ message MergeExtractorsToBody {}
 
 message HeaderBodyTransform {
   // When transforming a request, setting this to true will additionally add "queryString", 
-  // "httpMethod" and "path" to the body
+  // "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path",
+  // and "multiValueHeaders" to the body
   bool add_request_metadata = 1;
 }

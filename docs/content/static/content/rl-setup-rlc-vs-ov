@@ -1,0 +1,1 @@
+Refer to the RateLimitConfig in the VirtualService that you want to rate limit. You can choose to apply the rate limiting to all the routes on the virtual host, or to specific routes.
