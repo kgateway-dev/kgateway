@@ -67,7 +67,9 @@ aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_ZONE_ID --chan
 
 #### Provide AWS account details to cert-manager
 
-Add the access keys as a Kubernetes secret, so that cert-manager can access them:
+Allow cert-manager access to configure DNS records in AWS. See cert-manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager. 
+
+Once you have configured access, add the access keys as a Kubernetes secret, so that cert-manager can access them:
 
 ```shell
 export ACCESS_KEY_ID=...

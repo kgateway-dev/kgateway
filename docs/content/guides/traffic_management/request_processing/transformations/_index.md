@@ -50,7 +50,7 @@ virtualHost:
     stagedTransformations:
       regular:
         requestTransforms:
-        - matcher:
+        - matchers:
             - prefix: '/parent'
           requestTransformation:
             transformationTemplate:
