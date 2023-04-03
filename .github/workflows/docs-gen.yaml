@@ -87,17 +87,6 @@ jobs:
 
         echo "After clearing disk space:"
         df -h
-    - name: Set up Go
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.20.1
-      id: go
-    - name: Setup Hugo
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: peaceiris/actions-hugo@v2
-      with:
-        hugo-version: '0.69.2'
     - name: Check out code into the Go module directory
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: actions/checkout@v3
@@ -106,6 +95,17 @@ jobs:
     - name: Override master checkout if deploying PR test
       if: ${{ github.event_name == 'pull_request' }}
       uses: actions/checkout@v3
+    - name: Set up Go
+      if: needs.prepare_env.outputs.should-pass-docs != 'true'
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: go.mod
+      id: go
+    - name: Setup Hugo
+      if: needs.prepare_env.outputs.should-pass-docs != 'true'
+      uses: peaceiris/actions-hugo@v2
+      with:
+        hugo-version: '0.69.2'
     - name: Detect Community PR
       id: community-pr-check
       if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}

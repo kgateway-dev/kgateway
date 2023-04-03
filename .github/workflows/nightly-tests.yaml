@@ -25,7 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [{ node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7',  kind: 'v0.17.0'}]
+        kube-version: [ { node: 'v1.23.13@sha256:ef453bb7c79f0e3caba88d2067d4196f427794086a7d0df8df4f019d5e336b61', kubectl: 'v1.23.17', kind: 'v0.17.0', helm: 'v3.11.2' },
+                        { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8',  kind: 'v0.17.0', helm: 'v3.11.2' }]
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/regression-tests
@@ -38,8 +39,8 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.21.14', kubectl: 'v1.21.14', kind: 'v0.17.0' },
-                        { node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7', kind: 'v0.17.0' } ]
+        kube-version: [ { node: 'v1.21.14@sha256:9d9eb5fb26b4fbc0c6d95fa8c790414f9750dd583f5d7cee45d92e8c26670aa1', kubectl: 'v1.21.14', kind: 'v0.17.0', helm: 'v3.9.4' },
+                        { node: 'v1.24.7@sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315', kubectl: 'v1.24.7', kind: 'v0.17.0', helm: 'v3.9.4' } ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -54,8 +55,8 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.21.14', kubectl: 'v1.21.14', kind: 'v0.17.0' },
-                        { node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7', kind: 'v0.17.0' } ]
+        kube-version: [ { node: 'v1.21.14@sha256:9d9eb5fb26b4fbc0c6d95fa8c790414f9750dd583f5d7cee45d92e8c26670aa1', kubectl: 'v1.21.14', kind: 'v0.17.0', helm: 'v3.9.4' },
+                        { node: 'v1.24.7@sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315', kubectl: 'v1.24.7', kind: 'v0.17.0', helm: 'v3.9.4' } ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -70,8 +71,8 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.21.14', kubectl: 'v1.21.14', kind: 'v0.17.0' },
-                        { node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7', kind: 'v0.17.0' } ]
+        kube-version: [ { node: 'v1.21.14@sha256:9d9eb5fb26b4fbc0c6d95fa8c790414f9750dd583f5d7cee45d92e8c26670aa1', kubectl: 'v1.21.14', kind: 'v0.17.0', helm: 'v3.9.4' },
+                        { node: 'v1.24.7@sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315', kubectl: 'v1.24.7', kind: 'v0.17.0', helm: 'v3.9.4' } ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -86,8 +87,8 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.21.14', kubectl: 'v1.21.14', kind: 'v0.17.0' },
-                        { node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7', kind: 'v0.17.0' } ]
+        kube-version: [ { node: 'v1.21.14@sha256:9d9eb5fb26b4fbc0c6d95fa8c790414f9750dd583f5d7cee45d92e8c26670aa1', kubectl: 'v1.21.14', kind: 'v0.17.0', helm: 'v3.9.4' },
+                        { node: 'v1.24.7@sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315', kubectl: 'v1.24.7', kind: 'v0.17.0', helm: 'v3.9.4' } ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -122,9 +123,9 @@ jobs:
 
           echo "Setting PREAMBLE as $preamble"
           echo "preamble=$preamble" >> $GITHUB_OUTPUT
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.20.1
+          go-version-file: go.mod
       - uses: actions/download-artifact@v3
       - name: send slack message
         env:

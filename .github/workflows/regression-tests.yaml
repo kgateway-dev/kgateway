@@ -65,7 +65,7 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade', 'istio']
-        kube-version: [{ node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7', kind: 'v0.17.0'}]
+        kube-version: [{ node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' }]
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/regression-tests
@@ -76,9 +76,9 @@ jobs:
     needs: [ regression_tests ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.20.1
+          go-version-file: go.mod
       - uses: actions/download-artifact@v3
       - name: Set pull_request_url
         run: echo "pull_request_url=$(cat ${{ github.event_path }} | jq --raw-output .pull_request._links.html.href)" >> $GITHUB_ENV

@@ -139,7 +139,7 @@ gatewayProxies:
 As a result, the following pod disruption budget policy is created:
 
 ```yaml
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb

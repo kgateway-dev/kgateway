@@ -211,7 +211,7 @@ type RunOptions struct {
 	KubeClient     kubernetes.Interface
 }
 
-// noinspection GoUnhandledErrorResult
+//goland:noinspection GoUnhandledErrorResult
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	if runOptions.GlooPort == 0 {
 		runOptions.GlooPort = AllocateGlooPort()

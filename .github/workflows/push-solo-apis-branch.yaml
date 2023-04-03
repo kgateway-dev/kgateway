@@ -76,10 +76,16 @@ jobs:
         uses: webfactory/ssh-agent@v0.4.1
         with:
           ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
         with:
-          go-version: 1.20.1
+          repository: solo-io/gloo
+          path: gloo
+          ref: ${{ env.RELEASE_TAG_NAME }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
         id: go
       - name: Install Protoc
         uses: arduino/setup-protoc@v1.1.2
@@ -87,13 +93,7 @@ jobs:
           version: '3.6.1'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-        with:
-          repository: solo-io/gloo
-          path: gloo
-          ref: ${{ env.RELEASE_TAG_NAME }}
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: solo-io/solo-apis
           path: solo-apis

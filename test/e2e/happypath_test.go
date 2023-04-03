@@ -178,7 +178,7 @@ var _ = Describe("Happy path", func() {
 					response, err := http.Get(fmt.Sprintf("http://localhost:%d/stats", envoyInstance.AdminPort))
 					Expect(err).NotTo(HaveOccurred())
 					Expect(response).NotTo(BeNil())
-					//noinspection GoUnhandledErrorResult
+					//goland:noinspection GoUnhandledErrorResult
 					defer response.Body.Close()
 
 					body, err := ioutil.ReadAll(response.Body)

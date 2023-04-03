@@ -1,4 +1,4 @@
-FROM bitnami/kubectl:1.24.7 as kubectl
+FROM bitnami/kubectl:1.25.3 as kubectl
 
 FROM alpine:3.17.2
 

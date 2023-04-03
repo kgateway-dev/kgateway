@@ -507,6 +507,8 @@
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.grpc.port|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.grpc.service|string|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.initialDelaySeconds|int32|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.timeoutSeconds|int32|||
 |gatewayProxies.NAME.podTemplate.customReadinessProbe.periodSeconds|int32|||
@@ -526,6 +528,8 @@
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.tcpSocket.port|int32|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.tcpSocket.port|string|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.tcpSocket.host|string|||
+|gatewayProxies.NAME.podTemplate.customLivenessProbe.grpc.port|int32|||
+|gatewayProxies.NAME.podTemplate.customLivenessProbe.grpc.service|string|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.initialDelaySeconds|int32|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.timeoutSeconds|int32|||
 |gatewayProxies.NAME.podTemplate.customLivenessProbe.periodSeconds|int32|||
@@ -744,6 +748,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.grpc.port|int32|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.grpc.service|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.timeoutSeconds|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds|int32|0||
@@ -763,6 +769,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.tcpSocket.port|int32|||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.tcpSocket.port|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.tcpSocket.host|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.grpc.port|int32|||
+|gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.grpc.service|string|||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.initialDelaySeconds|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.timeoutSeconds|int32|0||
 |gatewayProxies.gatewayProxy.podTemplate.customLivenessProbe.periodSeconds|int32|0||
