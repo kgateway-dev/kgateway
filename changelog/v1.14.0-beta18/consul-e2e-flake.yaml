@@ -3,3 +3,9 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/7932
     resolvesIssue: true
     description: Fix a flake in our consul_test which would cause inconsistent behavior in CI.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8003
+    resolvesIssue: false
+    description: >- 
+      Avoid a panic in the `ContainSubstrings` Gomega Matcher, by handling the case of a single
+      substring differently.
