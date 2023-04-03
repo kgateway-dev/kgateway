@@ -174,6 +174,8 @@ func (i *ConsulInstance) Silence() {
 	i.cmd.Stderr = nil
 }
 
+// Run starts the ConsulInstance
+// When the provided context is Done, the ConsulInstance is cleaned up
 func (i *ConsulInstance) Run(ctx context.Context) error {
 	go func() {
 		// Ensure the ConsulInstance is cleaned up when the Run context is completed
@@ -195,6 +197,7 @@ func (i *ConsulInstance) Binary() string {
 	return i.consulPath
 }
 
+// Clean stops the ConsulInstance
 func (i *ConsulInstance) Clean() {
 	if i == nil {
 		return
