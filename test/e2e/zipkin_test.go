@@ -89,10 +89,12 @@ var _ = Describe("Tracing config loading", func() {
 			// Execute a request against the admin endpoint, as this should result in a trace
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
 			Eventually(func(g Gomega) {
-				g.Expect(testRequest).To(ContainSubstring(`<title>Envoy Admin</title>`))
+				res, err := testRequest()
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(res).To(ContainSubstring(`<title>Envoy Admin</title>`))
 
 				g.Eventually(apiHit, 1*time.Second).Should(Receive(BeTrue()))
-			}, "10s", ".5s").Should(Succeed(), "Request should result in trace")
+			}, "10s", ".5s").Should(Succeed(), "Admin endpoint request should result in trace")
 
 		})
 
