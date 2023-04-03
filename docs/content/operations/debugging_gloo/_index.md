@@ -258,12 +258,28 @@ gloo:
     logLevel: error
   discovery:
     logLevel: error
-  gateway:
-    logLevel: error
   gatewayProxies:
     gatewayProxy:
       envoyLogLevel: error
 ```
+
+Additionally, you can change the logging level for other services in the following Helm values example:
+
+```yaml
+global:
+  extensions:
+    extAuth:
+      deployment:
+        logLevel: error
+    rateLimit:
+      deployment:
+        logLevel: error
+    caching:
+      deployment:
+        logLevel: error
+observability:
+  deployment:
+    logLevel: error
 
 ### All else fails
 
