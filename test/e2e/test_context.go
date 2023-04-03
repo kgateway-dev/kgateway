@@ -323,8 +323,8 @@ func (v *TestContextWithVault) RunVault() {
 }
 
 // TestContextWithConsul represents the aggregate set of configuration needed to run a single e2e test
-// using Consul as a service registry to route traffic to. This is used rarely in tests, so we intentionally try to separate the
-// consul logic from the core TestContext to avoid adding complexity
+// using Consul as a service registry to route traffic to. This is used rarely in tests,
+// so we intentionally try to separate the consul logic from the core TestContext to avoid adding complexity
 type TestContextWithConsul struct {
 	*TestContext
 
