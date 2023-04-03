@@ -88,10 +88,12 @@ var _ = Describe("Tracing config loading", func() {
 
 			// Execute a request against the admin endpoint, as this should result in a trace
 			testRequest := createRequestWithTracingEnabled("127.0.0.1", 11082)
-			Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
+			Eventually(func(g Gomega) {
+				g.Expect(testRequest).To(ContainSubstring(`<title>Envoy Admin</title>`))
 
-			truez := true
-			Eventually(apiHit, 5*time.Second).Should(Receive(&truez))
+				g.Eventually(apiHit, 1*time.Second).Should(Receive(BeTrue()))
+			}, "10s", ".5s").Should(Succeed(), "Request should result in trace")
+
 		})
 
 	})
@@ -244,7 +246,7 @@ var _ = Describe("Tracing config loading", func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
-			}, time.Second*10, time.Second, "tracing server should receive trace request").Should(Succeed())
+			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 
 		It("should send trace msgs with valid opentelemetry provider (cluster_name)", func() {
@@ -285,7 +287,7 @@ var _ = Describe("Tracing config loading", func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
-			}, time.Second*10, time.Second, "tracing server should receive trace request").Should(Succeed())
+			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 
 		It("should not send trace msgs with nil provider", func() {
@@ -315,7 +317,7 @@ var _ = Describe("Tracing config loading", func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Not(Receive()))
-			}, time.Second*5, time.Millisecond*250, "zipkin server should not receive trace request")
+			}, time.Second*5, time.Millisecond*250).Should(Succeed(), "zipkin server should not receive trace request")
 		})
 
 		It("should send trace msgs with valid zipkin provider (collector_ref)", func() {
@@ -358,7 +360,7 @@ var _ = Describe("Tracing config loading", func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
-			}, time.Second*10, time.Second, "tracing server should receive trace request").Should(Succeed())
+			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 
 		It("should send trace msgs with valid zipkin provider (cluster_name)", func() {
@@ -401,7 +403,7 @@ var _ = Describe("Tracing config loading", func() {
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest).Should(BeEmpty())
 				g.Eventually(collectorApiHit).Should(Receive())
-			}, time.Second*10, time.Second, "zipkin server should receive trace request").Should(Succeed())
+			}, time.Second*10, time.Second).Should(Succeed(), "zipkin server should receive trace request")
 		})
 
 		It("should error with invalid zipkin provider", func() {
