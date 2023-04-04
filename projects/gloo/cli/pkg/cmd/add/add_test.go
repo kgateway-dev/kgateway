@@ -8,12 +8,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	testutils2 "github.com/solo-io/gloo/test/testutils"
+	cliutils "github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"github.com/solo-io/gloo/test/testutils"
 )
 
 var _ = Describe("Add", func() {
-	if !testutils2.IsEnvTruthy(testutils2.RunConsulTests) {
+	if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
 		log.Print("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 		return
 	}
@@ -47,7 +47,7 @@ var _ = Describe("Add", func() {
 
 	Context("consul storage backend", func() {
 		It("works", func() {
-			err := testutils.Glooctl("add route " +
+			err := cliutils.Glooctl("add route " +
 				"--path-prefix / " +
 				"--dest-name petstore " +
 				"--prefix-rewrite /api/pets " +

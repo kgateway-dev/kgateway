@@ -12,7 +12,7 @@ import (
 
 	"github.com/solo-io/gloo/test/testutils"
 
-	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -22,7 +22,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	consulapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -43,7 +43,7 @@ var _ = Describe("Consul e2e", func() {
 
 			testContext.SetRunSettings(&gloov1.Settings{
 				Consul: &gloov1.Settings_ConsulConfiguration{
-					DnsAddress: consul2.DefaultDnsAddress,
+					DnsAddress: consulplugin.DefaultDnsAddress,
 					DnsPollingInterval: &duration.Duration{
 						Seconds: 1,
 					},
@@ -156,7 +156,7 @@ var _ = Describe("Consul e2e", func() {
 			var (
 				defaultConsulSettings = &gloov1.Settings{
 					Consul: &gloov1.Settings_ConsulConfiguration{
-						DnsAddress: consul2.DefaultDnsAddress,
+						DnsAddress: consulplugin.DefaultDnsAddress,
 						DnsPollingInterval: &duration.Duration{
 							Seconds: 1,
 						},
@@ -266,7 +266,7 @@ var _ = Describe("Consul e2e", func() {
 		// that our `refreshSpecs()` usage in consul eds.go is correct and does not miss updates (which also allows
 		// us to make performance optimizations at scale, since our current implementation has a lot more cache hits).
 		It("fires service watch even if catalog service is the only update", func() {
-			svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulplugin.ConsulConsistencyModes_DefaultMode, nil)
+			svcsChan, errChan := consulWatcher.WatchServices(ctx, []string{"dc1"}, consulapi.ConsulConsistencyModes_DefaultMode, nil)
 
 			// use select instead of eventually for easier debugging.
 			select {
