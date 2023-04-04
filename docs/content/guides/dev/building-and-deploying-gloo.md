@@ -68,7 +68,7 @@ You can choose from [several Gloo Edge installation options]({{% versioned_link_
       ```
    2. Build a kind cluster by running the script from the Gloo Edge project.
       ```sh
-      JUST_KIND=true ./ci/deploy-to-kind-cluster.sh
+      JUST_KIND=true ./ci/kind/setup-kind.sh
       ```
    Now, the Docker registry is located at `localhost:5000`. The docker registry runs the container with the image name `registry:2`.
 

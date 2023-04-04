@@ -57,8 +57,6 @@ else
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-
-# Automatically (lazily) determine OS type
 make glooctl-$GOOS-$GOARCH
 
 # 5. Install additional resources used for particular KUBE2E tests
