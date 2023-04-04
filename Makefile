@@ -44,10 +44,13 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "false"
-CREATE_TEST_ASSETS := "false"
-CREATE_ASSETS := "true"
-RUN_REGRESSION_TESTS=false
 
+# CREATE_ASSETS is used to protect certain make targets which publish assets and are used for releases
+CREATE_ASSETS := "true"
+
+# CREATE_TEST_ASSETS allows us to create assets on PRs that are unique
+# This flag will set the version to be PR-unique rather than commit-unique for charts and images
+CREATE_TEST_ASSETS := "false"
 ifneq ($(TEST_ASSET_ID),)
 	CREATE_TEST_ASSETS := "true"
 endif
