@@ -45,7 +45,7 @@ jobs:
       with:
         hugo-version: '0.69.2'
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Detect Community PR
       id: community-pr-check
       if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
