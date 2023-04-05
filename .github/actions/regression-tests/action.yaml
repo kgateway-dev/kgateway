@@ -31,16 +31,16 @@ runs:
     with:
       go-version-file: go.mod
     id: go
-  - uses: engineerd/setup-kind@v0.5.0
+  - name: Install kind
+    uses: helm/kind-action@v1.5.0
     with:
-      # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
-      skipClusterCreation: true
+      install_only: true
       version: ${{ matrix.kube-version.kind }}
-  - uses: azure/setup-kubectl@v1
+  - uses: azure/setup-kubectl@v3
     id: kubectl
     with:
       version: ${{ matrix.kube-version.kubectl }}
-  - uses: azure/setup-helm@v1
+  - uses: azure/setup-helm@v3
     with:
       version: ${{ matrix.kube-version.helm }}
   - name: Setup test env
