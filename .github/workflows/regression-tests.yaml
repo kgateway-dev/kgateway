@@ -18,16 +18,16 @@ jobs:
     - id: is-draft-pr
       name: Process draft Pull Requests
       if: ${{ github.event.pull_request.draft }}
-      run: echo "::set-output name=value::$(echo true)"
+      run: echo "value=$(echo true)" >> $GITHUB_OUTPUT
     - id: signal-ci-comment
       name: Process comments on Pull Request to signal CI
       if:  ${{ github.event.issue.pull_request }}
       run: |
-        echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/sig-ci') }})"
+        echo "value=$(echo ${{ contains(github.event.comment.body, '/sig-ci') }})" >> $GITHUB_OUTPUT
     - id: skip-ci-comment
       name: Process comments on Pull Request to skip CI
       if: ${{ github.event.issue.pull_request }}
-      run: echo "::set-output name=value::$(echo ${{ contains(github.event.comment.body, '/skip-ci') }})"
+      run: echo "value=$(echo ${{ contains(github.event.comment.body, '/skip-ci') }})" >> $GITHUB_OUTPUT
     - id: regression-tests
       name: Determine how to run regression tests
       run: |
@@ -49,7 +49,7 @@ jobs:
         fi
 
         echo "Should run regression tests? $should_run"
-        echo "::set-output name=run_value::$(echo $should_run)"
+        echo "run_value=$(echo $should_run)" >> $GITHUB_OUTPUT
 
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}}, ${{matrix.xds-relay}})
@@ -78,7 +78,7 @@ jobs:
     needs: [ regression_tests ]
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v4
         with:
           go-version: 1.18.6
       - uses: actions/download-artifact@v3
