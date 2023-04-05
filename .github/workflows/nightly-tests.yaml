@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.4.1
+      uses: styfle/cancel-workflow-action@0.11.0
       with:
         access_token: ${{ github.token }}
   regression_tests:
@@ -30,7 +30,7 @@ jobs:
         #    xds-relay: 'true'
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.4.1
+      uses: styfle/cancel-workflow-action@0.11.0
       with:
         access_token: ${{ github.token }}
     - name: Free disk space
@@ -56,7 +56,7 @@ jobs:
         go-version: 1.18.6
       id: go
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - uses: actions/cache@v1
@@ -65,16 +65,16 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    - uses: engineerd/setup-kind@v0.5.0
+    - name: Install kind
+      uses: helm/kind-action@v1.5.0
       with:
-        # We rely on the `deploy-to-kind-cluster` script to create a kind cluster
-        skipClusterCreation: true
+        install_only: true
         version: v0.17.0
-    - uses: azure/setup-kubectl@v1
+    - uses: azure/setup-kubectl@v3
       id: kubectl
       with:
         version: 'v1.24.7'
-    - uses: azure/setup-helm@v1
+    - uses: azure/setup-helm@v3
       with:
         version: v3.6.3
     - name: Setup test env
