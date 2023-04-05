@@ -3,3 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/4708
     resolvesIssue: false
     description: Updated various github actions due to deprecated methods or needing to upgrade node 12 to node 16.
+
