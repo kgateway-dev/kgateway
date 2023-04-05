@@ -41,6 +41,10 @@ const (
 	// This should be used sparingly, and if you disable a test, you should create a Github issue
 	// to track re-enabling the test
 	SkipTempDisabledTests = "SKIP_TEMP_DISABLED"
+
+	// EnvoyImageTag is used in e2e tests to specify the tag of the docker image to use for the tests
+	// If a tag is not provided, the tests dynamically identify the latest released tag to use
+	EnvoyImageTag = "ENVOY_IMAGE_TAG"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

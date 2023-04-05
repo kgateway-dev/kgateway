@@ -19,6 +19,9 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/test/testutils/version"
+
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -200,64 +203,13 @@ admin:
 var defaultBootstrapTemplate = template.Must(template.New("bootstrap").Parse(envoyConfigTemplate))
 
 type EnvoyFactory struct {
-	envoypath      string
-	tmpdir         string
-	useDocker      bool
+	envoypath string
+	tmpdir    string
+	useDocker bool
+	// The tag of the image that will be used to run the Envoy instance in Docker
+	// Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags
 	dockerImageTag string
 	instances      []*EnvoyInstance
-}
-
-// mustGetEnvoyGlooTag returns the tag of the envoy-gloo image which will be executed
-// The tag is chosen using the following process:
-//  1. If ENVOY_IMAGE_TAG is defined, use that tag
-//  2. If not defined, use the ENVOY_GLOO_IMAGE tag defined in the Makefile
-func mustGetEnvoyGlooTag() string {
-	eit := os.Getenv("ENVOY_IMAGE_TAG")
-	if eit != "" {
-		return eit
-	}
-
-	// get project base
-	gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-	gomodfile := strings.TrimSpace(string(gomod))
-	projectbase, _ := filepath.Split(gomodfile)
-
-	makefile := filepath.Join(projectbase, "Makefile")
-	inFile, err := os.Open(makefile)
-	Expect(err).NotTo(HaveOccurred())
-
-	defer inFile.Close()
-
-	const prefix = "ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:"
-
-	scanner := bufio.NewScanner(inFile)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, prefix) {
-			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
-		}
-	}
-
-	ginkgo.Fail("Could not determine envoy-gloo tag. Find valid tag names here https://quay.io/repository/solo-io/envoy-gloo?tab=tags")
-	return ""
-}
-
-// mustGetEnvoyWrapperTag returns the tag of the envoy-gloo-wrapper image which will be executed
-// The tag is chosen using the following process:
-//  1. If ENVOY_IMAGE_TAG is defined, use that tag
-//  2. If not defined, use the latest released tag of that image
-func mustGetEnvoyWrapperTag() string {
-	eit := os.Getenv("ENVOY_IMAGE_TAG")
-	if eit != "" {
-		return eit
-	}
-
-	// todo
-	// determine latest tag
-
-	ginkgo.Fail("Could not determine gloo-envoy-wrapper tag. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
-	return ""
 }
 
 func NewEnvoyFactory() (*EnvoyFactory, error) {
@@ -336,6 +288,60 @@ docker rm $CID
 	default:
 		return nil, errors.New("Unsupported OS: " + runtime.GOOS)
 	}
+}
+
+// mustGetEnvoyGlooTag returns the tag of the envoy-gloo image which will be executed
+// The tag is chosen using the following process:
+//  1. If ENVOY_IMAGE_TAG is defined, use that tag
+//  2. If not defined, use the ENVOY_GLOO_IMAGE tag defined in the Makefile
+func mustGetEnvoyGlooTag() string {
+	eit := os.Getenv(testutils.EnvoyImageTag)
+	if eit != "" {
+		return eit
+	}
+
+	// get project base
+	gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred())
+	gomodfile := strings.TrimSpace(string(gomod))
+	projectbase, _ := filepath.Split(gomodfile)
+
+	makefile := filepath.Join(projectbase, "Makefile")
+	inFile, err := os.Open(makefile)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer inFile.Close()
+
+	const prefix = "ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:"
+
+	scanner := bufio.NewScanner(inFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		}
+	}
+
+	ginkgo.Fail("Could not determine envoy-gloo tag. Find valid tag names here https://quay.io/repository/solo-io/envoy-gloo?tab=tags")
+	return ""
+}
+
+// mustGetEnvoyWrapperTag returns the tag of the envoy-gloo-wrapper image which will be executed
+// The tag is chosen using the following process:
+//  1. If ENVOY_IMAGE_TAG is defined, use that tag
+//  2. If not defined, use the latest released tag of that image
+func mustGetEnvoyWrapperTag() string {
+	eit := os.Getenv(testutils.EnvoyImageTag)
+	if eit != "" {
+		return eit
+	}
+
+	latestPatchVersion, err := version.GetLastReleaseOfCurrentBranch()
+	if err != nil {
+		ginkgo.Fail(errors.Wrap(err, "Failed to extract the latest release of current minor").Error())
+	}
+
+	return strings.TrimPrefix(latestPatchVersion.String(), "v")
 }
 
 func (ef *EnvoyFactory) EnvoyPath() string {
