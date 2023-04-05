@@ -91,7 +91,7 @@ If you plan to install Gloo Edge Enterprise, you will need to enable certain per
 
 ```bash
 oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-server -n gloo-system 
-oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics  -n gloo-system 
+oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics-v2 -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z default -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
