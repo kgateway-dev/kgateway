@@ -2,13 +2,14 @@ package gloomtls_test
 
 import (
 	"context"
-	kubeutils2 "github.com/solo-io/gloo/test/testutils"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	kubeutils2 "github.com/solo-io/gloo/test/testutils"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/k8s-utils/kubeutils"
