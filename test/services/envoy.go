@@ -200,13 +200,18 @@ admin:
 var defaultBootstrapTemplate = template.Must(template.New("bootstrap").Parse(envoyConfigTemplate))
 
 type EnvoyFactory struct {
-	envoypath string
-	tmpdir    string
-	useDocker bool
-	instances []*EnvoyInstance
+	envoypath      string
+	tmpdir         string
+	useDocker      bool
+	dockerImageTag string
+	instances      []*EnvoyInstance
 }
 
-func getEnvoyImageTag() string {
+// mustGetEnvoyGlooTag returns the tag of the envoy-gloo image which will be executed
+// The tag is chosen using the following process:
+//  1. If ENVOY_IMAGE_TAG is defined, use that tag
+//  2. If not defined, use the ENVOY_GLOO_IMAGE tag defined in the Makefile
+func mustGetEnvoyGlooTag() string {
 	eit := os.Getenv("ENVOY_IMAGE_TAG")
 	if eit != "" {
 		return eit
@@ -233,6 +238,25 @@ func getEnvoyImageTag() string {
 			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
 		}
 	}
+
+	ginkgo.Fail("Could not determine envoy-gloo tag. Find valid tag names here https://quay.io/repository/solo-io/envoy-gloo?tab=tags")
+	return ""
+}
+
+// mustGetEnvoyWrapperTag returns the tag of the envoy-gloo-wrapper image which will be executed
+// The tag is chosen using the following process:
+//  1. If ENVOY_IMAGE_TAG is defined, use that tag
+//  2. If not defined, use the latest released tag of that image
+func mustGetEnvoyWrapperTag() string {
+	eit := os.Getenv("ENVOY_IMAGE_TAG")
+	if eit != "" {
+		return eit
+	}
+
+	// todo
+	// determine latest tag
+
+	ginkgo.Fail("Could not determine gloo-envoy-wrapper tag. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 	return ""
 }
 
@@ -266,7 +290,10 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 	case "darwin":
 		log.Printf("Using docker to run envoy")
 
-		return &EnvoyFactory{useDocker: true}, nil
+		return &EnvoyFactory{
+			useDocker:      true,
+			dockerImageTag: mustGetEnvoyWrapperTag(),
+		}, nil
 	case "linux":
 		// try to grab one form docker...
 		tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "envoy")
@@ -274,10 +301,8 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 			return nil, err
 		}
 
-		envoyImageTag := getEnvoyImageTag()
-		if envoyImageTag == "" {
-			panic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
-		}
+		envoyImageTag := mustGetEnvoyGlooTag()
+
 		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
 
 		bash := fmt.Sprintf(`
@@ -333,21 +358,22 @@ func (ef *EnvoyFactory) Clean() error {
 }
 
 type EnvoyInstance struct {
-	AccessLogAddr string
-	AccessLogPort uint32
-	RatelimitAddr string
-	RatelimitPort uint32
-	ID            string
-	Role          string
-	envoypath     string
-	envoycfg      string
-	logs          *SafeBuffer
-	cmd           *exec.Cmd
-	UseDocker     bool
-	GlooAddr      string // address for gloo and services
-	Port          uint32
-	RestXdsPort   uint32
-	AdminPort     uint32
+	AccessLogAddr  string
+	AccessLogPort  uint32
+	RatelimitAddr  string
+	RatelimitPort  uint32
+	ID             string
+	Role           string
+	envoypath      string
+	envoycfg       string
+	logs           *SafeBuffer
+	cmd            *exec.Cmd
+	UseDocker      bool
+	DockerImageTag string
+	GlooAddr       string // address for gloo and services
+	Port           uint32
+	RestXdsPort    uint32
+	AdminPort      uint32
 
 	// Envoy API Version to use, default to V3
 	ApiVersion string
@@ -383,12 +409,13 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 	}
 
 	ei := &EnvoyInstance{
-		envoypath:     ef.envoypath,
-		UseDocker:     ef.useDocker,
-		GlooAddr:      gloo,
-		AccessLogAddr: gloo,
-		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(parallel.GetPortOffset()),
-		ApiVersion:    "V3",
+		envoypath:      ef.envoypath,
+		UseDocker:      ef.useDocker,
+		DockerImageTag: ef.dockerImageTag,
+		GlooAddr:       gloo,
+		AccessLogAddr:  gloo,
+		AdminPort:      atomic.AddUint32(&adminPort, 1) + uint32(parallel.GetPortOffset()),
+		ApiVersion:     "V3",
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
@@ -549,12 +576,7 @@ func (ei *EnvoyInstance) Clean() {
 }
 
 func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
-	envoyImageTag := getEnvoyImageTag()
-	if envoyImageTag == "" {
-		return errors.New("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
-	}
-
-	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
+	image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", ei.DockerImageTag)
 	args := []string{"run", "--rm", "--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
