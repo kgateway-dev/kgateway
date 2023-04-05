@@ -42,8 +42,7 @@ require (
 	github.com/onsi/gomega v1.26.0
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.14.0
-	github.com/prometheus/prometheus v2.5.0+incompatible
+	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/rotisserie/eris v0.4.0
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0

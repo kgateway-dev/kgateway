@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/hashicorp/consul/api"
+
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/golang/protobuf/proto"
@@ -199,16 +201,14 @@ type What struct {
 }
 
 type RunOptions struct {
-	NsToWrite        string
-	NsToWatch        []string
-	WhatToRun        What
-	GlooPort         int32
-	ValidationPort   int32
-	RestXdsPort      int32
-	Settings         *gloov1.Settings
-	KubeClient       kubernetes.Interface
-	ConsulClient     consul.ConsulWatcher
-	ConsulDnsAddress string
+	NsToWrite      string
+	NsToWatch      []string
+	WhatToRun      What
+	GlooPort       int32
+	ValidationPort int32
+	RestXdsPort    int32
+	Settings       *gloov1.Settings
+	KubeClient     kubernetes.Interface
 }
 
 //goland:noinspection GoUnhandledErrorResult
@@ -465,16 +465,36 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 			IP:   net.IPv4zero,
 			Port: 8001,
 		}, false),
-		KubeClient:    runOptions.KubeClient,
-		KubeCoreCache: kubeCoreCache,
-		DevMode:       settings.GetDevMode(),
-		Consul: bootstrap.Consul{
-			ConsulWatcher: runOptions.ConsulClient,
-			DnsServer:     runOptions.ConsulDnsAddress,
-		},
+		KubeClient:               runOptions.KubeClient,
+		KubeCoreCache:            kubeCoreCache,
+		DevMode:                  settings.GetDevMode(),
+		Consul:                   getConsulRunOpts(settings),
 		GatewayControllerEnabled: settings.GetGateway().GetEnableGatewayController().GetValue(),
 		ValidationOpts:           validationOpts,
 		Identity:                 singlereplica.Identity(),
+	}
+}
+
+func getConsulRunOpts(settings *gloov1.Settings) bootstrap.Consul {
+	if settings.GetConsul() == nil {
+		// If the developer hasn't configured Consul settings, we don't want to try to create a consul client
+		return bootstrap.Consul{
+			ConsulWatcher: nil,
+		}
+	}
+
+	consulClient, err := api.NewClient(api.DefaultConfig())
+	Expect(err).NotTo(HaveOccurred())
+
+	consulWatcher, err := consul.NewConsulWatcher(consulClient,
+		settings.GetConsul().GetServiceDiscovery().GetDataCenters(),
+		settings.GetConsulDiscovery().GetServiceTagsAllowlist())
+	Expect(err).NotTo(HaveOccurred())
+
+	return bootstrap.Consul{
+		ConsulWatcher:      consulWatcher,
+		DnsServer:          settings.GetConsul().GetDnsAddress(),
+		DnsPollingInterval: settings.GetConsul().GetDnsPollingInterval(),
 	}
 }
 

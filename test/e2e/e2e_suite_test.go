@@ -36,8 +36,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	testContextFactory = &e2e.TestContextFactory{
-		EnvoyFactory: envoyFactory,
-		VaultFactory: vaultFactory,
+		EnvoyFactory:  envoyFactory,
+		VaultFactory:  vaultFactory,
+		ConsulFactory: consulFactory,
 	}
 })
 

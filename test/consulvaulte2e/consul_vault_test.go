@@ -80,7 +80,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = consulInstance.Run()
+		err = consulInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start Vault
@@ -172,10 +172,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	})
 
 	AfterEach(func() {
-		if consulInstance != nil {
-			err = consulInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
 		envoyInstance.Clean()
 
 		os.RemoveAll(settingsDir)

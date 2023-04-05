@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -103,6 +104,12 @@ func (ef *ConsulFactory) Clean() error {
 	return nil
 }
 
+func (ef *ConsulFactory) MustConsulInstance() *ConsulInstance {
+	instance, err := ef.NewConsulInstance()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return instance
+}
+
 func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 	// try to grab one form docker...
 	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
@@ -167,7 +174,15 @@ func (i *ConsulInstance) Silence() {
 	i.cmd.Stderr = nil
 }
 
-func (i *ConsulInstance) Run() error {
+// Run starts the ConsulInstance
+// When the provided context is Done, the ConsulInstance is cleaned up
+func (i *ConsulInstance) Run(ctx context.Context) error {
+	go func() {
+		// Ensure the ConsulInstance is cleaned up when the Run context is completed
+		<-ctx.Done()
+		i.Clean()
+	}()
+
 	var err error
 	i.session, err = gexec.Start(i.cmd, GinkgoWriter, GinkgoWriter)
 
@@ -182,7 +197,11 @@ func (i *ConsulInstance) Binary() string {
 	return i.consulPath
 }
 
-func (i *ConsulInstance) Clean() error {
+// Clean stops the ConsulInstance
+func (i *ConsulInstance) Clean() {
+	if i == nil {
+		return
+	}
 	if i.session != nil {
 		i.session.Kill()
 	}
@@ -190,9 +209,8 @@ func (i *ConsulInstance) Clean() error {
 		i.cmd.Process.Kill()
 	}
 	if i.tmpdir != "" {
-		return os.RemoveAll(i.tmpdir)
+		_ = os.RemoveAll(i.tmpdir)
 	}
-	return nil
 }
 
 func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []string, port uint32) error {
@@ -216,7 +234,7 @@ func (i *ConsulInstance) RegisterService(svcName, svcId, address string, tags []
 	return i.ReloadConfig()
 }
 
-// While it may be tempting to just reload all config using `consul reload` or marshalling new json and
+// RegisterLiveService While it may be tempting to just reload all config using `consul reload` or marshalling new json and
 // sending SIGHUP to the process (per https://www.consul.io/commands/reload), it is preferable to live update
 // using the consul APIs as this is a more realistic flow and doesn't fire our watches too actively (which can
 // both make debugging hard and hide bugs)
