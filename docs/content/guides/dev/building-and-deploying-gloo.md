@@ -45,7 +45,7 @@ To compile the `gloo` binary to the `_output/projects/gloo/` directory, run:
 
 To build the Docker image, run the following command. Review the following table to understand the command options.
 
-    make -B VERSION=0.0.1 IMAGE_REPO=localhost:5000 gloo-docker
+    VERSION=0.0.1 make gloo-docker -B
 
 | Option | Description |
 | ------ | ----------- |
@@ -61,22 +61,11 @@ Example output:
 
 You can choose from [several Gloo Edge installation options]({{% versioned_link_path fromRoot="/installation/preparation/#deployment-requirements" %}}). This guide assumes you deploy Gloo Edge into a Kubernetes cluster that runs locally in [kind]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind" %}}).
 
-1. **For `arm64` or `m1` machines only**: Use the Docker registry to upload and use images in kind. 
-   1. If kind is already a different cluster, delete the cluster. 
-      ```sh
-      kind delete cluster
-      ```
-   2. Build a kind cluster by running the script from the Gloo Edge project.
-      ```sh
-      JUST_KIND=true ./ci/kind/setup-kind.sh
-      ```
-   Now, the Docker registry is located at `localhost:5000`. The docker registry runs the container with the image name `registry:2`.
-
-2. Install `gloo` into the cluster, if not already present.
+1. Install `gloo` into the cluster, if not already present.
    ```sh
    glooctl install gateway
    ```
-3. Make the image accessible to the kind cluster. 
+2. Make the image accessible to the kind cluster. 
    {{< tabs >}} 
 {{% tab name="x86_64" %}}
 ```sh
@@ -85,7 +74,7 @@ kind load docker-image quay.io/solo-io/gloo:0.0.1
 {{% /tab %}} 
 {{% tab name="arm64 or m1" %}}
 ```sh
-docker push localhost:5000/gloo:0.0.1
+kind load docker-image quay.io/solo-io/gloo:0.0.1
 ```
 {{% /tab %}} 
    {{< /tabs >}}
@@ -98,11 +87,11 @@ kubectl -n gloo-system set image deployments/gloo gloo=quay.io/solo-io/gloo:0.0.
 {{% /tab %}} 
 {{% tab name="arm64 or m1" %}}
 ```sh
-kubectl -n gloo-system set image deployments/gloo gloo=localhost:5000/solo-io/gloo:0.0.1
+kubectl -n gloo-system set image deployments/gloo gloo=quay.io/solo-io/gloo:0.0.1
 ```
 {{% /tab %}} 
    {{< /tabs >}}
-5. Verify that Kubernetes removes the old pod and spins up a new pod.{{% notice tip %}}Tip: You might find it easier to observe the update in real time by using a live monitoring tool like [k9s](https://k9scli.io/).{{% /notice %}}
+3. Verify that Kubernetes removes the old pod and spins up a new pod.{{% notice tip %}}Tip: You might find it easier to observe the update in real time by using a live monitoring tool like [k9s](https://k9scli.io/).{{% /notice %}}
    ```
    $ kubectl -n gloo-system get pods
    NAME                            READY   STATUS    RESTARTS   AGE
