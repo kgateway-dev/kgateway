@@ -57,7 +57,7 @@ else
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-make glooctl-$GOOS-$GOARCH
+make build-cli-local
 
 # 5. Install additional resources used for particular KUBE2E tests
 if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then

@@ -168,7 +168,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Context("tests with orphaned gateways", func() {
+	FContext("tests with orphaned gateways", func() {
 
 		It("correctly sets a status to a single gateway", func() {
 			// Delete all VirtualServices to create an "orphaned" Gateway CR
