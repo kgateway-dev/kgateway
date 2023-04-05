@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7577
+    resolvesIssue: false
+    description: >-
+      Allow E2E tests to be run with specifying an ENVOY_IMAGE_TAG. Now, if one is not provided, instead of failing,
+      we will attempt to pull the latest released image and use that in the tests.
