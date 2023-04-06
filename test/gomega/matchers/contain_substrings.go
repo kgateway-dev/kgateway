@@ -22,8 +22,8 @@ func ContainSubstrings(substrings []string) types.GomegaMatcher {
 	}
 
 	substringMatchers := make([]types.GomegaMatcher, 0, len(substrings))
-	for i := range substrings {
-		substringMatchers = append(substringMatchers, gomega.ContainSubstring(substrings[i]))
+	for _, str := range substrings {
+		substringMatchers = append(substringMatchers, gomega.ContainSubstring(str))
 	}
 	return gomega.And(substringMatchers...)
 }
