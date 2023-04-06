@@ -118,18 +118,18 @@ NAME                                    AGE
 gateway.gateway.solo.io/corp-gw         3m7s
 gateway.gateway.solo.io/public-gw-ssl   3m7s
 
-NAME                                                  READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/discovery                             1/1     1            1           3m8s
-deployment.apps/gateway                               1/1     1            1           3m8s
-deployment.apps/gloo                                  1/1     1            1           3m8s
-deployment.apps/gloo-fed                              1/1     1            1           3m8s
-deployment.apps/gloo-fed-console                      1/1     1            1           3m7s
-deployment.apps/glooe-grafana                         1/1     1            1           3m7s
-deployment.apps/glooe-prometheus-kube-state-metrics   1/1     1            1           3m8s
-deployment.apps/glooe-prometheus-server               1/1     1            1           3m8s
-deployment.apps/observability                         1/1     1            1           3m8s
-deployment.apps/corp-gw                               1/1     1            1           3m8s
-deployment.apps/public-gw                             2/2     2            2           3m8s
+NAME                                                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/discovery                                1/1     1            1           3m8s
+deployment.apps/gateway                                  1/1     1            1           3m8s
+deployment.apps/gloo                                     1/1     1            1           3m8s
+deployment.apps/gloo-fed                                 1/1     1            1           3m8s
+deployment.apps/gloo-fed-console                         1/1     1            1           3m7s
+deployment.apps/glooe-grafana                            1/1     1            1           3m7s
+deployment.apps/glooe-prometheus-kube-state-metrics-v2   1/1     1            1           3m8s
+deployment.apps/glooe-prometheus-server                  1/1     1            1           3m8s
+deployment.apps/observability                            1/1     1            1           3m8s
+deployment.apps/corp-gw                                  1/1     1            1           3m8s
+deployment.apps/public-gw                                2/2     2            2           3m8s
 ```
 
 
