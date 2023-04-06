@@ -16,7 +16,7 @@ var _ = Describe("ContainSubstrings", func() {
 		Entry("empty list", []string{}),
 		Entry("empty string", []string{""}),
 		Entry("single substring", []string{"this"}),
-		Entry("multiple substrings", []string{"this", "is", "the"}),
+		Entry("multiple substrings", []string{"the", "is", "this"}),
 	)
 
 	DescribeTable("does not contain substrings",
