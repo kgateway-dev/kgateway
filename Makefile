@@ -434,7 +434,7 @@ discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_
 		-t $(IMAGE_REPO)/discovery:$(VERSION) $(QUAY_EXPIRATION_LABEL)
 
 #----------------------------------------------------------------------------------
-# Gloo Edge
+# Gloo
 #----------------------------------------------------------------------------------
 
 GLOO_DIR=projects/gloo
@@ -505,6 +505,7 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
 		-t $(IMAGE_REPO)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL)
 	touch $@
+
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
 #----------------------------------------------------------------------------------
@@ -704,15 +705,6 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 #----------------------------------------------------------------------------------
 # Docker
 #----------------------------------------------------------------------------------
-#
-#---------
-#--------- Push
-#---------
-
-DOCKER_IMAGES :=
-ifeq ($(CREATE_ASSETS),"true")
-	DOCKER_IMAGES := docker
-endif
 
 .PHONY: docker-push-retag
 docker-push-retag:
@@ -754,66 +746,72 @@ ifeq ($(RELEASE), "true")
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)-extended
 endif
 
-.PHONY: docker docker-push
-docker: docker-local
 
-.PHONY: docker-local
-docker-local: discovery-docker gloo-docker  \
-		gloo-envoy-wrapper-docker certgen-docker sds-docker \
-		ingress-docker access-logger-docker kubectl-docker
-		touch $@
+.PHONY: docker
+docker: gloo-docker
+docker: discovery-docker
+docker: gloo-envoy-wrapper-docker
+docker: certgen-docker
+docker: sds-docker
+docker: ingress-docker
+docker: access-logger-docker
+docker: kubectl-docker
 
-.PHONY: docker-push-local-arm
-docker-push-local-arm: docker docker-push
+docker-push-%:
+	docker push $(IMAGE_REPO)/$*:$(VERSION)
 
-# Depends on DOCKER_IMAGES, which is set to docker if CREATE_ASSETS is "true", otherwise empty (making this a no-op).
-# This prevents executing the dependent targets if CREATE_ASSETS is not true, while still enabling `make docker`
-# to be used for local testing.
+docker-push-%-extended:
+	docker push $(IMAGE_REPO)/$*:$(VERSION)-extended
+
 .PHONY: docker-push
-docker-push: docker-push-local
-
-.PHONY: docker-push-local
-docker-push-local: $(DOCKER_IMAGES)
-	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
-	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
-	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
-	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+docker-push: docker-push-gloo
+docker-push: docker-push-discovery
+docker-push: docker-push-gloo-envoy-wrapper
+docker-push: docker-push-certgen
+docker-push: docker-push-sds
+docker-push: docker-push-ingress
+docker-push: docker-push-access-logger
+docker-push: docker-push-kubectl
 
 # To mimic the effects of CI, CREATE_ASSETS, TAGGED_VERSION and CREATE_TEST_ASSETS need to be set
 # Extended images are the same as regular images but with curl
-.PHONY: docker-push-extended
-docker-push-extended:
+.PHONY: docker-release
+docker-release:
 ifeq ($(CREATE_ASSETS), "true")
-	ci/extended-docker/extended-docker.sh
+docker-release: docker
+docker-release: ci/extended-docker/extended-docker.sh
 endif
+
+
+#----------------------------------------------------------------------------------
+# Build assets for Kube2e tests
+#----------------------------------------------------------------------------------
+#
+# The following targets are used to generate the assets on which the kube2e tests rely upon.
+# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
 
 CLUSTER_NAME ?= kind
 
-.PHONY: push-kind-images
-push-kind-images: docker
-	kind load docker-image $(IMAGE_REPO)/ingress:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/kubectl:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
+.PHONY: build-test-chart
+build-test-chart:
+	mkdir -p $(TEST_ASSET_DIR)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
+	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
+	helm repo index $(TEST_ASSET_DIR)
 
-.PHONY: push-docker-images-arm-to-kind-registry
-push-docker-images-arm-to-kind-registry:
-	docker push $(IMAGE_REPO)/ingress:$(VERSION)
-	docker push $(IMAGE_REPO)/discovery:$(VERSION)
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
-	docker push $(IMAGE_REPO)/certgen:$(VERSION)
-	docker push $(IMAGE_REPO)/kubectl:$(VERSION)
-	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
-	docker push $(IMAGE_REPO)/sds:$(VERSION)
+.PHONY: kind-build-and-load-images
+kind-build-and-load-images: docker
+kind-build-and-load-images: kind-load-gloo
+kind-build-and-load-images: kind-load-discovery
+kind-build-and-load-images: kind-load-gloo-envoy-wrapper
+kind-build-and-load-images: kind-load-certgen
+kind-build-and-load-images: kind-load-sds
+kind-build-and-load-images: kind-load-ingress
+kind-build-and-load-images: kind-load-access-logger
+kind-build-and-load-images: kind-load-kubectl
+
+kind-load-%:
+	kind load docker-image $(IMAGE_REPO)/$*:$(VERSION) --name $(CLUSTER_NAME)
 
 # Useful utility for listing images loaded into the kind cluster
 .PHONY: kind-list-images
@@ -825,20 +823,6 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
-
-#----------------------------------------------------------------------------------
-# Build assets for Kube2e tests
-#----------------------------------------------------------------------------------
-#
-# The following targets are used to generate the assets on which the kube2e tests rely upon.
-# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
-
-.PHONY: build-test-chart
-build-test-chart:
-	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
-	helm repo index $(TEST_ASSET_DIR)
 
 #----------------------------------------------------------------------------------
 # Security Scan

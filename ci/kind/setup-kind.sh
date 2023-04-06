@@ -50,7 +50,7 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make push-kind-images
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load-images
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
   VERSION=$VERSION make build-test-chart
