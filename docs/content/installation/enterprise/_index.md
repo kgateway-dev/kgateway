@@ -253,58 +253,58 @@ kubectl --namespace gloo-system get all
 ```
 
 ```noop
-NAME                                                       READY   STATUS    RESTARTS   AGE
-pod/discovery-6dbb5fd8bc-gk2th                             1/1     Running   0          2m5s
-pod/extauth-68bb4745fc-2rs7b                               1/1     Running   0          2m5s
-pod/gateway-proxy-7c49898fdf-blxps                         1/1     Running   0          2m5s
-pod/gloo-7748b94989-dj85p                                  1/1     Running   0          2m5s
-pod/gloo-fed-76c85d689b-q62k4                              1/1     Running   0          2m5s
-pod/gloo-fed-console-dd5f877bd-jgg8n                       3/3     Running   0          2m5s
-pod/glooe-grafana-6f95948945-pvbcg                         1/1     Running   0          2m4s
-pod/glooe-prometheus-kube-state-metrics-6c79cc9554-hlhns   1/1     Running   0          2m5s
-pod/glooe-prometheus-server-757dc7d8f7-x489q               2/2     Running   0          2m5s
-pod/observability-78cb7bddf7-kcrbm                         1/1     Running   0          2m5s
-pod/rate-limit-5ddd4b69d-84d6b                             1/1     Running   0          2m5s
-pod/redis-888f4d9b5-p76wk                                  1/1     Running   0          2m4s
+NAME                                                          READY   STATUS    RESTARTS   AGE
+pod/discovery-6dbb5fd8bc-gk2th                                1/1     Running   0          2m5s
+pod/extauth-68bb4745fc-2rs7b                                  1/1     Running   0          2m5s
+pod/gateway-proxy-7c49898fdf-blxps                            1/1     Running   0          2m5s
+pod/gloo-7748b94989-dj85p                                     1/1     Running   0          2m5s
+pod/gloo-fed-76c85d689b-q62k4                                 1/1     Running   0          2m5s
+pod/gloo-fed-console-dd5f877bd-jgg8n                          3/3     Running   0          2m5s
+pod/glooe-grafana-6f95948945-pvbcg                            1/1     Running   0          2m4s
+pod/glooe-prometheus-kube-state-metrics-v2-6c79cc9554-hlhns   1/1     Running   0          2m5s
+pod/glooe-prometheus-server-757dc7d8f7-x489q                  2/2     Running   0          2m5s
+pod/observability-78cb7bddf7-kcrbm                            1/1     Running   0          2m5s
+pod/rate-limit-5ddd4b69d-84d6b                                1/1     Running   0          2m5s
+pod/redis-888f4d9b5-p76wk                                     1/1     Running   0          2m4s
 
-NAME                                          TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                                                AGE
-service/extauth                               ClusterIP      10.xxx.xx.xx    <none>          8083/TCP                                               2m6s
-service/gateway-proxy                         LoadBalancer   10.xxx.xx.xx    34.xx.xxx.xxx   80:30437/TCP,443:31651/TCP                             2m6s
-service/gloo                                  ClusterIP      10.xxx.xx.xx    <none>          9977/TCP,9976/TCP,9988/TCP,9966/TCP,9979/TCP,443/TCP   2m7s
-service/gloo-fed-console                      ClusterIP      10.xxx.xx.xx    <none>          10101/TCP,8090/TCP,8081/TCP                            2m6s
-service/glooe-grafana                         ClusterIP      10.xxx.xx.xxx   <none>          80/TCP                                                 2m6s
-service/glooe-prometheus-kube-state-metrics   ClusterIP      10.xxx.xx.xxx   <none>          8080/TCP                                               2m6s
-service/glooe-prometheus-server               ClusterIP      10.xxx.xx.xx    <none>          80/TCP                                                 2m7s
-service/rate-limit                            ClusterIP      10.xxx.xx.xxx   <none>          18081/TCP                                              2m7s
-service/redis                                 ClusterIP      10.xxx.xx.xx    <none>          6379/TCP                                               2m6s
+NAME                                             TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                                                AGE
+service/extauth                                  ClusterIP      10.xxx.xx.xx    <none>          8083/TCP                                               2m6s
+service/gateway-proxy                            LoadBalancer   10.xxx.xx.xx    34.xx.xxx.xxx   80:30437/TCP,443:31651/TCP                             2m6s
+service/gloo                                     ClusterIP      10.xxx.xx.xx    <none>          9977/TCP,9976/TCP,9988/TCP,9966/TCP,9979/TCP,443/TCP   2m7s
+service/gloo-fed-console                         ClusterIP      10.xxx.xx.xx    <none>          10101/TCP,8090/TCP,8081/TCP                            2m6s
+service/glooe-grafana                            ClusterIP      10.xxx.xx.xxx   <none>          80/TCP                                                 2m6s
+service/glooe-prometheus-kube-state-metrics-v2   ClusterIP      10.xxx.xx.xxx   <none>          8080/TCP                                               2m6s
+service/glooe-prometheus-server                  ClusterIP      10.xxx.xx.xx    <none>          80/TCP                                                 2m7s
+service/rate-limit                               ClusterIP      10.xxx.xx.xxx   <none>          18081/TCP                                              2m7s
+service/redis                                    ClusterIP      10.xxx.xx.xx    <none>          6379/TCP                                               2m6s
 
-NAME                                                  READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/discovery                             1/1     1            1           2m7s
-deployment.apps/extauth                               1/1     1            1           2m7s
-deployment.apps/gateway-proxy                         1/1     1            1           2m7s
-deployment.apps/gloo                                  1/1     1            1           2m7s
-deployment.apps/gloo-fed                              1/1     1            1           2m7s
-deployment.apps/gloo-fed-console                      1/1     1            1           2m7s
-deployment.apps/glooe-grafana                         1/1     1            1           2m7s
-deployment.apps/glooe-prometheus-kube-state-metrics   1/1     1            1           2m7s
-deployment.apps/glooe-prometheus-server               1/1     1            1           2m7s
-deployment.apps/observability                         1/1     1            1           2m7s
-deployment.apps/rate-limit                            1/1     1            1           2m7s
-deployment.apps/redis                                 1/1     1            1           2m7s
+NAME                                                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/discovery                                1/1     1            1           2m7s
+deployment.apps/extauth                                  1/1     1            1           2m7s
+deployment.apps/gateway-proxy                            1/1     1            1           2m7s
+deployment.apps/gloo                                     1/1     1            1           2m7s
+deployment.apps/gloo-fed                                 1/1     1            1           2m7s
+deployment.apps/gloo-fed-console                         1/1     1            1           2m7s
+deployment.apps/glooe-grafana                            1/1     1            1           2m7s
+deployment.apps/glooe-prometheus-kube-state-metrics-v2   1/1     1            1           2m7s
+deployment.apps/glooe-prometheus-server                  1/1     1            1           2m7s
+deployment.apps/observability                            1/1     1            1           2m7s
+deployment.apps/rate-limit                               1/1     1            1           2m7s
+deployment.apps/redis                                    1/1     1            1           2m7s
 
-NAME                                                             DESIRED   CURRENT   READY   AGE
-replicaset.apps/discovery-6dbb5fd8bc                             1         1         1       2m6s
-replicaset.apps/extauth-68bb4745fc                               1         1         1       2m7s
-replicaset.apps/gateway-proxy-7c49898fdf                         1         1         1       2m6s
-replicaset.apps/gloo-7748b94989                                  1         1         1       2m7s
-replicaset.apps/gloo-fed-76c85d689b                              1         1         1       2m7s
-replicaset.apps/gloo-fed-console-dd5f877bd                       1         1         1       2m6s
-replicaset.apps/glooe-grafana-6f95948945                         1         1         1       2m6s
-replicaset.apps/glooe-prometheus-kube-state-metrics-6c79cc9554   1         1         1       2m6s
-replicaset.apps/glooe-prometheus-server-757dc7d8f7               1         1         1       2m6s
-replicaset.apps/observability-78cb7bddf7                         1         1         1       2m7s
-replicaset.apps/rate-limit-5ddd4b69d                             1         1         1       2m7s
-replicaset.apps/redis-888f4d9b5                                  1         1         1       2m6s
+NAME                                                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/discovery-6dbb5fd8bc                                1         1         1       2m6s
+replicaset.apps/extauth-68bb4745fc                                  1         1         1       2m7s
+replicaset.apps/gateway-proxy-7c49898fdf                            1         1         1       2m6s
+replicaset.apps/gloo-7748b94989                                     1         1         1       2m7s
+replicaset.apps/gloo-fed-76c85d689b                                 1         1         1       2m7s
+replicaset.apps/gloo-fed-console-dd5f877bd                          1         1         1       2m6s
+replicaset.apps/glooe-grafana-6f95948945                            1         1         1       2m6s
+replicaset.apps/glooe-prometheus-kube-state-metrics-v2-6c79cc9554   1         1         1       2m6s
+replicaset.apps/glooe-prometheus-server-757dc7d8f7                  1         1         1       2m6s
+replicaset.apps/observability-78cb7bddf7                            1         1         1       2m7s
+replicaset.apps/rate-limit-5ddd4b69d                                1         1         1       2m7s
+replicaset.apps/redis-888f4d9b5                                     1         1         1       2m6s
 ```
 
 #### Looking for opened ports?
