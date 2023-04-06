@@ -5,11 +5,12 @@ env:
 
 on:
   schedule:
-    - cron: "0 5 * * 1-5" # weekdays @ 00:00 EST, run tests against latest dev
-    - cron: "6 6 * * 1"   # monday   @ 01:06 EST, run expanded tests against v1.13.x 
-    - cron: "7 7 * * 1"   # monday   @ 02:07 EST, run expanded tests against v1.12.x
-    - cron: "8 8 * * 1"   # monday   @ 03:08 EST, run expanded tests against v1.11.x
-    - cron: "9 9 * * 1"   # monday   @ 04:09 EST, run expanded tests against v1.10.x
+    - cron: "0 5 * * 1-5"   # weekdays @ 00:00 EST, run tests against latest dev
+    - cron: "10 10 * * 1"   # monday   @ 05:10 EST, run expanded tests against v1.14.x
+    - cron: "6 6 * * 1"     # monday   @ 01:06 EST, run expanded tests against v1.13.x 
+    - cron: "7 7 * * 1"     # monday   @ 02:07 EST, run expanded tests against v1.12.x
+    - cron: "8 8 * * 1"     # monday   @ 03:08 EST, run expanded tests against v1.11.x
+    - cron: "9 9 * * 1"     # monday   @ 04:09 EST, run expanded tests against v1.10.x
   workflow_dispatch:
 jobs:
   regression_tests_latest_dev:
@@ -29,6 +30,22 @@ jobs:
                         { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8',  kind: 'v0.17.0', helm: 'v3.11.2' }]
     steps:
     - uses: actions/checkout@v3
+    - uses: ./.github/actions/regression-tests
+
+  regression_tests_14:
+    name: v1.14.x regression tests
+    if: github.event.schedule == '10 10 * * 1'
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
+        kube-version: [ { node: 'v1.23.13@sha256:ef453bb7c79f0e3caba88d2067d4196f427794086a7d0df8df4f019d5e336b61', kubectl: 'v1.23.17', kind: 'v0.17.0', helm: 'v3.11.2' },
+                        { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8',  kind: 'v0.17.0', helm: 'v3.11.2' }]
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: v1.14.x
     - uses: ./.github/actions/regression-tests
 
   regression_tests_13:
@@ -98,7 +115,7 @@ jobs:
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_dev, regression_tests_13, regression_tests_12, regression_tests_11, regression_tests_10 ] 
+    needs: [ regression_tests_latest_dev, regression_tests_14, regression_tests_13, regression_tests_12, regression_tests_11, regression_tests_10 ]
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
@@ -117,6 +134,8 @@ jobs:
               preamble="Gloo OSS weeklies (v1.12.x)"
           elif [[ ${{github.event.schedule == '6 6 * * 1'}} = true ]]; then
               preamble="Gloo OSS weeklies (v1.13.x)"
+          elif [[ ${{github.event.schedule == '10 10 * * 1'}} = true ]]; then
+              preamble="Gloo OSS weeklies (v1.14.x)"
           elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
               preamble="Gloo OSS nightlies (dev)"
           fi
