@@ -27,11 +27,11 @@ runs:
       echo "After clearing disk space:"
       df -h
   - name: Set up Go
-    uses: actions/setup-go@v2
+    uses: actions/setup-go@v4
     with:
       go-version: 1.18.6
     id: go
-  - uses: actions/cache@v1
+  - uses: actions/cache@v3
     with:
       path: ~/go/pkg/mod
       key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
