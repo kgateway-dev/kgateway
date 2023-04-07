@@ -24,9 +24,11 @@ If a test fails, you can retry it using the build-bot [comment directives](https
 
 ## Local Development
 ### Setup
-For these tests to run, we require Envoy be built in a docker container.
+For these tests to run, we require that our gateway-proxy component be previously built as a docker image.
 
-Refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
+If you have not made local changes to the component, you can rely on a previously published image and no setup is required.
+
+However, if you have made changes to the component, refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
 
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
@@ -38,9 +40,25 @@ The `run-tests` make target runs ginkgo with a set of useful flags. The followin
 | WAIT_ON_FAIL      | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
 | INVALID_TEST_REQS | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
 
-Example:
+#### Using Recently Published Image (Most Common)
+This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
+
 ```bash
-ENVOY_IMAGE_TAG=solo-test-image TEST_PKG=./test/e2e/... make run-tests
+TEST_PKG=./test/e2e/... make run-tests
+```
+
+#### Using Previously Published Image
+If you want to specify a particular version that was previously published, you can also do that by specifying the `ENVOY_IMAGE_TAG`.
+
+```bash
+ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make run-tests
+```
+
+#### Using Locally Built Image
+If you have made changes to the component, you will have had to rebuild the image locally (see [setup tests](#setup)). After you rebuild the image, you need to supply the tag of that image when running the tests:
+
+```bash
+ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make run-tests
 ```
 
 ### Debugging Tests
