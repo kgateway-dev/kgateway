@@ -35,7 +35,7 @@ var (
 
 	// Versions to upgrade from
 	// ex: current branch is 1.13.10 - this would be the latest patch release of 1.12
-	LastPatchMostRecentMinorVersion *versionutils.Version
+	LastPatchPreviousMinorVersion *versionutils.Version
 
 	// ex:current branch is 1.13.10 - this would be 1.13.9
 	CurrentPatchMostRecentMinorVersion *versionutils.Version
@@ -56,10 +56,12 @@ var _ = BeforeSuite(func() {
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 	}
 
-	LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
+	LastPatchPreviousMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
 	if err != nil && errors.Is(err, upgrade.FirstReleaseError) {
 		firstReleaseOfMinor = true
 		fmt.Println("First release of minor, skipping some upgrade tests")
+		CurrentPatchMostRecentMinorVersion = versionutils.NewVersion(0, 0, 0, "", 0)
+
 	} else if err != nil {
 		Expect(err).NotTo(HaveOccurred())
 	}

@@ -38,7 +38,7 @@ func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
 
 	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
-	if curMinorErr != FirstReleaseError {
+	if !errors.Is(curMinorErr, FirstReleaseError) {
 		return nil, nil, curMinorErr
 	}
 
