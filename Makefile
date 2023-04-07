@@ -600,7 +600,7 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl discovery envoyinit certgen ingress ## Build all Docker images
+build: gloo glooctl discovery envoyinit certgen ingress
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -712,6 +712,7 @@ docker-retag-%:
 docker-push-%:
 	docker push $(IMAGE_REPO)/$*:$(VERSION)
 
+# Build docker images using the defined IMAGE_REPO, VERSION
 .PHONY: docker
 docker: gloo-docker
 docker: discovery-docker
@@ -722,6 +723,7 @@ docker: ingress-docker
 docker: access-logger-docker
 docker: kubectl-docker
 
+# Push docker images to the defined IMAGE_REPO
 .PHONY: docker-push
 docker-push: docker-push-gloo
 docker-push: docker-push-discovery
@@ -744,9 +746,8 @@ endif
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REPO,
 # and push them to a secondary repository, defined at IMAGE_REPO
 .PHONY: docker-publish-retag
-docker-publish-retag:
 ifeq ($(RELEASE), "true")
-docker-publish-retag: ## Re-tag all images
+docker-publish-retag: # Re-tag all images
 docker-publish-retag: docker-retag-gloo
 docker-publish-retag: docker-retag-discovery
 docker-publish-retag: docker-retag-gloo-envoy-wrapper
@@ -755,15 +756,8 @@ docker-publish-retag: docker-retag-sds
 docker-publish-retag: docker-retag-ingress
 docker-publish-retag: docker-retag-access-logger
 docker-publish-retag: docker-retag-kubectl
-docker-publish-retag: ## Push those re-tagged images
-docker-publish-retag: docker-push-gloo
-docker-publish-retag: docker-push-discovery
-docker-publish-retag: docker-push-gloo-envoy-wrapper
-docker-publish-retag: docker-push-certgen
-docker-publish-retag: docker-push-sds
-docker-publish-retag: docker-push-ingress
-docker-publish-retag: docker-push-access-logger
-docker-publish-retag: docker-push-kubectl
+docker-publish-retag: # Push those re-tagged images
+docker-publish-retag: docker-push
 endif
 
 #----------------------------------------------------------------------------------
