@@ -140,9 +140,8 @@ else
 	endif
 endif
 
-ifeq ($(GOOS),)
-	GOOS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
-endif
+
+GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
 GOLANG_VERSION := golang:1.20.1-alpine
@@ -595,12 +594,6 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 	docker buildx build --load $(PLATFORM) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
 		--build-arg GOARCH=$(GOARCH) \
 		-t $(IMAGE_REPO)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL)
-
-#----------------------------------------------------------------------------------
-# Build All
-#----------------------------------------------------------------------------------
-.PHONY: build
-build: gloo glooctl discovery envoyinit certgen ingress
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
