@@ -19,6 +19,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/solo-io/skv2/codegen/util"
+
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/gloo/test/testutils/version"
 
@@ -302,13 +304,7 @@ func mustGetEnvoyGlooTag() string {
 		return eit
 	}
 
-	// get project base
-	gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-	gomodfile := strings.TrimSpace(string(gomod))
-	projectbase, _ := filepath.Split(gomodfile)
-
-	makefile := filepath.Join(projectbase, "Makefile")
+	makefile := filepath.Join(util.GetModuleRoot(), "Makefile")
 	inFile, err := os.Open(makefile)
 	Expect(err).NotTo(HaveOccurred())
 
