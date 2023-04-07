@@ -65,16 +65,15 @@ func beforeSuiteAll(_ []byte) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func afterSuiteOne() []byte {
+func afterSuiteOne(ctx context.Context) {
 	// Delete those CRDs once at the end of the suite
-	_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(suiteCtx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
-	_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(suiteCtx, gatewayv1.VirtualServiceCrd.FullName(), v1.DeleteOptions{})
+	_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
+	_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, gatewayv1.VirtualServiceCrd.FullName(), v1.DeleteOptions{})
 
 	suiteCancel()
-	return nil
 }
 
-func afterSuiteAll(_ []byte) {
+func afterSuiteAll(_ context.Context) {
 	err := locker.ReleaseLock()
 	Expect(err).NotTo(HaveOccurred())
 
