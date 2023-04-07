@@ -32,22 +32,27 @@ func (a ByVersion) Less(i, j int) bool {
 }
 func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
+// GetUpgradeVersions for the given repo.
+// This will return the lastminor, currentminor, and an error
+// This may return lastminor + currentminor, or just lastminor and an error or a just an error
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
+	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
+	if lastMinorErr != nil {
+		return nil, nil, lastMinorErr
+	}
+
 	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
 	if curMinorErr != nil {
 		if curMinorErr.Error() != FirstReleaseError {
-			return nil, nil, curMinorErr
+			return nil, lastMinorLatestPatchVersion, curMinorErr
 		}
 	}
 	// we may get a changelog value that does not have a github release - get the latest release for current minor
 	currentMinorLatestRelease, currentMinorLatestReleaseError := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
 	if currentMinorLatestReleaseError != nil {
-		return nil, nil, currentMinorLatestReleaseError
+		return nil, lastMinorLatestPatchVersion, currentMinorLatestReleaseError
 	}
-	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
-	if lastMinorErr != nil {
-		return nil, nil, lastMinorErr
-	}
+
 	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
 }
 

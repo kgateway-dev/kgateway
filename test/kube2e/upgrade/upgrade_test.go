@@ -59,10 +59,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 	Describe("Upgrading from a previous gloo version to current version", func() {
 
 		Context("When upgrading from lastPatchMostRecentMinorVersion to PR version of gloo", func() {
-			if LastPatchMostRecentMinorVersion == nil {
-				fmt.Println("Skipping upgrade tests because LastPatchMostRecentMinorVersion is not set")
-				return
-			}
 			BeforeEach(func() {
 				installGloo(testHelper, LastPatchMostRecentMinorVersion.String(), strictValidation)
 			})
