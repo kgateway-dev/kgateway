@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	FirstReleaseError = "First Release of Minor"
+	FirstReleaseError = errors.New("First Release of Minor")
 )
 
 // Type used to sort Versions
@@ -36,23 +36,37 @@ func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 // This will return the lastminor, currentminor, and an error
 // This may return lastminor + currentminor, or just lastminor and an error or a just an error
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
+
+	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
+	if curMinorErr != FirstReleaseError {
+		return nil, nil, curMinorErr
+	}
+
+	// TODO(nfuden): Update goutils to not use a struct but rather interface
+	// so we can test this more easily.
+	client, err := githubutils.GetClient(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "unable to create github client")
+	}
+
+	var currentMinorLatestRelease *versionutils.Version
+	// we dont believe there should be a minor release yet so its ok to not do this extra computation
+	if curMinorErr == FirstReleaseError {
+		var currentMinorLatestReleaseError error
+		// we may get a changelog value that does not have a github release - get the latest release for current minor
+		currentMinorLatestRelease, currentMinorLatestReleaseError = getLatestReleasedPatchVersion(ctx, client, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
+		if currentMinorLatestReleaseError != nil {
+			return nil, lastMinorLatestPatchVersion, currentMinorLatestReleaseError
+		}
+	}
+
+	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedPatchVersion(ctx, client, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
 	if lastMinorErr != nil {
+		// a true error lets return that.
 		return nil, nil, lastMinorErr
 	}
 
-	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
-	if curMinorErr != nil {
-		if curMinorErr.Error() != FirstReleaseError {
-			return nil, lastMinorLatestPatchVersion, curMinorErr
-		}
-	}
-	// we may get a changelog value that does not have a github release - get the latest release for current minor
-	currentMinorLatestRelease, currentMinorLatestReleaseError := getLatestReleasedVersion(ctx, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
-	if currentMinorLatestReleaseError != nil {
-		return nil, lastMinorLatestPatchVersion, currentMinorLatestReleaseError
-	}
-
+	// last minor should never be nil, currentMinor and curMinorerr MAY be nil
 	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
 }
 
@@ -76,21 +90,39 @@ func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 		return nil, changelogutils.ReadChangelogDirError(err)
 	}
 
-	versions := make([]*versionutils.Version, len(files)-1) //ignore validation file
-	for idx, f := range files {
-		if f.Name() != "validation.yaml" {
-			version, err := versionutils.ParseVersion(f.Name())
-			if err != nil {
-				return nil, errors.Errorf("Could not get version for changelog folder: %s\n", f.Name())
-			}
-			versions[idx] = version
+	return filterFilesForLatestRelease(files...)
+}
+
+// namedEntry extracts the only thing we really care about for a file entry - the name
+type namedEntry interface {
+	Name() string
+}
+
+// filterFilesForLatestRelease will return the latest release of the current minor
+// from a set of file entries that mimick our changelog structure
+func filterFilesForLatestRelease[T namedEntry](files ...T) (*versionutils.Version, error) {
+
+	if len(files) < 3 {
+		return nil, errors.Errorf("Could not get sufficient versions from files: %v\n", files)
+	}
+
+	versions := make([]*versionutils.Version, 0, len(files))
+	for _, f := range files {
+		// we expect there to be files like "validation.yaml"
+		// which are not valid changelogs
+		version, err := versionutils.ParseVersion(f.Name())
+		if err == nil {
+			versions = append(versions, version)
 		}
+	}
+	if len(versions) < 2 {
+		return nil, errors.Errorf("Could not get sufficient valid versions from files: %v\n", files)
 	}
 
 	sort.Sort(ByVersion(versions))
 	//first release of minor
 	if versions[len(versions)-1].Minor != versions[len(versions)-2].Minor {
-		return versions[len(versions)-1], errors.Errorf(FirstReleaseError)
+		return versions[len(versions)-1], FirstReleaseError
 	}
 	return versions[len(versions)-2], nil
 }
@@ -112,13 +144,15 @@ func newLatestPatchForMinorPredicate(versionPrefix string) *latestPatchForMinorP
 	}
 }
 
-func getLatestReleasedVersion(ctx context.Context, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
-	client, err := githubutils.GetClient(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to create github client")
-	}
+// getLatestReleasedPatchVersion will return the latest released patch version for the given major and minor version
+// NOTE: this attempts to reach out to github to get the latest release
+func getLatestReleasedPatchVersion(ctx context.Context, client *github.Client, repoName string, majorVersion, minorVersion int) (*versionutils.Version, error) {
+
 	versionPrefix := fmt.Sprintf("v%d.%d", majorVersion, minorVersion)
 	releases, err := githubutils.GetRepoReleasesWithPredicateAndMax(ctx, client, "solo-io", repoName, newLatestPatchForMinorPredicate(versionPrefix), 1)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get releases")
+	}
 	if len(releases) == 0 {
 		return nil, errors.Errorf("Could not find a recent release with version prefix: %s", versionPrefix)
 	}

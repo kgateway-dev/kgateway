@@ -3,7 +3,6 @@ package upgrade_test
 import (
 	"context"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -56,7 +55,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
-	if err != nil && strings.Contains(err.Error(), upgrade.FirstReleaseError) {
+	if err != nil && err == upgrade.FirstReleaseError {
 		firstReleaseOfMinor = true
 	}
 })
