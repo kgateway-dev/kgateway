@@ -54,7 +54,7 @@ func beforeSuiteOne() []byte {
 	return nil
 }
 
-func beforeSuiteAll() {
+func beforeSuiteAll(_ []byte) {
 	var err error
 	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
@@ -74,7 +74,7 @@ func afterSuiteOne() []byte {
 	return nil
 }
 
-func afterSuiteAll() {
+func afterSuiteAll(_ []byte) {
 	err := locker.ReleaseLock()
 	Expect(err).NotTo(HaveOccurred())
 
