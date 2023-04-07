@@ -76,7 +76,6 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			})
 		})
 		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
-			skipFunc()
 
 			BeforeEach(func() {
 				skipFunc()
@@ -87,9 +86,11 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
+				skipFunc()
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
+				skipFunc()
 				addSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 
