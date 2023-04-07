@@ -48,7 +48,7 @@ func setCaBundle(ctx context.Context, vwc *v1.ValidatingWebhookConfiguration, cf
 		if svcName == cfg.ServiceName && svcNamespace == cfg.ServiceNamespace {
 			wh.ClientConfig.CABundle = encodedCaBundle
 
-			vwc.Webhooks = wh
+			vwc.Webhooks[i] = wh
 
 			contextutils.LoggerFrom(ctx).Infow("set CA bundle on ValidatingWebhookConfiguration", zap.String("svc", svcName), zap.String("vwc", vwc.Name), zap.Int("webhook", i))
 		}
