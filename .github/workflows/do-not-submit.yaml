@@ -14,6 +14,6 @@ jobs:
           fetch-depth: 0
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v1.1.2
+        uses: tj-actions/changed-files@v35
       - name: Check for DO_NOT_SUBMIT
         run: ./ci/do-not-submit.sh ${{ steps.changed-files.outputs.all_modified_files }}

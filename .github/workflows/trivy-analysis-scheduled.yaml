@@ -50,10 +50,13 @@ jobs:
         with:
           go-version-file: go.mod
         id: go
+      - name: Install kind
+        uses: helm/kind-action@v1.5.0
+        with:
+          credentials_json: ${{ secrets.GLOO_VULN_REPORTER }}
       - name: Setup - gcloud / gsutil
         uses: google-github-actions/setup-gcloud@v0
         with:
-          service_account_key: ${{ secrets.GLOO_VULN_REPORTER }}
           project_id: solo-public
           export_default_credentials: true
       - name: Run and Push Security Scan Files to Google Cloud Bucket
