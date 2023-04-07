@@ -51,7 +51,7 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 
 	var currentMinorLatestRelease *versionutils.Version
 	// we dont believe there should be a minor release yet so its ok to not do this extra computation
-	if curMinorErr == FirstReleaseError {
+	if curMinorErr == nil {
 		var currentMinorLatestReleaseError error
 		// we may get a changelog value that does not have a github release - get the latest release for current minor
 		currentMinorLatestRelease, currentMinorLatestReleaseError = getLatestReleasedPatchVersion(ctx, client, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
