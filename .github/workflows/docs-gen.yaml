@@ -82,6 +82,9 @@ jobs:
 
         echo "After clearing disk space:"
         df -h
+    - name: Check out code into the Go module directory
+      if: needs.prepare_env.outputs.should-pass-docs != 'true'
+      uses: actions/checkout@v3
     - name: Set up Go
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: actions/setup-go@v4
@@ -93,9 +96,6 @@ jobs:
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.69.2'
-    - name: Check out code into the Go module directory
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/checkout@v3
     - name: Detect Community PR
       id: community-pr-check
       if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
