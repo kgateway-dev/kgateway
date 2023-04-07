@@ -19,11 +19,7 @@ func ContainHeaders(headers http.Header) types.GomegaMatcher {
 	}
 	headerMatchers := make([]types.GomegaMatcher, 0, len(headers))
 	for k, v := range headers {
-		vals := make([]interface{}, len(v))
-		for i := range v {
-			vals[i] = v[i]
-		}
-		headerMatchers = append(headerMatchers, gomega.WithTransform(transforms.WithHeaderValues(k), gomega.ContainElements(vals...)))
+		headerMatchers = append(headerMatchers, gomega.WithTransform(transforms.WithHeaderValues(k), gomega.ContainElements(v)))
 	}
 	return gomega.And(headerMatchers...)
 }
