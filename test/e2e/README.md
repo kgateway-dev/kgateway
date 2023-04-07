@@ -48,7 +48,7 @@ TEST_PKG=./test/e2e/... make run-tests
 ```
 
 #### Using Previously Published Image
-If you want to specify a particular version that was previously published, you can also do that be specifying the `ENVOY_IMAGE_TAG`.
+If you want to specify a particular version that was previously published, you can also do that by specifying the `ENVOY_IMAGE_TAG`.
 
 ```bash
 ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make run-tests
@@ -56,6 +56,7 @@ ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make run-tests
 
 #### Using Locally Built Image
 If you have made changes to the component, you will have had to rebuild the image locally (see [setup tests](#setup)). After you rebuild the image, you need to supply the tag of that image when running the tests:
+
 ```bash
 ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make run-tests
 ```
