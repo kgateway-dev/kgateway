@@ -50,15 +50,15 @@ jobs:
         
         echo "After clearing disk space:"
         df -h
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: 1.18.6
-      id: go
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version-file: "go.mod"
+      id: go
     - name: Install kind
       uses: helm/kind-action@v1.5.0
       with:
