@@ -76,22 +76,23 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 			})
 		})
 		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
-			if firstReleaseOfMinor {
-				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
-			} else {
-				BeforeEach(func() {
-					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
-				})
-				AfterEach(func() {
-					uninstallGloo(testHelper, ctx, cancel)
-				})
-				It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
-					updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
-				})
-				It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
-					addSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
-				})
-			}
+			skipFunc()
+
+			BeforeEach(func() {
+				skipFunc()
+				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+			})
+			AfterEach(func() {
+				skipFunc()
+				uninstallGloo(testHelper, ctx, cancel)
+			})
+			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
+				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
+			})
+			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
+				addSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
+			})
+
 		})
 	})
 
@@ -121,19 +122,19 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		})
 
 		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
-			if firstReleaseOfMinor {
-				Skip("First Release of minor, cannot upgrade from a lower patch version to this version")
-			} else {
-				BeforeEach(func() {
-					installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
-				})
-				AfterEach(func() {
-					uninstallGloo(testHelper, ctx, cancel)
-				})
-				It("sets validation webhook caBundle on install and upgrade", func() {
-					updateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, targetReleasedVersion, false)
-				})
-			}
+			skipFunc()
+			BeforeEach(func() {
+				skipFunc()
+				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
+			})
+			AfterEach(func() {
+				skipFunc()
+				uninstallGloo(testHelper, ctx, cancel)
+			})
+			It("sets validation webhook caBundle on install and upgrade", func() {
+				updateValidationWebhookTests(ctx, crdDir, kubeClientset, testHelper, chartUri, targetReleasedVersion, false)
+			})
+
 		})
 	})
 })
