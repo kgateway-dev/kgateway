@@ -209,6 +209,7 @@ type EnvoyFactory struct {
 	// The tag of the image that will be used to run the Envoy instance in Docker
 	// This can either be a previously released tag: https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags
 	// Or the tag of a locally built image
+	// See the Setup section of the ./test/e2e/README for details about building a local image
 	dockerImageTag string
 	instances      []*EnvoyInstance
 }
