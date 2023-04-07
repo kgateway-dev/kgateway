@@ -45,9 +45,9 @@ steps:
 
 # Run make targets to push docker images to quay.io
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.2'
-  id: 'docker-release'
+  id: 'docker-publish'
   args:
-  - 'docker-release'
+  - 'docker-publish'
   dir: *dir
   secretEnv:
   - 'GITHUB_TOKEN'
@@ -63,7 +63,7 @@ steps:
   - 'auth'
   - 'configure-docker'
   waitFor:
-  - 'docker-release'
+  - 'docker-publish'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.2'
   id: 'release-chart'
@@ -86,16 +86,16 @@ steps:
   id: 'docker-push-extended-gcr'
   dir: *dir
   args:
-  - 'docker-push-retag'
+  - 'docker-publish-retag'
   env:
+  - 'ORIGINAL_IMAGE_REPO=quay.io/solo-io'
   - 'IMAGE_REPO=gcr.io/gloo-edge'
-  - 'RETAG_IMAGE_REGISTRY=quay.io/solo-io'
   secretEnv:
   - 'GITHUB_TOKEN'
   waitFor:
   - 'gcr-auth'
   - 'prepare-gcr-zone'
-  - 'docker-release'
+  - 'docker-publish'
 
 secrets:
 - kmsKeyName: 'projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key'
