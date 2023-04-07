@@ -59,7 +59,7 @@ var _ = BeforeSuite(func() {
 	LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
 	if err != nil && errors.Is(err, upgrade.FirstReleaseError) {
 		firstReleaseOfMinor = true
-		fmt.Println("First release of minor, skipping upgrade tests")
+		fmt.Println("First release of minor, skipping some upgrade tests")
 	} else if err != nil {
 		Expect(err).NotTo(HaveOccurred())
 	}
