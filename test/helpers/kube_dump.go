@@ -7,69 +7,26 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-var dumpCommands = func(namespace string) []string {
-	return []string{
-		fmt.Sprintf("echo PODS FROM %s: && kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name", namespace, namespace),
-		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo STATUS FOR %s.$i: $(kubectl get pod -n %s $i -o go-template=\"{{range .status.containerStatuses}}{{.state}}{{end}}\"); done", namespace, namespace, namespace),
-		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i: $(kubectl logs -n %s $i --all-containers); done", namespace, namespace, namespace),
-		fmt.Sprintf("kubectl get events -n %s", namespace),
-	}
-}
+var (
+	kubeCli = &install.CmdKubectl{}
+)
 
 func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
 		outDir := setupOutDir()
-		recordKubeState(fileAtPath(outDir + "kube-state.log"))
-		recordDockerState(fileAtPath(outDir + "docker-state.log"))
-		recordProcessState(fileAtPath(outDir + "process-state.log"))
-		recordKubeDump(fileAtPath(outDir+"kube-dump.log"), namespaces...)
-	}
-}
 
-func recordKubeDump(f *os.File, namespaces ...string) {
-	defer f.Close()
+		recordDockerState(fileAtPath(filepath.Join(outDir, "docker-state.log")))
+		recordProcessState(fileAtPath(filepath.Join(outDir, "process-state.log")))
+		recordKubeState(fileAtPath(filepath.Join(outDir, "kube-state.log")))
 
-	b := &bytes.Buffer{}
-	b.WriteString("** Begin Kubernetes Dump ** \n")
-	for _, ns := range namespaces {
-		for _, command := range dumpCommands(ns) {
-			cmd := exec.Command("bash", "-c", command)
-			cmd.Stdout = b
-			cmd.Stderr = b
-			if err := cmd.Run(); err != nil {
-				b.WriteString(fmt.Sprintf(
-					"command %s failed: %v", command, b.String(),
-				))
-			}
-		}
+		recordKubeDump(outDir, namespaces...)
 	}
-	b.WriteString("** End Kubernetes Dump ** \n")
-	f.WriteString(b.String())
-}
-
-func recordKubeState(f *os.File) {
-	defer f.Close()
-
-	kubeCli := &install.CmdKubectl{}
-	kubeState, err := kubeCli.KubectlOut(nil, "get", "all", "-A")
-	if err != nil {
-		f.WriteString("*** Unable to get kube state ***\n")
-		return
-	}
-	kubeEndpointsState, err := kubeCli.KubectlOut(nil, "get", "endpoints", "-A")
-	if err != nil {
-		f.WriteString("*** Unable to get kube state ***\n")
-		return
-	}
-	f.WriteString("*** Kube state ***\n")
-	f.WriteString(string(kubeState) + "\n")
-	f.WriteString(string(kubeEndpointsState) + "\n")
-	f.WriteString("*** End Kube state ***\n")
 }
 
 func recordDockerState(f *os.File) {
@@ -108,6 +65,142 @@ func recordProcessState(f *os.File) {
 	f.WriteString("*** Process state ***\n")
 	f.WriteString(psState.String() + "\n")
 	f.WriteString("*** End Process state ***\n")
+}
+
+func recordKubeState(f *os.File) {
+	defer f.Close()
+
+	kubeState, err := kubeCli.KubectlOut(nil, "get", "all", "-A")
+	if err != nil {
+		f.WriteString("*** Unable to get kube state ***\n")
+		return
+	}
+	kubeEndpointsState, err := kubeCli.KubectlOut(nil, "get", "endpoints", "-A")
+	if err != nil {
+		f.WriteString("*** Unable to get kube state ***\n")
+		return
+	}
+	f.WriteString("*** Kube state ***\n")
+	f.WriteString(string(kubeState) + "\n")
+	f.WriteString(string(kubeEndpointsState) + "\n")
+	f.WriteString("*** End Kube state ***\n")
+}
+
+func recordKubeDump(outDir string, namespaces ...string) {
+
+	// for each namespace, create a namespace directory that contains...
+	for _, ns := range namespaces {
+		// ...a pod logs subdirectoy
+		if err := recordPods(filepath.Join(outDir, ns, "pods"), ns); err != nil {
+			fmt.Printf("error recording pod logs: %f, \n", err)
+			break
+		}
+
+		// ...an envoy dump
+
+		// ...and a subdirectory for each solo.io CRD with non-zero resources
+		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
+			fmt.Printf("error recording pod logs: %f, \n", err)
+			break
+		}
+	}
+}
+
+// recordPods records logs from each pod to _output/test-failure-dump/$namespace/pods/$pod.log
+func recordPods(podDir, namespace string) error {
+	pods, err := kubeList(namespace, "pod")
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods {
+		if err := os.MkdirAll(podDir, os.ModePerm); err != nil {
+			return err
+		}
+
+		f := fileAtPath(filepath.Join(podDir, pod+".log"))
+		logs, err := kubeLogs(namespace, pod)
+		if err != nil {
+			return err
+		}
+		f.WriteString(logs)
+		f.Close()
+	}
+	return nil
+}
+
+// recordCRs records all unique CRs floating about to _output/test-failure-dump/$namespace/$crd/$cr.yaml
+func recordCRs(namespaceDir string, namespace string) error {
+	crds, err := kubeList(namespace, "crd")
+	if err != nil {
+		return err
+	}
+
+	// record all unique CRs floating about
+	for _, crd := range crds {
+		// consider all installed CRDs that are solo-managed
+		if !strings.Contains(crd, "solo.io") {
+			continue
+		}
+
+		// if there are any existing CRs corresponding to this CRD
+		crs, err := kubeList(namespace, crd)
+		if err != nil {
+			return err
+		}
+		if len(crs) == 0 {
+			continue
+		}
+
+		// we record each one in its own .yaml representation
+		for _, cr := range crs {
+			crdDir := filepath.Join(namespaceDir, crd)
+			if err := os.MkdirAll(crdDir, os.ModePerm); err != nil {
+				return err
+			}
+
+			f := fileAtPath(filepath.Join(crdDir, cr+".yaml"))
+			crDetails, err := kubeGet(namespace, crd, cr)
+			if err != nil {
+				return err
+			}
+			f.WriteString(crDetails)
+			f.Close()
+		}
+	}
+
+	return nil
+}
+
+// kubeLogs runs $(kubectl -n $namespace logs $pod --all-containers) and returns the string result
+func kubeLogs(namespace string, pod string) (string, error) {
+	toReturn, err := kubeCli.KubectlOut(nil, "-n", namespace, "logs", pod, "--all-containers")
+	return string(toReturn), err
+}
+
+// kubeGet runs $(kubectl -n $namespace get $kubeType $name -oyaml) and returns the string result
+func kubeGet(namespace string, kubeType string, name string) (string, error) {
+	toReturn, err := kubeCli.KubectlOut(nil, "-n", namespace, "get", kubeType, name, "-oyaml")
+	return string(toReturn), err
+}
+
+// kubeList runs $(kubectl -n $namespace $target) and returns a slice of kubernetes object names
+func kubeList(namespace string, target string) ([]string, error) {
+	line, err := kubeCli.KubectlOut(nil, "-n", namespace, "get", target)
+	if err != nil {
+		return nil, err
+	}
+
+	var toReturn []string
+	for _, line := range strings.Split(strings.TrimSuffix(string(line), "\n"), "\n") {
+		if strings.HasPrefix(line, "NAME") || strings.HasPrefix(line, "No resources found") {
+			continue // skip header line and cases where there are no resources
+		}
+		if split := strings.Split(line, " "); len(split) > 1 {
+			toReturn = append(toReturn, split[0])
+		}
+	}
+	return toReturn, nil
 }
 
 // setupOutDir forcibly deletes/creates the output directory, then return the path to it
