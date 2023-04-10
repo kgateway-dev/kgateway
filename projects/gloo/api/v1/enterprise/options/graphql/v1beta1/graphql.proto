@@ -319,6 +319,10 @@ message Resolution {
   // The stats prefix which will be used for this resolver.
   // If empty, will generate a stats prefix ${RESOLVER_NAME}
   google.protobuf.StringValue stat_prefix = 3;
+
+  // The timeout to use for this resolver. This timeout should be shorter than the
+  // overall request timeout set for the route // TODO(jbohanon) check on this
+  google.protobuf.Duration timeout = 5;
 }
 
 // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
