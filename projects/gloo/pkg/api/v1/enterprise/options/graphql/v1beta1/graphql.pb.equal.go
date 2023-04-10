@@ -489,6 +489,16 @@ func (m *Resolution) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTimeout(), target.GetTimeout()) {
+			return false
+		}
+	}
+
 	switch m.Resolver.(type) {
 
 	case *Resolution_RestResolver:

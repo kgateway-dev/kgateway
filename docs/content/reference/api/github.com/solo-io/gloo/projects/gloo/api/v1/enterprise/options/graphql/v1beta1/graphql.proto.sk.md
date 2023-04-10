@@ -307,6 +307,7 @@ If a field with the same name does not exist in the parent, null will be used.
 "grpcResolver": .graphql.gloo.solo.io.GrpcResolver
 "mockResolver": .graphql.gloo.solo.io.MockResolver
 "statPrefix": .google.protobuf.StringValue
+"timeout": .google.protobuf.Duration
 
 ```
 
@@ -316,6 +317,7 @@ If a field with the same name does not exist in the parent, null will be used.
 | `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) | gRPC resolver used to translate and send graphql requests to a gRPC upstream. Only one of `grpcResolver`, `restResolver`, or `mockResolver` can be set. |
 | `mockResolver` | [.graphql.gloo.solo.io.MockResolver](../graphql.proto.sk/#mockresolver) | Resolver used to mock responses from an upstream. This resolver doesn't make a call out to an upstream, but can mock responses either synchronously or with a delay. Additionally, can be used to mock errors from an upstream. Only one of `mockResolver`, `restResolver`, or `grpcResolver` can be set. |
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this resolver. If empty, will generate a stats prefix ${RESOLVER_NAME}. |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. This timeout should be shorter than the overall request timeout set for the route // TODO(jbohanon) check on this. |
 
 
 

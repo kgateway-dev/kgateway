@@ -549,6 +549,7 @@ exist in the parent, null will be used.
 "resolver": .solo.io.envoy.config.core.v3.TypedExtensionConfig
 "statPrefix": string
 "cacheControl": .envoy.config.filter.http.graphql.v2.CacheControl
+"timeout": .google.protobuf.Duration
 
 ```
 
@@ -558,6 +559,7 @@ exist in the parent, null will be used.
 | `resolver` | [.solo.io.envoy.config.core.v3.TypedExtensionConfig](../../../config/core/v3/extension.proto.sk/#typedextensionconfig) | The resolver to use. |
 | `statPrefix` | `string` | The stats prefix which will be used for this resolver. |
 | `cacheControl` | [.envoy.config.filter.http.graphql.v2.CacheControl](../graphql.proto.sk/#cachecontrol) | caching configuration, defaults to no caching. |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 
 
 
