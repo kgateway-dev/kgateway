@@ -19,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	grpc_json_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 )
 
@@ -39,21 +38,21 @@ func getGrpcspec(u *v1.Upstream) *grpc_json_plugins.GrpcJsonTranscoder {
 	}
 	return grpcWrapper.GrpcJsonTranscoder
 }
-func getDeprecatedGrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
+func isDeprecatedGrpcspec(u *v1.Upstream) bool {
+
 	upstreamType, ok := u.GetUpstreamType().(v1.ServiceSpecGetter)
 	if !ok {
-		return nil
+		return false
 	}
 
 	if upstreamType.GetServiceSpec() == nil {
-		return nil
+		return false
 	}
-
-	grpcWrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc)
-	if !ok {
-		return nil
+	_, ok = upstreamType.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc)
+	if ok {
+		return true
 	}
-	return grpcWrapper.Grpc
+	return false
 }
 
 func NewFunctionDiscoveryFactory() fds.FunctionDiscoveryFactory {
@@ -90,10 +89,7 @@ type UpstreamFunctionDiscovery struct {
 
 // IsFunctional returns true if the upstream is functional
 func (f *UpstreamFunctionDiscovery) IsFunctional() bool {
-	if getGrpcspec(f.upstream) != nil {
-		return true
-	}
-	return getDeprecatedGrpcspec(f.upstream) != nil
+	return getGrpcspec(f.upstream) != nil
 }
 
 func (f *UpstreamFunctionDiscovery) DetectType(ctx context.Context, url *url.URL) (*plugins.ServiceSpec, error) {
@@ -190,6 +186,10 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 	return updatecb(func(out *v1.Upstream) error {
 		svcSpec := getGrpcspec(out)
 		if svcSpec == nil {
+			if isDeprecatedGrpcspec(out) {
+				//TODO: description of how to find migration guide
+				return errors.New("Existing upstream with deprecated API found")
+			}
 			return errors.New("not a GRPC upstream")
 		}
 		svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
