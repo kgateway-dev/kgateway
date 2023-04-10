@@ -82,15 +82,14 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
-				skipFunc()
+
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			It("uses helm to update validationServerGrpcMaxSizeBytes without errors", func() {
-				skipFunc()
+
 				updateSettingsWithoutErrors(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 			It("uses helm to add a second gateway-proxy in a separate namespace without errors", func() {
-				skipFunc()
 				addSecondGatewayProxySeparateNamespaceTest(ctx, crdDir, testHelper, chartUri, targetReleasedVersion, strictValidation)
 			})
 
@@ -129,7 +128,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
-				skipFunc()
+
 				uninstallGloo(testHelper, ctx, cancel)
 			})
 			It("sets validation webhook caBundle on install and upgrade", func() {
