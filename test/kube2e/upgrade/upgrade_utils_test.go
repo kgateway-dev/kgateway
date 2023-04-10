@@ -18,7 +18,7 @@ func (m mockDirEntry) Name() string {
 	return m.name
 }
 
-var _ = FDescribe("upgrade utils unit tests", func() {
+var _ = Describe("upgrade utils unit tests", func() {
 	baseEntries := []mockDirEntry{
 		{"v1.7.0"}, {"v1.8.0-beta1"}, {"v1.7.1"},
 	}
