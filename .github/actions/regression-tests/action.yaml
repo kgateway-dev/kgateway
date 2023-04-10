@@ -78,5 +78,5 @@ runs:
     if: ${{ failure() }}
     with:
       name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}-kube-dump
-      path: "**/test-failure-dump"
+      path: "_output/test-failure-dump"
       if-no-files-found: warn

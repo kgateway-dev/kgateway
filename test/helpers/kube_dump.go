@@ -7,10 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
 var dumpCommands = func(namespace string) []string {
@@ -111,30 +110,9 @@ func recordProcessState(f *os.File) {
 	f.WriteString("*** End Process state ***\n")
 }
 
-// originatingPackage returns the name of the root package that called this function.
-func originatingPackage() string {
-	pc, _, _, _ := runtime.Caller(1)
-	funcName := runtime.FuncForPC(pc).Name()
-	lastSlash := strings.LastIndexByte(funcName, '/')
-	if lastSlash < 0 {
-		lastSlash = 0
-	}
-	lastDot := strings.LastIndexByte(funcName[lastSlash:], '.') + lastSlash
-	originatingPackage := funcName[:lastDot]
-	// callingFunc := funcName[lastDot+1:]  // calling function, if someone were to want it:
-	return originatingPackage
-}
-
-// basepath returns the file system folder where go.mod is stored
-func basepath() string {
-	_, b, _, _ := runtime.Caller(0)
-	basepath := filepath.Dir(b)
-	return basepath
-}
-
 // setupOutDir forcibly deletes/creates the output directory, then return the path to it
 func setupOutDir() string {
-	outDir := basepath() + "/_output/test-failure-dump/" + originatingPackage()
+	outDir := filepath.Join(util.GetModuleRoot(), "_output", "test-failure-dump")
 
 	err := os.RemoveAll(outDir)
 	if err != nil {
