@@ -19,6 +19,11 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/solo-io/skv2/codegen/util"
+
+	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/test/testutils/version"
+
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -203,37 +208,12 @@ type EnvoyFactory struct {
 	envoypath string
 	tmpdir    string
 	useDocker bool
-	instances []*EnvoyInstance
-}
-
-func getEnvoyImageTag() string {
-	eit := os.Getenv("ENVOY_IMAGE_TAG")
-	if eit != "" {
-		return eit
-	}
-
-	// get project base
-	gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
-	Expect(err).NotTo(HaveOccurred())
-	gomodfile := strings.TrimSpace(string(gomod))
-	projectbase, _ := filepath.Split(gomodfile)
-
-	makefile := filepath.Join(projectbase, "Makefile")
-	inFile, err := os.Open(makefile)
-	Expect(err).NotTo(HaveOccurred())
-
-	defer inFile.Close()
-
-	const prefix = "ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:"
-
-	scanner := bufio.NewScanner(inFile)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, prefix) {
-			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
-		}
-	}
-	return ""
+	// The tag of the image that will be used to run the Envoy instance in Docker
+	// This can either be a previously released tag: https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags
+	// Or the tag of a locally built image
+	// See the Setup section of the ./test/e2e/README for details about building a local image
+	dockerImageTag string
+	instances      []*EnvoyInstance
 }
 
 func NewEnvoyFactory() (*EnvoyFactory, error) {
@@ -266,7 +246,10 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 	case "darwin":
 		log.Printf("Using docker to run envoy")
 
-		return &EnvoyFactory{useDocker: true}, nil
+		return &EnvoyFactory{
+			useDocker:      true,
+			dockerImageTag: mustGetEnvoyWrapperTag(),
+		}, nil
 	case "linux":
 		// try to grab one form docker...
 		tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "envoy")
@@ -274,10 +257,8 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 			return nil, err
 		}
 
-		envoyImageTag := getEnvoyImageTag()
-		if envoyImageTag == "" {
-			panic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
-		}
+		envoyImageTag := mustGetEnvoyGlooTag()
+
 		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
 
 		bash := fmt.Sprintf(`
@@ -313,6 +294,54 @@ docker rm $CID
 	}
 }
 
+// mustGetEnvoyGlooTag returns the tag of the envoy-gloo image which will be executed
+// The tag is chosen using the following process:
+//  1. If ENVOY_IMAGE_TAG is defined, use that tag
+//  2. If not defined, use the ENVOY_GLOO_IMAGE tag defined in the Makefile
+func mustGetEnvoyGlooTag() string {
+	eit := os.Getenv(testutils.EnvoyImageTag)
+	if eit != "" {
+		return eit
+	}
+
+	makefile := filepath.Join(util.GetModuleRoot(), "Makefile")
+	inFile, err := os.Open(makefile)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer inFile.Close()
+
+	const prefix = "ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:"
+
+	scanner := bufio.NewScanner(inFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		}
+	}
+
+	ginkgo.Fail("Could not determine envoy-gloo tag. Find valid tag names here https://quay.io/repository/solo-io/envoy-gloo?tab=tags")
+	return ""
+}
+
+// mustGetEnvoyWrapperTag returns the tag of the envoy-gloo-wrapper image which will be executed
+// The tag is chosen using the following process:
+//  1. If ENVOY_IMAGE_TAG is defined, use that tag
+//  2. If not defined, use the latest released tag of that image
+func mustGetEnvoyWrapperTag() string {
+	eit := os.Getenv(testutils.EnvoyImageTag)
+	if eit != "" {
+		return eit
+	}
+
+	latestPatchVersion, err := version.GetLastReleaseOfCurrentBranch()
+	if err != nil {
+		ginkgo.Fail(errors.Wrap(err, "Failed to extract the latest release of current minor").Error())
+	}
+
+	return strings.TrimPrefix(latestPatchVersion.String(), "v")
+}
+
 func (ef *EnvoyFactory) EnvoyPath() string {
 	return ef.envoypath
 }
@@ -333,21 +362,22 @@ func (ef *EnvoyFactory) Clean() error {
 }
 
 type EnvoyInstance struct {
-	AccessLogAddr string
-	AccessLogPort uint32
-	RatelimitAddr string
-	RatelimitPort uint32
-	ID            string
-	Role          string
-	envoypath     string
-	envoycfg      string
-	logs          *SafeBuffer
-	cmd           *exec.Cmd
-	UseDocker     bool
-	GlooAddr      string // address for gloo and services
-	Port          uint32
-	RestXdsPort   uint32
-	AdminPort     uint32
+	AccessLogAddr  string
+	AccessLogPort  uint32
+	RatelimitAddr  string
+	RatelimitPort  uint32
+	ID             string
+	Role           string
+	envoypath      string
+	envoycfg       string
+	logs           *SafeBuffer
+	cmd            *exec.Cmd
+	UseDocker      bool
+	DockerImageTag string
+	GlooAddr       string // address for gloo and services
+	Port           uint32
+	RestXdsPort    uint32
+	AdminPort      uint32
 
 	// Envoy API Version to use, default to V3
 	ApiVersion string
@@ -383,12 +413,13 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 	}
 
 	ei := &EnvoyInstance{
-		envoypath:     ef.envoypath,
-		UseDocker:     ef.useDocker,
-		GlooAddr:      gloo,
-		AccessLogAddr: gloo,
-		AdminPort:     atomic.AddUint32(&adminPort, 1) + uint32(parallel.GetPortOffset()),
-		ApiVersion:    "V3",
+		envoypath:      ef.envoypath,
+		UseDocker:      ef.useDocker,
+		DockerImageTag: ef.dockerImageTag,
+		GlooAddr:       gloo,
+		AccessLogAddr:  gloo,
+		AdminPort:      atomic.AddUint32(&adminPort, 1) + uint32(parallel.GetPortOffset()),
+		ApiVersion:     "V3",
 	}
 	ef.instances = append(ef.instances, ei)
 	return ei, nil
@@ -549,12 +580,7 @@ func (ei *EnvoyInstance) Clean() {
 }
 
 func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
-	envoyImageTag := getEnvoyImageTag()
-	if envoyImageTag == "" {
-		return errors.New("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
-	}
-
-	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
+	image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", ei.DockerImageTag)
 	args := []string{"run", "--rm", "--name", containerName,
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
