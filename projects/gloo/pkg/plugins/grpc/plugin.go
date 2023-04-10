@@ -83,6 +83,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if !ok {
 		return nil
 	}
+
 	grpcSpec := grpcWrapper.Grpc
 
 	// GRPC transcoding always requires http2
@@ -115,7 +116,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
 	})
-	contextutils.LoggerFrom(params.Ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName())
+	contextutils.LoggerFrom(params.Ctx).Debugf("record grpc upstream in.Metadata.Namespace: %s, in.Metadata.Name: %s cluster: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName(), translator.UpstreamToClusterName(in.GetMetadata().Ref()))
 
 	return nil
 }
@@ -180,7 +181,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			upstream := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if upstream == nil {
-				return nil, errors.New("upstream was not recorded for grpc route")
+				return nil, errors.New(fmt.Sprintf("upstream %v was not recorded for grpc route", upstreamRef))
 			}
 
 			// create the transformation for the route
