@@ -27,13 +27,13 @@ var _ = Describe("upgrade utils unit tests", func() {
 			entries = append(entries, baseEntries...) // dont pollute baseEntries
 			ver, err := filterFilesForLatestRelease(entries...)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(ver.String()).To(Equal("v1.8.0-beta2"))
+			Expect(ver.String()).To(Equal("v1.8.0-beta2"), entries)
 		})
 		It("should note that we are missing the last minor version", func() {
 
 			ver, err := filterFilesForLatestRelease(baseEntries...)
 			Expect(err).To(HaveOccurred())
-			Expect(ver.String()).To(Equal("v1.8.0-beta1"))
+			Expect(ver.String()).To(Equal("v1.8.0-beta1"), baseEntries)
 			Expect(err).To(Equal(FirstReleaseError))
 		})
 	})
