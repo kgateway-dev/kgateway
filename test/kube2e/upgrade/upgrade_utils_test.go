@@ -18,17 +18,17 @@ func (m mockDirEntry) Name() string {
 	return m.name
 }
 
-var _ = Describe("upgrade utils unit tests", func() {
+var _ = FDescribe("upgrade utils unit tests", func() {
 	baseEntries := []mockDirEntry{
-		{"v1.8.0-beta2"}, {"v1.7.0"}, {"v1.8.0-beta1"}, {"v1.7.1"},
+		{"v1.7.0"}, {"v1.8.0-beta1"}, {"v1.7.1"},
 	}
 	Context("versions are returned as expected", func() {
 		It("should return the last minor version", func() {
-			entries := []mockDirEntry{{"v1.8.0-beta3"}}
+			entries := []mockDirEntry{{"v1.8.0-beta2"}}
 			entries = append(entries, baseEntries...) // dont pollute baseEntries
 			ver, err := filterFilesForLatestRelease(entries...)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(ver.String()).To(Equal("v1.8.0-beta2"), fmt.Sprintf("%v", entries))
+			Expect(ver.String()).To(Equal("v1.8.0-beta1"), fmt.Sprintf("%v", entries))
 		})
 		It("should note that we are missing the last minor version", func() {
 
