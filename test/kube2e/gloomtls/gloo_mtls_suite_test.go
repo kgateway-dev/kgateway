@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	kubeutils2 "github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/test/testutils"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -59,7 +59,7 @@ func StartTestHelper() {
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 
 	// Allow skipping of install step for running multiple times
-	if !kubeutils2.ShouldSkipInstall() {
+	if !testutils.ShouldSkipInstall() {
 		installGloo()
 	}
 
@@ -73,7 +73,7 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
-	if kubeutils2.ShouldTearDown() {
+	if testutils.ShouldTearDown() {
 		uninstallGloo()
 	}
 	cancel()
