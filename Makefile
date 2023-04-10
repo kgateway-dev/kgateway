@@ -727,6 +727,18 @@ docker-push: docker-push-ingress
 docker-push: docker-push-access-logger
 docker-push: docker-push-kubectl
 
+# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REPO,
+# and tag them with a secondary repository, defined at IMAGE_REPO
+.PHONY: docker-retag
+docker-retag: docker-retag-gloo
+docker-retag: docker-retag-discovery
+docker-retag: docker-retag-gloo-envoy-wrapper
+docker-retag: docker-retag-certgen
+docker-retag: docker-retag-sds
+docker-retag: docker-retag-ingress
+docker-retag: docker-retag-access-logger
+docker-retag: docker-retag-kubectl
+
 # Intended only to be run by CI
 # Build and push docker images to the defined IMAGE_REPO
 .PHONY: docker-publish
@@ -740,16 +752,7 @@ endif
 # and push them to a secondary repository, defined at IMAGE_REPO
 .PHONY: docker-publish-retag
 ifeq ($(RELEASE), "true")
-docker-publish-retag: # Re-tag all images
-docker-publish-retag: docker-retag-gloo
-docker-publish-retag: docker-retag-discovery
-docker-publish-retag: docker-retag-gloo-envoy-wrapper
-docker-publish-retag: docker-retag-certgen
-docker-publish-retag: docker-retag-sds
-docker-publish-retag: docker-retag-ingress
-docker-publish-retag: docker-retag-access-logger
-docker-publish-retag: docker-retag-kubectl
-docker-publish-retag: # Push those re-tagged images
+docker-publish-retag: docker-retag
 docker-publish-retag: docker-push
 endif
 
