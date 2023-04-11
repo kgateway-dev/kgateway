@@ -66,14 +66,8 @@ runs:
   - name: save results
     if: ${{ failure() }}
     shell: bash
-    run: echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-            "name":"${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}"}' > test-out.json
-  - uses: actions/upload-artifact@v3
-    if: ${{ failure() }}
-    with:
-      name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}
-      path: test-out.json
-      if-no-files-found: warn
+    run: mkdir -p _output/test-failure-dump && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
+            "name":"${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}"}' > _output/test-failure-dump/test-out.json
   - uses: actions/upload-artifact@v3
     if: ${{ failure() }}
     with:
