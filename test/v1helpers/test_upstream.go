@@ -208,6 +208,31 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	mux.Handle("/health", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte(healthReply))
 	}))
+	mux.Handle("/wait", http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		returnBadRequest := func(err error) {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(err.Error()))
+		}
+		if err := r.ParseForm(); err != nil {
+			returnBadRequest(err)
+			return
+		}
+		seconds := r.Form.Get("seconds")
+		s, err := strconv.Atoi(seconds)
+		if err != nil {
+			returnBadRequest(err)
+			return
+		}
+
+		milliseconds := r.Form.Get("milliseconds")
+		if err != nil {
+			returnBadRequest(err)
+			return
+		}
+		ms, err := strconv.Atoi(milliseconds)
+		delay := (time.Second * time.Duration(s)) + (time.Millisecond * time.Duration(ms))
+		time.Sleep(delay)
+	}))
 
 	go func() {
 		defer GinkgoRecover()
