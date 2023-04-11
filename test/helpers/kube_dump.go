@@ -148,14 +148,13 @@ func recordCRs(namespaceDir string, namespace string) error {
 		if len(crs) == 0 {
 			continue
 		}
+		crdDir := filepath.Join(namespaceDir, crd)
+		if err := os.MkdirAll(crdDir, os.ModePerm); err != nil {
+			return err
+		}
 
 		// we record each one in its own .yaml representation
 		for _, cr := range crs {
-			crdDir := filepath.Join(namespaceDir, crd)
-			if err := os.MkdirAll(crdDir, os.ModePerm); err != nil {
-				return err
-			}
-
 			f := fileAtPath(filepath.Join(crdDir, cr+".yaml"))
 			crDetails, err := kubeGet(namespace, crd, cr)
 			if err != nil {
