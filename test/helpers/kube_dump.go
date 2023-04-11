@@ -15,17 +15,18 @@ import (
 
 var (
 	kubeCli = &install.CmdKubectl{}
+	outDir  = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
 )
 
 func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
-		outDir := setupOutDir()
+		setupOutDir()
 
 		recordDockerState(fileAtPath(filepath.Join(outDir, "docker-state.log")))
 		recordProcessState(fileAtPath(filepath.Join(outDir, "process-state.log")))
 		recordKubeState(fileAtPath(filepath.Join(outDir, "kube-state.log")))
 
-		recordKubeDump(outDir, namespaces...)
+		recordKubeDump(namespaces...)
 	}
 }
 
@@ -86,7 +87,7 @@ func recordKubeState(f *os.File) {
 	f.WriteString("*** End Kube state ***\n")
 }
 
-func recordKubeDump(outDir string, namespaces ...string) {
+func recordKubeDump(namespaces ...string) {
 	// for each namespace, create a namespace directory that contains...
 	for _, ns := range namespaces {
 		// ...a pod logs subdirectoy
@@ -103,7 +104,7 @@ func recordKubeDump(outDir string, namespaces ...string) {
 	}
 }
 
-// recordPods records logs from each pod to _output/test-failure-dump/$namespace/pods/$pod.log
+// recordPods records logs from each pod to _output/kube2e-artifacts/$namespace/pods/$pod.log
 func recordPods(podDir, namespace string) error {
 	pods, err := kubeList(namespace, "pod")
 	if err != nil {
@@ -126,7 +127,7 @@ func recordPods(podDir, namespace string) error {
 	return nil
 }
 
-// recordCRs records all unique CRs floating about to _output/test-failure-dump/$namespace/$crd/$cr.yaml
+// recordCRs records all unique CRs floating about to _output/kube2e-artifacts/$namespace/$crd/$cr.yaml
 func recordCRs(namespaceDir string, namespace string) error {
 	crds, err := kubeList(namespace, "crd")
 	if err != nil {
@@ -199,10 +200,8 @@ func kubeList(namespace string, target string) ([]string, error) {
 	return toReturn, nil
 }
 
-// setupOutDir forcibly deletes/creates the output directory, then return the path to it
-func setupOutDir() string {
-	outDir := filepath.Join(util.GetModuleRoot(), "_output", "test-failure-dump")
-
+// setupOutDir forcibly deletes/creates the output directory
+func setupOutDir() {
 	err := os.RemoveAll(outDir)
 	if err != nil {
 		fmt.Printf("error removing log directory: %f\n", err)
@@ -213,7 +212,6 @@ func setupOutDir() string {
 	}
 
 	fmt.Println("kube dump artifacts will be stored at: " + outDir)
-	return outDir
 }
 
 // fileAtPath creates a file at the given path, and returns the file object
