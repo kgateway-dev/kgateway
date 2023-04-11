@@ -78,7 +78,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
 
 			BeforeEach(func() {
-				skipFunc()
+				skipIfFirstMinorFunc()
 				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
@@ -124,7 +124,7 @@ var _ = Describe("Kube2e: Upgrade Tests", func() {
 		Context("When upgrading from currentPatchMostRecentMinorVersion to PR version of gloo", func() {
 
 			BeforeEach(func() {
-				skipFunc()
+				skipIfFirstMinorFunc()
 				installGloo(testHelper, CurrentPatchMostRecentMinorVersion.String(), strictValidation)
 			})
 			AfterEach(func() {
