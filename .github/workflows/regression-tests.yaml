@@ -91,6 +91,6 @@ jobs:
           SLACK_CHANNEL: ${{ env.direct_message_id }}       # DM to the user who ran CI
           SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
         run: |
-          test_results="$(cat */_output/test-failure-dump/test-out.json | jq -c --slurp .)"
+          test_results="$(cat */test-out.json | jq -c --slurp .)"
           echo $test_results
           go run .github/workflows/helpers/notify-from-json.go $test_results
