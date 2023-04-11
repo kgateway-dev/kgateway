@@ -18,6 +18,15 @@ var (
 	outDir  = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
 )
 
+// KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.
+// This is useful for debugging test failures.
+// The dump is written to _output/kube2e-artifacts.
+// The dump includes:
+// - docker state
+// - process state
+// - kubernetes state
+// - logs from all pods in the given namespaces
+// - yaml representations of all solo.io CRs in the given namespaces
 func KubeDumpOnFail(out io.Writer, namespaces ...string) func() {
 	return func() {
 		setupOutDir()
@@ -93,13 +102,11 @@ func recordKubeDump(namespaces ...string) {
 		// ...a pod logs subdirectoy
 		if err := recordPods(filepath.Join(outDir, ns, "_pods"), ns); err != nil {
 			fmt.Printf("error recording pod logs: %f, \n", err)
-			break
 		}
 
 		// ...and a subdirectory for each solo.io CRD with non-zero resources
 		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
 			fmt.Printf("error recording pod logs: %f, \n", err)
-			break
 		}
 	}
 }
