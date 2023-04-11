@@ -1359,7 +1359,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return err
 					}
 					g.Expect(rlc.Status.State).To(Equal(v1alpha1.RateLimitConfigStatus_REJECTED))
-					g.Expect(rlc.Status.Message).Should(ContainSubstring("fail-please-enterprise-only"))
+					g.Expect(rlc.Status.Message).Should(ContainSubstring("enterprise-only"))
 					return nil
 				}, "15s", "0.5s").ShouldNot(HaveOccurred())
 			})

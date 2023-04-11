@@ -87,7 +87,6 @@ func recordKubeState(f *os.File) {
 }
 
 func recordKubeDump(outDir string, namespaces ...string) {
-
 	// for each namespace, create a namespace directory that contains...
 	for _, ns := range namespaces {
 		// ...a pod logs subdirectoy
@@ -95,8 +94,6 @@ func recordKubeDump(outDir string, namespaces ...string) {
 			fmt.Printf("error recording pod logs: %f, \n", err)
 			break
 		}
-
-		// ...an envoy dump
 
 		// ...and a subdirectory for each solo.io CRD with non-zero resources
 		if err := recordCRs(filepath.Join(outDir, ns), ns); err != nil {
