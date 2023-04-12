@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/gloo/test/testutils/version"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -61,7 +62,7 @@ var _ = BeforeSuite(func() {
 	}
 	skipIfFirstMinorFunc = func() {}
 	LastPatchPreviousMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
-	if err != nil && errors.Is(err, upgrade.FirstReleaseError) {
+	if err != nil && errors.Is(err, version.FirstReleaseError) {
 		firstReleaseOfMinor = true
 		fmt.Println("First release of minor, skipping some upgrade tests")
 		CurrentPatchMostRecentMinorVersion = versionutils.NewVersion(0, 0, 0, "", 0)
