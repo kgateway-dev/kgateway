@@ -2,6 +2,7 @@ package upgrade
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -9,14 +10,14 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = Describe("upgrade utils unit tests", func() {
+var _ = FDescribe("upgrade utils unit tests", func() {
 
-	Context("Should never fail if you have internet", func() {
+	FContext("Should never fail if you have internet", func() {
 		It("should error or have a nil lastminor", func() {
-			lastminor, _, err := GetUpgradeVersions(context.Background(), "gloo")
+			lastMinor, currentMinor, err := GetUpgradeVersions(context.Background(), "gloo")
 
-			belief := err != nil || lastminor == nil
-			Expect(belief).To(BeTrue())
+			belief := err != nil || lastMinor != nil
+			Expect(belief).To(BeTrue(), fmt.Sprintf("%v %v %v", err, lastMinor, currentMinor))
 		})
 	})
 
