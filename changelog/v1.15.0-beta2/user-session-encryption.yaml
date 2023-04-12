@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    description: >-
+      Adding the ability to apply symmetric encryption to cookie session tokens and values through the Gloo API.
