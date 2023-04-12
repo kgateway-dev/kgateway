@@ -10,9 +10,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-var _ = FDescribe("upgrade utils unit tests", func() {
+var _ = Describe("upgrade utils unit tests", func() {
 
-	FContext("Should never fail if you have internet", func() {
+	Context("Should never fail if you have internet", func() {
 		It("should error or have a nil lastminor", func() {
 			lastMinor, currentMinor, err := GetUpgradeVersions(context.Background(), "gloo")
 
