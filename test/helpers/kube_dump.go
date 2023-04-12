@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	kubeCli = &install.CmdKubectl{}
-	outDir  = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
+	outDir = filepath.Join(util.GetModuleRoot(), "_output", "kube2e-artifacts")
 )
 
 // KubeDumpOnFail creates a small dump of the kubernetes state when a test fails.
@@ -79,6 +78,7 @@ func recordProcessState(f *os.File) {
 
 func recordKubeState(f *os.File) {
 	defer f.Close()
+	kubeCli := &install.CmdKubectl{}
 
 	kubeState, err := kubeCli.KubectlOut(nil, "get", "all", "-A")
 	if err != nil {
@@ -178,18 +178,21 @@ func recordCRs(namespaceDir string, namespace string) error {
 
 // kubeLogs runs $(kubectl -n $namespace logs $pod --all-containers) and returns the string result
 func kubeLogs(namespace string, pod string) (string, error) {
+	kubeCli := &install.CmdKubectl{}
 	toReturn, err := kubeCli.KubectlOut(nil, "-n", namespace, "logs", pod, "--all-containers")
 	return string(toReturn), err
 }
 
 // kubeGet runs $(kubectl -n $namespace get $kubeType $name -oyaml) and returns the string result
 func kubeGet(namespace string, kubeType string, name string) (string, error) {
+	kubeCli := &install.CmdKubectl{}
 	toReturn, err := kubeCli.KubectlOut(nil, "-n", namespace, "get", kubeType, name, "-oyaml")
 	return string(toReturn), err
 }
 
 // kubeList runs $(kubectl -n $namespace $target) and returns a slice of kubernetes object names
 func kubeList(namespace string, target string) ([]string, error) {
+	kubeCli := &install.CmdKubectl{}
 	line, err := kubeCli.KubectlOut(nil, "-n", namespace, "get", target)
 	if err != nil {
 		return nil, err
