@@ -6,39 +6,29 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/google/go-github/v32/github"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/test/testutils/version"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
 )
-
-var (
-	FirstReleaseError = errors.New("First Release of Minor")
-)
-
-// Type used to sort Versions
-type ByVersion []*versionutils.Version
-
-func (a ByVersion) Len() int { return len(a) }
-func (a ByVersion) Less(i, j int) bool {
-	var version1 = *a[i]
-	var version2 = *a[j]
-	return version2.MustIsGreaterThan(version1)
-}
-func (a ByVersion) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 // GetUpgradeVersions for the given repo.
 // This will return the lastminor, currentminor, and an error
 // This may return lastminor + currentminor, or just lastminor and an error or a just an error
 func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
 
-	currentMinorLatestPatchVersion, curMinorErr := getLastReleaseOfCurrentMinor()
-	if !errors.Is(curMinorErr, FirstReleaseError) {
+	twoBack, currentBranch, curMinorErr := getLastReleaseOfCurrentMinor()
+	currentMinorLatestPatchVersion = twoBack
+	if errors.Is(curMinorErr, version.FirstReleaseError) {
+		// we are on the first release of a minor
+		// we should use this branch rather than the last release
+		currentMinorLatestPatchVersion = currentBranch
+	} else if curMinorErr != nil {
 		return nil, nil, curMinorErr
 	}
 
@@ -70,7 +60,7 @@ func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPa
 	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
 }
 
-func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
+func getLastReleaseOfCurrentMinor() (*versionutils.Version, *versionutils.Version, error) {
 	// pull out to const
 	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
 	fParts := strings.Split(filename, string(os.PathSeparator))
@@ -87,44 +77,10 @@ func getLastReleaseOfCurrentMinor() (*versionutils.Version, error) {
 
 	files, err := os.ReadDir(pathToChangelogs)
 	if err != nil {
-		return nil, changelogutils.ReadChangelogDirError(err)
+		return nil, nil, changelogutils.ReadChangelogDirError(err)
 	}
 
-	return filterFilesForLatestRelease(files...)
-}
-
-// namedEntry extracts the only thing we really care about for a file entry - the name
-type namedEntry interface {
-	Name() string
-}
-
-// filterFilesForLatestRelease will return the latest release of the current minor
-// from a set of file entries that mimick our changelog structure
-func filterFilesForLatestRelease[T namedEntry](files ...T) (*versionutils.Version, error) {
-
-	if len(files) < 3 {
-		return nil, errors.Errorf("Could not get sufficient versions from files: %v\n", files)
-	}
-
-	versions := make([]*versionutils.Version, 0, len(files))
-	for _, f := range files {
-		// we expect there to be files like "validation.yaml"
-		// which are not valid changelogs
-		version, err := versionutils.ParseVersion(f.Name())
-		if err == nil {
-			versions = append(versions, version)
-		}
-	}
-	if len(versions) < 2 {
-		return nil, errors.Errorf("Could not get sufficient valid versions from files: %v\n", files)
-	}
-
-	sort.Sort(ByVersion(versions))
-	//first release of minor
-	if versions[len(versions)-1].Minor != versions[len(versions)-2].Minor {
-		return versions[len(versions)-1], FirstReleaseError
-	}
-	return versions[len(versions)-2], nil
+	return version.ChangelogDirForLatestRelease(files...)
 }
 
 type latestPatchForMinorPredicate struct {
