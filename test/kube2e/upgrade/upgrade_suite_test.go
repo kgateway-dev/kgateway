@@ -47,6 +47,8 @@ var _ = BeforeSuite(func() {
 	testHelper, err := kube2e.GetTestHelper(suiteCtx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "upgrade", testHelper.InstallNamespace, "other-ns"))
+
 	crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 	targetReleasedVersion = kube2e.GetTestReleasedVersion(suiteCtx, "gloo")
 	if targetReleasedVersion != "" {

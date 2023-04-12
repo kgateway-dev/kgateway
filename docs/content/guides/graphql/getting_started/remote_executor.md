@@ -70,28 +70,28 @@ In the previous section, you used local execution to resolve GraphQL queries to 
 
 4. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `default-todos-80` GraphQL API.
    {{< highlight yaml "hl_lines=12-16" >}}
-   cat << EOF | kubectl apply -f -
-   apiVersion: gateway.solo.io/v1
-   kind: VirtualService
-   metadata:
-     name: default
-     namespace: gloo-system
-   spec:
-     virtualHost:
-       domains:
-       - '*'
-       routes:
-       - graphqlApiRef:
-           name: default-todos-80
-           namespace: gloo-system
-         matchers:
-         - prefix: /graphql
-         options:
-           prefixRewrite: "/graphql"
-   EOF
+cat << EOF | kubectl apply -f -
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - graphqlApiRef:
+        name: default-todos-80
+        namespace: gloo-system
+      matchers:
+      - prefix: /graphql
+      options:
+        prefixRewrite: "/graphql"
+EOF
    {{< /highlight >}}
 
-5. Send a request to the GraphQL endpoint to verify that the request is successfully resolved by the upstream.
+1. Send a request to the GraphQL endpoint to verify that the request is successfully resolved by the upstream.
    ```sh
    curl -X POST -d '{"query":"{todo(id:\"b\"){id,text,done}}"}' "$(glooctl proxy url)/graphql"
    ```
@@ -100,7 +100,7 @@ In the previous section, you used local execution to resolve GraphQL queries to 
    {"data":{"todo":{"done":false,"id":"b","text":"This is the most important"}}}
    ```
 
-6. To see other example of data filtering, you can optionally send other queries to the GraphQL server, such as the following.
+2. To see other example of data filtering, you can optionally send other queries to the GraphQL server, such as the following.
    ```sh
    curl -X POST -d '{"query":"mutation _{updateTodo(id:\"b\",done:true){id,text,done}}", "operationName":"Mutation"}' "$(glooctl proxy url)/graphql"
    curl -X POST -d '{"query":"mutation _{createTodo(text:\"My new todo\"){id,text,done}}", "operationName":"Mutation"}' "$(glooctl proxy url)/graphql"
