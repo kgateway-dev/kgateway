@@ -42,8 +42,9 @@ var (
 )
 
 type TestContextFactory struct {
-	EnvoyFactory *services.EnvoyFactory
-	VaultFactory *services.VaultFactory
+	EnvoyFactory  *services.EnvoyFactory
+	VaultFactory  *services.VaultFactory
+	ConsulFactory *services.ConsulFactory
 }
 
 func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requirement) *TestContext {
@@ -63,6 +64,16 @@ func (f *TestContextFactory) NewTestContextWithVault(testRequirements ...testuti
 	return &TestContextWithVault{
 		TestContext:   testContext,
 		vaultInstance: f.VaultFactory.MustVaultInstance(),
+	}
+}
+
+func (f *TestContextFactory) NewTestContextWithConsul(testRequirements ...testutils.Requirement) *TestContextWithConsul {
+	requirementsWithConsul := append(testRequirements, testutils.Consul())
+	testContext := f.NewTestContext(requirementsWithConsul...)
+
+	return &TestContextWithConsul{
+		TestContext:    testContext,
+		consulInstance: f.ConsulFactory.MustConsulInstance(),
 	}
 }
 
@@ -147,9 +158,7 @@ func (c *TestContext) JustBeforeEach() {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	// Wait for a proxy to be accepted
-	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-		return c.testClients.ProxyClient.Read(WriteNamespace, DefaultProxyName, clients.ReadOpts{Ctx: c.ctx})
-	})
+	c.EventuallyProxyAccepted()
 }
 
 func (c *TestContext) JustAfterEach() {
@@ -266,6 +275,15 @@ func (c *TestContext) SetUpstreamGenerator(generator func(ctx context.Context, a
 	c.testUpstreamGenerator = generator
 }
 
+// For tests that rely on changing an existing configuration.
+func (c *TestContext) EventuallyProxyAccepted() {
+
+	// Wait for a proxy to be accepted
+	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+		return c.testClients.ProxyClient.Read(WriteNamespace, DefaultProxyName, clients.ReadOpts{Ctx: c.ctx})
+	})
+}
+
 // GetHttpRequestBuilder returns an HttpRequestBuilder to easily build http requests used in e2e tests
 func (c *TestContext) GetHttpRequestBuilder() *testutils.HttpRequestBuilder {
 	return testutils.DefaultRequestBuilder().
@@ -308,5 +326,30 @@ func (v *TestContextWithVault) RunVault() {
 	// By running Vault with the TestContext.Ctxt, we can be sure that when the TestContext
 	// completes, Vault will be cleaned up
 	err := v.VaultInstance().Run(v.Ctx())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+}
+
+// TestContextWithConsul represents the aggregate set of configuration needed to run a single e2e test
+// using Consul as a service registry to route traffic to. This is used rarely in tests,
+// so we intentionally try to separate the consul logic from the core TestContext to avoid adding complexity
+type TestContextWithConsul struct {
+	*TestContext
+
+	consulInstance *services.ConsulInstance
+}
+
+// ConsulInstance returns the wrapper for the running instance of Vault that this test is using
+func (c *TestContextWithConsul) ConsulInstance() *services.ConsulInstance {
+	return c.consulInstance
+}
+
+// RunConsul starts running the ConsulInstance and blocks until it has successfully started
+func (c *TestContextWithConsul) RunConsul() {
+	ginkgo.By("TestContextWithConsul: Running Consul")
+
+	// The ConsulInstance will be cleaned up when the provided context is cancelled
+	// By running Consul with the TestContext.Ctxt, we can be sure that when the TestContext
+	// completes, Consul will be cleaned up
+	err := c.ConsulInstance().Run(c.Ctx())
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }

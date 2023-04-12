@@ -17,8 +17,10 @@ glooctl edit route externalauth [flags]
 ### Options
 
 ```
-  -d, --disable   set to true to disable authentication on this route
-  -h, --help      help for externalauth
+  -d, --disable            set to true to disable authentication on this route
+  -h, --help               help for externalauth
+      --name string        name of the resource to read or write
+  -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
 ```
 
 ### Options inherited from parent commands
@@ -35,8 +37,6 @@ glooctl edit route externalauth [flags]
   -i, --interactive                use interactive mode
       --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
-      --name string                name of the resource to read or write
-  -n, --namespace string           namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType          output format: (yaml, json, table, kube-yaml, wide) (default table)
       --resource-version string    the resource version of the resource we are editing. if not empty, resource will only be changed if the resource version matches
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)

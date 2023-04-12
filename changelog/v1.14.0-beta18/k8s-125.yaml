@@ -1,0 +1,61 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Adds support for running Gloo Edge (OSS) on Kubernetes 1.25 and removes support for 1.22 and below.
+      Notable changes include `PodDisruptionBudget` moving from `policy/v1beta1` to `policy/v1`, and the
+      gloo helm chart OCI registry path changing from `gcr.io/solo-public/gloo-helm` to
+      `gcr.io/solo-public/gloo-helm/gloo`.
+    issueLink: https://github.com/solo-io/gloo/issues/6833
+    resolvesIssue: false
+  - type: NON_USER_FACING
+    description: Use `go-version-file` with `actions/setup-go`
+    issueLink: https://github.com/solo-io/gloo/issues/7926
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: skv2
+    dependencyTag: v0.29.2
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: helm
+    dependencyRepo: helm
+    dependencyTag: v3.11.2
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: api
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apiextensions-apiserver
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apimachinery
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: cli-runtime
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: client-go
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: code-generator
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: component-base
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: kubectl
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: metrics
+    dependencyTag: v0.25.8
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: kube-openapi
+    dependencyTag: v0.0.0-20220803162953-67bda5d908f1

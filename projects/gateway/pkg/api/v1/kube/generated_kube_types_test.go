@@ -3,11 +3,9 @@ package kube_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/solo-kit/test/helpers"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/test/testutils"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kubetypes "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/apis/gateway.solo.io/v1"
@@ -25,39 +23,27 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 
-	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Generated Kube Code", func() {
 	var (
-		apiExts         apiext.Interface
+		ctx    context.Context
+		cancel context.CancelFunc
+
 		glooV1Client    gloov1kube.GlooV1Interface       // upstreams
 		gatewayV1Client gatewayv1kube.GatewayV1Interface // virtual service
 
 		upstreamClient       gloov1.UpstreamClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
-		ctx                  context.Context
-		cancel               context.CancelFunc
 	)
 
 	BeforeEach(func() {
 		if !testutils.ShouldRunKubeTests() {
 			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		}
-
 		ctx, cancel = context.WithCancel(context.Background())
 		cfg, err := kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-
-		// register the crds
-		apiExts, err = apiext.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = helpers.AddAndRegisterCrd(ctx, gloov1.UpstreamCrd, apiExts)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = helpers.AddAndRegisterCrd(ctx, gatewayv1.VirtualServiceCrd, apiExts)
 		Expect(err).NotTo(HaveOccurred())
 
 		glooV1Client, err = gloov1kube.NewForConfig(cfg)
@@ -85,9 +71,8 @@ var _ = Describe("Generated Kube Code", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 	})
+
 	AfterEach(func() {
-		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
-		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, gatewayv1.VirtualServiceCrd.FullName(), v1.DeleteOptions{})
 		cancel()
 	})
 

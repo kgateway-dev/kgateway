@@ -89,7 +89,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.1-patch3
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.4-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -630,10 +630,8 @@ package-chart: generate-helm-files
 
 .PHONY: push-chart-to-registry
 push-chart-to-registry: generate-helm-files
-	mkdir -p $(HELM_REPOSITORY_CACHE)
-	cp $(DOCKER_CONFIG)/config.json $(HELM_REPOSITORY_CACHE)/config.json
-	HELM_EXPERIMENTAL_OCI=1 helm chart save $(HELM_DIR) gcr.io/solo-public/gloo-helm:$(VERSION)
-	HELM_EXPERIMENTAL_OCI=1 helm chart push gcr.io/solo-public/gloo-helm:$(VERSION)
+	helm package $(HELM_DIR)
+	helm push --registry-config $(DOCKER_CONFIG)/config.json gloo-$(VERSION).tgz oci://gcr.io/solo-public/gloo-helm
 
 .PHONY: fetch-package-and-save-helm
 fetch-package-and-save-helm: generate-helm-files
@@ -719,7 +717,6 @@ ifeq ($(RELEASE), "true")
 	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-race $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker tag $(RETAG_IMAGE_REGISTRY)/kubectl:$(VERSION) $(IMAGE_REPO)/kubectl:$(VERSION) && \
@@ -738,7 +735,6 @@ ifeq ($(RELEASE), "true")
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \

@@ -28,8 +28,6 @@ const (
 var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 
 	var (
-		vaultSecretSettings *gloov1.Settings_VaultSecrets
-
 		testContext *e2e.TestContextWithVault
 	)
 
@@ -41,7 +39,7 @@ var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 		v, err := localAwsCredentials.Get()
 		Expect(err).NotTo(HaveOccurred(), "can load AWS shared credentials")
 
-		vaultSecretSettings = &gloov1.Settings_VaultSecrets{
+		vaultSecretSettings := &gloov1.Settings_VaultSecrets{
 			Address: testContext.VaultInstance().Address(),
 			AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 				Aws: &gloov1.Settings_VaultAwsAuth{

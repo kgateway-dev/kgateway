@@ -91,7 +91,7 @@ If you plan to install Gloo Edge Enterprise, you will need to enable certain per
 
 ```bash
 oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-server -n gloo-system 
-oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics  -n gloo-system 
+oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics-v2 -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z default -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
@@ -109,7 +109,7 @@ Kind is ideal for getting started with Gloo Edge on your personal workstation.  
 We advise customizing kind cluster creation slightly to make it easier to access your services from your host workstation.  Since services deployed in kind are inside a Docker container, you cannot easily access them.  It is more convenient if you expose ports from inside the container to your host machine.
 
 ```bash
-cat <<EOF | kind create cluster --name kind --image kindest/node:v1.24.7 --config=-
+cat <<EOF | kind create cluster --name kind --image kindest/node:v1.25.3 --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -128,7 +128,7 @@ Note that Kind's docker container will be publishing ports 31500 (for http) and 
 
 ```
 Creating cluster "kind" ...
- ✓ Ensuring node image (kindest/node:v1.24.7) 🖼
+ ✓ Ensuring node image (kindest/node:v1.25.3) 🖼
  ✓ Preparing nodes 📦
  ✓ Writing configuration 📜
  ✓ Starting control-plane 🕹️

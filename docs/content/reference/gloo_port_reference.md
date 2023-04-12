@@ -117,7 +117,7 @@ The following table lists the services backed by the deployed pods.
 | gloo-fed-console | 8081 | healthcheck |
 | extauth | 8083 | extauth | 8083 | External authentication |
 | glooe-grafana | 80 | grafana | 3000 | Grafana UI |
-| glooe-prometheus-kube-state-metrics | 80 | prometheus-kube-state-metrics | 8080 | Kubernetes metric collection |
+| glooe-prometheus-kube-state-metrics-v2 | 80 | prometheus-kube-state-metrics | 8080 | Kubernetes metric collection |
 | glooe-prometheus-server | 80 | prometheus-server | 9090 | Prometheus server |
 | rate-limit | 18081 | rate-limit | 18081 | Rate-limiting |
 | redis | 6379 | redis | 6379 | Rate-limiting |

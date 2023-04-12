@@ -34,7 +34,6 @@ func (t *AccountCredentialsSecretConverter) FromKubeSecret(_ context.Context, _ 
 			Metadata: &skcore.Metadata{
 				Name:        secret.Name,
 				Namespace:   secret.Namespace,
-				Cluster:     secret.ClusterName,
 				Labels:      secret.Labels,
 				Annotations: secret.Annotations,
 			},
