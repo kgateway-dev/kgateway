@@ -148,7 +148,8 @@ message RESTResolver {
   ResponseTemplate response = 3;
   string span_name = 4;
 
-  // The timeout to use for this resolver.
+  // The timeout to use for this resolver. If unset, the upstream connection timeout
+  // or a default of 1 second will be used.
   google.protobuf.Duration timeout = 5;
 }
 
@@ -193,8 +194,8 @@ message GrpcResolver {
   reserved 3;
   string span_name = 4;
 
-  // The timeout to use for this resolver. This timeout should be shorter than the
-  // overall request timeout set for the route // TODO(jbohanon) check on this
+  // The timeout to use for this resolver. If unset, the upstream connection timeout
+  // or a default of 1 second will be used.
   google.protobuf.Duration timeout = 5;
 }
 

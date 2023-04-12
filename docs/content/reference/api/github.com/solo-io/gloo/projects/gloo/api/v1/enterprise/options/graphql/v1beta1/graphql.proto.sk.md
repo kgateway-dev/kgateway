@@ -128,7 +128,7 @@ control-plane API
 | `request` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `response` | [.graphql.gloo.solo.io.ResponseTemplate](../graphql.proto.sk/#responsetemplate) | configuration used to modify the response from the REST API before being handled by the graphql server. |
 | `spanName` | `string` |  |
-| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. If unset, the upstream connection timeout or a default of 1 second will be used. |
 
 
 
@@ -192,7 +192,7 @@ control-plane API
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `requestTransform` | [.graphql.gloo.solo.io.GrpcRequestTemplate](../graphql.proto.sk/#grpcrequesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `spanName` | `string` |  |
-| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. This timeout should be shorter than the overall request timeout set for the route // TODO(jbohanon) check on this. |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. If unset, the upstream connection timeout or a default of 1 second will be used. |
 
 
 

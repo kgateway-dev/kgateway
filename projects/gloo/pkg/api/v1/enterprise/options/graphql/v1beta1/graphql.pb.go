@@ -295,7 +295,8 @@ type RESTResolver struct {
 	// before being handled by the graphql server.
 	Response *ResponseTemplate `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
 	SpanName string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
-	// The timeout to use for this resolver.
+	// The timeout to use for this resolver. If unset, the upstream connection timeout
+	// or a default of 1 second will be used.
 	Timeout *duration.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
@@ -484,8 +485,8 @@ type GrpcResolver struct {
 	// configuration used to compose the outgoing request to a REST API
 	RequestTransform *GrpcRequestTemplate `protobuf:"bytes,2,opt,name=request_transform,json=requestTransform,proto3" json:"request_transform,omitempty"`
 	SpanName         string               `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
-	// The timeout to use for this resolver. This timeout should be shorter than the
-	// overall request timeout set for the route // TODO(jbohanon) check on this
+	// The timeout to use for this resolver. If unset, the upstream connection timeout
+	// or a default of 1 second will be used.
 	Timeout *duration.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
