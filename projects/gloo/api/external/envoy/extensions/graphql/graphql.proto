@@ -378,7 +378,6 @@ message Resolution {
   // with those variables taking naming precedence over variables declared at this level.
   // VariableTransformation pre_execution_transform = 6;
   reserved 5, 6;
-  google.protobuf.Duration timeout = 7;
 }
 
 // Resolvers for scalar, non-root fields rarely fetch data and instead usually populate data via the parent argument.
