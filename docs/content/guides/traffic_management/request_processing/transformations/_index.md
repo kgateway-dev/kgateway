@@ -107,7 +107,7 @@ would run.
 ### Configuration format
 Learn more about the properties that you can set in the `stagedTransformations` {{< protobuf display="object" name="transformation.options.gloo.solo.io.TransformationStages" >}} section of your YAML file. 
 
-The following YAML file show a sample structure for how to configure request and response transformations in the `stagedTransformations` section: 
+The following YAML file shows a sample structure for how to configure request and response transformations in the `stagedTransformations` section: 
 
 ```yaml
 stagedTransformations:
@@ -123,7 +123,7 @@ stagedTransformations:
     responseTransforms: {}
   inheritTransformations: bool
 
-The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. The following diagram illustrates the stages at which each of the transformation filters run in relation to other envoy filters when applying transformations to a request. For request transformations, early transformations are applied before regular transformations. For response transformations, this order is reversed, and regular transformations are applied before early transformations. 
+The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. For request transformations, early transformations are applied before regular transformations as shown in the following diagram. For response transformations, this order is reversed, and regular transformations are applied before early transformations. To learn more about the order in which envoy filters are applied, see [HTTP filter chain processing](https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request#http-filter-chain-processing) in the envoy documentation. 
 
 ![Transformation Filter Stages]({{% versioned_link_path fromRoot="/img/transformation_stages.png" %}})
 
@@ -137,7 +137,8 @@ The `requestTransformation` and `responseTransformation` attributes have the {{<
 
 - `headerBodyTransform`: This type of transformation makes all the headers available in the body and returns a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
   - If `addRequestMetadata` is true, `queryString`, `queryStringParameters`, `multiValueQueryStringParameters`, `httpMethod`, `path`, and `multiValueHeaders` will additionally be present in the body.
-- `transformationTemplate`: This type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
+- `transformationTemplate`: This type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. For more information, see [Transformation templates](#transformation-templates).
+- `xsltTransformation`: This type of transformation allows you to use the XSLT transformation language to describe your transformation. For more information, see [XSLT Transformation](#xslt-transformation). 
 
 The `inheritTransformation` attribute allows child routes to inherit transformations from their parent RouteTables and/or VirtualHosts. For more information, see [Inheritance rules](#inheritance-rules).
 
