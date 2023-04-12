@@ -72,7 +72,7 @@ var (
 	}
 
 	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config",
-		"A boolean indicating whether gloo config is valid")
+		"A boolean meant to indicate whether the gloo config is valid. However, its behavior/meaning changes depending upon the validation configuration and in most cases there is a better metric to use")
 )
 
 const (

@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/4169
+    resolvesIssue: true
+    description: Updating documentation around status metrics to provide more details on their use
