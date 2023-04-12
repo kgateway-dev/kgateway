@@ -215,16 +215,14 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		if retresp := waitIfNecessary(r); retresp != nil {
 			rw.WriteHeader(retresp.Code)
 			rw.Write(retresp.Body)
-			respChan <- retresp
-		}
-
-		if reply != "" {
-			_, _ = rw.Write([]byte(reply))
+			rresp = *retresp
+		} else if reply != "" {
+			rw.Write([]byte(reply))
 			rresp.Code = http.StatusOK
 			rresp.Headers = rw.Header()
 			rresp.Body = []byte(reply)
 		} else if body != nil {
-			_, _ = rw.Write(body)
+			rw.Write(body)
 			rresp.Code = http.StatusOK
 			rresp.Headers = rw.Header()
 			rresp.Body = body
