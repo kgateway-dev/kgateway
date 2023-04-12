@@ -63,21 +63,14 @@ runs:
     shell: bash
     run: testspace push --verbose "**/junit.xml"
     if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-  - name: Debug Info
-    if: failure()
-    shell: bash
-    run: |
-      # see what's in the cluster if we failed
-      kubectl get all -A
-      kubectl get configmaps -A
   - name: save results
     if: ${{ failure() }}
     shell: bash
-    run: echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-            "name":"${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}"}' > test-out.json
+    run: mkdir -p _output/kube2e-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
+            "name":"${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}"}' > _output/kube2e-artifacts/test-out.json
   - uses: actions/upload-artifact@v3
     if: ${{ failure() }}
     with:
-      name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}
-      path: test-out.json
+      name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}-kube-dump
+      path: "_output/kube2e-artifacts"
       if-no-files-found: warn
