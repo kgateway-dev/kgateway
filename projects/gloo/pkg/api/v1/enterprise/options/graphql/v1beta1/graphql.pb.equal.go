@@ -228,6 +228,16 @@ func (m *RESTResolver) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTimeout(), target.GetTimeout()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -340,6 +350,16 @@ func (m *GrpcResolver) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetSpanName(), target.GetSpanName()) != 0 {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetTimeout()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTimeout()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTimeout(), target.GetTimeout()) {
+			return false
+		}
 	}
 
 	return true
@@ -485,16 +505,6 @@ func (m *Resolution) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetStatPrefix(), target.GetStatPrefix()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetTimeout()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetTimeout()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetTimeout(), target.GetTimeout()) {
 			return false
 		}
 	}
