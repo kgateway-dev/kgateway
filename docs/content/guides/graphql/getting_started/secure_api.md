@@ -37,36 +37,36 @@ Protect the GraphQL API that you created in the previous sections by using an AP
 
 4. Update the `default` virtual service that you previously created to reference the `apikey-auth` AuthConfig. 
    {{< highlight yaml "hl_lines=17-21" >}}
-   cat << EOF | kubectl apply -f -
-   apiVersion: gateway.solo.io/v1
-   kind: VirtualService
-   metadata:
-     name: 'default'
-     namespace: 'gloo-system'
-   spec:
-     virtualHost:
-       domains:
-       - '*'
-       routes:
-       - graphqlApiRef:
-           name: bookinfo-graphql
-           namespace: gloo-system
-         matchers:
-         - prefix: /graphql
-         options:
-           extauth:
-             configRef:
-               name: apikey-auth
-               namespace: gloo-system
-   EOF
+cat << EOF | kubectl apply -f -
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'default'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - graphqlApiRef:
+        name: bookinfo-graphql
+        namespace: gloo-system
+      matchers:
+      - prefix: /graphql
+      options:
+        extauth:
+          configRef:
+            name: apikey-auth
+            namespace: gloo-system
+EOF
    {{< /highlight >}}
 
-5. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails, and you get a `401 Unauthorized` response.
+1. Send a request to the GraphQL endpoint. Note that because you enforced API key authorization, the unauthorized request fails, and you get a `401 Unauthorized` response.
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}' -v
    ```
 
-6. Add the API key to your request in the `-H 'api-key: $API_KEY'` header, and curl the endpoint again.
+2. Add the API key to your request in the `-H 'api-key: $API_KEY'` header, and curl the endpoint again.
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -H 'api-key: $API_KEY' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
    ```
