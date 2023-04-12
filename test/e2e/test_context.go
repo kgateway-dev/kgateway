@@ -158,9 +158,7 @@ func (c *TestContext) JustBeforeEach() {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	// Wait for a proxy to be accepted
-	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-		return c.testClients.ProxyClient.Read(WriteNamespace, DefaultProxyName, clients.ReadOpts{Ctx: c.ctx})
-	})
+	c.EventuallyProxyAccepted()
 }
 
 func (c *TestContext) JustAfterEach() {
@@ -275,6 +273,15 @@ func (c *TestContext) PatchDefaultUpstream(mutator func(us *gloov1.Upstream) *gl
 // Used for example with helpers.NewTestGrpcUpstream which has the side effect of also starting a grpc service
 func (c *TestContext) SetUpstreamGenerator(generator func(ctx context.Context, addr string) *v1helpers.TestUpstream) {
 	c.testUpstreamGenerator = generator
+}
+
+// For tests that rely on changing an existing configuration.
+func (c *TestContext) EventuallyProxyAccepted() {
+
+	// Wait for a proxy to be accepted
+	helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+		return c.testClients.ProxyClient.Read(WriteNamespace, DefaultProxyName, clients.ReadOpts{Ctx: c.ctx})
+	})
 }
 
 // GetHttpRequestBuilder returns an HttpRequestBuilder to easily build http requests used in e2e tests
