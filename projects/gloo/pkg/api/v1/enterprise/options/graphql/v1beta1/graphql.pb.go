@@ -150,7 +150,7 @@ type ResponseTemplate struct {
 	// fullname: '{$body.details.firstname} {$body.details.lastname}'
 	//
 	// and the graphql server will be able to extract data for a field given the path to the relevant data
-	// in the upstream JSON response. We don not need to have a setter for the `firstname` field because the
+	// in the upstream JSON response. We do not need to have a setter for the `firstname` field because the
 	// JSON response has that field in a position the graphql server can understand automatically.
 	//
 	// So far only the $body keyword is supported, but in the future we may add support for others such as $headers.
@@ -295,8 +295,7 @@ type RESTResolver struct {
 	// before being handled by the graphql server.
 	Response *ResponseTemplate `protobuf:"bytes,3,opt,name=response,proto3" json:"response,omitempty"`
 	SpanName string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
-	// The timeout to use for this resolver. This timeout should be shorter than the
-	// overall request timeout set for the route // TODO(jbohanon) check on this
+	// The timeout to use for this resolver.
 	Timeout *duration.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
 }
 
