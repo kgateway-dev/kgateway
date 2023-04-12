@@ -4,7 +4,7 @@ weight: 30
 description: Explore local GraphQL resolution with the Bookinfo sample application.
 ---
 
-Next, explore local GraphQL resolution with the Bookinfo sample application.
+Next, explore local GraphQL resolution with the Bookinfo sample application. 
 
 In Gloo Edge, you can create GraphQL resolvers to fetch the data from your backend when using _local execution_. Today Gloo Edge supports _local execution_ with REST and gRPC resolvers, and _remote execution_ for GraphQL servers. In the following steps, you create resolvers that point to Bookinfo services and use the resolvers in a GraphQL schema.
 
@@ -73,26 +73,26 @@ Note that this example uses _local execution_, which means the Envoy server exec
 
 5. Update the `default` virtual service that you previously created to route traffic to `/graphql` to the new `bookinfo-graphql` GraphQL API.
    {{< highlight yaml "hl_lines=12-16" >}}
-   cat << EOF | kubectl apply -f -
-   apiVersion: gateway.solo.io/v1
-   kind: VirtualService
-   metadata:
-     name: 'default'
-     namespace: 'gloo-system'
-   spec:
-     virtualHost:
-       domains:
-       - '*'
-       routes:
-       - graphqlApiRef:
-           name: bookinfo-graphql
-           namespace: gloo-system
-         matchers:
-         - prefix: /graphql
-   EOF
+cat << EOF | kubectl apply -f -
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'default'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - graphqlApiRef:
+        name: bookinfo-graphql
+        namespace: gloo-system
+      matchers:
+      - prefix: /graphql
+EOF
    {{< /highlight >}}
 
-6. Send a request to the GraphQL endpoint to verify that the request is successfully resolved by Envoy.
+1. Send a request to the GraphQL endpoint to verify that the request is successfully resolved by Envoy.
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {productsForHome {id, title, author, pages, year}}"}'
    ```
