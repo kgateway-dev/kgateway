@@ -113,7 +113,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		testRequest := basicReq(body)
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
-
 	})
 
 	It("Routes to GRPC Functions with parameters", func() {

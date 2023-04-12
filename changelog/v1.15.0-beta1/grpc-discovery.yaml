@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7983
+    description: To give users time to migrate, discovery does not overwrite the old gRPC upstream API with the new one.

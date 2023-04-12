@@ -27,6 +27,9 @@ func EventuallyResourceAccepted(getter InputResourceGetter, intervals ...interfa
 	EventuallyResourceStatusMatchesState(1, getter, core.Status_Accepted, intervals...)
 }
 
+func EventuallyResourceAcceptedWithOffset(offset int, getter InputResourceGetter, intervals ...interface{}) {
+	EventuallyResourceStatusMatchesState(offset+1, getter, core.Status_Accepted, intervals...)
+}
 func EventuallyResourceWarning(getter InputResourceGetter, intervals ...interface{}) {
 	EventuallyResourceStatusMatchesState(1, getter, core.Status_Warning, intervals...)
 }
