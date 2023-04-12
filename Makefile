@@ -684,7 +684,12 @@ ifeq ($(RELEASE),"true")
 endif
 
 #----------------------------------------------------------------------------------
-# Release
+# Publish Artifacts
+#
+# We publish artifacts using our CI pipeline. This may happen during any of the following scenarios:
+# 	- Release
+#	- Development Build (a one-off build for unreleased code)
+#	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
 #----------------------------------------------------------------------------------
 
 $(OUTPUT_DIR)/gloo-enterprise-version:
@@ -694,6 +699,22 @@ $(OUTPUT_DIR)/gloo-enterprise-version:
 upload-github-release-assets: print-git-info build-cli render-manifests
 	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
+# Intended only to be run by CI
+# Build and push docker images to the defined IMAGE_REPO
+.PHONY: publish-docker
+ifeq ($(CREATE_ASSETS), "true")
+publish-docker: docker
+publish-docker: docker-push
+endif
+
+# Intended only to be run by CI
+# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REPO,
+# and push them to a secondary repository, defined at IMAGE_REPO
+.PHONY: publish-docker-retag
+ifeq ($(RELEASE), "true")
+publish-docker-retag: docker-retag
+publish-docker-retag: docker-push
+endif
 
 #----------------------------------------------------------------------------------
 # Docker
@@ -738,23 +759,6 @@ docker-retag: docker-retag-sds
 docker-retag: docker-retag-ingress
 docker-retag: docker-retag-access-logger
 docker-retag: docker-retag-kubectl
-
-# Intended only to be run by CI
-# Build and push docker images to the defined IMAGE_REPO
-.PHONY: docker-publish
-ifeq ($(CREATE_ASSETS), "true")
-docker-publish: docker
-docker-publish: docker-push
-endif
-
-# Intended only to be run by CI
-# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REPO,
-# and push them to a secondary repository, defined at IMAGE_REPO
-.PHONY: docker-publish-retag
-ifeq ($(RELEASE), "true")
-docker-publish-retag: docker-retag
-docker-publish-retag: docker-push
-endif
 
 #----------------------------------------------------------------------------------
 # Build assets for Kube2e tests
