@@ -19,8 +19,6 @@ KUBE2E_TESTS="${KUBE2E_TESTS:-gateway}"  # If 'KUBE2E_TESTS' not set or null, us
 # https://istio.io/latest/docs/releases/supported-releases/#support-status-of-istio-releases
 ISTIO_VERSION="${ISTIO_VERSION:-1.17.1}"
 
-# 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
-# This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
 function create_kind_cluster_or_skip() {
   activeClusters=$(kind get clusters)
 
@@ -36,15 +34,17 @@ function create_kind_cluster_or_skip() {
     --image "kindest/node:$CLUSTER_NODE_VERSION" \
     --config="$SCRIPT_DIR/cluster.yaml"
   echo "Finished setting up cluster $CLUSTER_NAME"
+
+  # so that you can just build the kind image alone if needed
+  if [[ $JUST_KIND == 'true' ]]; then
+    echo "JUST_KIND=true, not building images"
+    exit
+  fi
 }
+
+# 1. Create a kind cluster (or skip creation if a cluster with name=CLUSTER_NAME already exists)
+# This config is roughly based on: https://kind.sigs.k8s.io/docs/user/ingress/
 create_kind_cluster_or_skip
-
-# so that you can just build the kind image alone if needed
-if [[ $JUST_KIND == 'true' ]]; then
-  echo "JUST_KIND=true, not building images"
-  exit
-fi
-
 
 if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
