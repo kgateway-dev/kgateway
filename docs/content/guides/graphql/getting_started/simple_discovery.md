@@ -87,26 +87,26 @@ Explore basic GraphQL service discovery with the Pet Store sample application.
 
 5. Create a virtual service that defines a `Route` with a `graphqlApiRef` as the destination. In this example, all traffic to `/graphql` is handled by the GraphQL server in the Envoy proxy.
    {{< highlight yaml "hl_lines=12-16" >}}
-   cat << EOF | kubectl apply -f -
-   apiVersion: gateway.solo.io/v1
-   kind: VirtualService
-   metadata:
-     name: 'default'
-     namespace: 'gloo-system'
-   spec:
-     virtualHost:
-       domains:
-       - '*'
-       routes:
-       - graphqlApiRef:
-           name: default-petstore-8080
-           namespace: gloo-system
-         matchers:
-         - prefix: /graphql
-   EOF
+cat << EOF | kubectl apply -f -
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'default'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - graphqlApiRef:
+        name: default-petstore-8080
+        namespace: gloo-system
+      matchers:
+      - prefix: /graphql
+EOF
    {{< /highlight >}}
 
-6. Send a request to the endpoint to verify that the request is successfully resolved by Envoy. For example, if you want only the name of the pet given the pet's ID:
+1. Send a request to the endpoint to verify that the request is successfully resolved by Envoy. For example, if you want only the name of the pet given the pet's ID:
    ```sh
    curl "$(glooctl proxy url)/graphql" -H 'Content-Type: application/json' -d '{"query": "query {getPetById(petId: 10) {name}}"}' 
    ```
