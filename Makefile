@@ -785,15 +785,15 @@ kind-build-and-load-%: %-docker kind-load-%
 kind-reload-%: kind-build-and-load-%
 	kubectl rollout restart deployment/$* -n $(INSTALL_NAMESPACE)
 
-.PHONY: kind-build-and-load-images
-kind-build-and-load-images: kind-build-and-load-gloo
-kind-build-and-load-images: kind-build-and-load-discovery
-kind-build-and-load-images: kind-build-and-load-gloo-envoy-wrapper
-kind-build-and-load-images: kind-build-and-load-certgen
-kind-build-and-load-images: kind-build-and-load-sds
-kind-build-and-load-images: kind-build-and-load-ingress
-kind-build-and-load-images: kind-build-and-load-access-logger
-kind-build-and-load-images: kind-build-and-load-kubectl
+.PHONY: kind-build-and-load
+kind-build-and-load: kind-build-and-load-gloo
+kind-build-and-load: kind-build-and-load-discovery
+kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper
+kind-build-and-load: kind-build-and-load-certgen
+kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-ingress
+kind-build-and-load: kind-build-and-load-access-logger
+kind-build-and-load: kind-build-and-load-kubectl
 
 # Useful utility for listing images loaded into the kind cluster
 .PHONY: kind-list-images
