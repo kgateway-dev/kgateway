@@ -765,7 +765,7 @@ docker-retag: docker-retag-kubectl
 #----------------------------------------------------------------------------------
 #
 # The following targets are used to generate the assets on which the kube2e tests rely upon.
-# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
+# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the KinD test cluster.
 
 CLUSTER_NAME ?= kind
 INSTALL_NAMESPACE ?= gloo-system
@@ -775,7 +775,7 @@ kind-load-%:
 
 # Build an image and load it into the KinD cluster
 # Depends on: IMAGE_REPO, VERSION, CLUSTER_NAME
-kind-build-and-load-%: %-docker kind-load-%
+kind-build-and-load-%: %-docker kind-load-% ;
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
