@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
@@ -21,36 +22,60 @@ func GetLastReleaseOfCurrentBranch() (*versionutils.Version, error) {
 		return nil, changelogutils.ReadChangelogDirError(err)
 	}
 
-	var latestVersions []*versionutils.Version
+	currentlyReleasedVer, _, _ := ChangelogDirForLatestRelease(directoryEntries...)
+	return currentlyReleasedVer, nil
+}
 
-	for _, dirEntry := range directoryEntries {
-		if !dirEntry.IsDir() {
-			// We can ignore validation.yaml and any other files
-			continue
-		}
+// namedEntry extracts the only thing we really care about for a file entry - the name
+type namedEntry interface {
+	Name() string
+}
 
-		changelogVersion, parseErr := versionutils.ParseVersion(dirEntry.Name())
-		if parseErr != nil {
-			// This would happen if a changelog is poorly formatted
-			// We don't want to let that break this functionality
-			continue
-		}
+// ChangelogDirForLatestRelease will return the latest release of the current minor
+// from a set of file entries that mimick our changelog structure.
+// It will also return the currently in flight release and an error
+// The error may be FirstReleaseError if the changelog dir is for the first release of a minor version
+func ChangelogDirForLatestRelease[T namedEntry](files ...T) (
+	currentRelease *versionutils.Version, unreleasedVersion *versionutils.Version, err error) {
 
-		latestVersions = append(latestVersions, changelogVersion)
-		sort.Slice(latestVersions, func(i, j int) bool {
-			var version1 = *latestVersions[i]
-			var version2 = *latestVersions[j]
-			return !version2.MustIsGreaterThanOrEqualTo(version1)
-		})
-
-		// We only care about the 2 latest versions
-		if len(latestVersions) > 2 {
-			latestVersions = latestVersions[:2]
-		}
+	if len(files) < 3 {
+		return nil, nil, errors.Errorf("Could not get sufficient versions from files: %v\n", files)
 	}
 
-	// The latest version will be for a changelog entry that is in progress, but not yet released.
-	// Therefore, we always take the second latest
-	secondLatestChangelogVersion := latestVersions[1]
-	return secondLatestChangelogVersion, nil
+	versions := make([]*versionutils.Version, 0, len(files))
+	for _, f := range files {
+		// we expect there to be files like "validation.yaml"
+		// which are not valid changelogs
+		// there may also be badly formatted entries we should skip
+		version, err := versionutils.ParseVersion(f.Name())
+		if err == nil {
+			versions = append(versions, version)
+		}
+	}
+	if len(versions) < 2 {
+		return nil, nil, errors.Errorf("Could not get sufficient valid versions from files: %v\n", files)
+	}
+
+	sort.Sort(sortableVersionSlice(versions))
+
+	if versions[len(versions)-1].Minor != versions[len(versions)-2].Minor {
+		err = FirstReleaseError
+	}
+	return versions[len(versions)-2], versions[len(versions)-1], err
 }
+
+var (
+	// FirstReleaseError is returned when the changelog dir is for the first release of a minor version
+	FirstReleaseError = errors.New("First Release of Minor")
+)
+
+// versionSort is a helper type for sorting versions in a slice
+type sortableVersionSlice []*versionutils.Version
+
+func (a sortableVersionSlice) Len() int { return len(a) }
+func (a sortableVersionSlice) Less(i, j int) bool {
+	var version1 = *a[i]
+	var version2 = *a[j]
+	return version2.MustIsGreaterThan(version1)
+}
+func (a sortableVersionSlice) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

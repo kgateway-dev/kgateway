@@ -149,7 +149,7 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
    kind: VirtualService
    metadata:
      name: my-virtual-service
-    namespace: gloo-system
+     namespace: gloo-system
    spec:
      virtualHost:
        domains:
