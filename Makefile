@@ -768,20 +768,33 @@ docker-retag: docker-retag-kubectl
 # The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
 
 CLUSTER_NAME ?= kind
+INSTALL_NAMESPACE ?= gloo-system
 
 kind-load-%:
 	kind load docker-image $(IMAGE_REPO)/$*:$(VERSION) --name $(CLUSTER_NAME)
 
+# Build an image and load it into the KinD cluster
+# Depends on: IMAGE_REPO, VERSION, CLUSTER_NAME
+kind-build-and-load-%: %-docker
+kind-build-and-load-%: kind-load-%
+
+# Reload an image in KinD
+# This is useful to developers when changing a single component
+# You can reload an image, which means it will be rebuilt and reloaded into the kind cluster
+# using the same tag so that tests can be re-run
+# Depends on: IMAGE_REPO, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
+kind-reload-%: kind-build-and-load-%
+	kubectl rollout restart deployment/$* -n $(INSTALL_NAMESPACE)
+
 .PHONY: kind-build-and-load-images
-kind-build-and-load-images: docker
-kind-build-and-load-images: kind-load-gloo
-kind-build-and-load-images: kind-load-discovery
-kind-build-and-load-images: kind-load-gloo-envoy-wrapper
-kind-build-and-load-images: kind-load-certgen
-kind-build-and-load-images: kind-load-sds
-kind-build-and-load-images: kind-load-ingress
-kind-build-and-load-images: kind-load-access-logger
-kind-build-and-load-images: kind-load-kubectl
+kind-build-and-load-images: kind-build-and-load-gloo
+kind-build-and-load-images: kind-build-and-load-discovery
+kind-build-and-load-images: kind-build-and-load-gloo-envoy-wrapper
+kind-build-and-load-images: kind-build-and-load-certgen
+kind-build-and-load-images: kind-build-and-load-sds
+kind-build-and-load-images: kind-build-and-load-ingress
+kind-build-and-load-images: kind-build-and-load-access-logger
+kind-build-and-load-images: kind-build-and-load-kubectl
 
 # Useful utility for listing images loaded into the kind cluster
 .PHONY: kind-list-images
