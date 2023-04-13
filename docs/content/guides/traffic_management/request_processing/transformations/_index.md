@@ -122,6 +122,7 @@ stagedTransformations:
         responseTransformation: {}
     responseTransforms: {}
   inheritTransformations: bool
+```
 
 The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. For request transformations, early transformations are applied before regular transformations as shown in the following diagram. For response transformations, this order is reversed, and regular transformations are applied before early transformations. To learn more about the order in which envoy filters are applied, see [HTTP filter chain processing](https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request#http-filter-chain-processing) in the envoy documentation. 
 
