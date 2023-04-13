@@ -58,8 +58,8 @@ When Gloo Edge fails to process a resource, the failure is reflected in the reso
 You can configure Gloo Edge to publish metrics that record the configuration status of resources.
 
 In the `observabilityOptions` of the Settings CRD, you can enable status metrics by specifying the resource type and any labels to apply
-to the metric. Consider the following, which will add metrics for virtual services and
-upstreams, both having labels that include the namespace and name of each individual resource:
+to the metric. The following example adds metrics for virtual services and
+upstreams, which both have labels that include the namespace and name of each individual resource:
 
 ```yaml
 observabilityOptions:
