@@ -775,8 +775,7 @@ kind-load-%:
 
 # Build an image and load it into the KinD cluster
 # Depends on: IMAGE_REPO, VERSION, CLUSTER_NAME
-kind-build-and-load-%: %-docker
-kind-build-and-load-%: kind-load-%
+kind-build-and-load-%: %-docker kind-load-%
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
