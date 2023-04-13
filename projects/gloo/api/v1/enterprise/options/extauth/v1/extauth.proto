@@ -446,7 +446,8 @@ message UserSession {
     }
     // the cipher config is used to encrypt session cookie values.  This is currently only available for OIDC.
     message CipherConfig {
-        // to enable the cipher encryption, the key has to be present.
+        // to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in 
+        // length for the authconfig to not be rejected.
         oneof key {
             // The key reference used for the cipher. The reference must be a gloo.solo.io.EncryptionKeySecret custom resource.
             core.solo.io.ResourceRef key_ref = 1;
@@ -1281,7 +1282,8 @@ message ExtAuthConfig {
             UserSession.RedisSession redis = 4;
         }
         message CipherConfig {
-            // to enable the cipher encryption, the key has to be present. Note that the key has to be 32 bytes.
+            // to enable the cipher encryption, the key has to be present.
+            // Note that the key has to be found and 32 bytes in length for the authconfig to not be rejected.
             string key_value = 1 [(extproto.sensitive) = true];
         }
         // the cipher config enables the symmetric key encryption of the cookie values of the user session.

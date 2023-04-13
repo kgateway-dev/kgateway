@@ -5288,7 +5288,8 @@ type UserSession_CipherConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// to enable the cipher encryption, the key has to be present.
+	// to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in
+	// length for the authconfig to not be rejected.
 	//
 	// Types that are assignable to Key:
 	//
@@ -7912,7 +7913,8 @@ type ExtAuthConfig_UserSessionConfig_CipherConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// to enable the cipher encryption, the key has to be present. Note that the key has to be 32 bytes.
+	// to enable the cipher encryption, the key has to be present.
+	// Note that the key has to be found and 32 bytes in length for the authconfig to not be rejected.
 	KeyValue string `protobuf:"bytes,1,opt,name=key_value,json=keyValue,proto3" json:"key_value,omitempty"`
 }
 
