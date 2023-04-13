@@ -54,7 +54,7 @@ The proxy that *Gateways* and their *Virtual Services* will be applied to can be
 
 ## Monitoring the configuration status of Gloo resources
 
-When Gloo Edge fails to process a resource, we see that reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}.
+When Gloo Edge fails to process a resource, the failure is reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}.
 You can configure Gloo Edge to publish metrics that record the configuration status of resources.
 
 In the `observabilityOptions` of the Settings CRD, you can enable status metrics by specifying the resource type and any labels to apply
