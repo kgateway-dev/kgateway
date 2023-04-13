@@ -2,13 +2,15 @@ package upgrade_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
+	"github.com/solo-io/gloo/test/testutils/version"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -34,11 +36,13 @@ var (
 
 	// Versions to upgrade from
 	// ex: current branch is 1.13.10 - this would be the latest patch release of 1.12
-	LastPatchMostRecentMinorVersion *versionutils.Version
+	LastPatchPreviousMinorVersion *versionutils.Version
 
 	// ex:current branch is 1.13.10 - this would be 1.13.9
 	CurrentPatchMostRecentMinorVersion *versionutils.Version
 	firstReleaseOfMinor                bool
+
+	skipIfFirstMinorFunc func()
 )
 
 var _ = BeforeSuite(func() {
@@ -56,10 +60,17 @@ var _ = BeforeSuite(func() {
 	} else {
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 	}
-
-	LastPatchMostRecentMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
-	if err != nil && strings.Contains(err.Error(), upgrade.FirstReleaseError) {
+	skipIfFirstMinorFunc = func() {}
+	LastPatchPreviousMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
+	if err != nil && errors.Is(err, version.FirstReleaseError) {
 		firstReleaseOfMinor = true
+		fmt.Println("First release of minor, skipping some upgrade tests")
+		CurrentPatchMostRecentMinorVersion = versionutils.NewVersion(0, 0, 0, "", 0)
+		skipIfFirstMinorFunc = func() {
+			Skip("First release of minor, skipping some upgrade tests")
+		}
+	} else if err != nil {
+		Expect(err).NotTo(HaveOccurred())
 	}
 })
 
