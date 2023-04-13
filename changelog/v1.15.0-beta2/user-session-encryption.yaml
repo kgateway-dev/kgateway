@@ -3,3 +3,4 @@ changelog:
     resolvesIssue: false
     description: >-
       Adding the ability to apply symmetric encryption to cookie session tokens and values through the Gloo API.
+      The `UserSession` (`Session`) is now deprecated in the `ExtAuthConfig` API, please use the `UserSession` (`UserSessionConfig`).
