@@ -2,10 +2,6 @@ package kubeconverters_test
 
 import (
 	"context"
-	"fmt"
-	"go/importer"
-	"go/types"
-	"reflect"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -21,49 +17,7 @@ import (
 )
 
 var _ = Describe("SecretConverter", func() {
-	FIt("should have the number of secret converters equal to the number of secrets", func() {
-		// kindField, ok := reflect.TypeOf(v1.Secret{}).FieldByName("Kind")
-		// Expect(ok).To(BeTrue())
 
-		secretType := reflect.TypeOf(v1.Secret{}).PkgPath()
-		secretElem := reflect.TypeOf(v1.Secret{}).Elem()
-		packagePath := secretElem.PkgPath()
-		fmt.Println(packagePath)
-		fmt.Println(secretElem)
-		kindType := secretType
-		info := types.Info{}
-		fmt.Println(kindType)
-		pathOfKind := "alksdjf"
-		fmt.Println(pathOfKind)
-		pathOfKind = "."
-		v1Package := types.NewPackage(pathOfKind, "")
-		checker := types.NewChecker(&types.Config{}, nil, v1Package, &info)
-		for _, scope := range checker.Scopes {
-			fmt.Println(scope)
-		}
-		pathOfKind = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-		pkg, err := importer.Default().Import(pathOfKind)
-		if err != nil {
-			fmt.Printf("error: %s\n", err.Error())
-			return
-		}
-		for _, declName := range pkg.Scope().Names() {
-			fmt.Println(declName)
-		}
-		// ifaceType := v1Package.Scope().Lookup("isSecret_Kind").Type().(*types.Named)
-		names := v1Package.Scope().Names()
-		for _, obj := range names {
-			fmt.Println(obj)
-			// if types.Implements(named, ifaceType) {
-			// 	count++
-			// }
-		}
-		// types.NewPackage(pathOfKind)
-		// secretKind := reflect.TypeOf(v1.Secret{}.Kind).Elem()
-		// reflect.
-		// for _, t := range reflect.TypeOf((*interface{})(nil)).Elem().Elem().PkgPath() {
-		// }
-	})
 	It("should convert kube secret to gloo secret", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
