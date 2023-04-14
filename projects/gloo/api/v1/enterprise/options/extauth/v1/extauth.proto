@@ -449,7 +449,7 @@ message UserSession {
         // to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in 
         // length for the authconfig to not be rejected.
         oneof key {
-            // The key reference used for the cipher. The reference must be a gloo.solo.io.EncryptionKeySecret custom resource.
+            // The key reference used for the cipher. The reference must be a Kubernetes Secret of type `gloo.solo.io.EncryptionKeySecret`.
             core.solo.io.ResourceRef key_ref = 1;
         }
     }
