@@ -5348,7 +5348,7 @@ type isUserSession_CipherConfig_Key interface {
 }
 
 type UserSession_CipherConfig_KeyRef struct {
-	// The key reference used for the cipher. The reference must be a gloo.solo.io.EncryptionKeySecret custom resource.
+	// The key reference used for the cipher. The reference must be a Kubernetes Secret of type `gloo.solo.io.EncryptionKeySecret`.
 	KeyRef *core.ResourceRef `protobuf:"bytes,1,opt,name=key_ref,json=keyRef,proto3,oneof"`
 }
 

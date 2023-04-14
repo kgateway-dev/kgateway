@@ -728,7 +728,7 @@ the cipher config is used to encrypt session cookie values.  This is currently o
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `keyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The key reference used for the cipher. The reference must be a gloo.solo.io.EncryptionKeySecret custom resource. |
+| `keyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The key reference used for the cipher. The reference must be a Kubernetes Secret of type `gloo.solo.io.EncryptionKeySecret`. |
 
 
 
