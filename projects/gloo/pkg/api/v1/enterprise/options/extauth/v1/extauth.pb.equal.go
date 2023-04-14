@@ -5307,7 +5307,7 @@ func (m *ExtAuthConfig_UserSessionConfig_CipherConfig) Equal(that interface{}) b
 		return false
 	}
 
-	if strings.Compare(m.GetKeyValue(), target.GetKeyValue()) != 0 {
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
 		return false
 	}
 

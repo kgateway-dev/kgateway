@@ -5875,7 +5875,7 @@ func (m *ExtAuthConfig_UserSessionConfig_CipherConfig) Hash(hasher hash.Hash64) 
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetKeyValue())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
 		return 0, err
 	}
 

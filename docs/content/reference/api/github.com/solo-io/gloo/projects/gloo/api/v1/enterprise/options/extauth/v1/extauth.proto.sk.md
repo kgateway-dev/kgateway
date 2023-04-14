@@ -1733,13 +1733,13 @@ Deprecated, prefer OAuth2Config
 
 
 ```yaml
-"keyValue": string
+"key": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `keyValue` | `string` | to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in length for the authconfig to not be rejected. |
+| `key` | `string` | to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in length for the authconfig to not be rejected. |
 
 
 

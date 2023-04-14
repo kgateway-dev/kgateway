@@ -3172,7 +3172,7 @@ func (m *ExtAuthConfig_UserSessionConfig_CipherConfig) Clone() proto.Message {
 	}
 	target = &ExtAuthConfig_UserSessionConfig_CipherConfig{}
 
-	target.KeyValue = m.GetKeyValue()
+	target.Key = m.GetKey()
 
 	return target
 }

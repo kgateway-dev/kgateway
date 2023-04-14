@@ -203,7 +203,7 @@ var _ = Describe("Log Redactor", func() {
 						OidcAuthorizationCode: &xdsproto.ExtAuthConfig_OidcAuthorizationCodeConfig{
 							UserSession: &xdsproto.ExtAuthConfig_UserSessionConfig{
 								CipherConfig: &xdsproto.ExtAuthConfig_UserSessionConfig_CipherConfig{
-									KeyValue: "encryptionKey",
+									Key: "encryptionKey",
 								},
 							},
 						},
