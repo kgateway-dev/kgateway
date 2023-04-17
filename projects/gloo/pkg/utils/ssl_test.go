@@ -279,7 +279,7 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.AllowRenegotiation).To(BeTrue())
 		})
 
-		FContext("ocsp", func() {
+		Context("ocsp", func() {
 			Context("staple policy", func() {
 				It("should default to LENIENT_STAPLING for ocsp staple policy", func() {
 					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
