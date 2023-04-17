@@ -18,7 +18,7 @@ import (
 	test_matchers "github.com/solo-io/solo-kit/test/matchers"
 )
 
-var _ = FDescribe("Ssl", func() {
+var _ = Describe("Ssl", func() {
 
 	var (
 		upstreamCfg            *ssl.UpstreamSslConfig
@@ -92,7 +92,6 @@ var _ = FDescribe("Ssl", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
-		// TODO (fabian) add the ocsp tests here
 	})
 	Context("secret", func() {
 		BeforeEach(func() {
