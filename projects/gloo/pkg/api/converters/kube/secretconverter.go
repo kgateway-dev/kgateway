@@ -2,7 +2,6 @@ package kubeconverters
 
 import (
 	"context"
-
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
@@ -12,6 +11,8 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
+
+const OCSPStapleKey = "tls.ocsp-staple"
 
 var GlooSecretConverterChain = NewSecretConverterChain(
 	new(TLSSecretConverter),
@@ -75,6 +76,7 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
 					CertChain:  string(secret.Data[kubev1.TLSCertKey]),
 					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
+					OcspStaple: string(secret.Data[OCSPStapleKey]),
 				},
 			},
 			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
@@ -103,6 +105,10 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 
 			if tlsGlooSecret.Tls.GetRootCa() != "" {
 				kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
+			}
+
+			if tlsGlooSecret.Tls.GetOcspStaple() != "" {
+				kubeSecret.Data[OCSPStapleKey] = []byte(tlsGlooSecret.Tls.GetOcspStaple())
 			}
 
 			return kubeSecret, nil

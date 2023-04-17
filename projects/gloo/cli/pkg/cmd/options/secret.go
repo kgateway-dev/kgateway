@@ -32,21 +32,22 @@ type TlsSecret struct {
 	RootCaFilename     string
 	PrivateKeyFilename string
 	CertChainFilename  string
+	OCSPStapleFilename string
 	// non-user facing value for test purposes
 	// if set, Read() will just return the filenames
 	Mock bool
 }
 
 // ReadFiles provides a way to sidestep file io during testing
-func (t *TlsSecret) ReadFiles() (string, string, string, error) {
+func (t *TlsSecret) ReadFiles() (string, string, string, string, error) {
 	// short circuit if testing
 	if t.Mock {
-		return t.RootCaFilename, t.PrivateKeyFilename, t.CertChainFilename, nil
+		return t.RootCaFilename, t.PrivateKeyFilename, t.CertChainFilename, t.OCSPStapleFilename, nil
 	}
 
 	// ensure that the key pair is valid
 	if err := t.validateKeyPairIfExists(); err != nil {
-		return "", "", "", errors.Wrapf(err, "invalid key pair (cert chain file: %v, private key file: %v)", t.CertChainFilename, t.PrivateKeyFilename)
+		return "", "", "", "", errors.Wrapf(err, "invalid key pair (cert chain file: %v, private key file: %v)", t.CertChainFilename, t.PrivateKeyFilename)
 	}
 
 	// read files
@@ -55,7 +56,15 @@ func (t *TlsSecret) ReadFiles() (string, string, string, error) {
 		var err error
 		rootCa, err = ioutil.ReadFile(t.RootCaFilename)
 		if err != nil {
-			return "", "", "", errors.Wrapf(err, "reading root ca file: %v", t.RootCaFilename)
+			return "", "", "", "", errors.Wrapf(err, "reading root ca file: %v", t.RootCaFilename)
+		}
+	}
+	var ocspStaple []byte
+	if t.OCSPStapleFilename != "" {
+		var err error
+		ocspStaple, err = ioutil.ReadFile(t.OCSPStapleFilename)
+		if err != nil {
+			return "", "", "", "", errors.Wrapf(err, "reading ocsp staple file: %v", t.OCSPStapleFilename)
 		}
 	}
 	var privateKey []byte
@@ -64,15 +73,15 @@ func (t *TlsSecret) ReadFiles() (string, string, string, error) {
 		var err error
 		privateKey, err = ioutil.ReadFile(t.PrivateKeyFilename)
 		if err != nil {
-			return "", "", "", errors.Wrapf(err, "reading private key file: %v", t.PrivateKeyFilename)
+			return "", "", "", "", errors.Wrapf(err, "reading private key file: %v", t.PrivateKeyFilename)
 		}
 		certChain, err = ioutil.ReadFile(t.CertChainFilename)
 		if err != nil {
-			return "", "", "", errors.Wrapf(err, "reading cert chain file: %v", t.CertChainFilename)
+			return "", "", "", "", errors.Wrapf(err, "reading cert chain file: %v", t.CertChainFilename)
 		}
 	}
 
-	return string(rootCa), string(privateKey), string(certChain), nil
+	return string(rootCa), string(privateKey), string(certChain), string(ocspStaple), nil
 }
 
 func (t *TlsSecret) keyPairExists() bool {

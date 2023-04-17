@@ -187,7 +187,7 @@ metadata:
 			Expect(err.Error()).To(Equal(argsutils.NameError))
 		})
 
-		It("should work as with just root ca", func() {
+		It("should work with just root ca", func() {
 
 			rootca := mustWriteTestFile("foo")
 			err := testutils.Glooctl("create secret tls valid --namespace gloo-system --rootca " + rootca)
@@ -201,58 +201,46 @@ metadata:
 			Expect(*secret.GetTls()).To(Equal(tls))
 		})
 
-		It("should work as expected with valid and invalid input", func() {
-			type keyPair struct {
-				shouldPass   bool
-				resourceName string
-				key          string
-				cert         string
+		DescribeTable("should work as expected", func(shouldPass bool, resourceName string, key string, cert string) {
+			rootca := mustWriteTestFile("foo")
+			defer os.Remove(rootca)
+			privatekey := mustWriteTestFile(key)
+			defer os.Remove(privatekey)
+			certchain := mustWriteTestFile(cert)
+			defer os.Remove(certchain)
+			args := fmt.Sprintf(
+				"create secret tls %s --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
+				resourceName,
+				rootca,
+				privatekey,
+				certchain)
+
+			tls := v1.TlsSecret{
+				RootCa:     "foo",
+				PrivateKey: key,
+				CertChain:  cert,
 			}
-			keyPairTestTable := []keyPair{
-				{shouldPass: true, resourceName: "valid1", key: privateKey1, cert: privateKey1Cert},
-				{shouldPass: true, resourceName: "valid2", key: privateKey2, cert: privateKey2Cert},
-				{shouldPass: false, resourceName: "invalid1", key: privateKey1, cert: privateKey2Cert},
+
+			if shouldPass {
+				err := testutils.Glooctl(args)
+				Expect(err).NotTo(HaveOccurred())
+
+				secret, err := helpers.MustSecretClient(ctx).Read("gloo-system", resourceName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(*secret.GetTls()).To(Equal(tls))
+			} else {
+				err := testutils.Glooctl(args)
+				Expect(err).To(HaveOccurred())
+
+				_, err = helpers.MustSecretClient(ctx).Read("gloo-system", resourceName, clients.ReadOpts{})
+				Expect(err).To(HaveOccurred())
 			}
-			for i, kp := range keyPairTestTable {
-				func() {
-					By(fmt.Sprintf("KeyPair test table, row %v", i))
-					rootca := mustWriteTestFile("foo")
-					defer os.Remove(rootca)
-					privatekey := mustWriteTestFile(kp.key)
-					defer os.Remove(privatekey)
-					certchain := mustWriteTestFile(kp.cert)
-					defer os.Remove(certchain)
-					args := fmt.Sprintf(
-						"create secret tls %s --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
-						kp.resourceName,
-						rootca,
-						privatekey,
-						certchain)
+		},
+			Entry("passes with matching key and certificate", true, "valid1", privateKey1, privateKey1Cert),
+			Entry("passes with matching key and certificate", true, "valid2", privateKey2, privateKey2Cert),
+			Entry("fails with mismatched key and certificate", false, "invalid1", privateKey1, privateKey2Cert),
+		)
 
-					tls := v1.TlsSecret{
-						RootCa:     "foo",
-						PrivateKey: kp.key,
-						CertChain:  kp.cert,
-					}
-
-					if kp.shouldPass {
-						err := testutils.Glooctl(args)
-						Expect(err).NotTo(HaveOccurred())
-
-						secret, err := helpers.MustSecretClient(ctx).Read("gloo-system", kp.resourceName, clients.ReadOpts{})
-						Expect(err).NotTo(HaveOccurred())
-						Expect(*secret.GetTls()).To(Equal(tls))
-					} else {
-						err := testutils.Glooctl(args)
-						Expect(err).To(HaveOccurred())
-
-						_, err = helpers.MustSecretClient(ctx).Read("gloo-system", kp.resourceName, clients.ReadOpts{})
-						Expect(err).To(HaveOccurred())
-					}
-
-				}()
-			}
-		})
 		It("can print the kube yaml", func() {
 			rootca := mustWriteTestFile("foo")
 			defer os.Remove(rootca)
@@ -260,11 +248,14 @@ metadata:
 			defer os.Remove(privatekey)
 			certchain := mustWriteTestFile(privateKey1Cert)
 			defer os.Remove(certchain)
+			ocspStaple := mustWriteTestFile(ocspResponse)
+			defer os.Remove(ocspStaple)
 			args := fmt.Sprintf(
-				"create secret tls test --dry-run --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s",
+				"create secret tls test --dry-run --name test --namespace gloo-system --rootca %s --privatekey %s --certchain %s --ocspstaple %s",
 				rootca,
 				privatekey,
-				certchain)
+				certchain,
+				ocspStaple)
 
 			out, err := testutils.GlooctlOut(args)
 			Expect(err).NotTo(HaveOccurred())
@@ -274,6 +265,7 @@ metadata:
   ca.crt: Zm9v
   tls.crt: Ci0tLS0tQkVHSU4gQ0VSVElGSUNBVEUtLS0tLQpNSUlDdkRDQ0FhUUNDUURybzZaWHliaGxZREFOQmdrcWhraUc5dzBCQVFzRkFEQWdNUjR3SEFZRFZRUUREQlZ3ClpYUnpkRzl5WlRFdVpYaGhiWEJzWlM1amIyMHdIaGNOTVRrd05EQTFNVGt5T0RRMldoY05NakF3TkRBME1Ua3kKT0RRMldqQWdNUjR3SEFZRFZRUUREQlZ3WlhSemRHOXlaVEV1WlhoaGJYQnNaUzVqYjIwd2dnRWlNQTBHQ1NxRwpTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFES3Rmc0QvbHEvaHRHdTI4aXZ6THp6bVplOGZPaXFCbjJlCk5VajhRVk9sSExuYXhUWnZycWxrVEFuUHNEdmRIQ1NUUXJaREdJNWFtMS9jdE1Lb2REYmZseWJnc2tLdlp2RGkKNkJGMXcxc2JaM2tQR1pFdDBFbnlrb2lLRHZjKytYdWlOVXZNUUcwMkIwM3Y0aXVyckxhNlRMYXBCOE5XdG1SSgozbi9QYmE1MDB6dSt1REY2V0ZrTlRFYXd6dU1NbDdqTFg1Z21rRFFlQlZ2WDEySVJZMEUxenlxN29UTnhzeXBwCnh2a25oQVZLZExZc0tSVkN0d3J1QzBBQ2pkd1lncTQ3Tm4xUzdkN2I3TThUY1JrY3NIcXB5NGZVdnNraTF5a2YKWDQ1a3QzUWNIOFhFcENMUEE2Qjc0LzFZREFHS2ZkZkJLVHNaYmV1VXQ1UTN2OHUyL1ZKREFnTUJBQUV3RFFZSgpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFMOG01VGpGRWI1OE1FWEtHZGJ5R1pFZFMwRnBOSStmWUJZeXhrcFU1L3ozCjA2aFYyYWppc2d2SEd5R3VuL0hMQkRYdFduYk5XS3BTamlKaVM5S3BrdjZYNzNoYmE2UTNwM3ByamdkWGtwU1UKT05vendsTU0xU00wZGovTzVWVUxrY1c0dWhTUUpFeUlSUlBpQThmc2xxV3VJbHI1S1dXUGJkSWtEZXgvOURkZgpvQzdEMWV4Y2xaTlZEVm1KellGU3hiMWpzL3JTc2xuMTFWSjd1eW96cGsyM2xyQVZHSXJ0ZzVYcjR2eHFVWkhVClRPZUZTVkg2TE1DNWovRmZmK2JFQmhiUHhKQUkwUDdWWGFwaFloL2RNeUFFcSt4UnhtNnNzdWNjZ0N5dnR0bXoKKzZzVWl2dnhhRGhVQ0F6QW9MU2E1WGduNWVOZHNlUHo2UFE1VnkvWWlkZz0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
   tls.key: Ci0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tLQpNSUlFdmdJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLZ3dnZ1NrQWdFQUFvSUJBUURLdGZzRC9scS9odEd1CjI4aXZ6THp6bVplOGZPaXFCbjJlTlVqOFFWT2xITG5heFRadnJxbGtUQW5Qc0R2ZEhDU1RRclpER0k1YW0xL2MKdE1Lb2REYmZseWJnc2tLdlp2RGk2QkYxdzFzYloza1BHWkV0MEVueWtvaUtEdmMrK1h1aU5Vdk1RRzAyQjAzdgo0aXVyckxhNlRMYXBCOE5XdG1SSjNuL1BiYTUwMHp1K3VERjZXRmtOVEVhd3p1TU1sN2pMWDVnbWtEUWVCVnZYCjEySVJZMEUxenlxN29UTnhzeXBweHZrbmhBVktkTFlzS1JWQ3R3cnVDMEFDamR3WWdxNDdObjFTN2Q3YjdNOFQKY1JrY3NIcXB5NGZVdnNraTF5a2ZYNDVrdDNRY0g4WEVwQ0xQQTZCNzQvMVlEQUdLZmRmQktUc1piZXVVdDVRMwp2OHUyL1ZKREFnTUJBQUVDZ2dFQkFMVmIvMHBoWkx0NldWdENFOWtGS2dBZjZKdWdmV0N4RWU1YjZnS1dSOG12Clc3Q1pSTXpDelphSVdUYlJpNTJWTWp2Mk1hN3g1MXExTEIwQU5EQVdXWW5OWitFY1c0RW1ibG4wR3Jycm56VnoKYStIUWxBMFREelhSV0F0OHZFUkJYUldRN1ZHK1NuZE9MYkp5L1hOSXdPc0krMXRiTUs4QjI5UWpGdUowVk9MNwpDVW9HMS8wQlh3NnNsb2g5VWNvcU00blZjTmFxb2N0aTRLN2QzWjAvVDF6Snp4Nm80bzg5RHFCUm56VGowYjlPCmdlK3NScUdGeEVlanIyaHFNSjBqRjVCUFlVT3l0LzRrejFnSmNSc3QwTkk5ZHR0d1RQV1dvZHUyYTNlUVQxU0YKR21ZYUpwWlFBaGtuUTZMYkZNSWRHeExVanQ5RWowRC9ZUmpBdmpyczVTRUNnWUVBOG81TUpvcThnSU1iWUZ1UwpVcFI5L3FoT2gxRWFSMUQ2U0VLQnBTdHZWWGtSUjBKSFU3N2g1Z21aWk5qemVvR3pSNXJPTjVpcTJrdUtOb21XCmp0NFM2QmRFUG9SK0txeHUvNTV1VmhtZHJTbVAvdE1YTjBYVFFhNjNIc2NtV1VzYWRCbS9FMXhBYWl2WUc3VzkKR3l6c1ZXK0hBcG02bVRtTDJTK1lRMWFCMWVzQ2dZRUExZkpQVGlGaWZqQXVoUEtPTEhRWjZXbWdkQVdOQXNEaQpuSW9NOUJTYXhaWU5vN28ybmVzMkZJYTg4aElBdGx5Q3pMTU5JOHI3eGtEM1hKRXNXb2UrVlgxZ2JlVGpBUnBtClc2eUxNa1l2UXNGNlVydDRKdzFtMittQ2JiaC9hTmZkYUwzSHJIZXZVOG1NVWFQOWlSZWtYWU5oMjRDYU5LK3YKdDJZUnVXc0NKd2tDZ1lCZ1ArTXI4Q1c1QVUyZHdQaWhXRmRlOUQ2bEo2Tzc1UUJNS0VmMTJQU0hBRkhBNnlZTwpyMUpJekVwWVlGYk5xQ1lTSmZYcXplUU9WNmR5Mk1vcnl5ZkpmV0lSUk5ZajdPVG0vbUZlUFMvNmhPR2xCdkxSCmRoM01sSjRKMHBEL0lmUlBXZUFldUo2L0FzTHd5LzlNaDFrSTFnYkhHMldXWStXQXU0ZzZRRnVwSFFLQmdRQ0sKT0RXTUlIMWxVUE44Nk1kNWFMaWsxNXpWMkJBMXl5K2NPb1FMM0pQeE92UXM1czBLVVQ5ckczRk9ZdHNhOWNGNwpSZUlqVWF3L2RSRmFPR0FUVE1kbXE4MTBzZjhHWTJ2bHBoOTNwMmc1Rkk1V2pNOGZTOFU4Sml3aGZxU3hzMlJUCm11ZzVRRW1CTkNEM1RaOHF4cDlsMnMrSjVCZThHaFRIdzZXSHlONW5JUUtCZ0hzZUtBWU5IMFNLTVRCbUQ5dEMKK0RNaHc2WXB4ZTRWc0RCRm9EcjFXeHB0NlNtclpjeTdKY0JPL2ptWFkveHdzbkd5ZWhkYnBzTXhYMDNjN1FTZgpBbW9KQ2dPdG0wRlVYYytleWJGemdqTTlkdkIvWmFLUms3THRBMktKakZ0TVBHd0ttTHdqQzQrY0Q4eEw1N0VqClpFaGpmZXl1Y2Q0OE0rSk5ieU11RTJaQwotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==
+  tls.ocsp-staple: Ci0tLS0tQkVHSU4gT0NTUCBSRVNQT05TRS0tLS0tCmZha2UtcmVzcG9uc2UKLS0tLS1FTkQgT0NTUCBSRVNQT05TRS0tLS0t
 metadata:
   creationTimestamp: null
   name: test
@@ -357,6 +349,12 @@ TOeFSVH6LMC5j/Fff+bEBhbPxJAI0P7VXaphYh/dMyAEq+xRxm6ssuccgCyvttmz
 +6sUivvxaDhUCAzAoLSa5Xgn5eNdsePz6PQ5Vy/Yidg=
 -----END CERTIFICATE-----
 `
+
+// This is a fake OCSP response for the certificate above. It is just used to test that it has been written onto the secret.
+var ocspResponse = `
+-----BEGIN OCSP RESPONSE-----
+fake-response
+-----END OCSP RESPONSE-----`
 
 var privateKey2 = `
 -----BEGIN PRIVATE KEY-----

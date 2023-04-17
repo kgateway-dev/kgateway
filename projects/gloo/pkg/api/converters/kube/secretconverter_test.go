@@ -24,6 +24,7 @@ var _ = Describe("SecretConverter", func() {
 				kubev1.TLSCertKey:              []byte("cert"),
 				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+				OCSPStapleKey:                  []byte("ocsp"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -41,9 +42,10 @@ var _ = Describe("SecretConverter", func() {
 		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(secret.Data[kubev1.ServiceAccountRootCAKey]))
+		Expect(glooSecret.OcspStaple).To(BeEquivalentTo(secret.Data[OCSPStapleKey]))
 	})
 
-	It("should convert kube secret to gloo secret without optional root ca", func() {
+	It("should convert kube secret to gloo secret without optional root ca or optional ocsp staple", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
@@ -66,6 +68,7 @@ var _ = Describe("SecretConverter", func() {
 		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(""))
+		Expect(glooSecret.OcspStaple).To(BeEquivalentTo(""))
 	})
 
 	It("should convert to gloo secret kube in gloo format", func() {
@@ -75,6 +78,7 @@ var _ = Describe("SecretConverter", func() {
 					PrivateKey: "key",
 					CertChain:  "cert",
 					RootCa:     "ca",
+					OcspStaple: "ocsp",
 				},
 			},
 			Metadata: &core.Metadata{
@@ -91,9 +95,10 @@ var _ = Describe("SecretConverter", func() {
 				Namespace: "ns",
 			},
 			Data: map[string][]byte{
-				"tls.key": []byte("key"),
-				"tls.crt": []byte("cert"),
-				"ca.crt":  []byte("ca"),
+				"tls.key":         []byte("key"),
+				"tls.crt":         []byte("cert"),
+				"ca.crt":          []byte("ca"),
+				"tls.ocsp-staple": []byte("ocsp"),
 			},
 			Type: "kubernetes.io/tls",
 		}))
@@ -106,6 +111,7 @@ var _ = Describe("SecretConverter", func() {
 				kubev1.TLSCertKey:              []byte("cert"),
 				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+				OCSPStapleKey:                  []byte("ocsp"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -124,7 +130,7 @@ var _ = Describe("SecretConverter", func() {
 
 	})
 
-	It("should round trip kube ssl secret back to kube ssl secret without optional root ca", func() {
+	It("should round trip kube ssl secret back to kube ssl secret without optional root ca or ocsp staple", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
