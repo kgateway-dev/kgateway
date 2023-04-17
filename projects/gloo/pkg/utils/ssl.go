@@ -107,7 +107,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if dc.GetDisableTlsSessionResumption().GetValue() {
 		out.SessionTicketKeysType = &envoyauth.DownstreamTlsContext_DisableStatelessSessionResumption{DisableStatelessSessionResumption: true}
 	}
-	ocspPolicy, err := convertOcspStaplePolicy(dc.OcspStaplePolicy)
+	ocspPolicy, err := convertOcspStaplePolicy(dc.GetOcspStaplePolicy())
 	if err != nil {
 		return nil, err
 	}

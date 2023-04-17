@@ -176,7 +176,7 @@ metadata:
 | `certChain` | `string` | provided by `glooctl create secret tls`. |
 | `privateKey` | `string` | provided by `glooctl create secret tls`. |
 | `rootCa` | `string` | provided by `glooctl create secret tls`. |
-| `ocspStaple` | `string` |  |
+| `ocspStaple` | `string` | provided by `glooctl create secret tls`. |
 
 
 
