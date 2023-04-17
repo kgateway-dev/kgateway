@@ -2,6 +2,7 @@ package kubeconverters_test
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -17,6 +18,15 @@ import (
 )
 
 var _ = Describe("SecretConverter", func() {
+	It("should have the correct number of converters with cli components", func() {
+		// note that this test does not confirm that the number of secrets are being used in the cli
+		converterField, ok := reflect.TypeOf(*GlooSecretConverterChain).FieldByName("converters")
+		Expect(ok).To(BeTrue())
+		convertersValue := reflect.ValueOf(*GlooSecretConverterChain).FieldByName(converterField.Name)
+		// NOTE: when adding a converter here, please add the glooctl command
+		// for the secret converter as well add to cli projects/gloo/cli/pkg/cmd/create/secret
+		Expect(convertersValue.Len()).To(Equal(8))
+	})
 	It("should convert kube secret to gloo secret", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
