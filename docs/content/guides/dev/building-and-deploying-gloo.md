@@ -47,11 +47,11 @@ To build the Docker image, run the following command. Review the following table
 
     VERSION=0.0.1 make gloo-docker -B
 
-| Option | Description |
-| ------ | ----------- |
+| Option | Description                                                                                                                                  |
+| ------ |----------------------------------------------------------------------------------------------------------------------------------------------|
 | `VERSION` | An optional version number for the Docker image tag, such as `0.0.1`. The format *must* be valid [semantic versioning](https://semver.org/). |
-| `IMAGE_REPO` | The image repository for the image, such as the local host. This value is *required* on `arm64` or `m1` machines. |
-| `gloo-docker` | The name for the Docker image. |
+| `IMAGE_REGISTRY` | The image registry for the image, such as the local host. This value is *required* on `arm64` or `m1` machines.                              |
+| `gloo-docker` | The name for the Docker image.                                                                                                               |
 
 Example output:
 
@@ -78,7 +78,7 @@ kind load docker-image quay.io/solo-io/gloo:0.0.1
 ```
 {{% /tab %}} 
    {{< /tabs >}}
-4. Update the kind cluster to use the new image as the template. Note that the image tag varies depending on your machine and the image repository and tag version that you previously used.
+4. Update the kind cluster to use the new image as the template. Note that the image tag varies depending on your machine and the image registry and tag version that you previously used.
    {{< tabs >}} 
 {{% tab name="x86_64" %}}
 ```sh

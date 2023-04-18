@@ -88,8 +88,8 @@ steps:
   args:
   - 'publish-docker-retag'
   env:
-  - 'ORIGINAL_IMAGE_REPO=quay.io/solo-io'
-  - 'IMAGE_REPO=gcr.io/gloo-edge'
+  - 'ORIGINAL_IMAGE_REGISTRY=quay.io/solo-io'
+  - 'IMAGE_REGISTRY=gcr.io/gloo-edge'
   secretEnv:
   - 'GITHUB_TOKEN'
   waitFor:

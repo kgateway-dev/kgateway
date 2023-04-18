@@ -61,7 +61,7 @@ jobs:
       - name: Run and Push Security Scan Files to Google Cloud Bucket
         env:
           SCAN_DIR: _output/scans
-          IMAGE_REPO: quay.io/solo-io
+          IMAGE_REGISTRY: quay.io/solo-io
           MIN_SCANNED_VERSION: 'v1.10.0' # ⚠️ you should also change docs-gen.yaml ⚠️
         run: |
           mkdir -p $SCAN_DIR
