@@ -1082,6 +1082,12 @@ message PassThroughGrpc {
 
     // Timeout for the auth server to respond. Defaults to 5s
     google.protobuf.Duration connection_timeout = 2;
+
+    // TLS config for the Grpc passthrough, if not configured the connection will use insecure.
+    PassThroughGrpcTLSConfig tlsConfig =3;
+}
+// TLS configuration for the extauth grpc passthrough connection
+message PassThroughGrpcTLSConfig {
 }
 
 // Authorizes requests by making a POST HTTP/1 request to a custom HTTP auth server
