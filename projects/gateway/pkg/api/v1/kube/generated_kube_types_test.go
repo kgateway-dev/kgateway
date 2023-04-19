@@ -94,7 +94,7 @@ var _ = Describe("Generated Kube Code", func() {
 		cancel()
 	})
 
-	FIt("can read and write a gloo resource as a typed kube object", func() {
+	It("can read and write a gloo resource as a typed kube object", func() {
 		us := &gloov1kubetypes.Upstream{
 			ObjectMeta: v1.ObjectMeta{Name: "petstore-static", Namespace: "default"},
 			Spec: gloov1.Upstream{
