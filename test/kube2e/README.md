@@ -33,7 +33,7 @@ For these tests to run, we require the following conditions:
   - kind cluster set up and loaded with the images to be installed by the helm chart
 
 #### Use the CI Install Script
-[ci/deploy-to-kind-cluster.sh](`https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh`) gets run in CI to setup the test environment for the above requirements.
+[ci/kind/setup-kind.sh](`https://github.com/solo-io/gloo/blob/master/ci/kind/setup-kind.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
 | Name                 | Default  | Description                                                                                                         |
@@ -46,7 +46,7 @@ It accepts a number of environment variables, to control the creation of a kind 
 
 Example:
 ```bash
-CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.25.3 VERSION=v1.0.0-solo-test ci/deploy-to-kind-cluster.sh
+CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.25.3 VERSION=v1.0.0-solo-test ci/kind/setup-kind.sh
 ```
 
 ### Verify Your Setup
