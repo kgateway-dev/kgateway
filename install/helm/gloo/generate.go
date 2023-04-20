@@ -4,7 +4,6 @@ import (
 	"flag"
 	"io/ioutil"
 	"os"
-	"runtime"
 
 	"github.com/ghodss/yaml"
 	errors "github.com/rotisserie/eris"
@@ -152,18 +151,7 @@ func readValuesTemplate() (*generate.HelmConfig, error) {
 	if err := readYaml(valuesTemplate, &config); err != nil {
 		return nil, err
 	}
-	// adding in for arm64 registry work around
-	if runtime.GOARCH == "arm64" && os.Getenv("RUNNING_REGRESSION_TESTS") == "true" {
-		imageRepo := "localhost:5000"
-		if envImageRepo := os.Getenv("IMAGE_REPO"); envImageRepo != "" {
-			imageRepo = envImageRepo
-		}
-		configImage := config.Global.Image
-		reg := imageRepo
-		always := "Always"
-		configImage.Registry = &reg
-		configImage.PullPolicy = &always
-	}
+
 	return &config, nil
 }
 

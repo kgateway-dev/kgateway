@@ -204,6 +204,11 @@ spec:
         - name: http-monitoring
           containerPort: 9091
         {{- end }}
+        {{- if .Values.settings.devMode }}
+        - containerPort: 10010
+          name: dev-admin
+          protocol: TCP
+        {{- end }}
         volumeMounts:
         {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
         - mountPath: /etc/gateway/validation-certs

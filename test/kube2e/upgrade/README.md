@@ -8,7 +8,7 @@
 
 # Running Tests
 - You will need to generate the `_test` and `_output` folders in order to run these tests locally
-  - running [./ci/deploy-to-kind-cluster.sh](/ci/deploy-to-kind-cluster.sh) is an easy way to set up your environment to run the tests
+  - running [./ci/kind/setup-kind.sh](/ci/kind/setup-kind.sh) is an easy way to set up your environment to run the tests
 - If you are debugging and cancel the test early there may be leftover pods and namespace resources, these commands can help clean things up for you
 
 # remove gloo-system namespace resources and crds
