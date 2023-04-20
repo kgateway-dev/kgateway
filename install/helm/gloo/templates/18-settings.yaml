@@ -10,6 +10,10 @@ metadata:
   name: default
   namespace: {{ .Release.Namespace }}
 spec:
+{{- if .Values.settings.devMode }}
+  devMode:
+    {{ .Values.settings.devMode}}
+{{- end }}
   gloo:
 {{- if .Values.global.glooMtls.enabled }}
     xdsBindAddr: "127.0.0.1:9999"
@@ -168,6 +172,7 @@ spec:
 
 {{- end }} {{/* if .Values.settings.create  */}}
 {{- end }} {{/* define "settings.settingsSpec" */}}
+
 
 {{/* Render template with yaml overrides */}}
 {{- $kubeResourceOverride := dict -}}
