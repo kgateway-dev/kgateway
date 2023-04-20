@@ -173,10 +173,9 @@ If the authorization server has a service error, Gloo logs out the user, but doe
 ## Sessions in Cookies
 
 You can store the id token, access token, and other cookies on the client side. To do this you will need to configure the `session` with the `cookie` configurations. Here, we set the `keyPrefix` to add a prefix to the cookie name.
-In addition, you can configure the settings to encrypt the cookie values as well, using the new `cipherConfig`. This is available in Gloo v1.15.0 and later. You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis.
 
 Example configuration:
-{{< highlight yaml "hl_lines=19-25" >}}
+{{< highlight yaml "hl_lines=19-21" >}}
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
@@ -196,19 +195,29 @@ spec:
         scopes:
         - email
         session:
-          cipherConfig:
-            keyRef:
-              name: my-encryption-key
-              namespace: gloo-system
           cookie:
             keyPrefix: "my_cookie_prefix"
+{{< /highlight >}}
+
+### Symmetric Cookie Encryption
+
+Using the configuration in the previous step, we can configure configure the settings to encrypt the cookie values as well, using the new `cipherConfig`. This is available in Gloo v1.15.0 and later. You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis sessions.
+
+{{< highlight yaml "hl_lines=2-5" >}}
+session:
+  cipherConfig:
+    keyRef:
+      name: my-encryption-key
+      namespace: gloo-system
+  cookie:
+    keyPrefix: "my_cookie_prefix"
 {{< /highlight >}}
 
 ## Sessions in Redis
 
 By default, the tokens will be saved in a secure client side cookie.
 Gloo can instead use Redis to save the OIDC tokens, and set a randomly generated session id in the user's cookie.
-Going forward, we will be using examples of OIDC using a redis session.
+Going forward in the Gloo Edge documentation, we will be using examples of OIDC using a redis session.
 
 Example configuration:
 
