@@ -86,6 +86,7 @@ gloo:
                 name: https
                 targetPort: 8443
             type: LoadBalancer
+      tcpKeepaliveTimeSeconds: 5s # send keep-alive probes after 5s to keep connection up
       gatewaySettings:
         customHttpsGateway: # using the default HTTPS Gateway
           virtualServiceSelector:
@@ -99,6 +100,7 @@ gloo:
         httpsPort: 443
         httpNodePort: 32080 # random port to be fixed in your private network
         type: NodePort
+      tcpKeepaliveTimeSeconds: 5s # send keep-alive probes after 5s to keep connection up
       gatewaySettings:
         customHttpGateway: # using the default HTTP Gateway
           virtualServiceSelector:

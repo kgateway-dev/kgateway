@@ -175,7 +175,7 @@ global:
     create: false
 settings:
   # configure gloo to write generated custom resources to a custom namespace
-  writeNamespace: my-custom-namespace
+  writeNamespace: my-custom-namespace 
 ```
 
 Then, refer to the file during installation to override default values in the Gloo Edge Helm chart.
@@ -202,20 +202,22 @@ For more information, see the following resources:
 Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, unless they are the Gloo Edge settings, such as `settings.<rest of helm value>`.
 {{% /notice %}}
 
-| Option                                                    | Type     | Description                                                                                                                                                                                                                                                    |
-| --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| grafana.defaultInstallationEnabled                        | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
-| prometheus.enabled                                        | bool     | Deploy Prometheus in the `gloo-system` namespace. Default is `true`. |
-| rateLimit.enabled                                         | bool     | Deploy the rate-limiting server in the `gloo-system` namespace. Default is `true`. |
+| Option | Type | Description |
+| --- | --- | --- |
 | global.extensions.caching.enabled                         | bool     | Deploy the caching server in the `gloo-system` namespace. Default is `false`. |
 | global.extensions.extAuth.enabled                         | bool     | Deploy the ext-auth server in the `gloo-system` namespace. Default is `true`. |
 | global.extensions.extAuth.envoySidecar                    | bool     | Deploy ext-auth in the `gateway-proxy` pod as a sidecar to Envoy. Communicates over a Unix domain socket instead of TCP. Default is `false`. |
+| gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds | unit32 | The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60s. You might use this to prevent sync issues due to network connectivity glitches. For more information, see [the Knowledge Base help article](https://support.solo.io/hc/en-us/articles/12066701909524).|
+| gloo.gloo.disableLeaderElection | bool | Leave this field set to the default value of `false` when you have multiple replicas of the `gloo` deployment. This way, Gloo Edge elects a leader from the replicas, with the other replicas ready to become leader if needed in case the elected leader pod fails or restarts. If you want to run only one replica of `gloo`, you can set this value to `true`.|
+| grafana.defaultInstallationEnabled                        | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
 | observability.enabled                                     | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
 | observability.customGrafana.enabled                       | bool     | Use your own Grafana instance instead of the default Gloo Edge Grafana instance. Default is `false`. |
 | observability.customGrafana.username                      | string   | Authenticate to your custom Grafana instance using this username for basic auth. |
 | observability.customGrafana.password                      | string   | Authenticate to your custom Grafana instance using this password basic auth. |
 | observability.customGrafana.apiKey                        | string   | Authenticate to your custom Grafana instance using this API key. |
 | observability.customGrafana.url                           | string   | The URL for your custom Grafana instance. |
+| prometheus.enabled                                        | bool     | Deploy Prometheus in the `gloo-system` namespace. Default is `true`. |
+| rateLimit.enabled                                         | bool     | Deploy the rate-limiting server in the `gloo-system` namespace. Default is `true`. |
 ---
 
 ## Enterprise UI
