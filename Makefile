@@ -810,7 +810,7 @@ kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) $(STDERR_SILENCE_REDIRECT)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
