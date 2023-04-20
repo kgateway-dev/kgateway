@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    reduce log burden by suppressing several hundred lines of docker build and go dependency download
