@@ -170,10 +170,45 @@ You can also override the revocation endpoint through the [DiscoveryOverride fie
 If the authorization server has a service error, Gloo logs out the user, but does not retry revoking the access token. Check the logs and your identity provider for errors, and manually revoke the access token.
 {{% /notice %}}
 
+## Sessions in Cookies
+
+You can store the id token, access token in cookies on the client side. To do this you will need to configure the `session` with the `cookie` configurations. Here we set the `keyPrefix` to add a prefix to the cookie name.
+In addition you can configure the settings to encrypt the cookie values as well using the new `cipherConfig`. This is available in Gloo v1.15.0 and later. You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis.
+
+Example configuration:
+{{< highlight yaml "hl_lines=19-25" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        session:
+          cipherConfig:
+            keyRef:
+              name: my-encryption-key
+              namespace: gloo-system
+          cookie:
+            keyPrefix: "my_cookie_prefix"
+{{< /highlight >}}
+
 ## Sessions in Redis
 
 By default, the tokens will be saved in a secure client side cookie.
 Gloo can instead use Redis to save the OIDC tokens, and set a randomly generated session id in the user's cookie.
+Going forward, we will be using examples of OIDC using a redis session.
 
 Example configuration:
 
