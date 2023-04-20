@@ -88,7 +88,7 @@ var _ = Describe("SecretConverter", func() {
 					PrivateKey: "key",
 					CertChain:  "cert",
 					RootCa:     "ca",
-					OcspStaple: "ocsp",
+					OcspStaple: []byte("ocsp"),
 				},
 			},
 			Metadata: &core.Metadata{
