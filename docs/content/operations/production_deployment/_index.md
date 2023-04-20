@@ -222,10 +222,6 @@ Affinity settings for the `rate-limit` deployment can be overwritten during inst
 
 *DO NOT* scale the control plane components, such as the Gateway deployment, the Gloo deployment or the Discovery deployment. Scaling these components provides no benefit and can lead to race conditions.
 
-{{% notice note %}}
-If you are using the xDS-Relay architecture, you can scale the `xds-relay` deployment up.
-{{% /notice %}}
-
 
 ## Enhancing the data-plane reliability
 
