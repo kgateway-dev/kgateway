@@ -6076,6 +6076,52 @@ spec:
 				})
 			})
 
+			It("test devMode", func() {
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: append([]string{"settings.devMode=true"}),
+				})
+
+				resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+					// Check the gloo deployment container
+					if u.GetKind() == "Deployment" && u.GetName() == "gloo" {
+						deploymentObject, err := kuberesource.ConvertUnstructured(u)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+
+						containers := structuredDeployment.Spec.Template.Spec.Containers
+						//a := getFieldFromUnstructured(u, []string{"spec", "template", "spec", "containers"}...)
+						Expect(containers).ToNot(BeNil())
+						Expect(containers).To(HaveLen(1), "should have exactly 1 container")
+						ports := containers[0].Ports
+
+						foundDevModePort := false
+						for _, port := range ports {
+							if port.Name == "dev-admin" && port.ContainerPort == 10010 {
+								foundDevModePort = true
+							}
+						}
+
+						Expect(foundDevModePort).To(Equal(true), "should have found the dev mode port")
+						return foundDevModePort
+					}
+					// Check the Settigns
+					if u.GetKind() == "Settings" && u.GetName() == "default" {
+						devMode := getFieldFromUnstructured(u, []string{"spec", "devMode"}...)
+						devModeBool, ok := devMode.(bool)
+						Expect(ok).To(BeTrue(), "devMode should be a bool")
+						Expect(devModeBool).To(BeTrue(), "should have found the dev mode port")
+						if devMode == true {
+							return true
+						}
+					}
+
+					return false
+				})
+
+				Expect(resources.NumResources()).To(Equal(2))
+			})
+
 		})
 
 		Context("Reflection", func() {
