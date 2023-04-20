@@ -39,6 +39,54 @@ as file sink access logs), there are two main configurations to set:
 * Path: This is where the logs are written, either to `/dev/stdout` or to a file that is in a writable volume in the proxy container 
 * Format: This provides a log template for either string or json-formatted logs
 
+### File-based Standard logging
+File-based standard logging(stdout/stderr) can be enabled in Gloo Edge by passing `--log-path path` in `gloo.gatewayProxies.gatewayProxy.extraEnvoyArgs[]` parameter during [Helm install](https://docs.solo.io/gloo-edge/master/reference/helm_chart_values/enterprise_helm_chart_values/).
+Additional info on Envoy Logging can be found [here](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#envoy-logging)
+
+This requires an additional `VolumeMount` within the gateway-proxy deployment, as we have a read-only filesystem.
+
+Helm Values(sample)
+> values-override.yaml
+```yaml
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      extraVolumes:
+      - name: gloo-logs
+        persistentVolumeClaim:
+          claimName: local-claim
+      extraProxyVolumeMounts:
+      - name: gloo-logs
+        mountPath: /var/log/gloo
+      extraEnvoyArgs: # Add extra arguments to Envoy.
+      -  --log-path /var/log/gloo/envoy_log
+```
+The Helm command to deploy this would look something like
+```bash
+# Fresh install
+helm install gloo-edge gloo-ee/gloo-ee --namespace gloo1 --create-namespace  --set-string license_key=$GQ   --version $VERSION -f value-overrides.yaml
+
+# If you're upgrading an existing install
+helm upgrade --install gloo1 gloo-ee/gloo-ee --namespace gloo-system --set-string license_key=$GQ   --version $VERSION -f value-overrides.yaml
+```
+
+Cross-verify that these volumes have been mounted.
+```bash
+$ kubectl describe -n gloo-system deployment/gateway-proxy
+#---SNIP---
+ Mounts:
+      /etc/envoy from envoy-config (rw)
+      /var/log/gloo from gloo-access (rw)
+```
+You can then exec into the container to see the file and logs.
+```bash
+$ tail /var/log/gloo/envoy_log
+[2023-04-18 06:07:52.111][7][info][config] [external/envoy/source/server/configuration_impl.cc:113] loading stats configuration
+[2023-04-18 06:07:52.111][7][info][main] [external/envoy/source/server/server.cc:897] starting main dispatch loop
+[2023-04-18 06:07:52.112][7][info][runtime] [external/envoy/source/common/runtime/runtime_impl.cc:463] RTDS has finished initialization
+[2023-04-18 06:07:52.112][7][info][upstream] [external/envoy/source/common/upstream/cluster_manager_impl.cc:221] cm init: initializing cds
+```
+
 #### Outputting formatted strings
 
 To configure access logs on a specific Envoy listener that output string-formatted logs to a file, 
