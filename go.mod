@@ -2,6 +2,9 @@ module github.com/solo-io/gloo
 
 go 1.20
 
+// Note for developers: upgrading go will also require upgrading go in the following files:
+// ./cloudbuild-cache.yaml,
+
 require (
 	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
