@@ -101,7 +101,7 @@ SSLFiles reference paths to certificates which can be read by the proxy off of i
 | `tlsCert` | `string` |  |
 | `tlsKey` | `string` |  |
 | `rootCa` | `string` | for client cert validation. optional. |
-| `ocspStaple` | `string` | stapled ocsp response. optional. |
+| `ocspStaple` | `string` | stapled ocsp response. optional should be der-encoded. |
 
 
 

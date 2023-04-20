@@ -167,7 +167,7 @@ metadata:
 "certChain": string
 "privateKey": string
 "rootCa": string
-"ocspStaple": string
+"ocspStaple": bytes
 
 ```
 
@@ -176,7 +176,7 @@ metadata:
 | `certChain` | `string` | provided by `glooctl create secret tls`. |
 | `privateKey` | `string` | provided by `glooctl create secret tls`. |
 | `rootCa` | `string` | provided by `glooctl create secret tls`. |
-| `ocspStaple` | `string` | provided by `glooctl create secret tls`. |
+| `ocspStaple` | `bytes` | provided by `glooctl create secret tls` ocsp staple is a der-encoded binary structure. |
 
 
 

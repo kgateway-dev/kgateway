@@ -80,7 +80,7 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
 					CertChain:  string(secret.Data[kubev1.TLSCertKey]),
 					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
-					OcspStaple: string(secret.Data[OCSPStapleKey]),
+					OcspStaple: secret.Data[OCSPStapleKey],
 				},
 			},
 			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
@@ -111,8 +111,8 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 				kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
 			}
 
-			if tlsGlooSecret.Tls.GetOcspStaple() != "" {
-				kubeSecret.Data[OCSPStapleKey] = []byte(tlsGlooSecret.Tls.GetOcspStaple())
+			if tlsGlooSecret.Tls.GetOcspStaple() != nil {
+				kubeSecret.Data[OCSPStapleKey] = tlsGlooSecret.Tls.GetOcspStaple()
 			}
 
 			return kubeSecret, nil

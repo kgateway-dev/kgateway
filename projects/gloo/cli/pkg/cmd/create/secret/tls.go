@@ -90,7 +90,7 @@ func createTlsSecret(ctx context.Context, meta *core.Metadata, input options.Tls
 				CertChain:  string(certChain),
 				PrivateKey: string(privateKey),
 				RootCa:     string(rootCa),
-				OcspStaple: string(ocspStaple),
+				OcspStaple: ocspStaple,
 			},
 		},
 	}

@@ -76,6 +76,7 @@ message SSLFiles {
     // for client cert validation. optional
     string root_ca = 3;
     // stapled ocsp response. optional
+    // should be der-encoded
     string ocsp_staple = 4;
 }
 

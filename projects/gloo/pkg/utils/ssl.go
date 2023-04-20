@@ -124,8 +124,8 @@ type CertSource interface {
 	GetAlpnProtocols() []string
 }
 
-func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
-	return func(s string) *envoycore.DataSource {
+func dataSourceGenerator(inlineDataSource bool) func(s string, b []byte) *envoycore.DataSource {
+	return func(s string, b []byte) *envoycore.DataSource {
 		if !inlineDataSource {
 			return &envoycore.DataSource{
 				Specifier: &envoycore.DataSource_Filename{
@@ -133,6 +133,14 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 				},
 			}
 		}
+		if b != nil {
+			return &envoycore.DataSource{
+				Specifier: &envoycore.DataSource_InlineBytes{
+					InlineBytes: b,
+				},
+			}
+		}
+
 		return &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_InlineString{
 				InlineString: s,
@@ -282,7 +290,9 @@ func (s *sslConfigTranslator) handleSds(sslSecrets *ssl.SDSConfig, matchSan []*e
 
 func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList, mustHaveCert bool) (*envoyauth.CommonTlsContext, error) {
 	var (
-		certChain, privateKey, rootCa, ocspStaple string
+		certChain, privateKey, rootCa, ocspStapleFile string
+		// An OCSP response (staple) is a DER-encoded binary file
+		ocspStaple []byte
 		// if using a Secret ref, we will inline the certs in the tls config
 		inlineDataSource bool
 	)
@@ -296,7 +306,9 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			return nil, err
 		}
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
-		certChain, privateKey, rootCa, ocspStaple = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa(), sslSecrets.GetOcspStaple()
+		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
+		// Since ocspStaple is []byte, but we want the file path, we're storing it in a separate string variable
+		ocspStapleFile = sslSecrets.GetOcspStaple()
 		err := isValidSslKeyPair(certChain, privateKey, rootCa)
 		if err != nil {
 			return nil, InvalidTlsSecretError(nil, err)
@@ -325,16 +337,20 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	var certChainData, privateKeyData, rootCaData, ocspStapleData *envoycore.DataSource
 
 	if certChain != "" {
-		certChainData = dataSource(certChain)
+		certChainData = dataSource(certChain, nil)
 	}
 	if privateKey != "" {
-		privateKeyData = dataSource(privateKey)
+		privateKeyData = dataSource(privateKey, nil)
 	}
 	if rootCa != "" {
-		rootCaData = dataSource(rootCa)
+		rootCaData = dataSource(rootCa, nil)
 	}
-	if ocspStaple != "" {
-		ocspStapleData = dataSource(ocspStaple)
+	// If we have a filename for the ocsp staple, we are not doing inline data source and want to fetch ocsp data from the file
+	// otherwise, we use the []byte data stored in ocspStaple
+	if ocspStapleFile != "" {
+		ocspStapleData = dataSource(ocspStapleFile, nil)
+	} else if ocspStaple != nil {
+		ocspStapleData = dataSource("", ocspStaple)
 	}
 
 	tlsContext := &envoyauth.CommonTlsContext{
@@ -379,15 +395,15 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	return tlsContext, err
 }
 
-func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, string, error) {
+func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, []byte, error) {
 	secret, err := secrets.Find(ref.Strings())
 	if err != nil {
-		return "", "", "", "", SslSecretNotFoundError(err)
+		return "", "", "", nil, SslSecretNotFoundError(err)
 	}
 
 	sslSecret, ok := secret.GetKind().(*v1.Secret_Tls)
 	if !ok {
-		return "", "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
+		return "", "", "", nil, NotTlsSecretError(secret.GetMetadata().Ref())
 	}
 
 	certChain := sslSecret.Tls.GetCertChain()
@@ -397,7 +413,7 @@ func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string,
 
 	err = isValidSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
-		return "", "", "", "", InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
+		return "", "", "", nil, InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
 	}
 
 	return certChain, privateKey, rootCa, ocspStaple, nil

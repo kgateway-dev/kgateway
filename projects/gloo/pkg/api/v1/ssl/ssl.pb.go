@@ -332,6 +332,7 @@ type SSLFiles struct {
 	// for client cert validation. optional
 	RootCa string `protobuf:"bytes,3,opt,name=root_ca,json=rootCa,proto3" json:"root_ca,omitempty"`
 	// stapled ocsp response. optional
+	// should be der-encoded
 	OcspStaple string `protobuf:"bytes,4,opt,name=ocsp_staple,json=ocspStaple,proto3" json:"ocsp_staple,omitempty"`
 }
 

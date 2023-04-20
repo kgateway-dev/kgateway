@@ -209,7 +209,10 @@ func (m *TlsSecret) Clone() proto.Message {
 
 	target.RootCa = m.GetRootCa()
 
-	target.OcspStaple = m.GetOcspStaple()
+	if m.GetOcspStaple() != nil {
+		target.OcspStaple = make([]byte, len(m.GetOcspStaple()))
+		copy(target.OcspStaple, m.GetOcspStaple())
+	}
 
 	return target
 }

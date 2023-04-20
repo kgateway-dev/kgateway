@@ -355,7 +355,7 @@ func (m *TlsSecret) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetOcspStaple())); err != nil {
+	if _, err = hasher.Write(m.GetOcspStaple()); err != nil {
 		return 0, err
 	}
 
