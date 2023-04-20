@@ -322,7 +322,7 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -360,7 +360,6 @@ generate-client-mocks:
 # build-ci and glooctl along with others are in the ci makefile
 
 ifeq ($(USE_SILENCE_REDIRECTS), true)
-STDOUT_SILENCE_REDIRECT := 1> /dev/null
 STDERR_SILENCE_REDIRECT := 2> /dev/null
 endif
 
@@ -373,7 +372,7 @@ INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 INGRESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(INGRESS_DIR)
 
 $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH): $(INGRESS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: ingress
 ingress: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH)
@@ -396,7 +395,7 @@ ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 ACCESS_LOG_OUTPUT_DIR=$(OUTPUT_DIR)/$(ACCESS_LOG_DIR)
 
 $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH): $(ACCESS_LOG_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: access-logger
 access-logger: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH)
@@ -419,7 +418,7 @@ DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 DISCOVERY_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISCOVERY_DIR)
 
 $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH): $(DISCOVERY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: discovery
 discovery: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH)
@@ -442,7 +441,7 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
 
 $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: gloo
 gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) ## Gloo Edge
@@ -516,7 +515,7 @@ SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 
 $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: sds
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
@@ -539,7 +538,7 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
@@ -566,7 +565,7 @@ CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
 CERTGEN_OUTPUT_DIR=$(OUTPUT_DIR)/$(CERTGEN_DIR)
 
 $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go $(STDOUT_SILENCE_REDIRECT)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: certgen
 certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
