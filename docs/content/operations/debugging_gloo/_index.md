@@ -280,6 +280,33 @@ global:
 observability:
   deployment:
     logLevel: error
+```
+
+### Dev Mode and Gloo Debug Endpoint
+In non-production environments `settings.devMode` can be set to `true` to enable a debug endpoint on the gloo deployment on port `10010`. If this flag set at install time, the port will be exposed automatically. To set it on an existing installation:
+* Enable in the settings CR:
+```
+spec:
+  devMode: true
+``` 
+* Expose the port in the gloo deployment CR by adding the existing list of ports in the gloo deployment image definition:
+```
+      - ports
+        - containerPort: 10010
+          name: dev-admin
+          protocol: TCP
+```
+* Enable port forwarding:
+```
+kubectl port-forward -n gloo-system deployment/gloo 10010
+```
+
+The following endpoints are then available:
+* `http://localhost:10010/` :   a "Hello World" type page that displays the text `Developer API`
+* `http://localhost:10010/xds` : gets status keys from the xds cache
+* `http://localhost:10010/xds/{key}` : gets the snapshot of the object referred to by  key from the xds cache
+* `http://localhost:10010/api ` : gets the latest ApiSnapshot
+
 
 ### All else fails
 
