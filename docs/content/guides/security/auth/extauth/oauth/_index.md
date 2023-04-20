@@ -172,8 +172,8 @@ If the authorization server has a service error, Gloo logs out the user, but doe
 
 ## Sessions in Cookies
 
-You can store the id token, access token in cookies on the client side. To do this you will need to configure the `session` with the `cookie` configurations. Here we set the `keyPrefix` to add a prefix to the cookie name.
-In addition you can configure the settings to encrypt the cookie values as well using the new `cipherConfig`. This is available in Gloo v1.15.0 and later. You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis.
+You can store the id token, access token in cookies on the client side. To do this you will need to configure the `session` with the `cookie` configurations. Here, we set the `keyPrefix` to add a prefix to the cookie name.
+In addition, you can configure the settings to encrypt the cookie values as well, using the new `cipherConfig`. This is available in Gloo v1.15.0 and later. You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis.
 
 Example configuration:
 {{< highlight yaml "hl_lines=19-25" >}}
