@@ -50,14 +50,14 @@ if [[ $SKIP_DOCKER == 'true' ]]; then
   echo "SKIP_DOCKER=true, not building images or chart"
 else
   # 2. Make all the docker images and load them to the kind cluster
-  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME make kind-build-and-load
+  VERSION=$VERSION CLUSTER_NAME=$CLUSTER_NAME USE_SILENCE_REDIRECTS=true make -s kind-build-and-load
 
   # 3. Build the test helm chart, ensuring we have a chart in the `_test` folder
-  VERSION=$VERSION make build-test-chart
+  VERSION=$VERSION USE_SILENCE_REDIRECTS=true make -s build-test-chart
 fi
 
 # 4. Build the gloo command line tool, ensuring we have one in the `_output` folder
-make build-cli-local
+USE_SILENCE_REDIRECTS=true make -s build-cli-local
 
 # 5. Install additional resources used for particular KUBE2E tests
 if [[ $KUBE2E_TESTS = "glooctl" || $KUBE2E_TESTS = "istio" ]]; then
