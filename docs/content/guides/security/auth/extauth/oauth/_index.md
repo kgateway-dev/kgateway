@@ -219,7 +219,7 @@ Setting the `cipherConfig` attribute is supported in Gloo Edge version 1.15 and 
    glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key"
    ```
 
-2. Reference the secret in the `cipherConfig` section of your authconfig. Note that they key must be 32 bytes in length. 
+2. Reference the secret in the `cipherConfig` section of your authconfig. Note that the key must be 32 bytes in length. 
    {{< highlight yaml "hl_lines=2-5" >}}
    session:
      cipherConfig:
