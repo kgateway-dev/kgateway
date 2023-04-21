@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Updates the OIDC docs to show the cookie encryption configurations needed to encrypt cookie values.
