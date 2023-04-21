@@ -173,7 +173,7 @@ If the authorization server has a service error, Gloo logs out the user, but doe
 ## Sessions in Cookies
 
 You can store the id token, access token, and other cookies on the client side. To do this you will need to configure the `session` with the `cookie` configurations. Here, we set the `keyPrefix` to add a prefix to the cookie name. This will expose the raw cookie value to the client, for more secure options please look at the next steps in symmetric cookie encryption.
-Current limitations apply to the size of cookies. Cookies larger than 4KB will cause errors.
+Current limitations apply to the size of cookies. Cookies cannot be larger than 4KB. Approaches to limit the size of the cookies or using redis sessions are solutions around this.
 
 Example configuration:
 {{< highlight yaml "hl_lines=19-21" >}}
@@ -202,8 +202,9 @@ spec:
 
 ### Symmetric Cookie Encryption
 
-Because the cookies are not encrypted, and pose a security risk when storing the cookies on the client side, we would want to enable cookie encryption.
-Using the configuration in the previous step, we can configure configure the settings to encrypt the cookie values as well, using the new `cipherConfig`. This is available in Gloo v1.15.0 and later. You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis sessions.
+Because the cookies are not encrypted, and pose a security risk when attackers manipulate the values of the cookies. Encrypting those values prevents attackers from manipulating the cookie values.
+Using the configuration in the previous step, we can configure the settings to encrypt the cookie values, using the `cipherConfig` attribute. This is available in Gloo v1.15.0 and later.
+You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis sessions.
 
 {{< highlight yaml "hl_lines=2-5" >}}
 session:
