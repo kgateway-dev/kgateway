@@ -172,8 +172,14 @@ If the authorization server has a service error, Gloo logs out the user, but doe
 
 ## Sessions in Cookies
 
-You can store the id token, access token, and other cookies on the client side. To do this you will need to configure the `session` with the `cookie` configurations. Here, we set the `keyPrefix` to add a prefix to the cookie name. This will expose the raw cookie value to the client, for more secure options please look at the next steps in symmetric cookie encryption.
-Current limitations apply to the size of cookies. Cookies cannot be larger than 4KB. Approaches to limit the size of the cookies or using redis sessions are solutions around this.
+You can store the ID token, access token, and other tokens that are returned from your OIDC provider in a cookie on the client side. To do this, you configure your cookie options, such as the `keyPrefix` that you want to add to the token name, in the `oauth2.oidcAuthorizationCode.session.cookie` section of your authconfig as shown in the following example. After a client successfully authenticates with the OIDC provider, the tokens are stored in the `Set-Cookie` response header and sent to the client. If you set a `keyPrefix` value in your cookie configuration, the prefix is added to the name of the token before it is sent to the client, such as `Set-Cookie: <myprefix>_id-token=<ID_token>`. To prove successful authentication with the OIDC provider in subsequent requests, clients send their tokens in a `Cookie` header. 
+
+Cookie headers can have a maximum size of 4KB. If you find that your cookie header exceeds this value, you can either limit the size of the cookie header or [store the tokens in Redis](#sessions-in-redis) and send back a Redis session ID instead. 
+
+{{% notice warning %}}
+Storing the raw, unencrypted tokens in a cookie header is not a recommended security practice as they can be manipulated through malicious attacks. To encrypt your tokens, see [Symmetric cookie encryption](#symmetric-cookie-encryption). For a more secure setup, [store the tokens in a Redis instance](#sessions-in-redis) and send back a Redis session ID in the cookie header. 
+{{% /notice %}}
+
 
 Example configuration:
 {{< highlight yaml "hl_lines=19-21" >}}
@@ -200,21 +206,29 @@ spec:
             keyPrefix: "my_cookie_prefix"
 {{< /highlight >}}
 
-### Symmetric Cookie Encryption
+### Symmetric cookie encryption
 
-Because the cookies are not encrypted, and pose a security risk when attackers manipulate the values of the cookies. Encrypting those values prevents attackers from manipulating the cookie values.
-Using the configuration in the previous step, we can configure the settings to encrypt the cookie values, using the `cipherConfig` attribute. This is available in Gloo v1.15.0 and later.
-You can generate a key using the following command `glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"`. Then you can set the `keyRef` for the generated `encryptionkey`. NOTE: that the key has to be 32 bytes in length for it to work. The encryption only works on cookie sessions, this is not applied to redis sessions.
+By default, the tokens that are sent in the cookie header are not encrypted and can be manipulated through malicious attacks. To encrypt the cookie values, you can add a `cipherConfig` section to your session configuration as shown in the following example. 
 
-{{< highlight yaml "hl_lines=2-5" >}}
-session:
-  cipherConfig:
-    keyRef:
-      name: my-encryption-key
-      namespace: gloo-system
-  cookie:
-    keyPrefix: "my_cookie_prefix"
-{{< /highlight >}}
+{{% notice note %}}
+Setting the `cipherConfig` attribute is supported in Gloo Edge version 1.15 and later and can be used only to encrypt cookie sessions. You cannot use this feature to encrypt Redis sessions. 
+{{% /notice %}}
+
+1. Create a secret with your encryption key. 
+   ```shell
+   glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key"
+   ```
+
+2. Reference the secret in the `cipherConfig` section of your authconfig. Note that they key must be 32 bytes in length. 
+   {{< highlight yaml "hl_lines=2-5" >}}
+   session:
+     cipherConfig:
+       keyRef:
+         name: my-encryption-key
+         namespace: gloo-system
+     cookie:
+       keyPrefix: "my_cookie_prefix"
+   {{< /highlight >}}
 
 ## Sessions in Redis
 
