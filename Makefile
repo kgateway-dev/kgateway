@@ -779,6 +779,11 @@ kind-load-%:
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
 kind-build-and-load-%: %-docker kind-load-% ;
 
+# This is an alias to remedy the fact that the deployment is called gateway-proxy
+# but our make targets refer to gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+	kubectl rollout restart deployment/gateway-proxy -n $(INSTALL_NAMESPACE)
+
 # Reload an image in KinD
 # This is useful to developers when changing a single component
 # You can reload an image, which means it will be rebuilt and reloaded into the kind cluster
