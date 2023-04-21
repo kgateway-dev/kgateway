@@ -18,8 +18,20 @@ We may want to test API changes in other projects, without actually merging the 
 
 The arguments are:
 - `Use Workflow From`: The branch which contains the workflow code you want to execute. Often times, the default branch will work.
-- `Source Branch`: The branch which contains the API changes you want to mirror
-- `Target Branch`: The Gloo LTS branch which you want to merge your changes into
+- `The branch that contains the relevant API change`: The branch which contains the API changes you want to mirror
+- `The LTS branch that these API changes are targeted for`: The Gloo LTS branch which you want to merge your changes into
+
+Below are some examples for inputs to the job, if you are working on a feature branched named `feature/new-api`
+
+To test this on the default main branch:
+- Use Workflow From: `master`
+- The branch that contains the relevant API change: `feature/new-api`
+- The LTS branch that these API changes are targeted for: `master`
+
+To test this on 1.13.x branch:
+- Use Workflow From: `master`
+- The branch that contains the relevant API change: `feature/new-api`
+- The LTS branch that these API changes are targeted for: `v1.13.x`
 
 **NOTE: After the PR opens in solo-apis, we want to avoid the chance that it merges. Please put a 'work in progress' label on the PR to prevent it from merging.**
 
