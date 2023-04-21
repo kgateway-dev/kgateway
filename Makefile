@@ -189,7 +189,7 @@ fmt-changed:
 
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download:
+mod-download: check-go-version
 	go mod download all
 
 
@@ -324,6 +324,12 @@ $(OUTPUT_DIR)/.generated-code:
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
+	
+# makes sure you are running codegen with the correct Go version
+.PHONY: check-go-version
+check-go-version:
+	./ci/check-go-version.sh
+
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -730,6 +736,7 @@ docker-push-%:
 
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
+docker: check-go-version
 docker: gloo-docker
 docker: discovery-docker
 docker: gloo-envoy-wrapper-docker
