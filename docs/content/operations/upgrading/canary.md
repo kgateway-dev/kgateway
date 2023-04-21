@@ -84,11 +84,6 @@ glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TAR
    gloooctl uninstall -n gloo-system
    ```
 
-### In-place canary upgrades by using xDS relay {#canary-xds-relay}
-
-By default, your Gloo Edge or Gloo Edge Enterprise control plane and data plane are installed together. However, you can decouple the control plane and data plane lifecycles by using the [`xds-relay`]({{< versioned_link_path fromRoot="/operations/advanced/xds_relay/" >}})
-project as the "control plane" for the newer version deployment in a canary upgrade. This setup provides extra resiliency for your live xDS configuration in the event of failure during an in-place `helm upgrade`. 
-
 ## Upgrade Gloo Edge Federation in a canary model {#canary-upgrade-fed}
 
 You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later. In [Gloo Edge Federation]({{< versioned_link_path fromRoot="/guides/gloo_federation/" >}}), you have a management cluster that runs Gloo Edge Federation (and optionally, other Enterprise components). Then you register remote clusters with Gloo Edge Enterprise.
