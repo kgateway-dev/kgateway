@@ -820,7 +820,7 @@ kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
 .PHONY: build-test-chart
-build-test-chart:
+build-test-chart: ## Build the Helm chart and place it in the _test directory
 	mkdir -p $(TEST_ASSET_DIR)
 	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
