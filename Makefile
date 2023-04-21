@@ -305,7 +305,7 @@ clean-cli-docs:
 generate-all: generated-code ## Calls generated-code
 
 .PHONY: generated-code
-generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
+generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
 generated-code: $(OUTPUT_DIR)/.generated-code
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
