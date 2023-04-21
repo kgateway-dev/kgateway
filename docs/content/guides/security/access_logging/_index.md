@@ -41,11 +41,11 @@ as file sink access logs), there are two main configurations to set:
 
 ## File-based Standard logging
 
-You can enable file-based standard logging (stdout/stderr) in Gloo Edge Enterprise during [Helm installation]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}). For more information about Envoy logging, see [the Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#envoy-logging).
+You can enable file-based standard logging (stdout/stderr) in Gloo Edge during [Helm installation]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}). For more information about Envoy logging, see [the Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#envoy-logging).
 
 To enable, you use the `--log-path path` Helm setting in the `gloo.gatewayProxies.gatewayProxy.extraEnvoyArgs[]` parameter. Because the filesystem is read-only, you must also mount an additional volume in the `gateway-proxy` deployment.
 
-Before you begin, set the Gloo Edge Enterprise version (`$VERSION`) and license key (`$YOUR_LICENSE_KEY`) as variables. For more information, see the [Installation guide]({{% versioned_link_path fromRoot="/installation/enterprise/" %}}).
+The following steps show an example for Gloo Edge Enterprise installations. Before you begin, set the Gloo Edge Enterprise version (`$VERSION`) and license key (`$YOUR_LICENSE_KEY`) as variables. For more information or open source steps, see the [Installation guide]({{% versioned_link_path fromRoot="/installation/" %}}).
 
 1. Prepare a Helm values configuration file with override settings such as the following.
    ```yaml
