@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Update the `go-version-file` field to a valid path in the push-solo-apis-branch workflow.
