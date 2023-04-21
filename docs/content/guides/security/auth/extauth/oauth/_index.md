@@ -220,14 +220,20 @@ Setting the `cipherConfig` attribute is supported in Gloo Edge version 1.15 and 
    ```
 
 2. Reference the secret in the `cipherConfig` section of your authconfig. Note that the key must be 32 bytes in length. 
-   {{< highlight yaml "hl_lines=2-5" >}}
-   session:
-     cipherConfig:
-       keyRef:
-         name: my-encryption-key
-         namespace: gloo-system
-     cookie:
-       keyPrefix: "my_cookie_prefix"
+   {{< highlight yaml "hl_lines=8-11" >}}
+   ...
+   kind: AuthConfig
+   spec:
+     configs:
+     - oauth2:
+          oidcAuthorizationCode:
+            session:
+              cipherConfig:
+                keyRef:
+                  name: my-encryption-key
+                  namespace: gloo-system
+                cookie:
+                  keyPrefix: "my_cookie_prefix"
    {{< /highlight >}}
 
 ## Sessions in Redis
