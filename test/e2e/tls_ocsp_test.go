@@ -213,18 +213,17 @@ var _ = Describe("TLS OCSP e2e", func() {
 
 			// TODO (fabian): figure out the proper way to test this test exactly.
 			// When doing this through an Envoy bootstrap Envoy fails to start, or at least resulted in many errors, since the `MUST_STAPLE` requires an ocsp staple.
-			// Getting an EOF error (or just no specific server/client error) makes sense, as the downstream/resource would, at the very least, not be created.
+			// Getting an error makes sense, as the downstream/resource would, at the very least, not be created.
+			// The specific error is unknown. Locally, it was `EOF`, but in CI there was a SyscallError.
 			Eventually(func(g Gomega) {
 				resp, err := httpClient.Do(httpRequestBuilder.Build())
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(resp).To(BeNil())
-				g.Expect(err).To(MatchError(ContainSubstring("EOF")))
 			}, "10s", "1s").Should(Succeed())
 			Consistently(func(g Gomega) {
 				resp, err := httpClient.Do(httpRequestBuilder.Build())
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(resp).To(BeNil())
-				g.Expect(err).To(MatchError(ContainSubstring("EOF")))
 			}, "2s", ".5s").Should(Succeed())
 		})
 
