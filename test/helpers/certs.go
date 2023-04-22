@@ -64,7 +64,7 @@ type Params struct {
 	RsaBits          int                // Size of RSA key to generate. Ignored if EcdsaCurve is set
 	EcdsaCurve       string             // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
 	AdditionalUsages []x509.ExtKeyUsage // Usages to define in addition to default x509.ExtKeyUsageServerAuth
-	IssuerKey        interface{}
+	IssuerKey        interface{}        // If provided, the certificate will be signed by this key
 }
 
 func GetCerts(params Params) (string, string) {
@@ -74,25 +74,30 @@ func GetCerts(params Params) (string, string) {
 	}
 
 	var priv interface{}
-	var err error
-	switch params.EcdsaCurve {
-	case "":
-		if params.RsaBits == 0 {
-			params.RsaBits = 2048
+	// If an issuer key is provided, use it to sign the certificate
+	if params.IssuerKey != nil {
+		priv = params.IssuerKey
+	} else {
+		var err error
+		switch params.EcdsaCurve {
+		case "":
+			if params.RsaBits == 0 {
+				params.RsaBits = 2048
+			}
+			priv, err = rsa.GenerateKey(rand.Reader, params.RsaBits)
+		case "P224":
+			priv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+		case "P256":
+			priv, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		case "P384":
+			priv, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		case "P521":
+			priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		default:
+			Fail(fmt.Sprintf("Unrecognized elliptic curve: %q", params.EcdsaCurve))
 		}
-		priv, err = rsa.GenerateKey(rand.Reader, params.RsaBits)
-	case "P224":
-		priv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
-	case "P256":
-		priv, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	case "P384":
-		priv, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	case "P521":
-		priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-	default:
-		Fail(fmt.Sprintf("Unrecognized elliptic curve: %q", params.EcdsaCurve))
+		Expect(err).NotTo(HaveOccurred())
 	}
-	Expect(err).NotTo(HaveOccurred())
 
 	var notBefore time.Time
 	if params.ValidFrom == nil {
@@ -142,10 +147,6 @@ func GetCerts(params Params) (string, string) {
 		template.KeyUsage |= x509.KeyUsageCertSign
 	}
 
-	if params.IssuerKey != nil {
-		priv = params.IssuerKey
-	}
-
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
 		Fail(fmt.Sprintf("Failed to create certificate: %s", err))
@@ -161,47 +162,6 @@ func GetCerts(params Params) (string, string) {
 	Expect(err).NotTo(HaveOccurred())
 
 	return certOut.String(), keyOut.String()
-}
-
-type FakeOcspResponder struct {
-	certificate *x509.Certificate
-	privateKey  *rsa.PrivateKey
-	issuer      *x509.Certificate
-}
-
-func NewFakeOcspResponder(rootCa *x509.Certificate, rootKey interface{}) *FakeOcspResponder {
-	cert, key := GetCerts(Params{
-		Hosts:     "ocsp-responder",
-		IsCA:      false,
-		IssuerKey: rootKey,
-	})
-
-	return &FakeOcspResponder{
-		certificate: GetCertificateFromString(cert),
-		privateKey:  GetPrivateKeyFromString(key),
-		issuer:      rootCa,
-	}
-}
-
-func (f *FakeOcspResponder) GetOcspResponse(certificate *x509.Certificate, expiration time.Duration, isRevoked bool, resp ocsp.Response) []byte {
-	template := resp
-	template.Certificate = certificate
-	status := ocsp.Good
-	if isRevoked {
-		status = ocsp.Revoked
-	}
-
-	template = ocsp.Response{
-		Status:       status,
-		SerialNumber: certificate.SerialNumber,
-		NextUpdate:   time.Now().Add(expiration),
-		Certificate:  certificate,
-	}
-
-	response, err := ocsp.CreateResponse(f.issuer, f.certificate, template, f.privateKey)
-	Expect(err).NotTo(HaveOccurred())
-
-	return response
 }
 
 var (
@@ -262,6 +222,7 @@ func GetKubeSecret(name, namespace string) *kubev1.Secret {
 	}
 }
 
+// GetCertificateFromString returns an x509 certificate from the certificate's string representation.
 func GetCertificateFromString(certificate string) *x509.Certificate {
 	block, _ := pem.Decode([]byte(certificate))
 	cert, err := x509.ParseCertificate(block.Bytes)
@@ -269,9 +230,56 @@ func GetCertificateFromString(certificate string) *x509.Certificate {
 	return cert
 }
 
-func GetPrivateKeyFromString(privateKey string) *rsa.PrivateKey {
+// GetPrivateKeyRSAFromString returns a private key from the key's string representation.
+func GetPrivateKeyRSAFromString(privateKey string) *rsa.PrivateKey {
 	block, _ := pem.Decode([]byte(privateKey))
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 	Expect(err).NotTo(HaveOccurred())
 	return key
+}
+
+// FakeOcspResponder is a fake OCSP responder that can be used to generate OCSP responses.
+type FakeOcspResponder struct {
+	certificate *x509.Certificate
+	privateKey  *rsa.PrivateKey
+	issuer      *x509.Certificate
+}
+
+// NewFakeOcspResponder creates a new fake OCSP responder from the given root CA.
+func NewFakeOcspResponder(rootCa *x509.Certificate, rootKey interface{}) *FakeOcspResponder {
+	cert, key := GetCerts(Params{
+		Hosts:     "ocsp-responder",
+		IsCA:      false,
+		IssuerKey: rootKey,
+	})
+
+	return &FakeOcspResponder{
+		certificate: GetCertificateFromString(cert),
+		privateKey:  GetPrivateKeyRSAFromString(key),
+		issuer:      rootCa,
+	}
+}
+
+// GetOcspResponse returns a DER-encoded OCSP response for the given certificate.
+// You pass it the certificate to get a response for, the expiration time of the response, and whether the certificate should be revoked.
+// You can also pass it an ocsp.Response to use as a template for the response. This allows for customizing the response wanted.
+func (f *FakeOcspResponder) GetOcspResponse(certificate *x509.Certificate, expiration time.Duration, isRevoked bool, resp ocsp.Response) []byte {
+	template := resp
+	template.Certificate = certificate
+	status := ocsp.Good
+	if isRevoked {
+		status = ocsp.Revoked
+	}
+
+	template = ocsp.Response{
+		Status:       status,
+		SerialNumber: certificate.SerialNumber,
+		NextUpdate:   time.Now().Add(expiration),
+		Certificate:  certificate,
+	}
+
+	response, err := ocsp.CreateResponse(f.issuer, f.certificate, template, f.privateKey)
+	Expect(err).NotTo(HaveOccurred())
+
+	return response
 }
