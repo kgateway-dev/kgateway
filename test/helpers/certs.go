@@ -12,6 +12,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"golang.org/x/crypto/ocsp"
 	"math/big"
 	"net"
 	"os"
@@ -63,6 +64,7 @@ type Params struct {
 	RsaBits          int                // Size of RSA key to generate. Ignored if EcdsaCurve is set
 	EcdsaCurve       string             // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
 	AdditionalUsages []x509.ExtKeyUsage // Usages to define in addition to default x509.ExtKeyUsageServerAuth
+	IssuerKey        interface{}
 }
 
 func GetCerts(params Params) (string, string) {
@@ -140,6 +142,10 @@ func GetCerts(params Params) (string, string) {
 		template.KeyUsage |= x509.KeyUsageCertSign
 	}
 
+	if params.IssuerKey != nil {
+		priv = params.IssuerKey
+	}
+
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
 		Fail(fmt.Sprintf("Failed to create certificate: %s", err))
@@ -155,6 +161,47 @@ func GetCerts(params Params) (string, string) {
 	Expect(err).NotTo(HaveOccurred())
 
 	return certOut.String(), keyOut.String()
+}
+
+type FakeOcspResponder struct {
+	certificate *x509.Certificate
+	privateKey  *rsa.PrivateKey
+	issuer      *x509.Certificate
+}
+
+func NewFakeOcspResponder(rootCa *x509.Certificate, rootKey interface{}) *FakeOcspResponder {
+	cert, key := GetCerts(Params{
+		Hosts:     "ocsp-responder",
+		IsCA:      false,
+		IssuerKey: rootKey,
+	})
+
+	return &FakeOcspResponder{
+		certificate: GetCertificateFromString(cert),
+		privateKey:  GetPrivateKeyFromString(key),
+		issuer:      rootCa,
+	}
+}
+
+func (f *FakeOcspResponder) GetOcspResponse(certificate *x509.Certificate, expiration time.Duration, isRevoked bool, resp ocsp.Response) []byte {
+	template := resp
+	template.Certificate = certificate
+	status := ocsp.Good
+	if isRevoked {
+		status = ocsp.Revoked
+	}
+
+	template = ocsp.Response{
+		Status:       status,
+		SerialNumber: certificate.SerialNumber,
+		NextUpdate:   time.Now().Add(expiration),
+		Certificate:  certificate,
+	}
+
+	response, err := ocsp.CreateResponse(f.issuer, f.certificate, template, f.privateKey)
+	Expect(err).NotTo(HaveOccurred())
+
+	return response
 }
 
 var (
@@ -213,4 +260,18 @@ func GetKubeSecret(name, namespace string) *kubev1.Secret {
 			Namespace: namespace,
 		},
 	}
+}
+
+func GetCertificateFromString(certificate string) *x509.Certificate {
+	block, _ := pem.Decode([]byte(certificate))
+	cert, err := x509.ParseCertificate(block.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+	return cert
+}
+
+func GetPrivateKeyFromString(privateKey string) *rsa.PrivateKey {
+	block, _ := pem.Decode([]byte(privateKey))
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+	return key
 }
