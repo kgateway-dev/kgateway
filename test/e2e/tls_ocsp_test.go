@@ -1,6 +1,9 @@
 package e2e_test
 
 import (
+	"net/http"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -14,8 +17,6 @@ import (
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/crypto/ocsp"
-	"net/http"
-	"time"
 )
 
 var _ = Describe("TLS OCSP e2e", func() {

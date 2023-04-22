@@ -12,13 +12,14 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"golang.org/x/crypto/ocsp"
 	"math/big"
 	"net"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/ocsp"
 
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
