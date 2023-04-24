@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -15,72 +14,46 @@ import (
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
-// GetUpgradeVersions for the given repo.
-// This will return the lastminor, currentminor, and an error
-// This may return lastminor + currentminor, or just lastminor and an error or a just an error
-func GetUpgradeVersions(ctx context.Context, repoName string) (lastMinorLatestPatchVersion *versionutils.Version, currentMinorLatestPatchVersion *versionutils.Version, err error) {
-
-	twoBack, currentBranch, curMinorErr := getLastReleaseOfCurrentMinor()
-	currentMinorLatestPatchVersion = twoBack
-	if errors.Is(curMinorErr, version.FirstReleaseError) {
-		// we are on the first release of a minor
-		// we should use this branch rather than the last release
-		currentMinorLatestPatchVersion = currentBranch
-	} else if curMinorErr != nil {
-		return nil, nil, curMinorErr
+// GetUpgradeVersions returns two semantic versions of a repository:
+//   - prevLtsRelease: the latest patch release of v1.m-1.x
+//   - latestRelease:  the latest patch release of v1.m.x
+//
+// Originally intended for use in upgrade testing, it can return any of:
+//   - (prevLtsRelease, latestRelease, nil): all release versions computable
+//   - (prevLtsRelease, nil, nil):           only prevLtsRelease computable (ie current branch has never been released)
+//   - (nil, nil, err):                      unable to fetch versions for upgrade test
+func GetUpgradeVersions(ctx context.Context, repoName string) (*versionutils.Version, *versionutils.Version, error) {
+	// get the latest and upcoming releases of the current branch
+	files, changelogReadErr := os.ReadDir(filepath.Join(util.GetModuleRoot(), changelogutils.ChangelogDirectory))
+	if changelogReadErr != nil {
+		return nil, nil, changelogutils.ReadChangelogDirError(changelogReadErr)
+	}
+	latestRelease, upcomingRelease, upcomingReleaseErr := version.ChangelogDirForLatestRelease(files...)
+	if upcomingReleaseErr != nil && !errors.Is(upcomingReleaseErr, version.FirstReleaseError) {
+		return nil, nil, upcomingReleaseErr
 	}
 
-	// TODO(nfuden): Update goutils to not use a struct but rather interface
-	// so we can test this more easily.
-	client, err := githubutils.GetClient(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "unable to create github client")
+	// get latest release of previous LTS branch
+	// TODO(nfuden): Update goutils to not use a struct but rather interface so we can test this more easily.
+	client, githubClientErr := githubutils.GetClient(ctx)
+	if githubClientErr != nil {
+		return nil, nil, errors.Wrapf(githubClientErr, "unable to create github client")
+	}
+	prevLtsRelease, prevLtsReleaseErr := getLatestReleasedPatchVersion(ctx, client, repoName, upcomingRelease.Major, upcomingRelease.Minor-1)
+	if prevLtsReleaseErr != nil {
+		return nil, nil, prevLtsReleaseErr
 	}
 
-	var currentMinorLatestRelease *versionutils.Version
-	// we dont believe there should be a minor release yet so its ok to not do this extra computation
-	if curMinorErr == nil {
-		var currentMinorLatestReleaseError error
-		// we may get a changelog value that does not have a github release - get the latest release for current minor
-		currentMinorLatestRelease, currentMinorLatestReleaseError = getLatestReleasedPatchVersion(ctx, client, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor)
-		if currentMinorLatestReleaseError != nil {
-			return nil, lastMinorLatestPatchVersion, currentMinorLatestReleaseError
-		}
+	if upcomingReleaseErr != nil {
+		// if we don't yet have a release for the current branch, we can only upgrade from prevLtsRelease
+		return prevLtsRelease, nil, nil
+	} else {
+		// otherwise, we can upgrade from both prevLtsRelease -and- latestRelease
+		return prevLtsRelease, latestRelease, nil
 	}
-
-	lastMinorLatestPatchVersion, lastMinorErr := getLatestReleasedPatchVersion(ctx, client, repoName, currentMinorLatestPatchVersion.Major, currentMinorLatestPatchVersion.Minor-1)
-	if lastMinorErr != nil {
-		// a true error lets return that.
-		return nil, nil, lastMinorErr
-	}
-
-	// last minor should never be nil, currentMinor and curMinorerr MAY be nil
-	return lastMinorLatestPatchVersion, currentMinorLatestRelease, curMinorErr
-}
-
-func getLastReleaseOfCurrentMinor() (*versionutils.Version, *versionutils.Version, error) {
-	// pull out to const
-	_, filename, _, _ := runtime.Caller(0) //get info about what is calling the function
-	fParts := strings.Split(filename, string(os.PathSeparator))
-	splitIdx := 0
-	// In all cases the home of the project will be one level above test - this handles forks as well as the standard case /home/runner/work/gloo/gloo/test/kube2e/upgrade/junit.xml
-	for idx, dir := range fParts {
-		if dir == "test" {
-			splitIdx = idx - 1
-		}
-	}
-	pathToChangelogs := filepath.Join(fParts[:splitIdx+1]...)
-	pathToChangelogs = filepath.Join(pathToChangelogs, changelogutils.ChangelogDirectory)
-	pathToChangelogs = string(os.PathSeparator) + pathToChangelogs
-
-	files, err := os.ReadDir(pathToChangelogs)
-	if err != nil {
-		return nil, nil, changelogutils.ReadChangelogDirError(err)
-	}
-
-	return version.ChangelogDirForLatestRelease(files...)
 }
 
 type latestPatchForMinorPredicate struct {
