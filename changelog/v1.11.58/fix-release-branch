@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Resolves an issue in the `push-solo-apis-branch` release workflow that
+      caused the `RELEASE_BRANCH` environment variable to be unset
