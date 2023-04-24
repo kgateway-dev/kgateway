@@ -791,7 +791,7 @@ kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image an
 # Update the docker image used by a deployment
 # This works for most of our deployments because the deployment name and container name both match
 kind-set-image-%:
-	 kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
