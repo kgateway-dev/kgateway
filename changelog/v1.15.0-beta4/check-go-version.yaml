@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Check go version before building docker images, other small fixes
+    issueLink: https://github.com/solo-io/gloo/issues/7926
+    resolvesIssue: false
