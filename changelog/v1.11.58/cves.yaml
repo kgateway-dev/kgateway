@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: linux
+  dependencyRepo: alpine
+  dependencyTag: 3.17.3
+  issueLink: https://github.com/solo-io/gloo/issues/8125
+  description: >-
+    Bump alpine in kubectl to fix CVE-2023-0464
