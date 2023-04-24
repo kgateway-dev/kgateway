@@ -17,32 +17,31 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-// GetUpgradeVersions for the given repo.
-// This will return the (prevLtsRelease, latestRelease, err)
-// return possiblities (from best-case to worst-case):
-//   - 😃 (prevLtsRelease, latestRelease, nil)
-//   - 😐 (prevLtsRelease, nil, nil)
-//   - 😔 (nil, nil, err)
+// GetUpgradeVersions returns two semantic versions of a repository:
+//   - prevLtsRelease: the latest patch release of v1.m-1.x
+//   - latestRelease:  the latest patch release of v1.m.x
+//
+// Originally intended for use in upgrade testing, it can return any of:
+//   - (prevLtsRelease, latestRelease, nil): all release versions computable
+//   - (prevLtsRelease, nil, nil):           only prevLtsRelease computable
+//   - (nil, nil, err):                      unable to fetch versions for upgrade test
 func GetUpgradeVersions(ctx context.Context, repoName string) (*versionutils.Version, *versionutils.Version, error) {
-	// read in changelog directory for later use
+	// get the latest and upcoming releases of the current branch
 	files, changelogReadErr := os.ReadDir(filepath.Join(util.GetModuleRoot(), changelogutils.ChangelogDirectory))
 	if changelogReadErr != nil {
 		return nil, nil, changelogutils.ReadChangelogDirError(changelogReadErr)
 	}
-
-	// TODO(nfuden): Update goutils to not use a struct but rather interface so we can test this more easily.
-	client, githubClientErr := githubutils.GetClient(ctx)
-	if githubClientErr != nil {
-		return nil, nil, errors.Wrapf(githubClientErr, "unable to create github client")
-	}
-
-	// get the latest and upcoming releases of the current branch
 	latestRelease, upcomingRelease, upcomingReleaseErr := version.ChangelogDirForLatestRelease(files...)
 	if upcomingReleaseErr != nil && !errors.Is(upcomingReleaseErr, version.FirstReleaseError) {
 		return nil, nil, upcomingReleaseErr
 	}
 
 	// get latest release of previous LTS branch
+	// TODO(nfuden): Update goutils to not use a struct but rather interface so we can test this more easily.
+	client, githubClientErr := githubutils.GetClient(ctx)
+	if githubClientErr != nil {
+		return nil, nil, errors.Wrapf(githubClientErr, "unable to create github client")
+	}
 	prevLtsRelease, prevLtsReleaseErr := getLatestReleasedPatchVersion(ctx, client, repoName, upcomingRelease.Major, upcomingRelease.Minor-1)
 	if prevLtsReleaseErr != nil {
 		return nil, nil, prevLtsReleaseErr
