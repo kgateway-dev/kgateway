@@ -799,6 +799,9 @@ kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
 # using the same tag so that tests can be re-run
 # Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
 # Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+# We restart the deployment, to ensure that the newly built/tagged image is started in the new Pod
+# It is important to ensure that the image you built, has the same tag as the deployment image
+# Otherwise you will build a new image, and the deployment will still reference the old image
 kind-reload-%: kind-build-and-load-% ## Use to build specified image, load it into kind, and restart its deployment
 	kubectl rollout restart deployment/$* -n $(INSTALL_NAMESPACE)
 

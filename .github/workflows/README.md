@@ -29,7 +29,7 @@ To test this on the default main branch:
 - The LTS branch that these API changes are targeted for: `master`
 
 To test this on 1.13.x branch:
-- Use Workflow From: `master`
+- Use Workflow From: `v1.13.x`
 - The branch that contains the relevant API change: `feature/new-api`
 - The LTS branch that these API changes are targeted for: `v1.13.x`
 
