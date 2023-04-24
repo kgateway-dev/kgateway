@@ -85,7 +85,7 @@ jobs:
         with:
           repository: solo-io/gloo
           path: gloo
-          ref: ${{ env.RELEASE_TAG_NAME }}
+          ref: ${{ env.SOURCE_COMMIT }}
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
