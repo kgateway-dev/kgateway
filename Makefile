@@ -190,7 +190,7 @@ fmt-changed:
 
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download:
+mod-download: check-go-version
 	go mod download all
 
 
@@ -234,7 +234,7 @@ TEST_PKG ?= ./... # Default to run all tests
 GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
-install-test-tools:
+install-test-tools: check-go-version
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
@@ -306,7 +306,7 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
+generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
 generated-code: $(OUTPUT_DIR)/.generated-code
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
@@ -325,6 +325,12 @@ $(OUTPUT_DIR)/.generated-code:
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
+	
+# makes sure you are running codegen with the correct Go version
+.PHONY: check-go-version
+check-go-version:
+	./ci/check-go-version.sh
+
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -731,6 +737,7 @@ docker-push-%:
 
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
+docker: check-go-version
 docker: gloo-docker
 docker: discovery-docker
 docker: gloo-envoy-wrapper-docker
