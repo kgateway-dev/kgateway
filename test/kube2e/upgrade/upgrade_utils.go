@@ -23,7 +23,7 @@ import (
 //
 // Originally intended for use in upgrade testing, it can return any of:
 //   - (prevLtsRelease, latestRelease, nil): all release versions computable
-//   - (prevLtsRelease, nil, nil):           only prevLtsRelease computable
+//   - (prevLtsRelease, nil, nil):           only prevLtsRelease computable (ie current branch has never been released)
 //   - (nil, nil, err):                      unable to fetch versions for upgrade test
 func GetUpgradeVersions(ctx context.Context, repoName string) (*versionutils.Version, *versionutils.Version, error) {
 	// get the latest and upcoming releases of the current branch
