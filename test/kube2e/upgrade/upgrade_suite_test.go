@@ -2,7 +2,6 @@ package upgrade_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -10,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/gloo/test/kube2e/upgrade"
-	"github.com/solo-io/gloo/test/testutils/version"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/skv2/codegen/util"
 
@@ -55,22 +53,22 @@ var _ = BeforeSuite(func() {
 
 	crdDir = filepath.Join(util.GetModuleRoot(), "install", "helm", "gloo", "crds")
 	targetReleasedVersion = kube2e.GetTestReleasedVersion(suiteCtx, "gloo")
-	if targetReleasedVersion != "" {
-		chartUri = "gloo/gloo"
-	} else {
+
+	chartUri = "gloo/gloo"
+	if targetReleasedVersion == "" {
 		chartUri = filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 	}
-	skipIfFirstMinorFunc = func() {}
+
 	LastPatchPreviousMinorVersion, CurrentPatchMostRecentMinorVersion, err = upgrade.GetUpgradeVersions(suiteCtx, "gloo")
-	if err != nil && errors.Is(err, version.FirstReleaseError) {
-		firstReleaseOfMinor = true
+	Expect(err).NotTo(HaveOccurred())
+
+	skipIfFirstMinorFunc = func() {}
+	if CurrentPatchMostRecentMinorVersion == nil {
 		fmt.Println("First release of minor, skipping some upgrade tests")
 		CurrentPatchMostRecentMinorVersion = versionutils.NewVersion(0, 0, 0, "", 0)
 		skipIfFirstMinorFunc = func() {
 			Skip("First release of minor, skipping some upgrade tests")
 		}
-	} else if err != nil {
-		Expect(err).NotTo(HaveOccurred())
 	}
 })
 
