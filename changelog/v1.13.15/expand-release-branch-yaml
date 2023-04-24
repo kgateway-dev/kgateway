@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      resolves issue in push-solo-apis release job, in which the `RELEASE_BRANCH`
+      environment variable was not being expanded correctly

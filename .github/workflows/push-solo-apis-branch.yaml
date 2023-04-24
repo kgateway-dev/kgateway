@@ -41,7 +41,7 @@ jobs:
         if [[ ${{ github.event_name == 'release' }} = true ]]; then
           RELEASE_BRANCH=${{ github.event.release.target_commitish }}
         fi
-        echo "value=$(echo RELEASE_BRANCH)" >> $GITHUB_OUTPUT
+        echo "value=$(echo $RELEASE_BRANCH)" >> $GITHUB_OUTPUT
   push-to-solo-apis-branch:
     needs: prepare-env
     env:
