@@ -16,9 +16,10 @@
 # **NOTE TO DEVELOPERS**
 # As you encounter make targets that are frequently used, please make them self-documenting
 .PHONY: help
-help: FIRST_COLUMN_WIDTH=35
+help: NAME_COLUMN_WIDTH=35
+help: LINE_COLUMN_WIDTH=5
 help: ## Output the self-documenting make targets
-	@grep -hE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-$(FIRST_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2}'
+	@grep -hnE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = "[:]|(## )"}; {printf "\033[36mL%-$(LINE_COLUMN_WIDTH)s%-$(NAME_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2, $$4}'
 
 
 #----------------------------------------------------------------------------------
@@ -302,7 +303,7 @@ clean-cli-docs:
 #----------------------------------------------------------------------------------
 
 .PHONY: generate-all
-generate-all: generated-code ## Calls generated-code
+generate-all: generated-code
 
 .PHONY: generated-code
 generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
@@ -445,13 +446,13 @@ $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: gloo
-gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) ## Gloo Edge
+gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
 .PHONY: gloo-docker
-gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo ## gloo-docker
+gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
@@ -500,7 +501,7 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 # Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
 # Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
-gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker ## gloo-race-docker
+gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
 	docker buildx build --load $(PLATFORM) $(GLOO_RACE_OUT_DIR) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
@@ -551,7 +552,7 @@ $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh ## Envoy container used by Gloo (required for target run-tests)
+gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
@@ -613,7 +614,7 @@ ifeq ($(RELEASE), "false")
 endif
 
 .PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
@@ -777,17 +778,24 @@ kind-load-%:
 
 # Build an image and load it into the KinD cluster
 # Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
-kind-build-and-load-%: %-docker kind-load-% ;
+# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
+
+# This is an alias to remedy the fact that the deployment is called gateway-proxy
+# but our make targets refer to gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+	kubectl rollout restart deployment/gateway-proxy -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
 # You can reload an image, which means it will be rebuilt and reloaded into the kind cluster
 # using the same tag so that tests can be re-run
 # Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
-kind-reload-%: kind-build-and-load-%
+# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+kind-reload-%: kind-build-and-load-% ## Use to build specified image, load it into kind, and restart its deployment
 	kubectl rollout restart deployment/$* -n $(INSTALL_NAMESPACE)
 
-.PHONY: kind-build-and-load
+.PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-gloo
 kind-build-and-load: kind-build-and-load-discovery
 kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper
@@ -796,6 +804,17 @@ kind-build-and-load: kind-build-and-load-sds
 kind-build-and-load: kind-build-and-load-ingress
 kind-build-and-load: kind-build-and-load-access-logger
 kind-build-and-load: kind-build-and-load-kubectl
+
+define kind_reload_msg
+The kind-reload-% targets exist in order to assist developers with the work cycle of
+build->test->change->build->test. To that end, rebuilding/reloading every image, then
+restarting every deployment is seldom necessary. Consider using kind-reload-% to do so
+for a specific component, or kind-build-and-load to push new images for every component.
+endef
+export kind_reload_msg
+.PHONY: kind-reload
+kind-reload:
+	@echo "$$kind_reload_msg"
 
 # Useful utility for listing images loaded into the kind cluster
 .PHONY: kind-list-images
@@ -808,7 +827,7 @@ kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
 .PHONY: build-test-chart
-build-test-chart:
+build-test-chart: ## Build the Helm chart and place it in the _test directory
 	mkdir -p $(TEST_ASSET_DIR)
 	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) $(STDERR_SILENCE_REDIRECT)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
