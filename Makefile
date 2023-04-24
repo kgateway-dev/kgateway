@@ -788,19 +788,23 @@ kind-load-%:
 # Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
 
-# This is an alias to remedy the fact that the deployment is called gateway-proxy
-# but our make targets refer to gloo-envoy-wrapper
-kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
-	kubectl rollout restart deployment/gateway-proxy -n $(INSTALL_NAMESPACE)
+# Update the docker image used by a deployment
+# This works for most of our deployments because the deployment name and container name both match
+kind-set-image-%:
+	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
-# You can reload an image, which means it will be rebuilt and reloaded into the kind cluster
-# using the same tag so that tests can be re-run
+# You can reload an image, which means it will be rebuilt and reloaded into the kind cluster, and the deployment
+# will be updated to reference it
 # Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
 # Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
-kind-reload-%: kind-build-and-load-% ## Use to build specified image, load it into kind, and restart its deployment
-	kubectl rollout restart deployment/$* -n $(INSTALL_NAMESPACE)
+kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
+
+# This is an alias to remedy the fact that the deployment is called gateway-proxy
+# but our make targets refer to gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-gloo
