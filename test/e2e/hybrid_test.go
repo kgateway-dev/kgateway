@@ -1,9 +1,19 @@
 package e2e_test
 
 import (
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+
+	"math/rand"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
@@ -11,9 +21,14 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/e2e"
 )
+
+const NoMatch = "nothing matched"
 
 var _ = Describe("Hybrid Gateway", func() {
 
@@ -24,6 +39,10 @@ var _ = Describe("Hybrid Gateway", func() {
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
+		// limit default gateway to the default vs, so it doesn't catch the new vs we generate
+		testContext.ResourcesToCreate().Gateways[0].GetHttpGateway().VirtualServices = []*core.ResourceRef{
+			testContext.ResourcesToCreate().VirtualServices[0].GetMetadata().Ref(),
+		}
 	})
 
 	AfterEach(func() {
@@ -149,7 +168,7 @@ var _ = Describe("Hybrid Gateway", func() {
 			}
 		})
 
-		FIt("http request fails", func() {
+		It("http request fails", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
 			Consistently(func(g Gomega) {
 				_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
@@ -159,4 +178,208 @@ var _ = Describe("Hybrid Gateway", func() {
 
 	})
 
+	FContext("table test", func() {
+
+		var (
+			secret *gloov1.Secret
+			tester *GwTester
+		)
+
+		BeforeEach(func() {
+			secret = &gloov1.Secret{
+				Metadata: &core.Metadata{
+					Name:      "secret",
+					Namespace: "default",
+				},
+				Kind: &gloov1.Secret_Tls{
+					Tls: &gloov1.TlsSecret{
+						CertChain:  gloohelpers.Certificate(),
+						PrivateKey: gloohelpers.PrivateKey(),
+					},
+				},
+			}
+
+			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
+				secret,
+			}
+			tester = &GwTester{
+				secret:      secret,
+				testContext: testContext,
+			}
+		})
+		DescribeTable("SetResource[Invalid|Valid] works as expected",
+			func(cp ConnectionProperties, matches map[string]*v1.Matcher, expected string) {
+				Expect(tester.GetMatchedMatcher(cp, matches)).To(Equal(expected))
+			},
+			Entry("no match",
+				ConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "test.com",
+				},
+				map[string]*v1.Matcher{
+					"sni-star": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.foo.com"},
+						},
+					},
+				}, NoMatch),
+			Entry("sni match",
+				ConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"sni-star": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.test.com"},
+						},
+					},
+				}, "sni-star"),
+		)
+
+	})
 })
+
+type ConnectionProperties struct {
+	SrcIp net.IP
+	SNI   string
+}
+
+type GwTester struct {
+	secret      *gloov1.Secret
+	testContext *e2e.TestContext
+}
+
+func (gt *GwTester) GetMatchedMatcher(cp ConnectionProperties, matches map[string]*v1.Matcher) string {
+	//random prefix, to make sure the gw updated to current config
+	configver := fmt.Sprintf("%d", rand.Uint32())
+	vss, gw := gt.getGwWithMatches(configver, matches)
+
+	writeOptions := clients.WriteOpts{
+		Ctx:               gt.testContext.Ctx(),
+		OverwriteExisting: true,
+	}
+	c := gt.testContext.TestClients()
+
+	By("writing snapshot with updated gw config")
+	for _, vs := range vss {
+		_, err := c.VirtualServiceClient.Write(vs, writeOptions)
+		Expect(err).NotTo(HaveOccurred())
+	}
+	_, err := c.GatewayClient.Write(gw, writeOptions)
+	Expect(err).NotTo(HaveOccurred())
+
+	var stringBody string
+	// Make a request, return when our configver is present and current
+	Eventually(func(g Gomega) error {
+
+		resp, err := gt.makeARequest(gt.testContext, cp.SrcIp, cp.SNI)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.Header.Get("x-gloo-configver") != configver {
+			return fmt.Errorf("configver is not current")
+		}
+		bBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		stringBody = string(bBody)
+		return nil
+	}, "5s", "0.1s").Should(Succeed())
+
+	return stringBody
+}
+
+func (gt *GwTester) makeARequest(testContext *e2e.TestContext, srcip net.IP, sni string) (*http.Response, error) {
+	if srcip == nil {
+		srcip = net.ParseIP("127.0.0.1")
+	}
+	requestBuilder := testContext.GetHttpRequestBuilder().WithScheme("https").WithPort(defaults.HybridPort)
+	proxyProtocolBytes = []byte("PROXY TCP4 " + srcip.String() + " 1.2.3.4 123 123\r\n")
+	client := testutils.DefaultClientBuilder().
+		WithTLSRootCa(gloohelpers.Certificate()).
+		WithProxyProtocolBytes(proxyProtocolBytes).
+		WithTLSServerName(sni).
+		Build()
+
+	// skip ssl verification as it wouldnot work for test.com
+	//       Get "https://localhost:8087/": tls: failed to verify certificate: x509: certificate is valid for gateway-proxy, knative-proxy, ingress-proxy, not test.com
+	client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
+
+	return client.Do(requestBuilder.Build())
+}
+
+func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Matcher) ([]*v1.VirtualService, *v1.Gateway) {
+	gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
+	vs := []*v1.VirtualService{}
+	gw.Options = &gloov1.ListenerOptions{
+		ProxyProtocol: &proxy_protocol.ProxyProtocol{},
+	}
+	vsopts := &gloov1.VirtualHostOptions{
+		HeaderManipulation: &headers.HeaderManipulation{
+			ResponseHeadersToAdd: []*headers.HeaderValueOption{{
+				Header: &headers.HeaderValue{
+					Key:   "x-gloo-configver",
+					Value: configver,
+				},
+				Append: &wrappers.BoolValue{
+					Value: true,
+				},
+			}},
+		},
+	}
+	var matchedGw []*v1.MatchedGateway
+
+	needDefault := true
+	i := 0
+	for name, m := range matches {
+		i++
+		curvs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, fmt.Sprintf("vs-%s-%d", configver, i), name)
+		curvs.VirtualHost.Options = vsopts
+		vs = append(vs, curvs)
+		matchedGw = append(matchedGw, &v1.MatchedGateway{
+			Matcher: m,
+			GatewayType: &v1.MatchedGateway_HttpGateway{
+				HttpGateway: &v1.HttpGateway{
+					VirtualServices: []*core.ResourceRef{
+						curvs.Metadata.Ref(),
+					},
+				},
+			},
+		})
+		if m == nil {
+			needDefault = false
+		}
+	}
+
+	if needDefault {
+		curvs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, "vs-"+configver+"-nomatch", NoMatch)
+		curvs.VirtualHost.Options = vsopts
+		vs = append(vs, curvs)
+		matchedGw = append(matchedGw, &v1.MatchedGateway{
+			Matcher: &v1.Matcher{
+				SslConfig: &ssl.SslConfig{},
+			},
+			GatewayType: &v1.MatchedGateway_HttpGateway{
+				HttpGateway: &v1.HttpGateway{
+					VirtualServices: []*core.ResourceRef{
+						curvs.Metadata.Ref(),
+					},
+				},
+			},
+		})
+	}
+
+	for _, v := range vs {
+		v.SslConfig = &ssl.SslConfig{
+			SslSecrets: &ssl.SslConfig_SecretRef{
+				SecretRef: gt.secret.Metadata.Ref(),
+			},
+		}
+	}
+
+	gw.GetHybridGateway().MatchedGateways = matchedGw
+	return vs, gw
+}

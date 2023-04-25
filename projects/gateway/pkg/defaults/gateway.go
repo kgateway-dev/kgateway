@@ -140,6 +140,13 @@ func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *ssl.SslC
 }
 
 func DefaultVirtualService(namespace, name string) *v1.VirtualService {
+	return DirectResponseVirtualService(namespace, name, `Gloo and Envoy are configured correctly!
+
+	Delete the '`+name+` Virtual Service to get started. 	
+	`)
+}
+
+func DirectResponseVirtualService(namespace, name, body string) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: &core.Metadata{
 			Name:      name,
@@ -151,10 +158,7 @@ func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 				Matchers: []*matchers.Matcher{DefaultMatcher()},
 				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{
 					Status: 200,
-					Body: `Gloo and Envoy are configured correctly!
-
-Delete the '` + name + ` Virtual Service to get started. 	
-`,
+					Body:   body,
 				}},
 			}},
 		},
