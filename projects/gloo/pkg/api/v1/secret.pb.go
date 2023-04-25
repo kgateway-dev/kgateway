@@ -413,14 +413,14 @@ type TlsSecret struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// provided by `glooctl create secret tls`
+	// provided by `glooctl create secret tls`, and stored as `tls.crt` in the secret.
 	CertChain string `protobuf:"bytes,1,opt,name=cert_chain,json=certChain,proto3" json:"cert_chain,omitempty"`
-	// provided by `glooctl create secret tls`
+	// provided by `glooctl create secret tls`, and stored as `tls.key` in the secret.
 	PrivateKey string `protobuf:"bytes,2,opt,name=private_key,json=privateKey,proto3" json:"private_key,omitempty"`
-	// provided by `glooctl create secret tls`
+	// provided by `glooctl create secret tls`, and stored as `ca.crt` in the secret.
 	RootCa string `protobuf:"bytes,3,opt,name=root_ca,json=rootCa,proto3" json:"root_ca,omitempty"`
-	// provided by `glooctl create secret tls`
 	// ocsp staple is a der-encoded binary structure
+	// provided by `glooctl create secret tls`, and stored as `tls.ocsp-staple` in the secret.
 	OcspStaple []byte `protobuf:"bytes,4,opt,name=ocsp_staple,json=ocspStaple,proto3" json:"ocsp_staple,omitempty"`
 }
 

@@ -67,6 +67,7 @@ require (
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.21.0
+	golang.org/x/crypto v0.5.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/tools v0.7.0
 	google.golang.org/genproto v0.0.0-20221201164419-0e50fba7f41c
@@ -87,8 +88,6 @@ require (
 	sigs.k8s.io/controller-runtime v0.13.1
 	sigs.k8s.io/yaml v1.3.0
 )
-
-require golang.org/x/crypto v0.5.0
 
 require (
 	cloud.google.com/go/compute v1.12.1 // indirect
