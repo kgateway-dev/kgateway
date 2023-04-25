@@ -124,16 +124,12 @@ type CertSource interface {
 	GetAlpnProtocols() []string
 }
 
-// dataSourceGenerator returns a function that is used to generate an Envoy DataSource object.
-// The closure function takes in a string and/or a []byte as parameters, and returns an Envoy DataSource object.
-// If inlineDataSource is false, the closure function will return a DataSource object with the string parameter `s` as the filename.
-// If inlineDataSource is true, there are two possible cases:
-//  1. If `b` is nil, the closure function will return an inline-string DataSource object using `s`.
-//  2. If `b` is not nil, the closure function will return an inline-bytes DataSource object using `b`.
-func dataSourceGenerator(inlineDataSource bool) func(s string, b []byte) *envoycore.DataSource {
+// stringDataSourceGenerator returns a function that returns an Envoy data source that uses the given string as the data source.
+// If inlineDataSource is false, the returned function returns a file data source. Otherwise, the returned function returns an inline-string data source.
+func stringDataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
 	// Return a file data source if inlineDataSource is false.
 	if !inlineDataSource {
-		return func(s string, _ []byte) *envoycore.DataSource {
+		return func(s string) *envoycore.DataSource {
 			return &envoycore.DataSource{
 				Specifier: &envoycore.DataSource_Filename{
 					Filename: s,
@@ -142,22 +138,21 @@ func dataSourceGenerator(inlineDataSource bool) func(s string, b []byte) *envoyc
 		}
 	}
 
-	return func(s string, b []byte) *envoycore.DataSource {
-		// if the []byte parameter `b` is not nil, we will use the inline-bytes specifier as the data source.
-		if b != nil {
-			return &envoycore.DataSource{
-				Specifier: &envoycore.DataSource_InlineBytes{
-					InlineBytes: b,
-				},
-			}
-		}
-
-		// Return an inline-string specifier using `s` as the data source.
+	return func(s string) *envoycore.DataSource {
 		return &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_InlineString{
 				InlineString: s,
 			},
 		}
+	}
+}
+
+// byteDataSource returns an Envoy inline-bytes data source that uses the given byte slice as the data source.
+func byteDataSource(b []byte) *envoycore.DataSource {
+	return &envoycore.DataSource{
+		Specifier: &envoycore.DataSource_InlineBytes{
+			InlineBytes: b,
+		},
 	}
 }
 
@@ -317,16 +312,16 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		if err != nil {
 			return nil, err
 		}
-	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
-		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
+	} else if sslFiles := cs.GetSslFiles(); sslFiles != nil {
+		certChain, privateKey, rootCa = sslFiles.GetTlsCert(), sslFiles.GetTlsKey(), sslFiles.GetRootCa()
 		// Since ocspStaple is []byte, but we want the file path, we're storing it in a separate string variable
-		ocspStapleFile = sslSecrets.GetOcspStaple()
+		ocspStapleFile = sslFiles.GetOcspStaple()
 		err := isValidSslKeyPair(certChain, privateKey, rootCa)
 		if err != nil {
 			return nil, InvalidTlsSecretError(nil, err)
 		}
-	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
-		tlsContext, err := s.handleSds(sslSecrets, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
+	} else if sslSds := cs.GetSds(); sslSds != nil {
+		tlsContext, err := s.handleSds(sslSds, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
 			return nil, err
 		}
@@ -344,25 +339,24 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		}
 	}
 
-	dataSource := dataSourceGenerator(inlineDataSource)
+	dataSource := stringDataSourceGenerator(inlineDataSource)
 
 	var certChainData, privateKeyData, rootCaData, ocspStapleData *envoycore.DataSource
 
 	if certChain != "" {
-		certChainData = dataSource(certChain, nil)
+		certChainData = dataSource(certChain)
 	}
 	if privateKey != "" {
-		privateKeyData = dataSource(privateKey, nil)
+		privateKeyData = dataSource(privateKey)
 	}
 	if rootCa != "" {
-		rootCaData = dataSource(rootCa, nil)
+		rootCaData = dataSource(rootCa)
 	}
-	// If we have a filename for the ocsp staple, we are not doing inline data source and want to fetch ocsp data from the file
-	// otherwise, we use the []byte data stored in ocspStaple
+	// If we have a filename for the ocsp staple, we want to fetch ocsp data from the file otherwise, we use the []byte data stored in ocspStaple.
 	if ocspStapleFile != "" {
-		ocspStapleData = dataSource(ocspStapleFile, nil)
+		ocspStapleData = dataSource(ocspStapleFile)
 	} else if ocspStaple != nil {
-		ocspStapleData = dataSource("", ocspStaple)
+		ocspStapleData = byteDataSource(ocspStaple)
 	}
 
 	tlsContext := &envoyauth.CommonTlsContext{
