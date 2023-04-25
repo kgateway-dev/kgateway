@@ -1,6 +1,9 @@
 package e2e_test
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/testutils"
@@ -11,6 +14,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/e2e"
 )
 
@@ -133,11 +137,14 @@ var _ = Describe("Hybrid Gateway", func() {
 				// HttpGateway gets a filter our request *will not* hit
 				{
 					Matcher: &v1.Matcher{
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"test.com"},
+						},
 						SourcePrefixRanges: []*v3.CidrRange{
 							{
-								AddressPrefix: "1.2.3.4",
+								AddressPrefix: "0.0.0.0",
 								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+									Value: 1,
 								},
 							},
 						},
@@ -153,8 +160,12 @@ var _ = Describe("Hybrid Gateway", func() {
 			}
 		})
 
-		It("http request fails", func() {
+		FIt("http request fails", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			fmt.Println("i am going to sleep")
+			config, _ := testContext.EnvoyInstance().ConfigDump()
+			fmt.Printf("my config is: %s\n", config)
+			time.Sleep(500 * time.Minute)
 			Consistently(func(g Gomega) {
 				_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
 				g.Expect(err).Should(HaveOccurred())
