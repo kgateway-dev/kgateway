@@ -75,10 +75,8 @@ func TlsSecretArgsInteractive(input *options.TlsSecret) error {
 }
 
 func createTlsSecret(ctx context.Context, meta *core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
-
 	// read the values
-
-	rootCa, privateKey, certChain, ocspStaple, err := input.ReadFiles()
+	tlsSecretData, err := input.ReadFiles()
 	if err != nil {
 		return err
 	}
@@ -86,12 +84,7 @@ func createTlsSecret(ctx context.Context, meta *core.Metadata, input options.Tls
 	secret := &gloov1.Secret{
 		Metadata: meta,
 		Kind: &gloov1.Secret_Tls{
-			Tls: &gloov1.TlsSecret{
-				CertChain:  string(certChain),
-				PrivateKey: string(privateKey),
-				RootCa:     string(rootCa),
-				OcspStaple: ocspStaple,
-			},
+			Tls: tlsSecretData,
 		},
 	}
 

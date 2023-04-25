@@ -57,6 +57,7 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 
 }
 
+// Params includes parameters used to generate an x509 certificate.
 type Params struct {
 	Hosts            string             // Comma-separated hostnames and IPs to generate a certificate for
 	ValidFrom        *time.Time         // Creation date
@@ -68,6 +69,8 @@ type Params struct {
 	IssuerKey        interface{}        // If provided, the certificate will be signed by this key
 }
 
+// GetCerts generates a signed key and certificate for the given parameters.
+// If an IssuerKey is provided, the certificate will be signed by that key. Otherwise, a self-signed certificate will be generated.
 func GetCerts(params Params) (string, string) {
 
 	if len(params.Hosts) == 0 {
@@ -166,14 +169,15 @@ func GetCerts(params Params) (string, string) {
 }
 
 var (
-	getCerts     sync.Once
-	getMtlsCerts sync.Once
-	mtlsCert     string
-	mtlsPrivKey  string
-	cert         string
-	privKey      string
+	getCerts     sync.Once // Used to generate CA certs for the proxy once.
+	getMtlsCerts sync.Once // Used to generate mTLS CA certs for the proxy once.
+	mtlsCert     string    // mTLS CA certificate for the proxy.
+	mtlsPrivKey  string    // mTLS CA private key for the proxy.
+	cert         string    // CA certificate for the proxy.
+	privKey      string    // CA private key for the proxy.
 )
 
+// gencerts generates CA certs for the proxy.
 func gencerts() {
 	cert, privKey = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
@@ -181,6 +185,7 @@ func gencerts() {
 	})
 }
 
+// genmtlscerts generates mTLS certs for the proxy.
 func genmtlscerts() {
 	mtlsCert, mtlsPrivKey = GetCerts(Params{
 		Hosts:            "gateway-proxy,knative-proxy,ingress-proxy",
@@ -189,21 +194,25 @@ func genmtlscerts() {
 	})
 }
 
+// Certificate returns the CA certificate for the proxy.
 func Certificate() string {
 	getCerts.Do(gencerts)
 	return cert
 }
 
+// PrivateKey returns the CA private key for the proxy.
 func PrivateKey() string {
 	getCerts.Do(gencerts)
 	return privKey
 }
 
+// MtlsCertificate returns an mTLS CA certificate for the proxy.
 func MtlsCertificate() string {
 	getMtlsCerts.Do(genmtlscerts)
 	return mtlsCert
 }
 
+// MtlsPrivateKey returns an mTLS CA private key for the proxy.
 func MtlsPrivateKey() string {
 	getMtlsCerts.Do(genmtlscerts)
 	return mtlsPrivKey
@@ -231,7 +240,7 @@ func GetCertificateFromString(certificate string) *x509.Certificate {
 	return cert
 }
 
-// GetPrivateKeyRSAFromString returns a private key from the key's string representation.
+// GetPrivateKeyRSAFromString returns an RSA private key from the key's string representation.
 func GetPrivateKeyRSAFromString(privateKey string) *rsa.PrivateKey {
 	block, _ := pem.Decode([]byte(privateKey))
 	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
@@ -241,13 +250,18 @@ func GetPrivateKeyRSAFromString(privateKey string) *rsa.PrivateKey {
 
 // FakeOcspResponder is a fake OCSP responder that can be used to generate OCSP responses.
 type FakeOcspResponder struct {
+	// The certificate of the OCSP responder.
 	certificate *x509.Certificate
-	privateKey  *rsa.PrivateKey
-	issuer      *x509.Certificate
+	// The private key of the OCSP responder.
+	privateKey *rsa.PrivateKey
+	// The certificate of the CA that signed the OCSP responder's certificate.
+	// It is assumed that the signer has also signed any certificate that FakeOcspResponder will be generating responses for.
+	issuer *x509.Certificate
 }
 
 // NewFakeOcspResponder creates a new fake OCSP responder from the given root CA.
 func NewFakeOcspResponder(rootCa *x509.Certificate, rootKey interface{}) *FakeOcspResponder {
+	// Generate a certificate for the OCSP responder, signed by the root key passed.
 	cert, key := GetCerts(Params{
 		Hosts:     "ocsp-responder",
 		IsCA:      false,

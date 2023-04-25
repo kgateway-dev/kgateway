@@ -124,15 +124,26 @@ type CertSource interface {
 	GetAlpnProtocols() []string
 }
 
+// dataSourceGenerator returns a function that is used to generate an Envoy DataSource object.
+// The closure function takes in a string and/or a []byte as parameters, and returns an Envoy DataSource object.
+// If inlineDataSource is false, the closure function will return a DataSource object with the string parameter `s` as the filename.
+// If inlineDataSource is true, there are two possible cases:
+//  1. If `b` is nil, the closure function will return an inline-string DataSource object using `s`.
+//  2. If `b` is not nil, the closure function will return an inline-bytes DataSource object using `b`.
 func dataSourceGenerator(inlineDataSource bool) func(s string, b []byte) *envoycore.DataSource {
-	return func(s string, b []byte) *envoycore.DataSource {
-		if !inlineDataSource {
+	// Return a file data source if inlineDataSource is false.
+	if !inlineDataSource {
+		return func(s string, _ []byte) *envoycore.DataSource {
 			return &envoycore.DataSource{
 				Specifier: &envoycore.DataSource_Filename{
 					Filename: s,
 				},
 			}
 		}
+	}
+
+	return func(s string, b []byte) *envoycore.DataSource {
+		// if the []byte parameter `b` is not nil, we will use the inline-bytes specifier as the data source.
 		if b != nil {
 			return &envoycore.DataSource{
 				Specifier: &envoycore.DataSource_InlineBytes{
@@ -141,6 +152,7 @@ func dataSourceGenerator(inlineDataSource bool) func(s string, b []byte) *envoyc
 			}
 		}
 
+		// Return an inline-string specifier using `s` as the data source.
 		return &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_InlineString{
 				InlineString: s,
