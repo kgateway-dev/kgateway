@@ -1,9 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/testutils"
@@ -138,15 +135,7 @@ var _ = Describe("Hybrid Gateway", func() {
 				{
 					Matcher: &v1.Matcher{
 						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"test.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "0.0.0.0",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 1,
-								},
-							},
+							SniDomains: []string{"*"},
 						},
 					},
 					GatewayType: &v1.MatchedGateway_HttpGateway{
@@ -162,10 +151,6 @@ var _ = Describe("Hybrid Gateway", func() {
 
 		FIt("http request fails", func() {
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
-			fmt.Println("i am going to sleep")
-			config, _ := testContext.EnvoyInstance().ConfigDump()
-			fmt.Printf("my config is: %s\n", config)
-			time.Sleep(500 * time.Minute)
 			Consistently(func(g Gomega) {
 				_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
 				g.Expect(err).Should(HaveOccurred())
