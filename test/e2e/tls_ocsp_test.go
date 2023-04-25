@@ -9,7 +9,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -20,14 +19,8 @@ import (
 )
 
 var _ = Describe("TLS OCSP e2e", func() {
-	const (
-		defaultVirtualServiceDomain = "client.com"
-		defaultVirtualServiceName   = "client-vs"
-	)
-
 	var (
 		testContext              *e2e.TestContext
-		rootCa, rootKey          string
 		clientCert, clientKey    string
 		fakeOcspResponder        *helpers.FakeOcspResponder
 		tlsSecretWithNoOcsp      = &core.Metadata{Name: "tls-no-ocsp", Namespace: writeNamespace}
@@ -44,24 +37,22 @@ var _ = Describe("TLS OCSP e2e", func() {
 			gatewaydefaults.DefaultSslGateway(writeNamespace),
 		}
 
-		// create CA
-		rootCa, rootKey = helpers.GetCerts(helpers.Params{
-			Hosts: "ca.com",
-			IsCA:  true,
-		})
-		rootCaX509 := helpers.GetCertificateFromString(rootCa)
-		rootKeyRSA := helpers.GetPrivateKeyRSAFromString(rootKey)
+		rootCaX509 := helpers.GetCertificateFromString(helpers.Certificate())
+		rootKeyRSA := helpers.GetPrivateKeyRSAFromString(helpers.PrivateKey())
 
 		// create ocsp responses
 		fakeOcspResponder = helpers.NewFakeOcspResponder(rootCaX509, rootKeyRSA)
 
+		// Generate certificates signed by root CA
 		clientCert, clientKey = helpers.GetCerts(helpers.Params{
-			Hosts:     "client.com",
+			Hosts:     e2e.DefaultHost,
 			IsCA:      false,
 			IssuerKey: rootKeyRSA,
 		})
+
 		clientX509 := helpers.GetCertificateFromString(clientCert)
 
+		// Generate ocsp responses for the client certificate
 		ocspResponse := fakeOcspResponder.GetOcspResponse(clientX509, 60*time.Minute, false, ocsp.Response{})
 		ocspResponseExpired := fakeOcspResponder.GetOcspResponse(clientX509, 0, false, ocsp.Response{})
 
@@ -139,28 +130,18 @@ var _ = Describe("TLS OCSP e2e", func() {
 		})
 	}
 
-	// createVirtualService creates a virtual service with the given information and writes it.
-	// It uses default values for most fields, as the default is used for all tests.
-	createVirtualService := func(sslRef *core.ResourceRef, ocspStaplePolicy ssl.SslConfig_OcspStaplePolicy) error {
-		vs := helpers.NewVirtualServiceBuilder().
-			WithName(defaultVirtualServiceName).
-			WithNamespace(writeNamespace).
-			WithDomain(defaultVirtualServiceDomain).
-			WithRoutePrefixMatcher(e2e.DefaultRouteName, "/").
-			WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
-			WithSslConfig(&ssl.SslConfig{
-				OcspStaplePolicy: ocspStaplePolicy,
-				SniDomains:       []string{defaultVirtualServiceDomain},
-				SslSecrets: &ssl.SslConfig_SecretRef{
-					SecretRef: sslRef,
-				},
-			}).
-			Build()
-
-		// For e2e.TestContext, Snapshots are written in its `JustBeforeEach`, but since we're creating the virtual service
-		// during the test's run, we need to manually write the snapshot.
-		return testContext.TestClients().WriteSnapshot(testContext.Ctx(), &gloosnapshot.ApiSnapshot{
-			VirtualServices: v1.VirtualServiceList{vs},
+	// updateVirtualService updates the default virtual service with the given sslRef and ocspStaplePolicy.
+	updateVirtualService := func(sslRef *core.ResourceRef, ocspStaplePolicy ssl.SslConfig_OcspStaplePolicy) {
+		testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+			vsBuilder := helpers.BuilderFromVirtualService(vs)
+			vsBuilder.
+				WithSslConfig(&ssl.SslConfig{
+					OcspStaplePolicy: ocspStaplePolicy,
+					SslSecrets: &ssl.SslConfig_SecretRef{
+						SecretRef: sslRef,
+					},
+				})
+			return vsBuilder.Build()
 		})
 	}
 
@@ -168,20 +149,18 @@ var _ = Describe("TLS OCSP e2e", func() {
 	// It uses default values for all fields, as the default is used for all tests.
 	buildHttpsRequestClient := func() (*http.Client, *testutils.HttpRequestBuilder) {
 		httpClient := testutils.DefaultClientBuilder().
-			WithTLSRootCa(rootCa).
-			WithTLSServerName(defaultVirtualServiceDomain).
+			WithTLSRootCa(helpers.Certificate()).
+			WithTLSServerName(e2e.DefaultHost).
 			Build()
 
-		httpRequestBuilder := testContext.GetHttpsRequestBuilder().
-			WithHost(defaultVirtualServiceDomain)
+		httpRequestBuilder := testContext.GetHttpsRequestBuilder()
 
 		return httpClient, httpRequestBuilder
 	}
 
 	Context("with OCSP Staple Policy set to LENIENT_STAPLING", func() {
 		DescribeTable("should successfully contact upstream", func(sslRef *core.ResourceRef, expectedStatusCode int) {
-			err := createVirtualService(sslRef, ssl.SslConfig_LENIENT_STAPLING)
-			Expect(err).NotTo(HaveOccurred())
+			updateVirtualService(sslRef, ssl.SslConfig_LENIENT_STAPLING)
 			httpClient, httpRequestBuilder := buildHttpsRequestClient()
 
 			expectConsistentResponseStatus(httpClient, httpRequestBuilder, expectedStatusCode)
@@ -194,8 +173,7 @@ var _ = Describe("TLS OCSP e2e", func() {
 
 	Context("with  OCSP Staple Policy set to STRICT_STAPLING", func() {
 		DescribeTable("should successfully contact upstream", func(sslRef *core.ResourceRef, expectedStatusCode int) {
-			err := createVirtualService(sslRef, ssl.SslConfig_STRICT_STAPLING)
-			Expect(err).NotTo(HaveOccurred())
+			updateVirtualService(sslRef, ssl.SslConfig_STRICT_STAPLING)
 			httpClient, httpRequestBuilder := buildHttpsRequestClient()
 
 			expectConsistentResponseStatus(httpClient, httpRequestBuilder, expectedStatusCode)
@@ -205,8 +183,7 @@ var _ = Describe("TLS OCSP e2e", func() {
 		)
 
 		It("fails handshake with expired ocsp staple", func() {
-			err := createVirtualService(tlsSecretWithExpiredOcsp.Ref(), ssl.SslConfig_STRICT_STAPLING)
-			Expect(err).NotTo(HaveOccurred())
+			updateVirtualService(tlsSecretWithExpiredOcsp.Ref(), ssl.SslConfig_STRICT_STAPLING)
 			httpClient, httpRequestBuilder := buildHttpsRequestClient()
 
 			expectConsistentError(httpClient, httpRequestBuilder, "handshake failure")
@@ -216,8 +193,7 @@ var _ = Describe("TLS OCSP e2e", func() {
 
 	Context("with  OCSP Staple Policy set to MUST_STAPLE", func() {
 		It("fails with no ocsp staple", func() {
-			err := createVirtualService(tlsSecretWithNoOcsp.Ref(), ssl.SslConfig_MUST_STAPLE)
-			Expect(err).NotTo(HaveOccurred())
+			updateVirtualService(tlsSecretWithNoOcsp.Ref(), ssl.SslConfig_MUST_STAPLE)
 			httpClient, httpRequestBuilder := buildHttpsRequestClient()
 
 			// TODO (fabian): figure out the proper way to test this test exactly.
@@ -228,16 +204,14 @@ var _ = Describe("TLS OCSP e2e", func() {
 		})
 
 		It("successfully contacts upstream with valid ocsp staple", func() {
-			err := createVirtualService(tlsSecretWithOcsp.Ref(), ssl.SslConfig_MUST_STAPLE)
-			Expect(err).NotTo(HaveOccurred())
+			updateVirtualService(tlsSecretWithOcsp.Ref(), ssl.SslConfig_MUST_STAPLE)
 			httpClient, httpRequestBuilder := buildHttpsRequestClient()
 
 			expectConsistentResponseStatus(httpClient, httpRequestBuilder, http.StatusOK)
 		})
 
 		It("fails handshake with expired ocsp staple", func() {
-			err := createVirtualService(tlsSecretWithExpiredOcsp.Ref(), ssl.SslConfig_MUST_STAPLE)
-			Expect(err).NotTo(HaveOccurred())
+			updateVirtualService(tlsSecretWithExpiredOcsp.Ref(), ssl.SslConfig_MUST_STAPLE)
 			httpClient, httpRequestBuilder := buildHttpsRequestClient()
 
 			expectConsistentError(httpClient, httpRequestBuilder, "handshake failure")
