@@ -72,7 +72,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 		}
 	}
 	Context("New API", func() {
-		FIt("Routes to GRPC Functions", func() {
+		It("Routes to GRPC Functions", func() {
 
 			body := `"foo"`
 			testRequest := basicReq(body, `{"str":"foo"}`)
@@ -84,7 +84,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			}))))
 		})
 		//basically `matchIncomingRequestRoute` needs to be set for this to work
-		FIt("Routes to GRPC functions with prefix matcher in VS", func() {
+		It("Routes to GRPC functions with prefix matcher in VS", func() {
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Routes[0].Matchers = []*matchers.Matcher{{
 					PathSpecifier: &matchers.Matcher_Prefix{
@@ -138,7 +138,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{getGrpcVs(e2e.WriteNamespace, testContext.TestUpstream().Upstream.GetMetadata().Ref())}
 		})
 		// The test vs we generate already has a prefix matcher because that was how this API was documented
-		FIt("Routes to GRPC Functions", func() {
+		It("Routes to GRPC Functions", func() {
 
 			body := `"foo"`
 			testRequest := basicReq(body, `{"str":"foo"}`)
@@ -149,7 +149,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Discovery", func() {
 				"GRPCRequest": PointTo(MatchFields(IgnoreExtras, Fields{"Str": Equal("foo")})),
 			}))))
 		})
-		FIt("Routes to GRPC Functions with parameters in URL", func() {
+		It("Routes to GRPC Functions with parameters in URL", func() {
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Routes = []*gatewayv1.Route{
 					{
