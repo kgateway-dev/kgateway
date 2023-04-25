@@ -207,6 +207,13 @@ var _ = Describe("Hybrid Gateway", func() {
 				testContext: testContext,
 			}
 		})
+
+		// Table test:
+		// Each entry contains a connection properties struct that is used to
+		// create a request.
+		// And a map of named matchers (name is arbitrary) to configure envoy with.
+		// the the last argument is the name of the matcher that should match,
+		// or `NoMatch` if nothing should match.
 		DescribeTable("SetResource[Invalid|Valid] works as expected",
 			func(cp ConnectionProperties, matches map[string]*v1.Matcher, expected string) {
 				Expect(tester.GetMatchedMatcher(cp, matches)).To(Equal(expected))
@@ -250,6 +257,9 @@ type GwTester struct {
 	testContext *e2e.TestContext
 }
 
+// Given a map of matchers, configure the gateway with them and return the name of the matcher that matches the request
+// defined by ConnectionProperties.
+// This uses a random header to make sure the gateway is updated with the current config.
 func (gt *GwTester) GetMatchedMatcher(cp ConnectionProperties, matches map[string]*v1.Matcher) string {
 	//random prefix, to make sure the gw updated to current config
 	configver := fmt.Sprintf("%d", rand.Uint32())
