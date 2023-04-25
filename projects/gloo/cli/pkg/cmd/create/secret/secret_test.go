@@ -231,9 +231,11 @@ metadata:
 			} else {
 				err := testutils.Glooctl(args)
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("invalid key pair"))
 
 				_, err = helpers.MustSecretClient(ctx).Read("gloo-system", resourceName, clients.ReadOpts{})
 				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(fmt.Sprintf("%s.%s does not exist", "gloo-system", resourceName)))
 			}
 		},
 			Entry("passes with matching key and certificate", true, "valid1", privateKey1, privateKey1Cert),
