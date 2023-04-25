@@ -81,7 +81,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// If the upstream uses the new API we should record that it exists for use in `ProcessRoute` but not make any changes
 	_, ok = upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_GrpcJsonTranscoder)
 	if ok {
-		contextutils.LoggerFrom(params.Ctx).Infof("ELC, recording grpsjson us")
 		p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = in
 		return nil
 	}
@@ -194,7 +193,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			// If the upstream uses the new API we assume the descriptors and vs match and do not do any transformations
 			_, ok = upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_GrpcJsonTranscoder)
 			if ok {
-				contextutils.LoggerFrom(params.Ctx).Infof("ELC vs points to new API, we can direct straight to us")
 				return nil, nil
 			}
 			// create the transformation for the route
