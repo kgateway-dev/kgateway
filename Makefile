@@ -790,8 +790,15 @@ kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image an
 
 # Update the docker image used by a deployment
 # This works for most of our deployments because the deployment name and container name both match
+# NOTE TO DEVS:
+#	I explored using a special format of the wildcard to pass deployment:image,
+# 	but ran into some challenges with that pattern, while calling this target from another one.
+#	It could be a cool extension to support, but didn't feel pressing so I stopped
 kind-set-image-%:
+	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
 	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
@@ -804,7 +811,11 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 # This is an alias to remedy the fact that the deployment is called gateway-proxy
 # but our make targets refer to gloo-envoy-wrapper
 kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper:
+	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
 	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-gloo
