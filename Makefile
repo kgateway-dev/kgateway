@@ -190,7 +190,7 @@ fmt-changed:
 
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download:
+mod-download: check-go-version
 	go mod download all
 
 
@@ -234,7 +234,7 @@ TEST_PKG ?= ./... # Default to run all tests
 GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
-install-test-tools:
+install-test-tools: check-go-version
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
@@ -306,7 +306,7 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
+generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
 generated-code: $(OUTPUT_DIR)/.generated-code
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
@@ -325,6 +325,12 @@ $(OUTPUT_DIR)/.generated-code:
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
+	
+# makes sure you are running codegen with the correct Go version
+.PHONY: check-go-version
+check-go-version:
+	./ci/check-go-version.sh
+
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -731,6 +737,7 @@ docker-push-%:
 
 # Build docker images using the defined IMAGE_REGISTRY, VERSION
 .PHONY: docker
+docker: check-go-version
 docker: gloo-docker
 docker: discovery-docker
 docker: gloo-envoy-wrapper-docker
@@ -781,19 +788,34 @@ kind-load-%:
 # Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
 kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
 
-# This is an alias to remedy the fact that the deployment is called gateway-proxy
-# but our make targets refer to gloo-envoy-wrapper
-kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
-	kubectl rollout restart deployment/gateway-proxy -n $(INSTALL_NAMESPACE)
+# Update the docker image used by a deployment
+# This works for most of our deployments because the deployment name and container name both match
+# NOTE TO DEVS:
+#	I explored using a special format of the wildcard to pass deployment:image,
+# 	but ran into some challenges with that pattern, while calling this target from another one.
+#	It could be a cool extension to support, but didn't feel pressing so I stopped
+kind-set-image-%:
+	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
+	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
-# You can reload an image, which means it will be rebuilt and reloaded into the kind cluster
-# using the same tag so that tests can be re-run
+# You can reload an image, which means it will be rebuilt and reloaded into the kind cluster, and the deployment
+# will be updated to reference it
 # Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
 # Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
-kind-reload-%: kind-build-and-load-% ## Use to build specified image, load it into kind, and restart its deployment
-	kubectl rollout restart deployment/$* -n $(INSTALL_NAMESPACE)
+kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
+
+# This is an alias to remedy the fact that the deployment is called gateway-proxy
+# but our make targets refer to gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper:
+	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
+	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-gloo

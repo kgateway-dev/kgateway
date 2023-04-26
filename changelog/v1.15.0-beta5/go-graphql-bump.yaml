@@ -1,0 +1,5 @@
+changelog:
+    - type: NON_USER_FACING
+      description: Remove CVE-2022-37315 as v0.8.1 resolves this
+      resolvesIssue: false
+      issueLink: https://github.com/solo-io/solo-projects/issues/4016

@@ -43,7 +43,7 @@ jobs:
       run: |
         TARGET_BRANCH=${{ github.event.inputs.target-branch }}
         if [[ ${{ github.event_name == 'release' }} = true ]]; then
-          TARGET_BRANCH=${{ github.event.release.SOURCE_COMMITish }}
+          TARGET_BRANCH=${{ github.event.release.target_commitish }}
         fi
         echo "value=$TARGET_BRANCH" >> $GITHUB_OUTPUT
   push-to-solo-apis-branch:
@@ -85,7 +85,7 @@ jobs:
         with:
           repository: solo-io/gloo
           path: gloo
-          ref: ${{ env.RELEASE_TAG_NAME }}
+          ref: ${{ env.SOURCE_COMMIT }}
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
