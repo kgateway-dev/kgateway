@@ -93,7 +93,6 @@ else
   endif
 endif
 
-# WIP envoy image -- this must be update to a release tag before merging this PR
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.4-patch3
 
 # The full SHA of the currently checked out commit
