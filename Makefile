@@ -93,7 +93,8 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.4-patch1
+# WIP envoy image -- this must be update to a release tag before merging this PR
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:02612466efc5861a853e7b32339d99f9d75ba019
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
