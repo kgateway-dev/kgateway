@@ -91,7 +91,6 @@ type ServerVersion struct {
 	// Currently only kubernetes is supported
 	//
 	// Types that are assignable to VersionType:
-	//
 	//	*ServerVersion_Kubernetes
 	VersionType isServerVersion_VersionType `protobuf_oneof:"version_type"`
 }

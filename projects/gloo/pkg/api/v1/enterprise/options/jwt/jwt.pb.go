@@ -346,7 +346,6 @@ type Jwks struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Jwks:
-	//
 	//	*Jwks_Remote
 	//	*Jwks_Local
 	Jwks isJwks_Jwks `protobuf_oneof:"jwks"`
@@ -441,15 +440,15 @@ type RemoteJwks struct {
 	//
 	// If this feature is not enabled:
 	//
-	//   - The Jwks is fetched on-demand when the requests come. During the fetching, first
-	//     few requests are paused until the Jwks is fetched.
-	//   - Each worker thread fetches its own Jwks since Jwks cache is per worker thread.
+	// * The Jwks is fetched on-demand when the requests come. During the fetching, first
+	//   few requests are paused until the Jwks is fetched.
+	// * Each worker thread fetches its own Jwks since Jwks cache is per worker thread.
 	//
 	// If this feature is enabled:
 	//
-	//   - Fetched Jwks is done in the main thread before the listener is activated. Its fetched
-	//     Jwks can be used by all worker threads. Each worker thread doesn't need to fetch its own.
-	//   - Jwks is ready when the requests come, not need to wait for the Jwks fetching.
+	// * Fetched Jwks is done in the main thread before the listener is activated. Its fetched
+	//   Jwks can be used by all worker threads. Each worker thread doesn't need to fetch its own.
+	// * Jwks is ready when the requests come, not need to wait for the Jwks fetching.
 	AsyncFetch *v3.JwksAsyncFetch `protobuf:"bytes,3,opt,name=async_fetch,json=asyncFetch,proto3" json:"async_fetch,omitempty"`
 }
 

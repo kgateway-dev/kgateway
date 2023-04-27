@@ -25,18 +25,21 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Failover configuration for an upstream.
 //
-// Failover allows for optional fallback endpoints in the case that the primary set of endpoints is deemed
-// unhealthy. As failover requires knowledge of the health of each set of endpoints, active or passive
-// health checks must be configured on an upstream using failover in order for it to work properly.
 //
-// Failover closely resembles the Envoy config which this is translated to, with one notable exception.
-// The priorities are not defined on the `LocalityLbEndpoints` but rather inferred from the list of
-// `PrioritizedLocality`. More information on envoy prioritization can be found
-// [here](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/priority#arch-overview-load-balancing-priority-levels).
-// In practice this means that the priority of a given set of `LocalityLbEndpoints` is determined by its index in
-// the list, first being `0` through `n-1`.
+//Failover configuration for an upstream.
+//
+//Failover allows for optional fallback endpoints in the case that the primary set of endpoints is deemed
+//unhealthy. As failover requires knowledge of the health of each set of endpoints, active or passive
+//health checks must be configured on an upstream using failover in order for it to work properly.
+//
+//Failover closely resembles the Envoy config which this is translated to, with one notable exception.
+//The priorities are not defined on the `LocalityLbEndpoints` but rather inferred from the list of
+//`PrioritizedLocality`. More information on envoy prioritization can be found
+//[here](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/priority#arch-overview-load-balancing-priority-levels).
+//In practice this means that the priority of a given set of `LocalityLbEndpoints` is determined by its index in
+//the list, first being `0` through `n-1`.
+//
 type Failover struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -399,7 +402,7 @@ type Failover_Policy struct {
 	//
 	// .. code-block:: json
 	//
-	//	{ "overprovisioning_factor": 100 }
+	//  { "overprovisioning_factor": 100 }
 	//
 	// Read more at :ref:`priority levels <arch_overview_load_balancing_priority_levels>` and
 	// :ref:`localities <arch_overview_load_balancing_locality_weighted_lb>`.

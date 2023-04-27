@@ -35,7 +35,6 @@ type OpenTelemetryConfig struct {
 	// The cluster to use for submitting traces to the OpenTelemetry agent.
 	//
 	// Types that are assignable to CollectorCluster:
-	//
 	//	*OpenTelemetryConfig_CollectorUpstreamRef
 	//	*OpenTelemetryConfig_ClusterName
 	CollectorCluster isOpenTelemetryConfig_CollectorCluster `protobuf_oneof:"collector_cluster"`

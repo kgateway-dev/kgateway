@@ -357,7 +357,6 @@ type HttpConnectionManagerSettings struct {
 	AllowChunkedLength *wrappers.BoolValue `protobuf:"bytes,34,opt,name=allow_chunked_length,json=allowChunkedLength,proto3" json:"allow_chunked_length,omitempty"`
 	EnableTrailers     *wrappers.BoolValue `protobuf:"bytes,35,opt,name=enable_trailers,json=enableTrailers,proto3" json:"enable_trailers,omitempty"`
 	// Types that are assignable to HeaderFormat:
-	//
 	//	*HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat
 	//	*HttpConnectionManagerSettings_PreserveCaseHeaderKeyFormat
 	HeaderFormat                isHttpConnectionManagerSettings_HeaderFormat               `protobuf_oneof:"header_format"`

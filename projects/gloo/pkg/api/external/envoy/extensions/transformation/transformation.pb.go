@@ -148,8 +148,9 @@ type TransformationRule struct {
 	//
 	// .. code-block:: yaml
 	//
-	//	match:
-	//	  prefix: /
+	//    match:
+	//      prefix: /
+	//
 	Match *v3.RouteMatch `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
 	// transformation to perform
 	RouteTransformations *TransformationRule_Transformations `protobuf:"bytes,2,opt,name=route_transformations,json=routeTransformations,proto3" json:"route_transformations,omitempty"`
@@ -414,7 +415,6 @@ type Transformation struct {
 	// The type of transformation to apply.
 	//
 	// Types that are assignable to TransformationType:
-	//
 	//	*Transformation_TransformationTemplate
 	//	*Transformation_HeaderBodyTransform
 	//	*Transformation_TransformerConfig
@@ -520,7 +520,6 @@ type Extraction struct {
 	// The source of the extraction
 	//
 	// Types that are assignable to Source:
-	//
 	//	*Extraction_Header
 	//	*Extraction_Body
 	Source isExtraction_Source `protobuf_oneof:"source"`
@@ -653,16 +652,14 @@ type TransformationTemplate struct {
 	// For example, the following header transformation configuration:
 	//
 	// ```yaml
-	//
-	//	headers:
-	//	  x-header-one: {"text": "first {{inja}} template"}
-	//	  x-header-one: {"text": "second {{inja}} template"}
-	//	headersToAppend:
-	//	  - key: x-header-one
-	//	    value: {"text": "first appended {{inja}} template"}
-	//	  - key: x-header-one
-	//	    value: {"text": "second appended {{inja}} template"}
-	//
+	//    headers:
+	//      x-header-one: {"text": "first {{inja}} template"}
+	//      x-header-one: {"text": "second {{inja}} template"}
+	//    headersToAppend:
+	//      - key: x-header-one
+	//        value: {"text": "first appended {{inja}} template"}
+	//      - key: x-header-one
+	//        value: {"text": "second appended {{inja}} template"}
 	// ```
 	// will result in the following headers on the HTTP message:
 	//
@@ -684,7 +681,6 @@ type TransformationTemplate struct {
 	// Determines the type of transformation to apply to the request/response body
 	//
 	// Types that are assignable to BodyTransformation:
-	//
 	//	*TransformationTemplate_Body
 	//	*TransformationTemplate_Passthrough
 	//	*TransformationTemplate_MergeExtractorsToBody
@@ -1119,7 +1115,6 @@ type RouteTransformations_RouteTransformation struct {
 	// the same stage number.
 	Stage uint32 `protobuf:"varint,1,opt,name=stage,proto3" json:"stage,omitempty"`
 	// Types that are assignable to Match:
-	//
 	//	*RouteTransformations_RouteTransformation_RequestMatch_
 	//	*RouteTransformations_RouteTransformation_ResponseMatch_
 	Match isRouteTransformations_RouteTransformation_Match `protobuf_oneof:"match"`

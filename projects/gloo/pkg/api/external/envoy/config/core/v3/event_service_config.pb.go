@@ -32,7 +32,6 @@ type EventServiceConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ConfigSourceSpecifier:
-	//
 	//	*EventServiceConfig_GrpcService
 	ConfigSourceSpecifier isEventServiceConfig_ConfigSourceSpecifier `protobuf_oneof:"config_source_specifier"`
 }
