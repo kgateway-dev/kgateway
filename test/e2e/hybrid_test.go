@@ -155,6 +155,14 @@ var _ = Describe("Hybrid Gateway", func() {
 				// HttpGateway gets a filter our request *will not* hit
 				{
 					Matcher: &v1.Matcher{
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
 						SslConfig: &ssl.SslConfig{
 							SniDomains: []string{"*"},
 						},
