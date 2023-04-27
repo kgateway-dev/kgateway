@@ -178,6 +178,7 @@ var _ = Describe("Hybrid Gateway", func() {
 
 	})
 
+	// TODO unfocus this test
 	FContext("table test", func() {
 
 		var (
@@ -242,6 +243,78 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, "sni-star"),
+			Entry("sni and ip match",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"sni-star": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.test.com"},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
+					},
+				}, "sni-star"),
+			Entry("most specific sni matcher",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"less-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.test.com"},
+						},
+					},
+					"more-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"foo.test.com"},
+						},
+						// SourcePrefixRanges: []*v3.CidrRange{
+						// 	{
+						// 		AddressPrefix: "2.3.4.5",
+						// 		PrefixLen: &wrappers.UInt32Value{
+						// 			Value: 32,
+						// 		},
+						// 	},
+						// },
+					},
+				}, "more-specific"),
+			FEntry("most specific sni matcher with invalid source ip",
+				// envoy rules say this should still match more-specific, even
+				// though ip doesn't match
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.5"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"less-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.test.com"},
+						},
+					},
+					"more-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"foo.test.com"},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
+					},
+				}, "more-specific"),
 		)
 
 	})
