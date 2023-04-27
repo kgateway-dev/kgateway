@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7663
+    resolvesIssue: false
+    description: >
+      Adding TLS support for extauth Grpc passthrough. 
