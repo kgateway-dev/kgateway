@@ -2,6 +2,7 @@ package regexutils_test
 
 import (
 	"context"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
