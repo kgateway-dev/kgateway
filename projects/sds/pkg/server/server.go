@@ -32,6 +32,7 @@ type Secret struct {
 	SslCaFile         string
 	SslKeyFile        string
 	SslCertFile       string
+	SslOcspFile       string
 	ServerCert        string // name of a tls_certificate_sds_secret_config
 	ValidationContext string // name of the validation_context_sds_secret_config
 }
@@ -111,7 +112,15 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 			return err
 		}
 		certs = append(certs, ca)
-		items = append(items, serverCertSecret(key, certChain, sec.ServerCert))
+		var ocspStaple []byte // ocsp stapling is optional
+		if sec.SslOcspFile != "" {
+			ocspStaple, err = readAndVerifyCert(sec.SslOcspFile)
+			if err != nil {
+				return err
+			}
+			certs = append(certs, ocspStaple)
+		}
+		items = append(items, serverCertSecret(key, certChain, ocspStaple, sec.ServerCert))
 		items = append(items, validationContextSecret(ca, sec.ValidationContext))
 	}
 
@@ -181,8 +190,8 @@ func checkCert(certs []byte) bool {
 	return true
 }
 
-func serverCertSecret(privateKey, certChain []byte, serverCert string) cache_types.Resource {
-	return &envoy_extensions_transport_sockets_tls_v3.Secret{
+func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert string) cache_types.Resource {
+	secret := &envoy_extensions_transport_sockets_tls_v3.Secret{
 		Name: serverCert,
 		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate{
 			TlsCertificate: &envoy_extensions_transport_sockets_tls_v3.TlsCertificate{
@@ -199,6 +208,15 @@ func serverCertSecret(privateKey, certChain []byte, serverCert string) cache_typ
 			},
 		},
 	}
+	// Only add an OCSP staple if it exists
+	if ocspStaple != nil {
+		secret.Type.(*envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate).TlsCertificate.OcspStaple = &envoy_config_core_v3.DataSource{
+			Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
+				InlineBytes: ocspStaple,
+			},
+		}
+	}
+	return secret
 }
 
 func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
