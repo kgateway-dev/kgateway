@@ -191,32 +191,22 @@ func checkCert(certs []byte) bool {
 }
 
 func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert string) cache_types.Resource {
-	secret := &envoy_extensions_transport_sockets_tls_v3.Secret{
+	tlsCert := &envoy_extensions_transport_sockets_tls_v3.TlsCertificate{
+		CertificateChain: inlineBytesDataSource(certChain),
+		PrivateKey:       inlineBytesDataSource(privateKey),
+	}
+
+	// Only add an OCSP staple if one exists
+	if ocspStaple != nil {
+		tlsCert.OcspStaple = inlineBytesDataSource(ocspStaple)
+	}
+
+	return &envoy_extensions_transport_sockets_tls_v3.Secret{
 		Name: serverCert,
 		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate{
-			TlsCertificate: &envoy_extensions_transport_sockets_tls_v3.TlsCertificate{
-				CertificateChain: &envoy_config_core_v3.DataSource{
-					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-						InlineBytes: certChain,
-					},
-				},
-				PrivateKey: &envoy_config_core_v3.DataSource{
-					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-						InlineBytes: privateKey,
-					},
-				},
-			},
+			TlsCertificate: tlsCert,
 		},
 	}
-	// Only add an OCSP staple if it exists
-	if ocspStaple != nil {
-		secret.GetType().(*envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate).TlsCertificate.OcspStaple = &envoy_config_core_v3.DataSource{
-			Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-				InlineBytes: ocspStaple,
-			},
-		}
-	}
-	return secret
 }
 
 func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
@@ -230,6 +220,14 @@ func validationContextSecret(caCert []byte, validationContext string) cache_type
 					},
 				},
 			},
+		},
+	}
+}
+
+func inlineBytesDataSource(b []byte) *envoy_config_core_v3.DataSource {
+	return &envoy_config_core_v3.DataSource{
+		Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
+			InlineBytes: b,
 		},
 	}
 }
