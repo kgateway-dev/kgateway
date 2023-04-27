@@ -1,10 +1,12 @@
 package e2e_test
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"syscall"
 
 	"math/rand"
 
@@ -178,8 +180,7 @@ var _ = Describe("Hybrid Gateway", func() {
 
 	})
 
-	// TODO unfocus this test
-	FContext("table test", func() {
+	Context("table test", func() {
 
 		var (
 			secret *gloov1.Secret
@@ -217,6 +218,11 @@ var _ = Describe("Hybrid Gateway", func() {
 		// or `NoMatch` if nothing should match.
 		DescribeTable("SetResource[Invalid|Valid] works as expected",
 			func(cp ClientConnectionProperties, matches map[string]*v1.Matcher, expected string) {
+				// uncomment to dump envoy config
+				// defer func() {
+				// 	config, _ := testContext.EnvoyInstance().ConfigDump()
+				// 	fmt.Println(config)
+				// }()
 				Expect(tester.GetMatchedMatcher(cp, matches)).To(Equal(expected))
 			},
 			Entry("no match",
@@ -263,7 +269,50 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, "sni-star"),
+			Entry("sni match, ip non-match",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"sni-star": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.test.com"},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "2.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
+					},
+				}, NoMatch),
 			Entry("most specific sni matcher",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"less-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.test.com"},
+						},
+					},
+					"more-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"foo.test.com", "*.com"},
+						},
+					},
+				}, "more-specific"),
+			Entry("most specific sni matcher with invalid source ip",
+				// envoy parses sni domain first - it matches 'more-specific',
+				// and then ignores all other matchers at the same level (ie.
+				// the 'less-specific' matcher). as envoy descends through the
+				// 'more-specific' branch, it finds no matching
+				// SourcePrefixRanges values, so it returns no filter chain
+				// found
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
 					SNI:   "foo.test.com",
@@ -278,43 +327,16 @@ var _ = Describe("Hybrid Gateway", func() {
 						SslConfig: &ssl.SslConfig{
 							SniDomains: []string{"foo.test.com"},
 						},
-						// SourcePrefixRanges: []*v3.CidrRange{
-						// 	{
-						// 		AddressPrefix: "2.3.4.5",
-						// 		PrefixLen: &wrappers.UInt32Value{
-						// 			Value: 32,
-						// 		},
-						// 	},
-						// },
-					},
-				}, "more-specific"),
-			FEntry("most specific sni matcher with invalid source ip",
-				// envoy rules say this should still match more-specific, even
-				// though ip doesn't match
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.5"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"less-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.test.com"},
-						},
-					},
-					"more-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"foo.test.com"},
-						},
 						SourcePrefixRanges: []*v3.CidrRange{
 							{
-								AddressPrefix: "1.2.3.4",
+								AddressPrefix: "2.2.3.4",
 								PrefixLen: &wrappers.UInt32Value{
 									Value: 32,
 								},
 							},
 						},
 					},
-				}, "more-specific"),
+				}, NoMatch),
 		)
 
 	})
@@ -335,8 +357,13 @@ type GwTester struct {
 // This uses a random header to make sure the gateway is updated with the current config.
 func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matches map[string]*v1.Matcher) string {
 	//random prefix, to make sure the gw updated to current config
-	configver := fmt.Sprintf("%d", rand.Uint32())
-	vss, gw := gt.getGwWithMatches(configver, matches)
+	magicServerName := fmt.Sprintf("%d", rand.Uint32()) + ".com"
+	matches[magicServerName] = &v1.Matcher{
+		SslConfig: &ssl.SslConfig{
+			SniDomains: []string{magicServerName},
+		},
+	}
+	vss, gw := gt.getGwWithMatches(magicServerName, matches)
 
 	writeOptions := clients.WriteOpts{
 		Ctx:               gt.testContext.Ctx(),
@@ -352,25 +379,32 @@ func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matches map
 	_, err := c.GatewayClient.Write(gw, writeOptions)
 	Expect(err).NotTo(HaveOccurred())
 
-	var stringBody string
-	// Make a request, return when our configver is present and current
-	Eventually(func(g Gomega) error {
-
-		resp, err := gt.makeARequest(gt.testContext, cp.SrcIp, cp.SNI)
+	// use magicservername to ensure envoy has latest config
+	Eventually(func(g Gomega) (int, error) {
+		resp, err := gt.makeARequest(gt.testContext, net.ParseIP("127.0.0.1"), magicServerName)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		defer resp.Body.Close()
-		if resp.Header.Get("x-gloo-configver") != configver {
-			return fmt.Errorf("configver is not current")
-		}
-		bBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-		stringBody = string(bBody)
-		return nil
-	}, "5s", "0.1s").Should(Succeed())
+		return resp.StatusCode, nil
+	}, "5s", "0.1s").Should(Equal(200))
+
+	// envoy fully configured at this point, get the response on the filter chain
+	// if connection is refused, it's because no filter chian matched
+
+	var stringBody string
+	// Make a request, return when our magicServerName is present and current
+
+	resp, err := gt.makeARequest(gt.testContext, cp.SrcIp, cp.SNI)
+	if errors.Is(err, syscall.ECONNRESET) {
+		return NoMatch
+	}
+	Expect(err).NotTo(HaveOccurred())
+
+	defer resp.Body.Close()
+	bBody, err := io.ReadAll(resp.Body)
+	Expect(err).NotTo(HaveOccurred())
+	stringBody = string(bBody)
 
 	return stringBody
 }
@@ -415,7 +449,6 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 	}
 	var matchedGw []*v1.MatchedGateway
 
-	needDefault := true
 	i := 0
 	for name, m := range matches {
 		i++
@@ -424,27 +457,6 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 		vs = append(vs, curvs)
 		matchedGw = append(matchedGw, &v1.MatchedGateway{
 			Matcher: m,
-			GatewayType: &v1.MatchedGateway_HttpGateway{
-				HttpGateway: &v1.HttpGateway{
-					VirtualServices: []*core.ResourceRef{
-						curvs.Metadata.Ref(),
-					},
-				},
-			},
-		})
-		if m == nil {
-			needDefault = false
-		}
-	}
-
-	if needDefault {
-		curvs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, "vs-"+configver+"-nomatch", NoMatch)
-		curvs.VirtualHost.Options = vsopts
-		vs = append(vs, curvs)
-		matchedGw = append(matchedGw, &v1.MatchedGateway{
-			Matcher: &v1.Matcher{
-				SslConfig: &ssl.SslConfig{},
-			},
 			GatewayType: &v1.MatchedGateway_HttpGateway{
 				HttpGateway: &v1.HttpGateway{
 					VirtualServices: []*core.ResourceRef{
