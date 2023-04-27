@@ -420,18 +420,17 @@ type GwTester struct {
 	testContext *e2e.TestContext
 }
 
-// Given a map of matchers, configure the gateway with them and return the name of the matcher that matches the request
-// defined by ClientConnectionProperties.
-// This uses a random header to make sure the gateway is updated with the current config.
-func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matches map[string]*v1.Matcher) string {
-	//random prefix, to make sure the gw updated to current config
+func (gt *GwTester) configureEnvoy(matchers map[string]*v1.Matcher) {
+	// create a magic servername value to ensure that envoy is configured. we
+	// first send a request against this magic servername to make sure envoy
+	// has been fully configured
 	magicServerName := fmt.Sprintf("%d", rand.Uint32()) + ".com"
-	matches[magicServerName] = &v1.Matcher{
+	matchers[magicServerName] = &v1.Matcher{
 		SslConfig: &ssl.SslConfig{
 			SniDomains: []string{magicServerName},
 		},
 	}
-	vss, gw := gt.getGwWithMatches(magicServerName, matches)
+	vss, gw := gt.getGwWithMatches(magicServerName, matchers)
 
 	writeOptions := clients.WriteOpts{
 		Ctx:               gt.testContext.Ctx(),
@@ -456,15 +455,19 @@ func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matches map
 		defer resp.Body.Close()
 		return resp.StatusCode, nil
 	}, "5s", "0.1s").Should(Equal(200))
+}
 
-	// envoy fully configured at this point, get the response on the filter chain
-	// if connection is refused, it's because no filter chian matched
+// Configure the gateway with the provided `matchers`, then send a request
+// against the gateway using the information in ClientConnectionProperties and
+// return the matcher that is matched.
+func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matchers map[string]*v1.Matcher) string {
+	gt.configureEnvoy(matchers)
 
+	// no need for an Eventually block since envoy is configured at this point
 	var stringBody string
-	// Make a request, return when our magicServerName is present and current
-
 	resp, err := gt.makeARequest(gt.testContext, cp.SrcIp, cp.SNI)
 	if errors.Is(err, syscall.ECONNRESET) {
+		// connection properties does not match any of the matchers
 		return NoMatch
 	}
 	Expect(err).NotTo(HaveOccurred())
