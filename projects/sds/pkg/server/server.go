@@ -210,7 +210,7 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 	}
 	// Only add an OCSP staple if it exists
 	if ocspStaple != nil {
-		secret.Type.(*envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate).TlsCertificate.OcspStaple = &envoy_config_core_v3.DataSource{
+		secret.GetType().(*envoy_extensions_transport_sockets_tls_v3.Secret_TlsCertificate).TlsCertificate.OcspStaple = &envoy_config_core_v3.DataSource{
 			Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
 				InlineBytes: ocspStaple,
 			},
