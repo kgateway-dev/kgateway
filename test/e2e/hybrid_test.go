@@ -163,9 +163,6 @@ var _ = Describe("Hybrid Gateway", func() {
 								},
 							},
 						},
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*"},
-						},
 					},
 					GatewayType: &v1.MatchedGateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{},
