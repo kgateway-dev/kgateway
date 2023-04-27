@@ -215,11 +215,11 @@ var _ = Describe("Hybrid Gateway", func() {
 		// the the last argument is the name of the matcher that should match,
 		// or `NoMatch` if nothing should match.
 		DescribeTable("SetResource[Invalid|Valid] works as expected",
-			func(cp ConnectionProperties, matches map[string]*v1.Matcher, expected string) {
+			func(cp ClientConnectionProperties, matches map[string]*v1.Matcher, expected string) {
 				Expect(tester.GetMatchedMatcher(cp, matches)).To(Equal(expected))
 			},
 			Entry("no match",
-				ConnectionProperties{
+				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
 					SNI:   "test.com",
 				},
@@ -231,7 +231,7 @@ var _ = Describe("Hybrid Gateway", func() {
 					},
 				}, NoMatch),
 			Entry("sni match",
-				ConnectionProperties{
+				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
 					SNI:   "foo.test.com",
 				},
@@ -247,7 +247,7 @@ var _ = Describe("Hybrid Gateway", func() {
 	})
 })
 
-type ConnectionProperties struct {
+type ClientConnectionProperties struct {
 	SrcIp net.IP
 	SNI   string
 }
@@ -258,9 +258,9 @@ type GwTester struct {
 }
 
 // Given a map of matchers, configure the gateway with them and return the name of the matcher that matches the request
-// defined by ConnectionProperties.
+// defined by ClientConnectionProperties.
 // This uses a random header to make sure the gateway is updated with the current config.
-func (gt *GwTester) GetMatchedMatcher(cp ConnectionProperties, matches map[string]*v1.Matcher) string {
+func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matches map[string]*v1.Matcher) string {
 	//random prefix, to make sure the gw updated to current config
 	configver := fmt.Sprintf("%d", rand.Uint32())
 	vss, gw := gt.getGwWithMatches(configver, matches)
