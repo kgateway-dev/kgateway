@@ -180,7 +180,18 @@ var _ = Describe("Hybrid Gateway", func() {
 
 	})
 
-	Context("table test", func() {
+	Context("permutations of servername and SourcePrefixRanges", func() {
+		/*
+			Currently, gloo exposes 2 fields that are used in filter chain
+			matchers: SNI servername, and SourcePrefixRanges. When these values are
+			set, Envoy's behaviour (using the old filter chain match API) is to (1)
+			match on the *most specific* servername first, then (2) see if a
+			matching value is present for SourcePrefixRanges
+
+			This set of tests tries to comprehensively test all possible
+			permutations of the outcomes of these 2 matchers to ensure that our
+			implemented use of the new API does not create any regressions.
+		*/
 
 		var (
 			secret *gloov1.Secret
