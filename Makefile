@@ -320,17 +320,7 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-<<<<<<< HEAD
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
-=======
-	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
-
-# makes sure you are running codegen with the correct Go version
-.PHONY: check-go-version
-check-go-version:
-	./ci/check-go-version.sh
-
->>>>>>> 732af35b2 (bump envoy-gloo)
 
 #----------------------------------------------------------------------------------
 # Generate mocks
