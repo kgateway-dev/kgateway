@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: Fixes a bug which prevented users from using resource-based policies to invoke cross-account lambda functions.
+    issueLink: https://github.com/solo-io/gloo/issues/7965
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.25.4-patch3
