@@ -379,7 +379,7 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, "more-specific"),
-			Entry("sni matcher with multiple source ip",
+			Entry("sni matcher with multiple source ip, less precise CIDR range match",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
 					SNI:   "foo.test.com",
