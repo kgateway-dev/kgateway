@@ -243,9 +243,11 @@ type HttpListenerOptions struct {
 	// Example:
 	// ```
 	// gzip:
-	//  contentType:
-	//  - "application/json"
-	//  compressionLevel: BEST
+	//
+	//	contentType:
+	//	- "application/json"
+	//	compressionLevel: BEST
+	//
 	// ```
 	Gzip *v2.Gzip `protobuf:"bytes,8,opt,name=gzip,proto3" json:"gzip,omitempty"`
 	// Enterprise-only: Proxy latency
@@ -513,14 +515,17 @@ type VirtualHostOptions struct {
 	// Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
 	RatelimitBasic *ratelimit.IngressRateLimit `protobuf:"bytes,6,opt,name=ratelimit_basic,json=ratelimitBasic,proto3" json:"ratelimit_basic,omitempty"`
 	// Types that are assignable to RateLimitEarlyConfigType:
+	//
 	//	*VirtualHostOptions_RatelimitEarly
 	//	*VirtualHostOptions_RateLimitEarlyConfigs
 	RateLimitEarlyConfigType isVirtualHostOptions_RateLimitEarlyConfigType `protobuf_oneof:"rate_limit_early_config_type"`
 	// Types that are assignable to RateLimitConfigType:
+	//
 	//	*VirtualHostOptions_Ratelimit
 	//	*VirtualHostOptions_RateLimitConfigs
 	RateLimitConfigType isVirtualHostOptions_RateLimitConfigType `protobuf_oneof:"rate_limit_config_type"`
 	// Types that are assignable to RateLimitRegularConfigType:
+	//
 	//	*VirtualHostOptions_RatelimitRegular
 	//	*VirtualHostOptions_RateLimitRegularConfigs
 	RateLimitRegularConfigType isVirtualHostOptions_RateLimitRegularConfigType `protobuf_oneof:"rate_limit_regular_config_type"`
@@ -528,6 +533,7 @@ type VirtualHostOptions struct {
 	// the popular ModSecurity 3.0 ruleset
 	Waf *waf.Settings `protobuf:"bytes,8,opt,name=waf,proto3" json:"waf,omitempty"`
 	// Types that are assignable to JwtConfig:
+	//
 	//	*VirtualHostOptions_Jwt
 	//	*VirtualHostOptions_JwtStaged
 	JwtConfig isVirtualHostOptions_JwtConfig `protobuf_oneof:"jwt_config"`
@@ -941,6 +947,7 @@ type RouteOptions struct {
 	// For requests matched on this route, rewrite the Host header before forwarding upstream
 	//
 	// Types that are assignable to HostRewriteType:
+	//
 	//	*RouteOptions_HostRewrite
 	//	*RouteOptions_AutoHostRewrite
 	HostRewriteType isRouteOptions_HostRewriteType `protobuf_oneof:"host_rewrite_type"`
@@ -956,14 +963,17 @@ type RouteOptions struct {
 	// Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
 	RatelimitBasic *ratelimit.IngressRateLimit `protobuf:"bytes,13,opt,name=ratelimit_basic,json=ratelimitBasic,proto3" json:"ratelimit_basic,omitempty"`
 	// Types that are assignable to RateLimitEarlyConfigType:
+	//
 	//	*RouteOptions_RatelimitEarly
 	//	*RouteOptions_RateLimitEarlyConfigs
 	RateLimitEarlyConfigType isRouteOptions_RateLimitEarlyConfigType `protobuf_oneof:"rate_limit_early_config_type"`
 	// Types that are assignable to RateLimitConfigType:
+	//
 	//	*RouteOptions_Ratelimit
 	//	*RouteOptions_RateLimitConfigs
 	RateLimitConfigType isRouteOptions_RateLimitConfigType `protobuf_oneof:"rate_limit_config_type"`
 	// Types that are assignable to RateLimitRegularConfigType:
+	//
 	//	*RouteOptions_RatelimitRegular
 	//	*RouteOptions_RateLimitRegularConfigs
 	RateLimitRegularConfigType isRouteOptions_RateLimitRegularConfigType `protobuf_oneof:"rate_limit_regular_config_type"`
@@ -971,6 +981,7 @@ type RouteOptions struct {
 	// the popular ModSecurity 3.0 ruleset
 	Waf *waf.Settings `protobuf:"bytes,15,opt,name=waf,proto3" json:"waf,omitempty"`
 	// Types that are assignable to JwtConfig:
+	//
 	//	*RouteOptions_Jwt
 	//	*RouteOptions_JwtStaged
 	JwtConfig isRouteOptions_JwtConfig `protobuf_oneof:"jwt_config"`
@@ -1443,6 +1454,7 @@ type DestinationSpec struct {
 	// to be usable by Gloo.
 	//
 	// Types that are assignable to DestinationType:
+	//
 	//	*DestinationSpec_Aws
 	//	*DestinationSpec_Azure
 	//	*DestinationSpec_Rest

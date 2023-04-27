@@ -38,6 +38,7 @@ type GrpcService struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to TargetSpecifier:
+	//
 	//	*GrpcService_EnvoyGrpc_
 	//	*GrpcService_GoogleGrpc_
 	TargetSpecifier isGrpcService_TargetSpecifier `protobuf_oneof:"target_specifier"`
@@ -46,7 +47,7 @@ type GrpcService struct {
 	Timeout *duration.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Additional metadata to include in streams initiated to the GrpcService.
 	// This can be used for scenarios in which additional ad hoc authorization
-	// headers (e.g. ``x-foo-bar: baz-key``) are to be injected.
+	// headers (e.g. “x-foo-bar: baz-key“) are to be injected.
 	InitialMetadata []*HeaderValue `protobuf:"bytes,5,rep,name=initial_metadata,json=initialMetadata,proto3" json:"initial_metadata,omitempty"`
 }
 
@@ -207,11 +208,12 @@ type GrpcService_GoogleGrpc struct {
 	// service.
 	//
 	// .. csv-table::
-	//    :header: Name, Type, Description
-	//    :widths: 1, 1, 2
 	//
-	//    streams_total, Counter, Total number of streams opened
-	//    streams_closed_<gRPC status code>, Counter, Total streams closed with <gRPC status code>
+	//	:header: Name, Type, Description
+	//	:widths: 1, 1, 2
+	//
+	//	streams_total, Counter, Total number of streams opened
+	//	streams_closed_<gRPC status code>, Counter, Total streams closed with <gRPC status code>
 	StatPrefix string `protobuf:"bytes,4,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
 	// The name of the Google gRPC credentials factory to use. This must have been registered with
 	// Envoy. If this is empty, a default credentials factory will be used that sets up channel
@@ -430,6 +432,7 @@ type GrpcService_GoogleGrpc_ChannelCredentials struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to CredentialSpecifier:
+	//
 	//	*GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials
 	//	*GrpcService_GoogleGrpc_ChannelCredentials_GoogleDefault
 	//	*GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials
@@ -529,6 +532,7 @@ type GrpcService_GoogleGrpc_CallCredentials struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to CredentialSpecifier:
+	//
 	//	*GrpcService_GoogleGrpc_CallCredentials_AccessToken
 	//	*GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine
 	//	*GrpcService_GoogleGrpc_CallCredentials_GoogleRefreshToken
@@ -862,6 +866,7 @@ type GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin struct
 
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to ConfigType:
+	//
 	//	*GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig
 	ConfigType isGrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_ConfigType `protobuf_oneof:"config_type"`
 }
@@ -1072,6 +1077,7 @@ type GrpcService_GoogleGrpc_ChannelArgs_Value struct {
 	// delivered via the API.
 	//
 	// Types that are assignable to ValueSpecifier:
+	//
 	//	*GrpcService_GoogleGrpc_ChannelArgs_Value_StringValue
 	//	*GrpcService_GoogleGrpc_ChannelArgs_Value_IntValue
 	ValueSpecifier isGrpcService_GoogleGrpc_ChannelArgs_Value_ValueSpecifier `protobuf_oneof:"value_specifier"`
