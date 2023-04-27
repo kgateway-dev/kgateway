@@ -29,8 +29,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A Gateway describes a single Listener (bind address:port)
-// and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
+//
+//A Gateway describes a single Listener (bind address:port)
+//and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
 type Gateway struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

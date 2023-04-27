@@ -130,43 +130,45 @@ func (Config_EnableFor) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_dlp_dlp_proto_rawDescGZIP(), []int{2, 0}
 }
 
-// The following pre-made action types map to subgroup 1 of the listed regex patterns:
 //
-// SSN:
-// - '(?:^|\D)([0-9]{9})(?:\D|$)'
-// - '(?:^|\D)([0-9]{3}\-[0-9]{2}\-[0-9]{4})(?:\D|$)'
-// - '(?:^|\D)([0-9]{3}\ [0-9]{2}\ [0-9]{4})(?:\D|$)'
+//The following pre-made action types map to subgroup 1 of the listed regex patterns:
 //
-// MASTERCARD:
-// - '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+//SSN:
+//- '(?:^|\D)([0-9]{9})(?:\D|$)'
+//- '(?:^|\D)([0-9]{3}\-[0-9]{2}\-[0-9]{4})(?:\D|$)'
+//- '(?:^|\D)([0-9]{3}\ [0-9]{2}\ [0-9]{4})(?:\D|$)'
 //
-// VISA:
-// - '(?:^|\D)(4[0-9]{3}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+//MASTERCARD:
+//- '(?:^|\D)(5[1-5][0-9]{2}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 //
-// AMEX:
-// - '(?:^|\D)((?:34|37)[0-9]{2}(?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{5})(?:\D|$)'
+//VISA:
+//- '(?:^|\D)(4[0-9]{3}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 //
-// DISCOVER:
-// - '(?:^|\D)(6011(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+//AMEX:
+//- '(?:^|\D)((?:34|37)[0-9]{2}(?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{5})(?:\D|$)'
 //
-// JCB:
-// - '(?:^|\D)(3[0-9]{3}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
-// - '(?:^|\D)((?:2131|1800)[0-9]{11})(?:\D|$)'
+//DISCOVER:
+//- '(?:^|\D)(6011(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 //
-// DINERS_CLUB:
-// - '(?:^|\D)(30[0-5][0-9](?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{4})(?:\D|$)'
-// - '(?:^|\D)((?:36|38)[0-9]{2}(?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+//JCB:
+//- '(?:^|\D)(3[0-9]{3}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+//- '(?:^|\D)((?:2131|1800)[0-9]{11})(?:\D|$)'
 //
-// CREDIT_CARD_TRACKERS:
-// - '([1-9][0-9]{2}\-[0-9]{2}\-[0-9]{4}\^\d)'
-// - '(?:^|\D)(\%?[Bb]\d{13,19}\^[\-\/\.\w\s]{2,26}\^[0-9][0-9][01][0-9][0-9]{3})'
-// - '(?:^|\D)(\;\d{13,19}\=(?:\d{3}|)(?:\d{4}|\=))'
+//DINERS_CLUB:
+//- '(?:^|\D)(30[0-5][0-9](?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{4})(?:\D|$)'
+//- '(?:^|\D)((?:36|38)[0-9]{2}(?:\ |\-|)[0-9]{6}(?:\ |\-|)[0-9]{4})(?:\D|$)'
 //
-// ALL_CREDIT_CARDS:
-// - (All credit card related regexes from above)
+//CREDIT_CARD_TRACKERS:
+//- '([1-9][0-9]{2}\-[0-9]{2}\-[0-9]{4}\^\d)'
+//- '(?:^|\D)(\%?[Bb]\d{13,19}\^[\-\/\.\w\s]{2,26}\^[0-9][0-9][01][0-9][0-9]{3})'
+//- '(?:^|\D)(\;\d{13,19}\=(?:\d{3}|)(?:\d{4}|\=))'
 //
-// ALL_CREDIT_CARDS_COMBINED:
-// - Same as ALL_CREDIT_CARDS but using a single action instead of multiple which should be marginally faster
+//ALL_CREDIT_CARDS:
+//- (All credit card related regexes from above)
+//
+//ALL_CREDIT_CARDS_COMBINED:
+//- Same as ALL_CREDIT_CARDS but using a single action instead of multiple which should be marginally faster
+//
 type Action_ActionType int32
 
 const (
@@ -364,10 +366,11 @@ func (x *DlpRule) GetActions() []*Action {
 	return nil
 }
 
-// Route/Vhost level config for dlp filter
 //
-// If a config is present on the route or vhost level it will completely overwrite the
-// listener level config.
+//Route/Vhost level config for dlp filter
+//
+//If a config is present on the route or vhost level it will completely overwrite the
+//listener level config.
 type Config struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -427,30 +430,33 @@ func (x *Config) GetEnabledFor() Config_EnableFor {
 	return Config_RESPONSE_BODY
 }
 
-// A single action meant to mask sensitive data.
-// The action type represents a set of pre configured actions,
-// as well as the ability to create custom actions.
-// These actions can also be shadowed, a shadowed action will be recorded
-// in the statistics, and debug logs, but not actually committed in the response body.
 //
-// To use a pre-made action simply set the action type to anything other than `CUSTOM`
+//A single action meant to mask sensitive data.
+//The action type represents a set of pre configured actions,
+//as well as the ability to create custom actions.
+//These actions can also be shadowed, a shadowed action will be recorded
+//in the statistics, and debug logs, but not actually committed in the response body.
 //
-// ``` yaml
-// actionType: VISA
-// ```
+//To use a pre-made action simply set the action type to anything other than `CUSTOM`
 //
-// To create a custom action set the custom action field. The default enum value
-// is custom, so that can be left empty.
+//``` yaml
+//actionType: VISA
+//```
 //
-// ``` yaml
-// customAction:
-// name: test
-// regex:
-// - "hello"
-// - "world"
-// maskChar: Y
-// percent: 60
-// ```
+//To create a custom action set the custom action field. The default enum value
+//is custom, so that can be left empty.
+//
+//``` yaml
+//customAction:
+//name: test
+//regex:
+//- "hello"
+//- "world"
+//maskChar: Y
+//percent: 60
+//```
+//
+//
 type Action struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -529,27 +535,29 @@ func (x *Action) GetShadow() bool {
 	return false
 }
 
-// A user defined custom action to carry out on the response body.
 //
-// The list of regex strings are applied in order. So for instance, if there is a response body with the content:
-// `hello world`
+//A user defined custom action to carry out on the response body.
 //
-// And there is a custom action
-// ``` yaml
-// customAction:
-// name: test
-// regex:
-// - "hello"
-// - "world"
-// maskChar: Y
-// percent: 60
-// ```
+//The list of regex strings are applied in order. So for instance, if there is a response body with the content:
+//`hello world`
 //
-// the result would be:
-// `YYYlo YYYld`
+//And there is a custom action
+//``` yaml
+//customAction:
+//name: test
+//regex:
+//- "hello"
+//- "world"
+//maskChar: Y
+//percent: 60
+//```
 //
-// If the mask_char, and percent were left to default, the result would be:
-// `XXXXo XXXXd`
+//the result would be:
+//`YYYlo YYYld`
+//
+//If the mask_char, and percent were left to default, the result would be:
+//`XXXXo XXXXd`
+//
 type CustomAction struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

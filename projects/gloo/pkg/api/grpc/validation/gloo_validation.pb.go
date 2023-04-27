@@ -828,6 +828,7 @@ func (*NotifyOnResyncResponse) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_grpc_validation_gloo_validation_proto_rawDescGZIP(), []int{7}
 }
 
+//
 // The Proxy Report should contain one report for each sub-resource of the Proxy
 // E.g., each listener will have a corresponding report. Within each listener report is
 // a route report corresponding to each route on the listener.

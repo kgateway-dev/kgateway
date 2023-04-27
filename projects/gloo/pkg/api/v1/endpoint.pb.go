@@ -23,7 +23,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Endpoints represent dynamically discovered address/ports where an upstream service is listening
+//
+//
+//Endpoints represent dynamically discovered address/ports where an upstream service is listening
 type Endpoint struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
