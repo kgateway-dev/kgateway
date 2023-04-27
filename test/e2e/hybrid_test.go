@@ -66,9 +66,9 @@ func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matchers ma
 }
 
 func (gt *GwTester) configureEnvoy(matchers map[string]*v1.Matcher) {
-	// create a magic servername value to ensure that envoy is configured. we
-	// first send a request against this magic servername to make sure envoy
-	// has been fully configured
+	// create a magic servername value to ensure that envoy is configured
+	// then we send a request against this magic servername to make sure
+	// envoy has been fully configured
 	magicServerName := fmt.Sprintf("%d", rand.Uint32()) + ".com"
 	matchers[magicServerName] = &v1.Matcher{
 		SslConfig: &ssl.SslConfig{
@@ -104,7 +104,7 @@ func (gt *GwTester) configureEnvoy(matchers map[string]*v1.Matcher) {
 
 func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Matcher) ([]*v1.VirtualService, *v1.Gateway) {
 	gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
-	vs := []*v1.VirtualService{}
+	virtual_services := []*v1.VirtualService{}
 	gw.Options = &gloov1.ListenerOptions{
 		ProxyProtocol: &proxy_protocol.ProxyProtocol{},
 	}
@@ -128,7 +128,7 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 		i++
 		curvs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, fmt.Sprintf("vs-%s-%d", configver, i), name)
 		curvs.VirtualHost.Options = vsopts
-		vs = append(vs, curvs)
+		virtual_services = append(virtual_services, curvs)
 		matchedGw = append(matchedGw, &v1.MatchedGateway{
 			Matcher: m,
 			GatewayType: &v1.MatchedGateway_HttpGateway{
@@ -141,7 +141,7 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 		})
 	}
 
-	for _, v := range vs {
+	for _, v := range virtual_services {
 		v.SslConfig = &ssl.SslConfig{
 			SslSecrets: &ssl.SslConfig_SecretRef{
 				SecretRef: gt.secret.Metadata.Ref(),
@@ -150,7 +150,7 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 	}
 
 	gw.GetHybridGateway().MatchedGateways = matchedGw
-	return vs, gw
+	return virtual_services, gw
 }
 
 func (gt *GwTester) makeARequest(testContext *e2e.TestContext, srcip net.IP, sni string) (*http.Response, error) {
