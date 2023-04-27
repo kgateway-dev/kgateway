@@ -1,7 +1,7 @@
 ##########################################################################################
 # run-ci-regression-tests - runs a set of regression tests. Set KUBE2E_TESTS = (gateway, gloo, gloomtls, glooctl, helm, ingress)
 # run-tests - runs tests (see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md)
-# 
+#
 ##########################################################################################
 #----------------------------------------------------------------------------------
 # Base
