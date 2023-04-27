@@ -1,7 +1,7 @@
 ##########################################################################################
 # run-ci-regression-tests - runs a set of regression tests. Set KUBE2E_TESTS = (gateway, gloo, gloomtls, glooctl, helm, ingress)
 # run-tests - runs tests (see https://github.com/solo-io/gloo/blob/master/test/e2e/README.md)
-# 
+#
 ##########################################################################################
 #----------------------------------------------------------------------------------
 # Base
@@ -65,7 +65,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.7-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.23.9-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
