@@ -10,7 +10,6 @@ on:
     - cron: "6 6 * * 1"     # monday   @ 01:06 EST, run expanded tests against v1.13.x 
     - cron: "7 7 * * 1"     # monday   @ 02:07 EST, run expanded tests against v1.12.x
     - cron: "8 8 * * 1"     # monday   @ 03:08 EST, run expanded tests against v1.11.x
-    - cron: "9 9 * * 1"     # monday   @ 04:09 EST, run expanded tests against v1.10.x
   workflow_dispatch:
 jobs:
   regression_tests_latest_dev:
@@ -96,26 +95,10 @@ jobs:
         ref: v1.11.x
     - uses: ./.github/actions/regression-tests
 
-  regression_tests_10:
-    name: v1.10.x regression tests
-    if: github.event.schedule == '9 9 * * 1'
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade']
-        kube-version: [ { node: 'v1.21.14@sha256:9d9eb5fb26b4fbc0c6d95fa8c790414f9750dd583f5d7cee45d92e8c26670aa1', kubectl: 'v1.21.14', kind: 'v0.17.0', helm: 'v3.9.4' },
-                        { node: 'v1.24.7@sha256:577c630ce8e509131eab1aea12c022190978dd2f745aac5eb1fe65c0807eb315', kubectl: 'v1.24.7', kind: 'v0.17.0', helm: 'v3.9.4' } ]
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: v1.10.x
-    - uses: ./.github/actions/regression-tests
-
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_dev, regression_tests_14, regression_tests_13, regression_tests_12, regression_tests_11, regression_tests_10 ]
+    needs: [ regression_tests_latest_dev, regression_tests_14, regression_tests_13, regression_tests_12, regression_tests_11 ]
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
@@ -126,8 +109,6 @@ jobs:
           if [[ ${{github.event_name == 'workflow_dispatch'}} = true ]]; then
             preamble="Gloo OSS nightlies (manual run)"
             echo "SLACK_CHANNEL=C0314KESVNV" >> $GITHUB_ENV   #slack-integration-testing if manually run
-          elif [[ ${{github.event.schedule == '9 9 * * 1'}} = true ]]; then
-              preamble="Gloo OSS weeklies (v1.10.x)"
           elif [[ ${{github.event.schedule == '8 8 * * 1'}} = true ]]; then
               preamble="Gloo OSS weeklies (v1.11.x)"
           elif [[ ${{github.event.schedule == '7 7 * * 1'}} = true ]]; then
