@@ -3347,10 +3347,10 @@ func (x *OpaAuthOptions) GetFastInputConversion() bool {
 }
 
 // Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
-//  * Requests provide credentials via the basic HTTP authentication header. Gloo will BIND to the LDAP server using the
-//    credentials extracted from the header.
-//  * Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
-//    memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
+//   - Requests provide credentials via the basic HTTP authentication header. Gloo will BIND to the LDAP server using the
+//     credentials extracted from the header.
+//   - Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
+//     memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
 type Ldap struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3816,12 +3816,11 @@ func (x *PassThroughHttp) GetConnectionTimeout() *duration.Duration {
 	return nil
 }
 
+// @solo-kit:xds-service=ExtAuthDiscoveryService
+// @solo-kit:resource.no_references
 //
-//@solo-kit:xds-service=ExtAuthDiscoveryService
-//@solo-kit:resource.no_references
-//
-//This is an internal API used to share configuration between gloo-ee and extauth. Although this API is only used in gloo-ee,
-//rules about breaking changes still apply to ensure we do not get errors during upgrade and downgrade.
+// This is an internal API used to share configuration between gloo-ee and extauth. Although this API is only used in gloo-ee,
+// rules about breaking changes still apply to ensure we do not get errors during upgrade and downgrade.
 type ExtAuthConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5688,20 +5687,19 @@ func (x *Ldap_ConnectionPool) GetInitialSize() *wrappers.UInt32Value {
 }
 
 // The passthrough http request can be configured to pass through the incoming request body,
-//the ext-auth state (which is shared between different auth methods within one ext-auth instance), and
-//the [filterMetadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
-//The body of the passthrough auth request will be a JSON as follows:
-//{
-//"body" : string,
-//"state": object (map[string]interface{}),
-//"filterMetadata": object (map[string]protobuf.Struct),
-//"config": object (protobuf.Struct),
-//}
-//`config` is the struct block specified under the passthrough auth configuration.
-//If `passthrough_body`, `passthrough_state`, `passthrough_filter_metadata`, and `config` are all false/nil,
-//the body of the auth request will remain empty. Setting any of these will increase latency slightly due to
-//JSON marshalling.
-//
+// the ext-auth state (which is shared between different auth methods within one ext-auth instance), and
+// the [filterMetadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
+// The body of the passthrough auth request will be a JSON as follows:
+// {
+// "body" : string,
+// "state": object (map[string]interface{}),
+// "filterMetadata": object (map[string]protobuf.Struct),
+// "config": object (protobuf.Struct),
+// }
+// `config` is the struct block specified under the passthrough auth configuration.
+// If `passthrough_body`, `passthrough_state`, `passthrough_filter_metadata`, and `config` are all false/nil,
+// the body of the auth request will remain empty. Setting any of these will increase latency slightly due to
+// JSON marshalling.
 type PassThroughHttp_Request struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

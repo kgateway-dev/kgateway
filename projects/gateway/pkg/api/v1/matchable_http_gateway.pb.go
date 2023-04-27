@@ -25,14 +25,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// A MatchableHttpGateway describes a single FilterChain configured with:
+// - The HttpConnectionManager NetworkFilter
+// - A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
 //
-//A MatchableHttpGateway describes a single FilterChain configured with:
-//- The HttpConnectionManager NetworkFilter
-//- A FilterChainMatch and TransportSocket that support TLS configuration and Source IP matching
-//
-//A Gateway CR may select one or more MatchableHttpGateways on a single listener.
-//This enables separate teams to own Listener configuration (Gateway CR)
-//and FilterChain configuration (MatchableHttpGateway CR)
+// A Gateway CR may select one or more MatchableHttpGateways on a single listener.
+// This enables separate teams to own Listener configuration (Gateway CR)
+// and FilterChain configuration (MatchableHttpGateway CR)
 type MatchableHttpGateway struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

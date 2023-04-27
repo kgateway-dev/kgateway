@@ -31,22 +31,21 @@ const (
 //
 // .. code-block:: yaml
 //
-//    filter_metadata:
-//      envoy.xxx:
-//        prop:
-//          foo: bar
-//          xyz:
-//            hello: envoy
+//	filter_metadata:
+//	  envoy.xxx:
+//	    prop:
+//	      foo: bar
+//	      xyz:
+//	        hello: envoy
 //
 // The following MetadataKey will retrieve a string value "bar" from the Metadata.
 //
 // .. code-block:: yaml
 //
-//    key: envoy.xxx
-//    path:
-//    - key: prop
-//    - key: foo
-//
+//	key: envoy.xxx
+//	path:
+//	- key: prop
+//	- key: foo
 type MetadataKey struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

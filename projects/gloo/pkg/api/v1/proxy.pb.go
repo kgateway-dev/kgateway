@@ -91,16 +91,15 @@ func (RedirectAction_RedirectResponseCode) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_proxy_proto_rawDescGZIP(), []int{18, 0}
 }
 
+// A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
+// Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
+// for connections. Each listener has its own set of configuration.
 //
-//A Proxy is a container for the entire set of configuration that will to be applied to one or more Proxy instances.
-//Proxies can be understood as a set of listeners, represents a different bind address/port where the proxy will listen
-//for connections. Each listener has its own set of configuration.
+// If any of the sub-resources within a listener is declared invalid (e.g. due to invalid user configuration), the
+// proxy will be marked invalid by Gloo.
 //
-//If any of the sub-resources within a listener is declared invalid (e.g. due to invalid user configuration), the
-//proxy will be marked invalid by Gloo.
-//
-//Proxy instances that register with Gloo are assigned the proxy configuration corresponding with
-//a proxy-specific identifier.
+// Proxy instances that register with Gloo are assigned the proxy configuration corresponding with
+// a proxy-specific identifier.
 // In the case of Envoy, proxy instances are identified by their Node ID. Node IDs must match a existing Proxy
 // Node ID can be specified in Envoy with the `--service-node` flag, or in the Envoy instance's bootstrap config.
 type Proxy struct {
@@ -889,7 +888,6 @@ func (x *AggregateListener) GetHttpFilterChains() []*AggregateListener_HttpFilte
 	return nil
 }
 
-//
 // Virtual Hosts group an ordered list of routes under one or more domains.
 // Each Virtual Host has a logical name, which must be unique for the http listener.
 // An HTTP request is first matched to a virtual host based on its host header, then to a route within the virtual host.
@@ -1024,7 +1022,7 @@ func (*VirtualHost_Metadata) isVirtualHost_OpaqueMetadata() {}
 
 func (*VirtualHost_MetadataStatic) isVirtualHost_OpaqueMetadata() {}
 
-//*
+// *
 // Routes declare the entry points on virtual hosts and the action to take for matched requests.
 type Route struct {
 	state         protoimpl.MessageState
