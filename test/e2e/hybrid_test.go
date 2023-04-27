@@ -165,7 +165,7 @@ func (gt *GwTester) makeARequest(testContext *e2e.TestContext, srcip net.IP, sni
 		WithTLSServerName(sni).
 		Build()
 
-	// skip ssl verification as it wouldnot work for test.com
+	// skip ssl verification as it would not work for test.com
 	//       Get "https://localhost:8087/": tls: failed to verify certificate: x509: certificate is valid for gateway-proxy, knative-proxy, ingress-proxy, not test.com
 	client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
 
