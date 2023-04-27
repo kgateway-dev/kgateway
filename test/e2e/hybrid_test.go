@@ -45,7 +45,7 @@ const NoMatch = "nothing matched"
 // Configure the gateway with the provided `matchers`, then send a request
 // against the gateway using the information in ClientConnectionProperties and
 // return the matcher that is matched.
-func (gt *GwTester) GetMatchedMatcher(cp ClientConnectionProperties, matchers map[string]*v1.Matcher) string {
+func (gt *GwTester) getMatchedMatcher(cp ClientConnectionProperties, matchers map[string]*v1.Matcher) string {
 	gt.configureEnvoy(matchers)
 
 	// no need for an Eventually block since envoy is configured at this point
@@ -379,7 +379,7 @@ var _ = Describe("Hybrid Gateway", func() {
 				// 	config, _ := testContext.EnvoyInstance().ConfigDump()
 				// 	fmt.Println(config)
 				// }()
-				Expect(tester.GetMatchedMatcher(cp, matches)).To(Equal(expected))
+				Expect(tester.getMatchedMatcher(cp, matches)).To(Equal(expected))
 			},
 			Entry("no match",
 				ClientConnectionProperties{
