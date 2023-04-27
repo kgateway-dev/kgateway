@@ -337,6 +337,58 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, NoMatch),
+			Entry("sni matcher with multiple source ip",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"more-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"foo.test.com"},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "2.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
+					},
+				}, "more-specific"),
+			Entry("sni matcher with multiple source ip",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"more-specific": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"foo.test.com"},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "2.3.4.5",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+							{
+								AddressPrefix: "1.2.0.0",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 16,
+								},
+							},
+						},
+					},
+				}, "more-specific"),
 		)
 
 	})
