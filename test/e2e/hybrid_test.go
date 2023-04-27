@@ -126,15 +126,15 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 	i := 0
 	for name, m := range matches {
 		i++
-		curvs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, fmt.Sprintf("vs-%s-%d", configver, i), name)
-		curvs.VirtualHost.Options = vsopts
-		virtual_services = append(virtual_services, curvs)
+		curVs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, fmt.Sprintf("vs-%s-%d", configver, i), name)
+		curVs.VirtualHost.Options = vsopts
+		virtual_services = append(virtual_services, curVs)
 		matchedGw = append(matchedGw, &v1.MatchedGateway{
 			Matcher: m,
 			GatewayType: &v1.MatchedGateway_HttpGateway{
 				HttpGateway: &v1.HttpGateway{
 					VirtualServices: []*core.ResourceRef{
-						curvs.Metadata.Ref(),
+						curVs.Metadata.Ref(),
 					},
 				},
 			},
