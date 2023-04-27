@@ -228,9 +228,9 @@ var _ = Describe("Hybrid Gateway", func() {
 
 		// Table test:
 		// Each entry contains a connection properties struct that is used to
-		// create a request.
-		// And a map of named matchers (name is arbitrary) to configure envoy with.
-		// the the last argument is the name of the matcher that should match,
+		// create a request and a map of named matchers (name is arbitrary)
+		// to configure envoy with.
+		// The last argument is the name of the matcher that should match,
 		// or `NoMatch` if nothing should match.
 		DescribeTable("SetResource[Invalid|Valid] works as expected",
 			func(cp ClientConnectionProperties, matches map[string]*v1.Matcher, expected string) {
