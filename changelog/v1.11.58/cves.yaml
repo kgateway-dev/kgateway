@@ -5,4 +5,10 @@ changelog:
   dependencyTag: 3.17.3
   issueLink: https://github.com/solo-io/gloo/issues/8125
   description: >-
-    Bump alpine in kubectl to fix CVE-2023-0464
+    Bump alpine to fix CVE-2023-0464
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.21.5-patch2
+  description: >-
+    Bump envoy-gloo to gain access to rebuilt image with CVE fixes
