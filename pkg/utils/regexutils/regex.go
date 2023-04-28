@@ -2,7 +2,6 @@ package regexutils
 
 import (
 	"context"
-	"regexp"
 
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
@@ -50,11 +49,6 @@ func NewRegexWithProgramSize(regex string, programsize *uint32) *envoy_type_matc
 func ConvertRegexMatchAndSubstitute(ctx context.Context, in *v32.RegexMatchAndSubstitute) (*envoy_type_matcher_v3.RegexMatchAndSubstitute, error) {
 	if in == nil {
 		return nil, nil
-	}
-
-	_, err := regexp.Compile(in.GetPattern().GetRegex())
-	if err != nil {
-		return nil, err
 	}
 
 	out := &envoy_type_matcher_v3.RegexMatchAndSubstitute{

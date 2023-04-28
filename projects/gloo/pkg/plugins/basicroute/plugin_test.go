@@ -243,44 +243,6 @@ var _ = Describe("regex rewrite", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.RegexRewrite).To(Equal(rmas))
 	})
-	It("errors when incorrect regex syntax is used", func() {
-		p := NewPlugin()
-		routeAction := &envoy_config_route_v3.RouteAction{
-			RegexRewrite: &envoy_type_matcher_v3.RegexMatchAndSubstitute{
-				Pattern: &envoy_type_matcher_v3.RegexMatcher{
-					Regex: "^/proxy/v1/store/[^/]*/xyz/order/status/[^/]*)",
-					EngineType: &envoy_type_matcher_v3.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoy_type_matcher_v3.RegexMatcher_GoogleRE2{},
-					},
-				},
-				Substitution: "/bar",
-			},
-		}
-		out := &envoy_config_route_v3.Route{
-			Action: &envoy_config_route_v3.Route_Route{
-				Route: routeAction,
-			},
-		}
-
-		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			Options: &v1.RouteOptions{
-				RegexRewrite: &v3.RegexMatchAndSubstitute{
-					Pattern: &v3.RegexMatcher{
-						Regex: "^/proxy/v1/store/[^/]*/xyz/order/status/[^/]*)",
-						EngineType: &v3.RegexMatcher_GoogleRe2{
-							GoogleRe2: &v3.RegexMatcher_GoogleRE2{
-								MaxProgramSize: &wrappers.UInt32Value{Value: 1024},
-							},
-						},
-					},
-					Substitution: "/foo",
-				},
-			},
-			Action: &v1.Route_RouteAction{},
-		}, out)
-		expectedError := "error parsing regexp: unexpected ): `^/proxy/v1/store/[^/]*/xyz/order/status/[^/]*)`"
-		Expect(err.Error()).To(Equal(expectedError))
-	})
 })
 
 var _ = Describe("timeout", func() {

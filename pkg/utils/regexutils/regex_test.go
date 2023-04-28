@@ -54,20 +54,4 @@ var _ = Describe("Regex", func() {
 		Expect(out.Pattern.Regex).To(Equal(in.Pattern.Regex))
 		Expect(out.Substitution).To(Equal(in.Substitution))
 	})
-
-	It("should error on incorrect regex", func() {
-		ctx := settingsutil.WithSettings(context.Background(), &v1.Settings{
-			Gloo: &v1.GlooOptions{RegexMaxProgramSize: &wrappers.UInt32Value{Value: 123}},
-		})
-		subPattern := v32.RegexMatcher{
-			Regex: "^/proxy/v1/store/[^/]*/xyz/order/status/[^/]*)",
-		}
-		in := v32.RegexMatchAndSubstitute{
-			Substitution: "123",
-			Pattern:      &subPattern,
-		}
-		_, err := ConvertRegexMatchAndSubstitute(ctx, &in)
-		expectedError := "error parsing regexp: unexpected ): `^/proxy/v1/store/[^/]*/xyz/order/status/[^/]*)`"
-		Expect(err.Error()).To(Equal(expectedError))
-	})
 })
