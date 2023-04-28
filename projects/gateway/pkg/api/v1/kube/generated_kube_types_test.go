@@ -94,6 +94,18 @@ var _ = Describe("Generated Kube Code", func() {
 		cancel()
 	})
 
+	JustBeforeEach(func() {
+		us, _ := upstreamClient.Read("default", "petstore-static", clients.ReadOpts{})
+		if us != nil {
+			upstreamClient.Delete("default", "petstore-static", clients.DeleteOpts{})
+		}
+
+		vs, _ := virtualServiceClient.Read("default", "my-routes", clients.ReadOpts{})
+		if vs != nil {
+			virtualServiceClient.Delete("default", "my-routes", clients.DeleteOpts{})
+		}
+	})
+
 	It("can read and write a gloo resource as a typed kube object", func() {
 		us := &gloov1kubetypes.Upstream{
 			ObjectMeta: v1.ObjectMeta{Name: "petstore-static", Namespace: "default"},
