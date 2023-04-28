@@ -119,6 +119,10 @@ func (m *SslConfig) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetOcspStaplePolicy() != target.GetOcspStaplePolicy() {
+		return false
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *SslConfig_SecretRef:
@@ -206,6 +210,10 @@ func (m *SSLFiles) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetRootCa(), target.GetRootCa()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetOcspStaple(), target.GetOcspStaple()) != 0 {
 		return false
 	}
 

@@ -307,6 +307,10 @@ func (m *TlsSecret) Equal(that interface{}) bool {
 		return false
 	}
 
+	if bytes.Compare(m.GetOcspStaple(), target.GetOcspStaple()) != 0 {
+		return false
+	}
+
 	return true
 }
 
