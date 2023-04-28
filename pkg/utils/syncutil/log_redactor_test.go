@@ -187,12 +187,27 @@ var _ = Describe("Log Redactor", func() {
 		},
 		},
 	}), Entry("hides the hmac secrets from logs", "hmacsecret", &xdsproto.ExtAuthConfig{
-		// TODO this should hide the credentials
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_HmacAuth{
 				HmacAuth: &xdsproto.ExtAuthConfig_HmacAuthConfig{
 					SecretStorage:      &xdsproto.ExtAuthConfig_HmacAuthConfig_SecretList{SecretList: &xdsproto.ExtAuthConfig_InMemorySecretList{SecretList: map[string]string{"hmacsecretuser": "hmacsecretpass"}}},
 					ImplementationType: &xdsproto.ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
+				},
+			},
+		}},
+	}), Entry("hides the encryption key value from logs", "encryptionKey", &xdsproto.ExtAuthConfig{
+		Configs: []*xdsproto.ExtAuthConfig_Config{{
+			AuthConfig: &xdsproto.ExtAuthConfig_Config_Oauth2{
+				Oauth2: &xdsproto.ExtAuthConfig_OAuth2Config{
+					OauthType: &xdsproto.ExtAuthConfig_OAuth2Config_OidcAuthorizationCode{
+						OidcAuthorizationCode: &xdsproto.ExtAuthConfig_OidcAuthorizationCodeConfig{
+							UserSession: &xdsproto.ExtAuthConfig_UserSessionConfig{
+								CipherConfig: &xdsproto.ExtAuthConfig_UserSessionConfig_CipherConfig{
+									Key: "encryptionKey",
+								},
+							},
+						},
+					},
 				},
 			},
 		}},
