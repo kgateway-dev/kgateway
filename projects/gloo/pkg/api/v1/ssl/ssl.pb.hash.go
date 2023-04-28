@@ -142,6 +142,11 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetOcspStaplePolicy())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.SslSecrets.(type) {
 
 	case *SslConfig_SecretRef:
@@ -237,6 +242,10 @@ func (m *SSLFiles) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	if _, err = hasher.Write([]byte(m.GetRootCa())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetOcspStaple())); err != nil {
 		return 0, err
 	}
 

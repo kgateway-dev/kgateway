@@ -90,6 +90,8 @@ func (m *SslConfig) Clone() proto.Message {
 		target.TransportSocketConnectTimeout = proto.Clone(m.GetTransportSocketConnectTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	target.OcspStaplePolicy = m.GetOcspStaplePolicy()
+
 	switch m.SslSecrets.(type) {
 
 	case *SslConfig_SecretRef:
@@ -146,6 +148,8 @@ func (m *SSLFiles) Clone() proto.Message {
 	target.TlsKey = m.GetTlsKey()
 
 	target.RootCa = m.GetRootCa()
+
+	target.OcspStaple = m.GetOcspStaple()
 
 	return target
 }

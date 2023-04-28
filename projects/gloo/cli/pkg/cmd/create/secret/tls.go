@@ -21,7 +21,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 		Use:   "tls",
 		Short: `Create a secret with the given name`,
 		Long: "Create a secret with the given name. " +
-			"The format of the secret data is: `{\"tls\" : { \"ca.crt\": [root ca], \"tls.crt\": [cert chain], \"tls.key\": [private key]}}`. ",
+			"The format of the secret data is: `{\"tls\" : { \"ca.crt\": [root ca], \"tls.crt\": [cert chain], \"tls.key\": [private key], \"tls.ocsp-staple\": [ocsp staple]}}`. ",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err
@@ -45,6 +45,7 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 	flags.StringVar(&input.RootCaFilename, "rootca", "", "filename of rootca for secret")
 	flags.StringVar(&input.PrivateKeyFilename, "privatekey", "", "filename of privatekey for secret")
 	flags.StringVar(&input.CertChainFilename, "certchain", "", "filename of certchain for secret")
+	flags.StringVar(&input.OCSPStapleFilename, "ocspstaple", "", "filename of ocspstaple for secret")
 
 	return cmd
 }
@@ -53,16 +54,20 @@ const (
 	tlsPromptRootCa     = "filename of rootca for secret (optional)"
 	tlsPromptPrivateKey = "filename of privatekey for secret"
 	tlsPromptCertChain  = "filename of certchain for secret"
+	tlsPromptOcspStaple = "filename of ocspstaple for secret (optional)"
 )
 
 func TlsSecretArgsInteractive(input *options.TlsSecret) error {
-	if err := cliutil.GetStringInput("filename of rootca for secret (optional)", &input.RootCaFilename); err != nil {
+	if err := cliutil.GetStringInput(tlsPromptRootCa, &input.RootCaFilename); err != nil {
 		return err
 	}
-	if err := cliutil.GetStringInput("filename of privatekey for secret", &input.PrivateKeyFilename); err != nil {
+	if err := cliutil.GetStringInput(tlsPromptPrivateKey, &input.PrivateKeyFilename); err != nil {
 		return err
 	}
-	if err := cliutil.GetStringInput("filename of certchain for secret", &input.CertChainFilename); err != nil {
+	if err := cliutil.GetStringInput(tlsPromptCertChain, &input.CertChainFilename); err != nil {
+		return err
+	}
+	if err := cliutil.GetStringInput(tlsPromptOcspStaple, &input.OCSPStapleFilename); err != nil {
 		return err
 	}
 
@@ -70,10 +75,8 @@ func TlsSecretArgsInteractive(input *options.TlsSecret) error {
 }
 
 func createTlsSecret(ctx context.Context, meta *core.Metadata, input options.TlsSecret, dryRun bool, outputType printers.OutputType) error {
-
 	// read the values
-
-	rootCa, privateKey, certChain, err := input.ReadFiles()
+	tlsSecretData, err := input.ReadFiles()
 	if err != nil {
 		return err
 	}
@@ -81,11 +84,7 @@ func createTlsSecret(ctx context.Context, meta *core.Metadata, input options.Tls
 	secret := &gloov1.Secret{
 		Metadata: meta,
 		Kind: &gloov1.Secret_Tls{
-			Tls: &gloov1.TlsSecret{
-				CertChain:  string(certChain),
-				PrivateKey: string(privateKey),
-				RootCa:     string(rootCa),
-			},
+			Tls: tlsSecretData,
 		},
 	}
 

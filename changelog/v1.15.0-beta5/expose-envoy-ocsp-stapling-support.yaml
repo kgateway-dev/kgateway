@@ -1,0 +1,8 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5605
+    resolvesIssue: false
+    description: >-
+      Expose Envoy's OCSP Stapling support through two new fields: `ocsp_staple` and `ocsp_staple_policy`.
+      OCSP responses can be stored in TLS secrets through `glooctl create secret tls`, or by manually storing the OCSP response in a k8s tls secret under the `data` field: `tls.ocsp-staple`.
+      The `tls.ocsp-staple` secret field name is subject to change, and is currently based off of the naming used by cert-manager in this [WIP PR](https://github.com/cert-manager/cert-manager/pull/5830).
