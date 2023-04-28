@@ -89,6 +89,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+require github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
+
 require (
 	cloud.google.com/go/compute v1.12.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
@@ -122,7 +124,6 @@ require (
 	github.com/cenkalti/backoff/v3 v3.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect
 	github.com/cockroachdb/apd/v2 v2.0.1 // indirect
 	github.com/containerd/cgroups v1.0.2 // indirect
 	github.com/containerd/containerd v1.6.15 // indirect
