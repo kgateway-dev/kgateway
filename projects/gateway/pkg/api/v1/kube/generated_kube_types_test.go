@@ -2,6 +2,7 @@ package kube_test
 
 import (
 	"context"
+	"strings"
 
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -84,6 +85,22 @@ var _ = Describe("Generated Kube Code", func() {
 			SharedCache: kubeCache,
 		})
 		Expect(err).NotTo(HaveOccurred())
+		err = glooV1Client.Upstreams("default").Delete(ctx, "petstore-static", v1.DeleteOptions{})
+		if err != nil {
+			notFound := strings.Contains(err.Error(), "not found")
+			alreadyExists := strings.Contains(err.Error(), "already exists")
+			if !(alreadyExists || notFound) {
+				Expect(err).ToNot(HaveOccurred())
+			}
+		}
+		err = gatewayV1Client.VirtualServices("default").Delete(ctx, "my-routes", v1.DeleteOptions{})
+		if err != nil {
+			notFound := strings.Contains(err.Error(), "not found")
+			alreadyExists := strings.Contains(err.Error(), "already exists")
+			if !(notFound || alreadyExists) {
+				Expect(err).ToNot(HaveOccurred())
+			}
+		}
 	})
 	AfterEach(func() {
 		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
