@@ -395,6 +395,8 @@ spec:
                                 type: string
                               sslFiles:
                                 properties:
+                                  ocspStaple:
+                                    type: string
                                   rootCa:
                                     type: string
                                   tlsCert:
@@ -1123,6 +1125,9 @@ spec:
                       disableTlsSessionResumption:
                         nullable: true
                         type: boolean
+                      ocspStaplePolicy:
+                        type: string
+                        x-kubernetes-int-or-string: true
                       oneWayTls:
                         nullable: true
                         type: boolean
@@ -1177,6 +1182,8 @@ spec:
                         type: array
                       sslFiles:
                         properties:
+                          ocspStaple:
+                            type: string
                           rootCa:
                             type: string
                           tlsCert:

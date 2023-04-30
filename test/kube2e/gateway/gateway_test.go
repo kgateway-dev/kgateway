@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/onsi/gomega/types"
+
 	ratelimit2 "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	v1alpha1skv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
@@ -344,7 +346,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			It("works with ssl", func() {
 				caFile := kube2e.ToFile(helpers.Certificate())
-				//noinspection GoUnhandledErrorResult
+				//goland:noinspection GoUnhandledErrorResult
 				defer os.Remove(caFile)
 
 				err := setup.Kubectl("cp", caFile, testHelper.InstallNamespace+"/testrunner:/tmp/ca.crt")
@@ -1967,14 +1969,15 @@ var _ = Describe("Kube2e: gateway", func() {
 			// specifically avoiding using a DescribeTable here in order to avoid reinstalling
 			// for every test case
 			type testCase struct {
-				resourceYaml, expectedErr string
+				resourceYaml string
+				errorMatcher types.GomegaMatcher
 			}
 
-			testValidation := func(yaml, expectedErr string) {
+			testValidation := func(yaml string, errorMatcher types.GomegaMatcher) {
 				out, err := install.KubectlApplyOut([]byte(yaml))
 
 				testValidationDidError := func() {
-					ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
+					ExpectWithOffset(1, string(out)).To(errorMatcher)
 					ExpectWithOffset(1, err).To(HaveOccurred())
 				}
 
@@ -1986,7 +1989,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				}
 
-				if expectedErr == "" {
+				if errorMatcher == nil {
 					testValidationDidSucceed()
 				} else {
 					testValidationDidError()
@@ -2008,7 +2011,13 @@ spec:
   virtualHoost: {}
 `,
 							// This is handled by validation schemas now
-							expectedErr: `ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`,
+							// We support matching on number of options, in order to support our nightly tests,
+							// which are run using our earliest and latest supported versions of Kubernetes
+							errorMatcher: Or(
+								// This is the error returned when running Kubernetes <1.25
+								ContainSubstring(`ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`),
+								// This is the error returned when running Kubernetes >= 1.25
+								ContainSubstring(`Error from server (BadRequest): error when creating "STDIN": VirtualService in version "v1" cannot be handled as a VirtualService: strict decoding error: unknown field "spec.virtualHoost"`)),
 						},
 						{
 							resourceYaml: `
@@ -2032,7 +2041,7 @@ spec:
               name: does-not-exist
               namespace: anywhere
 `,
-							expectedErr: "", // should not fail
+							errorMatcher: nil, // should not fail
 						},
 						{
 							resourceYaml: `
@@ -2052,7 +2061,7 @@ spec:
           name: does-not-exist # also not allowed, but caught later
           namespace: anywhere
 `,
-							expectedErr: gwtranslator.MissingPrefixErr.Error(),
+							errorMatcher: ContainSubstring(gwtranslator.MissingPrefixErr.Error()),
 						},
 						{
 							resourceYaml: `
@@ -2064,7 +2073,7 @@ metadata:
 spec:
   bindAddress: '::'
 `,
-							expectedErr: gwtranslator.MissingGatewayTypeErr.Error(),
+							errorMatcher: ContainSubstring(gwtranslator.MissingGatewayTypeErr.Error()),
 						},
 						{
 							resourceYaml: `
@@ -2086,12 +2095,12 @@ spec:
         - genericKey:
             descriptorValue: bar
 `,
-							expectedErr: "The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only",
+							errorMatcher: ContainSubstring("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only"),
 						},
 					}
 
 					for _, tc := range testCases {
-						testValidation(tc.resourceYaml, tc.expectedErr)
+						testValidation(tc.resourceYaml, tc.errorMatcher)
 					}
 				})
 
@@ -2132,10 +2141,10 @@ spec:
     hosts:
       - addr: ~
 `,
-						expectedErr: "addr cannot be empty for host\n",
+						errorMatcher: ContainSubstring("addr cannot be empty for host\n"),
 					}}
 					for _, tc := range testCases {
-						testValidation(tc.resourceYaml, tc.expectedErr)
+						testValidation(tc.resourceYaml, tc.errorMatcher)
 					}
 				})
 

@@ -216,12 +216,12 @@ var _ = Describe("Proxy Protocol", func() {
 })
 
 func getHttpClientWithoutProxyProtocol(rootCACert string) *http.Client {
-	return testutils.DefaultClientBuilder().WithTLS(rootCACert).Build()
+	return testutils.DefaultClientBuilder().WithTLSRootCa(rootCACert).Build()
 }
 
 func getHttpClientWithProxyProtocol(rootCACert string, proxyProtocolBytes []byte) *http.Client {
 	return testutils.DefaultClientBuilder().
-		WithTLS(rootCACert).
+		WithTLSRootCa(rootCACert).
 		WithProxyProtocolBytes(proxyProtocolBytes).
 		Build()
 }

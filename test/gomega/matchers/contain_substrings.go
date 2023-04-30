@@ -14,6 +14,13 @@ func ContainSubstrings(substrings []string) types.GomegaMatcher {
 		// If we do not this we will create an And matcher for 0 objects, which leads to a panic
 		return gstruct.Ignore()
 	}
+
+	if len(substrings) == 1 {
+		// If one substring is defined, we create a matcher for that substring
+		// If we do not this we will create an And matcher for 1 object, which leads to a panic
+		return gomega.ContainSubstring(substrings[0])
+	}
+
 	substringMatchers := make([]types.GomegaMatcher, 0, len(substrings))
 	for i := range substrings {
 		substringMatchers = append(substringMatchers, gomega.ContainSubstring(substrings[i]))

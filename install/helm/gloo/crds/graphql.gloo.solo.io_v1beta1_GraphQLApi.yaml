@@ -63,6 +63,8 @@ spec:
                                       type: object
                                     spanName:
                                       type: string
+                                    timeout:
+                                      type: string
                                     upstreamRef:
                                       properties:
                                         name:
@@ -110,6 +112,8 @@ spec:
                                           type: object
                                       type: object
                                     spanName:
+                                      type: string
+                                    timeout:
                                       type: string
                                     upstreamRef:
                                       properties:

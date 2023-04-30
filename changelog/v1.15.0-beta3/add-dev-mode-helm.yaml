@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Expose `settings.devMode` in the helm templates and expose gloo debug port when set to true at install time
+    issueLink: https://github.com/solo-io/solo-projects/issues/4169

@@ -139,7 +139,7 @@ gatewayProxies:
 As a result, the following pod disruption budget policy is created:
 
 ```yaml
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -222,10 +222,6 @@ Affinity settings for the `rate-limit` deployment can be overwritten during inst
 
 *DO NOT* scale the control plane components, such as the Gateway deployment, the Gloo deployment or the Discovery deployment. Scaling these components provides no benefit and can lead to race conditions.
 
-{{% notice note %}}
-If you are using the xDS-Relay architecture, you can scale the `xds-relay` deployment up.
-{{% /notice %}}
-
 
 ## Enhancing the data-plane reliability
 
@@ -292,18 +288,18 @@ Some metrics that may be useful to monitor (listed in Prometheus format):
 A common issue in production (or environments with high traffic) is to have sizing issues. This will result in an abnormal number of restarts like this:
 ```shell
 $ kubectl get all -n gloo-system
-NAME                                                       READY   STATUS             RESTARTS   AGE
-pod/discovery-9d4c7fb4c-5wq5m                              1/1     Running            13         35d
-pod/extauth-77bb4fc79b-dsl6q                               1/1     Running            0          35d
-pod/gateway-f774b4d5b-jfhwn                                1/1     Running            0          35d
-pod/gateway-proxy-7656d9df87-qtn2s                         1/1     Running            0          35d
-pod/gloo-db4fb8c4-lfcrp                                    1/1     Running            13         35d
-pod/glooe-grafana-78c6f96db-wgl5k                          1/1     Running            0          41d
-pod/glooe-prometheus-kube-state-metrics-5dd77b76fc-s8prb   1/1     Running            0          41d
-pod/glooe-prometheus-server-59dcf7bc5b-jt654               1/2     CrashLoopBackOff   10692      41d
-pod/observability-656d47787-2fskq                          0/1     CrashLoopBackOff   9558       33d
-pod/rate-limit-7d6cf64fbf-ldgbp                            1/1     Running            0          35d
-pod/redis-55d6dbb6b7-ql89p                                 1/1     Running            0          41d
+NAME                                                          READY   STATUS             RESTARTS   AGE
+pod/discovery-9d4c7fb4c-5wq5m                                 1/1     Running            13         35d
+pod/extauth-77bb4fc79b-dsl6q                                  1/1     Running            0          35d
+pod/gateway-f774b4d5b-jfhwn                                   1/1     Running            0          35d
+pod/gateway-proxy-7656d9df87-qtn2s                            1/1     Running            0          35d
+pod/gloo-db4fb8c4-lfcrp                                       1/1     Running            13         35d
+pod/glooe-grafana-78c6f96db-wgl5k                             1/1     Running            0          41d
+pod/glooe-prometheus-kube-state-metrics-v2-5dd77b76fc-s8prb   1/1     Running            0          41d
+pod/glooe-prometheus-server-59dcf7bc5b-jt654                  1/2     CrashLoopBackOff   10692      41d
+pod/observability-656d47787-2fskq                             0/1     CrashLoopBackOff   9558       33d
+pod/rate-limit-7d6cf64fbf-ldgbp                               1/1     Running            0          35d
+pod/redis-55d6dbb6b7-ql89p                                    1/1     Running            0          41d
 ```
 
 Looking at the cause of these restarts, we can see that the PV is exhausted:

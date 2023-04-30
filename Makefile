@@ -16,9 +16,10 @@
 # **NOTE TO DEVELOPERS**
 # As you encounter make targets that are frequently used, please make them self-documenting
 .PHONY: help
-help: FIRST_COLUMN_WIDTH=35
+help: NAME_COLUMN_WIDTH=35
+help: LINE_COLUMN_WIDTH=5
 help: ## Output the self-documenting make targets
-	@grep -hE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-$(FIRST_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2}'
+	@grep -hnE '^[%a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = "[:]|(## )"}; {printf "\033[36mL%-$(LINE_COLUMN_WIDTH)s%-$(NAME_COLUMN_WIDTH)s\033[0m %s\n", $$1, $$2, $$4}'
 
 
 #----------------------------------------------------------------------------------
@@ -34,20 +35,23 @@ export PATH:=$(DEPSGOBIN):$(PATH)
 export GOBIN:=$(DEPSGOBIN)
 
 # If you just put your username, then that refers to your account at hub.docker.com
-# To use quay images, set the IMAGE_REPO to "quay.io/solo-io" (or leave unset)
-# To use dockerhub images, set the IMAGE_REPO to "soloio"
-# To use gcr images, set the IMAGE_REPO to "gcr.io/$PROJECT_NAME"
-IMAGE_REPO ?= quay.io/solo-io
+# To use quay images, set the IMAGE_REGISTRY to "quay.io/solo-io" (or leave unset)
+# To use dockerhub images, set the IMAGE_REGISTRY to "soloio"
+# To use gcr images, set the IMAGE_REGISTRY to "gcr.io/$PROJECT_NAME"
+IMAGE_REGISTRY ?= quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "false"
-CREATE_TEST_ASSETS := "false"
-CREATE_ASSETS := "true"
-RUN_REGRESSION_TESTS=false
 
+# CREATE_ASSETS is used to protect certain make targets which publish assets and are used for releases
+CREATE_ASSETS := "true"
+
+# CREATE_TEST_ASSETS allows us to create assets on PRs that are unique
+# This flag will set the version to be PR-unique rather than commit-unique for charts and images
+CREATE_TEST_ASSETS := "false"
 ifneq ($(TEST_ASSET_ID),)
 	CREATE_TEST_ASSETS := "true"
 endif
@@ -79,7 +83,7 @@ endif
 # workaround since makefile has no Logical OR for conditionals
 ifeq ($(CREATE_TEST_ASSETS), "true")
   # set quay image expiration if creating test assets and we're pushing to Quay
-  ifeq ($(IMAGE_REPO),"quay.io/solo-io")
+  ifeq ($(IMAGE_REGISTRY),"quay.io/solo-io")
     QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
   endif
 else
@@ -89,12 +93,13 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.1-patch3
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.6-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
 # Returns the name of the default branch in the remote `origin` repository, e.g. `master`
-DEFAULT_BRANCH_NAME := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+DEFAULT_BRANCH_NAME := $(shell git remote show origin | sed -n '/HEAD branch/s/.*: //p')
+
 # Print the branches that contain the current commit and keep only the one that
 # EXACTLY matches the name of the default branch (avoid matching e.g. `master-2`).
 # If we get back a result, it mean we are on the default branch.
@@ -137,12 +142,11 @@ else
 	endif
 endif
 
-ifeq ($(GOOS),)
-	GOOS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
-endif
+
+GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
-GOLANG_VERSION := golang:1.20.1-alpine
+GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
@@ -186,7 +190,7 @@ fmt-changed:
 
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
-mod-download:
+mod-download: check-go-version
 	go mod download all
 
 
@@ -230,7 +234,7 @@ TEST_PKG ?= ./... # Default to run all tests
 GINKGO_USER_FLAGS ?=
 
 .PHONY: install-test-tools
-install-test-tools:
+install-test-tools: check-go-version
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
@@ -299,10 +303,10 @@ clean-cli-docs:
 #----------------------------------------------------------------------------------
 
 .PHONY: generate-all
-generate-all: generated-code ## Calls generated-code
+generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
+generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
 generated-code: $(OUTPUT_DIR)/.generated-code
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
@@ -320,7 +324,13 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
+
+# makes sure you are running codegen with the correct Go version
+.PHONY: check-go-version
+check-go-version:
+	./ci/check-go-version.sh
+
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -357,9 +367,9 @@ generate-client-mocks:
 #----------------------------------------------------------------------------------
 # build-ci and glooctl along with others are in the ci makefile
 
-
-
-
+ifeq ($(USE_SILENCE_REDIRECTS), true)
+STDERR_SILENCE_REDIRECT := 2> /dev/null
+endif
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -370,7 +380,7 @@ INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 INGRESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(INGRESS_DIR)
 
 $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH): $(INGRESS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: ingress
 ingress: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH)
@@ -382,7 +392,7 @@ $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 ingress-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-$(GOARCH) $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress
 	docker buildx build --load $(PLATFORM) $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/ingress:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/ingress:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Access Logger
@@ -393,7 +403,7 @@ ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 ACCESS_LOG_OUTPUT_DIR=$(OUTPUT_DIR)/$(ACCESS_LOG_DIR)
 
 $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH): $(ACCESS_LOG_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: access-logger
 access-logger: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH)
@@ -405,7 +415,7 @@ $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerf
 access-logger-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-$(GOARCH) $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger
 	docker buildx build --load $(PLATFORM) $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/access-logger:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/access-logger:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -416,7 +426,7 @@ DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 DISCOVERY_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISCOVERY_DIR)
 
 $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH): $(DISCOVERY_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: discovery
 discovery: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH)
@@ -428,10 +438,10 @@ $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-$(GOARCH) $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery
 	docker buildx build --load $(PLATFORM) $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/discovery:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/discovery:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
-# Gloo Edge
+# Gloo
 #----------------------------------------------------------------------------------
 
 GLOO_DIR=projects/gloo
@@ -439,20 +449,20 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
 
 $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: gloo
-gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) ## Gloo Edge
+gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH)
 
 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
 .PHONY: gloo-docker
-gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo ## gloo-docker
+gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-$(GOARCH) $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
 	docker buildx build --load $(PLATFORM) $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REPO)/gloo:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/gloo:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Gloo with race detection enabled.
@@ -466,15 +476,16 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile.build: $(GLOO_DIR)/Dockerfile
 
 # Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DIR)/Dockerfile.build
-	docker buildx build --load $(PLATFORM) -t $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) \
+	docker buildx build --load $(PLATFORM) -t $(IMAGE_REGISTRY)/gloo-race-build-container:$(VERSION) \
 		-f $(GLOO_RACE_OUT_DIR)/Dockerfile.build \
-		--build-arg GO_BUILD_IMAGE=$(GOLANG_VERSION) \
+		--build-arg GO_BUILD_IMAGE=$(GOLANG_ALPINE_IMAGE_NAME) \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg GCFLAGS=$(GCFLAGS) \
 		--build-arg LDFLAGS=$(LDFLAGS) \
 		--build-arg USE_APK=true \
 		--build-arg GOARCH=amd64 \
 		$(PLATFORM) \
+		$(STDERR_SILENCE_REDIRECT) \
 		.
 	touch $@
 
@@ -482,7 +493,7 @@ $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build: $(GLOO_SOURCES) $(GLOO_RACE_OUT_DI
 # Build inside container as we need to target linux and must compile with CGO_ENABLED=1
 # We may be running Docker in a VM (eg, minikube) so be careful about how we copy files out of the containers
 $(GLOO_RACE_OUT_DIR)/gloo-linux-$(GOARCH): $(GLOO_RACE_OUT_DIR)/.gloo-race-docker-build
-	docker create -ti --name gloo-race-temp-container $(IMAGE_REPO)/gloo-race-build-container:$(VERSION) bash
+	docker create -ti --name gloo-race-temp-container $(IMAGE_REGISTRY)/gloo-race-build-container:$(VERSION) bash
 	docker cp gloo-race-temp-container:/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64
 	docker rm -f gloo-race-temp-container
 
@@ -496,12 +507,13 @@ $(GLOO_RACE_OUT_DIR)/Dockerfile: $(GLOO_DIR)/cmd/Dockerfile
 # Hardcode GOARCH for targets that are both built and run entirely in amd64 docker containers
 # Take the executable built in gloo-race and put it in a docker container
 .PHONY: gloo-race-docker
-gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker ## gloo-race-docker
+gloo-race-docker: $(GLOO_RACE_OUT_DIR)/.gloo-race-docker
 $(GLOO_RACE_OUT_DIR)/.gloo-race-docker: $(GLOO_RACE_OUT_DIR)/gloo-linux-amd64 $(GLOO_RACE_OUT_DIR)/Dockerfile
 	docker buildx build --load $(PLATFORM) $(GLOO_RACE_OUT_DIR) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) --build-arg GOARCH=amd64 \
-		-t $(IMAGE_REPO)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/gloo:$(VERSION)-race $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 	touch $@
+
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config for Gloo Edge MTLS
 #----------------------------------------------------------------------------------
@@ -511,7 +523,7 @@ SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 
 $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH): $(SDS_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: sds
 sds: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH)
@@ -523,7 +535,7 @@ $(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/cmd/Dockerfile
 sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-$(GOARCH) $(SDS_OUTPUT_DIR)/Dockerfile.sds
 	docker buildx build --load $(PLATFORM) $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/sds:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/sds:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -534,7 +546,7 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
@@ -546,11 +558,11 @@ $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh ## Envoy container used by Gloo (required for target run-tests)
+gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
 	docker buildx build --load $(PLATFORM) $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg GOARCH=$(GOARCH) \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
-		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
@@ -561,7 +573,7 @@ CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
 CERTGEN_OUTPUT_DIR=$(OUTPUT_DIR)/$(CERTGEN_DIR)
 
 $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH): $(CERTGEN_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go $(STDERR_SILENCE_REDIRECT)
 
 .PHONY: certgen
 certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH)
@@ -573,7 +585,7 @@ $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-$(GOARCH) $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen
 	docker buildx build --load $(PLATFORM) $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/certgen:$(VERSION) $(QUAY_EXPIRATION_LABEL)
+		-t $(IMAGE_REGISTRY)/certgen:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Kubectl - Used in jobs during helm install/upgrade/uninstall
@@ -590,13 +602,7 @@ $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl: $(KUBECTL_DIR)/Dockerfile
 kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 	docker buildx build --load $(PLATFORM) $(KUBECTL_OUTPUT_DIR) -f $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl \
 		--build-arg GOARCH=$(GOARCH) \
-		-t $(IMAGE_REPO)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL)
-
-#----------------------------------------------------------------------------------
-# Build All
-#----------------------------------------------------------------------------------
-.PHONY: build
-build: gloo glooctl discovery envoyinit certgen ingress ## Build all Docker images
+		-t $(IMAGE_REGISTRY)/kubectl:$(VERSION) $(QUAY_EXPIRATION_LABEL) $(STDERR_SILENCE_REDIRECT)
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -614,12 +620,12 @@ ifeq ($(RELEASE), "false")
 endif
 
 .PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	IMAGE_REPO=$(IMAGE_REPO) go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
+	IMAGE_REGISTRY=$(IMAGE_REGISTRY) go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
 	touch $@
 
 .PHONY: package-chart
@@ -630,10 +636,8 @@ package-chart: generate-helm-files
 
 .PHONY: push-chart-to-registry
 push-chart-to-registry: generate-helm-files
-	mkdir -p $(HELM_REPOSITORY_CACHE)
-	cp $(DOCKER_CONFIG)/config.json $(HELM_REPOSITORY_CACHE)/config.json
-	HELM_EXPERIMENTAL_OCI=1 helm chart save $(HELM_DIR) gcr.io/solo-public/gloo-helm:$(VERSION)
-	HELM_EXPERIMENTAL_OCI=1 helm chart push gcr.io/solo-public/gloo-helm:$(VERSION)
+	helm package $(HELM_DIR)
+	helm push --registry-config $(DOCKER_CONFIG)/config.json gloo-$(VERSION).tgz oci://gcr.io/solo-public/gloo-helm
 
 .PHONY: fetch-package-and-save-helm
 fetch-package-and-save-helm: generate-helm-files
@@ -689,7 +693,12 @@ ifeq ($(RELEASE),"true")
 endif
 
 #----------------------------------------------------------------------------------
-# Release
+# Publish Artifacts
+#
+# We publish artifacts using our CI pipeline. This may happen during any of the following scenarios:
+# 	- Release
+#	- Development Build (a one-off build for unreleased code)
+#	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
 #----------------------------------------------------------------------------------
 
 $(OUTPUT_DIR)/gloo-enterprise-version:
@@ -699,122 +708,135 @@ $(OUTPUT_DIR)/gloo-enterprise-version:
 upload-github-release-assets: print-git-info build-cli render-manifests
 	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
+# Intended only to be run by CI
+# Build and push docker images to the defined IMAGE_REGISTRY
+.PHONY: publish-docker
+ifeq ($(CREATE_ASSETS), "true")
+publish-docker: docker
+publish-docker: docker-push
+endif
+
+# Intended only to be run by CI
+# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
+# and push them to a secondary repository, defined at IMAGE_REGISTRY
+.PHONY: publish-docker-retag
+ifeq ($(RELEASE), "true")
+publish-docker-retag: docker-retag
+publish-docker-retag: docker-push
+endif
 
 #----------------------------------------------------------------------------------
 # Docker
 #----------------------------------------------------------------------------------
-#
-#---------
-#--------- Push
-#---------
 
-DOCKER_IMAGES :=
-ifeq ($(CREATE_ASSETS),"true")
-	DOCKER_IMAGES := docker
-endif
+docker-retag-%:
+	docker tag $(ORIGINAL_IMAGE_REGISTRY)/$*:$(VERSION) $(IMAGE_REGISTRY)/$*:$(VERSION)
 
-.PHONY: docker-push-retag
-docker-push-retag:
-ifeq ($(RELEASE), "true")
-	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION) $(IMAGE_REPO)/ingress:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION) $(IMAGE_REPO)/discovery:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION) $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-race $(IMAGE_REPO)/gloo:$(VERSION)-race && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION) $(IMAGE_REPO)/certgen:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/kubectl:$(VERSION) $(IMAGE_REPO)/kubectl:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION) $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION) $(IMAGE_REPO)/access-logger:$(VERSION)
+docker-push-%:
+	docker push $(IMAGE_REGISTRY)/$*:$(VERSION)
 
-	docker tag $(RETAG_IMAGE_REGISTRY)/ingress:$(VERSION)-extended $(IMAGE_REPO)/ingress:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/discovery:$(VERSION)-extended $(IMAGE_REPO)/discovery:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo:$(VERSION)-extended $(IMAGE_REPO)/gloo:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION)-extended $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/certgen:$(VERSION)-extended $(IMAGE_REPO)/certgen:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/kubectl:$(VERSION)-extended $(IMAGE_REPO)/kubectl:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/sds:$(VERSION)-extended $(IMAGE_REPO)/sds:$(VERSION)-extended && \
-	docker tag $(RETAG_IMAGE_REGISTRY)/access-logger:$(VERSION)-extended $(IMAGE_REPO)/access-logger:$(VERSION)-extended
+# Build docker images using the defined IMAGE_REGISTRY, VERSION
+.PHONY: docker
+docker: check-go-version
+docker: gloo-docker
+docker: discovery-docker
+docker: gloo-envoy-wrapper-docker
+docker: certgen-docker
+docker: sds-docker
+docker: ingress-docker
+docker: access-logger-docker
+docker: kubectl-docker
 
-	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
-	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
-	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
-	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
-
-	docker push $(IMAGE_REPO)/ingress:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/discovery:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/certgen:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/kubectl:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/sds:$(VERSION)-extended && \
-	docker push $(IMAGE_REPO)/access-logger:$(VERSION)-extended
-endif
-
-.PHONY: docker docker-push
-docker: docker-local
-
-.PHONY: docker-local
-docker-local: discovery-docker gloo-docker  \
-		gloo-envoy-wrapper-docker certgen-docker sds-docker \
-		ingress-docker access-logger-docker kubectl-docker
-		touch $@
-
-.PHONY: docker-push-local-arm
-docker-push-local-arm: docker docker-push
-
-# Depends on DOCKER_IMAGES, which is set to docker if CREATE_ASSETS is "true", otherwise empty (making this a no-op).
-# This prevents executing the dependent targets if CREATE_ASSETS is not true, while still enabling `make docker`
-# to be used for local testing.
+# Push docker images to the defined IMAGE_REGISTRY
 .PHONY: docker-push
-docker-push: docker-push-local
+docker-push: docker-push-gloo
+docker-push: docker-push-discovery
+docker-push: docker-push-gloo-envoy-wrapper
+docker-push: docker-push-certgen
+docker-push: docker-push-sds
+docker-push: docker-push-ingress
+docker-push: docker-push-access-logger
+docker-push: docker-push-kubectl
 
-.PHONY: docker-push-local
-docker-push-local: $(DOCKER_IMAGES)
-	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
-	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
-	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
-	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
-	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
+# and tag them with a secondary repository, defined at IMAGE_REGISTRY
+.PHONY: docker-retag
+docker-retag: docker-retag-gloo
+docker-retag: docker-retag-discovery
+docker-retag: docker-retag-gloo-envoy-wrapper
+docker-retag: docker-retag-certgen
+docker-retag: docker-retag-sds
+docker-retag: docker-retag-ingress
+docker-retag: docker-retag-access-logger
+docker-retag: docker-retag-kubectl
 
-# To mimic the effects of CI, CREATE_ASSETS, TAGGED_VERSION and CREATE_TEST_ASSETS need to be set
-# Extended images are the same as regular images but with curl
-.PHONY: docker-push-extended
-docker-push-extended:
-ifeq ($(CREATE_ASSETS), "true")
-	ci/extended-docker/extended-docker.sh
-endif
+#----------------------------------------------------------------------------------
+# Build assets for Kube2e tests
+#----------------------------------------------------------------------------------
+#
+# The following targets are used to generate the assets on which the kube2e tests rely upon.
+# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the KinD test cluster.
 
 CLUSTER_NAME ?= kind
+INSTALL_NAMESPACE ?= gloo-system
 
-.PHONY: push-kind-images
-push-kind-images: docker
-	kind load docker-image $(IMAGE_REPO)/ingress:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/kubectl:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
+kind-load-%:
+	kind load docker-image $(IMAGE_REGISTRY)/$*:$(VERSION) --name $(CLUSTER_NAME)
 
-.PHONY: push-docker-images-arm-to-kind-registry
-push-docker-images-arm-to-kind-registry:
-	docker push $(IMAGE_REPO)/ingress:$(VERSION)
-	docker push $(IMAGE_REPO)/discovery:$(VERSION)
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
-	docker push $(IMAGE_REPO)/certgen:$(VERSION)
-	docker push $(IMAGE_REPO)/kubectl:$(VERSION)
-	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
-	docker push $(IMAGE_REPO)/sds:$(VERSION)
+# Build an image and load it into the KinD cluster
+# Depends on: IMAGE_REGISTRY, VERSION, CLUSTER_NAME
+# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image and load it into kind
+
+# Update the docker image used by a deployment
+# This works for most of our deployments because the deployment name and container name both match
+# NOTE TO DEVS:
+#	I explored using a special format of the wildcard to pass deployment:image,
+# 	but ran into some challenges with that pattern, while calling this target from another one.
+#	It could be a cool extension to support, but didn't feel pressing so I stopped
+kind-set-image-%:
+	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
+	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
+
+# Reload an image in KinD
+# This is useful to developers when changing a single component
+# You can reload an image, which means it will be rebuilt and reloaded into the kind cluster, and the deployment
+# will be updated to reference it
+# Depends on: IMAGE_REGISTRY, VERSION, INSTALL_NAMESPACE , CLUSTER_NAME
+# Envoy image may be specified via ENVOY_GLOO_IMAGE on the command line or at the top of this file
+kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specified image, load it into kind, and restart its deployment
+
+# This is an alias to remedy the fact that the deployment is called gateway-proxy
+# but our make targets refer to gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper:
+	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
+	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
+
+.PHONY: kind-build-and-load ## Use to build all images and load them into kind
+kind-build-and-load: kind-build-and-load-gloo
+kind-build-and-load: kind-build-and-load-discovery
+kind-build-and-load: kind-build-and-load-gloo-envoy-wrapper
+kind-build-and-load: kind-build-and-load-certgen
+kind-build-and-load: kind-build-and-load-sds
+kind-build-and-load: kind-build-and-load-ingress
+kind-build-and-load: kind-build-and-load-access-logger
+kind-build-and-load: kind-build-and-load-kubectl
+
+define kind_reload_msg
+The kind-reload-% targets exist in order to assist developers with the work cycle of
+build->test->change->build->test. To that end, rebuilding/reloading every image, then
+restarting every deployment is seldom necessary. Consider using kind-reload-% to do so
+for a specific component, or kind-build-and-load to push new images for every component.
+endef
+export kind_reload_msg
+.PHONY: kind-reload
+kind-reload:
+	@echo "$$kind_reload_msg"
 
 # Useful utility for listing images loaded into the kind cluster
 .PHONY: kind-list-images
@@ -826,18 +848,10 @@ kind-list-images: ## List solo-io images in the kind cluster named {CLUSTER_NAME
 kind-prune-images: ## Remove images in the kind cluster named {CLUSTER_NAME}
 	docker exec -ti $(CLUSTER_NAME)-control-plane crictl rmi --prune
 
-
-#----------------------------------------------------------------------------------
-# Build assets for Kube2e tests
-#----------------------------------------------------------------------------------
-#
-# The following targets are used to generate the assets on which the kube2e tests rely upon.
-# The Kube2e tests will use the generated Gloo Edge Chart to install Gloo Edge to the GKE test cluster.
-
 .PHONY: build-test-chart
-build-test-chart:
+build-test-chart: ## Build the Helm chart and place it in the _test directory
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) $(STDERR_SILENCE_REDIRECT)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
@@ -849,7 +863,7 @@ build-test-chart:
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 # The minimum version to scan with trivy
-MIN_SCANNED_VERSION ?= v1.10.0
+MIN_SCANNED_VERSION ?= v1.11.0
 
 .PHONY: run-security-scans
 run-security-scan:
@@ -867,7 +881,7 @@ publish-security-scan:
 .PHONY: scan-version
 scan-version: ## Scan all Gloo images with the tag matching {VERSION} env variable
 	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go run github.com/solo-io/go-utils/securityscanutils/cli scan-version -v \
-		-r $(IMAGE_REPO)\
+		-r $(IMAGE_REGISTRY)\
 		-t $(VERSION)\
 		--images gloo,gloo-envoy-wrapper,discovery,ingress,sds,certgen,access-logger,kubectl
 

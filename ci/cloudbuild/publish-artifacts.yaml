@@ -1,6 +1,6 @@
 steps:
 
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.1'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.2'
   id: 'prepare-workspace'
   args:
   - '--repo-name'
@@ -44,10 +44,10 @@ steps:
   - 'us-central1-a'
 
 # Run make targets to push docker images to quay.io
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
-  id: 'docker-push-extended'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.2'
+  id: 'publish-docker'
   args:
-  - 'docker-push-extended'
+  - 'publish-docker'
   dir: *dir
   secretEnv:
   - 'GITHUB_TOKEN'
@@ -63,9 +63,9 @@ steps:
   - 'auth'
   - 'configure-docker'
   waitFor:
-  - 'docker-push-extended'
+  - 'publish-docker'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.2'
   id: 'release-chart'
   dir: *dir
   args:
@@ -82,20 +82,20 @@ steps:
   - 'gcr-auth'
 
 # Run make targets to retag and push docker images to GCR
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.2'
   id: 'docker-push-extended-gcr'
   dir: *dir
   args:
-  - 'docker-push-retag'
+  - 'publish-docker-retag'
   env:
-  - 'IMAGE_REPO=gcr.io/gloo-edge'
-  - 'RETAG_IMAGE_REGISTRY=quay.io/solo-io'
+  - 'ORIGINAL_IMAGE_REGISTRY=quay.io/solo-io'
+  - 'IMAGE_REGISTRY=gcr.io/gloo-edge'
   secretEnv:
   - 'GITHUB_TOKEN'
   waitFor:
   - 'gcr-auth'
   - 'prepare-gcr-zone'
-  - 'docker-push-extended'
+  - 'publish-docker'
 
 secrets:
 - kmsKeyName: 'projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key'

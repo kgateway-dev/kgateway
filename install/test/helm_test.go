@@ -2058,7 +2058,7 @@ spec:
 						})
 
 						pdb := makeUnstructured(`
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -2082,7 +2082,7 @@ spec:
 						})
 
 						pdb := makeUnstructured(`
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -2107,7 +2107,7 @@ spec:
 						})
 
 						pdbFormat := `
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: %s-pdb
@@ -3004,7 +3004,7 @@ spec:
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"wget", "-O", "/dev/null", "127.0.0.1:19000/ready",
@@ -3016,7 +3016,7 @@ spec:
 							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
@@ -3050,7 +3050,7 @@ spec:
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								HTTPGet: &v1.HTTPGetAction{
 									Path:   "/ready",
 									Port:   intstr.FromInt(19000),
@@ -3062,7 +3062,7 @@ spec:
 							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								HTTPGet: &v1.HTTPGetAction{
 									Path:   "/server_info",
 									Port:   intstr.FromInt(19000),
@@ -3097,7 +3097,7 @@ spec:
 						})
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-							PreStop: &v1.Handler{
+							PreStop: &v1.LifecycleHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"/bin/sh",
@@ -3120,7 +3120,7 @@ spec:
 						})
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-							PreStop: &v1.Handler{
+							PreStop: &v1.LifecycleHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"/bin/sh",
@@ -4505,7 +4505,7 @@ metadata:
 						}
 
 						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								TCPSocket: &v1.TCPSocketAction{
 									Port: intstr.FromInt(9977),
 								},
@@ -5455,7 +5455,7 @@ metadata:
 												AllowPrivilegeEscalation: pointer.BoolPtr(false),
 											},
 											ReadinessProbe: &v1.Probe{
-												Handler: v1.Handler{
+												ProbeHandler: v1.ProbeHandler{
 													TCPSocket: &v1.TCPSocketAction{
 														Port: intstr.FromInt(9977),
 													},
@@ -6074,6 +6074,52 @@ spec:
   ssl: false
   useProxyProto: false`, true)
 				})
+			})
+
+			It("test devMode", func() {
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: append([]string{"settings.devMode=true"}),
+				})
+
+				resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+					// Check the gloo deployment container
+					if u.GetKind() == "Deployment" && u.GetName() == "gloo" {
+						deploymentObject, err := kuberesource.ConvertUnstructured(u)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+
+						containers := structuredDeployment.Spec.Template.Spec.Containers
+						//a := getFieldFromUnstructured(u, []string{"spec", "template", "spec", "containers"}...)
+						Expect(containers).ToNot(BeNil())
+						Expect(containers).To(HaveLen(1), "should have exactly 1 container")
+						ports := containers[0].Ports
+
+						foundDevModePort := false
+						for _, port := range ports {
+							if port.Name == "dev-admin" && port.ContainerPort == 10010 {
+								foundDevModePort = true
+							}
+						}
+
+						Expect(foundDevModePort).To(Equal(true), "should have found the dev mode port")
+						return foundDevModePort
+					}
+					// Check the Settigns
+					if u.GetKind() == "Settings" && u.GetName() == "default" {
+						devMode := getFieldFromUnstructured(u, []string{"spec", "devMode"}...)
+						devModeBool, ok := devMode.(bool)
+						Expect(ok).To(BeTrue(), "devMode should be a bool")
+						Expect(devModeBool).To(BeTrue(), "should have found the dev mode port")
+						if devMode == true {
+							return true
+						}
+					}
+
+					return false
+				})
+
+				Expect(resources.NumResources()).To(Equal(2))
 			})
 
 		})

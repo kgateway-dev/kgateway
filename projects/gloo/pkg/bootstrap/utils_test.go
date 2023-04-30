@@ -2,7 +2,6 @@ package bootstrap_test
 
 import (
 	"context"
-	"os"
 	"time"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -146,24 +145,27 @@ var _ = Describe("Utils", func() {
 
 	Context("consul tests", func() {
 
+		var (
+			ctx    context.Context
+			cancel context.CancelFunc
+		)
+
 		BeforeEach(func() {
-			if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+
+			if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
 				Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 				return
 			}
-			var err error
-			// Start Consul
-			consulInstance, err = consulFactory.NewConsulInstance()
-			Expect(err).NotTo(HaveOccurred())
-			err = consulInstance.Run()
+
+			ctx, cancel = context.WithCancel(context.Background())
+
+			consulInstance = consulFactory.MustConsulInstance()
+			err := consulInstance.Run(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			if consulInstance != nil {
-				err := consulInstance.Clean()
-				Expect(err).NotTo(HaveOccurred())
-			}
+			cancel()
 		})
 
 		Context("artifacts as consul key value", func() {

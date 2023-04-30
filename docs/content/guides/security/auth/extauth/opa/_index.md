@@ -325,7 +325,10 @@ config:
     - 'http://localhost:8080/callback'
     name: 'GlooApp'
     secret: secretvalue
-  
+  # Allow dex to store the static list of clients in memory
+  enablePasswordDB: true
+    storage:
+      type: memory 
   # A static list of passwords to login the end user. By identifying here, dex
   # won't look in its underlying storage for passwords.
   staticPasswords:
@@ -346,15 +349,15 @@ This configures Dex with two static users. Notice the **client secret** with val
 
 Using this configuration, we can deploy Dex to our cluster using Helm.
 
-If `help repo list` doesn't list the `stable` repo, invoke:
+If `help repo list` doesn't list the `dex` repo, invoke:
 
 ```shell
-helm repo add stable https://charts.helm.sh/stable
+helm repo add dex https://charts.dexidp.io
 ```
 
 And then install dex (helm 3 command follows):
 ```shell
-helm install dex --namespace gloo-system stable/dex -f dex-values.yaml
+helm install dex --namespace gloo-system dex/dex -f dex-values.yaml
 ```
 
 #### Make the client secret accessible to Gloo Edge

@@ -60,36 +60,35 @@ Copy this command for later use.
 
 ## Install Datadog using Helm
 
-We will be using Helm to install Datadog on your Kubernetes cluster. We will need to create a file to override the default values in the Helm chart.
+You can use Helm to install Datadog on your Kubernetes cluster. As part of the installation, you create a file to override the default values in the Helm chart.
 
-### Prepare the datadog-values.yaml file
+### Prepare the Datadog overrides file
 
-First things first, we are going to download the `values.yaml` file from the Datadog GitHub repository and making a couple edits.
+Use the Datadog `values.yaml` configuration file as a starting point for your overrides file. For more information, see the [Datadog docs](https://docs.datadoghq.com/containers/kubernetes/installation/?tab=helm).
 
-```console
-wget https://raw.githubusercontent.com/helm/charts/master/stable/datadog/values.yaml -O datadog-values.yaml
-```
-
-Once you have the file, we are going to update two settings. They are both under `datadog.logs`. Update the yaml as follows:
+Update two `datadog.logs` settings:
+* `enabled: true`: Enables log collection by Datadog.
+* `containerCollectAll: true`: Enables log collection across all containers.
 
 ```yaml
+cat << EOF >  datadog-values.yaml
+datadog:
   logs:
     ## @param enabled - boolean - optional - default: false
     ## Enables this to activate Datadog Agent log collection.
-    ## ref: https://docs.datadoghq.com/agent/basic_agent_usage/kubernetes/#log-collection-setup
+    ## ref: https://docs.datadoghq.com/containers/kubernetes/log/
     #
     enabled: true
 
     ## @param containerCollectAll - boolean - optional - default: false
     ## Enable this to allow log collection for all containers.
-    ## ref: https://docs.datadoghq.com/agent/basic_agent_usage/kubernetes/#log-collection-setup
+    ## ref: https://docs.datadoghq.com/containers/kubernetes/log/
     #
     containerCollectAll: true
+EOF
 ```
 
-The first setting will enable log collection by Datadog and the second enables log collection across all containers.
-
-Now that the `datadog-values.yaml` file is ready, we will use Helm to deploy Datadog to our Kubernetes cluster.
+Now that the `datadog-values.yaml` file is ready, you can use Helm to deploy Datadog to your Kubernetes cluster.
 
 ### Install Datadog with Helm
 

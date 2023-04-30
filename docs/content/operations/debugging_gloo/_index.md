@@ -164,20 +164,20 @@ gloo-66fb8974c9-8sgll            1/1     Running   0          15h
 You will see more components for the [Enterprise installation]({{< versioned_link_path fromRoot="/installation/enterprise/" >}})
 
 ```bash
-NAME                                                  READY   STATUS    RESTARTS   AGE
-discovery-68dbd794-ssx7b                               1/1     Running   0          107m
-extauth-67557744dd-5wc2p                               1/1     Running   0          107m
-gateway-595cc67f54-tr6ps                               1/1     Running   0          107m
-gateway-proxy-79c9f44b5d-cprg7                         1/1     Running   0          107m
-gloo-74bb8b9df7-72t8m                                  1/1     Running   0          107m
-gloo-fed-857964dd9f-gq8np                              1/1     Running   0          107m
-gloo-fed-console-6f99dddccd-ls64k                      3/3     Running   0          107m
-glooe-grafana-865bb9cd45-cdshq                         1/1     Running   0          107m
-glooe-prometheus-kube-state-metrics-55ffc89cbb-kr8jx   1/1     Running   0          107m
-glooe-prometheus-server-7d5b85764c-2nl2w               2/2     Running   0          107m
-observability-5f8ffc8bdc-zggxb                         1/1     Running   0          107m
-rate-limit-6d66688567-5tcx8                            1/1     Running   3          107m
-redis-57fd559c5c-hcd6n                                 1/1     Running   0          107m
+NAME                                                      READY   STATUS    RESTARTS   AGE
+discovery-68dbd794-ssx7b                                  1/1     Running   0          107m
+extauth-67557744dd-5wc2p                                  1/1     Running   0          107m
+gateway-595cc67f54-tr6ps                                  1/1     Running   0          107m
+gateway-proxy-79c9f44b5d-cprg7                            1/1     Running   0          107m
+gloo-74bb8b9df7-72t8m                                     1/1     Running   0          107m
+gloo-fed-857964dd9f-gq8np                                 1/1     Running   0          107m
+gloo-fed-console-6f99dddccd-ls64k                         3/3     Running   0          107m
+glooe-grafana-865bb9cd45-cdshq                            1/1     Running   0          107m
+glooe-prometheus-kube-state-metrics-v2-55ffc89cbb-kr8jx   1/1     Running   0          107m
+glooe-prometheus-server-7d5b85764c-2nl2w                  2/2     Running   0          107m
+observability-5f8ffc8bdc-zggxb                            1/1     Running   0          107m
+rate-limit-6d66688567-5tcx8                               1/1     Running   3          107m
+redis-57fd559c5c-hcd6n                                    1/1     Running   0          107m
 ```
 
 Each component logs the sync loops that it runs, such as syncing with various environment signals like the Kubernetes API, Consul, etc. 
@@ -258,12 +258,55 @@ gloo:
     logLevel: error
   discovery:
     logLevel: error
-  gateway:
-    logLevel: error
   gatewayProxies:
     gatewayProxy:
       envoyLogLevel: error
 ```
+
+Additionally, you can change the logging level for other services in the following Helm values example:
+
+```yaml
+global:
+  extensions:
+    extAuth:
+      deployment:
+        logLevel: error
+    rateLimit:
+      deployment:
+        logLevel: error
+    caching:
+      deployment:
+        logLevel: error
+observability:
+  deployment:
+    logLevel: error
+```
+
+### Dev Mode and Gloo Debug Endpoint
+In non-production environments `settings.devMode` can be set to `true` to enable a debug endpoint on the gloo deployment on port `10010`. If this flag set at install time, the port will be exposed automatically. To set it on an existing installation:
+* Enable in the settings CR:
+```
+spec:
+  devMode: true
+``` 
+* Expose the port in the gloo deployment CR by adding the existing list of ports in the gloo deployment image definition:
+```
+      - ports
+        - containerPort: 10010
+          name: dev-admin
+          protocol: TCP
+```
+* Enable port forwarding:
+```
+kubectl port-forward -n gloo-system deployment/gloo 10010
+```
+
+The following endpoints are then available:
+* `http://localhost:10010/` :   a "Hello World" type page that displays the text `Developer API`
+* `http://localhost:10010/xds` : gets status keys from the xds cache
+* `http://localhost:10010/xds/{key}` : gets the snapshot of the object referred to by  key from the xds cache
+* `http://localhost:10010/api ` : gets the latest ApiSnapshot
+
 
 ### All else fails
 

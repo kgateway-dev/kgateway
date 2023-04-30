@@ -88,7 +88,7 @@ message ResponseTemplate {
 
     and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`,
     the graphql server will not be able to marshal the upstream response into the Simple graphql type
-    because it doesn't know where the relevant data is. If we set result_root to "data.simple", we can give the
+    because it does not know where the relevant data is. If we set result_root to "data.simple", we can give the
     graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants.
   */
   string result_root = 1;
@@ -112,7 +112,7 @@ message ResponseTemplate {
       fullname: '{$body.details.firstname} {$body.details.lastname}'
 
     and the graphql server will be able to extract data for a field given the path to the relevant data
-    in the upstream JSON response. We don't need to have a setter for the `firstname` field because the
+    in the upstream JSON response. We do not need to have a setter for the `firstname` field because the
     JSON response has that field in a position the graphql server can understand automatically.
 
     So far only the $body keyword is supported, but in the future we may add support for others such as $headers.
@@ -147,6 +147,10 @@ message RESTResolver {
   // before being handled by the graphql server.
   ResponseTemplate response = 3;
   string span_name = 4;
+
+  // The timeout to use for this resolver. If unset, the upstream connection timeout
+  // or a default of 1 second will be used.
+  google.protobuf.Duration timeout = 5;
 }
 
 // Defines a configuration for serializing and deserializing requests for a gRPC resolver.
@@ -170,7 +174,7 @@ message GrpcDescriptorRegistry {
     // Supplies the binary content of
     // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
     // services.
-    // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
+    // Note: in yaml, this must be provided as a base64 standard encoded string; yaml cannot handle binary bytes
     bytes proto_descriptor_bin = 2;
 
     // Allows the user to put proto descriptor set binary content in configmaps;
@@ -186,7 +190,13 @@ message GrpcResolver {
   core.solo.io.ResourceRef upstream_ref = 1;
   // configuration used to compose the outgoing request to a REST API
   GrpcRequestTemplate request_transform = 2;
+  // Unclear why 3 was skipped, but reserve it in case it was previously used and removed
+  reserved 3;
   string span_name = 4;
+
+  // The timeout to use for this resolver. If unset, the upstream connection timeout
+  // or a default of 1 second will be used.
+  google.protobuf.Duration timeout = 5;
 }
 
 message StitchedSchema {
@@ -266,7 +276,7 @@ message StitchedSchema {
             username: username
       ```
       the stitched schema will now be able to provide the full user type to all types that require it. In this case,
-      we can now get the first name of an author from the Review.author field even though the Reviews schema doesn't
+      we can now get the first name of an author from the Review.author field even though the Reviews schema does not
       provide the full User type.
      */
     map<string,TypeMergeConfig> type_merge = 3;
@@ -310,7 +320,7 @@ message Resolution {
     // to a gRPC upstream.
     GrpcResolver grpc_resolver = 2;
     // Resolver used to mock responses from an upstream.
-    // This resolver doesn't make a call out to an upstream, but can mock responses
+    // This resolver does not make a call out to an upstream, but can mock responses
     // either synchronously or with a delay.
     // Additionally, can be used to mock errors from an upstream.
     MockResolver mock_resolver = 4;

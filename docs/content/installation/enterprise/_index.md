@@ -175,7 +175,7 @@ global:
     create: false
 settings:
   # configure gloo to write generated custom resources to a custom namespace
-  writeNamespace: my-custom-namespace
+  writeNamespace: my-custom-namespace 
 ```
 
 Then, refer to the file during installation to override default values in the Gloo Edge Helm chart.
@@ -202,20 +202,22 @@ For more information, see the following resources:
 Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, unless they are the Gloo Edge settings, such as `settings.<rest of helm value>`.
 {{% /notice %}}
 
-| Option                                                    | Type     | Description                                                                                                                                                                                                                                                    |
-| --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| grafana.defaultInstallationEnabled                        | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
-| prometheus.enabled                                        | bool     | Deploy Prometheus in the `gloo-system` namespace. Default is `true`. |
-| rateLimit.enabled                                         | bool     | Deploy the rate-limiting server in the `gloo-system` namespace. Default is `true`. |
+| Option | Type | Description |
+| --- | --- | --- |
 | global.extensions.caching.enabled                         | bool     | Deploy the caching server in the `gloo-system` namespace. Default is `false`. |
 | global.extensions.extAuth.enabled                         | bool     | Deploy the ext-auth server in the `gloo-system` namespace. Default is `true`. |
 | global.extensions.extAuth.envoySidecar                    | bool     | Deploy ext-auth in the `gateway-proxy` pod as a sidecar to Envoy. Communicates over a Unix domain socket instead of TCP. Default is `false`. |
+| gloo.gatewayProxies.NAME.tcpKeepaliveTimeSeconds | unit32 | The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60s. You might use this to prevent sync issues due to network connectivity glitches. For more information, see [the Knowledge Base help article](https://support.solo.io/hc/en-us/articles/12066701909524).|
+| gloo.gloo.disableLeaderElection | bool | Leave this field set to the default value of `false` when you have multiple replicas of the `gloo` deployment. This way, Gloo Edge elects a leader from the replicas, with the other replicas ready to become leader if needed in case the elected leader pod fails or restarts. If you want to run only one replica of `gloo`, you can set this value to `true`.|
+| grafana.defaultInstallationEnabled                        | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
 | observability.enabled                                     | bool     | Deploy Grafana in the `gloo-system` namespace. Default is `true`. |
 | observability.customGrafana.enabled                       | bool     | Use your own Grafana instance instead of the default Gloo Edge Grafana instance. Default is `false`. |
 | observability.customGrafana.username                      | string   | Authenticate to your custom Grafana instance using this username for basic auth. |
 | observability.customGrafana.password                      | string   | Authenticate to your custom Grafana instance using this password basic auth. |
 | observability.customGrafana.apiKey                        | string   | Authenticate to your custom Grafana instance using this API key. |
 | observability.customGrafana.url                           | string   | The URL for your custom Grafana instance. |
+| prometheus.enabled                                        | bool     | Deploy Prometheus in the `gloo-system` namespace. Default is `true`. |
+| rateLimit.enabled                                         | bool     | Deploy the rate-limiting server in the `gloo-system` namespace. Default is `true`. |
 ---
 
 ## Enterprise UI
@@ -253,58 +255,58 @@ kubectl --namespace gloo-system get all
 ```
 
 ```noop
-NAME                                                       READY   STATUS    RESTARTS   AGE
-pod/discovery-6dbb5fd8bc-gk2th                             1/1     Running   0          2m5s
-pod/extauth-68bb4745fc-2rs7b                               1/1     Running   0          2m5s
-pod/gateway-proxy-7c49898fdf-blxps                         1/1     Running   0          2m5s
-pod/gloo-7748b94989-dj85p                                  1/1     Running   0          2m5s
-pod/gloo-fed-76c85d689b-q62k4                              1/1     Running   0          2m5s
-pod/gloo-fed-console-dd5f877bd-jgg8n                       3/3     Running   0          2m5s
-pod/glooe-grafana-6f95948945-pvbcg                         1/1     Running   0          2m4s
-pod/glooe-prometheus-kube-state-metrics-6c79cc9554-hlhns   1/1     Running   0          2m5s
-pod/glooe-prometheus-server-757dc7d8f7-x489q               2/2     Running   0          2m5s
-pod/observability-78cb7bddf7-kcrbm                         1/1     Running   0          2m5s
-pod/rate-limit-5ddd4b69d-84d6b                             1/1     Running   0          2m5s
-pod/redis-888f4d9b5-p76wk                                  1/1     Running   0          2m4s
+NAME                                                          READY   STATUS    RESTARTS   AGE
+pod/discovery-6dbb5fd8bc-gk2th                                1/1     Running   0          2m5s
+pod/extauth-68bb4745fc-2rs7b                                  1/1     Running   0          2m5s
+pod/gateway-proxy-7c49898fdf-blxps                            1/1     Running   0          2m5s
+pod/gloo-7748b94989-dj85p                                     1/1     Running   0          2m5s
+pod/gloo-fed-76c85d689b-q62k4                                 1/1     Running   0          2m5s
+pod/gloo-fed-console-dd5f877bd-jgg8n                          3/3     Running   0          2m5s
+pod/glooe-grafana-6f95948945-pvbcg                            1/1     Running   0          2m4s
+pod/glooe-prometheus-kube-state-metrics-v2-6c79cc9554-hlhns   1/1     Running   0          2m5s
+pod/glooe-prometheus-server-757dc7d8f7-x489q                  2/2     Running   0          2m5s
+pod/observability-78cb7bddf7-kcrbm                            1/1     Running   0          2m5s
+pod/rate-limit-5ddd4b69d-84d6b                                1/1     Running   0          2m5s
+pod/redis-888f4d9b5-p76wk                                     1/1     Running   0          2m4s
 
-NAME                                          TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                                                AGE
-service/extauth                               ClusterIP      10.xxx.xx.xx    <none>          8083/TCP                                               2m6s
-service/gateway-proxy                         LoadBalancer   10.xxx.xx.xx    34.xx.xxx.xxx   80:30437/TCP,443:31651/TCP                             2m6s
-service/gloo                                  ClusterIP      10.xxx.xx.xx    <none>          9977/TCP,9976/TCP,9988/TCP,9966/TCP,9979/TCP,443/TCP   2m7s
-service/gloo-fed-console                      ClusterIP      10.xxx.xx.xx    <none>          10101/TCP,8090/TCP,8081/TCP                            2m6s
-service/glooe-grafana                         ClusterIP      10.xxx.xx.xxx   <none>          80/TCP                                                 2m6s
-service/glooe-prometheus-kube-state-metrics   ClusterIP      10.xxx.xx.xxx   <none>          8080/TCP                                               2m6s
-service/glooe-prometheus-server               ClusterIP      10.xxx.xx.xx    <none>          80/TCP                                                 2m7s
-service/rate-limit                            ClusterIP      10.xxx.xx.xxx   <none>          18081/TCP                                              2m7s
-service/redis                                 ClusterIP      10.xxx.xx.xx    <none>          6379/TCP                                               2m6s
+NAME                                             TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                                                AGE
+service/extauth                                  ClusterIP      10.xxx.xx.xx    <none>          8083/TCP                                               2m6s
+service/gateway-proxy                            LoadBalancer   10.xxx.xx.xx    34.xx.xxx.xxx   80:30437/TCP,443:31651/TCP                             2m6s
+service/gloo                                     ClusterIP      10.xxx.xx.xx    <none>          9977/TCP,9976/TCP,9988/TCP,9966/TCP,9979/TCP,443/TCP   2m7s
+service/gloo-fed-console                         ClusterIP      10.xxx.xx.xx    <none>          10101/TCP,8090/TCP,8081/TCP                            2m6s
+service/glooe-grafana                            ClusterIP      10.xxx.xx.xxx   <none>          80/TCP                                                 2m6s
+service/glooe-prometheus-kube-state-metrics-v2   ClusterIP      10.xxx.xx.xxx   <none>          8080/TCP                                               2m6s
+service/glooe-prometheus-server                  ClusterIP      10.xxx.xx.xx    <none>          80/TCP                                                 2m7s
+service/rate-limit                               ClusterIP      10.xxx.xx.xxx   <none>          18081/TCP                                              2m7s
+service/redis                                    ClusterIP      10.xxx.xx.xx    <none>          6379/TCP                                               2m6s
 
-NAME                                                  READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/discovery                             1/1     1            1           2m7s
-deployment.apps/extauth                               1/1     1            1           2m7s
-deployment.apps/gateway-proxy                         1/1     1            1           2m7s
-deployment.apps/gloo                                  1/1     1            1           2m7s
-deployment.apps/gloo-fed                              1/1     1            1           2m7s
-deployment.apps/gloo-fed-console                      1/1     1            1           2m7s
-deployment.apps/glooe-grafana                         1/1     1            1           2m7s
-deployment.apps/glooe-prometheus-kube-state-metrics   1/1     1            1           2m7s
-deployment.apps/glooe-prometheus-server               1/1     1            1           2m7s
-deployment.apps/observability                         1/1     1            1           2m7s
-deployment.apps/rate-limit                            1/1     1            1           2m7s
-deployment.apps/redis                                 1/1     1            1           2m7s
+NAME                                                     READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/discovery                                1/1     1            1           2m7s
+deployment.apps/extauth                                  1/1     1            1           2m7s
+deployment.apps/gateway-proxy                            1/1     1            1           2m7s
+deployment.apps/gloo                                     1/1     1            1           2m7s
+deployment.apps/gloo-fed                                 1/1     1            1           2m7s
+deployment.apps/gloo-fed-console                         1/1     1            1           2m7s
+deployment.apps/glooe-grafana                            1/1     1            1           2m7s
+deployment.apps/glooe-prometheus-kube-state-metrics-v2   1/1     1            1           2m7s
+deployment.apps/glooe-prometheus-server                  1/1     1            1           2m7s
+deployment.apps/observability                            1/1     1            1           2m7s
+deployment.apps/rate-limit                               1/1     1            1           2m7s
+deployment.apps/redis                                    1/1     1            1           2m7s
 
-NAME                                                             DESIRED   CURRENT   READY   AGE
-replicaset.apps/discovery-6dbb5fd8bc                             1         1         1       2m6s
-replicaset.apps/extauth-68bb4745fc                               1         1         1       2m7s
-replicaset.apps/gateway-proxy-7c49898fdf                         1         1         1       2m6s
-replicaset.apps/gloo-7748b94989                                  1         1         1       2m7s
-replicaset.apps/gloo-fed-76c85d689b                              1         1         1       2m7s
-replicaset.apps/gloo-fed-console-dd5f877bd                       1         1         1       2m6s
-replicaset.apps/glooe-grafana-6f95948945                         1         1         1       2m6s
-replicaset.apps/glooe-prometheus-kube-state-metrics-6c79cc9554   1         1         1       2m6s
-replicaset.apps/glooe-prometheus-server-757dc7d8f7               1         1         1       2m6s
-replicaset.apps/observability-78cb7bddf7                         1         1         1       2m7s
-replicaset.apps/rate-limit-5ddd4b69d                             1         1         1       2m7s
-replicaset.apps/redis-888f4d9b5                                  1         1         1       2m6s
+NAME                                                                DESIRED   CURRENT   READY   AGE
+replicaset.apps/discovery-6dbb5fd8bc                                1         1         1       2m6s
+replicaset.apps/extauth-68bb4745fc                                  1         1         1       2m7s
+replicaset.apps/gateway-proxy-7c49898fdf                            1         1         1       2m6s
+replicaset.apps/gloo-7748b94989                                     1         1         1       2m7s
+replicaset.apps/gloo-fed-76c85d689b                                 1         1         1       2m7s
+replicaset.apps/gloo-fed-console-dd5f877bd                          1         1         1       2m6s
+replicaset.apps/glooe-grafana-6f95948945                            1         1         1       2m6s
+replicaset.apps/glooe-prometheus-kube-state-metrics-v2-6c79cc9554   1         1         1       2m6s
+replicaset.apps/glooe-prometheus-server-757dc7d8f7                  1         1         1       2m6s
+replicaset.apps/observability-78cb7bddf7                            1         1         1       2m7s
+replicaset.apps/rate-limit-5ddd4b69d                                1         1         1       2m7s
+replicaset.apps/redis-888f4d9b5                                     1         1         1       2m6s
 ```
 
 #### Looking for opened ports?

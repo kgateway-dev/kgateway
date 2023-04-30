@@ -500,6 +500,8 @@ spec:
                                           type: string
                                         sslFiles:
                                           properties:
+                                            ocspStaple:
+                                              type: string
                                             rootCa:
                                               type: string
                                             tlsCert:
@@ -763,6 +765,8 @@ spec:
                     type: string
                   sslFiles:
                     properties:
+                      ocspStaple:
+                        type: string
                       rootCa:
                         type: string
                       tlsCert:
@@ -1363,6 +1367,8 @@ spec:
                     type: string
                   sslFiles:
                     properties:
+                      ocspStaple:
+                        type: string
                       rootCa:
                         type: string
                       tlsCert:
