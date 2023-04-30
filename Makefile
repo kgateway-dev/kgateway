@@ -89,7 +89,7 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.24.0-patch2
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.1-patch3
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -218,7 +218,7 @@ check-spelling:
 # Tests
 #----------------------------------------------------------------------------------
 
-GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2) 
+GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
 GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race --fail-fast -fail-on-pending --randomize-all
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
@@ -756,7 +756,7 @@ ifeq ($(RELEASE), "true")
 endif
 
 .PHONY: docker docker-push
-docker: docker-local docker-non-arm
+docker: docker-local
 
 .PHONY: docker-local
 docker-local: discovery-docker gloo-docker  \
@@ -764,22 +764,14 @@ docker-local: discovery-docker gloo-docker  \
 		ingress-docker access-logger-docker kubectl-docker
 		touch $@
 
-.PHONY: docker-non-arm
-ifeq ($(UNAME_M), arm64)
-docker-non-arm:
-else
-docker-non-arm: gloo-race-docker
-endif
-
 .PHONY: docker-push-local-arm
 docker-push-local-arm: docker docker-push
 
 # Depends on DOCKER_IMAGES, which is set to docker if CREATE_ASSETS is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if CREATE_ASSETS is not true, while still enabling `make docker`
 # to be used for local testing.
-# docker-push-non-arm is intended to be run on CI only, where as docker-push-local is intended for local builds. Primarily used for arm support.
 .PHONY: docker-push
-docker-push: docker-push-local docker-push-non-arm
+docker-push: docker-push-local
 
 .PHONY: docker-push-local
 docker-push-local: $(DOCKER_IMAGES)
@@ -791,12 +783,6 @@ docker-push-local: $(DOCKER_IMAGES)
 	docker push $(IMAGE_REPO)/kubectl:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
-
-.PHONY: docker-push-non-arm
-docker-push-non-arm:
-ifneq ($(and $(filter $(CREATE_ASSETS), "true"), $(filter-out $(UNAME_M), arm64)),)
-	docker push $(IMAGE_REPO)/gloo:$(VERSION)-race
-endif
 
 # To mimic the effects of CI, CREATE_ASSETS, TAGGED_VERSION and CREATE_TEST_ASSETS need to be set
 # Extended images are the same as regular images but with curl

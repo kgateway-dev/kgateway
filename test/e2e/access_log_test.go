@@ -2,9 +2,10 @@ package e2e_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
@@ -26,7 +27,6 @@ import (
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
@@ -89,11 +89,9 @@ var _ = Describe("Access Log", func() {
 		})
 
 		It("can stream access logs", func() {
+			requestBuilder := testContext.GetHttpRequestBuilder()
 			Eventually(func(g Gomega) {
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-				g.Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
 				var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 				g.Eventually(msgChan, 2*time.Second).Should(Receive(&entry))
@@ -131,11 +129,11 @@ var _ = Describe("Access Log", func() {
 			})
 
 			It("can create string access logs", func() {
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPath("1").
+					WithPostMethod()
 				Eventually(func(g Gomega) {
-					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-					g.Expect(err).NotTo(HaveOccurred())
-					req.Host = e2e.DefaultHost
-					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
 					logs, err := testContext.EnvoyInstance().Logs()
 					g.Expect(err).NotTo(HaveOccurred())
@@ -183,11 +181,11 @@ var _ = Describe("Access Log", func() {
 				}
 			})
 			It("can create json access logs", func() {
+				requestBuilder := testContext.GetHttpRequestBuilder().
+					WithPath("1").
+					WithPostMethod()
 				Eventually(func(g Gomega) {
-					req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-					g.Expect(err).NotTo(HaveOccurred())
-					req.Host = e2e.DefaultHost
-					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 
 					logs, err := testContext.EnvoyInstance().Logs()
 					g.Expect(err).NotTo(HaveOccurred())
@@ -240,19 +238,23 @@ var _ = Describe("Access Log", func() {
 		})
 
 		It("Can filter by status code", func() {
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Host = e2e.DefaultHost
-			Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
-			logs, err := testContext.EnvoyInstance().Logs()
-			Expect(err).To(Not(HaveOccurred()))
-			Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
-
+			requestBuilder := testContext.GetHttpRequestBuilder().
+				WithPath("1").
+				WithPostMethod()
 			Eventually(func(g Gomega) {
-				// We can get a 404 by not setting the Host header.
-				req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/BAD/HOST", "localhost", defaults.HttpPort), nil)
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
+
+				logs, err := testContext.EnvoyInstance().Logs()
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveStatusCode(http.StatusNotFound))
+				g.Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
+			}, time.Second*30, time.Second/2).Should(Succeed())
+
+			badHostRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithPath("BAD/HOST").
+				WithPostMethod().
+				WithHost("") // We can get a 404 by not setting the Host header.
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(badHostRequestBuilder.Build())).Should(matchers.HaveStatusCode(http.StatusNotFound))
 
 				logs, err := testContext.EnvoyInstance().Logs()
 				g.Expect(err).To(Not(HaveOccurred()))

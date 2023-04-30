@@ -128,13 +128,13 @@ At this point, Gloo Edge is routing directly to the `echo` Lambda function. To c
 
 ### Basic transformations
 
-When you use the AWS Lambda plug-in in Gloo Edge, you might want to transform requests and/or responses to align more closely with the AWS ecosystem.
+When you use the AWS Lambda plug-in in Gloo Edge, you might want to transform requests and/or responses to increase the amount of information passed to the Lambda function.
 
 The request transformation injects the headers of the request into the body. The resulting body will be a JSON object containing two keys: 'headers', which contains the injected headers, and 'body', which contains the original body.
 
 The response transformation extracts the value of the 'body' key from the upstream response's JSON body, and replaces the _entire_ response body with this value. Additionally, the response transformation overwrites the value of the 'Content-Type' header to `text/html`.
 
-Note that these request and response transformations are incompatible with the features `wrapAsApiGateway`, `unwrapAsApiGateway`, and `unwrapAsAlb`.
+Note that these request and response transformations are incompatible with the features `wrapAsApiGateway`, `unwrapAsApiGateway`, and `unwrapAsAlb`, which are designed to transform requests and responses into the format produced by AWS ALB and AWS API Gateway.
 
 **Before you begin**: [Install Gloo Edge version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
 
