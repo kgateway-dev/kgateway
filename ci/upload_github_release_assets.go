@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"github.com/golangci/golangci-lint"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/log"
