@@ -170,8 +170,8 @@ func GetCerts(params Params) (string, string) {
 
 var (
 	getCerts sync.Once // Used to generate CA certs for the proxy once.
-	cert     string // CA certificate for the proxy.
-	privKey  string // CA private key for the proxy.
+	cert     string    // CA certificate for the proxy.
+	privKey  string    // CA private key for the proxy.
 )
 
 // gencerts generates CA certs for the proxy.

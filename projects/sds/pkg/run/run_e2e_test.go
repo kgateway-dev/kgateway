@@ -2,10 +2,11 @@ package run_test
 
 import (
 	"context"
-	. "github.com/onsi/ginkgo/extensions/table"
 	"os"
 	"path"
 	"time"
+
+	. "github.com/onsi/ginkgo/extensions/table"
 
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
@@ -22,9 +23,9 @@ import (
 var _ = Describe("SDS Server E2E Test", func() {
 
 	var (
-		err                                            error
-		fs                                             afero.Fs
-		dir                                            string
+		err                                                             error
+		fs                                                              afero.Fs
+		dir                                                             string
 		keyName, certName, caName, ocspName                             string
 		keyNameSymlink, certNameSymlink, caNameSymlink, ocspNameSymlink string
 		secret                                                          server.Secret
