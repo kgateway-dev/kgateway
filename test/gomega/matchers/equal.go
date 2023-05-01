@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"encoding/json"
+
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 

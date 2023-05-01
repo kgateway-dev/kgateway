@@ -2,9 +2,10 @@ package testutils
 
 import (
 	"fmt"
-	"github.com/onsi/ginkgo"
 	"os"
 	"runtime"
+
+	"github.com/onsi/ginkgo"
 
 	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/util/sets"

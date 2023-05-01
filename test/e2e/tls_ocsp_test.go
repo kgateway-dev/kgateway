@@ -1,9 +1,10 @@
 package e2e_test
 
 import (
-	. "github.com/onsi/ginkgo/extensions/table"
 	"net/http"
 	"time"
+
+	. "github.com/onsi/ginkgo/extensions/table"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

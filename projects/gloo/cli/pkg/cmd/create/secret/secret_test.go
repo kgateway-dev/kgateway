@@ -3,8 +3,9 @@ package secret_test
 import (
 	"context"
 	"fmt"
-	. "github.com/onsi/ginkgo/extensions/table"
 	"os"
+
+	. "github.com/onsi/ginkgo/extensions/table"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 

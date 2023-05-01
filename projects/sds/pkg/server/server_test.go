@@ -2,10 +2,11 @@ package server_test
 
 import (
 	"context"
-	. "github.com/onsi/ginkgo/extensions/table"
 	"os"
 	"strings"
 	"time"
+
+	. "github.com/onsi/ginkgo/extensions/table"
 
 	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"

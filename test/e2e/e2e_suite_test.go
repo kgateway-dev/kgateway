@@ -1,8 +1,9 @@
 package e2e_test
 
 import (
-	"github.com/solo-io/gloo/test/e2e"
 	"testing"
+
+	"github.com/solo-io/gloo/test/e2e"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"

@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"github.com/onsi/ginkgo"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/onsi/ginkgo"
 )
 
 // DefaultHttpClient should be used in tests because it configures a timeout which the http.DefaultClient
