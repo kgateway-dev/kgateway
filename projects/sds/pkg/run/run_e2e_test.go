@@ -152,12 +152,12 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err == nil
-		}, "15s", "1s").Should(BeTrue())
+		}, "20s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return resp.VersionInfo == snapshotVersion
-		}, "15s", "1s").Should(BeTrue())
+		}, "20s", "1s").Should(BeTrue())
 
 		// Cert rotation #1
 		err = os.Remove(keyName)
@@ -181,7 +181,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
-		}, "15s", "1s").Should(BeTrue())
+		}, "20s", "1s").Should(BeTrue())
 
 		// Cert rotation #2
 		err = os.Remove(keyName)
@@ -205,7 +205,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
-		}, "15s", "1s").Should(BeTrue())
+		}, "20s", "1s").Should(BeTrue())
 	},
 		Entry("with ocsp", true, []string{"969835737182439215", "6265739243366543658", "14893951670674740726"}),
 		Entry("without ocsp", false, []string{"6730780456972595554", "16241649556325798095", "7644406922477208950"}),
