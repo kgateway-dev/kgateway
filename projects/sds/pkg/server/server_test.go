@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"context"
+	. "github.com/onsi/ginkgo/extensions/table"
 	"os"
 	"strings"
 	"time"

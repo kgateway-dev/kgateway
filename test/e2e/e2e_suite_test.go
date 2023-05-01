@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"github.com/solo-io/gloo/test/e2e"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -16,8 +17,9 @@ import (
 )
 
 var (
-	envoyFactory  *services.EnvoyFactory
-	consulFactory *services.ConsulFactory
+	envoyFactory       *services.EnvoyFactory
+	consulFactory      *services.ConsulFactory
+	testContextFactory *e2e.TestContextFactory
 
 	namespace = defaults.GlooSystem
 )
@@ -28,6 +30,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
+
+	testContextFactory = &e2e.TestContextFactory{
+		EnvoyFactory: envoyFactory,
+	}
 })
 
 var _ = AfterSuite(func() {

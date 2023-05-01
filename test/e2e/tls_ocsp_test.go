@@ -1,10 +1,11 @@
 package e2e_test
 
 import (
+	. "github.com/onsi/ginkgo/extensions/table"
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -23,9 +24,9 @@ var _ = Describe("TLS OCSP e2e", func() {
 		testContext              *e2e.TestContext
 		clientCert, clientKey    string
 		fakeOcspResponder        *helpers.FakeOcspResponder
-		tlsSecretWithNoOcsp      = &core.Metadata{Name: "tls-no-ocsp", Namespace: writeNamespace}
-		tlsSecretWithOcsp        = &core.Metadata{Name: "tls-with-ocsp", Namespace: writeNamespace}
-		tlsSecretWithExpiredOcsp = &core.Metadata{Name: "tls-with-expired-ocsp", Namespace: writeNamespace}
+		tlsSecretWithNoOcsp      = &core.Metadata{Name: "tls-no-ocsp", Namespace: e2e.WriteNamespace}
+		tlsSecretWithOcsp        = &core.Metadata{Name: "tls-with-ocsp", Namespace: e2e.WriteNamespace}
+		tlsSecretWithExpiredOcsp = &core.Metadata{Name: "tls-with-expired-ocsp", Namespace: e2e.WriteNamespace}
 	)
 
 	BeforeEach(func() {
@@ -34,7 +35,7 @@ var _ = Describe("TLS OCSP e2e", func() {
 
 		// Create SSL Gateway
 		testContext.ResourcesToCreate().Gateways = v1.GatewayList{
-			gatewaydefaults.DefaultSslGateway(writeNamespace),
+			gatewaydefaults.DefaultSslGateway(e2e.WriteNamespace),
 		}
 
 		rootCaX509 := helpers.GetCertificateFromString(helpers.Certificate())
@@ -132,7 +133,7 @@ var _ = Describe("TLS OCSP e2e", func() {
 
 	// updateVirtualService updates the default virtual service with the given sslRef and ocspStaplePolicy.
 	updateVirtualService := func(sslRef *core.ResourceRef, ocspStaplePolicy ssl.SslConfig_OcspStaplePolicy) {
-		testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+		testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) {
 			vsBuilder := helpers.BuilderFromVirtualService(vs)
 			vsBuilder.
 				WithSslConfig(&ssl.SslConfig{
@@ -141,7 +142,7 @@ var _ = Describe("TLS OCSP e2e", func() {
 						SecretRef: sslRef,
 					},
 				})
-			return vsBuilder.Build()
+			vsBuilder.Build()
 		})
 	}
 
