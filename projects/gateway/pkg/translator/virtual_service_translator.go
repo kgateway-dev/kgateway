@@ -339,21 +339,21 @@ func validateRoutesRegex(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports 
 			// validate HostRewrite regex
 			if options.GetHostRewritePathRegex() != nil {
 				_, err := regexp.Compile(options.GetHostRewritePathRegex().GetPattern().GetRegex())
-				if options.GetHostRewritePathRegex().GetPattern().GetRegex() != "" && err != nil {
+				if err != nil {
 					reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
 				}
 			}
 			// validate RegexRewrite regex
 			if options.GetRegexRewrite() != nil {
 				_, err := regexp.Compile(options.GetRegexRewrite().GetPattern().GetRegex())
-				if options.GetRegexRewrite().GetPattern().GetRegex() != "" && err != nil {
+				if err != nil {
 					reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
 				}
 			}
 		}
 		for _, matcher := range rt.GetMatchers() {
 			_, err := regexp.Compile(matcher.GetRegex())
-			if matcher.GetRegex() != "" && err != nil {
+			if err != nil {
 				reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
 			}
 		}
