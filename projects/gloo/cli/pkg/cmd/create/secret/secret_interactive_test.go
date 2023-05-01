@@ -116,9 +116,10 @@ var _ = Describe("Secret Interactive Mode", func() {
 	Context("Tls", func() {
 		It("should work", func() {
 			var (
-				rootCa            = "foo"
-				privateKey        = "bar"
-				certChainFilename = "baz"
+				rootCa             = "foo"
+				privateKey         = "bar"
+				certChainFilename  = "baz"
+				ocspStapleFilename = "qux"
 			)
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(surveyutils.PromptInteractiveNamespace)
@@ -131,6 +132,8 @@ var _ = Describe("Secret Interactive Mode", func() {
 				c.SendLine(privateKey)
 				c.ExpectString(tlsPromptCertChain)
 				c.SendLine(certChainFilename)
+				c.ExpectString(tlsPromptOcspStaple)
+				c.SendLine(ocspStapleFilename)
 				c.ExpectEOF()
 			}, func() {
 				tlsSecretOpts := options.Secret{
@@ -138,6 +141,7 @@ var _ = Describe("Secret Interactive Mode", func() {
 						RootCaFilename:     "",
 						PrivateKeyFilename: "",
 						CertChainFilename:  "",
+						OCSPStapleFilename: "",
 						Mock:               true,
 					},
 				}
@@ -147,6 +151,7 @@ var _ = Describe("Secret Interactive Mode", func() {
 				Expect(opts.Create.InputSecret.TlsSecret.RootCaFilename).To(Equal(rootCa))
 				Expect(opts.Create.InputSecret.TlsSecret.PrivateKeyFilename).To(Equal(privateKey))
 				Expect(opts.Create.InputSecret.TlsSecret.CertChainFilename).To(Equal(certChainFilename))
+				Expect(opts.Create.InputSecret.TlsSecret.OCSPStapleFilename).To(Equal(ocspStapleFilename))
 			})
 		})
 	})

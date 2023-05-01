@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const OCSPStapleKey = "tls.ocsp-staple"
+
 var GlooSecretConverterChain = NewSecretConverterChain(
 	new(TLSSecretConverter),
 	new(AwsSecretConverter),
@@ -75,6 +77,7 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
 					CertChain:  string(secret.Data[kubev1.TLSCertKey]),
 					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
+					OcspStaple: secret.Data[OCSPStapleKey],
 				},
 			},
 			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
@@ -103,6 +106,10 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 
 			if tlsGlooSecret.Tls.GetRootCa() != "" {
 				kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
+			}
+
+			if tlsGlooSecret.Tls.GetOcspStaple() != nil {
+				kubeSecret.Data[OCSPStapleKey] = tlsGlooSecret.Tls.GetOcspStaple()
 			}
 
 			return kubeSecret, nil

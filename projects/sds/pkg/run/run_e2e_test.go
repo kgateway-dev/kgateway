@@ -2,6 +2,7 @@ package run_test
 
 import (
 	"context"
+	. "github.com/onsi/ginkgo/extensions/table"
 	"os"
 	"path"
 	"time"
@@ -24,11 +25,11 @@ var _ = Describe("SDS Server E2E Test", func() {
 		err                                            error
 		fs                                             afero.Fs
 		dir                                            string
-		keyName, certName, caName                      string
-		keyNameSymlink, certNameSymlink, caNameSymlink string
-		secret                                         server.Secret
-		testServerAddress                              = "127.0.0.1:8236"
-		sdsClient                                      = "test-client"
+		keyName, certName, caName, ocspName                             string
+		keyNameSymlink, certNameSymlink, caNameSymlink, ocspNameSymlink string
+		secret                                                          server.Secret
+		testServerAddress                                               = "127.0.0.1:8236"
+		sdsClient                                                       = "test-client"
 	)
 
 	BeforeEach(func() {
@@ -41,20 +42,30 @@ var _ = Describe("SDS Server E2E Test", func() {
 		keyName = path.Join(dir, "/", "tls.key-0")
 		certName = path.Join(dir, "/", "tls.crt-0")
 		caName = path.Join(dir, "/", "ca.crt-0")
+		ocspName = path.Join(dir, "/", "tls.ocsp-staple-0")
 		err = afero.WriteFile(fs, keyName, fileString, 0644)
 		Expect(err).To(BeNil())
 		err = afero.WriteFile(fs, certName, fileString, 0644)
 		Expect(err).To(BeNil())
 		err = afero.WriteFile(fs, caName, fileString, 0644)
 		Expect(err).To(BeNil())
+		// This is a pre-generated DER-encoded OCSP response using `openssl` to better match actual ocsp staple/response data.
+		// This response isn't for the test certs as they are just random data, but it is a syntactically-valid OCSP response.
+		ocspResponse, err := os.ReadFile("certs/ocsp_response.der")
+		Expect(err).ToNot(HaveOccurred())
+		err = afero.WriteFile(fs, ocspName, ocspResponse, 0644)
+		Expect(err).To(BeNil())
 		keyNameSymlink = path.Join(dir, "/", "tls.key")
 		certNameSymlink = path.Join(dir, "/", "tls.crt")
 		caNameSymlink = path.Join(dir, "/", "ca.crt")
-		err := os.Symlink(keyName, keyNameSymlink)
+		ocspNameSymlink = path.Join(dir, "/", "tls.ocsp-staple")
+		err = os.Symlink(keyName, keyNameSymlink)
 		Expect(err).To(BeNil())
 		err = os.Symlink(certName, certNameSymlink)
 		Expect(err).To(BeNil())
 		err = os.Symlink(caName, caNameSymlink)
+		Expect(err).To(BeNil())
+		err = os.Symlink(ocspName, ocspNameSymlink)
 		Expect(err).To(BeNil())
 
 		secret = server.Secret{
@@ -63,6 +74,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			SslCaFile:         caName,
 			SslCertFile:       certName,
 			SslKeyFile:        keyName,
+			SslOcspFile:       ocspName,
 		}
 	})
 
@@ -102,8 +114,13 @@ var _ = Describe("SDS Server E2E Test", func() {
 
 	})
 
-	It("correctly picks up multiple cert rotations", func() {
+	DescribeTable("correctly picks up cert rotations", func(useOcsp bool, expectedHashes []string) {
 
+		ocsp := ""
+		if useOcsp {
+			ocsp = ocspName
+		}
+		secret.SslOcspFile = ocsp
 		go run.Run(context.Background(), []server.Secret{secret}, sdsClient, testServerAddress)
 
 		// Give it a second to spin up + read the files
@@ -117,19 +134,24 @@ var _ = Describe("SDS Server E2E Test", func() {
 		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
 
 		// Read certs
-		certs, err := testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		var certs [][]byte
+		if useOcsp {
+			certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink, ocspNameSymlink)
+		} else {
+			certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		}
 		Expect(err).NotTo(HaveOccurred())
 
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("6730780456972595554"))
+		Expect(snapshotVersion).To(Equal(expectedHashes[0]))
 
 		var resp *envoy_service_discovery_v3.DiscoveryResponse
 
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err == nil
-		}, "5s", "1s").Should(BeTrue())
+		}, "15s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
@@ -145,10 +167,15 @@ var _ = Describe("SDS Server E2E Test", func() {
 		// Re-read certs
 		certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 		Expect(err).NotTo(HaveOccurred())
+		if useOcsp {
+			ocspBytes, err := os.ReadFile(ocspNameSymlink)
+			Expect(err).ToNot(HaveOccurred())
+			certs = append(certs, ocspBytes)
+		}
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("16241649556325798095"))
+		Expect(snapshotVersion).To(Equal(expectedHashes[1]))
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
@@ -164,14 +191,22 @@ var _ = Describe("SDS Server E2E Test", func() {
 		// Re-read certs again
 		certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 		Expect(err).NotTo(HaveOccurred())
+		if useOcsp {
+			ocspBytes, err := os.ReadFile(ocspNameSymlink)
+			Expect(err).ToNot(HaveOccurred())
+			certs = append(certs, ocspBytes)
+		}
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("7644406922477208950"))
+		Expect(snapshotVersion).To(Equal(expectedHashes[2]))
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
-	})
+	},
+		Entry("with ocsp", true, []string{"969835737182439215", "6265739243366543658", "14893951670674740726"}),
+		Entry("without ocsp", false, []string{"6730780456972595554", "16241649556325798095", "7644406922477208950"}),
+	)
 })
