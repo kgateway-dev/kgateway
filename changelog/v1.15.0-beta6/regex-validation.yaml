@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo/issues/8091
-    resolvesIssue: false
-    description: >-
-      Adds a compile check on regex to avoid leaking incorrect regex syntax to envoy
