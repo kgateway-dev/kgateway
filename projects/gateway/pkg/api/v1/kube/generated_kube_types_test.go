@@ -6,8 +6,6 @@ import (
 
 	"github.com/solo-io/solo-kit/test/helpers"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
