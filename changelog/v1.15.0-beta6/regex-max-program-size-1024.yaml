@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8184
+    resolvesIssue: false
+    description: >-
+      Gloo edge will now use 1024 as the default max program size for regex
