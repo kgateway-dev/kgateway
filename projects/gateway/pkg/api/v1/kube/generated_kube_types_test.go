@@ -2,7 +2,6 @@ package kube_test
 
 import (
 	"context"
-	"strings"
 
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -85,22 +84,6 @@ var _ = Describe("Generated Kube Code", func() {
 			SharedCache: kubeCache,
 		})
 		Expect(err).NotTo(HaveOccurred())
-		err = glooV1Client.Upstreams("default").Delete(ctx, "petstore-static", v1.DeleteOptions{})
-		if err != nil {
-			notFound := strings.Contains(err.Error(), "not found")
-			alreadyExists := strings.Contains(err.Error(), "already exists")
-			if !(alreadyExists || notFound) {
-				Expect(err).ToNot(HaveOccurred())
-			}
-		}
-		err = gatewayV1Client.VirtualServices("default").Delete(ctx, "my-routes", v1.DeleteOptions{})
-		if err != nil {
-			notFound := strings.Contains(err.Error(), "not found")
-			alreadyExists := strings.Contains(err.Error(), "already exists")
-			if !(notFound || alreadyExists) {
-				Expect(err).ToNot(HaveOccurred())
-			}
-		}
 	})
 	AfterEach(func() {
 		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
@@ -147,9 +130,19 @@ var _ = Describe("Generated Kube Code", func() {
 			},
 		}
 
+		// this fixes a flake in v1.14.x. This flake occurs when we try to
+		// `glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})` create the resource.
+		// I do not know why this resource already exists, but this fixes it.
+		resourceName := "petstore-static"
+		err := glooV1Client.Upstreams("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+		resourceName = "my-routes"
+		err = gatewayV1Client.VirtualServices("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+
 		// ensure we can write the with kube clients
 
-		_, err := glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
+		_, err = glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = gatewayV1Client.VirtualServices(vs.Namespace).Create(ctx, vs, v1.CreateOptions{})
