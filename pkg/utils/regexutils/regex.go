@@ -3,13 +3,12 @@ package regexutils
 import (
 	"context"
 
-	"github.com/solo-io/solo-kit/pkg/errors"
-
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 func NewRegex(ctx context.Context, regex string) *envoy_type_matcher_v3.RegexMatcher {
