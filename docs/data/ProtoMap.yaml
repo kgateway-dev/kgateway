@@ -698,6 +698,9 @@ apis:
   gloo.solo.io.DiscoveryMetadata:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/#DiscoveryMetadata
     package: gloo.solo.io
+  gloo.solo.io.EncryptionKeySecret:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#EncryptionKeySecret
+    package: gloo.solo.io
   gloo.solo.io.Endpoint:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk/#Endpoint
     package: gloo.solo.io

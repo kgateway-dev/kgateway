@@ -130,9 +130,19 @@ var _ = Describe("Generated Kube Code", func() {
 			},
 		}
 
+		// this fixes a flake in v1.14.x. This flake occurs when we try to
+		// `glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})` create the resource.
+		// I do not know why this resource already exists, but this fixes it.
+		resourceName := "petstore-static"
+		err := glooV1Client.Upstreams("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+		resourceName = "my-routes"
+		err = gatewayV1Client.VirtualServices("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+
 		// ensure we can write the with kube clients
 
-		_, err := glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
+		_, err = glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = gatewayV1Client.VirtualServices(vs.Namespace).Create(ctx, vs, v1.CreateOptions{})
