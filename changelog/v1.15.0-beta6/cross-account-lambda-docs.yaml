@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add user guide for cross-account lambda support
+    issueLink: https://github.com/solo-io/gloo/issues/7965
