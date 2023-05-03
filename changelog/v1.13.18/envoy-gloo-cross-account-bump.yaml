@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adds testing around a bug fix for using resource-based policies to invoke cross-account lambda functions.
+    issueLink: https://github.com/solo-io/gloo/issues/7965
+    resolvesIssue: false
+  - type: FIX
+    description: fixes flake in generated_kube_types_test.go
+    issueLink: https://github.com/solo-io/gloo/issues/8099
+    resolvesIssue: false
