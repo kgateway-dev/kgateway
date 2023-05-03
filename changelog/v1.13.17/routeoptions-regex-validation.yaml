@@ -3,4 +3,4 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8091
     resolvesIssue: false
     description: >-
-      Adds regex validation to gloo.solo.io.RouteOptions.prefixRewrite and gloo.solo.io.RouteOptions.hostRewritePathRegex to prevent leaking invalid regex to envoy
+      Adds regex validation to gloo.solo.io.RouteOptions.prefixRewrite to prevent leaking invalid regex to envoy
