@@ -1,27 +1,24 @@
 ---
-title: "glooctl create secret tls"
+title: "glooctl create secret encryptionkey"
 weight: 5
 ---
-## glooctl create secret tls
+## glooctl create secret encryptionkey
 
-Create a secret with the given name
+Create an encryption key secret with the given name
 
 ### Synopsis
 
-Create a secret with the given name. The format of the secret data is: `{"tls" : { "ca.crt": [root ca], "tls.crt": [cert chain], "tls.key": [private key], "tls.ocsp-staple": [ocsp staple]}}`. 
+Create an encryption key secret with the given name. The format of the secret data is: <key>The encryption key will be stored is the secret data under the key `key`.
 
 ```
-glooctl create secret tls [flags]
+glooctl create secret encryptionkey [flags]
 ```
 
 ### Options
 
 ```
-      --certchain string    filename of certchain for secret
-  -h, --help                help for tls
-      --ocspstaple string   filename of ocspstaple for secret
-      --privatekey string   filename of privatekey for secret
-      --rootca string       filename of rootca for secret
+  -h, --help         help for encryptionkey
+      --key string   key for encryption
 ```
 
 ### Options inherited from parent commands

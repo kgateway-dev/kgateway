@@ -12,6 +12,7 @@ weight: 5
 
 
 - [SslConfig](#sslconfig)
+- [OcspStaplePolicy](#ocspstaplepolicy)
 - [SSLFiles](#sslfiles)
 - [UpstreamSslConfig](#upstreamsslconfig)
 - [SDSConfig](#sdsconfig)
@@ -46,6 +47,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "oneWayTls": .google.protobuf.BoolValue
 "disableTlsSessionResumption": .google.protobuf.BoolValue
 "transportSocketConnectTimeout": .google.protobuf.Duration
+"ocspStaplePolicy": .gloo.solo.io.SslConfig.OcspStaplePolicy
 
 ```
 
@@ -61,6 +63,21 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `oneWayTls` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If the SSL config has the ca.crt (root CA) provided, Gloo uses it to perform mTLS by default. Set oneWayTls to true to disable mTLS in favor of server-only TLS (one-way TLS), even if Gloo has the root CA. If unset, defaults to false. |
 | `disableTlsSessionResumption` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, the TLS session resumption will be deactivated, note that it deactivates only the tickets based tls session resumption (not the cache). |
 | `transportSocketConnectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | If present and nonzero, the amount of time to allow incoming connections to complete any transport socket negotiations. If this expires before the transport reports connection establishment, the connection is summarily closed. |
+| `ocspStaplePolicy` | [.gloo.solo.io.SslConfig.OcspStaplePolicy](../ssl.proto.sk/#ocspstaplepolicy) | The OCSP staple policy to use for this listener. Defaults to `LENIENT_STAPLING`. https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#enum-extensions-transport-sockets-tls-v3-downstreamtlscontext-ocspstaplepolicy. |
+
+
+
+
+---
+### OcspStaplePolicy
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `LENIENT_STAPLING` | OCSP responses are optional. If none is provided, or the provided response is expired, the associated certificate will be used without the OCSP response. |
+| `STRICT_STAPLING` | OCSP responses are optional. If none is provided, the associated certificate will be used without the OCSP response. If a response is present, but expired, the certificate will not be used for connections. If no suitable certificate is found, the connection is rejected. |
+| `MUST_STAPLE` | OCSP responses are required. If no `ocsp_staple` is set on a certificate, configuration will fail. If a response is expired, the associated certificate will not be used. If no suitable certificate is found, the connection is rejected. |
 
 
 
@@ -75,6 +92,7 @@ SSLFiles reference paths to certificates which can be read by the proxy off of i
 "tlsCert": string
 "tlsKey": string
 "rootCa": string
+"ocspStaple": string
 
 ```
 
@@ -83,6 +101,7 @@ SSLFiles reference paths to certificates which can be read by the proxy off of i
 | `tlsCert` | `string` |  |
 | `tlsKey` | `string` |  |
 | `rootCa` | `string` | for client cert validation. optional. |
+| `ocspStaple` | `string` | stapled ocsp response. optional should be der-encoded. |
 
 
 
