@@ -75,6 +75,20 @@ var _ = Describe("AWS Lambda", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
+		testClients = services.RunGateway(ctx, justGloo)
+
+		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	setupEnvoyUdsFds := func(justGloo bool) {
+		ctx, cancel = context.WithCancel(context.Background())
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
+
 		runOptions.WhatToRun.DisableGateway = justGloo
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
@@ -109,7 +123,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			return string(body), nil
-		}, "5m", "1s").Should(ContainSubstring(substring))
+		}, "25s", "1s").Should(ContainSubstring(substring))
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(2, envoyPort, "SOLO.IO")
@@ -483,6 +497,11 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.VirtualServiceClient.Write(vs, opts)
 		Expect(err).NotTo(HaveOccurred())
 
+		// wait for virtual service to be accepted
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.VirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		}, "20s", ".2s")
+
 		validateLambdaUppercase(defaults.HttpPort)
 	}
 
@@ -671,7 +690,7 @@ var _ = Describe("AWS Lambda", func() {
 		Context("Resource-based cross-account lambda", func() {
 			BeforeEach(func() {
 				runOptions.WhatToRun.DisableFds = true
-				setupEnvoy(true)
+				setupEnvoyUdsFds(true)
 				addBasicCredentials()
 				addCrossAccountUpstream()
 			})
