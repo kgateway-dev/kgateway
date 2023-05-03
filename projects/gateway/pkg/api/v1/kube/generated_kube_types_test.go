@@ -133,9 +133,18 @@ var _ = Describe("Generated Kube Code", func() {
 			},
 		}
 
+		// fix for a flake on `glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})`
+		// This resource often already exists leading to a failure on create - this aims to fix that error
+		resourceName := "petstore-static"
+		err := glooV1Client.Upstreams("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+		resourceName = "my-routes"
+		err = gatewayV1Client.VirtualServices("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+
 		// ensure we can write the with kube clients
 
-		_, err := glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
+		_, err = glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = gatewayV1Client.VirtualServices(vs.Namespace).Create(ctx, vs, v1.CreateOptions{})
