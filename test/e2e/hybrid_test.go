@@ -393,6 +393,57 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, NoMatch),
+			Entry("ip non-match (half ip address) without sni",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("2.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"ip-matcher": {
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 16,
+								},
+							},
+						},
+					},
+				}, NoMatch),
+			Entry("ip matcher (full ip address) without sni",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"ip-matcher": {
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
+					},
+				}, "ip-matcher"),
+			Entry("ip matcher (half ip address) without sni",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.5"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"ip-matcher": {
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 16,
+								},
+							},
+						},
+					},
+				}, "ip-matcher"),
 			Entry("sni match",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
