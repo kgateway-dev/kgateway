@@ -500,6 +500,26 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, NoMatch),
+			Entry("sni non-match, ip match",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.4"),
+					SNI:   "test.com",
+				},
+				map[string]*v1.Matcher{
+					"sni-star": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*.foo.com"},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 32,
+								},
+							},
+						},
+					},
+				}, NoMatch),
 			Entry("most specific sni matcher",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
