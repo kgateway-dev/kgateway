@@ -188,7 +188,8 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			if upstream == nil {
 				return nil, errors.New(fmt.Sprintf("upstream %v was not recorded for grpc route", upstreamRef))
 			}
-			upstreamType, ok := upstream.GetUpstreamType().(v1.ServiceSpecGetter)
+			// If we saved the upstream then it has a ServiceSpec that is either Grpc or GrpcJsonTranscoder
+			upstreamType, _ := upstream.GetUpstreamType().(v1.ServiceSpecGetter)
 
 			// If the upstream uses the new API we assume the descriptors and vs match and do not do any transformations
 			_, ok = upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_GrpcJsonTranscoder)

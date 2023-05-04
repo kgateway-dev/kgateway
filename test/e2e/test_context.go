@@ -115,7 +115,7 @@ func (c *TestContext) BeforeEach() {
 		WithName(DefaultVirtualServiceName).
 		WithNamespace(WriteNamespace).
 		WithDomain(DefaultHost).
-		WithRoutePrefixMatcher(DefaultRouteName, "/test").
+		WithRoutePrefixMatcher(DefaultRouteName, "/").
 		WithRouteActionToUpstream(DefaultRouteName, c.testUpstream.Upstream).
 		Build()
 
