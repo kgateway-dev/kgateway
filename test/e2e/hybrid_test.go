@@ -410,6 +410,10 @@ var _ = Describe("Hybrid Gateway", func() {
 						},
 					},
 				}, NoMatch),
+			// for the next 2 entries, no filter chain match is recorded
+			// because the filter chain translator aborts translation if there
+			// are no network filters (ie. virtual hosts)
+			// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/gloo/pkg/translator/filter_chain.go#L94-L96
 			Entry("ip matcher (full ip address) without sni",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
@@ -426,7 +430,7 @@ var _ = Describe("Hybrid Gateway", func() {
 							},
 						},
 					},
-				}, "ip-matcher"),
+				}, NoMatch),
 			Entry("ip matcher (half ip address) without sni",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.5"),
@@ -443,7 +447,7 @@ var _ = Describe("Hybrid Gateway", func() {
 							},
 						},
 					},
-				}, "ip-matcher"),
+				}, NoMatch),
 			Entry("sni match",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
