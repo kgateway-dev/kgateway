@@ -3809,6 +3809,20 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("correctly allows setting ratelimitServer field.", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/ratelimit_server.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.ratelimitServer.ratelimitServerRef.name=ratelimit",
+								"settings.ratelimitServer.ratelimitServerRef.namespace=ratelimitns",
+								"settings.ratelimitServer.denyOnFail=true",
+								"settings.ratelimitServer.rateLimitBeforeAuth=true",
+								"settings.ratelimitServer.enableXRatelimitHeaders=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 
 					It("correctly sets the `disableProxyGarbageCollection` field in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_proxy_garbage_collection.yaml", namespace)
