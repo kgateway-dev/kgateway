@@ -154,6 +154,7 @@
 |gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gloo.deployment.podSecurityContext.merge|bool|||
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -219,6 +220,7 @@
 |gloo.deployment.glooContainerSecurityContext.procMount|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gloo.deployment.glooContainerSecurityContext.merge|bool|||
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -587,6 +589,7 @@
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.merge|bool|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -828,6 +831,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.merge|bool|||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -1152,6 +1156,7 @@
 |global.glooMtls.sds.securityContext.procMount|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.type|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.sds.securityContext.merge|bool|||
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |global.glooMtls.envoy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1180,6 +1185,7 @@
 |global.glooMtls.envoy.securityContext.procMount|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.envoy.securityContext.merge|bool|||
 |global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1208,6 +1214,7 @@
 |global.glooMtls.istioProxy.securityContext.procMount|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.istioProxy.securityContext.merge|bool|||
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|

@@ -91,6 +91,28 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 {{- end -}}
 
+
+{{- define "gloo.securityContext" -}}
+{{- $securityContext := dict -}}
+{{- $overwrite := true -}}
+{{- if .values }}
+  {{- if .values.merge }}
+    {{- $overwrite = false }}
+  {{- end }}
+{{- end -}}
+{{- if $overwrite }}
+  {{- $securityContext = or .values .defaults }}
+{{- else }}
+  {{- $securityContext = merge .values .defaults }}
+{{- end }}
+{{- $securityContext = omit $securityContext "merge"}}
+{{- with $securityContext -}}
+securityContext:
+{{ toYaml . | indent 2 }}
+{{ end -}}
+{{  end -}}
+
+
 {{- /*
 This takes an array of three values:
 - the top context

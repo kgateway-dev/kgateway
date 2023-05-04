@@ -85,11 +85,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- $securityContext := or  .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.securityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults) | nindent 8 -}}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -133,10 +129,7 @@ spec:
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
         {{- $securityContext := or .Values.global.glooMtls.sds.securityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.securityContext" (dict "values" .Values.global.glooMtls.sds.securityContext $securityDefaults "defaults" $securityDefaults) | nindent 8 -}}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -177,11 +170,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- $securityContext := or .Values.gloo.deployment.glooContainerSecurityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.securityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 -}}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
