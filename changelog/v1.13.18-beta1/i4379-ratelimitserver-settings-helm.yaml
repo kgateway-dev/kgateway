@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/4379
+    description: Add helm value for ratelimitServer in settings.
