@@ -5,9 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/solo-io/gloo/test/e2e"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/e2e"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 

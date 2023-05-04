@@ -1,0 +1,18 @@
+#create cluster and install gloo 1.13 with fds enabled
+#port forward gateway-proxy
+k apply -f deploy-book.yaml
+k apply -f grpcvs.yaml
+#create a shelf
+curl -H "Host: foo.example.com" "localhost:8080/shelf" -d '{"shelf": {"theme": "music", "id":"2"}}' -X POST -v
+#look at the shelf
+curl -H "Host: foo.example.com" "localhost:8080/shelves/2" -v 
+VERSION=1.14.0-mig make kind-build-and-load build-test-chart -B
+helm upgrade -n gloo-system gloo _test/gloo-1.14.0-mig.tgz   
+#pause here to restart gateway proxy port forward
+k delete us default-bookstore-8080 -n gloo-system
+#pause to wait for bookstore to be discovered
+k apply -f newgrpcvs.yaml
+#look at the shelf
+curl -H "Host: foo.example.com" "localhost:8080/shelves/2" -v 
+#create another shelf
+curl -H "Host: foo.example.com" "localhost:8080/shelf" -d '{"theme": "science", "id":"1"}' -X POST -v
