@@ -293,7 +293,7 @@ func (v *VirtualServiceTranslator) virtualServiceToVirtualHost(vs *v1.VirtualSer
 		Options: vs.GetVirtualHost().GetOptions(),
 	}
 
-	validateRoutes(vs, vh, reports)
+	validateRoutesRegex(vs, vh, reports)
 
 	if v.WarnOnRouteShortCircuiting {
 		validateRouteShortCircuiting(vs, vh, reports)
@@ -330,13 +330,22 @@ func VirtualHostName(vs *v1.VirtualService) string {
 	return fmt.Sprintf("%v.%v", vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName())
 }
 
-// this function is written with the assumption that the routes will not be modified afterwards,
+// this function is written with the assumption that the routes will not be modified afterward,
 // and are in their final sorted form
-func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+func validateRoutesRegex(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	for _, rt := range vh.GetRoutes() {
+		options := rt.GetOptions()
+		if options != nil {
+			if options.GetRegexRewrite() != nil {
+				_, err := regexp.Compile(options.GetRegexRewrite().GetPattern().GetRegex())
+				if err != nil {
+					reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
+				}
+			}
+		}
 		for _, matcher := range rt.GetMatchers() {
 			_, err := regexp.Compile(matcher.GetRegex())
-			if matcher.GetRegex() != "" && err != nil {
+			if err != nil {
 				reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
 			}
 		}
@@ -571,23 +580,23 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 }
 
 // special case to catch the following:
-//	- matchers:
-//	  - prefix: /foo
-//      headers:
-//	    - name: :method
-//        value: GET
-//        invertMatch: true
-//    directResponseAction:
-//      status: 405
-//      body: 'Invalid HTTP Method'
-//	...
-//	- matchers:
-//	  - methods:
-//	    - GET
-//	    - POST # this one cannot be reached
-//      prefix: /foo
-//    routeAction:
-//	    ....
+//   - matchers:
+//   - prefix: /foo
+//     headers:
+//   - name: :method
+//     value: GET
+//     invertMatch: true
+//     directResponseAction:
+//     status: 405
+//     body: 'Invalid HTTP Method'
+//     ...
+//   - matchers:
+//   - methods:
+//   - GET
+//   - POST # this one cannot be reached
+//     prefix: /foo
+//     routeAction:
+//     ....
 func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
 
 	// regex matches simple OR regex, e.g. (GET|POST|...)
