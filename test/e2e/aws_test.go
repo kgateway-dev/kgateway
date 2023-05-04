@@ -24,6 +24,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/test/services"
 
@@ -57,7 +58,17 @@ var _ = Describe("AWS Lambda", func() {
 		envoyInstance *services.EnvoyInstance
 		secret        *gloov1.Secret
 		upstream      *gloov1.Upstream
+		runOptions    *services.RunOptions
 	)
+
+	BeforeEach(func() {
+		runOptions = &services.RunOptions{
+			WhatToRun: services.What{
+				DisableFds: false,
+				DisableUds: false,
+			},
+		}
+	})
 
 	setupEnvoy := func(justGloo bool) {
 		ctx, cancel = context.WithCancel(context.Background())
@@ -65,6 +76,21 @@ var _ = Describe("AWS Lambda", func() {
 		defaults.HttpsPort = services.NextBindPort()
 
 		testClients = services.RunGateway(ctx, justGloo)
+
+		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
+		Expect(err).NotTo(HaveOccurred())
+	}
+
+	setupEnvoyUdsFds := func(justGloo bool) {
+		ctx, cancel = context.WithCancel(context.Background())
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
+
+		runOptions.WhatToRun.DisableGateway = justGloo
+		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
@@ -97,7 +123,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			return string(body), nil
-		}, "5m", "1s").Should(ContainSubstring(substring))
+		}, "25s", "1s").Should(ContainSubstring(substring))
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(2, envoyPort, "SOLO.IO")
@@ -187,6 +213,39 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambdaUppercase(defaults.HttpPort)
+	}
+
+	addCrossAccountUpstream := func() {
+		upstream = &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Namespace: "default",
+				Name:      "cross-account-us",
+			},
+			UpstreamType: &gloov1.Upstream_Aws{
+				Aws: &aws_plugin.UpstreamSpec{
+					Region:    region,
+					SecretRef: secret.Metadata.Ref(),
+					// this is a separate account ID from the one that all other lambda
+					// functions tested in this file are in
+					AwsAccountId: "986112284769",
+					LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{
+						{
+							LogicalName:        "resource-based-cross-account-hello",
+							LambdaFunctionName: "resource-based-cross-account-hello",
+						},
+					},
+				},
+			},
+		}
+
+		var opts clients.WriteOpts
+		_, err := testClients.UpstreamClient.Write(upstream, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		// wait for the upstream to be created
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.UpstreamClient.Read(upstream.Metadata.Namespace, upstream.Metadata.Name, clients.ReadOpts{})
+		}, "30s", "1s")
 	}
 
 	testProxyWithResponseTransform := func() {
@@ -349,6 +408,57 @@ var _ = Describe("AWS Lambda", func() {
 		validateLambda(1, defaults.HttpPort, `"\"solo.io\""`)
 	}
 
+	testProxyWithCrossAccountLambda := func() {
+		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		proxy := &gloov1.Proxy{
+			Metadata: &core.Metadata{
+				Name:      "proxy",
+				Namespace: "default",
+			},
+			Listeners: []*gloov1.Listener{{
+				Name:        "listener",
+				BindAddress: "::",
+				BindPort:    defaults.HttpPort,
+				ListenerType: &gloov1.Listener_HttpListener{
+					HttpListener: &gloov1.HttpListener{
+						VirtualHosts: []*gloov1.VirtualHost{{
+							Name:    "virt1",
+							Domains: []string{"*"},
+							Routes: []*gloov1.Route{{
+								Action: &gloov1.Route_RouteAction{
+									RouteAction: &gloov1.RouteAction{
+										Destination: &gloov1.RouteAction_Single{
+											Single: &gloov1.Destination{
+												DestinationType: &gloov1.Destination_Upstream{
+													Upstream: upstream.Metadata.Ref(),
+												},
+												DestinationSpec: &gloov1.DestinationSpec{
+													DestinationType: &gloov1.DestinationSpec_Aws{
+														Aws: &aws_plugin.DestinationSpec{
+															LogicalName: "resource-based-cross-account-hello",
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}},
+						}},
+					},
+				},
+			}},
+		}
+
+		var opts clients.WriteOpts
+		_, err = testClients.ProxyClient.Write(proxy, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		validateLambda(1, defaults.HttpPort, `"\"Hello from Lambda!\""`)
+	}
+
 	testLambdaWithVirtualService := func() {
 		err := envoyInstance.RunWithRoleAndRestXds("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
@@ -386,6 +496,11 @@ var _ = Describe("AWS Lambda", func() {
 		var opts clients.WriteOpts
 		_, err = testClients.VirtualServiceClient.Write(vs, opts)
 		Expect(err).NotTo(HaveOccurred())
+
+		// wait for virtual service to be accepted
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.VirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		}, "20s", ".2s")
 
 		validateLambdaUppercase(defaults.HttpPort)
 	}
@@ -571,6 +686,16 @@ var _ = Describe("AWS Lambda", func() {
 			It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 
 			It("should be able to call lambda transformation and regular transformation", testLambdaTransformations)
+		})
+		Context("Resource-based cross-account lambda", func() {
+			BeforeEach(func() {
+				runOptions.WhatToRun.DisableFds = true
+				setupEnvoyUdsFds(true)
+				addBasicCredentials()
+				addCrossAccountUpstream()
+			})
+
+			It("should be able to interact with resource-based cross-account lambda", testProxyWithCrossAccountLambda)
 		})
 	})
 	Context("Temporary Credentials", func() {
