@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: fixes flake in generated_kube_types_test.go
+  issueLink: https://github.com/solo-io/gloo/issues/8099
+  resolvesIssue: false

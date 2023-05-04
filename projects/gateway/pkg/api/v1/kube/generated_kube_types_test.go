@@ -133,9 +133,8 @@ var _ = Describe("Generated Kube Code", func() {
 			},
 		}
 
-		// this fixes a flake in v1.14.x. This flake occurs when we try to
-		// `glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})` create the resource.
-		// I do not know why this resource already exists, but this fixes it.
+		// fix for a flake on `glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})`
+		// This resource often already exists leading to a failure on create - this aims to fix that error
 		resourceName := "petstore-static"
 		err := glooV1Client.Upstreams("default").Delete(ctx, resourceName, v1.DeleteOptions{})
 		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
