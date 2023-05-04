@@ -414,6 +414,11 @@ var _ = Describe("Hybrid Gateway", func() {
 			// because the filter chain translator aborts translation if there
 			// are no network filters (ie. virtual hosts)
 			// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/gloo/pkg/translator/filter_chain.go#L94-L96
+			// so even though the ip matches, we expect the request to fail
+			// similar to the above test.
+			// there is a workaround for this: by setting SniDomains to '*.', a
+			// virtual host *will* be created that matches all sni domains -
+			// see the tests a bit further below.
 			Entry("ip matcher (full ip address) without sni",
 				ClientConnectionProperties{
 					SrcIp: net.ParseIP("1.2.3.4"),
@@ -438,6 +443,46 @@ var _ = Describe("Hybrid Gateway", func() {
 				},
 				map[string]*v1.Matcher{
 					"ip-matcher": {
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 16,
+								},
+							},
+						},
+					},
+				}, NoMatch),
+			Entry("ip matcher (half ip address) with full wildcard sni (client SNI empty)",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.5"),
+					// SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"ip-matcher": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*."},
+						},
+						SourcePrefixRanges: []*v3.CidrRange{
+							{
+								AddressPrefix: "1.2.3.4",
+								PrefixLen: &wrappers.UInt32Value{
+									Value: 16,
+								},
+							},
+						},
+					},
+				}, NoMatch),
+			Entry("ip matcher (half ip address) with full wildcard sni",
+				ClientConnectionProperties{
+					SrcIp: net.ParseIP("1.2.3.5"),
+					SNI:   "foo.test.com",
+				},
+				map[string]*v1.Matcher{
+					"ip-matcher": {
+						SslConfig: &ssl.SslConfig{
+							SniDomains: []string{"*."},
+						},
 						SourcePrefixRanges: []*v3.CidrRange{
 							{
 								AddressPrefix: "1.2.3.4",
