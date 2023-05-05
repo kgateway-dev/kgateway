@@ -87,7 +87,7 @@ description: |
    - This can be done via the `gloo.discovery.fdsMode` setting to `DISABLED` in the enterprise Helm chart
    - Alternatively, you can set `spec.discovery.fdsMode` to `DISABLED` in the `gloo.solo.io/v1.Settings` custom resource
  - Configure an AWS secret, using the access key and secret key of the user in the primary account
-   - See the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/_index/" >}}) for more information on how to do this
+   - See the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/" >}}) for more information on how to do this
    - This secret will be used to authenticate with AWS when invoking the Lambda functions
  - Specify the Lambda functions in the target account that you wish to route to on the upstream
    - These are defined under the `spec.aws.LambdaFunctions` field of the upstream 
@@ -112,3 +112,5 @@ description: |
          - lambdaFunctionName: target-name
            logicalName: target-name
      ```
+## Validation
+ - To validate that the configuration is correct, you can follow the steps in the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda#step-3-create-an-upstream-and-virtual-service" >}}) to create a virtual service that routes to the Lambda function via the AWS upstream
