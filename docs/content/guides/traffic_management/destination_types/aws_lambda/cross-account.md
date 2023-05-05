@@ -8,13 +8,14 @@ description: |
 # Overview
  - Gloo Edge supports routing to AWS Lambda functions in different accounts than the one used to authenticate with AWS
  - There are two strategies that can be used to configure this behavior:
-   1. [IAM Roles for Service Accounts (IRSA) Configuration](#iam-roles-for-service-accounts-irsa-configuration) (Recommended)
+   1. [IAM Roles for Service Accounts/Role-Chained Configuration](#iam-roles-for-service-accounts-irsa-configuration) (Recommended)
    2. [Resource-Based Configuration](#resource-based-configuration)
 
-# IAM Roles for Service Accounts (IRSA) Configuration
+# IAM Roles for Service Accounts/Role-Chained Configuration
  - This is the recommended workflow for using cross-account Lambda functions with Gloo Edge
  - The configuration is essentially a modified version of the AWS Lambda with EKS ServiceAccounts [guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}})
 ## AWS Configuration
+- For this configuration you will need to create two roles, one in the primary account and one in the target account. The primary account is the account that you will use to authenticate with AWS, and the target account is the account that contains the Lambda functions that you wish to route to. The role in the primary account will be used to assume the role in the target account, which will be used to invoke the Lambda function.
 ### Primary Account
   - Follow the steps in the [AWS Lambda with EKS ServiceAccounts guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}})
     - As part of this guide, you will create a role which will be associated with the ServiceAccount in your cluster. This role will be used to assume the role in the target account, which will be used to invoke the Lambda function. Make sure to note the `ARN` of this role to use when configuring the target account's role later.
@@ -70,6 +71,7 @@ description: |
 
 # Resource-Based Configuration
 ## AWS Configuration
+- For this configuration you will need to create a user or role in the primary account, and a Lambda function in the target account. The Lambda function will have a resource-based policy statement which will allow the user or role in the primary account to invoke it.
 ### Primary Account
  - Create a user or role in the primary account that will be used to invoke the Lambda functions in the secondary account
    - Give the user the `lambda:InvokeFunction` permission
