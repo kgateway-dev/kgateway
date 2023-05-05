@@ -1,0 +1,7 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: bitnami
+  dependencyRepo: kubectl
+  dependencyTag: 1.25.9
+  issueLink: https://github.com/solo-io/gloo/issues/8166
+  resolvesIssue: false

@@ -30,6 +30,7 @@ import (
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/test/services"
 
@@ -64,11 +65,20 @@ var _ = Describe("AWS Lambda", func() {
 		secret        *gloov1.Secret
 		upstream      *gloov1.Upstream
 		httpClient    *http.Client
+		runOptions    *services.RunOptions
 	)
 
 	BeforeEach(func() {
 		httpClient = http.DefaultClient
 		httpClient.Timeout = 10 * time.Second
+		runOptions = &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableFds: false,
+			},
+			KubeClient: kube2e.MustKubeClient(),
+		}
 	})
 
 	setupEnvoy := func(justGloo bool) {
@@ -76,14 +86,7 @@ var _ = Describe("AWS Lambda", func() {
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		runOptions := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableGateway: justGloo,
-			},
-			KubeClient: kube2e.MustKubeClient(),
-		}
+		runOptions.WhatToRun.DisableGateway = justGloo
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
@@ -150,7 +153,7 @@ var _ = Describe("AWS Lambda", func() {
 				Custom:     testmatchers.ContainHeaders(params.expectedHeaders),
 			}))
 
-		}, "5m", "1s").Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(lambdaValidationParams{
@@ -193,6 +196,39 @@ var _ = Describe("AWS Lambda", func() {
 			LambdaFunctionName: "uppercase",
 			Qualifier:          "$LATEST",
 		}))
+	}
+
+	addCrossAccountUpstream := func() {
+		upstream = &gloov1.Upstream{
+			Metadata: &core.Metadata{
+				Namespace: "default",
+				Name:      "cross-account-us",
+			},
+			UpstreamType: &gloov1.Upstream_Aws{
+				Aws: &aws_plugin.UpstreamSpec{
+					Region:    region,
+					SecretRef: secret.Metadata.Ref(),
+					// this is a separate account ID from the one that all other lambda
+					// functions tested in this file are in
+					AwsAccountId: "986112284769",
+					LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{
+						{
+							LogicalName:        "resource-based-cross-account-hello",
+							LambdaFunctionName: "resource-based-cross-account-hello",
+						},
+					},
+				},
+			},
+		}
+
+		var opts clients.WriteOpts
+		_, err := testClients.UpstreamClient.Write(upstream, opts)
+		Expect(err).NotTo(HaveOccurred())
+
+		// wait for the upstream to be created
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.UpstreamClient.Read(upstream.Metadata.Namespace, upstream.Metadata.Name, clients.ReadOpts{})
+		}, "30s", "1s")
 	}
 
 	createProxy := func(unwrapAsApiGateway, requestTransformation, responseTransformation bool, logicalName string) {
@@ -243,6 +279,12 @@ var _ = Describe("AWS Lambda", func() {
 		var opts clients.WriteOpts
 		_, err := testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
+
+		// wait for proxy to be accepted
+		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+			return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+		}, "30s", "1s")
+
 	}
 
 	testProxy := func() {
@@ -306,6 +348,18 @@ var _ = Describe("AWS Lambda", func() {
 			offset:             1,
 			envoyPort:          defaults.HttpPort,
 			expectedSubstrings: []string{`"\"solo.io\""`},
+		})
+	}
+
+	testProxyWithCrossAccountLambda := func() {
+		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		Expect(err).NotTo(HaveOccurred())
+
+		createProxy(false, false, false, "resource-based-cross-account-hello")
+		validateLambda(lambdaValidationParams{
+			offset:             1,
+			envoyPort:          defaults.HttpPort,
+			expectedSubstrings: []string{`"\"Hello from Lambda!\""`},
 		})
 	}
 
@@ -540,6 +594,16 @@ var _ = Describe("AWS Lambda", func() {
 			It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 
 			It("should be able to call lambda transformation and regular transformation", testLambdaTransformations)
+		})
+		Context("Resource-based cross-account lambda", func() {
+			BeforeEach(func() {
+				runOptions.WhatToRun.DisableFds = true
+				setupEnvoy(true)
+				addBasicCredentials()
+				addCrossAccountUpstream()
+			})
+
+			It("should be able to interact with resource-based cross-account lambda", testProxyWithCrossAccountLambda)
 		})
 	})
 	Context("Temporary Credentials", func() {
