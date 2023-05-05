@@ -73,7 +73,7 @@ description: |
 ### Primary Account
  - Create a user or role in the primary account that will be used to invoke the Lambda functions in the secondary account
    - Give the user the `lambda:InvokeFunction` permission
-   - Create an access key for the user
+   - Create an access key for the user. This will be used to authenticate with AWS when invoking the Lambda functions
 ### Target Account
  - Create a Lambda function in the target account
  - Define a Resource-based policy statement for the function, which will allow the user in the Primary account to invoke it
@@ -86,6 +86,9 @@ description: |
  - Disable Function Discovery (FDS). This can be used to automatically discover functions in the user's primary AWS account, but since we are using a secondary account, we will need to manually configure the functions.
    - This can be done via the `gloo.discovery.fdsMode` setting to `DISABLED` in the enterprise Helm chart
    - Alternatively, you can set `spec.discovery.fdsMode` to `DISABLED` in the `gloo.solo.io/v1.Settings` custom resource
+ - Configure an AWS secret, using the access key and secret key of the user in the primary account
+   - See the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/_index/" >}}) for more information on how to do this
+   - This secret will be used to authenticate with AWS when invoking the Lambda functions
  - Specify the Lambda functions in the target account that you wish to route to on the upstream
    - These are defined under the `spec.aws.LambdaFunctions` field of the upstream 
  - Specify the target account ID in the upstream
