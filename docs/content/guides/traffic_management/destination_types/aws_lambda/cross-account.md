@@ -13,17 +13,17 @@ description: |
 
 # IAM Roles for Service Accounts (IRSA) Configuration
  - This is the recommended workflow for using cross-account Lambda functions with Gloo Edge
- - The configuration is essentially a modified version of the AWS Lambda with EKS ServiceAccounts [guide](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/)
+ - The configuration is essentially a modified version of the AWS Lambda with EKS ServiceAccounts [guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}})
 ## AWS Configuration
 ### Primary Account
-  - Follow the steps in the [AWS Lambda with EKS ServiceAccounts guide](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/)
-    - As part of this guide, you will create a role which will be associated with the ServiceAccount in your cluster. This role will be used to assume the role in the target account, which will be used to invoke the Lambda function.
+  - Follow the steps in the [AWS Lambda with EKS ServiceAccounts guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}})
+    - As part of this guide, you will create a role which will be associated with the ServiceAccount in your cluster. This role will be used to assume the role in the target account, which will be used to invoke the Lambda function. Make sure to note the `ARN` of this role to use when configuring the target account's role later.
 ### Target Account
  - Create a Lambda function in the target account
  - Create a role which:
-   1. Can be used to invoke the Lambda function -- this role should have the `lambda:InvokeFunction` permission
+   1. Can be used to invoke the Lambda function, which requires the `lambda:InvokeFunction` permission
    1. Can be assumed by the role associated with the ServiceAccount in the primary account
-     - in order to do this, specify the following trust policy on the role:
+     - To do so, specify the following trust policy on the role with the `ARN` of the primary account's role that you previously retrieved:
        ```json
         {
             "Version": "2012-10-17",
@@ -41,12 +41,12 @@ description: |
        ```
     
 ## Gloo Edge Configuration
- - Disable Function Discovery (FDS). This can be used to automatically discover functions in the user's primary AWS account, but since we are using a secondary account, we will need to manually configure the functions.
+ - Disable Function Discovery (FDS), which automatically discovers functions in your primary AWS account. Because you want to route to Lambdas in more than one account, you must disable discovery and instead manually configure the functions.
    - This can be done via the `gloo.discovery.fdsMode` setting to `DISABLED` in the enterprise Helm chart
    - Alternatively, you can set `spec.discovery.fdsMode` to `DISABLED` in the `gloo.solo.io/v1.Settings` custom resource
  - Specify the Lambda functions in the target account that you wish to route to on the upstream
    - These are defined under the `spec.aws.LambdaFunctions` field of the upstream
-- Configure the `spec.aws.roleArn` field of the upstream to point to the IAM role that will be used to invoke the Lambda functions (I.E., the role created in the target account)
+- Configure the `spec.aws.roleArn` field of the upstream to point to the IAM role that will be used to invoke the Lambda functions, which is the role that you created in the target account
   - This role should have the `lambda:InvokeFunction` permission
   - Example Upstream:
       ```yaml
