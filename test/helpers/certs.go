@@ -19,6 +19,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/crypto/ocsp"
+
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -55,6 +57,7 @@ func pemBlockForKey(priv interface{}) *pem.Block {
 
 }
 
+// Params includes parameters used to generate an x509 certificate.
 type Params struct {
 	Hosts            string             // Comma-separated hostnames and IPs to generate a certificate for
 	ValidFrom        *time.Time         // Creation date
@@ -63,8 +66,11 @@ type Params struct {
 	RsaBits          int                // Size of RSA key to generate. Ignored if EcdsaCurve is set
 	EcdsaCurve       string             // ECDSA curve to use to generate a key. Valid values are P224, P256 (recommended), P384, P521
 	AdditionalUsages []x509.ExtKeyUsage // Usages to define in addition to default x509.ExtKeyUsageServerAuth
+	IssuerKey        interface{}        // If provided, the certificate will be signed by this key
 }
 
+// GetCerts generates a signed key and certificate for the given parameters.
+// If an IssuerKey is provided, the certificate will be signed by that key. Otherwise, a self-signed certificate will be generated.
 func GetCerts(params Params) (string, string) {
 
 	if len(params.Hosts) == 0 {
@@ -72,25 +78,30 @@ func GetCerts(params Params) (string, string) {
 	}
 
 	var priv interface{}
-	var err error
-	switch params.EcdsaCurve {
-	case "":
-		if params.RsaBits == 0 {
-			params.RsaBits = 2048
+	// If an issuer key is provided, use it to sign the certificate
+	if params.IssuerKey != nil {
+		priv = params.IssuerKey
+	} else {
+		var err error
+		switch params.EcdsaCurve {
+		case "":
+			if params.RsaBits == 0 {
+				params.RsaBits = 2048
+			}
+			priv, err = rsa.GenerateKey(rand.Reader, params.RsaBits)
+		case "P224":
+			priv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+		case "P256":
+			priv, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		case "P384":
+			priv, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		case "P521":
+			priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		default:
+			Fail(fmt.Sprintf("Unrecognized elliptic curve: %q", params.EcdsaCurve))
 		}
-		priv, err = rsa.GenerateKey(rand.Reader, params.RsaBits)
-	case "P224":
-		priv, err = ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
-	case "P256":
-		priv, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	case "P384":
-		priv, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
-	case "P521":
-		priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-	default:
-		Fail(fmt.Sprintf("Unrecognized elliptic curve: %q", params.EcdsaCurve))
+		Expect(err).NotTo(HaveOccurred())
 	}
-	Expect(err).NotTo(HaveOccurred())
 
 	var notBefore time.Time
 	if params.ValidFrom == nil {
@@ -158,14 +169,15 @@ func GetCerts(params Params) (string, string) {
 }
 
 var (
-	getCerts     sync.Once
-	getMtlsCerts sync.Once
-	mtlsCert     string
-	mtlsPrivKey  string
-	cert         string
-	privKey      string
+	getCerts     sync.Once // Used to generate CA certs for the proxy once.
+	getMtlsCerts sync.Once // Used to generate mTLS CA certs for the proxy once.
+	mtlsCert     string    // mTLS CA certificate for the proxy.
+	mtlsPrivKey  string    // mTLS CA private key for the proxy.
+	cert         string    // CA certificate for the proxy.
+	privKey      string    // CA private key for the proxy.
 )
 
+// gencerts generates CA certs for the proxy.
 func gencerts() {
 	cert, privKey = GetCerts(Params{
 		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
@@ -173,6 +185,7 @@ func gencerts() {
 	})
 }
 
+// genmtlscerts generates mTLS certs for the proxy.
 func genmtlscerts() {
 	mtlsCert, mtlsPrivKey = GetCerts(Params{
 		Hosts:            "gateway-proxy,knative-proxy,ingress-proxy",
@@ -181,21 +194,25 @@ func genmtlscerts() {
 	})
 }
 
+// Certificate returns the CA certificate for the proxy.
 func Certificate() string {
 	getCerts.Do(gencerts)
 	return cert
 }
 
+// PrivateKey returns the CA private key for the proxy.
 func PrivateKey() string {
 	getCerts.Do(gencerts)
 	return privKey
 }
 
+// MtlsCertificate returns an mTLS CA certificate for the proxy.
 func MtlsCertificate() string {
 	getMtlsCerts.Do(genmtlscerts)
 	return mtlsCert
 }
 
+// MtlsPrivateKey returns an mTLS CA private key for the proxy.
 func MtlsPrivateKey() string {
 	getMtlsCerts.Do(genmtlscerts)
 	return mtlsPrivKey
@@ -213,4 +230,71 @@ func GetKubeSecret(name, namespace string) *kubev1.Secret {
 			Namespace: namespace,
 		},
 	}
+}
+
+// GetCertificateFromString returns an x509 certificate from the certificate's string representation.
+func GetCertificateFromString(certificate string) *x509.Certificate {
+	block, _ := pem.Decode([]byte(certificate))
+	cert, err := x509.ParseCertificate(block.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+	return cert
+}
+
+// GetPrivateKeyRSAFromString returns an RSA private key from the key's string representation.
+func GetPrivateKeyRSAFromString(privateKey string) *rsa.PrivateKey {
+	block, _ := pem.Decode([]byte(privateKey))
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	Expect(err).NotTo(HaveOccurred())
+	return key
+}
+
+// FakeOcspResponder is a fake OCSP responder that can be used to generate OCSP responses.
+type FakeOcspResponder struct {
+	// The certificate of the OCSP responder.
+	certificate *x509.Certificate
+	// The private key of the OCSP responder.
+	privateKey *rsa.PrivateKey
+	// The certificate of the CA that signed the OCSP responder's certificate.
+	// It is assumed that the signer has also signed any certificate that FakeOcspResponder will be generating responses for.
+	issuer *x509.Certificate
+}
+
+// NewFakeOcspResponder creates a new fake OCSP responder from the given root CA.
+func NewFakeOcspResponder(rootCa *x509.Certificate, rootKey interface{}) *FakeOcspResponder {
+	// Generate a certificate for the OCSP responder, signed by the root key passed.
+	cert, key := GetCerts(Params{
+		Hosts:     "ocsp-responder",
+		IsCA:      false,
+		IssuerKey: rootKey,
+	})
+
+	return &FakeOcspResponder{
+		certificate: GetCertificateFromString(cert),
+		privateKey:  GetPrivateKeyRSAFromString(key),
+		issuer:      rootCa,
+	}
+}
+
+// GetOcspResponse returns a DER-encoded OCSP response for the given certificate.
+// You pass it the certificate to get a response for, the expiration time of the response, and whether the certificate should be revoked.
+// You can also pass it an ocsp.Response to use as a template for the response. This allows for customizing the response wanted.
+func (f *FakeOcspResponder) GetOcspResponse(certificate *x509.Certificate, expiration time.Duration, isRevoked bool, resp ocsp.Response) []byte {
+	template := resp
+	template.Certificate = certificate
+	status := ocsp.Good
+	if isRevoked {
+		status = ocsp.Revoked
+	}
+
+	template = ocsp.Response{
+		Status:       status,
+		SerialNumber: certificate.SerialNumber,
+		NextUpdate:   time.Now().Add(expiration),
+		Certificate:  certificate,
+	}
+
+	response, err := ocsp.CreateResponse(f.issuer, f.certificate, template, f.privateKey)
+	Expect(err).NotTo(HaveOccurred())
+
+	return response
 }
