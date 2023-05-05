@@ -92,25 +92,24 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 
 
-{{- define "gloo.securityContext" -}}
+{{- define "gloo.securityContext" }}
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
-{{- if .values.merge -}}
-{{- $overwrite = false -}}
-{{ end -}}
+  {{- if .values.merge -}}
+    {{- $overwrite = false -}}
+  {{- end -}}
 {{- end -}}
 {{- if $overwrite -}}
-{{- $securityContext = or .values .defaults (dict) }}
+  {{- $securityContext = or .values .defaults (dict) -}}
 {{- else -}}
-{{- $securityContext = merge .values .defaults }}
-{{ end -}}
-{{- $securityContext = omit $securityContext "merge" -}}
+  {{- $securityContext = merge .values .defaults }}
+{{- end }}
+  {{- $securityContext = omit $securityContext "merge" -}}
 {{- with $securityContext -}}
 securityContext:{{ toYaml . | nindent 2 }}
-{{ end -}}
-{{-  end -}}
-
+{{- end }}
+{{- end }}
 
 {{- /*
 This takes an array of three values:
