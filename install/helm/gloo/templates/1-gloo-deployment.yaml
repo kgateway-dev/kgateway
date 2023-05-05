@@ -42,8 +42,10 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- include "gloo.securityContext" (dict "values" .Values.gloo.deployment.podSecurityContext "defaults" (dict)) | nindent 8 -}}
-      {{- include "gloo.pullSecret" $image | nindent 6 -}}
+{{- with .Values.gloo.deployment.podSecurityContext }}
+{{- include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 6 -}}
+{{- end }}
+{{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
       {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
       volumes:

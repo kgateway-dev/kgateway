@@ -109,11 +109,13 @@ spec:
         {{- end }}
 {{- end}}
     spec:
-      {{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
-      {{- if not $spec.podTemplate.floatingUserId -}}
-        {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
-      {{- end -}}
-      {{- include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults) | nindent 6 -}}
+      {{- if $spec.podTemplate.enablePodSecurityContext -}} 
+        {{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
+        {{- if not $spec.podTemplate.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
+        {{- end -}}
+{{- include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults) | nindent 6 -}}
+{{- end -}}
 {{- if $spec.kind.deployment }}
 {{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:

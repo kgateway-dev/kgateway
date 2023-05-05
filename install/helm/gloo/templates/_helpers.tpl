@@ -95,22 +95,21 @@ ttlSecondsAfterFinished: {{ . }}
 {{- define "gloo.securityContext" -}}
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
-{{- if .values }}
-  {{- if .values.merge }}
-    {{- $overwrite = false }}
-  {{- end }}
-{{- end -}}
-{{- if $overwrite }}
-  {{- $securityContext = or .values .defaults }}
-{{- else }}
-  {{- $securityContext = merge .values .defaults }}
-{{- end }}
-{{- $securityContext = omit $securityContext "merge"}}
-{{- with $securityContext -}}
-securityContext:
-{{ toYaml . | indent 2 }}
+{{- if .values -}}
+{{- if .values.merge -}}
+{{- $overwrite = false -}}
 {{ end -}}
-{{  end -}}
+{{- end -}}
+{{- if $overwrite -}}
+{{- $securityContext = or .values .defaults (dict) }}
+{{- else -}}
+{{- $securityContext = merge .values .defaults }}
+{{ end -}}
+{{- $securityContext = omit $securityContext "merge" -}}
+{{- with $securityContext -}}
+securityContext:{{ toYaml . | nindent 2 }}
+{{ end -}}
+{{-  end -}}
 
 
 {{- /*
