@@ -111,7 +111,7 @@ in the `matcher` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot=
 
 ### Matching boolean values
 
-#### Sample JWT (boolean)
+**Sample JWT (boolean)**
 
 Consider an example JWT with the following claims:
 ```json
@@ -123,7 +123,7 @@ Consider an example JWT with the following claims:
 }
 ```
 
-#### Virtual Service (boolean)
+**Virtual Service (boolean)**
 
 To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `email_verified`
 claim set to `true`, configure the Virtual Service with the following RBAC policy: 
@@ -181,7 +181,7 @@ spec:
 
 ### Matching list values
 
-#### Sample JWT (list)
+**Sample JWT (list)**
 
 Consider an example JWT with the following claims:
 ```json
@@ -198,7 +198,7 @@ Consider an example JWT with the following claims:
 }
 ```
 
-#### Virtual Service (list)
+**Virtual Service (list)**
 
 To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `roles`
 claim that contains `super_user` within its list, configure the Virtual Service with the following RBAC policy:
