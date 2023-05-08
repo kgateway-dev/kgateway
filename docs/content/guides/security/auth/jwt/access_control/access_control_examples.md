@@ -22,7 +22,7 @@ The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. I
     - [Virtual Service](#virtual-service-list)
 
 ## Setup
-Before you begin, set up basic JWT authorization and configure a Virtual Service to verify JWTs by following the steps in JWT and Access Control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
+Before you begin, set up basic JWT authorization and configure a Virtual Service to verify JWTs by following the steps in [JWT and Access Control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
 
 ## Matching against nested JWT claims
 
