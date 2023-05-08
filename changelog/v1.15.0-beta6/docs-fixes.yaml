@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Weekly doc fixes such as version bumps, links, and customer requests that were raised in Slack.
+  - type: NON_USER_FACING
+    description: Bump Hugo theme.
+    issueLink: https://github.com/solo-io/doctopus/issues/82
+    resolvesIssue: false
