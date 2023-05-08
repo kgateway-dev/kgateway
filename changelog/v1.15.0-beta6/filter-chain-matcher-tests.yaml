@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4812
+    resolvesIssue: true
+    description: Add tests to ensure no behaviour changes between old and new filter chain match APIs
