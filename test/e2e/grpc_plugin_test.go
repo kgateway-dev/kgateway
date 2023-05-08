@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/e2e"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -143,7 +145,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
 		Metadata: &core.Metadata{
-			Name:      "default",
+			Name:      e2e.DefaultVirtualServiceName,
 			Namespace: writeNamespace,
 		},
 		VirtualHost: &gatewayv1.VirtualHost{
