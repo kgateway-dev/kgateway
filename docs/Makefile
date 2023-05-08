@@ -14,7 +14,7 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 HUGO_VERSION := 0.69.2
 
-SOLO_HUGO_THEME_REVISION := v0.0.24
+SOLO_HUGO_THEME_REVISION := v0.0.25
 
 # The minimum version to maintain in our public docs
 MIN_SCANNED_VERSION ?= v1.11.0
