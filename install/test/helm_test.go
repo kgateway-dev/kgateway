@@ -3835,7 +3835,7 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					FIt("correctly sets the `regexMaxProgramSize` field to the default of 1024 in the settings", func() {
+					It("correctly sets the `regexMaxProgramSize` field to the default of 1024 in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_regex_max_program_size_default.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{},
