@@ -242,7 +242,7 @@ type Gloo struct {
 }
 
 type SecurityOpts struct {
-	Merge *bool `json:"merge,omitempty"`
+	Merge *bool `json:"merge,omitempty" desc:"If true, merge this security context with the default security context. If false, replace the default security context with this security context."`
 }
 type PodSecurityContext struct {
 	*appsv1.PodSecurityContext
