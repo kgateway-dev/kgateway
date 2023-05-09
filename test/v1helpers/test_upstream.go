@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -28,6 +28,26 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
+// TestUpstream is a testing utility (used in in-memory e2e tests) to compose the following concepts:
+//  1. Running an application with a custom response message (see: runTestServer)
+//  2. Configuring an Upstream object to route to that application (see: newTestUpstream)
+//  3. Utility methods for asserting that traffic was successfully routed to the application (see: Assertion Utilities)
+type TestUpstream struct {
+	Upstream    *gloov1.Upstream
+	C           <-chan *ReceivedRequest
+	CResp       <-chan *ReturnedResponse
+	Address     string
+	Port        uint32
+	GrpcServers []*testgrpcservice.TestGRPCServer
+}
+
+func (tu *TestUpstream) FailGrpcHealthCheck() *testgrpcservice.TestGRPCServer {
+	for _, v := range tu.GrpcServers[:len(tu.GrpcServers)-1] {
+		v.HealthChecker.Fail()
+	}
+	return tu.GrpcServers[len(tu.GrpcServers)-1]
+}
+
 type ReceivedRequest struct {
 	Method      string
 	Headers     map[string][]string
@@ -38,29 +58,68 @@ type ReceivedRequest struct {
 	Port        uint32
 }
 
-func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, "", false)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+func (rr *ReceivedRequest) String() string {
+	var grpcRequest string
+	if rr.GRPCRequest != nil {
+		grpcRequest = rr.GRPCRequest.String()
+	}
+	return fmt.Sprintf(`Method: %s
+Headers: %v
+URL: %s
+Body: %s
+Host: %s
+GRPCRequest: %s
+Port: %d`, rr.Method, rr.Headers, rr.URL.String(), string(rr.Body), rr.Host,
+		grpcRequest, rr.Port)
 }
 
-func NewTestHttpUpstreamWithTls(ctx context.Context, addr string, tlsUpstream bool) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, "", tlsUpstream)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+type ReturnedResponse struct {
+	Code    int
+	Body    []byte
+	Headers map[string][]string
+}
+
+func (rr *ReturnedResponse) String() string {
+	return fmt.Sprintf(`Code: %d
+Body: %s
+Headers: %v`, rr.Code, string(rr.Body), rr.Headers)
+}
+
+const (
+	NO_TLS = iota
+	TLS
+	MTLS
+)
+
+type UpstreamTlsRequired int
+
+// Test Upstream Factory Utilities
+//
+// Below are a collection of methods that can be used to create a TestUpstream with a certain behavior
+
+func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
+	backendPort, requests, responses := runTestServer(ctx, "", NO_TLS)
+	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
+}
+
+func NewTestHttpUpstreamWithTls(ctx context.Context, addr string, tlsServer UpstreamTlsRequired) *TestUpstream {
+	backendPort, requests, responses := runTestServer(ctx, "", tlsServer)
+	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
 func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, reply, false)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	backendPort, requests, responses := runTestServer(ctx, reply, NO_TLS)
+	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
 func NewTestHttpUpstreamWithReplyAndHealthReply(ctx context.Context, addr, reply, healthReply string) *TestUpstream {
-	backendPort, responses := runTestServerWithHealthReply(ctx, reply, healthReply, false)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	backendPort, requests, responses := runTestServerWithHealthReply(ctx, reply, healthReply, NO_TLS)
+	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
 func NewTestHttpsUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, reply, true)
-	return newTestUpstream(addr, []uint32{backendPort}, responses)
+	backendPort, requests, responses := runTestServer(ctx, reply, TLS)
+	return newTestUpstream(addr, []uint32{backendPort}, requests, responses)
 }
 
 func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUpstream {
@@ -69,6 +128,7 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 		grpcServices[i] = testgrpcservice.RunServer(ctx)
 	}
 	received := make(chan *ReceivedRequest, 100)
+	returned := make(chan *ReturnedResponse, 100)
 	for _, srv := range grpcServices {
 		srv := srv
 		go func() {
@@ -83,31 +143,18 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 		ports = append(ports, v.Port)
 	}
 
-	us := newTestUpstream(addr, ports, received)
+	us := newTestUpstream(addr, ports, received, returned)
 	us.Upstream.UseHttp2 = &wrappers.BoolValue{Value: true}
 	us.GrpcServers = grpcServices
 	return us
 }
 
-type TestUpstream struct {
-	Upstream    *gloov1.Upstream
-	C           <-chan *ReceivedRequest
-	Address     string
-	Port        uint32
-	GrpcServers []*testgrpcservice.TestGRPCServer
-}
+var testUpstreamId = 0
 
-func (tu *TestUpstream) FailGrpcHealthCheck() *testgrpcservice.TestGRPCServer {
-	for _, v := range tu.GrpcServers[:len(tu.GrpcServers)-1] {
-		v.HealthChecker.Fail()
-	}
-	return tu.GrpcServers[len(tu.GrpcServers)-1]
-}
-
-var id = 0
-
-func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequest) *TestUpstream {
-	id += 1
+// newTestUpstream creates a static Upstream that can route traffic to a set of ports for a given address
+// It contains a unique name (since tests may run in parallel), with a suffix id that increases each invocation
+func newTestUpstream(addr string, ports []uint32, requests <-chan *ReceivedRequest, responses <-chan *ReturnedResponse) *TestUpstream {
+	testUpstreamId += 1
 	hosts := make([]*static_plugin_gloo.Host, len(ports))
 	for i, port := range ports {
 		hosts[i] = &static_plugin_gloo.Host{
@@ -117,7 +164,7 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 	}
 	u := &gloov1.Upstream{
 		Metadata: &core.Metadata{
-			Name:      fmt.Sprintf("local-test-upstream-%d", id),
+			Name:      fmt.Sprintf("local-test-upstream-%d", testUpstreamId),
 			Namespace: "default",
 		},
 		UpstreamType: &gloov1.Upstream_Static{
@@ -129,40 +176,56 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 
 	return &TestUpstream{
 		Upstream: u,
-		C:        responses,
+		C:        requests,
+		CResp:    responses,
 		Port:     ports[0],
 	}
 }
 
-func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
-	return runTestServerWithHealthReply(ctx, reply, "OK", serveTls)
+// runTestServer starts a local server listening on a random port, that responds to requests with the provided `reply`.
+// It returns the port that the server is running on, and a channel which will contain requests received by this server
+func runTestServer(ctx context.Context, reply string, tlsServer UpstreamTlsRequired) (uint32, <-chan *ReceivedRequest, <-chan *ReturnedResponse) {
+	return runTestServerWithHealthReply(ctx, reply, "OK", tlsServer)
 }
 
-func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
-	bodyChan := make(chan *ReceivedRequest, 100)
+func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string, tlsServer UpstreamTlsRequired) (uint32, <-chan *ReceivedRequest, <-chan *ReturnedResponse) {
+	reqChan := make(chan *ReceivedRequest, 100)
+	respChan := make(chan *ReturnedResponse, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
+		var rresp ReturnedResponse
 		rr.Method = r.Method
 
 		var body []byte
 		if r.Body != nil {
-			body, _ = ioutil.ReadAll(r.Body)
+			body, _ = io.ReadAll(r.Body)
 			_ = r.Body.Close()
 			if len(body) != 0 {
 				rr.Body = body
 			}
 		}
-
-		if reply != "" {
-			_, _ = rw.Write([]byte(reply))
-		} else if body != nil {
-			_, _ = rw.Write(body)
-		}
 		rr.Host = r.Host
 		rr.URL = r.URL
 		rr.Headers = r.Header
 
-		bodyChan <- &rr
+		reqChan <- &rr
+
+		if retresp := waitIfNecessary(r); retresp != nil {
+			rw.WriteHeader(retresp.Code)
+			rw.Write(retresp.Body)
+			rresp = *retresp
+		} else if reply != "" {
+			rw.Write([]byte(reply))
+			rresp.Code = http.StatusOK
+			rresp.Headers = rw.Header()
+			rresp.Body = []byte(reply)
+		} else if body != nil {
+			rw.Write(body)
+			rresp.Code = http.StatusOK
+			rresp.Headers = rw.Header()
+			rresp.Body = body
+		}
+		respChan <- &rresp
 	}
 
 	listener, err := net.Listen("tcp", ":0")
@@ -190,7 +253,7 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 	go func() {
 		defer GinkgoRecover()
 		h := &http.Server{Handler: mux}
-		if serveTls {
+		if tlsServer > NO_TLS {
 			certs, err := tls.X509KeyPair([]byte(helpers.Certificate()), []byte(helpers.PrivateKey()))
 			if err != nil {
 				Expect(err).NotTo(HaveOccurred())
@@ -214,9 +277,26 @@ func runTestServerWithHealthReply(ctx context.Context, reply, healthReply string
 		_ = h.Shutdown(ctx)
 		cancel()
 		// close channel, the http handler may panic but this should be caught by the http code.
-		close(bodyChan)
+		close(reqChan)
 	}()
-	return uint32(port), bodyChan
+	return uint32(port), reqChan, respChan
+}
+
+func waitIfNecessary(r *http.Request) *ReturnedResponse {
+	ms := 0
+	if r.URL.Query().Has("wait") {
+		milliseconds := r.URL.Query().Get("wait")
+		var err error
+		ms, err = strconv.Atoi(milliseconds)
+		if err != nil {
+			return &ReturnedResponse{
+				Code: http.StatusBadRequest,
+				Body: []byte(err.Error()),
+			}
+		}
+	}
+	time.Sleep(time.Millisecond * time.Duration(ms))
+	return nil
 }
 
 func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
@@ -341,7 +421,7 @@ func ExpectCurlWithOffset(offset int, request CurlRequest, expectedResponse Curl
 	}, "30s", "1s").Should(BeNil())
 
 	if expectedResponse.Message != "" {
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		ExpectWithOffset(offset, err).NotTo(HaveOccurred())
 		defer res.Body.Close()
 		ExpectWithOffset(offset, string(body)).To(Equal(expectedResponse.Message))
