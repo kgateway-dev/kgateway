@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7477
+    resolvesIssue: false
+    description: When gRPC is defined on an Upstream, only create filters on Listeners that reference that US.
