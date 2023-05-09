@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/8080
     resolvesIssue: true
-    description: Backport change to support mismatched versions of the gRPC transcoding API to make migration without downtime possible.
+    description: Backport change to support mismatched versions of the gRPC transcoding API to make upgrade/migration without downtime possible.
