@@ -194,6 +194,7 @@ func (f *UpstreamFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, url
 		}
 		svcSpec.DescriptorSet = &grpc_json_plugins.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: rawDescriptors}
 		svcSpec.Services = servicesDiscovered
+		svcSpec.MatchIncomingRequestRoute = true
 		return nil
 	})
 }
