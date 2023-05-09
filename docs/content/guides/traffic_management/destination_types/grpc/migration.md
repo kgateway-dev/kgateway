@@ -12,7 +12,7 @@ In previous versions of Gloo Edge, you added any HTTP to gRPC mappings to the vi
 
 
 {{% notice note %}}
-Starting in Gloo Edge version 1.14.4, virtual services that still define the `destinationSpec: grpc` section can route to gRPC upstreams that are already migrated to the new gRPC API. 
+Starting in Gloo Edge OSS version 1.14.4 (Gloo Edge Enterprise version 1.14.2), virtual services that still define the `destinationSpec: grpc` section can route to gRPC upstreams that are already migrated to the new gRPC API. 
 {{% /notice %}}
 
 {{% notice note %}}
@@ -70,6 +70,6 @@ Migrate your upstreams to the new gRPC API. During the migration, your routes to
    ```sh
    kubectl get upstreams -n gloo-system
    ```
-6. Update the corresponding virtual services and remove the `destinationSpec: grpc` section. Note that with Gloo Edge 1.14.4, virtual services that keep the `destinationSpec: grpc` section can still route to gRPC upstreams that were migrated to the new gRPC API. 
+6. Update the corresponding virtual services and remove the `destinationSpec: grpc` section. Note that with Gloo Edge OSS version 1.14.4 (Gloo Edge Enterprise version 1.14.2), virtual services that keep the `destinationSpec: grpc` section can still route to gRPC upstreams that were migrated to the new gRPC API. 
 
 
