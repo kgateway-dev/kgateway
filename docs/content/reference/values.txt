@@ -561,6 +561,7 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.merge|bool|||
 |gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
 |gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
 |gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -803,6 +804,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.merge|bool|||
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|

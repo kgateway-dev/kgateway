@@ -5885,6 +5885,84 @@ metadata:
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 				)
 
+				DescribeTable("merges resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					// Run once "plain" to get the baseline
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: extraArgs,
+					})
+
+					// Get the resources
+					initial_resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							return true
+						}
+						return false
+					})
+
+					Expect(initial_resources.NumResources()).To(Equal(1))
+					var initialSecurityContext *v1.SecurityContext
+					initial_resources.ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						foundExpected := false
+						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+							if container.Name == containerName {
+								foundExpected = true
+								initialSecurityContext = container.SecurityContext
+								if initialSecurityContext == nil {
+									initialSecurityContext = &v1.SecurityContext{}
+								}
+							}
+						}
+						Expect(foundExpected).To(Equal(true))
+					})
+
+					// Run again with security context
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							securityRoot + ".runAsUser=1234",
+							securityRoot + ".merge=true",
+						}, extraArgs...),
+					})
+
+					// Get the resources
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						foundExpected := false
+						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+							if container.Name == containerName {
+								foundExpected = true
+								Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(1234))))
+								initialSecurityContext.RunAsUser = pointer.Int64(int64(1234))
+								Expect(container.SecurityContext).To(Equal(initialSecurityContext))
+
+							}
+						}
+						Expect(foundExpected).To(Equal(true))
+					})
+				},
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+				)
+
 				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
@@ -5949,6 +6027,55 @@ metadata:
 									},
 								},
 							))
+							return true
+						}
+						return false
+					})
+					Expect(resources.NumResources()).To(Equal(1))
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+				)
+
+				DescribeTable("merges resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: extraArgs,
+					})
+
+					var intitialSecurityContext *v1.PodSecurityContext
+					initialResources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							deploymentObject, err := kuberesource.ConvertUnstructured(u)
+							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+
+							intitialSecurityContext = structuredDeployment.Spec.Template.Spec.SecurityContext
+							if intitialSecurityContext == nil {
+								intitialSecurityContext = &v1.PodSecurityContext{}
+							}
+							return true
+						}
+						return false
+					})
+					Expect(initialResources.NumResources()).To(Equal(1))
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							securityRoot + ".runAsUser=303030",
+							securityRoot + ".merge=true",
+						}, extraArgs...),
+					})
+
+					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+							deploymentObject, err := kuberesource.ConvertUnstructured(u)
+							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(303030))))
+							intitialSecurityContext.RunAsUser = pointer.Int64(int64(303030))
+							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(intitialSecurityContext))
 							return true
 						}
 						return false
