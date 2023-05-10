@@ -22,6 +22,7 @@ jobs:
         echo ${{ github.ref }}
         echo ${{ contains(github.ref, 'master') }}
         echo $GITHUB_HEAD_REF
+        echo ${{ github.event.pull_request.base.ref }}
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.11.0
       with:
