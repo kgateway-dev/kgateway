@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4901
+    resolvesIssue: false
+    description:  >-
+      We will no longer run upgrade tests on PRs to master, all other branches will still run upgrades
+      We will no longer run nightlies for 1.12 and 1.11 - the focus will be on the stability of tests 1.13+
