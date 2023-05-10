@@ -6648,9 +6648,11 @@ func getConfigMap(testManifest TestManifest, namespace string, name string) *v1.
 	return configMapObj.(*v1.ConfigMap)
 }
 
-/* podSecurityContextFieldsStripeGroupA/B are used to generate the values.yaml for the podSecurityContext tests.
-   We use the stripe groups so that with two tests we can cover all the fields in the podSecurityContext struct both with and without
-   overriding the default values. We do this in 2 places, to test the merge and the overwrite, so we'll just define them once here
+/*
+podSecurityContextFieldsStripeGroupA/B are used to generate the values.yaml for the podSecurityContext tests.
+
+	We use the stripe groups so that with two tests we can cover all the fields in the podSecurityContext struct both with and without
+	overriding the default values. We do this in 2 places, to test the merge and the overwrite, so we'll just define them once here
 */
 func podSecurityContextFieldsStripeGroupA(securityRoot string, extraArgs ...string) helmValues {
 	return helmValues{
