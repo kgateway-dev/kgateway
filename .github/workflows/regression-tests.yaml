@@ -19,7 +19,7 @@ jobs:
     steps:
     - name: check github
       run: |
-        echo ${{ github.ref }}"
+        echo ${{ github.ref }}
         echo ${{ contains(github.ref, 'master') }}
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.11.0
