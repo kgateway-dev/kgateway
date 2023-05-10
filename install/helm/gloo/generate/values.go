@@ -242,7 +242,7 @@ type Gloo struct {
 }
 
 type SecurityOpts struct {
-	Merge *bool `json:"merge,omitempty" desc:"If true, merge this security context with the default security context. If false, replace the default security context with this security context."`
+	ApplyAsHelmMerge *bool `json:"applyAsHelmMerge,omitempty" desc:"If true, merge this security context with the default security context according to the logic of the helm 'merge' function. This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' functino works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. If false, replace the default security context with this security context. Default value is false."`
 }
 type PodSecurityContext struct {
 	*appsv1.PodSecurityContext

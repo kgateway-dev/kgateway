@@ -91,12 +91,21 @@ ttlSecondsAfterFinished: {{ . }}
 {{- end -}}
 {{- end -}}
 
+{{- /* 
+This template is used to generate the gloo pod or container security context.
+It takes 2 values:
+  .values - the securityContext passed from the user in values.yaml
+  .defaults - the default securityContext for the pod or container
 
+  Depending upon the value of .values.merge, the securityContext will be merged with the defaults or completely replaced.
+  In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
+Because of this, if a value is "true" in defaults it can not be modified with this method.
+*/ -}}
 {{- define "gloo.securityContext" }}
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
-  {{- if .values.merge -}}
+  {{- if .values.applyAsHelmMerge -}}
     {{- $overwrite = false -}}
   {{- end -}}
 {{- end -}}
@@ -105,7 +114,8 @@ ttlSecondsAfterFinished: {{ . }}
 {{- else -}}
   {{- $securityContext = merge .values .defaults }}
 {{- end }}
-  {{- $securityContext = omit $securityContext "merge" -}}
+{{- /* Remove "merge" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
+{{- $securityContext = omit $securityContext "applyAsHelmMerge" -}}
 {{- with $securityContext -}}
 securityContext:{{ toYaml . | nindent 2 }}
 {{- end }}
