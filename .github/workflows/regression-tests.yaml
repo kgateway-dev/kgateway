@@ -9,7 +9,7 @@ env:
   VERSION: '1.0.0-ci'
   GITHUB_TOKEN: ${{ github.token }} # necessary to pass upgrade tests
   IS_MASTER: false
-  TEST_MATRIX_MASTER: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio']
+  TEST_MATRIX_MASTER:
   TEST_MATRIX_LTS: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade']
 
 jobs:
@@ -24,15 +24,6 @@ jobs:
       uses: styfle/cancel-workflow-action@0.11.0
       with:
         access_token: ${{ github.token }}
-    - id: check-if-master
-      name: Check branch name
-      run: |
-        if [ "${{ github.ref }}" = "refs/heads/master" ]; then
-          echo "Branch is master"
-          echo "IS_MASTER=true" >> $GITHUB_ENV
-        else
-          echo "Branch is not master"
-        fi
     - id: is-draft-pr
       name: Process draft Pull Requests
       if: ${{ github.event.pull_request.draft }}
@@ -71,20 +62,26 @@ jobs:
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
-    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-22.04
+    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     strategy:
       fail-fast: false
       matrix:
         # upgrade tests are run on LTS but not on master branch, for master they are run nightly
         # this is the github action version of ternary op
-        kube-e2e-test-type: ${{ env.IS_MASTER == 'true' && env.TEST_MATRIX_MASTER || env.TEST_MATRIX_LTS }}
-        kube-version: [{ node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' }]
+        kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade']
+        kube-version: [ { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' } ]
+        is-master:
+          - ${{ contains(github.ref, 'master') }}
+        exclude:
+          - is-master: true
+            kube-e2e-test-type: upgrade
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/regression-tests
 
   notify_slack:
+    name: Notify slack
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'pull_request' && failure() }}
     needs: [ regression_tests ]
