@@ -17,6 +17,10 @@ jobs:
       should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
       should-pass-regression-tests: ${{ steps.regression-tests.outputs.pass_value }}
     steps:
+    - name: check github
+      run: |
+        echo ${{ github.ref }}"
+        echo ${{ contains(github.ref, 'master') }}
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.11.0
       with:
