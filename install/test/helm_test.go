@@ -6183,7 +6183,7 @@ metadata:
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
 
-				FDescribeTable("floatingUserID is properly applied", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+				DescribeTable("floatingUserID is properly applied", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
 					// Pass 1: floatingUserID=false
 					// Also set the runAsUser to something other than the default
 					prepareMakefile(namespace, helmValues{
