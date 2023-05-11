@@ -5818,7 +5818,7 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
 
-				FDescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
 					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
 					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
 					helmValuesB := securityContextFieldsStripeGroupB(securityRoot, extraArgs...)
