@@ -6225,17 +6225,17 @@ metadata:
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
 
-				FDescribeTable("floatingUserID is properly applied", func(resourceName string, kind string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+				FDescribeTable("floatingUserID is properly applied", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
 					// Pass 1: floatingUserID=false
 					// Also set the runAsUser to something other than the default
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
 							fpuidRoot + ".floatingUserID=false",
-							"gloo.deployment.runAsUser=30303",
+							securityRoot + ".runAsUser=30303",
 						}, extraArgs...),
 					})
 
-					container := getContainer(testManifest, kind, resourceName, containerName)
+					container := getContainer(testManifest, "Deployment", resourceName, containerName)
 					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
 
 					// Pass 2: floatingUserID=true
@@ -6246,12 +6246,26 @@ metadata:
 						}, extraArgs...),
 					})
 
-					container = getContainer(testManifest, kind, resourceName, containerName)
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
 					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
 
+					// Pass 3: floatingUserID=true
+					// BUT also pass in an override for the runAsUser
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+							securityRoot + ".runAsUser=20202",
+							securityRoot + ".applyAsHelmMerge=true",
+						}, extraArgs...),
+					})
+
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(20202))))
+
 				},
-					// Entry("1-gloo-deployment", "Deployment", "gloo", "gloo.deployment", "gloo.deployment", "global.glooMtls.enabled=true"),
-					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "Deployment", "envoy-sidecar", "gloo.deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "gloo.deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "gloo.deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"), //Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "gatewayProxies.gatewayProxy.podTemplate", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
 				)
 
 			})
