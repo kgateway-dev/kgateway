@@ -94,8 +94,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
 	usRef := core.ResourceRef{
-		Name:      in.Metadata.GetName(),
-		Namespace: in.Metadata.GetNamespace(),
+		Name:      in.GetMetadata().GetName(),
+		Namespace: in.GetMetadata().GetNamespace(),
 	}
 	p.upstreamFilters[usRef.Key()] = grpcJsonFilter
 	// GRPC transcoding always requires http2
