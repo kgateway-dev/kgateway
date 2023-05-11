@@ -67,6 +67,7 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(_ plugins.InitParams) {
+	//Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> filters to add to the listener
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
@@ -109,6 +110,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	var usFilters []plugins.StagedHttpFilter
 	// Skip looking at all the routes on the listener if we know no upstreams have a grpcJsonTranscoderSpec
 	if len(p.upstreamFilters) > 0 {
+		//this loops over each upstream on the listener and does a fixed time check to see if it's the map of gRPC upstreams.
 		for _, listenerUs := range upstreamsFromListener(params, listener) {
 			if filter, ok := p.upstreamFilters[listenerUs.Key()]; ok {
 				usFilters = append(usFilters, filter)
@@ -132,6 +134,8 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 }
 func upstreamsFromListener(params plugins.Params, listener *v1.HttpListener) []core.ResourceRef {
 	var allUpstreams []core.ResourceRef
+	// For single-destination and multi-destination routes, the destination lookup is 0(1) so this has complexity O(routes)
+	// For routes to UpstreamGroups, we search all the UpstreamGroups in the snapshot for a match so it has complexity O(routes*UsGroups)
 	for _, vhost := range listener.GetVirtualHosts() {
 		for _, route := range vhost.Routes {
 			routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, route.GetRouteAction())
