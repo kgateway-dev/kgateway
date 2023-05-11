@@ -105,8 +105,10 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
-  {{- if .values.applyAsHelmMerge -}}
+  {{- if eq .values.mergePolicy "helm-merge" -}}
     {{- $overwrite = false -}}
+  {{- else if and .values.mergePolicy (ne .values.mergePolicy "no-merge") -}}
+  {{- fail "value for mergePolicy is not as expected" }}
   {{- end -}}
 {{- end -}}
 {{- if $overwrite -}}
@@ -114,8 +116,8 @@ Because of this, if a value is "true" in defaults it can not be modified with th
 {{- else -}}
   {{- $securityContext = merge .values .defaults }}
 {{- end }}
-{{- /* Remove "merge" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
-{{- $securityContext = omit $securityContext "applyAsHelmMerge" -}}
+{{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
+{{- $securityContext = omit $securityContext "mergePolicy" -}}
 {{- with $securityContext -}}
 securityContext:{{ toYaml . | nindent 2 }}
 {{- end }}

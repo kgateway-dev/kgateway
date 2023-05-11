@@ -5821,6 +5821,11 @@ metadata:
 				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
 					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
 					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
+
+					// 2nd group of fields to test. Switch up the default 'no-merge' to the explict version
+					extraArgs = append([]string{
+						securityRoot + ".mergePolicy=no-merge",
+					}, extraArgs...)
 					helmValuesB := securityContextFieldsStripeGroupB(securityRoot, extraArgs...)
 
 					// First Group of fields to test
@@ -5842,7 +5847,6 @@ metadata:
 						},
 					))
 
-					// 2nd group of fields to test
 					prepareMakefile(namespace, helmValuesB)
 
 					container = getContainer(testManifest, "Deployment", resourceName, containerName)
@@ -5890,9 +5894,9 @@ metadata:
 					var initialSecurityContextClean *v1.SecurityContext
 					deepCopy(&initialSecurityContext, &initialSecurityContextClean)
 
-					// add "applyAsHelmMerge" to the security context
+					// add "mergePolicy" to the security context
 					extraArgs = append([]string{
-						securityRoot + ".applyAsHelmMerge=true",
+						securityRoot + ".mergePolicy=helm-merge",
 					}, extraArgs...)
 
 					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
@@ -5966,6 +5970,11 @@ metadata:
 
 				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
 					helmValuesA := podSecurityContextFieldsStripeGroupA(securityRoot, extraArgs...)
+
+					// 2nd group of fields to test. Switch up the default 'no-merge' to the explict version
+					extraArgs = append([]string{
+						securityRoot + ".mergePolicy=no-merge",
+					}, extraArgs...)
 					helmValuesB := podSecurityContextFieldsStripeGroupB(securityRoot, extraArgs...)
 
 					prepareMakefile(namespace, helmValuesA)
@@ -6035,7 +6044,7 @@ metadata:
 					deepCopy(&initialSecurityContext, &initialSecurityContextClean)
 
 					extraArgs = append([]string{
-						securityRoot + ".applyAsHelmMerge=true",
+						securityRoot + ".mergePolicy=helm-merge",
 					}, extraArgs...)
 
 					fsGroupChangePolicy := v1.PodFSGroupChangePolicy("fsGroupChangePolicyValue")
@@ -6128,6 +6137,7 @@ metadata:
 				)
 
 				DescribeTable("floatingUserID is properly applied (container)", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+					// Pass 1 - get with no changes
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
 							fpuidRoot + ".floatingUserID=false",
@@ -6155,7 +6165,7 @@ metadata:
 						valuesArgs: append([]string{
 							fpuidRoot + ".floatingUserID=true",
 							securityRoot + ".runAsUser=20202",
-							securityRoot + ".applyAsHelmMerge=true",
+							securityRoot + ".mergePolicy=helm-merge",
 						}, extraArgs...),
 					})
 
@@ -6199,7 +6209,7 @@ metadata:
 						valuesArgs: append([]string{
 							fpuidRoot + ".floatingUserID=true",
 							securityRoot + ".runAsUser=20202",
-							securityRoot + ".applyAsHelmMerge=true",
+							securityRoot + ".mergePolicy=helm-merge",
 						}, extraArgs...),
 					})
 
@@ -6208,6 +6218,17 @@ metadata:
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 				)
+
+				It("should error on an invalid mergePolicy", func() {
+					values := helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.mergePolicy=invalid",
+						},
+					}
+					_, err := rendererTestCase.renderer.RenderManifest(namespace, values)
+					ExpectWithOffset(1, err).To(HaveOccurred(), "should error on an invalid mergePolicy")
+
+				})
 
 			})
 
