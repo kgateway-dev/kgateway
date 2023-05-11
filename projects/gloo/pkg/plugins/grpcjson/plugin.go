@@ -137,7 +137,7 @@ func upstreamsFromListener(params plugins.Params, listener *v1.HttpListener) []c
 	// For single-destination and multi-destination routes, the destination lookup is 0(1) so this has complexity O(routes)
 	// For routes to UpstreamGroups, we search all the UpstreamGroups in the snapshot for a match so it has complexity O(routes*UsGroups)
 	for _, vhost := range listener.GetVirtualHosts() {
-		for _, route := range vhost.Routes {
+		for _, route := range vhost.GetRoutes() {
 			routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, route.GetRouteAction())
 			// DestinationUpstreams returns an error on an invalid route but the other routes on this listener can be fine
 			if err == nil {
