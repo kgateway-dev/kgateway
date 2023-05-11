@@ -7,7 +7,7 @@ description: Automatically monitor the status of Upstreams by configuring health
 As part of configuring an Upstream, Gloo Edge provides the option of adding *health checks* that periodically assess the readiness of the Upstream to receive requests. See the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/health_checking#arch-overview-health-checking) for more information. 
 
 {{% notice note %}}
-Upstreams with working health checks will not be removed from Envoy's service directory, even on configuration changes unless `ignoreHealthOnHostRemoval` is set on that Upstream.
+Upstreams with working health checks will not be removed from Envoy's service directory, even due to configuration changes. To allow them to be removed, set `ignoreHealthOnHostRemoval` in the Upstream's configuration.
 {{% /notice %}}
 ## Configuration
 
