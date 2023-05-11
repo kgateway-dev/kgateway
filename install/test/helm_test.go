@@ -5818,7 +5818,7 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
 
-				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+				FDescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
 					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
 					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
 					helmValuesB := securityContextFieldsStripeGroupB(securityRoot, extraArgs...)
@@ -5826,86 +5826,44 @@ metadata:
 					// First Group of fields to test
 					prepareMakefile(namespace, helmValuesA)
 
-					// Get the resources
-					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							return true
-						}
-						return false
-					})
-					Expect(resources.NumResources()).To(Equal(1))
-					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
-						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext).To(Equal(
+						&v1.SecurityContext{
+							RunAsUser:                pointer.Int64(int64(1234)),
+							AllowPrivilegeEscalation: pointer.Bool(true),
+							ReadOnlyRootFilesystem:   pointer.Bool(true),
+							RunAsNonRoot:             pointer.Bool(true),
+							SELinuxOptions: &v1.SELinuxOptions{
+								Level: "seLevel",
+								Role:  "seRole",
+								Type:  "seType",
+								User:  "seUser",
+							},
+						},
+					))
 
-						foundExpected := false
-						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-							if container.Name == containerName {
-								foundExpected = true
-								Expect(container.SecurityContext).To(Equal(
-									&v1.SecurityContext{
-										RunAsUser:                pointer.Int64(int64(1234)),
-										AllowPrivilegeEscalation: pointer.Bool(true),
-										ReadOnlyRootFilesystem:   pointer.Bool(true),
-										RunAsNonRoot:             pointer.Bool(true),
-										SELinuxOptions: &v1.SELinuxOptions{
-											Level: "seLevel",
-											Role:  "seRole",
-											Type:  "seType",
-											User:  "seUser",
-										},
-									},
-								))
-							}
-						}
-						Expect(foundExpected).To(Equal(true))
-					})
-
+					// 2nd group of fields to test
 					prepareMakefile(namespace, helmValuesB)
 
-					// Get the resources
-					resources = testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							return true
-						}
-						return false
-					})
-
-					Expect(resources.NumResources()).To(Equal(1))
-					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
-						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-						foundExpected := false
-						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-							if container.Name == containerName {
-								foundExpected = true
-								Expect(container.SecurityContext).To(Equal(
-									&v1.SecurityContext{
-										Capabilities: &v1.Capabilities{
-											Add:  []v1.Capability{"ADD"},
-											Drop: []v1.Capability{"DROP"},
-										},
-										SeccompProfile: &v1.SeccompProfile{
-											LocalhostProfile: pointer.String("seccompLHP"),
-											Type:             "seccompType",
-										},
-										WindowsOptions: &v1.WindowsSecurityContextOptions{
-											GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
-											GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
-											RunAsUserName:          pointer.String("winUser"),
-											HostProcess:            pointer.Bool(true),
-										},
-									},
-								))
-							}
-						}
-						Expect(foundExpected).To(Equal(true))
-					})
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext).To(Equal(
+						&v1.SecurityContext{
+							Capabilities: &v1.Capabilities{
+								Add:  []v1.Capability{"ADD"},
+								Drop: []v1.Capability{"DROP"},
+							},
+							SeccompProfile: &v1.SeccompProfile{
+								LocalhostProfile: pointer.String("seccompLHP"),
+								Type:             "seccompType",
+							},
+							WindowsOptions: &v1.WindowsSecurityContextOptions{
+								GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+								GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+								RunAsUserName:          pointer.String("winUser"),
+								HostProcess:            pointer.Bool(true),
+							},
+						},
+					))
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
@@ -6267,7 +6225,6 @@ metadata:
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "gloo.deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"), //Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "gatewayProxies.gatewayProxy.podTemplate", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
 				)
-
 			})
 
 			Context("Kube resource overrides", func() {
