@@ -5916,41 +5916,18 @@ metadata:
 				)
 
 				DescribeTable("merges resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					// First helm template generates the baseline
 					// Run once "plain" to get the baseline as generated with no helm values passed
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: extraArgs,
 					})
 
-					// Get the deployment resource
-					initial_resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							return true
-						}
-						return false
-					})
-
 					// Strip out the revelant security context
-					Expect(initial_resources.NumResources()).To(Equal(1))
-					var initialSecurityContext *v1.SecurityContext
-					initial_resources.ExpectAll(func(deployment *unstructured.Unstructured) {
-						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-						foundExpected := false
-						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-							if container.Name == containerName {
-								foundExpected = true
-								initialSecurityContext = container.SecurityContext
-								if initialSecurityContext == nil {
-									initialSecurityContext = &v1.SecurityContext{}
-								}
-							}
-						}
-						Expect(foundExpected).To(Equal(true))
-					})
-
+					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					initialSecurityContext := container.SecurityContext
+					if initialSecurityContext == nil {
+						initialSecurityContext = &v1.SecurityContext{}
+					}
 					// Make a copy so we can restore it later
 					var initialSecurityContextClean *v1.SecurityContext
 					DeepCopy(&initialSecurityContext, &initialSecurityContextClean)
@@ -5964,126 +5941,62 @@ metadata:
 					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
 					helmValuesB := securityContextFieldsStripeGroupB(securityRoot, extraArgs...)
 
+					//
 					// Run again with security context A helm values applied
 					prepareMakefile(namespace, helmValuesA)
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
 
-					// Get the resources
-					resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							return true
-						}
-						return false
-					})
-					Expect(resources.NumResources()).To(Equal(1))
+					// Test that all the values are set
+					Expect(container.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.RunAsNonRoot = pointer.Bool(true)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(1234))))
+					initialSecurityContext.RunAsUser = pointer.Int64(int64(1234))
+					Expect(container.SecurityContext.AllowPrivilegeEscalation).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.AllowPrivilegeEscalation = pointer.Bool(true)
+					Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
+					expectedSELinuxOptions := &v1.SELinuxOptions{
+						Level: "seLevel",
+						Role:  "seRole",
+						Type:  "seType",
+						User:  "seUser",
+					}
+					Expect(container.SecurityContext.SELinuxOptions).To(Equal(expectedSELinuxOptions))
+					initialSecurityContext.SELinuxOptions = expectedSELinuxOptions
 
-					// Find the relevant security context and test that its values were updated
-					// Apply the new values to the initial security context and compare. They should be the same
-					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
-						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+					// We've test/updated all the fields we passed, so now we can compare the whole thing
+					Expect(container.SecurityContext).To(Equal(initialSecurityContext))
 
-						foundExpected := false
-						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-							if container.Name == containerName {
-								foundExpected = true
-								// runAsNonRoot=true
-								Expect(container.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
-								initialSecurityContext.RunAsNonRoot = pointer.Bool(true)
-								// runAsUser=1234
-								Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(1234))))
-								initialSecurityContext.RunAsUser = pointer.Int64(int64(1234))
-								// allowPrivilegeEscalation=true
-								Expect(container.SecurityContext.AllowPrivilegeEscalation).To(Equal(pointer.Bool(true)))
-								initialSecurityContext.AllowPrivilegeEscalation = pointer.Bool(true)
-								// readOnlyRootFilesystem=false
-
-								Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(pointer.Bool(true)))
-								initialSecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
-								// seLinuxOptions.level=seLevel
-								// seLinuxOptions.role=seRole
-								// seLinuxOptions.type=seType
-								// seLinuxOptions.user=seUser
-								expectedSELinuxOptions := &v1.SELinuxOptions{
-									Level: "seLevel",
-									Role:  "seRole",
-									Type:  "seType",
-									User:  "seUser",
-								}
-								Expect(container.SecurityContext.SELinuxOptions).To(Equal(expectedSELinuxOptions))
-								initialSecurityContext.SELinuxOptions = expectedSELinuxOptions
-
-								// We've test/updated all the fields we passed, so now we can compare the whole thing
-								Expect(container.SecurityContext).To(Equal(initialSecurityContext))
-
-							}
-						}
-						Expect(foundExpected).To(Equal(true))
-					})
-
+					//
 					// Run again with security context B
 					prepareMakefile(namespace, helmValuesB)
 					initialSecurityContext = &v1.SecurityContext{}
 					DeepCopy(&initialSecurityContextClean, &initialSecurityContext)
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
 
-					// Get the resources
-					resources = testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							return true
-						}
-						return false
-					})
+					// Test that all the values are set
+					expectedCapabilities := &v1.Capabilities{
+						Add:  []v1.Capability{"ADD"},
+						Drop: []v1.Capability{"DROP"},
+					}
+					Expect(container.SecurityContext.Capabilities).To(Equal(expectedCapabilities))
+					initialSecurityContext.Capabilities = expectedCapabilities
+					expectedSeccompProfile := &v1.SeccompProfile{
+						LocalhostProfile: pointer.String("seccompLHP"),
+						Type:             "seccompType",
+					}
+					Expect(container.SecurityContext.SeccompProfile).To(Equal(expectedSeccompProfile))
+					initialSecurityContext.SeccompProfile = expectedSeccompProfile
+					expectedWindowsOptions := &v1.WindowsSecurityContextOptions{
+						GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+						GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+						RunAsUserName:          pointer.String("winUser"),
+						HostProcess:            pointer.Bool(true),
+					}
+					Expect(container.SecurityContext.WindowsOptions).To(Equal(expectedWindowsOptions))
+					initialSecurityContext.WindowsOptions = expectedWindowsOptions
 
-					Expect(resources.NumResources()).To(Equal(1))
-					resources.ExpectAll(func(deployment *unstructured.Unstructured) {
-						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-
-						foundExpected := false
-						// Find the relevant security context and test that its values were updated
-						// Apply the new values to the initial security context and compare. They should be the same
-						for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
-							if container.Name == containerName {
-								foundExpected = true
-								// capabilities.add={ADD}
-								// capabilities.drop={DROP}
-								expectedCapabilities := &v1.Capabilities{
-									Add:  []v1.Capability{"ADD"},
-									Drop: []v1.Capability{"DROP"},
-								}
-								Expect(container.SecurityContext.Capabilities).To(Equal(expectedCapabilities))
-								initialSecurityContext.Capabilities = expectedCapabilities
-								// seccompProfile.localhostProfile=seccompLHP
-								// seccompProfile.type=seccompType
-								expectedSeccompProfile := &v1.SeccompProfile{
-									LocalhostProfile: pointer.String("seccompLHP"),
-									Type:             "seccompType",
-								}
-								Expect(container.SecurityContext.SeccompProfile).To(Equal(expectedSeccompProfile))
-								initialSecurityContext.SeccompProfile = expectedSeccompProfile
-								// windowsOptions.gmsaCredentialSpec=winGmsaCredSpec
-								// windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName
-								// windowsOptions.hostProcess=true
-								// windowsOptions.runAsUserName=winUser
-								expectedWindowsOptions := &v1.WindowsSecurityContextOptions{
-									GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
-									GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
-									RunAsUserName:          pointer.String("winUser"),
-									HostProcess:            pointer.Bool(true),
-								}
-								Expect(container.SecurityContext.WindowsOptions).To(Equal(expectedWindowsOptions))
-								initialSecurityContext.WindowsOptions = expectedWindowsOptions
-
-								Expect(container.SecurityContext).To(Equal(initialSecurityContext))
-
-							}
-
-						}
-						Expect(foundExpected).To(Equal(true))
-					})
+					Expect(container.SecurityContext).To(Equal(initialSecurityContext))
 				},
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
 					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
@@ -6311,6 +6224,36 @@ metadata:
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
+
+				FDescribeTable("floatingUserID is properly applied", func(resourceName string, kind string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+					// Pass 1: floatingUserID=false
+					// Also set the runAsUser to something other than the default
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=false",
+							"gloo.deployment.runAsUser=30303",
+						}, extraArgs...),
+					})
+
+					container := getContainer(testManifest, kind, resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
+
+					// Pass 2: floatingUserID=true
+					// Get the default user id
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+						}, extraArgs...),
+					})
+
+					container = getContainer(testManifest, kind, resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
+
+				},
+					// Entry("1-gloo-deployment", "Deployment", "gloo", "gloo.deployment", "gloo.deployment", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "Deployment", "envoy-sidecar", "gloo.deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+				)
+
 			})
 
 			Context("Kube resource overrides", func() {
@@ -6714,4 +6657,33 @@ func securityContextFieldsStripeGroupB(securityRoot string, extraArgs ...string)
 			securityRoot + ".windowsOptions.runAsUserName=winUser",
 		}, extraArgs...),
 	}
+}
+
+func getContainer(t TestManifest, kind string, resourceName string, containerName string) *v1.Container {
+	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
+		if u.GetKind() == kind && u.GetName() == resourceName {
+			return true
+		}
+		return false
+	})
+	Expect(resources.NumResources()).To(Equal(1))
+	var foundContainer v1.Container
+	resources.ExpectAll(func(deployment *unstructured.Unstructured) {
+		foundExpected := false
+		deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+		structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+		Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+		for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+			if container.Name == containerName {
+				foundExpected = true
+				foundContainer = container
+			}
+		}
+
+		Expect(foundExpected).To(Equal(true))
+	})
+
+	return &foundContainer
 }

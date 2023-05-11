@@ -123,7 +123,7 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
-        {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsNonRoot" true }}
+        {{- $securityDefaults := dict "runAsNonRoot" true }}
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
