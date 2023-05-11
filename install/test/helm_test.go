@@ -5888,7 +5888,7 @@ metadata:
 					}
 					// Make a copy so we can restore it later
 					var initialSecurityContextClean *v1.SecurityContext
-					DeepCopy(&initialSecurityContext, &initialSecurityContextClean)
+					deepCopy(&initialSecurityContext, &initialSecurityContextClean)
 
 					// add "applyAsHelmMerge" to the security context
 					extraArgs = append([]string{
@@ -5929,7 +5929,7 @@ metadata:
 					// Run again with security context B
 					prepareMakefile(namespace, helmValuesB)
 					initialSecurityContext = &v1.SecurityContext{}
-					DeepCopy(&initialSecurityContextClean, &initialSecurityContext)
+					deepCopy(&initialSecurityContextClean, &initialSecurityContext)
 					container = getContainer(testManifest, "Deployment", resourceName, containerName)
 
 					// Test that all the values are set
@@ -6039,31 +6039,21 @@ metadata:
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
 
-				DescribeTable("merges resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+				FDescribeTable("merges resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+					// First run with no extra helm security context values
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: extraArgs,
 					})
 
-					var initialSecurityContext *v1.PodSecurityContext
-					initialResources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							deploymentObject, err := kuberesource.ConvertUnstructured(u)
-							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
 
-							initialSecurityContext = structuredDeployment.Spec.Template.Spec.SecurityContext
-							if initialSecurityContext == nil {
-								initialSecurityContext = &v1.PodSecurityContext{}
-							}
-							return true
-						}
-						return false
-					})
-					Expect(initialResources.NumResources()).To(Equal(1))
+					initialSecurityContext := structuredDeployment.Spec.Template.Spec.SecurityContext
+					if initialSecurityContext == nil {
+						initialSecurityContext = &v1.PodSecurityContext{}
+					}
 
 					var initialSecurityContextClean *v1.PodSecurityContext
-					DeepCopy(&initialSecurityContext, &initialSecurityContextClean)
+					deepCopy(&initialSecurityContext, &initialSecurityContextClean)
 
 					extraArgs = append([]string{
 						securityRoot + ".applyAsHelmMerge=true",
@@ -6074,118 +6064,91 @@ metadata:
 					helmValuesA := podSecurityContextFieldsStripeGroupA(securityRoot, extraArgs...)
 					helmValuesB := podSecurityContextFieldsStripeGroupB(securityRoot, extraArgs...)
 
+					//
+					// Stripe group A
+					//
 					prepareMakefile(namespace, helmValuesA)
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
 					// Find the relevant resource and test that its values were updated
 					// Apply the new values to the initial security context and compare. They should be the same
-					resourcesA := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							deploymentObject, err := kuberesource.ConvertUnstructured(u)
-							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
 
-							// Check the fields individually:
-							// fsGroup=101010
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.FSGroup).To(Equal(pointer.Int64(int64(101010))))
-							initialSecurityContext.FSGroup = pointer.Int64(int64(101010))
-							// fsGroupChangePolicy=fsGroupChangePolicyValue
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.FSGroupChangePolicy).To(Equal(&fsGroupChangePolicy))
-							initialSecurityContext.FSGroupChangePolicy = &fsGroupChangePolicy
-							// runAsGroup=202020
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(int64(202020))))
-							initialSecurityContext.RunAsGroup = pointer.Int64(int64(202020))
-							// runAsNonRoot=true
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
-							initialSecurityContext.RunAsNonRoot = pointer.Bool(true)
-							// runAsUser=303030
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(303030))))
-							initialSecurityContext.RunAsUser = pointer.Int64(int64(303030))
-							// supplementalGroups={11,22,33}
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SupplementalGroups).To(Equal(
-								[]int64{11, 22, 33}))
-							initialSecurityContext.SupplementalGroups = []int64{11, 22, 33}
-							// seLinuxOptions.level=seLevel
-							// seLinuxOptions.role=seRole
-							// seLinuxOptions.type=seType
-							// seLinuxOptions.user=seUser
-							expectedSELinuxOptions := &v1.SELinuxOptions{
-								Level: "seLevel",
-								Role:  "seRole",
-								Type:  "seType",
-								User:  "seUser",
-							}
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SELinuxOptions).To(Equal(expectedSELinuxOptions))
-							initialSecurityContext.SELinuxOptions = expectedSELinuxOptions
+					// Check the fields individually:
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.FSGroup).To(Equal(pointer.Int64(int64(101010))))
+					initialSecurityContext.FSGroup = pointer.Int64(int64(101010))
 
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
-							return true
-						}
-						return false
-					})
-					Expect(resourcesA.NumResources()).To(Equal(1))
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.FSGroupChangePolicy).To(Equal(&fsGroupChangePolicy))
+					initialSecurityContext.FSGroupChangePolicy = &fsGroupChangePolicy
 
-					// Now do it again for the other helm values stripe group
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(int64(202020))))
+					initialSecurityContext.RunAsGroup = pointer.Int64(int64(202020))
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.RunAsNonRoot = pointer.Bool(true)
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(303030))))
+					initialSecurityContext.RunAsUser = pointer.Int64(int64(303030))
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SupplementalGroups).To(Equal(
+						[]int64{11, 22, 33}))
+					initialSecurityContext.SupplementalGroups = []int64{11, 22, 33}
+
+					expectedSELinuxOptions := &v1.SELinuxOptions{
+						Level: "seLevel",
+						Role:  "seRole",
+						Type:  "seType",
+						User:  "seUser",
+					}
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SELinuxOptions).To(Equal(expectedSELinuxOptions))
+					initialSecurityContext.SELinuxOptions = expectedSELinuxOptions
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
+
+					//
+					// Stripe Group B
+					//
 					initialSecurityContext = &v1.PodSecurityContext{}
-					DeepCopy(&initialSecurityContextClean, &initialSecurityContext)
+					deepCopy(&initialSecurityContextClean, &initialSecurityContext)
 					prepareMakefile(namespace, helmValuesB)
 
 					// Find the relevant resource and test that its values were updated
 					// Apply the new values to the initial security context and compare. They should be the same
-					resourcesB := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
-						if u.GetKind() == "Deployment" && u.GetName() == resourceName {
-							deploymentObject, err := kuberesource.ConvertUnstructured(u)
-							ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
-							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
 
-							// Check the fields individually:
-							// seccompProfile.localhostProfile=seccompLHP
-							// seccompProfile.type=seccompType
-							expectedSeccompProfile := &v1.SeccompProfile{
-								LocalhostProfile: pointer.String("seccompLHP"),
-								Type:             "seccompType",
-							}
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SeccompProfile).To(Equal(expectedSeccompProfile))
+					// Check the fields individually:
+					expectedSeccompProfile := &v1.SeccompProfile{
+						LocalhostProfile: pointer.String("seccompLHP"),
+						Type:             "seccompType",
+					}
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SeccompProfile).To(Equal(expectedSeccompProfile))
+					initialSecurityContext.SeccompProfile = expectedSeccompProfile
 
-							initialSecurityContext.SeccompProfile = expectedSeccompProfile
-							// windowsOptions.gmsaCredentialSpec=winGmsaCredSpec
-							// windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName
-							// windowsOptions.hostProcess=true
-							// windowsOptions.runAsUserName=winUser
-							expectedWindowsOptions := &v1.WindowsSecurityContextOptions{
-								GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
-								GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
-								HostProcess:            pointer.Bool(true),
-								RunAsUserName:          pointer.String("winUser"),
-							}
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.WindowsOptions).To(Equal(expectedWindowsOptions))
-							initialSecurityContext.WindowsOptions = expectedWindowsOptions
-							// sysctls[0].name=sysctlName
-							// sysctls[0].value=sysctlValue
-							expectedSysctls := []v1.Sysctl{
-								{
-									Name:  "sysctlName",
-									Value: "sysctlValue",
-								},
-							}
+					expectedWindowsOptions := &v1.WindowsSecurityContextOptions{
+						GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+						GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+						HostProcess:            pointer.Bool(true),
+						RunAsUserName:          pointer.String("winUser"),
+					}
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.WindowsOptions).To(Equal(expectedWindowsOptions))
+					initialSecurityContext.WindowsOptions = expectedWindowsOptions
 
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.Sysctls).To(Equal(expectedSysctls))
-							initialSecurityContext.Sysctls = expectedSysctls
+					expectedSysctls := []v1.Sysctl{
+						{
+							Name:  "sysctlName",
+							Value: "sysctlValue",
+						},
+					}
 
-							Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
-							return true
-						}
-						return false
-					})
-					Expect(resourcesB.NumResources()).To(Equal(1))
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.Sysctls).To(Equal(expectedSysctls))
+					initialSecurityContext.Sysctls = expectedSysctls
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
+
 				},
 					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
 
-				DescribeTable("floatingUserID is properly applied", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
-					// Pass 1: floatingUserID=false
-					// Also set the runAsUser to something other than the default
+				DescribeTable("floatingUserID is properly applied (container)", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
 							fpuidRoot + ".floatingUserID=false",
@@ -6225,6 +6188,48 @@ metadata:
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "gloo.deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
 					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"), //Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "gatewayProxies.gatewayProxy.podTemplate", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
 				)
+
+				FDescribeTable("floatingUserID is properly applied (pod)", func(resourceName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+					// Pass 1: floatingUserID=false
+					// Also set the runAsUser to something other than the default
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=false",
+							securityRoot + ".runAsUser=30303",
+						}, extraArgs...),
+					})
+
+					// The chart uses the passed user id
+					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
+
+					// Pass 2: floatingUserID=true
+					// The chart uses the default user id
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+						}, extraArgs...),
+					})
+
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
+
+					// // Pass 3: floatingUserID=true
+					// // BUT also pass in an override for the runAsUser
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+							securityRoot + ".runAsUser=20202",
+							securityRoot + ".applyAsHelmMerge=true",
+						}, extraArgs...),
+					})
+
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(20202))))
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+				)
+
 			})
 
 			Context("Kube resource overrides", func() {
@@ -6521,13 +6526,6 @@ func cloneMap(input map[string]string) map[string]string {
 	return ret
 }
 
-// DeepCopy deepcopies a to b using json marshaling
-// https://stackoverflow.com/questions/46790190/quicker-way-to-deepcopy-objects-in-golang-json-vs-gob
-func DeepCopy(a, b interface{}) {
-	byt, _ := json.Marshal(a)
-	json.Unmarshal(byt, b)
-}
-
 func constructResourceID(resource *unstructured.Unstructured) string {
 	// technically vulnerable to resources that have commas in their names, but that's not a big concern
 	return fmt.Sprintf("%s,%s,%s", resource.GetNamespace(), resource.GetName(), resource.GroupVersionKind().String())
@@ -6560,6 +6558,13 @@ func getConfigMap(testManifest TestManifest, namespace string, name string) *v1.
 	Expect(err).NotTo(HaveOccurred())
 	Expect(configMapObj).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
 	return configMapObj.(*v1.ConfigMap)
+}
+
+// deepCopy deepcopies a to b using json marshaling
+// https://stackoverflow.com/questions/46790190/quicker-way-to-deepCopy-objects-in-golang-json-vs-gob
+func deepCopy(a, b interface{}) {
+	byt, _ := json.Marshal(a)
+	json.Unmarshal(byt, b)
 }
 
 /*
@@ -6657,4 +6662,24 @@ func getContainer(t TestManifest, kind string, resourceName string, containerNam
 	})
 
 	return &foundContainer
+}
+
+func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deployment {
+
+	structuredDeployment := &appsv1.Deployment{}
+
+	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
+		if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+			deploymentObject, err := kuberesource.ConvertUnstructured(u)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+			var ok bool
+			structuredDeployment, ok = deploymentObject.(*appsv1.Deployment)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+			return true
+		}
+		return false
+	})
+	Expect(resources.NumResources()).To(Equal(1))
+
+	return structuredDeployment
 }
