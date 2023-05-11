@@ -108,7 +108,7 @@ Because of this, if a value is "true" in defaults it can not be modified with th
   {{- if eq .values.mergePolicy "helm-merge" -}}
     {{- $overwrite = false -}}
   {{- else if and .values.mergePolicy (ne .values.mergePolicy "no-merge") -}}
-  {{- fail "value for mergePolicy is not as expected" }}
+  {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" .values.mergePolicy }}
   {{- end -}}
 {{- end -}}
 {{- if $overwrite -}}

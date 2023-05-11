@@ -6235,8 +6235,7 @@ metadata:
 						},
 					}
 					_, err := rendererTestCase.renderer.RenderManifest(namespace, values)
-					ExpectWithOffset(1, err).To(HaveOccurred(), "should error on an invalid mergePolicy")
-
+					Expect(err).To(HaveOccurred(), "should error on an invalid mergePolicy")
 				})
 
 			})
