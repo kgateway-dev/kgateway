@@ -20,7 +20,7 @@ copied from https://github.com/envoyproxy/envoy-wasm/blob/2721ee7897207c87c6cd2d
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto)
 
 
 

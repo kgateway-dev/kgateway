@@ -23,7 +23,7 @@ copied from https://raw.githubusercontent.com/envoyproxy/envoy/bd637fc7aab5de067
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto)
 
 
 

@@ -23,7 +23,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/v1/load_balancer.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/load_balancer.proto)
 
 
 

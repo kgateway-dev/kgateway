@@ -21,7 +21,7 @@ copied from https://github.com/envoyproxy/envoy/blob/3b52fc36373272902d9817f0db9
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto)
 
 
 

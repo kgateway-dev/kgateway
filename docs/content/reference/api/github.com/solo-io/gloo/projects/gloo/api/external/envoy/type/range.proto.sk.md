@@ -17,7 +17,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/type/range.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/range.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/type/range.proto)
 
 
 
