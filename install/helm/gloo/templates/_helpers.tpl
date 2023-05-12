@@ -154,7 +154,7 @@ Examples:
 │   - banana          │                       │                        │
 └─────────────────────┴───────────────────────┴────────────────────────┘
 
-gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/master/incubator/common/templates/_util.tpl).
+gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/main/incubator/common/templates/_util.tpl).
 This includes some optimizations to speed up chart rendering time, and merges in a value (overrides) with a named template, unlike the upstream
 version, which merges two named templates.
 

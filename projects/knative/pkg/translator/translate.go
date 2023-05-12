@@ -283,7 +283,7 @@ func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderMan
 
 // trim kube dns suffixes
 // undocumented requirement
-// see https://github.com/knative/serving/blob/master/pkg/reconciler/ingress/resources/virtual_service.go#L281
+// see https://github.com/knative/serving/blob/main/pkg/reconciler/ingress/resources/virtual_service.go#L281
 func expandHosts(hosts []string) []string {
 	expanded := sets.NewString()
 	allowedSuffixes := []string{

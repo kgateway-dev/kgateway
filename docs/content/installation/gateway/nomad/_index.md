@@ -37,7 +37,7 @@ Before proceeding to the installation, you will need to complete some prerequisi
 Installation on Nomad requires the following:
 
 - [Levant](https://github.com/jrasell/levant) installed on your local machine
-- [Docker](https://www.docker.com), [Consul](https://www.consul.io), [Vault](https://www.vaultproject.io), and [Nomad](https://www.nomadproject.io/) installed on the target host machine (which can also be your local machine). A [Vagrantfile](https://github.com/solo-io/gloo/blob/master/install/nomad/Vagrantfile) is provided that includes everything needed to run Nomad.
+- [Docker](https://www.docker.com), [Consul](https://www.consul.io), [Vault](https://www.vaultproject.io), and [Nomad](https://www.nomadproject.io/) installed on the target host machine (which can also be your local machine). A [Vagrantfile](https://github.com/solo-io/gloo/blob/main/install/nomad/Vagrantfile) is provided that includes everything needed to run Nomad.
 
 If you want to run locally on macOS, you will also need to install [Weave Network](https://www.weave.works/docs/net/latest/install/installing-weave/).
 

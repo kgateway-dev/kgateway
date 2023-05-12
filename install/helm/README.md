@@ -1,7 +1,7 @@
 # Gloo Edge Helm chart
 This directory contains the resources used to generate the Gloo Edge Helm chart archive.
 
-📝 [make targets](https://opensource.com/article/18/8/what-how-makefile]) are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) and should be executed from the root of the repository 📝
+📝 [make targets](https://opensource.com/article/18/8/what-how-makefile]) are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile) and should be executed from the root of the repository 📝
 
 ## Directory Structure
 ### generate.go

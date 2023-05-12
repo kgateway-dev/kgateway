@@ -1,7 +1,7 @@
 {
   "latest": "v1.14.x",
   "versions": [
-    "master",
+    "main",
     "v1.14.x"
   ],
   "oldVersions": [

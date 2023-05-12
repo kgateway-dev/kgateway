@@ -1,0 +1,5 @@
+changelog:
+    - type: NON_USER_FACING
+      description: change default branch to `main`
+      issueLink: https://github.com/solo-io/solo-projects/issues/4444
+      resolvesIssue: false

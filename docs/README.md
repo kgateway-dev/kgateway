@@ -8,7 +8,7 @@ make serve-site
 
 ## Deploying to a versioned test site
 
-NOTE: this process should only be done from master
+NOTE: this process should only be done from main
 
 ```
 make build-docs
@@ -17,7 +17,7 @@ firebase hosting:channel:deploy $(git describe --tags) --project=solo-corp --con
 
 ## Building the docs
 
-Building the docs is now done directly from the master branch, and occurs each time master is updated.
+Building the docs is now done directly from the main branch, and occurs each time main is updated.
 The docs are built using the `build-docs.sh` script. The script will build all relevant tags/branches of gloo
 and then package them in a way which they can be deployed to firebase. The versions used are determined by the 
 `active_versions.json` file.
@@ -29,14 +29,14 @@ and then package them in a way which they can be deployed to firebase. The versi
   3. "oldVersions" is the list of supported tags/branches which are behind latest.
 
 `build-docs.sh` clones gloo into a subdir, checks the repo out at each "version", and copies the [content](content) 
-directory to a temporary location. The master branch is then checked out, and each "version" of the docs are built by 
-replacing the master's content directory with content previously stored for that "version". The built docs are then
+directory to a temporary location. The main branch is then checked out, and each "version" of the docs are built by 
+replacing the main's content directory with content previously stored for that "version". The built docs are then
 moved into `docs/ci/public/edge/<tag>`. Once each version has been built, the whole folder can
 be deployed to firebase using the following command:
 
 `firebase deploy --only hosting --project=solo-corp --config=ci/firebase.json`
 
-Building the docs from master allows us to make changes to the way the docs are packaged and published without 
+Building the docs from main allows us to make changes to the way the docs are packaged and published without 
 needing to backport the changes each time. This allows the build, and styles to remain consistent.
 
 
