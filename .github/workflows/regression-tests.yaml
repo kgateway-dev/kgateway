@@ -1,9 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'main'
-  pull_request:
+on: pull_request
 
 env:
   VERSION: '1.0.0-ci'
