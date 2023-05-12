@@ -97,9 +97,12 @@ Modify your Gloo Edge installation settings and upstream resources to support ro
          logicalName: target-name
    ```
 3. Optional: [Verify routing](#verify-routing).
+
 ## Resource-based configuration
 
+Use AWS resource-based configuration to configure routing to functions in different accounts.
 ### AWS configuration
+
 For the AWS configuration, you create a user or role in the authentication account, and a Lambda function in the account that contains the Lambda functions. The Lambda function has a resource-based policy statement which allows the user or role in the authentication account to invoke it.
 
 1. Create the following resources for your authentication account. 
@@ -154,6 +157,7 @@ Modify your Gloo Edge installation settings and upstream resources to support ro
          logicalName: target-name
    ```
 3. Optional: [Verify routing](#verify-routing).
+
 ## Verify routing
 
 To verify that the configuration is correct, you can follow the steps in the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda#step-3-create-an-upstream-and-virtual-service" >}}) to create a virtual service that routes to the Lambda function via the AWS upstream.
