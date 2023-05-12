@@ -22,6 +22,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
      validationServerGrpcMaxSizeBytes: 104857600
  gloo:
+   regexMaxProgramSize: 1024
    circuitBreakers:
      maxConnections: 1024
      maxPendingRequests: 1024

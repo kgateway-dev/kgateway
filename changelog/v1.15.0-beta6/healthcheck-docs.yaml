@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7996
+    resolvesIssue: true
+    description: Add a note to the documentation for active health checking to clarify behavior around removing hosts.

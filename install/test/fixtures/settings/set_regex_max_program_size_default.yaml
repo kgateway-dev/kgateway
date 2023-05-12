@@ -22,22 +22,17 @@ spec:
       proxyValidationServerAddr: gloo:9988
       validationServerGrpcMaxSizeBytes: 104857600
   gloo:
-    regexMaxProgramSize: 1024
     enableRestEds: false
     xdsBindAddr: 0.0.0.0:9977
     restXdsBindAddr: 0.0.0.0:9976
     proxyDebugBindAddr: 0.0.0.0:9966
     disableKubernetesDestinations: false
     disableProxyGarbageCollection: false
+    regexMaxProgramSize: 1024
     invalidConfigPolicy:
       invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
       invalidRouteResponseCode: 404
       replaceInvalidRoutes: false
-    awsOptions:
-      serviceAccountCredentials:
-        cluster: aws_sts_cluster
-        uri: sts.us-east-2.amazonaws.com
-      propagateOriginalRouting: true
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}

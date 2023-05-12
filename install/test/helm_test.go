@@ -3835,6 +3835,14 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("correctly sets the `regexMaxProgramSize` field to the default of 1024 in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_regex_max_program_size_default.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("correctly sets the `regexMaxProgramSize` field in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_regex_max_program_size.yaml", namespace)
 
@@ -3898,6 +3906,7 @@ metadata:
   namespace: gloo-system
 spec:
   gloo:
+    regexMaxProgramSize: 1024
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
     proxyDebugBindAddr: "0.0.0.0:9966"

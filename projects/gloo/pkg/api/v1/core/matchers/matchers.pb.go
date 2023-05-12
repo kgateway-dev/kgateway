@@ -181,7 +181,7 @@ type Matcher_Regex struct {
 	//
 	// Note that the complexity of the regex is constrained by the regex engine's "program size" setting.
 	// If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
-	// in the `GlooOptions` section of your `Settings` resource
+	// in the `GlooOptions` section of your `Settings` resource (The gloo default is 1024)
 	Regex string `protobuf:"bytes,3,opt,name=regex,proto3,oneof"`
 }
 
