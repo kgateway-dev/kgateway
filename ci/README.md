@@ -9,7 +9,7 @@
 [Build Bot](https://github.com/solo-io/build-bot) runs unit tests for the entire project. This is configured with the [cloudbuild.yaml](../cloudbuild.yaml) at the root of the project and contains additional configuration in the [cloudbuild](cloudbuild) folder.
 
 ### Github Actions
-[Github Workflows](https://github.com/solo-io/gloo/tree/master/.github/workflows) run tests which rely on Kubernetes clusters
+[Github Workflows](https://github.com/solo-io/gloo/tree/main/.github/workflows) run tests which rely on Kubernetes clusters
 
 ### Bulldozer
 [Bulldozer](https://github.com/solo-io/bulldozer) automatically merges PRs once all required status checks are successful and required reviews are provided

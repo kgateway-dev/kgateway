@@ -1,6 +1,6 @@
 # Knative Networking with Gloo Edge Cluster Ingress
 
-With Knative support enabled, Gloo Edge will configure Envoy using [Knative's Cluster Ingress Resource](https://github.com/knative/serving/blob/master/pkg/client/informers/externalversions/networking/v1alpha1/clusteringress.go).
+With Knative support enabled, Gloo Edge will configure Envoy using [Knative's Cluster Ingress Resource](https://github.com/knative/serving/blob/main/pkg/client/informers/externalversions/networking/v1alpha1/clusteringress.go).
 
 The installation process detailed in this document provides a way of using Knative-Serving without needing to install Istio.
 
@@ -120,7 +120,7 @@ Create a Knative App:
 
 ```bash
 # deploy a basic helloworld-go service
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/test/kube2e/artifacts/knative-hello-service.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/main/test/kube2e/artifacts/knative-hello-service.yaml
 ```
 
 Get the URL of the Gloo Edge Knative Ingress:
