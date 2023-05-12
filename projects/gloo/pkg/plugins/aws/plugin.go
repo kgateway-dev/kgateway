@@ -372,7 +372,7 @@ func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destinatio
 
 	if lambdaFunc == nil {
 		// pull from options to see if we allow not setting the function on a route
-		// this is dangerous due to name ordering when discovery is on https://github.com/solo-io/gloo/tree/master/projects/discovery/pkg/fds/discoveries/aws/aws.go#L75
+		// this is dangerous due to name ordering when discovery is on https://github.com/solo-io/gloo/tree/main/projects/discovery/pkg/fds/discoveries/aws/aws.go#L75
 		tryFallback := options.GetFallbackToFirstFunction().GetValue()
 		if !tryFallback {
 			return nil, errors.Errorf("unknown lambda function %v", logicalName)

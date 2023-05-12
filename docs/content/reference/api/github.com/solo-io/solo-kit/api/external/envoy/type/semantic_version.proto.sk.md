@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/type/semantic_version.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/envoy/type/semantic_version.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/type/semantic_version.proto](https://github.com/solo-io/solo-kit/blob/main/api/external/envoy/type/semantic_version.proto)
 
 
 

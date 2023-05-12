@@ -18,7 +18,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/v1/status.proto](https://github.com/solo-io/solo-kit/blob/master/api/v1/status.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/v1/status.proto](https://github.com/solo-io/solo-kit/blob/main/api/v1/status.proto)
 
 
 

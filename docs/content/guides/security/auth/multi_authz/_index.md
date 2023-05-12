@@ -99,7 +99,7 @@ For both the **Passthrough Auth** option and the **namedExtAuth** option, you mu
 
 * [Envoy external auth proto](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto)
 * [gRPC Passthrough Auth guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/" %}})
-* [GitHub repo with Go examples](https://github.com/solo-io/gloo/tree/master/docs/examples/grpc-passthrough-auth/pkg/auth/v3)
+* [GitHub repo with Go examples](https://github.com/solo-io/gloo/tree/main/docs/examples/grpc-passthrough-auth/pkg/auth/v3)
 
 ## Managing headers
 

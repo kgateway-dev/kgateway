@@ -24,9 +24,9 @@ The arguments are:
 Below are some examples for inputs to the job, if you are working on a feature branched named `feature/new-api`
 
 To test this on the default main branch:
-- Use Workflow From: `master`
+- Use Workflow From: `main`
 - The branch that contains the relevant API change: `feature/new-api`
-- The LTS branch that these API changes are targeted for: `master`
+- The LTS branch that these API changes are targeted for: `main`
 
 To test this on 1.13.x branch:
 - Use Workflow From: `v1.13.x`
@@ -36,7 +36,7 @@ To test this on 1.13.x branch:
 **NOTE: After the PR opens in solo-apis, we want to avoid the chance that it merges. Please put a 'work in progress' label on the PR to prevent it from merging.**
 
 ## [Regression Tests](./regression-tests.yaml)
-Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/master/test).
+Regression tests run the suite of [Kubernetes End-To-End Tests](https://github.com/solo-io/gloo/tree/main/test).
 
 ### Draft Pull Requests
 This Github Action will not run by default on a Draft Pull Request. If you would like to run this, you need to:
@@ -54,7 +54,7 @@ This Github Action will not run by default on a Draft Pull Request. If you would
 ## [Trivy Vulnerability Scanning](./trivy-analysis-scheduled.yaml)
 A scheduled job which scans images released from both the Open Source and Enterprise repositories.
 
-To run the vulnerability locally, check out [the security scanner README](https://github.com/solo-io/gloo/tree/master/docs/cmd/securityscanutils)
+To run the vulnerability locally, check out [the security scanner README](https://github.com/solo-io/gloo/tree/main/docs/cmd/securityscanutils)
 
 ## Future Work
 It would be great to add support for issue comment directives. This would mean that commenting `/sig-ci` would signal CI to run, or `/skip-ci` would auto-succeed CI.

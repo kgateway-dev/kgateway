@@ -49,7 +49,7 @@ limitations under the License.
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/trace.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/trace.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/external/trace.proto](https://github.com/solo-io/solo-kit/blob/main/api/external/trace.proto)
 
 
 

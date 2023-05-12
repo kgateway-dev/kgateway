@@ -8,12 +8,12 @@ The [Envoy Proxy](https://www.envoyproxy.io/) is a cloud-native, high-performanc
 The Gloo Edge service proxies provide all the functionality of the [open source Envoy Proxy](https://github.com/solo-io/envoy-gloo), in addition to some custom extensions. The source code for these proxies is maintained at [envoy-gloo](https://github.com/solo-io/envoy-gloo)
 
 ### Versioning
-In the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile), the `ENVOY_GLOO_IMAGE` value defines the version of `envoy-gloo` that Gloo Edge depends on.
+In the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile), the `ENVOY_GLOO_IMAGE` value defines the version of `envoy-gloo` that Gloo Edge depends on.
 
 Envoy publishes new minor releases [each quarter](https://www.envoyproxy.io/docs/envoy/latest/version_history/version_history#). Gloo attempts to follow this cadence, and increment our minor version of `envoy-gloo` as well.
 
 ## Build
-*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) at the root of the repository.*
+*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile) at the root of the repository.*
 
 The `VERSION` env variable determines the name of the tag for the image.
 
@@ -38,16 +38,16 @@ Envoy is configured with [Bootstrap configuration](https://www.envoyproxy.io/doc
 
 In Gloo Edge, Envoy configuration is processed in the following order:
 
-1. The bootstrap configuration is defined in a [ConfigMap](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml)
+1. The bootstrap configuration is defined in a [ConfigMap](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml)
 2. The ConfigMap is mounted as a volume on the Pod
 3. At [initialization](./cmd/main.go), the container reads the configuration, and transforms it using the [Kubernetes Downward API](https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/#the-downward-api)
 4. The transformed configuration is provided to the Envoy executable
 
 ### Dynamic
-Envoy receives dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/master/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
+Envoy receives dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/main/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
 
 ## Debug
-It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. Please refer to [Running the Gateway Proxy locally](https://github.com/solo-io/gloo/tree/master/install/local-gateway-proxy) for further instructions.
+It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior. Please refer to [Running the Gateway Proxy locally](https://github.com/solo-io/gloo/tree/main/install/local-gateway-proxy) for further instructions.
 
 ## Testing
 Tests are run using [Ginkgo](https://onsi.github.io/ginkgo/).

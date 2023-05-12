@@ -31,5 +31,5 @@ VERSION_CONSTRAINT=">v1.8.0, <v1.9.0" go run generate_docs.go run-security-scan 
 ### Outputs
 The outputs of a trivy scan are the following:
 `_output/scans/gloo/markdown_results` - a folder which has scans for each image of each version of gloo that was scanned. The scan results are in markdown format
-and are uploaded to a google cloud bucket, which we later pull from during docs generation (which happens on merges to `master`), to generate a human-readable markdown
-security scans document, which we [display in our docs](https://docs.solo.io/gloo-edge/master/reference/security-updates/open_source/).
+and are uploaded to a google cloud bucket, which we later pull from during docs generation (which happens on merges to `main`), to generate a human-readable markdown
+security scans document, which we [display in our docs](https://docs.solo.io/gloo-edge/main/reference/security-updates/open_source/).
