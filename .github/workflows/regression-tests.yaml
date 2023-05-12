@@ -1,9 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'master'
-  pull_request:
+on: pull_request
 jobs:
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}}, ${{matrix.xds-relay}})
