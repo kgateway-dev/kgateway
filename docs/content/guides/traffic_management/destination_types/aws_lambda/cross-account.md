@@ -96,11 +96,11 @@ Modify your Gloo Edge installation settings and upstream resources to support ro
        - lambdaFunctionName: target-name
          logicalName: target-name
    ```
-
+3. Optional: [Verify routing](#verify-routing).
 ## Resource-based configuration
 
 ### AWS configuration
-For this configuration you will need to create a user or role in the authentication account, and a Lambda function in the account that contains the Lambda functions. The Lambda function will have a resource-based policy statement which will allow the user or role in the authentication account to invoke it.
+For the AWS configuration, you create a user or role in the authentication account, and a Lambda function in the account that contains the Lambda functions. The Lambda function has a resource-based policy statement which allows the user or role in the authentication account to invoke it.
 
 1. Create the following resources for your authentication account. 
    1. Create a user or role in your authentication account. Be sure to give the user or role the `lambda:InvokeFunction` permission, so that the role can used to invoke the Lambda functions in the other account.
@@ -121,7 +121,7 @@ For this configuration you will need to create a user or role in the authenticat
       2. Click the **Configuration** tab.
       3. In the sidebar, click the **Permissions** tab.
       4. In the **Resource-based policy statements** section, click **Add Permissions**.
-         * Select **AWS account** as the entity which will invoke the function.
+         * Select **AWS account** as the entity which invokes the function.
          * Specify the ARN of the user or role in the authentication account as the principal.
          * Select `lambda:InvokeFunction` as the action.
 
@@ -153,7 +153,7 @@ Modify your Gloo Edge installation settings and upstream resources to support ro
        - lambdaFunctionName: target-name
          logicalName: target-name
    ```
-
+3. Optional: [Verify routing](#verify-routing).
 ## Verify routing
 
 To verify that the configuration is correct, you can follow the steps in the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda#step-3-create-an-upstream-and-virtual-service" >}}) to create a virtual service that routes to the Lambda function via the AWS upstream.
