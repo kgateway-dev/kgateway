@@ -3,6 +3,7 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
+	"golang.org/x/exp/maps"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -107,30 +108,32 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	grpcJsonConf := listener.GetOptions().GetGrpcJsonTranscoder()
-	var usFilters []plugins.StagedHttpFilter
+	usFilters := make(map[plugins.StagedHttpFilter]int)
 	// Skip looking at all the routes on the listener if we know no upstreams have a grpcJsonTranscoderSpec
 	if len(p.upstreamFilters) > 0 {
 		//this loops over each upstream on the listener and does a fixed time check to see if it's the map of gRPC upstreams.
 		for _, listenerUs := range upstreamsFromListener(params, listener) {
 			if filter, ok := p.upstreamFilters[listenerUs.Key()]; ok {
-				usFilters = append(usFilters, filter)
+				usFilters[filter] = 1
 			}
 		}
 	}
 	if grpcJsonConf == nil {
-		return usFilters, nil
+		return maps.Keys(usFilters), nil
 	}
+	if grpcJsonConf != nil {
+		envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, grpcJsonConf)
+		if err != nil {
+			return nil, err
+		}
 
-	envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, grpcJsonConf)
-	if err != nil {
-		return nil, err
+		grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
+		if err != nil {
+			return nil, eris.Wrapf(err, "generating filter config")
+		}
+		usFilters[grpcJsonFilter] = 1
 	}
-
-	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
-	if err != nil {
-		return nil, eris.Wrapf(err, "generating filter config")
-	}
-	return append(usFilters, grpcJsonFilter), nil
+	return maps.Keys(usFilters), nil
 }
 func upstreamsFromListener(params plugins.Params, listener *v1.HttpListener) []core.ResourceRef {
 	var allUpstreams []core.ResourceRef
