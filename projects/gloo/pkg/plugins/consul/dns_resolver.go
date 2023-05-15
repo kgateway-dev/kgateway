@@ -9,8 +9,6 @@ import (
 )
 
 //go:generate mockgen -destination ./mocks/dnsresolver_mock.go github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul DnsResolver
-//go:generate gofmt -w ./mocks/
-//go:generate goimports -w ./mocks/
 
 type DnsResolver interface {
 	Resolve(ctx context.Context, address string) ([]net.IPAddr, error)
@@ -86,3 +84,5 @@ func (d *dnsResolverWithFallback) Resolve(ctx context.Context, address string) (
 	}
 	return lastKnownIdAddrs, nil
 }
+
+func (d *dnsResolverWithFallback) Foo() int { return 456 }

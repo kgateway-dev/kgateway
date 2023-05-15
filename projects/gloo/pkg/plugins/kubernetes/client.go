@@ -17,8 +17,6 @@ import (
 )
 
 //go:generate mockgen -destination ./mocks/kubesharedfactory_mock.go github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes KubePluginSharedFactory
-//go:generate gofmt -w ./mocks/
-//go:generate goimports -w ./mocks/
 
 type KubePluginSharedFactory interface {
 	EndpointsLister(ns string) kubelisters.EndpointsLister
