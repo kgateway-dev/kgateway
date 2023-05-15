@@ -306,14 +306,25 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: check-go-version clean-solo-kit-gen ## Execute Gloo Edge codegen
-generated-code: go-generate generate-cli-docs getter-check mod-tidy
+generated-code: check-go-version clean-solo-kit-gen
+generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
 
-.PHONY: go-generate
-go-generate: clean-vendor-any
+# Run all generate directives
+.PHONY: go-generate-all
+go-generate-all: clean-vendor-any
 	GO111MODULE=on go generate ./...
+
+# Runs only the generate directive in generate.go, which executes codegen via solo-kit
+.PHONY: go-generate-apis
+go-generate-apis: clean-vendor-any
+	GO111MODULE=on go generate .
+
+# Runs only generate directives for mockgen
+.PHONY: go-generate-mocks
+go-generate-mocks: clean-vendor-any
+	GO111MODULE=on go generate -run="mockgen" ./...
 
 .PHONY: generate-cli-docs
 generate-cli-docs: clean-cli-docs
@@ -324,7 +335,7 @@ getter-check:
 	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
 
 .PHONY: mod-tidy
-tidy:
+mod-tidy:
 	go mod tidy
 
 .PHONY: verify-enterprise-protos
@@ -337,6 +348,13 @@ verify-enterprise-protos:
 check-go-version:
 	./ci/check-go-version.sh
 
+# Executes only the targets necessary to generate formatted code from all protos
+.PHONY: generated-code-apis
+generated-code-apis: clean-solo-kit-gen go-generate-apis fmt
+
+# Executes only the targets necessary to cleanup and format code
+.PHONY: generated-code-cleanup
+generated-code-cleanup: getter-check mod-tidy update-licenses fmt
 
 #----------------------------------------------------------------------------------
 # Generate mocks
