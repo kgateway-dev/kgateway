@@ -306,20 +306,26 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: check-go-version clean-solo-kit-gen ## Execute Gloo Edge codegen
+generated-code: go-generate generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
 
-# Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
-# Glooctl enterprise docs are pushed from the private repo.
-# TODO(EItanya): make mockgen work for gloo
-$(OUTPUT_DIR)/.generated-code:
+.PHONY: go-generate
+go-generate: clean-vendor-any
 	GO111MODULE=on go generate ./...
+
+.PHONY: generate-cli-docs
+generate-cli-docs: clean-cli-docs
 	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+
+.PHONY: getter-check
+getter-check:
 	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
+
+.PHONY: mod-tidy
+tidy:
 	go mod tidy
-	touch $@
 
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
