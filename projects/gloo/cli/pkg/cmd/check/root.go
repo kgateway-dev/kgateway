@@ -10,6 +10,7 @@ import (
 	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -865,12 +866,14 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		proxyClient, err := helpers.ProxyClient(ctx, []string{ns})
-		if err != nil {
-			multiErr = multierror.Append(multiErr, err)
-			continue
-		}
-		proxies, err := proxyClient.List(ns, clients.ListOpts{})
+		proxies, err := common.GetProxies("", &options.Options{
+			Top: options.Top{
+				Ctx: ctx,
+			},
+			Metadata: core.Metadata{
+				Namespace: ns,
+			},
+		})
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue

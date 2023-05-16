@@ -118,10 +118,7 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	settingsClient := helpers.MustNamespacedSettingsClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
-	settings, err := settingsClient.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
-	if err != nil {
-		return nil, err
-	}
+	settings, _ := settingsClient.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
 	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
 	if proxyEndpointPort != "" {
 		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
