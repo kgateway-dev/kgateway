@@ -54,7 +54,7 @@ runs:
     env:
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
     shell: bash
-    run: make run-ci-regression-tests
+    run: make install-test-tools run-kube-e2e-tests
   - uses: testspace-com/setup-testspace@v1
     with:
       domain: solo-io.testspace.com
