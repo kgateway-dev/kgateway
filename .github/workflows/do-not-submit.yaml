@@ -1,9 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'master'
-  pull_request:
+on: pull_request
 jobs:
   build:
     runs-on: ubuntu-22.04

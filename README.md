@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://docs.solo.io/gloo-edge/master/img/Gloo-01.png" alt="Gloo Edge" width="200" height="155">
+    <img src="https://docs.solo.io/gloo-edge/main/img/Gloo-01.png" alt="Gloo Edge" width="200" height="155">
   <br>
   An Envoy-Powered API Gateway
 </h1>
@@ -16,7 +16,7 @@ Gloo Edge is a feature-rich, Kubernetes-native ingress controller, and next-gene
 &nbsp; [**Twitter**](https://twitter.com/soloio_inc) |
 &nbsp; [**Enterprise Trial**](https://www.solo.io/products/gloo/#enterprise-trial)
 
-<BR><center><img src="https://docs.solo.io/gloo-edge/master/img/gloo-architecture-envoys.png" alt="Gloo Edge Architecture" width="906"></center>
+<BR><center><img src="https://docs.solo.io/gloo-edge/main/img/gloo-architecture-envoys.png" alt="Gloo Edge Architecture" width="906"></center>
 
 ## Summary
 

@@ -8,7 +8,7 @@ weight: 5
 
 
 ### Package: `solo.io.envoy.extensions.filters.http.csrf.v3`  
-copied from https://github.com/envoyproxy/envoy/blob/master/api/envoy/extensions/filters/http/csrf/v3/csrf.proto
+copied from https://github.com/envoyproxy/envoy/blob/main/api/envoy/extensions/filters/http/csrf/v3/csrf.proto
 
 
  
