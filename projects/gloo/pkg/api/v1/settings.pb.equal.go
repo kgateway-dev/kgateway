@@ -65,6 +65,23 @@ func (m *Settings) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetSecretOptions()) != len(target.GetSecretOptions()) {
+		return false
+	}
+	for idx, v := range m.GetSecretOptions() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretOptions()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSecretOptions()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetRefreshRate()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRefreshRate()) {
 			return false
@@ -847,6 +864,64 @@ func (m *GraphqlOptions) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *Settings_SecretOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_SecretOptions)
+	if !ok {
+		that2, ok := that.(Settings_SecretOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSecretSources()) != len(target.GetSecretSources()) {
+		return false
+	}
+	for idx, v := range m.GetSecretSources() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretSources()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSecretSources()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetSecretSourceMap()) != len(target.GetSecretSourceMap()) {
+		return false
+	}
+	for k, v := range m.GetSecretSourceMap() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretSourceMap()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSecretSourceMap()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Settings_KubernetesCrds) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1546,6 +1621,84 @@ func (m *Settings_ObservabilityOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_SecretOptions_Source) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_SecretOptions_Source)
+	if !ok {
+		that2, ok := that.(Settings_SecretOptions_Source)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Source.(type) {
+
+	case *Settings_SecretOptions_Source_Kubernetes:
+		if _, ok := target.Source.(*Settings_SecretOptions_Source_Kubernetes); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetKubernetes()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetKubernetes()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetKubernetes(), target.GetKubernetes()) {
+				return false
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Vault:
+		if _, ok := target.Source.(*Settings_SecretOptions_Source_Vault); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVault()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVault()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVault(), target.GetVault()) {
+				return false
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Directory:
+		if _, ok := target.Source.(*Settings_SecretOptions_Source_Directory); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDirectory()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDirectory()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDirectory(), target.GetDirectory()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Source != target.Source {
+			return false
+		}
 	}
 
 	return true

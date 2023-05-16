@@ -64,6 +64,19 @@ func (m *Settings) Clone() proto.Message {
 		}
 	}
 
+	if m.GetSecretOptions() != nil {
+		target.SecretOptions = make([]*Settings_SecretOptions, len(m.GetSecretOptions()))
+		for idx, v := range m.GetSecretOptions() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SecretOptions[idx] = h.Clone().(*Settings_SecretOptions)
+			} else {
+				target.SecretOptions[idx] = proto.Clone(v).(*Settings_SecretOptions)
+			}
+
+		}
+	}
+
 	if h, ok := interface{}(m.GetRefreshRate()).(clone.Cloner); ok {
 		target.RefreshRate = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
@@ -538,6 +551,43 @@ func (m *GraphqlOptions) Clone() proto.Message {
 }
 
 // Clone function
+func (m *Settings_SecretOptions) Clone() proto.Message {
+	var target *Settings_SecretOptions
+	if m == nil {
+		return target
+	}
+	target = &Settings_SecretOptions{}
+
+	if m.GetSecretSources() != nil {
+		target.SecretSources = make([]*Settings_SecretOptions_Source, len(m.GetSecretSources()))
+		for idx, v := range m.GetSecretSources() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SecretSources[idx] = h.Clone().(*Settings_SecretOptions_Source)
+			} else {
+				target.SecretSources[idx] = proto.Clone(v).(*Settings_SecretOptions_Source)
+			}
+
+		}
+	}
+
+	if m.GetSecretSourceMap() != nil {
+		target.SecretSourceMap = make(map[string]*Settings_SecretOptions_Source, len(m.GetSecretSourceMap()))
+		for k, v := range m.GetSecretSourceMap() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.SecretSourceMap[k] = h.Clone().(*Settings_SecretOptions_Source)
+			} else {
+				target.SecretSourceMap[k] = proto.Clone(v).(*Settings_SecretOptions_Source)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *Settings_KubernetesCrds) Clone() proto.Message {
 	var target *Settings_KubernetesCrds
 	if m == nil {
@@ -898,6 +948,57 @@ func (m *Settings_ObservabilityOptions) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_SecretOptions_Source) Clone() proto.Message {
+	var target *Settings_SecretOptions_Source
+	if m == nil {
+		return target
+	}
+	target = &Settings_SecretOptions_Source{}
+
+	switch m.Source.(type) {
+
+	case *Settings_SecretOptions_Source_Kubernetes:
+
+		if h, ok := interface{}(m.GetKubernetes()).(clone.Cloner); ok {
+			target.Source = &Settings_SecretOptions_Source_Kubernetes{
+				Kubernetes: h.Clone().(*Settings_KubernetesSecrets),
+			}
+		} else {
+			target.Source = &Settings_SecretOptions_Source_Kubernetes{
+				Kubernetes: proto.Clone(m.GetKubernetes()).(*Settings_KubernetesSecrets),
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Vault:
+
+		if h, ok := interface{}(m.GetVault()).(clone.Cloner); ok {
+			target.Source = &Settings_SecretOptions_Source_Vault{
+				Vault: h.Clone().(*Settings_VaultSecrets),
+			}
+		} else {
+			target.Source = &Settings_SecretOptions_Source_Vault{
+				Vault: proto.Clone(m.GetVault()).(*Settings_VaultSecrets),
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Directory:
+
+		if h, ok := interface{}(m.GetDirectory()).(clone.Cloner); ok {
+			target.Source = &Settings_SecretOptions_Source_Directory{
+				Directory: h.Clone().(*Settings_Directory),
+			}
+		} else {
+			target.Source = &Settings_SecretOptions_Source_Directory{
+				Directory: proto.Clone(m.GetDirectory()).(*Settings_Directory),
+			}
+		}
+
 	}
 
 	return target
