@@ -125,6 +125,15 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	}
 	return getProxiesFromK8s(name, opts)
 }
+
+func GetProxiesFromSettings(name string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
+	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
+	if proxyEndpointPort != "" {
+		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
+	}
+	return getProxiesFromK8s(name, opts)
+}
+
 func computeProxyEndpointPort(ctx context.Context, settings *gloov1.Settings) string {
 
 	proxyEndpointAddress := settings.GetGloo().GetProxyDebugBindAddr()

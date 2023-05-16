@@ -214,7 +214,7 @@ func CheckResources(opts *options.Options) error {
 	}
 
 	if included := doesNotContain(opts.Top.CheckName, "proxies"); included {
-		err := checkProxies(ctx, opts, namespaces, opts.Metadata.GetNamespace(), deployments, deploymentsIncluded)
+		err := checkProxies(ctx, opts, namespaces, opts.Metadata.GetNamespace(), deployments, deploymentsIncluded, settings)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -854,7 +854,7 @@ func checkGateways(ctx context.Context, opts *options.Options, namespaces []stri
 	return nil
 }
 
-func checkProxies(ctx context.Context, opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList, deploymentsIncluded bool) error {
+func checkProxies(ctx context.Context, opts *options.Options, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList, deploymentsIncluded bool, settings *v1.Settings) error {
 	printer.AppendCheck("Checking proxies... ")
 	if !deploymentsIncluded {
 		printer.AppendStatus("proxies", "Skipping proxies because deployments were excluded")
@@ -865,15 +865,20 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
 	}
 	var multiErr *multierror.Error
-	for _, ns := range namespaces {
-		proxies, err := common.GetProxies("", &options.Options{
-			Top: options.Top{
-				Ctx: ctx,
-			},
-			Metadata: core.Metadata{
-				Namespace: ns,
-			},
-		})
+
+	glooNamespaces := []string{}
+	// iterate over deployments, and add the namespaces of all gloo deployments to the glooNamespaces slice
+	for _, deployment := range deployments.Items {
+		if deployment.Labels["gloo"] == "gloo" {
+			glooNamespaces = append(glooNamespaces, deployment.Namespace)
+		}
+	}
+
+	for _, ns := range glooNamespaces {
+		proxies, err := common.GetProxiesFromSettings("", &options.Options{
+			Top:      options.Top{Ctx: ctx},
+			Metadata: core.Metadata{Namespace: ns},
+		}, settings)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
