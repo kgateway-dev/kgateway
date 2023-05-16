@@ -166,8 +166,7 @@ func KubeServiceClientForSettings(ctx context.Context,
 	return skkube.NewServiceClientWithBase(inMemoryClient), nil
 }
 
-// sharedCache OR resourceCrd+cfg must be non-nil
-func SecretFactoryForSettings(ctx context.Context,
+func singleSecretFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
 	cfg **rest.Config,
@@ -208,6 +207,52 @@ func SecretFactoryForSettings(ctx context.Context,
 		return &factory.FileResourceClientFactory{
 			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), pluralName),
 		}, nil
+	}
+	return nil, errors.Errorf("invalid config source type")
+}
+func getSecretFactoryForMap(ctx context.Context,
+	settings *v1.Settings,
+	sharedCache memory.InMemoryResourceCache,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	vaultClient *vaultapi.Client,
+	pluralName string) (factory.ResourceClientFactory, error) {
+	panic("not implemented")
+}
+func getSecretFactoryForList(ctx context.Context,
+	settings *v1.Settings,
+	sharedCache memory.InMemoryResourceCache,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	vaultClient *vaultapi.Client,
+	pluralName string) (factory.ResourceClientFactory, error) {
+	panic("not implemented")
+}
+
+// sharedCache OR resourceCrd+cfg must be non-nil
+func SecretFactoryForSettings(ctx context.Context,
+	settings *v1.Settings,
+	sharedCache memory.InMemoryResourceCache,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	vaultClient *vaultapi.Client,
+	pluralName string) (factory.ResourceClientFactory, error) {
+
+	// Support deprecated API which specifies single secret source
+	if settings.GetSecretOptions() == nil {
+		return singleSecretFactoryForSettings(ctx, settings, sharedCache, cfg, clientset, kubeCoreCache, vaultClient, pluralName)
+	}
+
+	// this should not have been repeated
+	secretOpts := settings.GetSecretOptions()[0]
+	if secretOpts.GetSecretSourceMap() != nil {
+		return getSecretFactoryForMap(ctx, settings, sharedCache, cfg, clientset, kubeCoreCache, vaultClient, pluralName)
+	}
+	if secretOpts.GetSecretSources() != nil {
+		return getSecretFactoryForList(ctx, settings, sharedCache, cfg, clientset, kubeCoreCache, vaultClient, pluralName)
 	}
 	return nil, errors.Errorf("invalid config source type")
 }

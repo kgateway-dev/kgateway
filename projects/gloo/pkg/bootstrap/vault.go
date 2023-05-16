@@ -14,6 +14,17 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
+type vaultSecretClientSettings struct {
+	vault *api.Client
+
+	// Vault's path where resources are located.
+	root string
+
+	// Tells Vault which secrets engine it should route traffic to. Defaults to "secret".
+	// https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines
+	pathPrefix string
+}
+
 // The DefaultPathPrefix may be overridden to allow for non-standard vault mount paths
 const DefaultPathPrefix = "secret"
 
