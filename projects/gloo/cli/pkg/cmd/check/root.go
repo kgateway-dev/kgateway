@@ -18,7 +18,6 @@ import (
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -124,7 +123,7 @@ func CheckResources(opts *options.Options) error {
 		}
 	}
 
-	settings, err := getSettings(ctx, opts)
+	settings, err := common.GetSettings(ctx, opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
@@ -379,14 +378,6 @@ func checkPods(ctx context.Context, opts *options.Options) error {
 		printer.AppendStatus("pods", "OK")
 	}
 	return nil
-}
-
-func getSettings(ctx context.Context, opts *options.Options) (*v1.Settings, error) {
-	client, err := helpers.SettingsClient(ctx, []string{opts.Metadata.GetNamespace()})
-	if err != nil {
-		return nil, err
-	}
-	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{})
 }
 
 func getNamespaces(ctx context.Context, settings *v1.Settings) ([]string, error) {
