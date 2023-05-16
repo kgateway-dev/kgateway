@@ -249,7 +249,7 @@ test-with-coverage: test
 	go tool cover -html $(OUTPUT_DIR)/coverage.cov
 
 .PHONY: run-tests
-run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += -skip-package=e2e,kube ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
 run-tests: test
 
 .PHONY: run-e2e-tests
@@ -257,8 +257,8 @@ run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
 run-e2e-tests: test
 
 .PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-test-tools ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
+run-ci-regression-tests: install-test-tools ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} and {KUBE_TESTS} packages
+run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ./test/kube
 run-ci-regression-tests: test
 
 #----------------------------------------------------------------------------------
