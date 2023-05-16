@@ -1,16 +1,14 @@
-package service_test
+package kube_test
 
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/testutils"
 	kubev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -22,10 +20,7 @@ import (
 )
 
 var _ = Describe("ResourceClient", func() {
-	if !testutils.ShouldRunKubeTests() {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-		return
-	}
+
 	var (
 		namespace string
 		cfg       *rest.Config

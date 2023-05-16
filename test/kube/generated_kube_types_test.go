@@ -3,7 +3,6 @@ package kube_test
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -42,10 +41,6 @@ var _ = Describe("Generated Kube Code", func() {
 	)
 
 	BeforeEach(func() {
-		if !testutils.ShouldRunKubeTests() {
-			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-		}
-
 		ctx, cancel = context.WithCancel(context.Background())
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())

@@ -2,28 +2,25 @@ package kube_test
 
 import (
 	"context"
-	"os"
-	"testing"
+	"github.com/solo-io/gloo/test/services"
 
 	"github.com/avast/retry-go"
+	"github.com/hashicorp/consul/api"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/test/helpers"
 	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
+	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
-
-func TestKube(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Generated Kube Types Suite")
-}
 
 var (
 	suiteCtx    context.Context
@@ -31,8 +28,17 @@ var (
 	apiExts     apiext.Interface
 
 	locker    *clusterlock.TestClusterLocker
-	namespace = "kube-test-ns"
+	namespace = "kubernetes-test-ns"
+
+	consulFactory  *services.ConsulFactory
+	consulInstance *services.ConsulInstance
+	client         *api.Client
 )
+
+func TestKubernetes(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Kubernetes Suite")
+}
 
 var _ = SynchronizedBeforeSuite(beforeSuiteOne, beforeSuiteAll)
 var _ = SynchronizedAfterSuite(afterSuiteOne, afterSuiteAll)
