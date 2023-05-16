@@ -317,7 +317,7 @@ go-generate-all: clean-vendor-any ## Run all go generate directives in the repo,
 
 .PHONY: go-generate-apis
 go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
-	GO111MODULE=on go generate .
+	GO111MODULE=on go generate generate.go
 
 .PHONY: go-generate-mocks
 go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen in the repo
