@@ -84,5 +84,3 @@ func (d *dnsResolverWithFallback) Resolve(ctx context.Context, address string) (
 	}
 	return lastKnownIdAddrs, nil
 }
-
-func (d *dnsResolverWithFallback) Foo() int { return 456 }
