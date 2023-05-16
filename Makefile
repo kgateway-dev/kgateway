@@ -254,16 +254,19 @@ run-tests: GINKGO_FLAGS += --label-filter="!e2e && !nightly"
 run-tests: test
 
 .PHONY: run-e2e-tests
-run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
+run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all In Memory E2E tests
 run-e2e-tests: GINKGO_FLAGS += --label-filter="e2e && !nightly"
 run-e2e-tests: test
+
+.PHONY: run-hashicorp-e2e-tests
+run-hashicorp-e2e-tests: TEST_PKG = ./test/consulvaulte2e/
+run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="e2e && !nightly"
+run-hashicorp-e2e-tests: test
 
 .PHONY: run-ci-regression-tests
 run-ci-regression-tests: install-test-tools ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
 run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
 run-ci-regression-tests: test
-
-
 
 #----------------------------------------------------------------------------------
 # Clean
