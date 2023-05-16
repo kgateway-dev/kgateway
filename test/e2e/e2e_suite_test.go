@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"testing"
 
-	"github.com/solo-io/gloo/test/gomega/labels"
+	"github.com/solo-io/gloo/test/ginkgo/labels"
 
 	"github.com/solo-io/gloo/test/e2e"
 
