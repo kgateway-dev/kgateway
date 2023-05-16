@@ -50,12 +50,35 @@ message Settings {
         ConsulKv consul_kv_source = 21;
     };
 
+    // Deprecated: use secretOptions
     // Determines where Gloo will read/write secrets from/to.
     oneof secret_source {
         KubernetesSecrets kubernetes_secret_source = 6;
         VaultSecrets vault_secret_source = 7;
         Directory directory_secret_source = 8;
     };
+
+    // Settings for secrets storage
+    repeated SecretOptions secret_options = 38;
+
+    message SecretOptions {
+        message Source {
+            // Determines where Gloo will read/write secrets from/to.
+            oneof source {
+                KubernetesSecrets kubernetes = 1;
+                VaultSecrets vault = 2;
+                Directory directory = 3;
+            };
+        }
+
+        // DO NOT MERGE
+        // Only one of secret_sources and secret_source_map should be merged
+        repeated Source secret_sources = 1;
+
+        // DO NOT MERGE
+        // Only one of secret_sources and secret_source_map should be merged
+        map<string, Source> secret_source_map = 2;
+    }
 
     // Where to read artifacts from.
     oneof artifact_source {
