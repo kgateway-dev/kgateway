@@ -1,8 +1,9 @@
 package e2e_test
 
 import (
-	"github.com/solo-io/gloo/test/gomega/labels"
 	"testing"
+
+	"github.com/solo-io/gloo/test/gomega/labels"
 
 	"github.com/solo-io/gloo/test/e2e"
 

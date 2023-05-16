@@ -1,9 +1,10 @@
 package consulvaulte2e_test
 
 import (
-	"github.com/solo-io/gloo/test/gomega/labels"
 	"os"
 	"testing"
+
+	"github.com/solo-io/gloo/test/gomega/labels"
 
 	testhelpers "github.com/solo-io/gloo/test/testutils"
 

@@ -2,8 +2,9 @@ package e2e_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/gomega/labels"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/gomega/labels"
 
 	"github.com/solo-io/gloo/test/testutils"
 
