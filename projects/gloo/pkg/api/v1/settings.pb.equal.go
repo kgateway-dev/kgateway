@@ -65,21 +65,14 @@ func (m *Settings) Equal(that interface{}) bool {
 
 	}
 
-	if len(m.GetSecretOptions()) != len(target.GetSecretOptions()) {
-		return false
-	}
-	for idx, v := range m.GetSecretOptions() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetSecretOptions()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetSecretOptions()[idx]) {
-				return false
-			}
+	if h, ok := interface{}(m.GetSecretOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSecretOptions()) {
+			return false
 		}
-
+	} else {
+		if !proto.Equal(m.GetSecretOptions(), target.GetSecretOptions()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetRefreshRate()).(equality.Equalizer); ok {
@@ -884,23 +877,6 @@ func (m *Settings_SecretOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetSecretSources()) != len(target.GetSecretSources()) {
-		return false
-	}
-	for idx, v := range m.GetSecretSources() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetSecretSources()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetSecretSources()[idx]) {
-				return false
-			}
-		}
-
-	}
-
 	if len(m.GetSecretSourceMap()) != len(target.GetSecretSourceMap()) {
 		return false
 	}
@@ -916,6 +892,10 @@ func (m *Settings_SecretOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	if m.GetDefaultSource() != target.GetDefaultSource() {
+		return false
 	}
 
 	return true

@@ -64,17 +64,10 @@ func (m *Settings) Clone() proto.Message {
 		}
 	}
 
-	if m.GetSecretOptions() != nil {
-		target.SecretOptions = make([]*Settings_SecretOptions, len(m.GetSecretOptions()))
-		for idx, v := range m.GetSecretOptions() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.SecretOptions[idx] = h.Clone().(*Settings_SecretOptions)
-			} else {
-				target.SecretOptions[idx] = proto.Clone(v).(*Settings_SecretOptions)
-			}
-
-		}
+	if h, ok := interface{}(m.GetSecretOptions()).(clone.Cloner); ok {
+		target.SecretOptions = h.Clone().(*Settings_SecretOptions)
+	} else {
+		target.SecretOptions = proto.Clone(m.GetSecretOptions()).(*Settings_SecretOptions)
 	}
 
 	if h, ok := interface{}(m.GetRefreshRate()).(clone.Cloner); ok {
@@ -558,19 +551,6 @@ func (m *Settings_SecretOptions) Clone() proto.Message {
 	}
 	target = &Settings_SecretOptions{}
 
-	if m.GetSecretSources() != nil {
-		target.SecretSources = make([]*Settings_SecretOptions_Source, len(m.GetSecretSources()))
-		for idx, v := range m.GetSecretSources() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.SecretSources[idx] = h.Clone().(*Settings_SecretOptions_Source)
-			} else {
-				target.SecretSources[idx] = proto.Clone(v).(*Settings_SecretOptions_Source)
-			}
-
-		}
-	}
-
 	if m.GetSecretSourceMap() != nil {
 		target.SecretSourceMap = make(map[string]*Settings_SecretOptions_Source, len(m.GetSecretSourceMap()))
 		for k, v := range m.GetSecretSourceMap() {
@@ -583,6 +563,8 @@ func (m *Settings_SecretOptions) Clone() proto.Message {
 
 		}
 	}
+
+	target.DefaultSource = m.GetDefaultSource()
 
 	return target
 }

@@ -14,6 +14,7 @@ weight: 5
 - [Settings](#settings) **Top-Level Resource**
 - [SecretOptions](#secretoptions)
 - [Source](#source)
+- [DefaultSource](#defaultsource)
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
@@ -71,7 +72,7 @@ Represents global settings for all the Gloo components.
 "kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
 "vaultSecretSource": .gloo.solo.io.Settings.VaultSecrets
 "directorySecretSource": .gloo.solo.io.Settings.Directory
-"secretOptions": []gloo.solo.io.Settings.SecretOptions
+"secretOptions": .gloo.solo.io.Settings.SecretOptions
 "kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
 "directoryArtifactSource": .gloo.solo.io.Settings.Directory
 "consulKvArtifactSource": .gloo.solo.io.Settings.ConsulKv
@@ -111,7 +112,7 @@ Represents global settings for all the Gloo components.
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` can be set. |
 | `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, `kubernetesSecretSource`, or `directorySecretSource` can be set. |
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, `kubernetesSecretSource`, or `vaultSecretSource` can be set. |
-| `secretOptions` | [[]gloo.solo.io.Settings.SecretOptions](../settings.proto.sk/#secretoptions) | Settings for secrets storage. |
+| `secretOptions` | [.gloo.solo.io.Settings.SecretOptions](../settings.proto.sk/#secretoptions) | Settings for secrets storage. |
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
@@ -148,15 +149,15 @@ Represents global settings for all the Gloo components.
 
 
 ```yaml
-"secretSources": []gloo.solo.io.Settings.SecretOptions.Source
 "secretSourceMap": map<string, .gloo.solo.io.Settings.SecretOptions.Source>
+"defaultSource": .gloo.solo.io.Settings.SecretOptions.DefaultSource
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `secretSources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | DO NOT MERGE Only one of secret_sources and secret_source_map should be merged. |
-| `secretSourceMap` | `map<string, .gloo.solo.io.Settings.SecretOptions.Source>` | DO NOT MERGE Only one of secret_sources and secret_source_map should be merged. |
+| `secretSourceMap` | `map<string, .gloo.solo.io.Settings.SecretOptions.Source>` | Map of configured secret sources. A default of Kubernetes will be used if none is configured. |
+| `defaultSource` | [.gloo.solo.io.Settings.SecretOptions.DefaultSource](../settings.proto.sk/#defaultsource) | Default source to use for secrets if no source is specified. If none is configured, Kubernetes will be used. |
 
 
 
@@ -178,6 +179,20 @@ Represents global settings for all the Gloo components.
 | `kubernetes` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetes`, `vault`, or `directory` can be set. |
 | `vault` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vault`, `kubernetes`, or `directory` can be set. |
 | `directory` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directory`, `kubernetes`, or `vault` can be set. |
+
+
+
+
+---
+### DefaultSource
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `Kubernetes` |  |
+| `Vault` |  |
+| `Directory` |  |
 
 
 
