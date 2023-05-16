@@ -72,12 +72,12 @@ require (
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.11.2
-	k8s.io/api v0.26.4
+	k8s.io/api v0.26.0
 	k8s.io/apiextensions-apiserver v0.26.0
-	k8s.io/apimachinery v0.26.4
-	k8s.io/client-go v0.26.4
-	k8s.io/code-generator v0.26.4
-	k8s.io/component-base v0.26.4
+	k8s.io/apimachinery v0.26.0
+	k8s.io/client-go v0.26.0
+	k8s.io/code-generator v0.26.0
+	k8s.io/component-base v0.26.0
 	k8s.io/kubectl v0.26.0
 	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
@@ -87,9 +87,17 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute v1.12.1 // indirect
+	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
 	cuelang.org/go v0.3.2 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest v0.11.27 // indirect
+	github.com/Azure/go-autorest/autorest/adal v0.9.20 // indirect
+	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
+	github.com/Azure/go-autorest/logger v0.2.1 // indirect
+	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -157,6 +165,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/go-test/deep v1.0.7 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/golang-jwt/jwt/v4 v4.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.1 // indirect
@@ -246,6 +255,7 @@ require (
 	github.com/radovskyb/watcher v1.0.2 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rubenv/sql-migrate v1.3.1 // indirect
+	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
@@ -284,13 +294,13 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.26.4 // indirect
-	k8s.io/cli-runtime v0.26.4 // indirect
-	k8s.io/component-helpers v0.26.4 // indirect
+	k8s.io/apiserver v0.26.0 // indirect
+	k8s.io/cli-runtime v0.26.0 // indirect
+	k8s.io/component-helpers v0.26.0 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
-	k8s.io/metrics v0.26.4 // indirect
+	k8s.io/metrics v0.26.0 // indirect
 	oras.land/oras-go v1.2.2 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
@@ -323,22 +333,19 @@ replace (
 	// see https://github.com/solo-io/gloo/issues/5719
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
 
-	// Pin Kube libraries to v0.26
+	// Pin Kube libraries to v0.25
 	// These should be upgraded collectively
-	k8s.io/api => k8s.io/api v0.26.4
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.26.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.26.4
-	k8s.io/apiserver => k8s.io/apiserver v0.26.4
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.26.4
-	k8s.io/client-go => k8s.io/client-go v0.26.4
-	k8s.io/code-generator => k8s.io/code-generator v0.26.4
-	k8s.io/component-base => k8s.io/component-base v0.26.4
-	k8s.io/component-helpers => k8s.io/component-helpers v0.26.4
-	// version of kube-openapi used by client-go v0.26.4
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
-	k8s.io/kubectl => k8s.io/kubectl v0.26.4
-	k8s.io/metrics => k8s.io/metrics v0.26.4
-	k8s.io/utils => k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
+	k8s.io/api => k8s.io/api v0.25.8
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.25.8
+	k8s.io/apimachinery => k8s.io/apimachinery v0.25.8
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.25.8
+	k8s.io/client-go => k8s.io/client-go v0.25.8
+	k8s.io/code-generator => k8s.io/code-generator v0.25.8
+	k8s.io/component-base => k8s.io/component-base v0.25.8
+	// version of kube-openapi used by client-go v0.25.8
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1
+	k8s.io/kubectl => k8s.io/kubectl v0.25.8
+	k8s.io/metrics => k8s.io/metrics v0.25.8
 )
 
 exclude (
