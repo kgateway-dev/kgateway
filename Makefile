@@ -254,7 +254,8 @@ run-tests: GINKGO_FLAGS += --label-filter="!nightly"
 run-tests: test
 
 .PHONY: run-e2e-tests
-run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
+# run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
+run-e2e-tests: GINKGO_FLAGS += --label-filter="e2e && !nightly"
 run-e2e-tests: test
 
 .PHONY: run-ci-regression-tests
