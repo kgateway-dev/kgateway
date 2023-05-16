@@ -1,1 +1,1 @@
-As you continue to use Gloo Edge, remember to periodically [upgrade](https://docs.solo.io/gloo-edge/master/operations/upgrading/) your installation, CRDs, and `glooctl` CLI to get the latest features and security updates.
+As you continue to use Gloo Edge, remember to periodically [upgrade](https://docs.solo.io/gloo-edge/main/operations/upgrading/) your installation, CRDs, and `glooctl` CLI to get the latest features and security updates.

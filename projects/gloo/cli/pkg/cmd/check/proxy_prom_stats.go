@@ -165,7 +165,7 @@ func parseMetrics(stats string, desiredMetricSegments []string, deploymentName s
 	for _, line := range statsLines {
 		trimLine := strings.TrimSpace(line)
 		if strings.HasPrefix(trimLine, "#") || trimLine == "" {
-			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
+			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
 		}
 		desiredMetric := false
 		for _, s := range desiredMetricSegments {

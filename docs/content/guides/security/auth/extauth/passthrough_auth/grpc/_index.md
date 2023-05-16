@@ -57,7 +57,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-The source code for the gRPC service can be found in the Gloo Edge repository [here](https://github.com/solo-io/gloo/tree/master/docs/examples/grpc-passthrough-auth).
+The source code for the gRPC service can be found in the Gloo Edge repository [here](https://github.com/solo-io/gloo/tree/main/docs/examples/grpc-passthrough-auth).
 
 Once we create the authentication service, we also want to apply the following Service to assign it a static cluster IP.
 {{< highlight shell >}}

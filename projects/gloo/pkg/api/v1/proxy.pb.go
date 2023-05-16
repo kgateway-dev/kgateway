@@ -907,7 +907,7 @@ type VirtualHost struct {
 	// but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header.
 	// Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all
 	// virtual hosts or the config will be invalidated by Gloo
-	// Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto)
+	// Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto)
 	Domains []string `protobuf:"bytes,2,rep,name=domains,proto3" json:"domains,omitempty"`
 	// The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches
 	// this virtual host. If the request matches more than one route in the list, the first route matched will be selected.
@@ -1806,7 +1806,7 @@ func (x *WeightedDestination) GetOptions() *WeightedDestinationOptions {
 	return nil
 }
 
-// Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+// Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
 type RedirectAction struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1975,7 +1975,7 @@ func (*RedirectAction_PrefixRewrite) isRedirectAction_PathRewriteSpecifier() {}
 
 func (*RedirectAction_RegexRewrite) isRedirectAction_PathRewriteSpecifier() {}
 
-// DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+// DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
 type DirectResponseAction struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

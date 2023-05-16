@@ -110,7 +110,7 @@ which is invoked whenever a `gateway.solo.io` custom resource is created or modi
 {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}},
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
-The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Edge's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
+The [validating webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Edge's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
 by removing the `ValidatingWebhookConfiguration`.
 
 The webhook can be configured to perform strict or permissive validation, depending on the `gateway.validation.alwaysAccept` setting in the 
