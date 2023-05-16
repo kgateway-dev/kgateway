@@ -306,28 +306,25 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: check-go-version clean-solo-kit-gen
+generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
 generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
 
-# Run all generate directives
 .PHONY: go-generate-all
-go-generate-all: clean-vendor-any
+go-generate-all: clean-vendor-any ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
 	GO111MODULE=on go generate ./...
 
-# Runs only the generate directive in generate.go, which executes codegen via solo-kit
 .PHONY: go-generate-apis
-go-generate-apis: clean-vendor-any
+go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
 	GO111MODULE=on go generate .
 
-# Runs only generate directives for mockgen
 .PHONY: go-generate-mocks
-go-generate-mocks: clean-vendor-any
+go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen in the repo
 	GO111MODULE=on go generate -run="mockgen" ./...
 
 .PHONY: generate-cli-docs
-generate-cli-docs: clean-cli-docs
+generate-cli-docs: clean-cli-docs ## Generates documentation for glooctl
 	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 
 .PHONY: getter-check
@@ -348,13 +345,11 @@ verify-enterprise-protos:
 check-go-version:
 	./ci/check-go-version.sh
 
-# Executes only the targets necessary to generate formatted code from all protos
 .PHONY: generated-code-apis
-generated-code-apis: clean-solo-kit-gen go-generate-apis fmt
+generated-code-apis: clean-solo-kit-gen go-generate-apis fmt ## Executes the targets necessary to generate formatted code from all protos
 
-# Executes only the targets necessary to cleanup and format code
 .PHONY: generated-code-cleanup
-generated-code-cleanup: getter-check mod-tidy update-licenses fmt
+generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes the targets necessary to cleanup and format code
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -644,7 +639,7 @@ ifeq ($(RELEASE), "false")
 endif
 
 .PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
