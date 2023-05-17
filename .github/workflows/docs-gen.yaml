@@ -69,24 +69,6 @@ jobs:
     if: needs.prepare_env.outputs.should-build-docs == 'true'
     runs-on: ubuntu-22.04
     steps:
-    - name: Free disk space
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      run: |
-        echo "Before clearing disk space:"
-        df -h
-
-        # https://github.com/actions/virtual-environments/issues/709
-        sudo apt-get clean
-
-        # Clean up pre-installed tools
-        # https://github.com/actions/virtual-environments/issues/1918
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/local/share/boost
-        sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-        echo "After clearing disk space:"
-        df -h
     - name: Check out code into the Go module directory
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: actions/checkout@v3
@@ -95,12 +77,7 @@ jobs:
     - name: Override main checkout if deploying PR test
       if: ${{ github.event_name == 'pull_request' }}
       uses: actions/checkout@v3
-    - name: Set up Go
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/setup-go@v4
-      with:
-        go-version-file: go.mod
-      id: go
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
     - name: Setup Hugo
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: peaceiris/actions-hugo@v2
