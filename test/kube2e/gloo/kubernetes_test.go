@@ -2,26 +2,24 @@ package gloo_test
 
 import (
 	"context"
+	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/helpers"
 	"time"
-
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
-	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/client-go/kubernetes/fake"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	kubev1 "k8s.io/api/core/v1"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
 	"k8s.io/client-go/kubernetes"
 
 	// From https://github.com/kubernetes/client-go/blob/53c7adfd0294caa142d961e1f780f74081d5b15f/examples/out-of-cluster-client-configuration/main.go#L31
@@ -54,10 +52,21 @@ var _ = Describe("Kubernetes", func() {
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			ctx = settingsutil.WithSettings(ctx, &v1.Settings{})
+
 			svcNamespace = helpers.RandString(8)
-			kubeClient = fake.NewSimpleClientset()
-			var err error
+
+			cfg, err := kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			kubeClient, err = kubernetes.NewForConfig(cfg)
 			kubeCoreCache, err = kubecache.NewKubeCoreCache(context.TODO(), kubeClient)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: svcNamespace,
+				},
+			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
 			// create a service
@@ -115,7 +124,7 @@ var _ = Describe("Kubernetes", func() {
 				},
 			}, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Create(ctx, &kubev1.Endpoints{
+			_, err = kubeClient.CoreV1().Endpoints(svcNamespace).Update(ctx, &kubev1.Endpoints{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      svc.Name,
 					Namespace: svcNamespace,
@@ -130,11 +139,14 @@ var _ = Describe("Kubernetes", func() {
 						{Name: "bar", Port: 8080, Protocol: kubev1.ProtocolTCP},
 					},
 				}},
-			}, metav1.CreateOptions{})
+			}, metav1.UpdateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 		})
+
 		AfterEach(func() {
-			setup.TeardownKube(svcNamespace)
+			err := kubeClient.CoreV1().Namespaces().Delete(ctx, svcNamespace, metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
 			if cancel != nil {
 				cancel()
 			}
