@@ -63,9 +63,9 @@ message Settings {
 
     message SecretOptions {
         enum DefaultSource {
-            Kubernetes = 0;
-            Vault = 1;
-            Directory = 2;
+            KUBERNETES = 0;
+            VAULT = 1;
+            DIRECTORY = 2;
         }
         message Source {
             // Determines where Gloo will read/write secrets from/to.
