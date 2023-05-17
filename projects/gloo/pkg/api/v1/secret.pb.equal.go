@@ -56,10 +56,6 @@ func (m *Secret) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetSource(), target.GetSource()) != 0 {
-		return false
-	}
-
 	switch m.Kind.(type) {
 
 	case *Secret_Aws:

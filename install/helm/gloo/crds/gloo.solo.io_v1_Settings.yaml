@@ -638,11 +638,8 @@ spec:
                 type: string
               secretOptions:
                 properties:
-                  defaultSource:
-                    type: string
-                    x-kubernetes-int-or-string: true
-                  secretSourceMap:
-                    additionalProperties:
+                  secretSources:
+                    items:
                       properties:
                         directory:
                           properties:
@@ -711,7 +708,7 @@ spec:
                               type: string
                           type: object
                       type: object
-                    type: object
+                    type: array
                 type: object
               upstreamOptions:
                 properties:

@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
@@ -166,51 +167,10 @@ func KubeServiceClientForSettings(ctx context.Context,
 	return skkube.NewServiceClientWithBase(inMemoryClient), nil
 }
 
-func singleSecretFactoryForSettings(ctx context.Context,
-	settings *v1.Settings,
-	sharedCache memory.InMemoryResourceCache,
-	cfg **rest.Config,
-	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache,
-	vaultClient *vaultapi.Client,
-	pluralName string) (factory.ResourceClientFactory, error) {
-	if settings.GetSecretSource() == nil {
-		if sharedCache == nil {
-			return nil, errors.Errorf("internal error: shared cache cannot be nil")
-		}
-		return &factory.MemoryResourceClientFactory{
-			Cache: sharedCache,
-		}, nil
-	}
-
-	switch source := settings.GetSecretSource().(type) {
-	case *v1.Settings_KubernetesSecretSource:
-		if err := initializeForKube(ctx, cfg, clientset, kubeCoreCache, settings.GetRefreshRate(), settings.GetWatchNamespaces()); err != nil {
-			return nil, errors.Wrapf(err, "initializing kube cfg clientset and core cache")
-		}
-		return &factory.KubeSecretClientFactory{
-			Clientset:       *clientset,
-			Cache:           *kubeCoreCache,
-			SecretConverter: kubeconverters.GlooSecretConverterChain,
-		}, nil
-	case *v1.Settings_VaultSecretSource:
-		rootKey := source.VaultSecretSource.GetRootKey()
-		if rootKey == "" {
-			rootKey = DefaultRootKey
-		}
-		pathPrefix := source.VaultSecretSource.GetPathPrefix()
-		if pathPrefix == "" {
-			pathPrefix = DefaultPathPrefix
-		}
-		return NewVaultSecretClientFactory(vaultClient, pathPrefix, rootKey), nil
-	case *v1.Settings_DirectorySecretSource:
-		return &factory.FileResourceClientFactory{
-			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), pluralName),
-		}, nil
-	}
-	return nil, errors.Errorf("invalid config source type")
-}
-
+// SecretFactoryForSettings creates a resource client factory for provided config.
+// Implemented as multiSecretSourceResourceClient regardless if there is just one
+// source configured.
+// sharedCache OR resourceCrd+cfg must be non-nil
 func SecretFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
@@ -220,16 +180,52 @@ func SecretFactoryForSettings(ctx context.Context,
 	vaultClient *vaultapi.Client,
 	pluralName string) (factory.ResourceClientFactory, error) {
 
-	// Support deprecated API which specifies single secret source at root level of Settings
-	if settings.GetSecretOptions() == nil {
-		return singleSecretFactoryForSettings(ctx, settings, sharedCache, cfg, clientset, kubeCoreCache, vaultClient, pluralName)
+	if settings.GetSecretSource() == nil && settings.GetSecretOptions() == nil {
+		if sharedCache == nil {
+			return nil, errors.Errorf("internal error: shared cache cannot be nil")
+		}
+		return &factory.MemoryResourceClientFactory{
+			Cache: sharedCache,
+		}, nil
 	}
 
-	// this should not have been repeated
 	secretOpts := settings.GetSecretOptions()
-	if secretOpts.GetSecretSourceMap() != nil {
-		return newMultiSecretSourceResourceClientFactory(secretOpts.GetDefaultSource().Enum(),
-			secretOpts.GetSecretSourceMap(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
+
+	// Check for secretSource API config and translate it to secretOptions API config.
+	// Log a warning and use new API if both are defined.
+	if deprecatedApiSource := settings.GetSecretSource(); deprecatedApiSource != nil {
+		if secretOpts != nil {
+			contextutils.LoggerFrom(ctx).Warn("secretOptions API and deprecated secretSource API both configured; using secretOptions")
+		} else {
+			secretOpts = &v1.Settings_SecretOptions{
+				SecretSources: []*v1.Settings_SecretOptions_Source{},
+			}
+			newApiSource := &v1.Settings_SecretOptions_Source{}
+			switch src := deprecatedApiSource.(type) {
+			case *v1.Settings_DirectorySecretSource:
+				{
+					newApiSource.Source = &v1.Settings_SecretOptions_Source_Directory{
+						Directory: src.DirectorySecretSource,
+					}
+				}
+			case *v1.Settings_VaultSecretSource:
+				{
+					newApiSource.Source = &v1.Settings_SecretOptions_Source_Vault{
+						Vault: src.VaultSecretSource,
+					}
+				}
+			case *v1.Settings_KubernetesSecretSource:
+				{
+					newApiSource.Source = &v1.Settings_SecretOptions_Source_Kubernetes{
+						Kubernetes: src.KubernetesSecretSource,
+					}
+				}
+			}
+			secretOpts.SecretSources = []*v1.Settings_SecretOptions_Source{newApiSource}
+		}
+	}
+	if secretOpts != nil {
+		return newMultiSecretSourceResourceClientFactory(secretOpts.GetSecretSources(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
 	}
 	return nil, errors.Errorf("invalid config source type")
 }

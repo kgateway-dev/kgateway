@@ -14,7 +14,6 @@ weight: 5
 - [Settings](#settings) **Top-Level Resource**
 - [SecretOptions](#secretoptions)
 - [Source](#source)
-- [DefaultSource](#defaultsource)
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
@@ -149,15 +148,13 @@ Represents global settings for all the Gloo components.
 
 
 ```yaml
-"secretSourceMap": map<string, .gloo.solo.io.Settings.SecretOptions.Source>
-"defaultSource": .gloo.solo.io.Settings.SecretOptions.DefaultSource
+"secretSources": []gloo.solo.io.Settings.SecretOptions.Source
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `secretSourceMap` | `map<string, .gloo.solo.io.Settings.SecretOptions.Source>` | Map of configured secret sources. A default of Kubernetes will be used if none is configured. |
-| `defaultSource` | [.gloo.solo.io.Settings.SecretOptions.DefaultSource](../settings.proto.sk/#defaultsource) | Default source to use for secrets if no source is specified. If none is configured, Kubernetes will be used. |
+| `secretSources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | List of configured secret sources. |
 
 
 
@@ -179,20 +176,6 @@ Represents global settings for all the Gloo components.
 | `kubernetes` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetes`, `vault`, or `directory` can be set. |
 | `vault` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vault`, `kubernetes`, or `directory` can be set. |
 | `directory` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directory`, `kubernetes`, or `vault` can be set. |
-
-
-
-
----
-### DefaultSource
-
-
-
-| Name | Description |
-| ----- | ----------- | 
-| `KUBERNETES` |  |
-| `VAULT` |  |
-| `DIRECTORY` |  |
 
 
 

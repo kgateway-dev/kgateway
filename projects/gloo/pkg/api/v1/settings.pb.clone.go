@@ -551,20 +551,18 @@ func (m *Settings_SecretOptions) Clone() proto.Message {
 	}
 	target = &Settings_SecretOptions{}
 
-	if m.GetSecretSourceMap() != nil {
-		target.SecretSourceMap = make(map[string]*Settings_SecretOptions_Source, len(m.GetSecretSourceMap()))
-		for k, v := range m.GetSecretSourceMap() {
+	if m.GetSecretSources() != nil {
+		target.SecretSources = make([]*Settings_SecretOptions_Source, len(m.GetSecretSources()))
+		for idx, v := range m.GetSecretSources() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.SecretSourceMap[k] = h.Clone().(*Settings_SecretOptions_Source)
+				target.SecretSources[idx] = h.Clone().(*Settings_SecretOptions_Source)
 			} else {
-				target.SecretSourceMap[k] = proto.Clone(v).(*Settings_SecretOptions_Source)
+				target.SecretSources[idx] = proto.Clone(v).(*Settings_SecretOptions_Source)
 			}
 
 		}
 	}
-
-	target.DefaultSource = m.GetDefaultSource()
 
 	return target
 }

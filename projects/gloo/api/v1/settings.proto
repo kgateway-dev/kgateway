@@ -62,11 +62,6 @@ message Settings {
     SecretOptions secret_options = 38;
 
     message SecretOptions {
-        enum DefaultSource {
-            KUBERNETES = 0;
-            VAULT = 1;
-            DIRECTORY = 2;
-        }
         message Source {
             // Determines where Gloo will read/write secrets from/to.
             oneof source {
@@ -76,12 +71,8 @@ message Settings {
             };
         }
 
-        // Map of configured secret sources. A default of Kubernetes will be used if none is configured
-        map<string, Source> secret_source_map = 1;
-
-        // Default source to use for secrets if no source is specified.
-        // If none is configured, Kubernetes will be used.
-        DefaultSource default_source = 2;
+        // List of configured secret sources
+        repeated Source secret_sources = 1;
     }
 
     // Where to read artifacts from.

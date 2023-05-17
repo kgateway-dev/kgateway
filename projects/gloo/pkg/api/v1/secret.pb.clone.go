@@ -43,8 +43,6 @@ func (m *Secret) Clone() proto.Message {
 		target.Metadata = proto.Clone(m.GetMetadata()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.Metadata)
 	}
 
-	target.Source = m.GetSource()
-
 	switch m.Kind.(type) {
 
 	case *Secret_Aws:
