@@ -407,6 +407,15 @@ func (m *Matcher) Clone() proto.Message {
 		}
 	}
 
+	if m.GetPassthroughCipherSuites() != nil {
+		target.PassthroughCipherSuites = make([]string, len(m.GetPassthroughCipherSuites()))
+		for idx, v := range m.GetPassthroughCipherSuites() {
+
+			target.PassthroughCipherSuites[idx] = v
+
+		}
+	}
+
 	return target
 }
 
