@@ -211,7 +211,6 @@ func singleSecretFactoryForSettings(ctx context.Context,
 	return nil, errors.Errorf("invalid config source type")
 }
 
-// sharedCache OR resourceCrd+cfg must be non-nil
 func SecretFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
@@ -221,7 +220,7 @@ func SecretFactoryForSettings(ctx context.Context,
 	vaultClient *vaultapi.Client,
 	pluralName string) (factory.ResourceClientFactory, error) {
 
-	// Support deprecated API which specifies single secret source
+	// Support deprecated API which specifies single secret source at root level of Settings
 	if settings.GetSecretOptions() == nil {
 		return singleSecretFactoryForSettings(ctx, settings, sharedCache, cfg, clientset, kubeCoreCache, vaultClient, pluralName)
 	}

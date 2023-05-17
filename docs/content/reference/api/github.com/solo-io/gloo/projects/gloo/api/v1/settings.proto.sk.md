@@ -190,9 +190,9 @@ Represents global settings for all the Gloo components.
 
 | Name | Description |
 | ----- | ----------- | 
-| `Kubernetes` |  |
-| `Vault` |  |
-| `Directory` |  |
+| `KUBERNETES` |  |
+| `VAULT` |  |
+| `DIRECTORY` |  |
 
 
 
