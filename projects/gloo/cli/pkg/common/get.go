@@ -136,6 +136,8 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	return getProxiesFromK8s(name, opts)
 }
 
+// Retrieve proxies from the proxy debug endpoint, or from kubernetes if the proxy debug endpoint is not available
+// Takes in a settings object to determine whether the proxy debug endpoint is available
 func GetProxiesFromSettings(name string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
 	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
 	if proxyEndpointPort != "" {
