@@ -171,6 +171,13 @@ message Upstream {
     // Minimum value is 1 ms. Values below the minimum are considered invalid.
     // Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid.
     google.protobuf.Duration dns_refresh_rate = 30;
+
+
+    // Proxy Protocol Version to add when communicating with the upstream.
+    // If unset will not wrap the transport socket. 
+    // These are of the format "V1" or "V2"
+    google.protobuf.StringValue proxy_protocol_version= 31;
+
 }
 
 // created by discovery services

@@ -618,6 +618,17 @@ func (m *Matcher) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetPassthroughCipherSuites()) != len(target.GetPassthroughCipherSuites()) {
+		return false
+	}
+	for idx, v := range m.GetPassthroughCipherSuites() {
+
+		if strings.Compare(v, target.GetPassthroughCipherSuites()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 

@@ -22,6 +22,8 @@ type GatewayExpansion interface{}
 
 type MatchableHttpGatewayExpansion interface{}
 
+type MatchableTcpGatewayExpansion interface{}
+
 type RouteOptionExpansion interface{}
 
 type RouteTableExpansion interface{}

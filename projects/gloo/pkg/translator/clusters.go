@@ -17,6 +17,7 @@ import (
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	upstream_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upstreamproxyprotocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
@@ -125,6 +126,17 @@ func (t *translatorInstance) initializeCluster(
 					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 				}
 			}
+		}
+	}
+	// proxyprotocol may be wiped by some plugins that transform transport sockets
+	// see static and failover at time of writing.
+	if upstreamProxyProtocol := upstream.GetProxyProtocolVersion(); upstreamProxyProtocol != nil {
+
+		tp, err := upstream_proxy_protocol.WrapWithPProtocol(out.GetTransportSocket(), upstreamProxyProtocol.String())
+		if err != nil {
+			reports.AddError(upstream, err)
+		} else {
+			out.TransportSocket = tp
 		}
 	}
 
@@ -418,3 +430,8 @@ func applyDefaultsToUpstreamSslConfig(sslConfig *ssl.UpstreamSslConfig, options 
 		sslConfig.Parameters = options.GetSslParameters()
 	}
 }
+
+const (
+	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
+	upstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
+)
