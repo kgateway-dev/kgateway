@@ -101,7 +101,7 @@ It takes 2 values:
   In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
 Because of this, if a value is "true" in defaults it can not be modified with this method.
 */ -}}
-{{- define "gloofed.securityContext" }}
+{{- define "gloo.securityContext" }}
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
