@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Move k8s tests which had relied on long-lived clusters in CI to the kube2e package which uses KinD
+    issueLink: https://github.com/solo-io/solo-projects/issues/4907
