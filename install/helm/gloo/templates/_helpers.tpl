@@ -101,16 +101,19 @@ It takes 2 values:
   In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
 Because of this, if a value is "true" in defaults it can not be modified with this method.
 */ -}}
-{{- define "gloo.securityContext" }}
+{{- define "gloofed.securityContext" }}
 {{- $securityContext := dict -}}
 {{- $overwrite := true -}}
 {{- if .values -}}
-  {{- if eq .values.mergePolicy "helm-merge" -}}
-    {{- $overwrite = false -}}
-  {{- else if and .values.mergePolicy (ne .values.mergePolicy "no-merge") -}}
-  {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" .values.mergePolicy }}
-  {{- end -}}
+  {{- if .values.mergePolicy }}
+    {{- if eq .values.mergePolicy "helm-merge" -}}
+      {{- $overwrite = false -}}
+    {{- else if ne .values.mergePolicy "no-merge" -}}
+      {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" .values.mergePolicy }}
+    {{- end -}}
+  {{- end }}
 {{- end -}}
+
 {{- if $overwrite -}}
   {{- $securityContext = or .values .defaults (dict) -}}
 {{- else -}}
