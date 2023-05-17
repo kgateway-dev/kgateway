@@ -123,7 +123,7 @@ func CheckResources(opts *options.Options) error {
 		}
 	}
 
-	settings, err := common.GetSettings(ctx, opts)
+	settings, err := common.GetSettings(opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}

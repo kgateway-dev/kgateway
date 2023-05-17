@@ -116,16 +116,16 @@ func GetUpstreamGroups(name string, opts *options.Options) (gloov1.UpstreamGroup
 	return list, nil
 }
 
-func GetSettings(ctx context.Context, opts *options.Options) (*gloov1.Settings, error) {
-	client, err := helpers.SettingsClient(ctx, []string{opts.Metadata.GetNamespace()})
+func GetSettings(opts *options.Options) (*gloov1.Settings, error) {
+	client, err := helpers.SettingsClient(opts.Top.Ctx, []string{opts.Metadata.GetNamespace()})
 	if err != nil {
 		return nil, err
 	}
-	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{})
+	return client.Read(opts.Metadata.GetNamespace(), defaults.SettingsName, clients.ReadOpts{Ctx: opts.Top.Ctx})
 }
 
 func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
-	settings, err := GetSettings(opts.Top.Ctx, opts)
+	settings, err := GetSettings(opts)
 	if err != nil {
 		return nil, err
 	}
