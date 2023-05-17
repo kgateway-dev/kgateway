@@ -210,26 +210,6 @@ func singleSecretFactoryForSettings(ctx context.Context,
 	}
 	return nil, errors.Errorf("invalid config source type")
 }
-func getSecretFactoryForMap(ctx context.Context,
-	settings *v1.Settings,
-	sharedCache memory.InMemoryResourceCache,
-	cfg **rest.Config,
-	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache,
-	vaultClient *vaultapi.Client,
-	pluralName string) (factory.ResourceClientFactory, error) {
-	panic("not implemented")
-}
-func getSecretFactoryForList(ctx context.Context,
-	settings *v1.Settings,
-	sharedCache memory.InMemoryResourceCache,
-	cfg **rest.Config,
-	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache,
-	vaultClient *vaultapi.Client,
-	pluralName string) (factory.ResourceClientFactory, error) {
-	panic("not implemented")
-}
 
 // sharedCache OR resourceCrd+cfg must be non-nil
 func SecretFactoryForSettings(ctx context.Context,
@@ -249,7 +229,8 @@ func SecretFactoryForSettings(ctx context.Context,
 	// this should not have been repeated
 	secretOpts := settings.GetSecretOptions()
 	if secretOpts.GetSecretSourceMap() != nil {
-		return getSecretFactoryForMap(ctx, settings, sharedCache, cfg, clientset, kubeCoreCache, vaultClient, pluralName)
+		return newMultiSecretSourceResourceClientFactory(secretOpts.GetDefaultSource().Enum(),
+			secretOpts.SecretSourceMap, sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
 	}
 	return nil, errors.Errorf("invalid config source type")
 }
