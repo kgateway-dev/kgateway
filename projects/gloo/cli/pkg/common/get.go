@@ -136,14 +136,14 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	return getProxiesFromK8s(name, opts)
 }
 
-// GetProxiesFromSettings retrieves proxies from the proxy debug endpoint, or from kubernetes if the proxy debug endpoint is not available
+// ListProxiesFromSettings retrieves proxies from the proxy debug endpoint, or from kubernetes if the proxy debug endpoint is not available
 // Takes in a settings object to determine whether the proxy debug endpoint is available
-func GetProxiesFromSettings(name string, namespace string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
+func ListProxiesFromSettings(namespace string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
 	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
 	if proxyEndpointPort != "" {
-		return getProxiesFromGrpc(name, namespace, opts, proxyEndpointPort)
+		return getProxiesFromGrpc("", namespace, opts, proxyEndpointPort)
 	}
-	return getProxiesFromK8s(name, opts)
+	return getProxiesFromK8s("", opts)
 }
 
 func computeProxyEndpointPort(ctx context.Context, settings *gloov1.Settings) string {
@@ -159,6 +159,7 @@ func computeProxyEndpointPort(ctx context.Context, settings *gloov1.Settings) st
 }
 
 // This is necessary for older versions of gloo
+// if name is empty, return all proxies
 func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	var list gloov1.ProxyList
 	pxClient := helpers.MustNamespacedProxyClient(opts.Top.Ctx, opts.Metadata.GetNamespace())
@@ -180,6 +181,9 @@ func getProxiesFromK8s(name string, opts *options.Options) (gloov1.ProxyList, er
 
 	return list, nil
 }
+
+// Used to retrieve proxies from the proxy debug endpoint in newer versions of gloo
+// if name is empty, return all proxies
 func getProxiesFromGrpc(name string, namespace string, opts *options.Options, proxyEndpointPort string) (gloov1.ProxyList, error) {
 
 	options := []grpc.CallOption{

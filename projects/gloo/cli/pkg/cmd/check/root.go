@@ -857,7 +857,7 @@ func checkProxies(ctx context.Context, opts *options.Options, namespaces []strin
 	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
-		proxies, err := common.GetProxiesFromSettings("", ns, opts, settings)
+		proxies, err := common.ListProxiesFromSettings(ns, opts, settings)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 			continue
