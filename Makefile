@@ -224,7 +224,7 @@ check-spelling:
 
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race --fail-fast -fail-on-pending --randomize-all
+GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=4
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
@@ -238,7 +238,7 @@ install-test-tools: check-go-version
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
-test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
@@ -250,16 +250,22 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
 run-tests: test
 
 .PHONY: run-e2e-tests
-run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
+run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
+run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
 run-e2e-tests: test
 
-.PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-test-tools ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
-run-ci-regression-tests: test
+.PHONY: run-hashicorp-e2e-tests
+run-hashicorp-e2e-tests: TEST_PKG = ./test/consulvaulte2e/
+run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
+run-hashicorp-e2e-tests: test
+
+.PHONY: run-kube-e2e-tests
+run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
+run-kube-e2e-tests: test
 
 #----------------------------------------------------------------------------------
 # Clean
