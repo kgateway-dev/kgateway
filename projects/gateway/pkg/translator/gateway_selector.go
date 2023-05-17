@@ -4,12 +4,17 @@ import (
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 )
 
 type HttpGatewaySelector interface {
 	SelectMatchableHttpGateways(selector *v1.DelegatedHttpGateway, onError func(err error)) v1.MatchableHttpGatewayList
+}
+
+type TcpGatewaySelector interface {
+	SelectMatchableTcpGateways(selector *v1.DelegatedTcpGateway, onError func(err error)) v1.MatchableTcpGatewayList
 }
 
 var (
@@ -27,21 +32,25 @@ var (
 	}
 )
 
-type gatewaySelector struct {
+type httpGatewaySelector struct {
 	availableGateways v1.MatchableHttpGatewayList
 }
 
-func NewHttpGatewaySelector(gwList v1.MatchableHttpGatewayList) *gatewaySelector {
-	return &gatewaySelector{
+type tcpGatewaySelector struct {
+	availableGateways v1.MatchableTcpGatewayList
+}
+
+func NewHttpGatewaySelector(gwList v1.MatchableHttpGatewayList) *httpGatewaySelector {
+	return &httpGatewaySelector{
 		availableGateways: gwList,
 	}
 }
 
-func (s *gatewaySelector) SelectMatchableHttpGateways(selector *v1.DelegatedHttpGateway, onError func(err error)) v1.MatchableHttpGatewayList {
+func (s *httpGatewaySelector) SelectMatchableHttpGateways(selector *v1.DelegatedHttpGateway, onError func(err error)) v1.MatchableHttpGatewayList {
 	var selectedGateways v1.MatchableHttpGatewayList
 
 	s.availableGateways.Each(func(element *v1.MatchableHttpGateway) {
-		selected, err := s.isSelected(element, selector)
+		selected, err := isHttpGatewaySelected(element, selector)
 		if err != nil {
 			onError(err)
 			return
@@ -55,7 +64,7 @@ func (s *gatewaySelector) SelectMatchableHttpGateways(selector *v1.DelegatedHttp
 	return selectedGateways
 }
 
-func (s *gatewaySelector) isSelected(matchableHttpGateway *v1.MatchableHttpGateway, selector *v1.DelegatedHttpGateway) (bool, error) {
+func isHttpGatewaySelected(matchableHttpGateway *v1.MatchableHttpGateway, selector *v1.DelegatedHttpGateway) (bool, error) {
 	if selector == nil {
 		return false, nil
 	}
@@ -66,17 +75,52 @@ func (s *gatewaySelector) isSelected(matchableHttpGateway *v1.MatchableHttpGatew
 		return false, nil
 	}
 
-	refSelector := selector.GetRef()
-	if refSelector != nil {
-		return refSelector.Equal(matchableHttpGateway.GetMetadata().Ref()), nil
+	return matchMetadata(matchableHttpGateway.GetMetadata(), selector.GetRef(), selector.GetSelector())
+}
+
+func NewTcpGatewaySelector(gwList v1.MatchableTcpGatewayList) *tcpGatewaySelector {
+	return &tcpGatewaySelector{
+		availableGateways: gwList,
+	}
+}
+
+func (s *tcpGatewaySelector) SelectMatchableTcpGateways(selector *v1.DelegatedTcpGateway, onError func(err error)) v1.MatchableTcpGatewayList {
+	var selectedGateways v1.MatchableTcpGatewayList
+
+	s.availableGateways.Each(func(element *v1.MatchableTcpGateway) {
+		selected, err := isTcpGatewaySelected(element, selector)
+		if err != nil {
+			onError(err)
+			return
+		}
+
+		if selected {
+			selectedGateways = append(selectedGateways, element)
+		}
+	})
+
+	return selectedGateways
+}
+
+func isTcpGatewaySelected(matchableTcpGateway *v1.MatchableTcpGateway, selector *v1.DelegatedTcpGateway) (bool, error) {
+	if selector == nil {
+		return false, nil
 	}
 
-	gwLabels := labels.Set(matchableHttpGateway.GetMetadata().GetLabels())
-	gwNamespace := matchableHttpGateway.GetMetadata().GetNamespace()
+	return matchMetadata(matchableTcpGateway.GetMetadata(), selector.GetRef(), selector.GetSelector())
+}
 
-	doesMatchNamespaces := matchNamespaces(gwNamespace, selector.GetSelector().GetNamespaces())
-	doesMatchLabels := matchLabels(gwLabels, selector.GetSelector().GetLabels())
-	doesMatchExpressions, err := matchExpressions(gwLabels, selector.GetSelector().GetExpressions())
+func matchMetadata(meta *core.Metadata, refSelector *core.ResourceRef, selector *selectors.Selector) (bool, error) {
+	if refSelector != nil {
+		return refSelector.Equal(meta.Ref()), nil
+	}
+
+	gwLabels := labels.Set(meta.GetLabels())
+	gwNamespace := meta.GetNamespace()
+
+	doesMatchNamespaces := matchNamespaces(gwNamespace, selector.GetNamespaces())
+	doesMatchLabels := matchLabels(gwLabels, selector.GetLabels())
+	doesMatchExpressions, err := matchExpressions(gwLabels, selector.GetExpressions())
 	if err != nil {
 		return false, err
 	}
@@ -99,10 +143,8 @@ func matchNamespaces(gatewayNs string, namespaces []string) bool {
 }
 
 func matchLabels(gatewayLabelSet labels.Set, validLabels map[string]string) bool {
-	var labelSelector labels.Selector
-
 	// Check whether labels match (strict equality)
-	labelSelector = labels.SelectorFromSet(validLabels)
+	labelSelector := labels.SelectorFromSet(validLabels)
 	return labelSelector.Matches(gatewayLabelSet)
 }
 

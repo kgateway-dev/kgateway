@@ -192,6 +192,12 @@ func (m *HybridGateway) Clone() proto.Message {
 		target.DelegatedHttpGateways = proto.Clone(m.GetDelegatedHttpGateways()).(*DelegatedHttpGateway)
 	}
 
+	if h, ok := interface{}(m.GetDelegatedTcpGateways()).(clone.Cloner); ok {
+		target.DelegatedTcpGateways = h.Clone().(*DelegatedTcpGateway)
+	} else {
+		target.DelegatedTcpGateways = proto.Clone(m.GetDelegatedTcpGateways()).(*DelegatedTcpGateway)
+	}
+
 	return target
 }
 
@@ -239,6 +245,45 @@ func (m *DelegatedHttpGateway) Clone() proto.Message {
 			}
 		} else {
 			target.SelectionType = &DelegatedHttpGateway_Selector{
+				Selector: proto.Clone(m.GetSelector()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors.Selector),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *DelegatedTcpGateway) Clone() proto.Message {
+	var target *DelegatedTcpGateway
+	if m == nil {
+		return target
+	}
+	target = &DelegatedTcpGateway{}
+
+	switch m.SelectionType.(type) {
+
+	case *DelegatedTcpGateway_Ref:
+
+		if h, ok := interface{}(m.GetRef()).(clone.Cloner); ok {
+			target.SelectionType = &DelegatedTcpGateway_Ref{
+				Ref: h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
+			}
+		} else {
+			target.SelectionType = &DelegatedTcpGateway_Ref{
+				Ref: proto.Clone(m.GetRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef),
+			}
+		}
+
+	case *DelegatedTcpGateway_Selector:
+
+		if h, ok := interface{}(m.GetSelector()).(clone.Cloner); ok {
+			target.SelectionType = &DelegatedTcpGateway_Selector{
+				Selector: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors.Selector),
+			}
+		} else {
+			target.SelectionType = &DelegatedTcpGateway_Selector{
 				Selector: proto.Clone(m.GetSelector()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_core_selectors.Selector),
 			}
 		}
@@ -316,6 +361,15 @@ func (m *Matcher) Clone() proto.Message {
 			} else {
 				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
 			}
+
+		}
+	}
+
+	if m.GetPassthroughCipherSuites() != nil {
+		target.PassthroughCipherSuites = make([]string, len(m.GetPassthroughCipherSuites()))
+		for idx, v := range m.GetPassthroughCipherSuites() {
+
+			target.PassthroughCipherSuites[idx] = v
 
 		}
 	}

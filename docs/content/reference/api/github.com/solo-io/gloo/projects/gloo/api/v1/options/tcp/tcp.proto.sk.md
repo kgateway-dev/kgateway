@@ -36,6 +36,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-
 "maxConnectAttempts": .google.protobuf.UInt32Value
 "idleTimeout": .google.protobuf.Duration
 "tunnelingConfig": .tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig
+"accessLogFlushInterval": .google.protobuf.Duration
 
 ```
 
@@ -44,6 +45,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-
 | `maxConnectAttempts` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) |  |
 | `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |
 | `tunnelingConfig` | [.tcp.options.gloo.solo.io.TcpProxySettings.TunnelingConfig](../tcp.proto.sk/#tunnelingconfig) | If set, this configures tunneling, e.g. configuration options to tunnel multiple TCP payloads over a shared HTTP tunnel. If this message is absent, the payload will be proxied upstream as per usual. |
+| `accessLogFlushInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | If set, Envoy will flush the access log on this time interval. Must be a minimum of 1 ms. By default, will only write to the access log when a connection is closed. |
 
 
 

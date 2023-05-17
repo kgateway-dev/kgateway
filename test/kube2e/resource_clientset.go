@@ -26,6 +26,7 @@ var _ helpers.ResourceClientSet = new(KubeResourceClientSet)
 type KubeResourceClientSet struct {
 	gatewayClient           gatewayv1.GatewayClient
 	httpGatewayClient       gatewayv1.MatchableHttpGatewayClient
+	tcpGatewayClient        gatewayv1.MatchableTcpGatewayClient
 	virtualServiceClient    gatewayv1.VirtualServiceClient
 	routeTableClient        gatewayv1.RouteTableClient
 	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
@@ -87,6 +88,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 		return nil, err
 	}
 	resourceClientSet.httpGatewayClient = httpGatewayClient
+
+	// TcpGateway
+	tcpGatewayClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.MatchableTcpGatewayCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	}
+	tcpGatewayClient, err := gatewayv1.NewMatchableTcpGatewayClient(ctx, tcpGatewayClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = tcpGatewayClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.tcpGatewayClient = tcpGatewayClient
 
 	// VirtualService
 	virtualServiceClientFactory := &factory.KubeResourceClientFactory{
@@ -282,6 +298,10 @@ func (k KubeResourceClientSet) GatewayClient() gatewayv1.GatewayClient {
 
 func (k KubeResourceClientSet) HttpGatewayClient() gatewayv1.MatchableHttpGatewayClient {
 	return k.httpGatewayClient
+}
+
+func (k KubeResourceClientSet) TcpGatewayClient() gatewayv1.MatchableTcpGatewayClient {
+	return k.tcpGatewayClient
 }
 
 func (k KubeResourceClientSet) VirtualServiceClient() gatewayv1.VirtualServiceClient {

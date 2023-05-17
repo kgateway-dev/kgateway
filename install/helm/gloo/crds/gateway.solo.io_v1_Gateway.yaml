@@ -1572,6 +1572,41 @@ spec:
                             type: array
                         type: object
                     type: object
+                  delegatedTcpGateways:
+                    properties:
+                      ref:
+                        properties:
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                        type: object
+                      selector:
+                        properties:
+                          expressions:
+                            items:
+                              properties:
+                                key:
+                                  type: string
+                                operator:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
+                                values:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: array
+                          labels:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          namespaces:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: object
                   matchedGateways:
                     items:
                       properties:
@@ -2656,6 +2691,10 @@ spec:
                           type: object
                         matcher:
                           properties:
+                            passthroughCipherSuites:
+                              items:
+                                type: string
+                              type: array
                             sourcePrefixRanges:
                               items:
                                 properties:
@@ -2757,6 +2796,8 @@ spec:
                               properties:
                                 tcpProxySettings:
                                   properties:
+                                    accessLogFlushInterval:
+                                      type: string
                                     idleTimeout:
                                       type: string
                                     maxConnectAttempts:
@@ -4514,6 +4555,8 @@ spec:
                     properties:
                       tcpProxySettings:
                         properties:
+                          accessLogFlushInterval:
+                            type: string
                           idleTimeout:
                             type: string
                           maxConnectAttempts:

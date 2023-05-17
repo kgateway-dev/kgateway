@@ -117,7 +117,7 @@ func (c *FakeVirtualHostOptions) UpdateStatus(ctx context.Context, virtualHostOp
 // Delete takes name of the virtualHostOption and deletes it. Returns an error if one occurs.
 func (c *FakeVirtualHostOptions) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(virtualhostoptionsResource, c.ns, name), &gatewaysoloiov1.VirtualHostOption{})
+		Invokes(testing.NewDeleteActionWithOptions(virtualhostoptionsResource, c.ns, name, opts), &gatewaysoloiov1.VirtualHostOption{})
 
 	return err
 }
