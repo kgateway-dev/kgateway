@@ -138,10 +138,10 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 
 // Retrieve proxies from the proxy debug endpoint, or from kubernetes if the proxy debug endpoint is not available
 // Takes in a settings object to determine whether the proxy debug endpoint is available
-func GetProxiesFromSettings(name string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
+func GetProxiesFromSettings(name string, namespace string, opts *options.Options, settings *gloov1.Settings) (gloov1.ProxyList, error) {
 	proxyEndpointPort := computeProxyEndpointPort(opts.Top.Ctx, settings)
 	if proxyEndpointPort != "" {
-		return getProxiesFromGrpc(name, opts.Metadata.GetNamespace(), opts, proxyEndpointPort)
+		return getProxiesFromGrpc(name, namespace, opts, proxyEndpointPort)
 	}
 	return getProxiesFromK8s(name, opts)
 }
@@ -194,7 +194,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 		return nil, err
 	}
 	localPort := strconv.Itoa(freePort)
-	portFwdCmd, err := cliutil.PortForward(namespace, "deployment/gloo",
+	portFwdCmd, err := cliutil.PortForward(opts.Metadata.GetNamespace(), "deployment/gloo",
 		localPort, proxyEndpointPort, opts.Top.Verbose)
 	if portFwdCmd.Process != nil {
 		defer portFwdCmd.Process.Release()
@@ -228,7 +228,7 @@ func getProxiesFromGrpc(name string, namespace string, opts *options.Options, pr
 			pxClient := debug.NewProxyEndpointServiceClient(cc)
 			r, err := pxClient.GetProxies(opts.Top.Ctx, &debug.ProxyEndpointRequest{
 				Name:      name,
-				Namespace: opts.Metadata.GetNamespace(),
+				Namespace: namespace,
 			}, options...)
 			if err != nil {
 				errs <- err
