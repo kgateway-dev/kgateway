@@ -3,10 +3,10 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
-	"golang.org/x/exp/maps"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/golang/protobuf/ptypes/any"
 	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -24,6 +24,7 @@ var (
 	_ plugins.Plugin           = new(plugin)
 	_ plugins.UpstreamPlugin   = new(plugin)
 	_ plugins.HttpFilterPlugin = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
 
 	NoConfigMapRefError = func() error {
 		return eris.Errorf("a configmap ref must be provided")
@@ -57,6 +58,7 @@ var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
 	upstreamFilters map[string]plugins.StagedHttpFilter
+	ctx             context.Context
 }
 
 func NewPlugin() *plugin {
@@ -67,9 +69,12 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) {
+func (p *plugin) Init(params plugins.InitParams) {
 	//Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> filters to add to the listener
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
+	//TODO remove all logging
+	p.ctx = params.Ctx
+
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
@@ -108,47 +113,52 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	grpcJsonConf := listener.GetOptions().GetGrpcJsonTranscoder()
-	usFilters := make(map[plugins.StagedHttpFilter]int)
-	// Skip looking at all the routes on the listener if we know no upstreams have a grpcJsonTranscoderSpec
-	if len(p.upstreamFilters) > 0 {
-		//this loops over each upstream on the listener and does a fixed time check to see if it's the map of gRPC upstreams.
-		for _, listenerUs := range upstreamsFromListener(params, listener) {
-			if filter, ok := p.upstreamFilters[listenerUs.Key()]; ok {
-				usFilters[filter] = 1
-			}
-		}
-	}
-	if grpcJsonConf == nil {
-		return maps.Keys(usFilters), nil
-	}
 	if grpcJsonConf != nil {
+		// put the config from the gateway resource on the listener
 		envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, grpcJsonConf)
 		if err != nil {
 			return nil, err
 		}
-
 		grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
 		if err != nil {
 			return nil, eris.Wrapf(err, "generating filter config")
 		}
-		usFilters[grpcJsonFilter] = 1
+		return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
+	} else if len(p.upstreamFilters) > 0 {
+		// There needs to be a filter on the listener to be able to set filters on routes
+		// Envoy errors if this config is empty
+		emptyGlooConfig := &grpc_json.GrpcJsonTranscoder{
+			DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptor{ProtoDescriptor: "/to/override"},
+		}
+		envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, emptyGlooConfig)
+		if err != nil {
+			return nil, err
+		}
+		grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
+		if err != nil {
+			return nil, eris.Wrapf(err, "generating filter config")
+		}
+		return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
 	}
-	return maps.Keys(usFilters), nil
+	return nil, nil
 }
-func upstreamsFromListener(params plugins.Params, listener *v1.HttpListener) []core.ResourceRef {
-	var allUpstreams []core.ResourceRef
-	// For single-destination and multi-destination routes, the destination lookup is 0(1) so this has complexity O(routes)
-	// For routes to UpstreamGroups, we search all the UpstreamGroups in the snapshot for a match so it has complexity O(routes*UsGroups)
-	for _, vhost := range listener.GetVirtualHosts() {
-		for _, route := range vhost.GetRoutes() {
-			routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, route.GetRouteAction())
-			// DestinationUpstreams returns an error on an invalid route but the other routes on this listener can be fine
-			if err == nil {
-				allUpstreams = append(allUpstreams, routeUpstreams...)
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+
+	routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in.GetRouteAction())
+	if err != nil {
+		return err
+	}
+	for _, us := range routeUpstreams {
+		if filter, ok := p.upstreamFilters[us.Key()]; ok {
+			if out.GetTypedPerFilterConfig() == nil {
+				out.TypedPerFilterConfig = make(map[string]*any.Any)
 			}
+			// Assume that a single route won't have upstreams with multiple different grpc configurations
+			out.TypedPerFilterConfig[wellknown.GRPCJSONTranscoder] = filter.HttpFilter.GetTypedConfig()
+			return nil
 		}
 	}
-	return allUpstreams
+	return nil
 }
 func translateGlooToEnvoyGrpcJson(params plugins.Params, grpcJsonConf *grpc_json.GrpcJsonTranscoder) (*envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder, error) {
 
