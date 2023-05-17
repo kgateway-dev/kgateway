@@ -36,6 +36,10 @@ func (c *FakeGatewayV1) MatchableHttpGateways(namespace string) v1.MatchableHttp
 	return &FakeMatchableHttpGateways{c, namespace}
 }
 
+func (c *FakeGatewayV1) MatchableTcpGateways(namespace string) v1.MatchableTcpGatewayInterface {
+	return &FakeMatchableTcpGateways{c, namespace}
+}
+
 func (c *FakeGatewayV1) RouteOptions(namespace string) v1.RouteOptionInterface {
 	return &FakeRouteOptions{c, namespace}
 }

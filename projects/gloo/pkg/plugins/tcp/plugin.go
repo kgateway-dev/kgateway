@@ -1,6 +1,9 @@
 package tcp
 
 import (
+	"errors"
+	"time"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_extensions_filters_network_sni_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
@@ -12,6 +15,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	als2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
@@ -110,6 +114,12 @@ func (p *plugin) tcpProxyFilters(
 			cfg.MaxConnectAttempts = tcpSettings.GetMaxConnectAttempts()
 			cfg.IdleTimeout = tcpSettings.GetIdleTimeout()
 			cfg.TunnelingConfig = convertToEnvoyTunnelingConfig(tcpSettings.GetTunnelingConfig())
+			flush := tcpSettings.GetAccessLogFlushInterval()
+			if flush != nil && prototime.DurationFromProto(flush) < 1*time.Millisecond {
+				return nil, errors.New("access log flush interval must have minimum of 1ms")
+			}
+			cfg.AccessLogFlushInterval = flush
+
 		}
 	}
 

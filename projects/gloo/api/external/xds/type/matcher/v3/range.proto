@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package xds.type.matcher.v3;
+
+import "xds/type/v3/range.proto";
+import "xds/type/matcher/v3/matcher.proto";
+
+import "validate/validate.proto";
+
+option java_package = "com.github.xds.type.matcher.v3";
+option java_outer_classname = "RangeProto";
+option java_multiple_files = true;
+option go_package = "github.com/cncf/xds/go/xds/type/matcher/v3";
+
+// [#protodoc-title: Range matcher]
+
+// Specifies a set of ranges for matching an int64 number and the associated
+// match actions.
+message Int64RangeMatcher {
+  // Specifies a list of number ranges and a match action.
+  message RangeMatcher {
+    // A non-empty set of int64 ranges.
+    repeated xds.type.v3.Int64Range ranges = 1
+        [(validate.rules).repeated = { min_items: 1 }];
+
+    // Match action to apply when the input number is within one of the ranges.
+    Matcher.OnMatch on_match = 2;
+  }
+
+  // Match a number by a list of number ranges. If multiple ranges contain the
+  // input number, then the first action in this list is taken.
+  repeated RangeMatcher range_matchers = 1;
+}
+
+// Specifies a set of ranges for matching an int32 number and the associated
+// match actions.
+message Int32RangeMatcher {
+  // Specifies a list of number ranges and a match action.
+  message RangeMatcher {
+    // A non-empty set of int32 ranges.
+    repeated xds.type.v3.Int32Range ranges = 1
+        [(validate.rules).repeated = { min_items: 1 }];
+
+    // Match action to apply when the input number is within one of the ranges.
+    Matcher.OnMatch on_match = 2;
+  }
+
+  // Match a number by a list of number ranges. If multiple ranges contain the
+  // input number, then the first action in this list is taken.
+  repeated RangeMatcher range_matchers = 1;
+}
+
+// Specifies a set of ranges for matching a double number and the associated
+// match actions.
+message DoubleRangeMatcher {
+  // Specifies a list of number ranges and a match action.
+  message RangeMatcher {
+    // A non-empty set of double ranges.
+    repeated xds.type.v3.DoubleRange ranges = 1
+        [(validate.rules).repeated = { min_items: 1 }];
+
+    // Match action to apply when the input number is within one of the ranges.
+    Matcher.OnMatch on_match = 2;
+  }
+
+  // Match a number by a list of number ranges. If multiple ranges contain the
+  // input number, then the first action in this list is taken.
+  repeated RangeMatcher range_matchers = 1;
+}

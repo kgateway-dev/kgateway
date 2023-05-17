@@ -19,7 +19,7 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "create"]
 - apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io", "gateway.solo.io"]
-  resources: ["settings", "upstreams", "upstreamgroups", "proxies", "authconfigs", "virtualservices", "routetables", "virtualhostoptions", "routeoptions", "gateways", "httpgateways"]
+  resources: ["settings", "upstreams", "upstreamgroups", "proxies", "authconfigs", "virtualservices", "routetables", "virtualhostoptions", "routeoptions", "gateways", "httpgateways", "tcpgateways"]
   verbs: ["*"]
 - apiGroups: ["ratelimit.solo.io"]
   resources: ["ratelimitconfigs", "ratelimitconfigs/status"]

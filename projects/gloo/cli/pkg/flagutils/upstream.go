@@ -74,9 +74,9 @@ func AddCreateUpstreamFlags(set *pflag.FlagSet, upstreamType string, upstream *o
 		set.StringSliceVar(&upstream.Static.Hosts, "static-hosts", []string{},
 			"comma-separated list of hosts for the static upstream. these are hostnames or ips provided in the format "+
 				"IP:PORT or HOSTNAME:PORT. if :PORT is missing, it will default to :80")
-		set.BoolVar(&upstream.Static.UseTls, "static-outbound-tls", false,
+		set.Var(&upstream.Static.UseTls, "static-outbound-tls",
 			"connections Gloo manages to this cluster will attempt to use TLS for outbound connections. "+
-				"Gloo will automatically set this to true for port 443")
+				"If not specified, Gloo will automatically set this to true for port 443")
 	}
 
 	if addServiceSpecFlags {

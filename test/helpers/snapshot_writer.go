@@ -110,6 +110,11 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 			return writeErr
 		}
 	}
+	for _, tgw := range snapshot.TcpGateways {
+		if _, writeErr := s.TcpGatewayClient().Write(tgw, writeOptions); !s.isContinuableWriteError(writeErr) {
+			return writeErr
+		}
+	}
 	for _, gw := range snapshot.Gateways {
 		if _, writeErr := s.GatewayClient().Write(gw, writeOptions); !s.isContinuableWriteError(writeErr) {
 			return writeErr
@@ -148,6 +153,12 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	for _, hgw := range snapshot.HttpGateways {
 		hgwNamespace, hgwName := hgw.GetMetadata().Ref().Strings()
 		if deleteErr := s.HttpGatewayClient().Delete(hgwNamespace, hgwName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, tgw := range snapshot.TcpGateways {
+		tgwNamespace, tgwName := tgw.GetMetadata().Ref().Strings()
+		if deleteErr := s.TcpGatewayClient().Delete(tgwNamespace, tgwName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
