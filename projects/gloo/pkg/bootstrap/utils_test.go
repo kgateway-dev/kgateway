@@ -2,6 +2,7 @@ package bootstrap_test
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/hashicorp/consul/api"

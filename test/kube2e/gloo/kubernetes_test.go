@@ -2,9 +2,10 @@ package gloo_test
 
 import (
 	"context"
+	"time"
+
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
