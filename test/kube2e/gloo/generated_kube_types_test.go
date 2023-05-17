@@ -1,4 +1,4 @@
-package kube_test
+package gloo_test
 
 import (
 	"context"
