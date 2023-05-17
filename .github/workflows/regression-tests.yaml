@@ -71,7 +71,7 @@ jobs:
             kube-e2e-test-type: upgrade
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/regression-tests
+    - uses: ./.github/workflows/composite-actions/regression-tests
 
   notify_slack:
     name: Notify slack
