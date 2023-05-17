@@ -58,7 +58,6 @@ var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
 	upstreamFilters map[string]plugins.StagedHttpFilter
-	ctx             context.Context
 }
 
 func NewPlugin() *plugin {
@@ -70,11 +69,8 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) {
-	//Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> filters to add to the listener
+	// Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> filters to add to the listener
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
-	//TODO remove all logging
-	p.ctx = params.Ctx
-
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
