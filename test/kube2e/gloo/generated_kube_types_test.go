@@ -28,6 +28,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// Tests generated code in projects/gateway/pkg/api/v1/kube
 var _ = Describe("Generated Kube Code", func() {
 	var (
 		apiExts         apiext.Interface
