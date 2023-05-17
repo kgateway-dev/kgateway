@@ -230,7 +230,7 @@ func SecretFactoryForSettings(ctx context.Context,
 	secretOpts := settings.GetSecretOptions()
 	if secretOpts.GetSecretSourceMap() != nil {
 		return newMultiSecretSourceResourceClientFactory(secretOpts.GetDefaultSource().Enum(),
-			secretOpts.SecretSourceMap, sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
+			secretOpts.GetSecretSourceMap(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
 	}
 	return nil, errors.Errorf("invalid config source type")
 }

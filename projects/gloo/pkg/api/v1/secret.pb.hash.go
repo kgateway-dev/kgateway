@@ -58,6 +58,10 @@ func (m *Secret) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetSource())); err != nil {
+		return 0, err
+	}
+
 	switch m.Kind.(type) {
 
 	case *Secret_Aws:

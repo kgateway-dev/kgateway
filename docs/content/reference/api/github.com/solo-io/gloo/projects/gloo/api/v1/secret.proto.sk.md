@@ -54,6 +54,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 "encryption": .gloo.solo.io.EncryptionKeySecret
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
+"source": string
 
 ```
 
@@ -69,6 +70,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 | `encryption` | [.gloo.solo.io.EncryptionKeySecret](../secret.proto.sk/#encryptionkeysecret) | Enterprise-only: Secrets used to encrypt messages and data. Used to encrypt and decrypt session values in Ext-Auth. Only one of `encryption`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, `credentials`, or `extensions` can be set. |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. Only one of `extensions`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, `credentials`, or `encryption` can be set. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
+| `source` | `string` | Optional: secret store to use in associaiton with this secret The store name will be prepended to the secret name e.g. "Kubernetes_mysecret" DO_NOT_SUBMIT: this may be an inappropriate leak of implementation; will get feedback. |
 
 
 
