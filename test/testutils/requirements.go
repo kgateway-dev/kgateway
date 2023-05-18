@@ -168,7 +168,7 @@ func TruthyEnv(env string) Requirement {
 func Kubernetes(reason string) Requirement {
 	return func(configuration *RequiredConfiguration) {
 		configuration.reasons["kubernetes"] = reason
-		TruthyEnv(RunKubeTests)(configuration)
+		//TruthyEnv(RunKubeTests)(configuration)
 	}
 }
 
