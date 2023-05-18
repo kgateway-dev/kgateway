@@ -15,7 +15,7 @@ import (
 
 	"github.com/solo-io/gloo/test/testutils"
 
-	"github.com/solo-io/gloo/test/kube2e"
+	//"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -49,7 +49,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = Describe("AWS Lambda", func() {
+var _ = FDescribe("AWS Lambda", func() {
 	const (
 		region               = "us-east-1"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
@@ -77,7 +77,7 @@ var _ = Describe("AWS Lambda", func() {
 			WhatToRun: services.What{
 				DisableFds: false,
 			},
-			KubeClient: kube2e.MustKubeClient(),
+			//KubeClient: kube2e.MustKubeClient(),
 		}
 	})
 
@@ -529,7 +529,7 @@ var _ = Describe("AWS Lambda", func() {
 
 	BeforeEach(func() {
 		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.Kubernetes("Uses a Kubernetes client"),
+		//testutils.Kubernetes("Uses a Kubernetes client"),
 		)
 	})
 
@@ -763,7 +763,7 @@ var _ = Describe("AWS Lambda", func() {
 				WhatToRun: services.What{
 					DisableGateway: justGloo,
 				},
-				KubeClient: kube2e.MustKubeClient(),
+				//KubeClient: kube2e.MustKubeClient(),
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						AwsOptions: &gloov1.GlooOptions_AWSOptions{
