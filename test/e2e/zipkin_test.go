@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -502,7 +502,7 @@ func createRequestWithTracingEnabled(address string, port uint32) func() (string
 			return "", err
 		}
 		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		return string(body), err
 	}
 }

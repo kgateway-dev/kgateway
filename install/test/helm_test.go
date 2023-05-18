@@ -3,7 +3,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"reflect"
 	"strconv"
@@ -4992,7 +4992,7 @@ metadata:
 						valuesArgs: []string{"",
 							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30"},
 					})
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/tcp_keepalive.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/tcp_keepalive.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -5035,7 +5035,7 @@ metadata:
 				It("can create a gateway proxy with added static clusters", func() {
 					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/static_clusters.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/static_clusters.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -5060,7 +5060,7 @@ metadata:
 							"gatewayProxies.gatewayProxy.disabled=false"},
 					})
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/overload_manager.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/overload_manager.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -5081,7 +5081,7 @@ metadata:
 
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -5102,7 +5102,7 @@ metadata:
 
 					prepareMakefileFromValuesFile("values/val_custom_static_bootstrap.yaml")
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/custom_static_bootstrap.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/custom_static_bootstrap.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 

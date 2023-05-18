@@ -9,8 +9,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
-	"io/ioutil"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -279,7 +277,7 @@ type: kubernetes.io/tls
 })
 
 func mustWriteTestFile(contents string) string {
-	tmpFile, err := ioutil.TempFile("", "test-")
+	tmpFile, err := os.CreateTemp("", "test-")
 
 	if err != nil {
 		log.Fatalf("Failed to create test file: %v", err)

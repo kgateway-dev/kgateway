@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -126,7 +126,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		It("with protodescriptor from configmap", func() {
 			// create an artifact containing the proto descriptor data
 			pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-			bytes, err := ioutil.ReadFile(pathToDescriptors)
+			bytes, err := os.ReadFile(pathToDescriptors)
 			Expect(err).ToNot(HaveOccurred())
 			encoded := base64.StdEncoding.EncodeToString(bytes)
 			artifact := &gloov1.Artifact{
@@ -224,7 +224,7 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	bytes, err := os.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 
 	return &gatewayv1.Gateway{
@@ -253,7 +253,7 @@ func addGrpcJsonToUpstream(res resources.Resource) resources.Resource {
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
 	tu := res.(*gloov1.Upstream)
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	bytes, err := os.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
 	t.SetServiceSpec(&options.ServiceSpec{

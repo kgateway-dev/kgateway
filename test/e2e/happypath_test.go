@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -181,7 +181,7 @@ var _ = Describe("Happy path", func() {
 					//goland:noinspection GoUnhandledErrorResult
 					defer response.Body.Close()
 
-					body, err := ioutil.ReadAll(response.Body)
+					body, err := io.ReadAll(response.Body)
 					Expect(err).NotTo(HaveOccurred())
 					statsString := string(body)
 

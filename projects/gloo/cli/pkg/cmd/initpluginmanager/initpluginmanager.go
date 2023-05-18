@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -110,7 +109,7 @@ func checkExisting(home string, force bool) error {
 		return err
 	}
 
-	binFiles, err := ioutil.ReadDir(filepath.Join(home, "bin"))
+	binFiles, err := os.ReadDir(filepath.Join(home, "bin"))
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ type pluginBinary struct {
 }
 
 func downloadTempBinary(ctx context.Context, home string) (*pluginBinary, error) {
-	tempDir, err := ioutil.TempDir("", "")
+	tempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +190,7 @@ func getBinaryURL(ctx context.Context) (string, error) {
 		return "", err
 	}
 	defer mfstBody.Close()
-	mfstData, err := ioutil.ReadAll(mfstBody)
+	mfstData, err := io.ReadAll(mfstBody)
 	if err != nil {
 		return "", err
 	}
@@ -233,7 +232,7 @@ func get(ctx context.Context, url string) (io.ReadCloser, error) {
 		return nil, err
 	} else if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
-		if b, err := ioutil.ReadAll(res.Body); err == nil {
+		if b, err := io.ReadAll(res.Body); err == nil {
 			fmt.Println(string(b))
 		} else {
 			fmt.Printf("unable to read response body: %s\n", err.Error())
