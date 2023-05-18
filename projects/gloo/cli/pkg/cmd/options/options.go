@@ -3,6 +3,7 @@ package options
 import (
 	"context"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
@@ -342,8 +343,36 @@ type Selector struct {
 type InputStaticSpec struct {
 	Hosts []string
 	// Attempt to use outbound TLS
-	// Gloo will automatically set this to true for port 443
-	UseTls bool
+	// If not explicitly set, Gloo will automatically set this to true for port 443
+	UseTls UseTls
+}
+
+type UseTls struct {
+	Value *bool
+}
+
+// methods to implement pflag Value interface https://github.com/spf13/pflag/blob/d5e0c0615acee7028e1e2740a11102313be88de1/flag.go#L187
+func (u *UseTls) String() string {
+	if u == nil || u.Value == nil {
+		return "<nil>"
+	}
+	return strconv.FormatBool(*u.Value)
+}
+
+func (u *UseTls) Set(s string) error {
+	if u == nil {
+		return eris.New("nil pointer")
+	}
+	b, err := strconv.ParseBool(s)
+	if err != nil {
+		return err
+	}
+	u.Value = &b
+	return nil
+}
+
+func (u *UseTls) Type() string {
+	return "bool"
 }
 
 const (

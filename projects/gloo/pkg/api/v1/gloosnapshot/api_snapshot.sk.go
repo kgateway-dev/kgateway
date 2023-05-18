@@ -36,6 +36,7 @@ type ApiSnapshot struct {
 	VirtualHostOptions gateway_solo_io.VirtualHostOptionList
 	RouteOptions       gateway_solo_io.RouteOptionList
 	HttpGateways       gateway_solo_io.MatchableHttpGatewayList
+	TcpGateways        gateway_solo_io.MatchableTcpGatewayList
 	GraphqlApis        graphql_gloo_solo_io.GraphQLApiList
 }
 
@@ -55,6 +56,7 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 		VirtualHostOptions: s.VirtualHostOptions.Clone(),
 		RouteOptions:       s.RouteOptions.Clone(),
 		HttpGateways:       s.HttpGateways.Clone(),
+		TcpGateways:        s.TcpGateways.Clone(),
 		GraphqlApis:        s.GraphqlApis.Clone(),
 	}
 }
@@ -103,6 +105,9 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	if _, err := s.hashHttpGateways(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashTcpGateways(hasher); err != nil {
 		return 0, err
 	}
 	if _, err := s.hashGraphqlApis(hasher); err != nil {
@@ -173,6 +178,10 @@ func (s ApiSnapshot) hashRouteOptions(hasher hash.Hash64) (uint64, error) {
 
 func (s ApiSnapshot) hashHttpGateways(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.HttpGateways.AsInterfaces()...)
+}
+
+func (s ApiSnapshot) hashTcpGateways(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.TcpGateways.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) hashGraphqlApis(hasher hash.Hash64) (uint64, error) {
@@ -252,6 +261,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("httpGateways", HttpGatewaysHash))
+	TcpGatewaysHash, err := s.hashTcpGateways(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("tcpGateways", TcpGatewaysHash))
 	GraphqlApisHash, err := s.hashGraphqlApis(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -294,6 +308,8 @@ func (s *ApiSnapshot) GetResourcesList(resource resources.Resource) (resources.R
 		return s.RouteOptions.AsResources(), nil
 	case *gateway_solo_io.MatchableHttpGateway:
 		return s.HttpGateways.AsResources(), nil
+	case *gateway_solo_io.MatchableTcpGateway:
+		return s.TcpGateways.AsResources(), nil
 	case *graphql_gloo_solo_io.GraphQLApi:
 		return s.GraphqlApis.AsResources(), nil
 	default:
@@ -426,6 +442,15 @@ func (s *ApiSnapshot) RemoveFromResourceList(resource resources.Resource) error 
 		for i, res := range s.HttpGateways {
 			if refKey == res.GetMetadata().Ref().Key() {
 				s.HttpGateways = append(s.HttpGateways[:i], s.HttpGateways[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *gateway_solo_io.MatchableTcpGateway:
+
+		for i, res := range s.TcpGateways {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.TcpGateways = append(s.TcpGateways[:i], s.TcpGateways[i+1:]...)
 				break
 			}
 		}
@@ -629,6 +654,19 @@ func (s *ApiSnapshot) UpsertToResourceList(resource resources.Resource) error {
 		}
 		s.HttpGateways.Sort()
 		return nil
+	case *gateway_solo_io.MatchableTcpGateway:
+		updated := false
+		for i, res := range s.TcpGateways {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.TcpGateways[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.TcpGateways = append(s.TcpGateways, typed)
+		}
+		s.TcpGateways.Sort()
+		return nil
 	case *graphql_gloo_solo_io.GraphQLApi:
 		updated := false
 		for i, res := range s.GraphqlApis {
@@ -663,6 +701,7 @@ type ApiSnapshotStringer struct {
 	VirtualHostOptions []string
 	RouteOptions       []string
 	HttpGateways       []string
+	TcpGateways        []string
 	GraphqlApis        []string
 }
 
@@ -739,6 +778,11 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  TcpGateways %v\n", len(ss.TcpGateways))
+	for _, name := range ss.TcpGateways {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	s += fmt.Sprintf("  GraphqlApis %v\n", len(ss.GraphqlApis))
 	for _, name := range ss.GraphqlApis {
 		s += fmt.Sprintf("    %v\n", name)
@@ -768,6 +812,7 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		VirtualHostOptions: s.VirtualHostOptions.NamespacesDotNames(),
 		RouteOptions:       s.RouteOptions.NamespacesDotNames(),
 		HttpGateways:       s.HttpGateways.NamespacesDotNames(),
+		TcpGateways:        s.TcpGateways.NamespacesDotNames(),
 		GraphqlApis:        s.GraphqlApis.NamespacesDotNames(),
 	}
 }
@@ -787,5 +832,6 @@ var ApiGvkToHashableResource = map[schema.GroupVersionKind]func() resources.Hash
 	gateway_solo_io.VirtualHostOptionGVK:    gateway_solo_io.NewVirtualHostOptionHashableResource,
 	gateway_solo_io.RouteOptionGVK:          gateway_solo_io.NewRouteOptionHashableResource,
 	gateway_solo_io.MatchableHttpGatewayGVK: gateway_solo_io.NewMatchableHttpGatewayHashableResource,
+	gateway_solo_io.MatchableTcpGatewayGVK:  gateway_solo_io.NewMatchableTcpGatewayHashableResource,
 	graphql_gloo_solo_io.GraphQLApiGVK:      graphql_gloo_solo_io.NewGraphQLApiHashableResource,
 }

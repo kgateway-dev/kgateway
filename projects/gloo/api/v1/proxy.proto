@@ -212,6 +212,8 @@ message Matcher {
     gloo.solo.io.SslConfig ssl_config = 1;
 
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+
+    repeated string passthrough_cipher_suites = 3;
 }
 
 // An AggregateListener defines a set of Gloo configuration which will map to a unique set of FilterChains on a Listener

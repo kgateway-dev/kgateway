@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package xds.type.matcher.v3;
+
+import "xds/annotations/v3/status.proto";
+import "xds/type/matcher/v3/matcher.proto";
+
+import "validate/validate.proto";
+
+option java_package = "com.github.xds.type.matcher.v3";
+option java_outer_classname = "ServerNameMatcherProto";
+option java_multiple_files = true;
+option go_package = "github.com/cncf/xds/go/xds/type/matcher/v3";
+
+option (xds.annotations.v3.file_status).work_in_progress = true;
+
+// [#protodoc-title: Server name matcher]
+
+// Matches a fully qualified server name against a set of domain
+// names with optional wildcards.
+message ServerNameMatcher {
+  // Specifies a set of exact and wildcard domains and a match action. The
+  // wildcard symbol ``*`` must appear at most once as the left-most part of
+  // the domain on a dot border. The wildcard matches one or more non-empty
+  // domain parts.
+  message DomainMatcher {
+    // A non-empty set of domain names with optional wildcards, e.g.
+    // ``www.example.com``, ``*.com``, or ``*``.
+    repeated string domains = 1 [ (validate.rules).repeated = {min_items : 1} ];
+
+    // Match action to apply when the server name matches any of the domain
+    // names in the matcher.
+    Matcher.OnMatch on_match = 2;
+  }
+
+  // Match a server name by multiple domain matchers. Each domain, exact or
+  // wildcard, must appear at most once across all the domain matchers.
+  //
+  // The server name will be matched against all wildcard domains starting from
+  // the longest suffix, i.e. ``www.example.com`` input will be first matched
+  // against ``www.example.com``, then ``*.example.com``, then ``*.com``, then
+  // ``*``, until the associated matcher action accepts the input. Note that
+  // wildcards must be on a dot border, and values like ``*w.example.com`` are
+  // invalid.
+  repeated DomainMatcher domain_matchers = 1;
+}
