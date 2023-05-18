@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sync"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -986,7 +986,7 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				ul := &unstructured.UnstructuredList{}
-				jsonBytes, err := ioutil.ReadFile("fixtures/unmarshal-err.json")
+				jsonBytes, err := os.ReadFile("fixtures/unmarshal-err.json")
 				Expect(err).ToNot(HaveOccurred())
 				err = ul.UnmarshalJSON(jsonBytes)
 				Expect(err).ToNot(HaveOccurred())

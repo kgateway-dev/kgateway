@@ -2,7 +2,6 @@ package create
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/authconfig"
@@ -51,7 +50,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				}
 				reader = r
 			}
-			yml, err := ioutil.ReadAll(reader)
+			yml, err := io.ReadAll(reader)
 			if err != nil {
 				return err
 			}

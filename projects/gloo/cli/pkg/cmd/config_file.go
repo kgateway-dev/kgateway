@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -103,5 +102,5 @@ func ensureExists(fullConfigFilePath string) error {
 }
 
 func writeDefaultConfig(configPath string) error {
-	return ioutil.WriteFile(configPath, []byte(defaultYaml), filePermissions)
+	return os.WriteFile(configPath, []byte(defaultYaml), filePermissions)
 }

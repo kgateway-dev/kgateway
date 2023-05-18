@@ -2,7 +2,6 @@ package cliutil
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -40,7 +39,7 @@ func GetLogger() io.Writer {
 func Initialize() error {
 	var initError error
 	mutex.Do(func() {
-		if _, err := ioutil.ReadDir(glooPath); err != nil {
+		if _, err := os.ReadDir(glooPath); err != nil {
 			if !os.IsNotExist(err) {
 				initError = err
 				return
