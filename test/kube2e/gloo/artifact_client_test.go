@@ -22,8 +22,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// Kubernetes tests for utils from projects/gloo/pkg/bootstrap
-var _ = Describe("Utils", func() {
+// Kubernetes tests for artifact client from projects/gloo/pkg/bootstrap
+var _ = Describe("Artifact Client", func() {
 
 	var (
 		namespace     string
