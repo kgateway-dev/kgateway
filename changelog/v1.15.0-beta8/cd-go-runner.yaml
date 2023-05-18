@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: restore solo-apis publish job by running setup steps in the same directory as gloo
