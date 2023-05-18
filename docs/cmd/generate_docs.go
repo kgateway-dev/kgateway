@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -278,7 +277,7 @@ func generateGlooEChangelog() error {
 }
 
 func getCachedReleases(fileName string) []*github.RepositoryRelease {
-	bArray, err := ioutil.ReadFile(fileName)
+	bArray, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil
 	}
@@ -453,7 +452,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 
 	// Download the file at the specified path on the latest released branch of solo-projects
 	path := "install/helm/gloo-ee/reference/values.txt"
-	semverReleaseTag, err := ioutil.ReadFile("../_output/gloo-enterprise-version")
+	semverReleaseTag, err := os.ReadFile("../_output/gloo-enterprise-version")
 	if err != nil {
 		return err
 	}

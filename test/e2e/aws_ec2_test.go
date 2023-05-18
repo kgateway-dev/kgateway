@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -157,7 +157,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			}
 
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				return "", eris.Wrapf(err, "unable to read body")
 			}

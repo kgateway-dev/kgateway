@@ -3,7 +3,7 @@ package check
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -116,7 +116,7 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 		err := fmt.Errorf(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the "+deploymentName+" deployment")
 		return err
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(errMessage)
 		return err
