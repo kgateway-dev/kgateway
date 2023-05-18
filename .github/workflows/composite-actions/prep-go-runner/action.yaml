@@ -1,5 +1,10 @@
 name: Prep Go Runner
 description: common setup steps for gloo actions
+inputs:
+  working-directory:
+    description: 'directory to run setup steps in'
+    required: false
+    default: '.'
 runs:
   using: "composite"
   steps:
@@ -28,5 +33,5 @@ runs:
   - name: Set up Go
     uses: actions/setup-go@v4
     with:
-      go-version-file: go.mod
+      go-version-file: ${{ inputs.working-directory }}/go.mod
     id: go
