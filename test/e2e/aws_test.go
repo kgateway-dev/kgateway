@@ -13,10 +13,6 @@ import (
 
 	errors "github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/test/testutils"
-
-	//"github.com/solo-io/gloo/test/kube2e"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -49,7 +45,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = FDescribe("AWS Lambda", func() {
+var _ = Describe("AWS Lambda", func() {
 	const (
 		region               = "us-east-1"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
@@ -77,7 +73,6 @@ var _ = FDescribe("AWS Lambda", func() {
 			WhatToRun: services.What{
 				DisableFds: false,
 			},
-			//KubeClient: kube2e.MustKubeClient(),
 		}
 	})
 
@@ -526,12 +521,6 @@ var _ = FDescribe("AWS Lambda", func() {
 		Expect(string(body)).To(Equal(`"test"`))
 
 	}
-
-	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-		//testutils.Kubernetes("Uses a Kubernetes client"),
-		)
-	})
 
 	AfterEach(func() {
 		envoyInstance.Clean()
