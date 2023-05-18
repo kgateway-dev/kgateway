@@ -7,17 +7,11 @@ import (
 	"testing"
 	"time"
 
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/k8s-utils/testutils/clusterlock"
-	apiext "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	glootestutils "github.com/solo-io/gloo/test/testutils"
-
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
+	"github.com/solo-io/k8s-utils/testutils/clusterlock"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -48,31 +42,10 @@ var (
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	apiExts apiext.Interface
-	locker  *clusterlock.TestClusterLocker
+	locker *clusterlock.TestClusterLocker
 )
 
-var _ = SynchronizedBeforeSuite(beforeSuiteOne, beforeSuiteAll)
-var _ = SynchronizedAfterSuite(afterSuiteOne, afterSuiteAll)
-
-func beforeSuiteOne() []byte {
-	// Register the CRDs once at the beginning of the suite
-	ctx, cancel = context.WithCancel(context.Background())
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-
-	apiExts, err = apiext.NewForConfig(cfg)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = skhelpers.AddAndRegisterCrd(ctx, gloov1.UpstreamCrd, apiExts)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = skhelpers.AddAndRegisterCrd(ctx, gatewayv1.VirtualServiceCrd, apiExts)
-	Expect(err).NotTo(HaveOccurred())
-	return nil
-}
-
-func beforeSuiteAll(_ []byte) {
+var _ = BeforeSuite(func() {
 	var err error
 	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
@@ -95,24 +68,18 @@ func beforeSuiteAll(_ []byte) {
 	Expect(err).NotTo(HaveOccurred())
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
-}
+})
 
-func afterSuiteOne(ctx context.Context) {
-	// Delete those CRDs once at the end of the suite
-	_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
-	_ = apiExts.ApiextensionsV1().CustomResourceDefinitions().Delete(ctx, gatewayv1.VirtualServiceCrd.FullName(), v1.DeleteOptions{})
+var _ = AfterSuite(func() {
+	defer cancel()
 
-	cancel()
-}
-
-func afterSuiteAll(_ context.Context) {
 	err := locker.ReleaseLock()
 	Expect(err).NotTo(HaveOccurred())
 
 	if glootestutils.ShouldTearDown() {
 		uninstallGloo()
 	}
-}
+})
 
 func installGloo() {
 	cwd, err := os.Getwd()
