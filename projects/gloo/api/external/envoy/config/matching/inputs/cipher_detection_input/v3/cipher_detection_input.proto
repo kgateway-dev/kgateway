@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package envoy.config.matching.cipher_detection_input.v3;
+
+import "udpa/annotations/status.proto";
+import "validate/validate.proto";
+
+option java_package = "io.envoyproxy.envoy.config.matching.cipher_detection_input.v3";
+option java_outer_classname = "NetworkInputsProto";
+option java_multiple_files = true;
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
+
+// [#protodoc-title: Common network matching inputs]
+
+// Specifies that matching should be performed by the destination IP address.
+// [#extension: io.solo.matching.inputs.cipher_detection_input]
+message CipherDetectionInput {
+  // List of TLS ciphers to send to the passthrough cipher chain. Ciphers must
+  // be provided using their 16-bit value. These numbers of IANA standardised
+  // values for all possible cipher suites and can be found here:
+  // https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
+  //
+  // example: to select the following cipher
+  //    0x00,0x3c TLS_RSA_WITH_AES_128_CBC_SHA256
+  // this field should be set to 0x003c
+  repeated uint32 passthrough_ciphers = 1;
+}
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/matching/inputs/cipher_detection_input/v3";
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+option (extproto.equal_all) = true;

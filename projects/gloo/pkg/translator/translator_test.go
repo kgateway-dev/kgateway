@@ -3034,7 +3034,7 @@ var _ = Describe("Translator", func() {
 					},
 				}
 				report := &validation.ListenerReport{}
-				CheckForDuplicateFilterChainMatches(filterChains, report)
+				CheckForFilterChainConsistency(filterChains, report, listener)
 				Expect(report.Errors).NotTo(BeNil())
 				Expect(report.Errors).To(HaveLen(1))
 				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))

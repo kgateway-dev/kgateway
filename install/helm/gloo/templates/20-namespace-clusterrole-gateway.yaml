@@ -188,6 +188,7 @@ rules:
   resources:
   - gateways
   - httpgateways
+  - tcpgateways
   - virtualservices
   - routetables
   - virtualhostoptions

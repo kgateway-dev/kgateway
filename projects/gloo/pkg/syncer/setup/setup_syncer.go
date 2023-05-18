@@ -541,6 +541,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if err := matchableHttpGatewayClient.Register(); err != nil {
 		return err
 	}
+
+	matchableTcpGatewayClient, err := gateway.NewMatchableTcpGatewayClient(watchOpts.Ctx, opts.MatchableTcpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableTcpGatewayClient.Register(); err != nil {
+		return err
+	}
+
 	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
 	if err != nil {
 		return err
@@ -626,6 +635,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		virtualHostOptionClient,
 		routeOptionClient,
 		matchableHttpGatewayClient,
+		matchableTcpGatewayClient,
 		graphqlApiClient,
 		extensions.ApiEmitterChannel,
 	)
@@ -638,6 +648,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		authConfigClient.BaseClient(),
 		gatewayClient.BaseClient(),
 		matchableHttpGatewayClient.BaseClient(),
+		matchableTcpGatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		rtClient.BaseClient(),
 		virtualHostOptionClient.BaseClient(),
@@ -1096,6 +1107,12 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
+
+	matchableTcpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableTcpGatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	var validation *gwtranslator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
 
@@ -1173,6 +1190,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		RouteOptions:                 routeOptionFactory,
 		Gateways:                     gatewayFactory,
 		MatchableHttpGateways:        matchableHttpGatewayFactory,
+		MatchableTcpGateways:         matchableTcpGatewayFactory,
 		KubeCoreCache:                kubeCoreCache,
 		ValidationOpts:               validation,
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,
