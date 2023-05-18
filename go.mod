@@ -51,13 +51,14 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.24.0
+	// todo (fabian) upgrade this
 	github.com/solo-io/k8s-utils v0.3.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.30.0
 
 	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
-	// todo (fabian) look into this...
+	// todo (fabian) look into this... do we need to update this for the solo-apis with 1.26 k8s?
 	github.com/solo-io/solo-apis v0.0.0-20220923183548-9746539fc625
 	// todo (fabian) use released update with k8s upgraded
 	github.com/solo-io/solo-kit v0.31.0
