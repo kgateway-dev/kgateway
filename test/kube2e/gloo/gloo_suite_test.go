@@ -2,6 +2,7 @@ package gloo_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/test/services"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,6 +44,8 @@ var (
 	cancel context.CancelFunc
 
 	locker *clusterlock.TestClusterLocker
+
+	envoyFactory *services.EnvoyFactory
 )
 
 var _ = BeforeSuite(func() {
@@ -68,6 +71,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
+
+	envoyFactory, err = services.NewEnvoyFactory()
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
