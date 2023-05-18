@@ -3,9 +3,10 @@ package matchers
 import (
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-	"net/http"
 
 	"github.com/onsi/gomega/matchers"
 	"github.com/onsi/gomega/types"
