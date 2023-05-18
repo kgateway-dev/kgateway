@@ -3,21 +3,20 @@ package grpcjson
 import (
 	"context"
 	"encoding/base64"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/golang/protobuf/ptypes/any"
-	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	envoy_extensions_filters_http_grpc_json_transcoder_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 var (
@@ -57,7 +56,11 @@ const (
 var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
+	// Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> grpcJsonTranscoder filter to add to routes
 	upstreamFilters map[string]plugins.StagedHttpFilter
+	// Track the routes that will have filters so we can check which listeners need a placeholder filter
+	// Use a map for constant time look up during HttpFilters()
+	affectedRoutes map[string]int
 }
 
 func NewPlugin() *plugin {
@@ -69,8 +72,8 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) {
-	// Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> filters to add to the listener
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
+	p.affectedRoutes = make(map[string]int)
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
@@ -96,11 +99,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
-	usRef := core.ResourceRef{
-		Name:      in.GetMetadata().GetName(),
-		Namespace: in.GetMetadata().GetNamespace(),
-	}
-	p.upstreamFilters[usRef.Key()] = grpcJsonFilter
+	p.upstreamFilters[in.GetMetadata().Ref().Key()] = grpcJsonFilter
 	// GRPC transcoding always requires http2
 	if out.GetHttp2ProtocolOptions() == nil {
 		out.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{}
@@ -121,6 +120,18 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}
 		return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
 	} else if len(p.upstreamFilters) > 0 {
+		needFilter := false
+		for _, vhost := range listener.GetVirtualHosts() {
+			for _, route := range vhost.GetRoutes() {
+				if _, ok := p.affectedRoutes[route.GetName()]; ok {
+					needFilter = true
+					break
+				}
+			}
+		}
+		if !needFilter {
+			return nil, nil
+		}
 		// There needs to be a filter on the listener to be able to set filters on routes
 		// Envoy errors if this config is empty
 		emptyGlooConfig := &grpc_json.GrpcJsonTranscoder{
@@ -139,7 +150,9 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return nil, nil
 }
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-
+	if len(p.upstreamFilters) == 0 {
+		return nil
+	}
 	routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in.GetRouteAction())
 	if err != nil {
 		return err
@@ -151,6 +164,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 			// Assume that a single route won't have upstreams with multiple different grpc configurations
 			out.GetTypedPerFilterConfig()[wellknown.GRPCJSONTranscoder] = filter.HttpFilter.GetTypedConfig()
+			p.affectedRoutes[in.GetName()] = 1
 			return nil
 		}
 	}

@@ -79,6 +79,7 @@ var _ = Describe("GrpcJson", func() {
 			},
 		}
 		route := &v1.Route{
+			Name: "host1_route1",
 			Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
@@ -106,16 +107,18 @@ var _ = Describe("GrpcJson", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = p.ProcessRoute(plugins.RouteParams{}, route, outRoute)
 		Expect(err).NotTo(HaveOccurred())
-		filter, ok := outRoute.TypedPerFilterConfig[wellknown.GRPCJSONTranscoder]
+		routeFilter, ok := outRoute.TypedPerFilterConfig[wellknown.GRPCJSONTranscoder]
 		Expect(ok).To(BeTrue())
-		Expect(filter).To(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
-		f, err := p.HttpFilters(plugins.Params{}, hl)
+		Expect(routeFilter).To(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
+		listenerFilter, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(f).NotTo(BeNil())
-		Expect(f).To(HaveLen(1))
+		Expect(listenerFilter).NotTo(BeNil())
+		Expect(listenerFilter).To(HaveLen(1))
+		// The filter should be a dummy filter to be overridden by route specific filters
+		Expect(listenerFilter[0]).NotTo(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
 	})
-	It("Does not create a filter when grpc is not configured", func() {
+	It("Does not create an empty filter on listener when no routes with gRPC are not configured", func() {
 		us := &v1.Upstream{
 			Metadata: &core.Metadata{
 				Name:      "testUs",
@@ -146,6 +149,32 @@ var _ = Describe("GrpcJson", func() {
 		Expect(err).NotTo(HaveOccurred())
 		vhost := &v1.VirtualHost{Routes: []*v1.Route{route}}
 		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{vhost}}
+		f, err := p.HttpFilters(plugins.Params{}, hl)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(f)).To(Equal(0))
+	})
+	It("Doesn't create empty filters on listeners when gRPC upstreams are configured but not referenced by routes on that listener", func() {
+		us := &v1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "testUs",
+				Namespace: "gloo-system",
+			},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{
+					ServiceSpec: &options.ServiceSpec{
+						PluginType: &options.ServiceSpec_GrpcJsonTranscoder{
+							GrpcJsonTranscoder: glooGrpcJsonConf,
+						},
+					},
+				},
+			},
+		}
+
+		p := grpcjson.NewPlugin()
+		p.Init(initParams)
+		err := p.ProcessUpstream(plugins.Params{}, us, &envoy_config_cluster_v3.Cluster{})
+		Expect(err).NotTo(HaveOccurred())
+		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{}}
 		f, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(f)).To(Equal(0))
