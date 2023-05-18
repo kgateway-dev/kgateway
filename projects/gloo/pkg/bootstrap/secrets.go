@@ -32,7 +32,15 @@ type multiSecretSourceResourceClientFactory struct {
 	watchNamespaces []string
 }
 
-func newMultiSecretSourceResourceClientFactory(secretSources []*v1.Settings_SecretOptions_Source,
+var (
+	// ErrNilSourceSlice indicates a nil slice of sources was passed to the factory,
+	// and we can therefore not initialize any sub-clients
+	ErrNilSourceSlice = errors.New("nil slice of secretSources")
+)
+
+// NewMultiSecretSourceResourceClientFactory returns a resource client factory for a client
+// supporting multiple sources
+func NewMultiSecretSourceResourceClientFactory(secretSources []*v1.Settings_SecretOptions_Source,
 	sharedCache memory.InMemoryResourceCache,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
@@ -41,7 +49,7 @@ func newMultiSecretSourceResourceClientFactory(secretSources []*v1.Settings_Secr
 
 	// Guard against nil source slice
 	if secretSources == nil {
-		return nil, errors.New("nil slice of secretSources")
+		return nil, ErrNilSourceSlice
 	}
 
 	return &multiSecretSourceResourceClientFactory{
@@ -54,6 +62,7 @@ func newMultiSecretSourceResourceClientFactory(secretSources []*v1.Settings_Secr
 	}, nil
 }
 
+// NewResourceClient implements ResourceClientFactory by creating a new client with each sub-client initialized
 func (m *multiSecretSourceResourceClientFactory) NewResourceClient(ctx context.Context, params factory.NewResourceClientParams) (clients.ResourceClient, error) {
 
 	multiClient := &multiSecretSourceResourceClient{}
@@ -96,7 +105,7 @@ func (m *multiSecretSourceResourceClientFactory) NewResourceClient(ctx context.C
 		}
 		c, err := f.NewResourceClient(ctx, params)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "failed to initialize secret resource client from factory of type %T", f)
 		}
 
 		multiClient.clientList = append(multiClient.clientList, c)

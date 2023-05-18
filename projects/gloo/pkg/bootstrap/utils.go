@@ -225,7 +225,7 @@ func SecretFactoryForSettings(ctx context.Context,
 		}
 	}
 	if secretOpts != nil {
-		return newMultiSecretSourceResourceClientFactory(secretOpts.GetSecretSources(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
+		return NewMultiSecretSourceResourceClientFactory(secretOpts.GetSecretSources(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
 	}
 	return nil, errors.Errorf("invalid config source type")
 }
