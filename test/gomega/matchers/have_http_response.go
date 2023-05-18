@@ -1,6 +1,7 @@
 package matchers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -143,13 +144,23 @@ func (m *HaveHttpResponseMatcher) Match(actual interface{}) (success bool, err e
 }
 
 func (m *HaveHttpResponseMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("%s\n\ndiff: %s",
+	return fmt.Sprintf("%s \n%s",
 		m.responseMatcher.FailureMessage(actual),
-		diff(m.Expected, actual))
+		informativeComparison(m.Expected, actual))
 }
 
 func (m *HaveHttpResponseMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("%s\n\ndiff: %s",
+	return fmt.Sprintf("%s \n%s",
 		m.responseMatcher.NegatedFailureMessage(actual),
-		diff(m.Expected, actual))
+		informativeComparison(m.Expected, actual))
+}
+
+// informativeComparison returns a string which presents data to the user to help them understand why a failure occurred.
+// The HaveHttpResponseMatcher uses an And matcher, which intentionally short-circuits and only
+// logs the first failure that occurred.
+// To help developers, we print the entire actual/expected objects in case there were other inconsistencies
+func informativeComparison(expected, actual interface{}) string {
+	expectedJson, _ := json.MarshalIndent(expected, "", "  ")
+
+	return fmt.Sprintf("\nexpected: %s \nactual: %s", expectedJson, actual)
 }
