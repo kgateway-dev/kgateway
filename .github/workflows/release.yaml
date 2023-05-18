@@ -1,0 +1,123 @@
+name: Publish Resources
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  compute-env-vars:
+    name: Compute Publish Context
+    runs-on: ubuntu-22.04
+    env:
+      PR_NUMBER: ${{ github.event.number }}
+    outputs:
+      publish-context: ${{ steps.publish-context.outputs.value }}
+      version: ${{ steps.version.outputs.value }}
+    steps:
+    - id: publish-context
+      run: |
+        if [[ ${{ github.event_name == 'workflow_dispatch' }} = true ]]; then
+          echo "value=RELEASE" >> $GITHUB_OUTPUT
+        elif [[ ${{ github.event_name == 'pull_request' }} = true ]]; then
+          echo "value=PULL_REQUEST" >> $GITHUB_OUTPUT
+        fi
+    - id: version
+      run: echo "value=GO111MODULE=on go run hack/compute_version/main.go" >> $GITHUB_OUTPUT
+
+  images:
+    name: Publish Images
+    runs-on: ubuntu-22.04
+    needs: compute-env-vars
+    env:
+      PUBLISH_CONTEXT: ${{ needs.compute-env-vars.outputs.publish-context }}
+      VERSION: ${{ needs.compute-env-vars.outputs.version }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
+    - name: Quay Login
+      uses: docker/login-action@v2
+      with:
+        registry: quay.io
+        username: solo-io+solobot
+        password: ${{ secrets.QUAY_IO_PASSWORD }}
+    - name: GCR Login
+      uses: docker/login-action@v2
+      with:
+        registry: gcr.io
+        username: _json_key
+        password: ${{ secrets.GCR_GLOO_EDGE_GHA_SA_JSON_KEY }}
+    - run: make publish-docker
+    - run: make publish-docker-retag
+      env:
+        ORIGINAL_IMAGE_REGISTRY: quay.io/solo-io
+        IMAGE_REGISTRY: gcr.io/gloo-edge
+  
+  charts:
+    name: Publish Charts
+    runs-on: ubuntu-22.04
+    needs: compute-env-vars
+    timeout-minutes: 10
+    env:
+      PUBLISH_CONTEXT: ${{ needs.compute-env-vars.outputs.publish-context }}
+      VERSION: ${{ needs.compute-env-vars.outputs.version }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
+    - name: Setup - gcloud / gsutil
+      uses: 'google-github-actions/auth@v0'
+      with:
+        credentials_json: ${{ secrets.GCR_GLOO_EDGE_GHA_SA_JSON_KEY }}
+    - name: Setup Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v0
+      with:
+        project_id: solo-public
+    - run: make fetch-package-and-save-helm
+  
+  cli:
+    name: Publish Glooctl
+    runs-on: ubuntu-22.04
+    needs: compute-env-vars
+    env:
+      PUBLISH_CONTEXT: ${{ needs.compute-env-vars.outputs.publish-context }}
+      VERSION: ${{ needs.compute-env-vars.outputs.version }}
+    steps:
+    - uses: actions/checkout@v3
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
+    - run: make upload-github-release-assets
+
+  tag:
+    name: Create GitHub Tag/Release
+    if: ${{ needs.compute-env-vars.outputs.publish-context == 'RELEASE' }}
+    needs: [ compute-env-vars, images, charts, cli ]
+    env:
+      VERSION: ${{ needs.compute-env-vars.outputs.version }}
+    runs-on: ubuntu-22.04
+    steps:
+    - run: actions/checkout@v3
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
+
+    # get release notes from latest tag; store latest tag as env.tag_value
+    - run: echo "tag_value=${{GO111MODULE=on go run hack/get_release_notes/main.go}}" >> $GITHUB_ENV
+    - uses: ncipollo/release-action@v1.12.0
+      with:
+        commit: ${{ github.ref }}
+        bodyFile: "./changelog-body.md"
+        tag: ${{ env.tag_value }}
+
+    # TODO: switch this to use a slackbot action, rather than a sketchy curl
+    - name: Alert on workflow success
+      if: ${{ success() }}
+      run : |
+        curl -X POST\
+              -H 'Content-type: application/json'\
+              --data '{"text":"Gloo Edge gloo@${{env.VERSION}} release has succeeded.  Visit https://github.com/solo-io/gloo/releases/tag/${{env.VERSION}}"}'\
+              ${{secrets.EDGE_TEAM_BOTS_WEBHOOK }}
+
+    # TODO: switch this to use a slackbot action, rather than a sketchy curl
+    - name: Alert on workflow failure
+      if: ${{ failure() }}
+      run : |
+        curl -X POST\
+              -H 'Content-type: application/json'\
+              --data '{"text":"Gloo Edge gloo@${{env.VERSION}} release has failed.  Visit https://github.com/solo-io/gloo/actions/runs/${{github.run_id}} to view logs."}'\
+              ${{secrets.EDGE_TEAM_BOTS_WEBHOOK }}

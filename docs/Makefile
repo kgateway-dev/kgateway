@@ -7,14 +7,11 @@
 # build hugo v0.69.2:
 # https://github.com/gohugoio/hugo must be built from commit ec9dcf304849ded11cea70ab9ad46e0a0a4615b2 and installed on $PATH
 
-
-
-# remove the "v" prefix
-VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-
 HUGO_VERSION := 0.69.2
 
 SOLO_HUGO_THEME_REVISION := v0.0.25
+
+VERSION 	?= 0.0.1-dev    # a basic version that can be overidden
 
 # The minimum version to maintain in our public docs
 MIN_SCANNED_VERSION ?= v1.11.0
@@ -23,6 +20,8 @@ MIN_SCANNED_VERSION ?= v1.11.0
 # Docs
 #----------------------------------------------------------------------------------
 
+$(OUTPUT_DIR)/gloo-enterprise-version:
+	GO111MODULE=on go run hack/find_latest_enterprise_version.go/main.go
 
 .PHONY: site-common
 site-common: clean gloo-enterprise-version
@@ -96,7 +95,7 @@ build-site: clean
 # corresponding to content in changelog directory.
 .PHONY: gloo-enterprise-version
 gloo-enterprise-version:
-	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version.go
+	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version/main.go
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

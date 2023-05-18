@@ -55,3 +55,6 @@ data
 
 # python pickle files
 *.p
+
+# artifact of release process when running hack/get_release_notes/main.go
+changelog-body.md

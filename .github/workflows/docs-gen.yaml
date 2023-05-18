@@ -25,6 +25,7 @@ jobs:
     outputs:
       should-build-docs: ${{ env.build_value }}
       should-pass-docs: ${{ env.pass_value }}
+      version: ${{ steps.version.outputs.value }}}
     steps:
       - id: is-draft-pr
         name: Process draft Pull Requests
@@ -63,10 +64,14 @@ jobs:
           echo "Should auto-pass docs? $should_pass"
           echo "build_value=$should_build" >> $GITHUB_ENV
           echo "pass_value=$should_pass" >> $GITHUB_ENV
+      - id: version
+        run: echo "value=GO111MODULE=on go run hack/compute_version/main.go" >> $GITHUB_OUTPUT
   build:
     name: Generate versioned docs site
     needs: prepare_env
     if: needs.prepare_env.outputs.should-build-docs == 'true'
+    env:
+      PUBLISH_CONTEXT: ${{ needs.prepare_env.outputs.version }}
     runs-on: ubuntu-22.04
     steps:
     - name: Check out code into the Go module directory

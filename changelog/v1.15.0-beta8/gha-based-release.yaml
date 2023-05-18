@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4909
+    resolvesIssue: false
+    description: |
+      change release mechanism to use github actions, rather than cloudbuild
