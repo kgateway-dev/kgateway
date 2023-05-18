@@ -2,11 +2,12 @@ package gloo_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/test/services"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/test/services"
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
