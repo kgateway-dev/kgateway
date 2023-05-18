@@ -158,9 +158,11 @@ func (m *HaveHttpResponseMatcher) NegatedFailureMessage(actual interface{}) (mes
 // informativeComparison returns a string which presents data to the user to help them understand why a failure occurred.
 // The HaveHttpResponseMatcher uses an And matcher, which intentionally short-circuits and only
 // logs the first failure that occurred.
-// To help developers, we print the entire actual/expected objects in case there were other inconsistencies
+// To help developers, we print more details in this function.
+// NOTE: Printing the actual http.Response is challenging (since the body has already been read), so for now
+// we do not print it.
 func informativeComparison(expected, actual interface{}) string {
 	expectedJson, _ := json.MarshalIndent(expected, "", "  ")
 
-	return fmt.Sprintf("\nexpected: %s \nactual: %s", expectedJson, actual)
+	return fmt.Sprintf("\nexpected: %s", expectedJson)
 }
