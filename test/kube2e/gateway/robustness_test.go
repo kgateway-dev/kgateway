@@ -3,7 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -444,7 +444,7 @@ var _ = Describe("Robustness tests", func() {
 			gatewayProxyPodName := findPodNamesByLabel(ctx, testHelper.InstallNamespace, "gloo=gateway-proxy")[0]
 			envoyClustersPath := "http://localhost:19000/clusters" // TODO - this should live in envoy test service
 			Eventually(func() bool {
-				clusters := testutils.CurlWithEphemeralPodStable(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
+				clusters := testutils.CurlWithEphemeralPodStable(ctx, io.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
 
 				fmt.Println(fmt.Sprintf("initial endpoint ips %+v", initialEndpointIPs))
 
