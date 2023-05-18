@@ -1,6 +1,6 @@
 changelog:
-  - type: HELM
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/7912
     resolvesIssue: false
     description: >-
-     Allow custom securityContext definitions to be merged with the default definition instead of overwriting with the use of the `merge` field
+    Backport: Allow custom securityContext definitions to be merged with the default definition instead of overwriting with the use of the `merge` field
