@@ -1,4 +1,4 @@
-package bootstrap
+package secrets
 
 import (
 	"context"

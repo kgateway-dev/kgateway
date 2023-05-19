@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/secrets"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -225,7 +226,7 @@ func SecretFactoryForSettings(ctx context.Context,
 		}
 	}
 	if secretOpts != nil {
-		return NewMultiSecretSourceResourceClientFactory(secretOpts.GetSecretSources(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
+		return secrets.NewMultiResourceClientFactory(secretOpts.GetSecretSources(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
 	}
 	return nil, errors.Errorf("invalid config source type")
 }

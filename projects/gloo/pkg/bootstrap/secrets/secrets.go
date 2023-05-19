@@ -1,4 +1,4 @@
-package bootstrap
+package secrets
 
 import (
 	"context"
@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type multiSecretSourceResourceClientFactory struct {
+type MultiResourceClientFactory struct {
 	secretSources []*v1.Settings_SecretOptions_Source
 	sharedCache   memory.InMemoryResourceCache
 	cfg           **rest.Config
@@ -38,21 +38,21 @@ var (
 	ErrNilSourceSlice = errors.New("nil slice of secretSources")
 )
 
-// NewMultiSecretSourceResourceClientFactory returns a resource client factory for a client
+// NewMultiResourceClientFactory returns a resource client factory for a client
 // supporting multiple sources
-func NewMultiSecretSourceResourceClientFactory(secretSources []*v1.Settings_SecretOptions_Source,
+func NewMultiResourceClientFactory(secretSources []*v1.Settings_SecretOptions_Source,
 	sharedCache memory.InMemoryResourceCache,
 	cfg **rest.Config,
 	clientset *kubernetes.Interface,
 	kubeCoreCache *cache.KubeCoreCache,
-	vaultClient *vaultapi.Client) (*multiSecretSourceResourceClientFactory, error) {
+	vaultClient *vaultapi.Client) (*MultiResourceClientFactory, error) {
 
 	// Guard against nil source slice
 	if secretSources == nil {
 		return nil, ErrNilSourceSlice
 	}
 
-	return &multiSecretSourceResourceClientFactory{
+	return &MultiResourceClientFactory{
 		secretSources: secretSources,
 		sharedCache:   sharedCache,
 		cfg:           cfg,
@@ -63,9 +63,9 @@ func NewMultiSecretSourceResourceClientFactory(secretSources []*v1.Settings_Secr
 }
 
 // NewResourceClient implements ResourceClientFactory by creating a new client with each sub-client initialized
-func (m *multiSecretSourceResourceClientFactory) NewResourceClient(ctx context.Context, params factory.NewResourceClientParams) (clients.ResourceClient, error) {
+func (m *MultiResourceClientFactory) NewResourceClient(ctx context.Context, params factory.NewResourceClientParams) (clients.ResourceClient, error) {
 
-	multiClient := &multiSecretSourceResourceClient{}
+	multiClient := &MultiResourceClient{}
 	var f factory.ResourceClientFactory
 	for _, v := range m.secretSources {
 		switch source := v.GetSource().(type) {
@@ -123,11 +123,19 @@ type (
 
 // we should not need a RWMutex here because we are only ever writing to the map during
 // its instantion in NewResourceClient
-type multiSecretSourceResourceClient struct {
+type MultiResourceClient struct {
 	clientList []clients.ResourceClient // do not use clients.ResourceClients here as that is not for this purpose
 }
 
-func (m *multiSecretSourceResourceClient) Kind() string {
+// Clients provides access to the sub-clients used by this multi-client. This is primarily
+// exposed for testing; care should be taken when mutating this client at runtime
+// as the Watch method may have spawned goroutines with clients that will not
+// be updated by the mutation.
+func (m *MultiResourceClient) Clients() []clients.ResourceClient {
+	return m.clientList
+}
+
+func (m *MultiResourceClient) Kind() string {
 	if len(m.clientList) == 0 {
 		return ""
 	}
@@ -136,7 +144,7 @@ func (m *multiSecretSourceResourceClient) Kind() string {
 	return m.clientList[0].Kind()
 }
 
-func (m *multiSecretSourceResourceClient) NewResource() resources.Resource {
+func (m *MultiResourceClient) NewResource() resources.Resource {
 	if len(m.clientList) == 0 {
 		return nil
 	}
@@ -146,7 +154,7 @@ func (m *multiSecretSourceResourceClient) NewResource() resources.Resource {
 }
 
 // Deprecated: implemented only by the kubernetes resource client. Will be removed from the interface.
-func (m *multiSecretSourceResourceClient) Register() error {
+func (m *MultiResourceClient) Register() error {
 	for _, v := range m.clientList {
 		switch concreteClient := v.(type) {
 		case *vault.ResourceClient:
@@ -160,25 +168,25 @@ func (m *multiSecretSourceResourceClient) Register() error {
 	return errors.New("Register method only implemented on Kubernetes resource client")
 }
 
-func (m *multiSecretSourceResourceClient) Read(namespace string, name string, opts clients.ReadOpts) (resources.Resource, error) {
+func (m *MultiResourceClient) Read(namespace string, name string, opts clients.ReadOpts) (resources.Resource, error) {
 	errMsg := "Read not implemented on multiSecretSourceResourceClient"
 	contextutils.LoggerFrom(opts.Ctx).DPanic(errMsg)
 	return nil, errors.New(errMsg)
 }
 
-func (m *multiSecretSourceResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+func (m *MultiResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	errMsg := "Write not implemented on multiSecretSourceResourceClient"
 	contextutils.LoggerFrom(opts.Ctx).DPanic(errMsg)
 	return nil, errors.New(errMsg)
 }
 
-func (m *multiSecretSourceResourceClient) Delete(namespace string, name string, opts clients.DeleteOpts) error {
+func (m *MultiResourceClient) Delete(namespace string, name string, opts clients.DeleteOpts) error {
 	errMsg := "Delete not implemented on multiSecretSourceResourceClient"
 	contextutils.LoggerFrom(opts.Ctx).DPanic(errMsg)
 	return errors.New(errMsg)
 }
 
-func (m *multiSecretSourceResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
+func (m *MultiResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	list := resources.ResourceList{}
 	for i := range m.clientList {
 		clientList, err := m.clientList[i].List(namespace, opts)
@@ -191,13 +199,13 @@ func (m *multiSecretSourceResourceClient) List(namespace string, opts clients.Li
 	return list, nil
 }
 
-func (m *multiSecretSourceResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+func (m *MultiResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
 	errMsg := "ApplyStatus not implemented on multiSecretSourceResourceClient"
 	contextutils.LoggerFrom(opts.Ctx).DPanic(errMsg)
 	return nil, errors.New(errMsg)
 }
 
-func (m *multiSecretSourceResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
+func (m *MultiResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	listChan := make(chan resources.ResourceList)
 	errChan := make(chan error)
 	for i := range m.clientList {
