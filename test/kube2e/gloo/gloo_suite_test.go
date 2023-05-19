@@ -11,13 +11,11 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	glootestutils "github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/k8s-utils/testutils/clusterlock"
-
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
+	glootestutils "github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/testutils"
+	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -44,16 +42,11 @@ var (
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	locker *clusterlock.TestClusterLocker
-
 	envoyFactory *services.EnvoyFactory
 )
 
 var _ = BeforeSuite(func() {
 	var err error
-	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
 	ctx, cancel = context.WithCancel(context.Background())
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
@@ -79,9 +72,6 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	defer cancel()
-
-	err := locker.ReleaseLock()
-	Expect(err).NotTo(HaveOccurred())
 
 	if glootestutils.ShouldTearDown() {
 		uninstallGloo()
