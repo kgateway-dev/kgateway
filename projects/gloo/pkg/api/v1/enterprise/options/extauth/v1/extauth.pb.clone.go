@@ -728,6 +728,12 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
+	if h, ok := interface{}(m.GetClaimsToMetadata()).(clone.Cloner); ok {
+		target.ClaimsToMetadata = h.Clone().(*ClaimsToMetadata)
+	} else {
+		target.ClaimsToMetadata = proto.Clone(m.GetClaimsToMetadata()).(*ClaimsToMetadata)
+	}
+
 	return target
 }
 
@@ -811,6 +817,12 @@ func (m *AccessTokenValidation) Clone() proto.Message {
 		target.CacheTimeout = proto.Clone(m.GetCacheTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetClaimsToMetadata()).(clone.Cloner); ok {
+		target.ClaimsToMetadata = h.Clone().(*ClaimsToMetadata)
+	} else {
+		target.ClaimsToMetadata = proto.Clone(m.GetClaimsToMetadata()).(*ClaimsToMetadata)
+	}
+
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
@@ -873,6 +885,29 @@ func (m *OauthSecret) Clone() proto.Message {
 	target = &OauthSecret{}
 
 	target.ClientSecret = m.GetClientSecret()
+
+	return target
+}
+
+// Clone function
+func (m *ClaimsToMetadata) Clone() proto.Message {
+	var target *ClaimsToMetadata
+	if m == nil {
+		return target
+	}
+	target = &ClaimsToMetadata{}
+
+	if h, ok := interface{}(m.GetIdToken()).(clone.Cloner); ok {
+		target.IdToken = h.Clone().(*ClaimsToMetadata_IdToken)
+	} else {
+		target.IdToken = proto.Clone(m.GetIdToken()).(*ClaimsToMetadata_IdToken)
+	}
+
+	if h, ok := interface{}(m.GetAccessToken()).(clone.Cloner); ok {
+		target.AccessToken = h.Clone().(*ClaimsToMetadata_AccessToken)
+	} else {
+		target.AccessToken = proto.Clone(m.GetAccessToken()).(*ClaimsToMetadata_AccessToken)
+	}
 
 	return target
 }
@@ -1551,6 +1586,36 @@ func (m *AccessTokenValidation_ScopeList) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ClaimsToMetadata_IdToken) Clone() proto.Message {
+	var target *ClaimsToMetadata_IdToken
+	if m == nil {
+		return target
+	}
+	target = &ClaimsToMetadata_IdToken{}
+
+	target.MetadataKey = m.GetMetadataKey()
+
+	target.Claim = m.GetClaim()
+
+	return target
+}
+
+// Clone function
+func (m *ClaimsToMetadata_AccessToken) Clone() proto.Message {
+	var target *ClaimsToMetadata_AccessToken
+	if m == nil {
+		return target
+	}
+	target = &ClaimsToMetadata_AccessToken{}
+
+	target.MetadataKey = m.GetMetadataKey()
+
+	target.Claim = m.GetClaim()
 
 	return target
 }

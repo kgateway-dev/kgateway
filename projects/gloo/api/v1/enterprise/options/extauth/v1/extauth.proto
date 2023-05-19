@@ -613,6 +613,9 @@ message OidcAuthorizationCode {
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
+
+    // If specified, the matching claims from the ID token and/or access token will be emitted as dynamic metadata.
+    ClaimsToMetadata claims_to_metadata = 20;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -738,6 +741,9 @@ message AccessTokenValidation {
         // in the future we may add other types of scope validation (e.g. predicate matching)
     }
 
+    // If specified, the matching claims from the access token will be emitted as dynamic metadata.
+    ClaimsToMetadata claims_to_metadata = 7;
+
     message ScopeList {
       repeated string scope = 1;
     }
@@ -745,6 +751,32 @@ message AccessTokenValidation {
 
 message OauthSecret {
     string client_secret = 1;
+}
+
+// ClaimsToMetadata allows claims to be extracted from the ID token and/or the access token and
+// emitted as dynamic metadata.
+message ClaimsToMetadata {
+
+    // Use this field to extract claims from the ID token.
+    IdToken id_token = 1;
+    // Use this field to extract claims from the access token.
+    AccessToken access_token = 2;
+
+    message IdToken {
+        // The key to use for the dynamic metadata emitted
+        string metadata_key = 1;
+
+        // The name of the claim to extract the value from
+        string claim = 2;
+    }
+
+    message AccessToken {
+        // The key to use for the dynamic metadata emitted
+        string metadata_key = 1;
+
+        // The name of the claim to extract the value from
+        string claim = 2;
+    }
 }
 
 message ApiKeyAuth {

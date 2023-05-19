@@ -141,6 +141,23 @@ spec:
                           properties:
                             cacheTimeout:
                               type: string
+                            claimsToMetadata:
+                              properties:
+                                accessToken:
+                                  properties:
+                                    claim:
+                                      type: string
+                                    metadataKey:
+                                      type: string
+                                  type: object
+                                idToken:
+                                  properties:
+                                    claim:
+                                      type: string
+                                    metadataKey:
+                                      type: string
+                                  type: object
+                              type: object
                             introspection:
                               properties:
                                 clientId:
@@ -203,6 +220,23 @@ spec:
                               type: object
                             callbackPath:
                               type: string
+                            claimsToMetadata:
+                              properties:
+                                accessToken:
+                                  properties:
+                                    claim:
+                                      type: string
+                                    metadataKey:
+                                      type: string
+                                  type: object
+                                idToken:
+                                  properties:
+                                    claim:
+                                      type: string
+                                    metadataKey:
+                                      type: string
+                                  type: object
+                              type: object
                             clientId:
                               type: string
                             clientSecretRef:

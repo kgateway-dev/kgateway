@@ -1226,6 +1226,16 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetClaimsToMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsToMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsToMetadata(), target.GetClaimsToMetadata()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1377,6 +1387,16 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetClaimsToMetadata()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsToMetadata()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsToMetadata(), target.GetClaimsToMetadata()) {
+			return false
+		}
+	}
+
 	switch m.ValidationType.(type) {
 
 	case *AccessTokenValidation_IntrospectionUrl:
@@ -1475,6 +1495,50 @@ func (m *OauthSecret) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ClaimsToMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ClaimsToMetadata)
+	if !ok {
+		that2, ok := that.(ClaimsToMetadata)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetIdToken()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIdToken()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIdToken(), target.GetIdToken()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAccessToken()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAccessToken()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAccessToken(), target.GetAccessToken()) {
+			return false
+		}
 	}
 
 	return true
@@ -2618,6 +2682,70 @@ func (m *AccessTokenValidation_ScopeList) Equal(that interface{}) bool {
 			return false
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ClaimsToMetadata_IdToken) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ClaimsToMetadata_IdToken)
+	if !ok {
+		that2, ok := that.(ClaimsToMetadata_IdToken)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ClaimsToMetadata_AccessToken) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ClaimsToMetadata_AccessToken)
+	if !ok {
+		that2, ok := that.(ClaimsToMetadata_AccessToken)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
 	}
 
 	return true
