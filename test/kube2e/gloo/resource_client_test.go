@@ -1,16 +1,14 @@
-package service_test
+package gloo_test
 
 import (
 	"context"
 
-	"github.com/solo-io/gloo/test/testutils"
 	kubev1 "k8s.io/api/core/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/projects/ingress/pkg/api/service"
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -21,11 +19,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Kubernetes tests for resource client from projects/ingress/pkg/api/service
 var _ = Describe("ResourceClient", func() {
-	if !testutils.ShouldRunKubeTests() {
-		log.Printf("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
-		return
-	}
+
 	var (
 		namespace string
 		cfg       *rest.Config
@@ -57,7 +53,7 @@ var _ = Describe("ResourceClient", func() {
 	It("can CRUD on v1 Services", func() {
 		kube, err := kubernetes.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
-		baseClient := NewResourceClient(kube, &v1.Ingress{})
+		baseClient := service.NewResourceClient(kube, &v1.Ingress{})
 		svcClient := v1.NewKubeServiceClientWithBase(baseClient)
 		Expect(err).NotTo(HaveOccurred())
 		kubeSvcClient := kube.CoreV1().Services(namespace)
@@ -80,7 +76,7 @@ var _ = Describe("ResourceClient", func() {
 		Expect(err).NotTo(HaveOccurred())
 		ingressResource, err := svcClient.Read(kubeSvc.Namespace, kubeSvc.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		convertedIng, err := ToKube(ingressResource)
+		convertedIng, err := service.ToKube(ingressResource)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(convertedIng.Spec).To(Equal(kubeSvc.Spec))
 	})
