@@ -56,7 +56,7 @@ var _ = Describe("Plugins", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		kubeClient, err = kubernetes.NewForConfig(cfg)
-		kubeCoreCache, err = kubecache.NewKubeCoreCache(context.TODO(), kubeClient)
+		kubeCoreCache, err = kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
@@ -144,9 +144,7 @@ var _ = Describe("Plugins", func() {
 		err := kubeClient.CoreV1().Namespaces().Delete(ctx, svcNamespace, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		if cancel != nil {
-			cancel()
-		}
+		cancel()
 	})
 
 	It("uses json keys when serializing", func() {
