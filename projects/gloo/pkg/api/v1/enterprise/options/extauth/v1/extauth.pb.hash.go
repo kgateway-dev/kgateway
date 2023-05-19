@@ -4145,11 +4145,11 @@ func (m *ClaimsToMetadata_IdToken) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetMetadataKey())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetMetadataKey())); err != nil {
 		return 0, err
 	}
 
@@ -4169,11 +4169,11 @@ func (m *ClaimsToMetadata_AccessToken) Hash(hasher hash.Hash64) (uint64, error) 
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetMetadataKey())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetClaim())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetMetadataKey())); err != nil {
 		return 0, err
 	}
 

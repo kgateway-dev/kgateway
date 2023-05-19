@@ -3769,11 +3769,11 @@ func (m *ClaimsToMetadata_IdToken) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
 		return false
 	}
 
-	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
 		return false
 	}
 
@@ -3801,11 +3801,11 @@ func (m *ClaimsToMetadata_AccessToken) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
 		return false
 	}
 
-	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
 		return false
 	}
 

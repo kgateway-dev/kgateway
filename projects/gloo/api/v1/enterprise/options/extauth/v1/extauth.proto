@@ -856,19 +856,19 @@ message ClaimsToMetadata {
     AccessToken access_token = 2;
 
     message IdToken {
-        // The key to use for the dynamic metadata emitted
-        string metadata_key = 1;
-
         // The name of the claim to extract the value from
-        string claim = 2;
+        string claim = 1;
+
+        // The key to use for the dynamic metadata emitted
+        string metadata_key = 2;
     }
 
     message AccessToken {
-        // The key to use for the dynamic metadata emitted
-        string metadata_key = 1;
-
         // The name of the claim to extract the value from
-        string claim = 2;
+        string claim = 1;
+
+        // The key to use for the dynamic metadata emitted
+        string metadata_key = 2;
     }
 }
 

@@ -1166,15 +1166,15 @@ emitted as dynamic metadata.
 
 
 ```yaml
-"metadataKey": string
 "claim": string
+"metadataKey": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `metadataKey` | `string` | The key to use for the dynamic metadata emitted. |
 | `claim` | `string` | The name of the claim to extract the value from. |
+| `metadataKey` | `string` | The key to use for the dynamic metadata emitted. |
 
 
 
@@ -1185,15 +1185,15 @@ emitted as dynamic metadata.
 
 
 ```yaml
-"metadataKey": string
 "claim": string
+"metadataKey": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `metadataKey` | `string` | The key to use for the dynamic metadata emitted. |
 | `claim` | `string` | The name of the claim to extract the value from. |
+| `metadataKey` | `string` | The key to use for the dynamic metadata emitted. |
 
 
 

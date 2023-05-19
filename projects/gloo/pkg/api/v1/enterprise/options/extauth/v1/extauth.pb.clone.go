@@ -2233,9 +2233,9 @@ func (m *ClaimsToMetadata_IdToken) Clone() proto.Message {
 	}
 	target = &ClaimsToMetadata_IdToken{}
 
-	target.MetadataKey = m.GetMetadataKey()
-
 	target.Claim = m.GetClaim()
+
+	target.MetadataKey = m.GetMetadataKey()
 
 	return target
 }
@@ -2248,9 +2248,9 @@ func (m *ClaimsToMetadata_AccessToken) Clone() proto.Message {
 	}
 	target = &ClaimsToMetadata_AccessToken{}
 
-	target.MetadataKey = m.GetMetadataKey()
-
 	target.Claim = m.GetClaim()
+
+	target.MetadataKey = m.GetMetadataKey()
 
 	return target
 }
