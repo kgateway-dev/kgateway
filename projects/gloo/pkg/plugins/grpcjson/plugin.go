@@ -58,9 +58,8 @@ var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 type plugin struct {
 	// Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> grpcJsonTranscoder filter to add to routes
 	upstreamFilters map[string]plugins.StagedHttpFilter
-	// Track the routes that will have filters so we can check which listeners need a placeholder filter
-	// Use a map for constant time look up during HttpFilters()
-	affectedRoutes map[string]int
+	// List of listeners that need an empty gRPC json filter that will be overridden by a route
+	affectedListeners map[*v1.HttpListener]int
 }
 
 func NewPlugin() *plugin {
@@ -73,7 +72,7 @@ func (p *plugin) Name() string {
 
 func (p *plugin) Init(params plugins.InitParams) {
 	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
-	p.affectedRoutes = make(map[string]int)
+	p.affectedListeners = make(map[*v1.HttpListener]int)
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
@@ -120,16 +119,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}
 		return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
 	} else if len(p.upstreamFilters) > 0 {
-		needFilter := false
-		for _, vhost := range listener.GetVirtualHosts() {
-			for _, route := range vhost.GetRoutes() {
-				if _, ok := p.affectedRoutes[route.GetName()]; ok {
-					needFilter = true
-					break
-				}
-			}
-		}
-		if !needFilter {
+		if _, ok := p.affectedListeners[listener]; !ok {
 			return nil, nil
 		}
 		// There needs to be a filter on the listener to be able to set filters on routes
@@ -164,7 +154,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			}
 			// Assume that a single route won't have upstreams with multiple different grpc configurations
 			out.GetTypedPerFilterConfig()[wellknown.GRPCJSONTranscoder] = filter.HttpFilter.GetTypedConfig()
-			p.affectedRoutes[in.GetName()] = 1
+			p.affectedListeners[params.HttpListener] = 1
 			return nil
 		}
 	}

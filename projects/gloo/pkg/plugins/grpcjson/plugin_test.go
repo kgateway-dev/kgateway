@@ -105,7 +105,7 @@ var _ = Describe("GrpcJson", func() {
 		p.Init(initParams)
 		err := p.ProcessUpstream(plugins.Params{}, us, &envoy_config_cluster_v3.Cluster{})
 		Expect(err).NotTo(HaveOccurred())
-		err = p.ProcessRoute(plugins.RouteParams{}, route, outRoute)
+		err = p.ProcessRoute(plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{HttpListener: hl}}, route, outRoute)
 		Expect(err).NotTo(HaveOccurred())
 		routeFilter, ok := outRoute.TypedPerFilterConfig[wellknown.GRPCJSONTranscoder]
 		Expect(ok).To(BeTrue())
