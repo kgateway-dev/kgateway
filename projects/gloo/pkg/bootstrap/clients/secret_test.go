@@ -1,10 +1,10 @@
-package secrets_test
+package clients_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/secrets"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 )
 
 var _ = Describe("secrets", func() {

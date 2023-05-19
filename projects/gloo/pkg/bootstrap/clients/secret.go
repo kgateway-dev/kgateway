@@ -1,4 +1,4 @@
-package secrets
+package clients
 
 import (
 	"context"
@@ -19,6 +19,69 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+// SecretFactoryForSettings creates a resource client factory for provided config.
+// Implemented as secrets.MultiResourceClient regardless if there is just one
+// source configured.
+// sharedCache OR resourceCrd+cfg must be non-nil
+func SecretFactoryForSettings(ctx context.Context,
+	settings *v1.Settings,
+	sharedCache memory.InMemoryResourceCache,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	vaultClient *vaultapi.Client,
+	pluralName string) (factory.ResourceClientFactory, error) {
+
+	if settings.GetSecretSource() == nil && settings.GetSecretOptions() == nil {
+		if sharedCache == nil {
+			return nil, errors.Errorf("internal error: shared cache cannot be nil")
+		}
+		return &factory.MemoryResourceClientFactory{
+			Cache: sharedCache,
+		}, nil
+	}
+
+	secretOpts := settings.GetSecretOptions()
+
+	// Check for secretSource API config and translate it to secretOptions API config.
+	// Log a warning and use new API if both are defined.
+	if deprecatedApiSource := settings.GetSecretSource(); deprecatedApiSource != nil {
+		if secretOpts != nil {
+			contextutils.LoggerFrom(ctx).Warn("secretOptions API and deprecated secretSource API both configured; using secretOptions")
+		} else {
+			secretOpts = &v1.Settings_SecretOptions{
+				SecretSources: []*v1.Settings_SecretOptions_Source{},
+			}
+			newApiSource := &v1.Settings_SecretOptions_Source{}
+			switch src := deprecatedApiSource.(type) {
+			case *v1.Settings_DirectorySecretSource:
+				{
+					newApiSource.Source = &v1.Settings_SecretOptions_Source_Directory{
+						Directory: src.DirectorySecretSource,
+					}
+				}
+			case *v1.Settings_VaultSecretSource:
+				{
+					newApiSource.Source = &v1.Settings_SecretOptions_Source_Vault{
+						Vault: src.VaultSecretSource,
+					}
+				}
+			case *v1.Settings_KubernetesSecretSource:
+				{
+					newApiSource.Source = &v1.Settings_SecretOptions_Source_Kubernetes{
+						Kubernetes: src.KubernetesSecretSource,
+					}
+				}
+			}
+			secretOpts.SecretSources = []*v1.Settings_SecretOptions_Source{newApiSource}
+		}
+	}
+	if secretOpts != nil {
+		return NewMultiResourceClientFactory(secretOpts.GetSecretSources(), sharedCache, cfg, clientset, kubeCoreCache, vaultClient)
+	}
+	return nil, errors.Errorf("invalid config source type")
+}
 
 type MultiResourceClientFactory struct {
 	secretSources []*v1.Settings_SecretOptions_Source

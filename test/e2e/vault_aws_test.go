@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -49,8 +49,8 @@ var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 					SecretAccessKey: v.SecretAccessKey,
 				},
 			},
-			PathPrefix: bootstrap.DefaultPathPrefix,
-			RootKey:    bootstrap.DefaultRootKey,
+			PathPrefix: bootstrap_clients.DefaultPathPrefix,
+			RootKey:    bootstrap_clients.DefaultRootKey,
 		}
 
 		testContext.SetRunSettings(&gloov1.Settings{

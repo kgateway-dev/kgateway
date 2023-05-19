@@ -7,9 +7,6 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -18,6 +15,8 @@ import (
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

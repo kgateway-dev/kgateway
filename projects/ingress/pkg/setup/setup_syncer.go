@@ -17,7 +17,7 @@ import (
 	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
@@ -54,7 +54,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		kubeCoreCache cache.KubeCoreCache
 	)
 
-	params := bootstrap.NewConfigFactoryParams(
+	params := bootstrap_clients.NewConfigFactoryParams(
 		settings,
 		inMemoryCache,
 		kubeCache,
@@ -62,17 +62,17 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		nil, // no consul client for ingress controller
 	)
 
-	proxyFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.ProxyCrd)
+	proxyFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gloov1.ProxyCrd)
 	if err != nil {
 		return err
 	}
 
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, gloov1.UpstreamCrd)
+	upstreamFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gloov1.UpstreamCrd)
 	if err != nil {
 		return err
 	}
 
-	secretFactory, err := bootstrap.SecretFactoryForSettings(
+	secretFactory, err := bootstrap_clients.SecretFactoryForSettings(
 		ctx,
 		settings,
 		inMemoryCache,

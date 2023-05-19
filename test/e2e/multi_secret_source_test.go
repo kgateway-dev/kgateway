@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/secrets"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/test/e2e"
 )
 
@@ -58,7 +58,7 @@ var _ = Describe("Multiple Secret Clients", Label(labels.Nightly), func() {
 	universalTests := func() {
 		It("creates secret client", func() {
 			Expect(testContext.TestClients().SecretClient).NotTo(BeNil())
-			_, ok := testContext.TestClients().SecretClient.BaseClient().(*secrets.MultiResourceClient)
+			_, ok := testContext.TestClients().SecretClient.BaseClient().(*bootstrap_clients.MultiResourceClient)
 			Expect(ok).To(BeTrue())
 			// DO_NOT_SUBMIT: fill out test
 		})
@@ -71,7 +71,7 @@ var _ = Describe("Multiple Secret Clients", Label(labels.Nightly), func() {
 	}
 	hasNSubClients := func(numClients int) {
 		It(fmt.Sprintf("has %d sub-client(s)", numClients), func() {
-			Expect(testContext.TestClients().SecretClient.BaseClient().(*secrets.MultiResourceClient).Clients()).To(HaveLen(numClients))
+			Expect(testContext.TestClients().SecretClient.BaseClient().(*bootstrap_clients.MultiResourceClient).Clients()).To(HaveLen(numClients))
 		})
 	}
 
