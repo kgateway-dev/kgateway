@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7697
+    resolvesIssue: false
+    description: |
+      Updates glooctl check to use the GPRC endpoint for proxy validation.
+      This fixes an issue where the check would report false-positives 
+      for invalid proxies that were not persisted.

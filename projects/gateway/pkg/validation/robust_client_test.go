@@ -8,7 +8,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"google.golang.org/grpc"
@@ -69,6 +69,8 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 
 		// shut down the server
 		cancel()
+
+		time.Sleep(100 * time.Millisecond) // wait for the server to shut down
 
 		resp, err = client.Validate(rootCtx, &validation.GlooValidationServiceRequest{})
 		Expect(err).To(HaveOccurred())

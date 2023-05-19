@@ -50,7 +50,7 @@ virtualHost:
     stagedTransformations:
       regular:
         requestTransforms:
-        - matchers:
+        - matcher:
             - prefix: '/parent'
           requestTransformation:
             transformationTemplate:
@@ -105,8 +105,9 @@ Note that only the first matched transformation will run, so if both the child a
 would run.
 
 ### Configuration format
-In this section we will detail all the properties of the `stagedTransformations` {{< protobuf display="object" name="transformation.options.gloo.solo.io.TransformationStages" >}},
-which has the following structure:
+Learn more about the properties that you can set in the `stagedTransformations` {{< protobuf display="object" name="transformation.options.gloo.solo.io.TransformationStages" >}} section of your YAML file. 
+
+The following YAML file shows a sample structure for how to configure request and response transformations in the `stagedTransformations` section: 
 
 ```yaml
 stagedTransformations:
@@ -123,22 +124,24 @@ stagedTransformations:
   inheritTransformations: bool
 ```
 
-The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. The following diagram illustrates the stages at which each of the transformation filters run in relation to other envoy filters. 
+The `early` and `regular` attributes are used to specify when in the envoy filter chain the transformations run. For request transformations, early transformations are applied before regular transformations as shown in the following diagram. For response transformations, this order is reversed, and regular transformations are applied before early transformations. To learn more about the order in which envoy filters are applied, see [HTTP filter chain processing](https://www.envoyproxy.io/docs/envoy/latest/intro/life_of_a_request#http-filter-chain-processing) in the envoy documentation. 
 
 ![Transformation Filter Stages]({{% versioned_link_path fromRoot="/img/transformation_stages.png" %}})
 
-The `inheritTransformation` attribute allows child routes to inherit transformations from their parent RouteTables and/or VirtualHosts. This is detailed in the Inheritance rules section.
+The `requestTransforms` attribute specifies a list of transformations that are applied when a matching request is found. The first transformation that specifies a `matcher` that matches the request attributes is applied.
 
-The `requestTransforms` attribute specifies a list of transformations which will be evaluated based on the request attributes. The first transformation which has a `matcher` that matches the request attributes will run.
-
-The `responseTransforms` attribute specifies a list of transformations which will be evaluated based on the response attributes. A transformation will only be chosen from this list if no transformation in `requestTransform` matched the request.
+The `responseTransforms` attribute specifies a list of transformations that are applied when a matching response is found. A transformation is applied only if no transformation in `requestTransforms` matched the request.
 
 The `clearRouteCache` attribute is a boolean value that determines whether the route cache should be cleared if the request transformation was applied. If the transformation modifies the headers in a way that affects routing, this attribute must be set to `true`. The default value is `false`.
 
-The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="transformation.options.gloo.solo.io.Transformation" >}} and specify transformations that will be applied to requests and responses respectively. The format can take one of two forms:
+The `requestTransformation` and `responseTransformation` attributes have the {{< protobuf display="same format" name="transformation.options.gloo.solo.io.Transformation" >}} and specify transformations that are applied to requests and responses respectively. The format can be one of the following:
 
-- `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
-- `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
+- `headerBodyTransform`: This type of transformation makes all the headers available in the body and returns a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
+  - If `addRequestMetadata` is true, `queryString`, `queryStringParameters`, `multiValueQueryStringParameters`, `httpMethod`, `path`, and `multiValueHeaders` will additionally be present in the body.
+- `transformationTemplate`: This type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. For more information, see [Transformation templates](#transformation-templates).
+- `xsltTransformation`: This type of transformation allows you to use the XSLT transformation language to describe your transformation. For more information, see [XSLT Transformation](#xslt-transformation). 
+
+The `inheritTransformation` attribute allows child routes to inherit transformations from their parent RouteTables and/or VirtualHosts. For more information, see [Inheritance rules](#inheritance-rules).
 
 #### Transformation templates
 {{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo Edge's transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of the headers and bodies themselves. The following snippet illustrates the structure of the `transformationTemplate` object:
@@ -163,6 +166,15 @@ The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three d
 
 Let's go ahead and describe each one of these attributes in detail.
 
+##### Body Parsing Behavior
+{{% notice warning %}}
+By default, `transformationTemplate` parses the request/response body as JSON, depending on whether you configure a `requestTransformation` or `responseTransformation`. If Gloo Edge fails to parse the request/response body as JSON, it returns a `400 Bad Request` error.
+
+If you want to skip this behavior, you can:
+* Set the [`parseBodyBehavior`](#parsebodybehavior) attribute to `DontParse`. Edge treats the body as plain text and does not parse it.
+* Set the [`ignoreErrorOnParse`](#ignoreerroronparse) attribute to `true`. Edge parses the body as JSON, but does not return an error if the body is not valid JSON.
+* Enable [`passthrough`](#passthrough). Edge does not parse the body.
+{{% /notice %}}
 ##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
 
@@ -385,6 +397,9 @@ In addition to the standard functions available in the core _Inja_ library, you 
 - `body()`: returns the request/response body.
 - `context()`: returns the base JSON context (allowing for example to range on a JSON body that is an array).
 - `request_header(header_name)`: return the value of the request header with the given name. Useful for including request header values in response transformations.
+- `base64_encode(string)`: encodes the input string to base64.
+- `base64_decode(string)`: decodes the input string from base64.
+- `substring(string, start_pos, substring_len)`: returns a substring of the input string, starting at `start_pos` and extending for `substring_len` characters. If no `substring_len` is provided or `substring_len` is <= 0, the substring extends to the end of the input string.
 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 

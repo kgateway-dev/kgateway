@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -89,11 +89,11 @@ func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, 
 		vs.SslConfig = nil
 	} else {
 		if vs.GetSslConfig() == nil {
-			vs.SslConfig = &gloov1.SslConfig{}
+			vs.SslConfig = &ssl.SslConfig{}
 		}
 
 		if optsExt.SslSecretRef.GetName() != "" {
-			vs.GetSslConfig().SslSecrets = &gloov1.SslConfig_SecretRef{
+			vs.GetSslConfig().SslSecrets = &ssl.SslConfig_SecretRef{
 				SecretRef: &optsExt.SslSecretRef,
 			}
 		} else if optsExt.SslSecretRef.GetNamespace() != "" {
@@ -103,7 +103,7 @@ func editVirtualService(opts *options.EditOptions, optsExt *EditVirtualService, 
 		if optsExt.SniDomains != nil {
 			vs.GetSslConfig().SniDomains = optsExt.SniDomains
 		}
-		if reflect.DeepEqual(*vs.GetSslConfig(), gloov1.SslConfig{}) {
+		if reflect.DeepEqual(*vs.GetSslConfig(), ssl.SslConfig{}) {
 			vs.SslConfig = nil
 		}
 	}

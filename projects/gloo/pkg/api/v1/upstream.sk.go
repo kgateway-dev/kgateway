@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(Upstream)
 )
 
+func NewUpstreamHashableResource() resources.HashableResource {
+	return new(Upstream)
+}
+
 func NewUpstream(namespace, name string) *Upstream {
 	upstream := &Upstream{}
 	upstream.SetMetadata(&core.Metadata{

@@ -7,7 +7,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -29,13 +29,15 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
+		typedConfig, err := utils.MessageToAny(&envoybuffer.Buffer{
+			MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
+		})
+		Expect(err).NotTo(HaveOccurred())
 		expectedStageFilter := plugins.StagedHttpFilter{
 			HttpFilter: &envoyhcm.HttpFilter{
 				Name: wellknown.Buffer,
 				ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-					TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
-						MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
-					}),
+					TypedConfig: typedConfig,
 				},
 			},
 

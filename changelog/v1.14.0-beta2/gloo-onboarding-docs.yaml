@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Improve internal documentation around the Gloo component. These were discovered during onboarding
+      and will hopefully make it easier for new developers to contribute to the project.

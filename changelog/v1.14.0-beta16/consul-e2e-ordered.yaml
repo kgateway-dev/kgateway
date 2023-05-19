@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7932
+    resolvesIssue: false
+    description: >
+      Ensure e2e consul tests run in order, to reduce the likelihood of a flake in CI.

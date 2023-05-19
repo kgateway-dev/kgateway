@@ -1,0 +1,15 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/7346
+    resolvesIssue: false
+    description: >-
+      Expose a new Helm value `gloo.disableLeaderElection` which is false by default.
+      Gloo will run leader election to support high availability, even if there is only
+      1 replica. This configuration, when set to true, will explicitly disable leader election,
+      regardless of the number of replicas.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5795
+    resolvesIssue: false
+    description: >-
+      Allow leader election to be disabled in Gloo by configuring the DISABLE_LEADER_ELECTION
+      environment variable to a truthy value. Previously, it could not be disabled explicitly.

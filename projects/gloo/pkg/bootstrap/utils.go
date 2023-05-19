@@ -26,8 +26,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// used for vault and consul key-value storage
-const DefaultRootKey = "gloo"
+const (
+	DefaultK8sQPS   = 50     // 10x the k8s-recommended default; gloo gets busy writing status updates
+	DefaultK8sBurst = 100    // 10x the k8s-recommended default; gloo gets busy writing status updates
+	DefaultRootKey  = "gloo" // used for vault and consul key-value storage
+)
 
 // default query options for consul
 var DefaultQueryOptions = &consulapi.QueryOptions{RequireConsistent: true, AllowStale: false}
@@ -97,13 +100,14 @@ func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (
 				return nil, err
 			}
 
+			c.QPS = DefaultK8sQPS
+			c.Burst = DefaultK8sBurst
 			if kubeSettingsConfig := settings.GetKubernetes(); kubeSettingsConfig != nil {
 				if rl := kubeSettingsConfig.GetRateLimits(); rl != nil {
 					c.QPS = rl.GetQPS()
 					c.Burst = int(rl.GetBurst())
 				}
 			}
-
 			*cfg = c
 		}
 

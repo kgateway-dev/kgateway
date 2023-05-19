@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7920
+  description: >-
+    Use k8s getter for getting service instead of using for loop by lister to improve performance

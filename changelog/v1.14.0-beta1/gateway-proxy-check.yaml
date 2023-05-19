@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/5768
+    description: >
+      Added two checks, one to ensure that we have at least one gateway-proxy deployment in the cluster, another to
+      ensure each gateway-proxy deployment has at least one replica

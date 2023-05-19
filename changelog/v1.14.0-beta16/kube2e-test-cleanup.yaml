@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7818
+    resolvesIssue: false
+    description: >
+      Update Kube2e tests to use the same pattern of defining helm values in an external file.
+      Disable leader election for suites which are not testing that functionality. By having
+      leader election enabled, with default resync values, we experienced flakes in the Istio suites
+      because statuses weren't updated immediately.

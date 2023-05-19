@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description:  >
+     update makefile to always push docker images. For m1 machines the ci script does not push images leading to failures when trying to install and upgrade gloo

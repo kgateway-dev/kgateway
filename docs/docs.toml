@@ -47,7 +47,7 @@ enableGitInfo = true
 glooctl-windows="https://storage.googleapis.com/glooctl-enterprise/051F7858-30A6-42CA-8EF2-9012D521358A/glooctl-windows-amd64.exe"
 glooctl-darwin="https://storage.googleapis.com/glooctl-enterprise/051F7858-30A6-42CA-8EF2-9012D521358A/glooctl-darwin-amd64"
 glooctl-linux="https://storage.googleapis.com/glooctl-enterprise/051F7858-30A6-42CA-8EF2-9012D521358A/glooctl-linux-amd64"
-logoPath="/img/Gloo-01-350-by-60.png"
+logoPath="/img/logo.png"
 
 [[menu.shortcuts]]
 name = "<i class='fa fa-github'></i> Github Repo"

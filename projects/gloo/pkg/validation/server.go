@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
@@ -10,12 +11,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	sk_resources "github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.uber.org/zap"
@@ -26,23 +26,32 @@ import (
 type Validator interface {
 	v1snap.ApiSyncer
 	validation.GlooValidationServiceServer
+	ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource resources.Resource, delete bool) ([]*GlooValidationReport, error)
+}
+
+// ValidatorConfig is used to configure the validator
+type ValidatorConfig struct {
+	Ctx                 context.Context
+	GlooValidatorConfig GlooValidatorConfig
 }
 
 type validator struct {
+	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
+	// any stateful fields should be protected by a mutex or themselves be synchronized (like the xds sanitizer / translator)
 	lock           sync.RWMutex
 	latestSnapshot *v1snap.ApiSnapshot
+	validator      GlooValidator
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 	ctx            context.Context
-	xdsSanitizer   sanitizer.XdsSanitizers
 }
 
-func NewValidator(ctx context.Context, translator translator.Translator, xdsSanitizer sanitizer.XdsSanitizers) *validator {
+func NewValidator(config ValidatorConfig) *validator {
 	return &validator{
-		translator:   translator,
+		translator:   config.GlooValidatorConfig.Translator,
+		validator:    NewGlooValidator(config.GlooValidatorConfig),
 		notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1),
-		ctx:          ctx,
-		xdsSanitizer: xdsSanitizer,
+		ctx:          config.Ctx,
 	}
 }
 
@@ -55,7 +64,7 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 	// rather than compare the hash of the whole snapshot,
 	// we compare the hash of resources that can affect
 	// the validation result (which excludes Endpoints)
-	hashFunc := func(snap *v1snap.ApiSnapshot) uint64 {
+	hashFunc := func(snap *v1snap.ApiSnapshot) (uint64, error) {
 		toHash := append([]interface{}{}, snap.Upstreams.AsInterfaces()...)
 		toHash = append(toHash, snap.UpstreamGroups.AsInterfaces()...)
 		toHash = append(toHash, snap.Secrets.AsInterfaces()...)
@@ -67,12 +76,16 @@ func (s *validator) shouldNotify(snap *v1snap.ApiSnapshot) bool {
 
 		hash, err := hashutils.HashAllSafe(nil, toHash...)
 		if err != nil {
-			panic("this error should never happen, as this is safe hasher")
+			contextutils.LoggerFrom(context.Background()).DPanic("this error should never happen, as this is safe hasher")
+			return 0, errors.New("this error should never happen, as this is safe hasher")
 		}
-		return hash
+		return hash, nil
 	}
-
-	hashChanged := hashFunc(s.latestSnapshot) != hashFunc(snap)
+	oldHash, oldHashErr := hashFunc(s.latestSnapshot)
+	newHash, newHashErr := hashFunc(snap)
+	// If we cannot hash then we choose to treat them as different hashes since this is just a performance optimization.
+	// In worst case we'd prefer correctness
+	hashChanged := oldHash != newHash || oldHashErr != nil || newHashErr != nil
 
 	logger := contextutils.LoggerFrom(s.ctx)
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
@@ -160,53 +173,65 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 	}
 }
 
+// Validate is a gRPC call that we use for validating resources against a request to add upstreams and secrets.
 func (s *validator) Validate(ctx context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
-	s.lock.RLock()
+	s.lock.Lock()
 	// we may receive a Validate call before a Sync has occurred
 	if s.latestSnapshot == nil {
-		s.lock.RUnlock()
+		s.lock.Unlock()
 		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
 	}
-	snapCopy := s.latestSnapshot.Clone()
-	s.lock.RUnlock()
+	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
+	s.lock.Unlock()
 
 	// update the snapshot copy with the resources from the request
 	applyRequestToSnapshot(&snapCopy, req)
+	contextutils.LoggerFrom(ctx).Infof("received proxy validation request")
 
-	ctx = contextutils.WithLogger(ctx, "proxy-validator")
-	logger := contextutils.LoggerFrom(ctx)
-
-	logger.Infof("received proxy validation request")
+	reports := s.validator.Validate(ctx, req.GetProxy(), &snapCopy, false)
 
 	var validationReports []*validation.ValidationReport
-	var proxiesToValidate v1.ProxyList
-	if req.GetProxy() != nil {
-		proxiesToValidate = v1.ProxyList{req.GetProxy()}
-	} else {
-		// if no proxy was passed in, call translate for all proxies in snapshot
-		proxiesToValidate = snapCopy.Proxies
+	// convert the reports for the gRPC response
+	for _, rep := range reports {
+		validationReports = append(validationReports, convertToValidationReport(rep.ProxyReport, rep.ResourceReports, rep.Proxy))
 	}
-	params := plugins.Params{
-		Ctx:      ctx,
-		Snapshot: &snapCopy,
-	}
-	for _, proxy := range proxiesToValidate {
-		xdsSnapshot, resourceReports, proxyReport := s.translator.Translate(params, proxy)
-
-		// Sanitize routes before sending report to gateway
-		s.xdsSanitizer.SanitizeSnapshot(ctx, &snapCopy, xdsSnapshot, resourceReports)
-		routeErrorToWarnings(resourceReports, proxyReport)
-
-		validationReports = append(validationReports, convertToValidationReport(proxyReport, resourceReports, proxy))
-	}
-
 	return &validation.GlooValidationServiceResponse{
 		ValidationReports: validationReports,
 	}, nil
 }
 
+// ValidateGloo replaces the functionality of Validate.  Validate is still a method that needs to be
+// exported because it is used as a gRPC service. A synced version of the snapshot is needed for
+// gloo validation.
+func (s *validator) ValidateGloo(ctx context.Context, proxy *v1.Proxy, resource resources.Resource, delete bool) ([]*GlooValidationReport, error) {
+	// the gateway validator will call this function to validate Gloo resources.
+	s.lock.Lock()
+	// we may receive a Validate call before a Sync has occurred
+	if s.latestSnapshot == nil {
+		s.lock.Unlock()
+		return nil, eris.New("proxy validation called before the validation server received its first sync of resources")
+	}
+	snapCopy := s.latestSnapshot.Clone() // cloning can mutate so we need a write lock
+	s.lock.Unlock()
+	if resource != nil {
+		if delete {
+			if err := snapCopy.RemoveFromResourceList(resource); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := snapCopy.UpsertToResourceList(resource); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return s.validator.Validate(ctx, proxy, &snapCopy, delete), nil
+}
+
 // updates the given snapshot with the resources from the request
 func applyRequestToSnapshot(snap *v1snap.ApiSnapshot, req *validation.GlooValidationServiceRequest) {
+	// if we want to change the type, we could use API snapshots as containers.  Like this struct
+	// projects/gloo/pkg/validation/api_snapshot_request.go
 	if req.GetModifiedResources() != nil {
 		existingUpstreams := snap.Upstreams.AsResources()
 		modifiedUpstreams := utils.UpstreamsToResourceList(req.GetModifiedResources().GetUpstreams())

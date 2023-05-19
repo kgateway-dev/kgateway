@@ -1,0 +1,13 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/7950
+  resolvesIssue: false
+  description: >-
+    (Enterprise Only) Introduce ability to configure timeouts for individual resolutions within a GraphQL query. Additionally, default the
+    resolver timeout to that configured on the upstream, if any. The per-resolution timeout will overwrite the upstream
+    timeout, and if neither are set then the default timeout of 1 second will be applied.
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/7144
+  resolvesIssue: false
+  description: >-
+    link issue

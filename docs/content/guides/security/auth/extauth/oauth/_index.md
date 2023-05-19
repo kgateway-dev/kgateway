@@ -41,7 +41,7 @@ spec:
       oidcAuthorizationCode:
         issuerUrl: theissuer.com
         appUrl: https://myapp.com
-        authEndpoint_query_params:
+        authEndpointQueryParams:
           paramKey: paramValue
         callbackPath: /my/callback/path/
         clientId: myclientid
@@ -170,10 +170,77 @@ You can also override the revocation endpoint through the [DiscoveryOverride fie
 If the authorization server has a service error, Gloo logs out the user, but does not retry revoking the access token. Check the logs and your identity provider for errors, and manually revoke the access token.
 {{% /notice %}}
 
+## Sessions in Cookies
+
+You can store the ID token, access token, and other tokens that are returned from your OIDC provider in a cookie on the client side. To do this, you configure your cookie options, such as the `keyPrefix` that you want to add to the token name, in the `oauth2.oidcAuthorizationCode.session.cookie` section of your authconfig as shown in the following example. After a client successfully authenticates with the OIDC provider, the tokens are stored in the `Set-Cookie` response header and sent to the client. If you set a `keyPrefix` value in your cookie configuration, the prefix is added to the name of the token before it is sent to the client, such as `Set-Cookie: <myprefix>_id-token=<ID_token>`. To prove successful authentication with the OIDC provider in subsequent requests, clients send their tokens in a `Cookie` header. 
+
+Cookie headers can have a maximum size of 4KB. If you find that your cookie header exceeds this value, you can either limit the size of the cookie header or [store the tokens in Redis](#sessions-in-redis) and send back a Redis session ID instead. 
+
+{{% notice warning %}}
+Storing the raw, unencrypted tokens in a cookie header is not a recommended security practice as they can be manipulated through malicious attacks. To encrypt your tokens, see [Symmetric cookie encryption](#symmetric-cookie-encryption). For a more secure setup, [store the tokens in a Redis instance](#sessions-in-redis) and send back a Redis session ID in the cookie header. 
+{{% /notice %}}
+
+
+Example configuration:
+{{< highlight yaml "hl_lines=19-21" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        session:
+          cookie:
+            keyPrefix: "my_cookie_prefix"
+{{< /highlight >}}
+
+### Symmetric cookie encryption
+
+By default, the tokens that are sent in the cookie header are not encrypted and can be manipulated through malicious attacks. To encrypt the cookie values, you can add a `cipherConfig` section to your session configuration as shown in the following example. 
+
+{{% notice note %}}
+Setting the `cipherConfig` attribute is supported in Gloo Edge version 1.15 and later and can be used only to encrypt cookie sessions. You cannot use this feature to encrypt Redis sessions. 
+{{% /notice %}}
+
+1. Create a secret with your encryption key. Note that the key must be 32 bytes in length. 
+   ```shell
+   glooctl create secret encryptionkey --name my-encryption-key --key "an example of an encryption key1"
+   ```
+
+2. Reference the secret in the `cipherConfig` section of your authconfig. 
+   {{< highlight yaml "hl_lines=8-11" >}}
+   ...
+   kind: AuthConfig
+   spec:
+     configs:
+     - oauth2:
+          oidcAuthorizationCode:
+            session:
+              cipherConfig:
+                keyRef:
+                  name: my-encryption-key
+                  namespace: gloo-system
+                cookie:
+                  keyPrefix: "my_cookie_prefix"
+   {{< /highlight >}}
+
 ## Sessions in Redis
 
 By default, the tokens will be saved in a secure client side cookie.
 Gloo can instead use Redis to save the OIDC tokens, and set a randomly generated session id in the user's cookie.
+Going forward in the Gloo Edge documentation, we will be using examples of OIDC using a redis session.
 
 Example configuration:
 

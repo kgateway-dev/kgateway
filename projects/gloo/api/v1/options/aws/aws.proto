@@ -39,9 +39,13 @@ message UpstreamSpec {
 
     // (Optional): The AWS Account ID to use while calling if using resource based access
     string aws_account_id = 5;
-   
+
     // Optional override to disable role chaining;
     bool disable_role_chaining = 6;
+
+    // Specifies AWS DestinationSpec configuration overrides for any route targeting this upstream.
+    // Note that the route in question must have an AWS DestinationSpec to be affected and this will only set things that are non-falsey as overrides.
+    DestinationSpec destination_overrides = 7;
 }
 
 // Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda functions:
@@ -70,24 +74,28 @@ message DestinationSpec {
         SYNC = 0;
         ASYNC = 1;
     }
-    // Include headers, querystring, request path, and request method in the event payload sent to aws lambda
+    // Include headers, multi-value headers, querystring, querystring parameters, multi-value querystring parameters,  request path, and request method in the event payload sent to aws lambda
+    // Only one of `requestTransformation` or `wrapAsApiGateway` should be provided.
     bool request_transformation = 6;
-    
-    // de-jsonify response bodies returned from aws lambda
-    bool response_transformation = 5;
+
+    // Deprecated. Use unwrapAsApiGateway
+    bool response_transformation = 5 [deprecated=true];
 
     // Unwrap the response as if the proxy was an ALB.
-    // Intended to ease migration when previously using alb to invoke Lambdas.
+    // Intended to ease migration when previously using ALB to invoke Lambdas.
     // For further information see below link for the expected format when true.
     // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
-    // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
-    // If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
+    // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided.
     bool unwrap_as_alb = 7;
 
-    // Enterprise-Only
     // Unwrap the response as if the proxy was an AWS API Gateway.
     // Intended to ease migration when previously using API Gateway to invoke Lambdas.
-    // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided.
-    // If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway
+    // Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided.
     bool unwrap_as_api_gateway = 8;
+
+    // Enterprise-Only
+    // Wrap the request into AWS API Gateway event format.
+    // Intended to ease migration when previously using API Gateway to invoke Lambdas.
+    // Only one of `requestTransformation` or `wrapAsApiGateway` should be provided.
+    bool wrap_as_api_gateway = 9;
 }

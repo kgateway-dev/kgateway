@@ -21,7 +21,7 @@ For more information, see the AWS Lambda documentation on [configuring Lambda fu
 Create an AWS Lambda function to test with Gloo Edge routing.
 
 1. Log in to the AWS console and navigate to the Lambda page.
-   
+
 2. Note your region, which is used when configuring the AWS upstream in subsequent steps.
 
 3. Click the **Create Function** button.
@@ -46,8 +46,8 @@ Create a Kubernetes secret that contains your AWS access key and secret key. Glo
    glooctl create secret aws \
        --name 'aws-creds' \
        --namespace gloo-system \
-       --access-key '$ACCESS_KEY' \
-       --secret-key '$SECRET_KEY'
+       --access-key $ACCESS_KEY \
+       --secret-key $SECRET_KEY
    ```
 
 ### Step 3: Create an upstream and virtual service
@@ -123,16 +123,42 @@ Create Gloo Edge `Upstream` and `VirtualService` resources to route requests to 
 
 At this point, Gloo Edge is routing directly to the `echo` Lambda function. To configure Gloo Edge to also unwrap the JSON response from the function in the same way as an AWS ALB or AWS API Gateway, continue to the next section.
 
-## Unwrap responses as an<!-- AWS ALB or--> AWS API Gateway
 
-To use Gloo Edge in place of your AWS ALB or AWS API Gateway, you can additionally configure the `unwrapAsAlb` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB or AWS API Gateway.
+## Transform requests and/or responses
 
-<!-- As of right now, we dont have a great understanding of exactly how edge should manipulate the response in the same manner as an aws alb. Seems very similar to the manipulation from the API gateway one. Will leave the unwrapAsAlb setting info in the about section and in the ^ paragraph right before this in case people still want to try this out on their own, but I dont think our testing docs will help very much at this point.
-### AWS ALB
+### Basic request transformations
+
+When you use the AWS Lambda plug-in in Gloo Edge, you might want to transform requests to increase the amount of information passed to the Lambda function.
+
+The request transformation injects the headers of the request into the body. The resulting body will be a JSON object containing two keys: 'headers', which contains the injected headers, and 'body', which contains the original body.
+
+Note that request transformations are incompatible with the `wrapAsApiGateway` setting, which transforms requests into the format produced by an AWS API Gateway.
+
+**Before you begin**: [Install Gloo Edge version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+
+1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.requestTransformation: true` setting.
+   ```bash
+   kubectl edit virtualservices.gateway.solo.io -n gloo-system aws-route
+   ```
+   {{< highlight yaml "hl_lines=5-8" >}}
+   ...
+         routeAction:
+           single:
+             destinationSpec:
+               aws:
+                 logicalName: echo
+                 requestTransformation: true
+             upstream:
+               name: aws-upstream
+               namespace: gloo-system
+   {{< / highlight >}}
+
+
+### Unwrap responses as an AWS ALB
 
 Unwrap the JSON response from the function in the same way as an AWS ALB.
 
-**Before you begin**: [Install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+In the following steps, you configure the `unwrapAsAlb` setting in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS ALB .
 
 1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsAlb: true` setting.
    ```bash
@@ -166,19 +192,23 @@ Unwrap the JSON response from the function in the same way as an AWS ALB.
    > Accept: */*
    > Content-Length: 116
    > Content-Type: application/x-www-form-urlencoded
-   > 
+   >
    * upload completely sent off: 116 out of 116 bytes
    < HTTP/1.1 201 Created
    < test-header-key: test-header-value
    < content-length: 32
    < date: Mon, 25 Jul 2022 13:37:05 GMT
    < server: envoy
-   < 
+   <
    * Connection #0 to host localhost left intact
    gloo edge is inserting this body* Closing connection 0
    ```
--->
-### AWS API Gateway (Enterprise v1.12.0+ only)
+
+### Wrap or unwrap requests and responses as an AWS API Gateway (Enterprise v1.12.0+ only)
+
+In Gloo Edge Enterprise, you can use Gloo Edge in place of an AWS API Gateway. To do this, configure the `wrapAsApiGateway` setting or the `unwrapAsApiGateway` setting (Gloo Edge Enterprise only, version 1.12.0 or later) in the [AWS `destinationSpec`]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/" %}}) of the route to your Lambda upstream. These settings allow Gloo Edge to manipulate a response from an upstream Lambda in the same way as an AWS API Gateway.
+
+#### Unwrap as API Gateway
 
 Unwrap the JSON response from the function in the same way as an AWS API Gateway.
 
@@ -225,14 +255,71 @@ For more information, see the AWS Lambda documentation on [how AWS API Gateways 
    > Accept: */*
    > Content-Length: 116
    > Content-Type: application/x-www-form-urlencoded
-   > 
+   >
    * upload completely sent off: 116 out of 116 bytes
    < HTTP/1.1 201 Created
    < test-header-key: test-header-value
    < content-length: 32
    < date: Mon, 25 Jul 2022 13:37:05 GMT
    < server: envoy
-   < 
+   <
    * Connection #0 to host localhost left intact
    gloo edge is inserting this body* Closing connection 0
    ```
+
+#### Wrap as API Gateway
+
+Wrap the request to the function in the same way as an AWS API Gateway.
+
+**Before you begin**: [Install Gloo Edge Enterprise version 1.12.0 or later in a Kubernetes cluster]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) or [upgrade your existing Enterprise installation to version 1.12.0 or later]({{% versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" %}}).
+
+1. Edit the VirtualService resource that you created in the previous section to add the `destinationSpec.aws.unwrapAsApiGateway: true` setting.
+   ```bash
+   kubectl edit virtualservices.gateway.solo.io -n gloo-system aws-route
+   ```
+   {{< highlight yaml "hl_lines=5-7" >}}
+   ...
+         routeAction:
+           single:
+             destinationSpec:
+               aws:
+                 logicalName: echo
+                 wrapAsApiGateway: true
+             upstream:
+               name: aws-upstream
+               namespace: gloo-system
+   {{< / highlight >}}
+
+2. Verify that Gloo Edge correctly routes traffic requests to the Lambda function and unwraps the response from the function.
+   ```sh
+   curl $(glooctl proxy url)/ -d 'gloo edge is inserting this body' -H 'test-header-key: test-header-value' -X POST -v
+   ```
+   A successful response contains the body as received by the upstream lambda function, such as the following:
+   ```
+   *   Trying ::1...
+   * TCP_NODELAY set
+   * Connected to localhost (::1) port 8080 (#0)
+   > POST / HTTP/1.1
+   > Host: localhost:8080
+   > User-Agent: curl/7.85.0
+   > Accept: */*
+   > test-header-key: test-header-value
+   > Content-Length: 32
+   > Content-Type: application/x-www-form-urlencoded
+   >
+   * Mark bundle as not supporting multiuse
+   < HTTP/1.1 200 OK
+   < date: Mon, 13 Feb 2023 13:22:06 GMT
+   < content-type: application/json
+   < content-length: 754
+   < x-amzn-requestid: 24c24091-ddf9-4bc5-9799-e86f06ca60b7
+   < x-amzn-remapped-content-length: 0
+   < x-amz-executed-version: $LATEST
+   < x-amzn-trace-id: root=1-63ea397d-75fcad35063993b6357a03ce;sampled=0
+   < x-envoy-upstream-service-time: 397
+   < server: envoy
+   <
+   * Connection #0 to host localhost left intact
+   {"body": "gloo edge is inserting this body", "headers": {":authority": "localhost:8080", ":method": "POST", ":path": "/", ":scheme": "http", "accept": "*/*", "content-length": "32", "content-type": "application/x-www-form-urlencoded", "test-header-key": "test-header-value", "user-agent": "curl/7.85.0", "x-forwarded-proto": "http", "x-request-id": "347975da-fa61-4d8a-9285-ee0826202819"}, "httpMethod": "POST", "isBase64Encoded": false, "multiValueHeaders": null, "multiValueQueryStringParameters": null, "path": "/", "pathParameters": null, "queryStringParameters": null, "requestContext": {"httpMethod": "POST", "path": "/", "protocol": "HTTP/1.1", "resourcePath": "/"}, "resource": "/", "routeKey": "POST /", "stageVariables": null, "version": "1.0"}%
+   ```
+

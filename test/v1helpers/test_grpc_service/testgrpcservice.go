@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
+
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/go-utils/healthchecker"
 	"google.golang.org/grpc"
@@ -41,7 +43,19 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	hc := healthchecker.NewGrpc("TestService", health.NewServer(), false, healthpb.HealthCheckResponse_SERVING)
 	healthpb.RegisterHealthServer(grpcServer, hc.GetServer())
 	glootest.RegisterTestServiceServer(grpcServer, srv)
-	go grpcServer.Serve(lis)
+
+	go func() {
+		defer ginkgo.GinkgoRecover()
+
+		_ = grpcServer.Serve(lis)
+	}()
+	go func() {
+		defer ginkgo.GinkgoRecover()
+
+		<-ctx.Done()
+		grpcServer.Stop()
+	}()
+
 	time.Sleep(time.Millisecond)
 
 	addr := lis.Addr().String()
@@ -71,15 +85,28 @@ type TestGRPCServer struct {
 	C             chan *glootest.TestRequest
 	Port          uint32
 	HealthChecker healthchecker.HealthChecker
+	glootest.UnimplementedTestServiceServer
 }
 
 // Returns a list of all shelves in the bookstore.
 func (s *TestGRPCServer) TestMethod(_ context.Context, req *glootest.TestRequest) (*glootest.TestResponse, error) {
 	if req == nil {
-		return nil, errors.New("cannot be nil")
+		return &glootest.TestResponse{Str: "cannot be nil"}, nil
+		//return nil, errors.New("cannot be nil")
 	}
 	go func() {
 		s.C <- req
+	}()
+	return &glootest.TestResponse{Str: req.GetStr()}, nil
+}
+
+// Returns a list of all shelves in the bookstore.
+func (s *TestGRPCServer) TestParameterMethod(_ context.Context, req *glootest.TestRequest) (*glootest.TestResponse, error) {
+	if req == nil {
+		return nil, errors.New("cannot be nil")
+	}
+	go func() {
+		s.C <- &glootest.TestRequest{Str: req.GetStr()}
 	}()
 	return &glootest.TestResponse{Str: req.GetStr()}, nil
 }

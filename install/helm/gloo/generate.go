@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
-	"runtime"
 
 	"github.com/ghodss/yaml"
 	errors "github.com/rotisserie/eris"
@@ -114,7 +112,7 @@ func generateChartYaml(version string) error {
 }
 
 func readYaml(path string, obj interface{}) error {
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "failed reading server config file: %s", path)
 	}
@@ -132,7 +130,7 @@ func writeYaml(obj interface{}, path string) error {
 		return errors.Wrapf(err, "failed marshaling config struct")
 	}
 
-	err = ioutil.WriteFile(path, bytes, os.ModePerm)
+	err = os.WriteFile(path, bytes, os.ModePerm)
 	if err != nil {
 		return errors.Wrapf(err, "failing writing config file")
 	}
@@ -140,7 +138,7 @@ func writeYaml(obj interface{}, path string) error {
 }
 
 func writeDocs(docs helmchart.HelmValues, path string) error {
-	err := ioutil.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
+	err := os.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
 	if err != nil {
 		return errors.Wrapf(err, "failing writing helm values file")
 	}
@@ -152,18 +150,7 @@ func readValuesTemplate() (*generate.HelmConfig, error) {
 	if err := readYaml(valuesTemplate, &config); err != nil {
 		return nil, err
 	}
-	// adding in for arm64 registry work around
-	if runtime.GOARCH == "arm64" && os.Getenv("RUNNING_REGRESSION_TESTS") == "true" {
-		imageRepo := "localhost:5000"
-		if envImageRepo := os.Getenv("IMAGE_REPO"); envImageRepo != "" {
-			imageRepo = envImageRepo
-		}
-		configImage := config.Global.Image
-		reg := imageRepo
-		always := "Always"
-		configImage.Registry = &reg
-		configImage.PullPolicy = &always
-	}
+
 	return &config, nil
 }
 

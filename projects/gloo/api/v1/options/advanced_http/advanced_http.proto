@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package advancedhttp.options.gloo.solo.io;
 
-import "udpa/annotations/status.proto";
 
 import "google/protobuf/empty.proto";
 import "validate/validate.proto";

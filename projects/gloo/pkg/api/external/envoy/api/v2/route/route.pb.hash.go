@@ -10,8 +10,8 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
@@ -858,6 +858,28 @@ func (m *RouteMatch) Hash(hasher hash.Hash64) (uint64, error) {
 
 		if _, err = hasher.Write([]byte(m.GetRegex())); err != nil {
 			return 0, err
+		}
+
+	case *RouteMatch_ConnectMatcher_:
+
+		if h, ok := interface{}(m.GetConnectMatcher()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ConnectMatcher")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetConnectMatcher(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ConnectMatcher")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
 		}
 
 	}
@@ -2200,6 +2222,22 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 			return 0, err
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *RouteMatch_ConnectMatcher) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("solo.io.envoy.api.v2.route.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route.RouteMatch_ConnectMatcher")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

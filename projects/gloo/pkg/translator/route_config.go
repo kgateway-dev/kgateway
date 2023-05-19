@@ -3,6 +3,8 @@ package translator
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -11,7 +13,6 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
@@ -30,9 +31,28 @@ import (
 )
 
 var (
-	NoDestinationSpecifiedError = errors.New("must specify at least one weighted destination for multi destination routes")
+	// invalidPathSequences are path sequences that should not be contained in a path
+	invalidPathSequences = []string{"//", "/./", "/../", "%2f", "%2F", "#"}
+	// invalidPathSuffixes are path suffixes that should not be at the end of a path
+	invalidPathSuffixes = []string{"/..", "/."}
+	// validCharacterRegex pattern based off RFC 3986 similar to kubernetes-sigs/gateway-api implementation
+	// for finding "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
+	validPathRegexCharacters = "^(?:([A-Za-z0-9/:@._~!$&'()*+,:=;-]*|[%][0-9a-fA-F]{2}))*$"
 
-	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not")
+	NoDestinationSpecifiedError       = errors.New("must specify at least one weighted destination for multi destination routes")
+	SubsetsMisconfiguredErr           = errors.New("route has a subset config, but the upstream does not")
+	CompilingRoutePathRegexError      = errors.Errorf("error compiling route path regex: %s", validPathRegexCharacters)
+	ValidRoutePatternError            = errors.Errorf("must only contain valid characters matching pattern %s", validPathRegexCharacters)
+	PathContainsInvalidCharacterError = func(s, invalid string) error {
+		return errors.Errorf("path [%s] cannot contain [%s]", s, invalid)
+	}
+	PathEndsWithInvalidCharactersError = func(s, invalid string) error {
+		return errors.Errorf("path [%s] cannot end with [%s]", s, invalid)
+	}
+)
+
+var (
+	validPathRegex *regexp.Regexp
 )
 
 type RouteConfigurationTranslator interface {
@@ -97,10 +117,11 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
 
-	// Make copy to avoid modifying the snapshot
-	virtualHost = proto.Clone(virtualHost).(*v1.VirtualHost)
-	virtualHost.Name = utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
-
+	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
+	if sanitizedName != virtualHost.GetName() {
+		virtualHost = virtualHost.Clone().(*v1.VirtualHost)
+		virtualHost.Name = sanitizedName
+	}
 	var envoyRoutes []*envoy_config_route_v3.Route
 	for i, route := range virtualHost.GetRoutes() {
 		routeParams := plugins.RouteParams{
@@ -153,6 +174,7 @@ func (h *httpRouteConfigurationTranslator) envoyRoutes(
 
 	for i := range out {
 		h.setAction(params, routeReport, in, out[i])
+		validateEnvoyRoute(out[i], routeReport)
 	}
 
 	return out
@@ -197,6 +219,23 @@ func initRoutes(
 	}
 
 	return out
+}
+
+// validateEnvoyRoute will validate all paths on a route. Any path, rewrite, or redirect of the path
+// will be validated.
+func validateEnvoyRoute(r *envoy_config_route_v3.Route, routeReport *validationapi.RouteReport) {
+	match := r.GetMatch()
+	route := r.GetRoute()
+	re := r.GetRedirect()
+	name := r.GetName()
+	validatePath(match.GetPath(), name, routeReport)
+	validatePath(match.GetPrefix(), name, routeReport)
+	validatePath(match.GetPathSeparatedPrefix(), name, routeReport)
+	validatePath(re.GetPathRedirect(), name, routeReport)
+	validatePath(re.GetHostRedirect(), name, routeReport)
+	validatePath(re.GetSchemeRedirect(), name, routeReport)
+	validatePrefixRewrite(route.GetPrefixRewrite(), name, routeReport)
+	validatePrefixRewrite(re.GetPrefixRewrite(), name, routeReport)
 }
 
 // utility function to transform gloo matcher to envoy route matcher
@@ -582,6 +621,10 @@ func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoy_c
 		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_Prefix{
 			Prefix: path.Prefix,
 		}
+	case *matchers.Matcher_ConnectMatcher_:
+		out.PathSpecifier = &envoy_config_route_v3.RouteMatch_ConnectMatcher_{
+			ConnectMatcher: &envoy_config_route_v3.RouteMatch_ConnectMatcher{},
+		}
 	}
 }
 
@@ -796,4 +839,56 @@ func isWarningErr(err error) bool {
 	default:
 		return false
 	}
+}
+
+func validatePath(path, name string, routeReport *validationapi.RouteReport) {
+	if err := ValidateRoutePath(path); err != nil {
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the path is invalid: %s", path).Error(), name)
+	}
+}
+
+func validatePrefixRewrite(rewrite, name string, routeReport *validationapi.RouteReport) {
+	if err := ValidatePrefixRewrite(rewrite); err != nil {
+		validation.AppendRouteError(routeReport, validationapi.RouteReport_Error_ProcessingError, errors.Wrapf(err, "the rewrite is invalid: %s", rewrite).Error(), name)
+	}
+}
+
+// ValidatePrefixRewrite will validate the rewrite using url.Parse. Then it will evaluate the Path of the rewrite.
+func ValidatePrefixRewrite(s string) error {
+	u, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+	return ValidateRoutePath(u.Path)
+}
+
+// ValidateRoutePath will validate a string for all characters according to RFC 3986
+// "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
+// https://www.rfc-editor.org/rfc/rfc3986/
+func ValidateRoutePath(s string) error {
+	if s == "" {
+		return nil
+	}
+	if validPathRegex == nil {
+		re, err := regexp.Compile(validPathRegexCharacters)
+		if err != nil {
+			validPathRegex = nil
+			return CompilingRoutePathRegexError
+		}
+		validPathRegex = re
+	}
+	if !validPathRegex.Match([]byte(s)) {
+		return ValidRoutePatternError
+	}
+	for _, invalid := range invalidPathSequences {
+		if strings.Contains(s, invalid) {
+			return PathContainsInvalidCharacterError(s, invalid)
+		}
+	}
+	for _, invalid := range invalidPathSuffixes {
+		if strings.HasSuffix(s, invalid) {
+			return PathEndsWithInvalidCharactersError(s, invalid)
+		}
+	}
+	return nil
 }

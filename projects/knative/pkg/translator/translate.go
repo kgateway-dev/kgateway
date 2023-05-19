@@ -15,6 +15,7 @@ import (
 	"knative.dev/pkg/network"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
@@ -46,7 +47,7 @@ const (
 	sslAnnotationKeySecretNamespace = "gloo.networking.knative.dev/ssl.secret_namespace"
 )
 
-func sslConfigFromAnnotations(annotations map[string]string, namespace string) *gloov1.SslConfig {
+func sslConfigFromAnnotations(annotations map[string]string, namespace string) *ssl.SslConfig {
 	secretName, ok := annotations[sslAnnotationKeySecretName]
 	if !ok {
 		return nil
@@ -59,8 +60,8 @@ func sslConfigFromAnnotations(annotations map[string]string, namespace string) *
 
 	sniDomains := strings.Split(annotations[sslAnnotationKeySniDomains], ",")
 
-	return &gloov1.SslConfig{
-		SslSecrets: &gloov1.SslConfig_SecretRef{
+	return &ssl.SslConfig{
+		SslSecrets: &ssl.SslConfig_SecretRef{
 			SecretRef: &core.ResourceRef{
 				Name:      secretName,
 				Namespace: secretNamespace,
@@ -122,10 +123,10 @@ func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace stri
 	}, nil
 }
 
-func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1alpha1.IngressSpec) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*gloov1.SslConfig, error) {
+func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1alpha1.IngressSpec) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*ssl.SslConfig, error) {
 
 	var virtualHostsHttp, virtualHostsHttps []*gloov1.VirtualHost
-	var sslConfigs []*gloov1.SslConfig
+	var sslConfigs []*ssl.SslConfig
 	for ing, spec := range ingresses {
 
 		for _, tls := range spec.TLS {
@@ -135,9 +136,9 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 				secretNamespace = ing.GetNamespace()
 			}
 
-			sslConfigs = append(sslConfigs, &gloov1.SslConfig{
+			sslConfigs = append(sslConfigs, &ssl.SslConfig{
 				SniDomains: tls.Hosts,
-				SslSecrets: &gloov1.SslConfig_SecretRef{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					// pass secret through to gloo,
 					// allow Gloo to perform secret validation
 					SecretRef: &core.ResourceRef{
@@ -282,7 +283,7 @@ func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderMan
 
 // trim kube dns suffixes
 // undocumented requirement
-// see https://github.com/knative/serving/blob/master/pkg/reconciler/ingress/resources/virtual_service.go#L281
+// see https://github.com/knative/serving/blob/main/pkg/reconciler/ingress/resources/virtual_service.go#L281
 func expandHosts(hosts []string) []string {
 	expanded := sets.NewString()
 	allowedSuffixes := []string{

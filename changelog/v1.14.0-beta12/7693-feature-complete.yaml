@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7693
+    resolvesIssue: false
+    description: >-
+      Allow configured DynamicForwardProxies to use TLS Origination (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-field-config-cluster-v3-cluster-transport-socket) via a newly exposed field: gateway.spec.httpGateway.options.dynamicForwardProxy.sslConfig

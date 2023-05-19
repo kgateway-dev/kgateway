@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7900
+    resolvesIssue: true
+    description: >
+      Update the AuthConfig API and add documentation to relevant API key module
+      fields for accessing the extra metadata attached to an API key Secret
+      in other modules (e.g. OPA).

@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -278,7 +277,7 @@ func generateGlooEChangelog() error {
 }
 
 func getCachedReleases(fileName string) []*github.RepositoryRelease {
-	bArray, err := ioutil.ReadFile(fileName)
+	bArray, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil
 	}
@@ -343,7 +342,7 @@ func scanImagesForRepo(ctx context.Context, targetRepo string, vulnerabilityActi
 					">=v1.12.3":            OpenSourceImages(version.MustParseSemantic("1.12.3")),  //extra images: [kubectl]
 					"<v1.12.3, >=v1.12.0":  OpenSourceImages(version.MustParseSemantic("1.12.0")),  //extra images: []
 					"<v1.12.0, >=v1.11.28": OpenSourceImages(version.MustParseSemantic("1.11.28")), //extra images: [gateway, kubectl]
-					"<v1.11.28, >=v1.9.0":  OpenSourceImages(version.MustParseSemantic("1.9.0")),   //extra images: [gateway]
+					"<v1.11.28, >=v1.10.0": OpenSourceImages(version.MustParseSemantic("1.10.0")),  //extra images: [gateway]
 				},
 				VersionConstraint:                      versionConstraint,
 				ImageRepo:                              "quay.io/solo-io",
@@ -453,7 +452,7 @@ func fetchEnterpriseHelmValues(args []string) error {
 
 	// Download the file at the specified path on the latest released branch of solo-projects
 	path := "install/helm/gloo-ee/reference/values.txt"
-	semverReleaseTag, err := ioutil.ReadFile("../_output/gloo-enterprise-version")
+	semverReleaseTag, err := os.ReadFile("../_output/gloo-enterprise-version")
 	if err != nil {
 		return err
 	}

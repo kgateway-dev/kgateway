@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/6983
+    description: >
+      Fix a bug in configuring Envoy upstreams where some http protocol options could not be specified when useHttp2 was enabled

@@ -65,6 +65,8 @@ func (p *plugin) Name() string {
 }
 
 func (p *plugin) Init(params plugins.InitParams) {
+	p.recordedUpstreams = make(map[string]*v1.Upstream)
+	p.upstreamServices = nil
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
@@ -76,13 +78,20 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if upstreamType.GetServiceSpec() == nil {
 		return nil
 	}
-
+	// If the upstream uses the new API we should record that it exists for use in `ProcessRoute` but not make any changes
+	_, ok = upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_GrpcJsonTranscoder)
+	if ok {
+		p.recordedUpstreams[translator.UpstreamToClusterName(in.GetMetadata().Ref())] = in
+		return nil
+	}
 	grpcWrapper, ok := upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_Grpc)
 	if !ok {
 		return nil
 	}
+
 	grpcSpec := grpcWrapper.Grpc
 
+	// GRPC transcoding always requires http2
 	if out.GetHttp2ProtocolOptions() == nil {
 		out.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
@@ -112,7 +121,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
 	})
-	contextutils.LoggerFrom(params.Ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName())
+	contextutils.LoggerFrom(params.Ctx).Debugf("record grpc upstream in.Metadata.Namespace: %s, in.Metadata.Name: %s cluster: %s", in.GetMetadata().GetNamespace(), in.GetMetadata().GetName(), translator.UpstreamToClusterName(in.GetMetadata().Ref()))
 
 	return nil
 }
@@ -177,9 +186,16 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 			upstream := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if upstream == nil {
-				return nil, errors.New("upstream was not recorded for grpc route")
+				return nil, errors.New(fmt.Sprintf("upstream %v was not recorded for grpc route", upstreamRef))
 			}
+			// If we saved the upstream then it has a ServiceSpec that is either Grpc or GrpcJsonTranscoder
+			upstreamType, _ := upstream.GetUpstreamType().(v1.ServiceSpecGetter)
 
+			// If the upstream uses the new API we assume the descriptors and vs match and do not do any transformations
+			_, ok = upstreamType.GetServiceSpec().GetPluginType().(*glooplugins.ServiceSpec_GrpcJsonTranscoder)
+			if ok {
+				return nil, nil
+			}
 			// create the transformation for the route
 			outPath := httpPath(upstream, fullServiceName, methodName)
 

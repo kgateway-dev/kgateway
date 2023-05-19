@@ -10,8 +10,8 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 )
 
 // ensure the imports are used
@@ -76,6 +76,50 @@ func (m *ServiceSpec) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("Grpc")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ServiceSpec_GrpcJsonTranscoder:
+
+		if h, ok := interface{}(m.GetGrpcJsonTranscoder()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("GrpcJsonTranscoder")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetGrpcJsonTranscoder(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("GrpcJsonTranscoder")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ServiceSpec_Graphql:
+
+		if h, ok := interface{}(m.GetGraphql()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Graphql")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetGraphql(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Graphql")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

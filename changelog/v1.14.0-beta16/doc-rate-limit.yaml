@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updates the rate limit docs based on user feedback shared in Slack.

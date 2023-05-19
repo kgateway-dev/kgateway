@@ -109,18 +109,18 @@ spec:
         {{- end }}
 {{- end}}
     spec:
+{{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
+{{- if not $spec.podTemplate.floatingUserId -}}
+  {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
+{{ end -}}
+{{- if $spec.podTemplate.enablePodSecurityContext -}}
+{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults) | indent 6 -}}
+{{- end -}}
 
-{{- if $spec.podTemplate.enablePodSecurityContext }}
-      securityContext:
-        fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) }}
-        {{- if not $spec.podTemplate.floatingUserId }}
-        runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
-        {{- end}}
-{{- end}}
 {{- if $spec.kind.deployment }}
 {{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:
-{{- end}}
+{{- end }}
 {{ if $spec.antiAffinity }}
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -133,6 +133,10 @@ spec:
 {{- end}}
 {{- if $spec.affinity }}
       {{ toYaml $spec.affinity | nindent 8 }}
+{{- end }}
+{{- with $spec.topologySpreadConstraints }}
+      topologySpreadConstraints:
+{{- toYaml $spec.topologySpreadConstraints | nindent 6 }}
 {{- end }}
 {{- end}}
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
@@ -159,11 +163,19 @@ spec:
       {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
       {{- end }}
-      {{- if $spec.extraInitContainersHelper }}
+      {{- if (or $spec.podTemplate.extraInitContainers $spec.extraInitContainersHelper) }}
       initContainers:
+      {{- if $spec.podTemplate.extraInitContainers }}
+{{ toYaml $spec.podTemplate.extraInitContainers | indent 6 }}
+      {{- end }}
+      {{- if $spec.extraInitContainersHelper }}
       {{- include $spec.extraInitContainersHelper . | nindent 6 }}
       {{- end }}
+      {{- end }}{{/* or */}}
       containers:
+      {{- if $spec.podTemplate.extraContainers }}
+{{ toYaml $spec.podTemplate.extraContainers | indent 6 }}
+      {{- end }}
       - args:
           - --disable-hot-restart
         {{- if $spec.envoyLogLevel }}
@@ -188,10 +200,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-      {{- if $spec.logLevel }}
-        - name: LOG_LEVEL
-          value: {{ $spec.logLevel }}
-      {{- end}}
+        - name: DISABLE_CORE_DUMPS
+          value: {{ $spec.disableCoreDumps | quote }}
         image: {{ template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         {{- if $spec.podTemplate.gracefulShutdown }}
@@ -207,22 +217,17 @@ spec:
         {{- end}}
         {{- end}}
         name: {{ $name | kebabcase }}
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          {{- if $spec.podTemplate.runUnprivileged }}
-          runAsNonRoot: true
-          {{- if not $spec.podTemplate.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
-          {{- end }}
-          {{- end}}
-          capabilities:
-            drop:
-            - ALL
-          {{- if not $spec.podTemplate.disableNetBind }}
-            add:
-            - NET_BIND_SERVICE
-          {{- end}}
+        {{- $runAsUser := $spec.podTemplate.runAsUser -}}
+        {{- if $spec.podTemplate.floatingUserId -}}
+        {{- $runAsUser = 0 -}}
+        {{- end -}}
+        {{- $capabilities := dict "drop" (list "ALL") }}
+        {{- if not $spec.podTemplate.disableNetBind -}}
+          {{- $_ := set $capabilities "add"  (list "NET_BIND_SERVICE") }}
+        {{- end -}}
+        {{- $securityDefaults := dict "runAsNonRoot" $spec.podTemplate.runUnprivileged "runAsUser" $runAsUser "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- include "gloo.securityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
+
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
           name: http
@@ -305,6 +310,10 @@ spec:
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
+        {{- with $global.glooMtls.sds.securityContext }}}
+        securityContext:
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
 {{- if $global.glooMtls.sdsResources }}
         resources:
@@ -356,6 +365,10 @@ spec:
 {{- end }}
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
+        {{- with $global.glooMtls.istioProxy.securityContext }}
+        securityContext:
+        {{- toYaml . | nindent 10  }}
+        {{- end }}
         {{- $istioProxyImage := merge $global.glooMtls.istioProxy.image $global.image }}
         image: {{ template "gloo.image" $istioProxyImage }}
         imagePullPolicy: {{ $istioProxyImage.pullPolicy }}

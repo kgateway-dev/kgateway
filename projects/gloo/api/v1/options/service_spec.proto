@@ -6,6 +6,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/graphql/graphql.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
 
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
@@ -21,6 +23,8 @@ message ServiceSpec {
     // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
     oneof plugin_type {
         rest.options.gloo.solo.io.ServiceSpec rest = 1;
-        grpc.options.gloo.solo.io.ServiceSpec grpc = 2;
+        grpc.options.gloo.solo.io.ServiceSpec grpc = 2 [deprecated = true];
+        grpc_json.options.gloo.solo.io.GrpcJsonTranscoder grpc_json_transcoder = 3;
+        graphql.options.gloo.solo.io.ServiceSpec graphql = 4;
     }
 }

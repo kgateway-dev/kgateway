@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7313
+  resolvesIssue: true
+  description: >-
+    Fix for issue where multiple routes defined for the same upstream would remove the UpstreamTlsContext associated with the tunneling cluster
+    and all requests would be sent through the tunnel as http.

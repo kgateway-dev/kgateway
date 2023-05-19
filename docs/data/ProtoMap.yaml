@@ -14,14 +14,50 @@ apis:
   als.options.gloo.solo.io.AccessLog:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLog
     package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.AccessLogFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLogFilter
+    package: als.options.gloo.solo.io
   als.options.gloo.solo.io.AccessLoggingService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AccessLoggingService
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.AndFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#AndFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.ComparisonFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#ComparisonFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.DurationFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#DurationFilter
     package: als.options.gloo.solo.io
   als.options.gloo.solo.io.FileSink:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#FileSink
     package: als.options.gloo.solo.io
   als.options.gloo.solo.io.GrpcService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#GrpcService
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.GrpcStatusFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#GrpcStatusFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.HeaderFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#HeaderFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.NotHealthCheckFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#NotHealthCheckFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.OrFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#OrFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.ResponseFlagFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#ResponseFlagFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.RuntimeFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#RuntimeFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.StatusCodeFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#StatusCodeFilter
+    package: als.options.gloo.solo.io
+  als.options.gloo.solo.io.TraceableFilter:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#TraceableFilter
     package: als.options.gloo.solo.io
   aws.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/#DestinationSpec
@@ -143,11 +179,41 @@ apis:
   enterprise.gloo.solo.io.AccessTokenValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AccessTokenValidation
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.AerospikeApiKeyStorage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AerospikeApiKeyStorage
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKey:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKey
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyAuth
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyCreateRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyCreateRequest
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyCreateResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyCreateResponse
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyDeleteRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyDeleteRequest
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyDeleteResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyDeleteResponse
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyReadRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyReadRequest
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyReadResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyReadResponse
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeySecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeySecret
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyUpdateRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyUpdateRequest
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ApiKeyUpdateResponse:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyUpdateResponse
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.AuthConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AuthConfig
@@ -188,6 +254,12 @@ apis:
   enterprise.gloo.solo.io.HeaderConfiguration:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderConfiguration
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.HmacAuth:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacAuth
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.HmacParametersInHeaders:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacParametersInHeaders
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.HttpService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HttpService
     package: enterprise.gloo.solo.io
@@ -200,8 +272,14 @@ apis:
   enterprise.gloo.solo.io.JwtValidation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#JwtValidation
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.K8sSecretApiKeyStorage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#K8sSecretApiKeyStorage
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Ldap:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Ldap
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.LdapServiceAccount:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#LdapServiceAccount
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.OAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OAuth
@@ -227,11 +305,20 @@ apis:
   enterprise.gloo.solo.io.PassThroughGrpc:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughGrpc
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.PassThroughGrpcTLSConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughGrpcTLSConfig
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.PassThroughHttp:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughHttp
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.PlainOAuth2:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PlainOAuth2
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.RedisOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RedisOptions
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.SecretRefList:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#SecretRefList
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Settings
@@ -428,6 +515,9 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.filter.listener.tls_cipher_inspector.v3.TlsCipherInspector:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/listener/tls_cipher_inspector/v3/tls_cipher_inspector.proto.sk/#TlsCipherInspector
+    package: envoy.config.filter.listener.tls_cipher_inspector.v3
   envoy.config.health_checker.advanced_http.v2.AdvancedHttp:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/advanced_http/advanced_http.proto.sk/#AdvancedHttp
     package: envoy.config.health_checker.advanced_http.v2
@@ -449,6 +539,12 @@ apis:
   envoy.config.listener.proxy_protocol.v3.CustomProxyProtocol:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxyprotocol/proxyprotocol.proto.sk/#CustomProxyProtocol
     package: envoy.config.listener.proxy_protocol.v3
+  envoy.config.matching.cipher_detection_input.v3.CipherDetectionInput:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/matching/inputs/cipher_detection_input/v3/cipher_detection_input.proto.sk/#CipherDetectionInput
+    package: envoy.config.matching.cipher_detection_input.v3
+  envoy.config.matching.custom_matchers.server_name.v3.ServerNameMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/matching/custom_matchers/server_name/v3/server_name_matcher.proto.sk/#ServerNameMatcher
+    package: envoy.config.matching.custom_matchers.server_name.v3
   envoy.config.resolver.stitching.v2.ArgPath:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/graphql/stitching.proto.sk/#ArgPath
     package: envoy.config.resolver.stitching.v2
@@ -515,6 +611,9 @@ apis:
   gateway.solo.io.DelegatedHttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#DelegatedHttpGateway
     package: gateway.solo.io
+  gateway.solo.io.DelegatedTcpGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#DelegatedTcpGateway
+    package: gateway.solo.io
   gateway.solo.io.Gateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#Gateway
     package: gateway.solo.io
@@ -526,6 +625,9 @@ apis:
     package: gateway.solo.io
   gateway.solo.io.MatchableHttpGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto.sk/#MatchableHttpGateway
+    package: gateway.solo.io
+  gateway.solo.io.MatchableTcpGateway:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/matchable_tcp_gateway.proto.sk/#MatchableTcpGateway
     package: gateway.solo.io
   gateway.solo.io.MatchedGateway:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#MatchedGateway
@@ -560,6 +662,9 @@ apis:
   gateway.solo.io.VirtualServiceSelectorExpressions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto.sk/#VirtualServiceSelectorExpressions
     package: gateway.solo.io
+  gloo.solo.io.AccountCredentialsSecret:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AccountCredentialsSecret
+    package: gloo.solo.io
   gloo.solo.io.AggregateListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#AggregateListener
     package: gloo.solo.io
@@ -576,13 +681,16 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#AzureSecret
     package: gloo.solo.io
   gloo.solo.io.CallCredentials:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#CallCredentials
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#CallCredentials
     package: gloo.solo.io
   gloo.solo.io.CircuitBreakerConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk/#CircuitBreakerConfig
     package: gloo.solo.io
   gloo.solo.io.ClientVersion:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/version/version.proto.sk/#ClientVersion
+    package: gloo.solo.io
+  gloo.solo.io.ConnectionBalanceConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#ConnectionBalanceConfig
     package: gloo.solo.io
   gloo.solo.io.ConnectionConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto.sk/#ConnectionConfig
@@ -607,6 +715,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.DiscoveryMetadata:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/#DiscoveryMetadata
+    package: gloo.solo.io
+  gloo.solo.io.EncryptionKeySecret:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#EncryptionKeySecret
     package: gloo.solo.io
   gloo.solo.io.Endpoint:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk/#Endpoint
@@ -740,11 +851,14 @@ apis:
   gloo.solo.io.RouteReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#RouteReport
     package: gloo.solo.io
+  gloo.solo.io.Router:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto.sk/#Router
+    package: gloo.solo.io
   gloo.solo.io.SDSConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SDSConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SDSConfig
     package: gloo.solo.io
   gloo.solo.io.SSLFiles:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SSLFiles
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SSLFiles
     package: gloo.solo.io
   gloo.solo.io.Secret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/#Secret
@@ -759,10 +873,10 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#SourceMetadata
     package: gloo.solo.io
   gloo.solo.io.SslConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SslConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SslConfig
     package: gloo.solo.io
   gloo.solo.io.SslParameters:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#SslParameters
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#SslParameters
     package: gloo.solo.io
   gloo.solo.io.Subset:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto.sk/#Subset
@@ -795,7 +909,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#UpstreamOptions
     package: gloo.solo.io
   gloo.solo.io.UpstreamSslConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto.sk/#UpstreamSslConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#UpstreamSslConfig
     package: gloo.solo.io
   gloo.solo.io.ValidationReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#ValidationReport
@@ -1016,6 +1130,9 @@ apis:
   graphql.gloo.solo.io.StitchedSchema:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#StitchedSchema
     package: graphql.gloo.solo.io
+  graphql.options.gloo.solo.io.ServiceSpec:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/graphql/graphql.proto.sk/#ServiceSpec
+    package: graphql.options.gloo.solo.io
   grpc.options.gloo.solo.io.DestinationSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#DestinationSpec
     package: grpc.options.gloo.solo.io
@@ -1259,6 +1376,9 @@ apis:
   rest.options.gloo.solo.io.ServiceSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto.sk/#ServiceSpec
     package: rest.options.gloo.solo.io
+  retries.options.gloo.solo.io.RetryBackOff:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/retries/retries.proto.sk/#RetryBackOff
+    package: retries.options.gloo.solo.io
   retries.options.gloo.solo.io.RetryPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/retries/retries.proto.sk/#RetryPolicy
     package: retries.options.gloo.solo.io
@@ -1547,8 +1667,26 @@ apis:
   solo.io.envoy.config.route.v3.WeightedCluster:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/route/v3/route_components.proto.sk/#WeightedCluster
     package: solo.io.envoy.config.route.v3
+  solo.io.envoy.config.trace.v3.ConstantSampler:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#ConstantSampler
+    package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.DatadogConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto.sk/#DatadogConfig
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.OpenCensusConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#OpenCensusConfig
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.OpenTelemetryConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto.sk/#OpenTelemetryConfig
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.ProbabilitySampler:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#ProbabilitySampler
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.RateLimitingSampler:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#RateLimitingSampler
+    package: solo.io.envoy.config.trace.v3
+  solo.io.envoy.config.trace.v3.TraceConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto.sk/#TraceConfig
     package: solo.io.envoy.config.trace.v3
   solo.io.envoy.config.trace.v3.ZipkinConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto.sk/#ZipkinConfig
@@ -1808,6 +1946,9 @@ apis:
   waf.options.gloo.solo.io.CoreRuleSet:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#CoreRuleSet
     package: waf.options.gloo.solo.io
+  waf.options.gloo.solo.io.RuleSetFromConfigMap:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#RuleSetFromConfigMap
+    package: waf.options.gloo.solo.io
   waf.options.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#Settings
     package: waf.options.gloo.solo.io
@@ -1820,3 +1961,99 @@ apis:
   wasm.options.gloo.solo.io.WasmFilter:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#WasmFilter
     package: wasm.options.gloo.solo.io
+  xds.annotations.v3.FieldMigrateAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/migrate.proto.sk/#FieldMigrateAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.FieldSecurityAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/security.proto.sk/#FieldSecurityAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.FieldStatusAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/status.proto.sk/#FieldStatusAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.FileMigrateAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/migrate.proto.sk/#FileMigrateAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.FileStatusAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/status.proto.sk/#FileStatusAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.MessageStatusAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/status.proto.sk/#MessageStatusAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.MigrateAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/migrate.proto.sk/#MigrateAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.StatusAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/status.proto.sk/#StatusAnnotation
+    package: xds.annotations.v3
+  xds.annotations.v3.VersioningAnnotation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/versioning.proto.sk/#VersioningAnnotation
+    package: xds.annotations.v3
+  xds.core.v3.Authority:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/authority.proto.sk/#Authority
+    package: xds.core.v3
+  xds.core.v3.CidrRange:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/cidr.proto.sk/#CidrRange
+    package: xds.core.v3
+  xds.core.v3.ContextParams:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/context_params.proto.sk/#ContextParams
+    package: xds.core.v3
+  xds.core.v3.Resource:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/resource.proto.sk/#Resource
+    package: xds.core.v3
+  xds.core.v3.ResourceLocator:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/resource_locator.proto.sk/#ResourceLocator
+    package: xds.core.v3
+  xds.core.v3.ResourceName:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/resource_name.proto.sk/#ResourceName
+    package: xds.core.v3
+  xds.core.v3.TypedExtensionConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/extension.proto.sk/#TypedExtensionConfig
+    package: xds.core.v3
+  xds.data.orca.v3.OrcaLoadReport:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/data/orca/v3/orca_load_report.proto.sk/#OrcaLoadReport
+    package: xds.data.orca.v3
+  xds.service.orca.v3.OrcaLoadReportRequest:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/service/orca/v3/orca.proto.sk/#OrcaLoadReportRequest
+    package: xds.service.orca.v3
+  xds.type.matcher.v3.DoubleRangeMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/range.proto.sk/#DoubleRangeMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.HttpAttributesCelMatchInput:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/http_inputs.proto.sk/#HttpAttributesCelMatchInput
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.IPMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/ip.proto.sk/#IPMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.Int32RangeMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/range.proto.sk/#Int32RangeMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.Int64RangeMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/range.proto.sk/#Int64RangeMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.ListStringMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/string.proto.sk/#ListStringMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.Matcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/matcher.proto.sk/#Matcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.RegexMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/regex.proto.sk/#RegexMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.ServerNameMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/domain.proto.sk/#ServerNameMatcher
+    package: xds.type.matcher.v3
+  xds.type.matcher.v3.StringMatcher:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/matcher/v3/string.proto.sk/#StringMatcher
+    package: xds.type.matcher.v3
+  xds.type.v3.DoubleRange:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/v3/range.proto.sk/#DoubleRange
+    package: xds.type.v3
+  xds.type.v3.Int32Range:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/v3/range.proto.sk/#Int32Range
+    package: xds.type.v3
+  xds.type.v3.Int64Range:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/v3/range.proto.sk/#Int64Range
+    package: xds.type.v3
+  xds.type.v3.TypedStruct:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/xds/type/v3/typed_struct.proto.sk/#TypedStruct
+    package: xds.type.v3

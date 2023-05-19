@@ -1,0 +1,11 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: >
+      Bump the version of envoy-gloo to get support for base64 encode/decode and substring inja functions.
+      This also pulls in upstream envoy [v1.23](https://www.envoyproxy.io/docs/envoy/v1.23.1/version_history/v1.23/v1.23.1)
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo-ee
+    dependencyTag: v1.23.1-patch2
+  - type: NON_USER_FACING
+    description: add e2e testing around base64 encode/decode and substring inja functions
+    issueLink: https://github.com/solo-io/gloo/issues/3597

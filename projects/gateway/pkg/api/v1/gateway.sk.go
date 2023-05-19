@@ -20,6 +20,10 @@ var (
 	_ resources.InputResource = new(Gateway)
 )
 
+func NewGatewayHashableResource() resources.HashableResource {
+	return new(Gateway)
+}
+
 func NewGateway(namespace, name string) *Gateway {
 	gateway := &Gateway{}
 	gateway.SetMetadata(&core.Metadata{

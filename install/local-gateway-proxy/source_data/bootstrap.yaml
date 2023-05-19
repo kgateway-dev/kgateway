@@ -1,0 +1,121 @@
+####
+# Configuration for the Admin Interface
+# https://www.envoyproxy.io/docs/envoy/latest/operations/admin#operations-admin-interface
+####
+admin:
+  # The AccessLog configuration for the Admin Interface
+  access_log:
+    - name: admin.access_loggers.stdout
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+  address:
+    # The network location where the Admin Interface can be accessed
+    socket_address: { address: 0.0.0.0, port_value: 19000 }
+
+####
+# Metadata about this Envoy instance
+####
+node:
+  # An opaque node identifier for the Envoy node.
+  id: gateway-proxy
+  # Opaque metadata extending the node identifier. Envoy will pass this directly to the management server.
+  metadata:
+    # Specifies the Proxy's in-memory xDS cache key (see projects/gloo/pkg/xds/envoy.go)
+    role: gateway-proxy
+
+####
+# Static configuration used to run the Envoy proxy
+####
+static_resources:
+  # A listener is a named network location (e.g., port, unix domain socket, etc.) that can be connected to by downstream clients.
+  # Envoy exposes one or more listeners that downstream hosts connect to.
+  listeners:
+    - name: http_listener
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 8000 }
+      # Listener filters may be used to manipulate connection metadata.
+      # The main purpose of listener filters is to make adding further system integration functions easier by not requiring changes to Envoy core functionality.
+      # Listener filters operate on newly accepted sockets.
+      listener_filters: []
+      # https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/listeners/network_filter_chain
+      filter_chains:
+        - name: http_filter_chain
+          # The criteria to use when matching a connection to this filter chain.
+          filter_chain_match: {}
+          # https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/listeners/network_filters
+          # Network filters operate on raw bytes and a small number of connection events
+          # (e.g., TLS handshake complete, connection disconnected locally or remotely, etc.).
+          # Network Filters in the chain can stop and subsequently continue iteration to further filters.
+          filters:
+            # https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/http_conn_man
+            # Envoy has a built in network level filter called the HTTP connection manager.
+            # This filter translates raw bytes into HTTP level messages and events (e.g., headers received, body data received, trailers received, etc.).
+            # It also handles functionality common to all HTTP connections
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: AUTO
+                # The AccessLog configuration for this Network FilterChain
+                access_log:
+                - name: listener.access_loggers.stdout
+                  typed_config:
+                    "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                # https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_routing#arch-overview-http-routing
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"]
+                      routes:
+                        - match: { prefix: "/" }
+                          route:
+                            cluster: echo_service
+                            autoHostRewrite: true
+                # https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/http/http_filters
+                # The API for HTTP level filters allows the filters to operate without knowledge of the underlying protocol.
+                # Like network level filters, HTTP filters can stop and continue iteration to subsequent filters.
+                http_filters:
+                  # Example configuration of a CSRF Http Filter
+                  # Only accept requests from the solo.io origin
+                  - name: envoy.filters.http.csrf
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.csrf.v3.CsrfPolicy
+                      filter_enabled:
+                        default_value:
+                          numerator: 50
+                          denominator: HUNDRED
+                      additional_origins:
+                        - suffix: solo.io
+                  # The last configured filter has to be a terminal filter, as determined by the
+                  # NamedHttpFilterConfigFactory::isTerminalFilterByProto(config, context) function.
+                  # This is most likely the router filter.
+                  # https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  # A cluster is a group of logically similar upstream hosts that Envoy connects to.
+  clusters:
+    - name: echo_service
+      connect_timeout: 0.25s
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: echo_service
+        # The cluster member that Envoy routes a request to is determined by the load balancing policy.
+        policy: {}
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  # It optionally determines the health of cluster members via active health checking.
+                  health_check_config: {}
+                  address:
+                    socket_address:
+                      address: postman-echo.com
+                      port_value: 80
+
+####
+# Definition for how Envoy will receive its dynamic configuration
+# https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol
+####
+dynamic_resources: {}

@@ -275,6 +275,16 @@ func (m *HybridGateway) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetDelegatedTcpGateways()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDelegatedTcpGateways()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetDelegatedTcpGateways(), target.GetDelegatedTcpGateways()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -342,6 +352,69 @@ func (m *DelegatedHttpGateway) Equal(that interface{}) bool {
 
 	case *DelegatedHttpGateway_Selector:
 		if _, ok := target.SelectionType.(*DelegatedHttpGateway_Selector); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSelector()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSelector()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSelector(), target.GetSelector()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.SelectionType != target.SelectionType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *DelegatedTcpGateway) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*DelegatedTcpGateway)
+	if !ok {
+		that2, ok := that.(DelegatedTcpGateway)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.SelectionType.(type) {
+
+	case *DelegatedTcpGateway_Ref:
+		if _, ok := target.SelectionType.(*DelegatedTcpGateway_Ref); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRef()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRef()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRef(), target.GetRef()) {
+				return false
+			}
+		}
+
+	case *DelegatedTcpGateway_Selector:
+		if _, ok := target.SelectionType.(*DelegatedTcpGateway_Selector); !ok {
 			return false
 		}
 
@@ -482,6 +555,17 @@ func (m *Matcher) Equal(that interface{}) bool {
 			if !proto.Equal(v, target.GetSourcePrefixRanges()[idx]) {
 				return false
 			}
+		}
+
+	}
+
+	if len(m.GetPassthroughCipherSuites()) != len(target.GetPassthroughCipherSuites()) {
+		return false
+	}
+	for idx, v := range m.GetPassthroughCipherSuites() {
+
+		if strings.Compare(v, target.GetPassthroughCipherSuites()[idx]) != 0 {
+			return false
 		}
 
 	}

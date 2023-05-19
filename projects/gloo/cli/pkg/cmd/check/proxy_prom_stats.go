@@ -3,12 +3,18 @@ package check
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+
+	"github.com/hashicorp/go-multierror"
+
+	"github.com/rotisserie/eris"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -20,15 +26,28 @@ const promStatsPath = "/stats/prometheus"
 
 const metricsUpdateInterval = time.Millisecond * 250
 
-func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
+func checkProxiesPromStats(ctx context.Context, opts *options.Options, glooNamespace string, deployments *v1.DeploymentList) (error, *multierror.Error) {
+	gatewayProxyDeploymentsFound := 0
+	var multiWarn *multierror.Error
+	var readOnlyErr error
 	for _, deployment := range deployments.Items {
-		if deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
-			if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
-				return err
+		if deployment.Labels["gloo"] == "gateway-proxy" || deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
+			gatewayProxyDeploymentsFound++
+			if *deployment.Spec.Replicas == 0 {
+				multiWarn = multierror.Append(multiWarn, eris.New("Warning: "+deployment.Namespace+":"+deployment.Name+" has zero replicas"))
+			} else if opts.Top.ReadOnly {
+				readOnlyErr = eris.New("Warning: checking proxies with port forwarding is disabled")
+			} else {
+				if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); err != nil {
+					return err, multierror.Append(multiWarn, readOnlyErr)
+				}
 			}
 		}
 	}
-	return nil
+	if gatewayProxyDeploymentsFound == 0 || (multiWarn != nil && gatewayProxyDeploymentsFound == len(multiWarn.Errors)) {
+		return eris.New("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"), multierror.Append(multiWarn, readOnlyErr)
+	}
+	return nil, multierror.Append(multiWarn, readOnlyErr)
 }
 
 func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {
@@ -97,7 +116,7 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 		err := fmt.Errorf(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the "+deploymentName+" deployment")
 		return err
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(errMessage)
 		return err
@@ -146,7 +165,7 @@ func parseMetrics(stats string, desiredMetricSegments []string, deploymentName s
 	for _, line := range statsLines {
 		trimLine := strings.TrimSpace(line)
 		if strings.HasPrefix(trimLine, "#") || trimLine == "" {
-			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
+			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
 		}
 		desiredMetric := false
 		for _, s := range desiredMetricSegments {

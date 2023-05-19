@@ -25,9 +25,20 @@ Gloo Edge Federation is composed of some core concepts and features detailed bel
 
 Gloo Edge Federation is composed of Kubernetes Custom Resource Definitions (CRDs) and a controller pod that watches the custom resources and executes actions. The controller deployment and CRDs are created in an administrative cluster and dedicated namespace. This cluster could be a separate Kubernetes cluster that is not running Gloo Edge, or Gloo Edge Federation could be deployed on an existing cluster running one or more Gloo Edge instances.
 
+{{< tabs >}}
+{{% tab name="Dedicated Admin cluster" %}}
+![Figure of Gloo Fed architecture in a dedicated admin cluster]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-admin-cluster.png" %}})
+{{% /tab %}}
+{{% tab name="Shared cluster" %}}
+![Figure of Gloo Fed architecture in a shared admin cluster]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-shared-cluster.png" %}})
+{{% /tab %}}
+{{< /tabs >}}
+
 ### Cluster Registration and Gloo Edge Discovery
 
 Gloo Edge Federation is capable of discovering Gloo Edge instances on any clusters that have been registered with the service. Local and remote instances of Gloo Edge are managed by adding the cluster housing Gloo Edge to Gloo Edge Federation. When a cluster is added, Gloo Edge Federation creates a service account, cluster role, and cluster role binding on the cluster. The service account is granted access to discover and configure the instances of Gloo Edge. The `kubeconfig` data for the service account is stored in a Kubernetes secret on the administrative cluster.
+
+![Figure of Gloo Fed registration]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-cluster-reg.png" %}})
 
 ### Federated Components
 
@@ -46,8 +57,19 @@ The federated configuration data is stored in the following Custom Resource type
 
 Each of these CRDs closely corresponds to the local version of Gloo Edge resources like Gateways, Upstreams, and Virtual Services.
 
+![Figure of Gloo Fed resources]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-fed-res.png" %}})
+
+
+### Cross-cluster failover
+
+Gloo Edge Federation helps platform operators to apply a localized fail-over strategy when a local service is not available. 
+
+![Figure of Gloo Fed failover scenario]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-failover.png" %}})
+
+### Global RBAC
+
 Gloo Edge Federation also includes a role-based access control framework to enable granular control over access to the resources controlled by Gloo Edge Federation. Users and groups can be associated with roles that grant them the ability to execute a limited set of actions on a particular resource. Gloo Edge Federation’s RBAC model closely resembles the Kubernetes model for service accounts, roles, and role bindings.
 
 ## Next Steps
 
-Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/demo/" %}}).

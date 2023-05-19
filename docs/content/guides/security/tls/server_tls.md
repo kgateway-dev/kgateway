@@ -403,22 +403,18 @@ curl -k --resolve animalstore.example.com:443:$(kubectl get svc -n gloo-system g
 
 By default, when a Virtual Service does NOT have any SSL/TLS configuration, it will be attached to the HTTP listener that we have for Gloo Edge proxy (listening on port `8080` by default, but exposed in Kubernetes on port `80` in the `gateway-proxy` service). When we add the SSL/TLS configuration, that Virtual Service will automatically become bound to the HTTPS port (listening on port `8443` on the gateway-proxy, but mapped to port `443` on the Kubernetes service). 
 
-To verify that, let's take a look at the Gloo Edge `Proxy` object. The Gloo Edge `Proxy` object is the lowest-level domain object that reflects the configuration Gloo Edge sends to Envoy. All of the other higher-level objects (like `Gateway` and `VirtualService`) drive the configuration of the `Proxy` object. 
+To verify that, let's take a look at the Gloo Edge proxy. The Gloo Edge proxy reflects the configuration that Gloo Edge sends to Envoy. All of the other custom Gloo resources like `Gateway` and `VirtualService` drive the proxy configuration. 
 
 ```bash
-kubectl get proxy -n gloo-system gateway-proxy -oyaml
+glooctl get proxy -n gloo-system gateway-proxy -o yaml
 ```
 
 {{% notice warning %}}
 Note that the proxy's TLS listener (the one with `bindPort` 8443) has multiple sslConfigurations. If any of those valid TLS configs match a request, they can be routed to any route on the listener. This means that SSL config can be shared between virtual services if they are part of the same listener (i.e., HTTP or HTTPS).
 {{% /notice %}}
 
-{{< highlight yaml "hl_lines=18-19 74-82" >}}
-apiVersion: gloo.solo.io/v1
-kind: Proxy
-metadata:
-  name: gateway-proxy
-  namespace: gloo-system
+{{< highlight yaml "hl_lines=13-14 69-77" >}}
+...
 spec:
   listeners:
   - bindAddress: '::'

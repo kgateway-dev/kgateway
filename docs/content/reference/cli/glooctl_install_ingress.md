@@ -38,6 +38,7 @@ glooctl install ingress [flags]
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
   -v, --verbose                    If true, output from kubectl commands will print to stdout/stderr

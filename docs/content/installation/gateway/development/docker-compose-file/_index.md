@@ -55,14 +55,14 @@ This tutorial uses files stored on the [Gloo Edge GitHub repository](https://git
 In order to install Gloo Edge using Docker-Compose, let's clone the repository:
 
 ```
-git clone --branch master https://github.com/solo-io/gloo
+git clone --branch main https://github.com/solo-io/gloo
 cd gloo/install/docker-compose-file
 ```
 
 The files used for installation live in the `install/docker-compose-file` directory.
 
 ```bash
-├── data
+├── source_data
 │   ├── config
 │   │   ├── gateways
 │   │   │   └── gloo-system
@@ -84,7 +84,7 @@ The files used for installation live in the `install/docker-compose-file` direct
 
 Since we are using the filesystem to store the Gloo Edge configuration and credentials, we need to set up a directory structure to support that. Each of the Gloo Edge containers created by the `docker-compose.yaml` file will attach to the `data` directory inside the `install/docker-compose-file` parent directory.
 
-Although much of the structure is already set up, there are some additional empty directories that must be created for use by the Gloo Edge containers. Let's run the `prepare-directories.sh` script to create the rest.
+Let's run the `prepare-directories.sh` script to create the necessary configuration in the `data` directory.
 
 ```bash
 ./prepare-directories.sh
@@ -148,7 +148,7 @@ Now that we have the proper directory structure in place, we can deploy the cont
 
 ## Deploying with Docker Compose
 
-With the necessary directory structure in place, it is time to deploy the containers using Docker Compose. The `docker-compose.yaml` file will create four containers: `petstore`, `gloo`, `gateway`, and `gateway-proxy`.
+With the necessary directory structure in place, it is time to deploy the containers using Docker Compose. The `docker-compose.yaml` file will create three containers: `petstore`, `gloo`, and `gateway-proxy`.
 
 Let's run `docker-compose up` from the `docker-compose-file` directory to start up the containers. The version of Gloo Edge can be controlled using the environment variable `GLOO_VERSION`. It's probably best to stick with the default version, unless you have a compelling reason to change it.
 
@@ -158,12 +158,13 @@ docker-compose up
 
 The following ports will be exposed to the host machine:
 
-|  service  | port |
-| ----- | ---- |
-| gloo/http | 8080 |
-| petstore | 8090 |
-| gloo/https | 8443 |
+| service    | port  |
+|------------|-------|
+| gloo/http  | 8080  |
+| petstore   | 8090  |
+| gloo/https | 8443  |
 | gloo/admin | 19000 |
+| gloo/dev   | 10010 |
 
 In addition to opening ports, there should be a new file in the `data` directory.
 

@@ -18,6 +18,8 @@ import (
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 )
 
 // ensure the imports are used
@@ -46,6 +48,12 @@ func (m *FilterConfig) Clone() proto.Message {
 	}
 
 	target.SaveUpstreamAddress = m.GetSaveUpstreamAddress()
+
+	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+	} else {
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
+	}
 
 	return target
 }

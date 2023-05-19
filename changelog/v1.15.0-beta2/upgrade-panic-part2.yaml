@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7517
+    description: >-
+      Update upgrade test to not fail on first of new version.

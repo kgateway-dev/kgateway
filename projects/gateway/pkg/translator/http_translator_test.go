@@ -4,15 +4,18 @@ import (
 	"context"
 	"time"
 
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+
+	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
-	. "github.com/onsi/ginkgo/extensions/table"
-
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/hashicorp/go-multierror"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -50,17 +53,16 @@ var _ = Describe("Http Translator", func() {
 		}
 	})
 
-	JustBeforeEach(func() {
-		// In case sub-contexts modify the snapshot, ensure that we build the ResourceReports last
+	AfterEach(func() {
+		cancel()
+	})
+
+	initializeReportsForSnap := func() {
 		reports = make(reporter.ResourceReports)
 		reports.Accept(snap.Gateways.AsInputResources()...)
 		reports.Accept(snap.VirtualServices.AsInputResources()...)
 		reports.Accept(snap.RouteTables.AsInputResources()...)
-	})
-
-	AfterEach(func() {
-		cancel()
-	})
+	}
 
 	Context("all-in-one virtual service", func() {
 
@@ -145,6 +147,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 		})
 
 		It("should translate an empty gateway to have all virtual services", func() {
@@ -340,9 +343,9 @@ var _ = Describe("Http Translator", func() {
 				}
 				ctx := settingsutil.WithSettings(context.Background(), settings)
 				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+				snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 				snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						OneWayTls: &wrappers.BoolValue{
 							Value: false,
 						},
@@ -380,9 +383,9 @@ var _ = Describe("Http Translator", func() {
 				}
 				ctx := settingsutil.WithSettings(context.Background(), settings)
 				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+				snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 				snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						OneWayTls: &wrappers.BoolValue{
 							Value: true,
 						},
@@ -416,9 +419,9 @@ var _ = Describe("Http Translator", func() {
 				}
 				ctx := settingsutil.WithSettings(context.Background(), settings)
 				snap.Gateways[0].Ssl = true
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+				snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 				snap.VirtualServices = append(snap.VirtualServices, &v1.VirtualService{
-					SslConfig: &gloov1.SslConfig{
+					SslConfig: &ssl.SslConfig{
 						OneWayTls: &wrappers.BoolValue{
 							Value: true,
 						},
@@ -446,7 +449,7 @@ var _ = Describe("Http Translator", func() {
 		})
 
 		It("should not have vhosts with ssl", func() {
-			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
@@ -468,7 +471,7 @@ var _ = Describe("Http Translator", func() {
 
 		It("should not have vhosts without ssl", func() {
 			snap.Gateways[0].Ssl = true
-			snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
+			snap.VirtualServices[0].SslConfig = new(ssl.SslConfig)
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
@@ -540,6 +543,30 @@ var _ = Describe("Http Translator", func() {
 
 			It("should error when a virtual service has invalid regex", func() {
 				snap.VirtualServices[0].VirtualHost.Routes[0].Matchers[0] = &matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}}
+				params := NewTranslatorParams(ctx, snap, reports)
+
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+				Expect(reports.Validate()).To(HaveOccurred())
+
+				errs := reports.ValidateStrict()
+				Expect(errs).To(HaveOccurred())
+				Expect(errs.Error()).To(ContainSubstring("missing closing ]: `[`"))
+			})
+			It("should error when a virtual service has invalid regex in host rewrite options", func() {
+				hostRegexRewriteOption := &gloov1.RouteOptions{HostRewriteType: &gloov1.RouteOptions_HostRewritePathRegex{HostRewritePathRegex: &v3.RegexMatchAndSubstitute{Pattern: &v3.RegexMatcher{Regex: "["}}}}
+				snap.VirtualServices[0].VirtualHost.Routes[0].Options = hostRegexRewriteOption
+				params := NewTranslatorParams(ctx, snap, reports)
+
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+				Expect(reports.Validate()).To(HaveOccurred())
+
+				errs := reports.ValidateStrict()
+				Expect(errs).To(HaveOccurred())
+				Expect(errs.Error()).To(ContainSubstring("missing closing ]: `[`"))
+			})
+			It("should error when a virtual service has invalid regex in regexRewrite options", func() {
+				regexRewriteOption := &gloov1.RouteOptions{RegexRewrite: &v3.RegexMatchAndSubstitute{Pattern: &v3.RegexMatcher{Regex: "["}}}
+				snap.VirtualServices[0].VirtualHost.Routes[0].Options = regexRewriteOption
 				params := NewTranslatorParams(ctx, snap, reports)
 
 				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
@@ -960,6 +987,7 @@ var _ = Describe("Http Translator", func() {
 						},
 					},
 				}
+				initializeReportsForSnap()
 			})
 
 			It("merges the vs and route tables to a single gloov1.VirtualHost", func() {
@@ -972,7 +1000,7 @@ var _ = Describe("Http Translator", func() {
 				httpListener := listener.ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 				Expect(httpListener.VirtualHosts).To(HaveLen(2))
 
-				Expect(httpListener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
+				routes := []*gloov1.Route{
 					{
 						Name: "vs:name_proxy1_gloo-system_name1_route:testRouteName_rt:gloo-system_delegate-1_route:<unnamed-0>",
 						Matchers: []*matchers.Matcher{{
@@ -1124,8 +1152,11 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 					},
-				}))
-				Expect(httpListener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
+				}
+				for index, route := range routes {
+					Expect(httpListener.VirtualHosts[0].Routes[index]).To(gloo_matchers.MatchProto(route))
+				}
+				routes = []*gloov1.Route{
 					{
 						Name: "vs:name_proxy1_gloo-system_name2_route:<unnamed-0>_rt:gloo-system_delegate-2_route:delegate2Route1",
 						Matchers: []*matchers.Matcher{{
@@ -1215,7 +1246,10 @@ var _ = Describe("Http Translator", func() {
 							},
 						},
 					},
-				}))
+				}
+				for index, route := range routes {
+					Expect(httpListener.VirtualHosts[1].Routes[index]).To(gloo_matchers.MatchProto(route))
+				}
 			})
 
 		})
@@ -1298,6 +1332,7 @@ var _ = Describe("Http Translator", func() {
 						},
 					},
 				}
+				initializeReportsForSnap()
 			})
 
 			It("detects cycle and returns error", func() {
@@ -1365,6 +1400,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
@@ -1427,6 +1463,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
@@ -1519,6 +1556,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
@@ -1623,6 +1661,7 @@ var _ = Describe("Http Translator", func() {
 					},
 				},
 			}
+			initializeReportsForSnap()
 			params := NewTranslatorParams(ctx, snap, reports)
 
 			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])

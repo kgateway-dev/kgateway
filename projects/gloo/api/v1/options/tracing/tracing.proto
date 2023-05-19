@@ -5,6 +5,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tr
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/zipkin.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/datadog.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opentelemetry.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/trace/v3/opencensus.proto";
 
 
 import "google/protobuf/wrappers.proto";
@@ -34,6 +36,8 @@ message ListenerTracingSettings {
     oneof provider_config {
         .solo.io.envoy.config.trace.v3.ZipkinConfig zipkin_config = 4;
         .solo.io.envoy.config.trace.v3.DatadogConfig datadog_config = 5;
+        .solo.io.envoy.config.trace.v3.OpenTelemetryConfig open_telemetry_config = 8;
+        .solo.io.envoy.config.trace.v3.OpenCensusConfig open_census_config = 9;
     }
     // Optional. If specified, Envoy will include the environment variables with the given tag as tracing tags.
     repeated TracingTagEnvironmentVariable environment_variables_for_tags = 6;

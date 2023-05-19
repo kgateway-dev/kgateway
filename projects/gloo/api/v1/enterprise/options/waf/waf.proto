@@ -2,6 +2,7 @@ syntax = "proto3";
 package waf.options.gloo.solo.io;
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf";
 
@@ -20,16 +21,29 @@ message Settings {
     // Add OWASP core rule set
     // if nil will not be added
     CoreRuleSet core_rule_set = 3;
-    // Custom rule sets rules to add
+    // Custom rule sets to add. Any subsequent changes to the rules in these files are not automatically updated. To update rules from files, version and update the file name.
+    // If you want dynamically updated rules, use the `configMapRuleSets` option instead.
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
+    // Kubernetes configmaps with the rule sets that you want to use.
+    // The rules must be in the value of the key-value mappings in the `data` field of the configmap.
+    // Subsequent updates to the configmap values are dynamically updated in the configuration.
+    repeated RuleSetFromConfigMap config_map_rule_sets = 8;
     // Audit Log settings
     envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
-
     // Only process request headers, not buffering the request body
     bool request_headers_only = 6;
-    
     // Only process response headers, not buffering the response body
     bool response_headers_only = 7;
+}
+
+message RuleSetFromConfigMap {
+    // The Kubernetes configmap that has the rule sets as values in the `data` section.
+    core.solo.io.ResourceRef config_map_ref = 1;
+    // The ConfigMap might have multiple key-value pairs in the `data` section, such as when you create the ConfigMap from multiple files. Each value in a key-value pair may contain 0 or more rules.
+    // You can use the `dataMapKey` field to select which keys to use, and the order you want them applied.
+    // If this field is included, only the rules from the specified keys are applied, in the specified order. Any rules contained in the value of keys not included are ignored.
+    // If this field is not included, all of the keys in the `data` section of the ConfigMap are sorted alphabetically, and all of the rules are included in the resulting order. The order of key-value pairs might differ from the order in which they appear in the ConfigMap (note, the rules within each mapping stay in the same order as they appear in the ConfigMap).
+    repeated string data_map_keys = 2;
 }
 
 message CoreRuleSet {
@@ -39,7 +53,7 @@ message CoreRuleSet {
     oneof CustomSettingsType {
         // String representing the core rule set custom config options
         string custom_settings_string = 2;
-        // String representing the core rule set custom config options
+        // String representing a file location with core rule set custom config options
         string custom_settings_file = 3;
     }
 }

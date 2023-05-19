@@ -17,10 +17,13 @@ glooctl check [flags]
 ### Options
 
 ```
-  -x, --exclude strings     check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)
-  -h, --help                help for check
-  -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (json, table) (default table)
+  -x, --exclude strings                   check to exclude: (deployments, pods, upstreams, upstreamgroup, auth-configs, rate-limit-configs, secrets, virtual-services, gateways, proxies, xds-metrics)
+  -h, --help                              help for check
+  -n, --namespace string                  namespace for reading or writing resources (default "gloo-system")
+  -o, --output OutputType                 output format: (json, table) (default table)
+  -p, --pod-selector string               Label selector for pod scanning (default "gloo")
+      --read-only                         only do checks that dont require creating resources (i.e. port forwards)
+  -r, --resource-namespaces stringArray   Namespaces in which to scan gloo custom resources. If not provided, all watched namespaces (as specified in settings) will be scanned.
 ```
 
 ### Options inherited from parent commands
@@ -34,6 +37,7 @@ glooctl check [flags]
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
 ```

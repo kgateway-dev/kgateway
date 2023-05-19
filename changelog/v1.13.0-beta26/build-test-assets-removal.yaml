@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7301
+    description:  >
+      Fixed build-test-assets make target bug introduced in https://github.com/solo-io/gloo/pull/7312 
+      by removing make target entirely.

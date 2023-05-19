@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: |
+      - Expose the `fallbackToFirstFunction` field through helm, allowing it to be configured at installation.
+      - When `fallbackToFirstFunction` is enabled, if `destinationSpec` is not set on a VirtualService, it will get processed as an AWS route if the upstream reference is an AWS upstream.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4274

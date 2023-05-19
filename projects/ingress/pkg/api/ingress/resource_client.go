@@ -142,6 +142,13 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	return rc.writeStatus(clone, opts)
 }
 
+func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	wopts := clients.WriteOpts{}
+	wopts = wopts.WithDefaults()
+	wopts.Ctx = opts.Ctx
+	return rc.writeStatus(inputResource, wopts)
+}
+
 func (rc *ResourceClient) write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {

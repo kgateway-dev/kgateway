@@ -25,7 +25,30 @@ You will also want some type of text editor that understands *YAML*. For real, t
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
----
+## Licensing
+
+You must provide the license key during the installation process.
+
+1. [Contact an account representative to get a Gloo Edge license key](https://www.solo.io/company/talk-to-an-expert/). {{% notice tip %}}You can also request a [trial license key](https://www.solo.io/products/gloo/#enterprise-trial) instead. Note that each trial license key is typically valid for **30 days**. When the license key expires, you can request a new license key by contacting your account representative or filling out [this form](https://lp.solo.io/request-trial). For more information, see [Updating Enterprise Licenses]({{< versioned_link_path fromRoot="/operations/updating_license/" >}}).{{% /notice %}}
+2. Decide how you want to provide your license keys during installation.
+   * **Provide license key directly**: When you install Gloo Edge, you can provide the license key string directly as the value for the `license_key` field in your Helm values file, or provide the `--license-key` flag in your `glooctl install` command. A Kubernetes secret is created for you to store the license key.
+   * **Provide license key in a secret**: You can specify your license key by creating a secret before you install Gloo Edge.
+     1. Create a secret with your license key in the `gloo-system` namespace of your cluster.
+        ```yaml
+        cat << EOF | kubectl apply -n gloo-system -f -
+        apiVersion: v1
+        kind: Secret
+        type: Opaque
+        metadata:
+          name: license-key
+          namespace: gloo-system
+        data:
+          license-key: ""
+        EOF
+        ```
+     2. When you install Gloo Edge, specify the secret name and disable default secret generation in your Helm values file or the `glooctl install` command.
+        * **Helm**: In your Helm values file, provide the secret name as the value for the `gloo.license_secret_name` field, and set `create_license_secret` to `false`.
+        * **glooctl**: In your `glooctl install` command, include the `--set gloo.license_secret_name=<license>` and `--set create_license_secret=false` flags.
 
 ## Deployment Requirements
 

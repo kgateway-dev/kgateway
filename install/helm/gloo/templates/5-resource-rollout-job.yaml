@@ -16,24 +16,50 @@ metadata:
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
-  {{- with .Values.gateway.rolloutJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
     metadata:
       labels:
         gloo: resource-rollout
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
+        {{- if .Values.gateway.rolloutJob.extraPodLabels }}
+        {{- range $key, $value := .Values.gateway.rolloutJob.extraPodLabels }}
+        {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
+        {{- end }}
+      {{- if or .Values.settings.linkerd .Values.gateway.rolloutJob.extraPodAnnotations }}
+      annotations:
+        {{- if .Values.settings.linkerd }}
+        "linkerd.io/inject": disabled
+        {{- end }}
+        {{- range $key, $value := .Values.gateway.rolloutJob.extraPodAnnotations }}
+        {{ $key | quote }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-rollout
       {{- include "gloo.podSpecStandardFields" .Values.gateway.rolloutJob | nindent 6 -}}
+      volumes:
+        - name: custom-resource-config-volume
+          configMap:
+            name: gloo-custom-resource-config
+            items:
+              - key: custom-resources
+                path: custom-resources
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}
+          env:
+            - name: HAS_CUSTOM_RESOURCES
+              valueFrom:
+                configMapKeyRef:
+                  name: gloo-custom-resource-config
+                  key: has-custom-resources
+          volumeMounts:
+            - name: custom-resource-config-volume
+              mountPath: /etc/gloo-custom-resources
           securityContext:
             runAsNonRoot: true
             {{- if not .Values.gateway.rolloutJob.floatingUserId }}
@@ -51,22 +77,19 @@ spec:
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
 
-            {{- $cr := include "gloo.customResources" . | indent 12 -}}
-            {{- if contains "kind:" $cr -}}{{/* only render if not empty */}}
             # apply Gloo Edge custom resources
-            kubectl apply -f - <<EOF || exit $?
-            {{- $cr -}}
-            EOF
-            {{- else }}
-            echo "no custom resources to apply"
-            {{- end }}
+            if [ $HAS_CUSTOM_RESOURCES == "true" ]
+            then
+              kubectl apply -f /etc/gloo-custom-resources/custom-resources || exit $?
+            else
+              echo "no custom resources to apply"
+            fi
 
             # remove the resource-policy annotations that were added temporarily by the gloo-resource-migration job during upgrade
             kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
             {{- range include "gloo.gatewayNamespaces" $ | fromJsonArray }}
             kubectl annotate gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/resource-policy- || exit $?
             {{- end }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

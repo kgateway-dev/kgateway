@@ -11,7 +11,6 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -22,6 +21,10 @@ var (
 	// Compile-time assertion
 	_ resources.Resource = new(RateLimitConfig)
 )
+
+func NewRateLimitConfigHashableResource() resources.HashableResource {
+	return new(RateLimitConfig)
+}
 
 func NewRateLimitConfig(namespace, name string) *RateLimitConfig {
 	ratelimitconfig := &RateLimitConfig{}
@@ -53,11 +56,64 @@ func (r *RateLimitConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
-	clone := r.RateLimitConfig.Clone()
-	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
-		meta.ResourceVersion = ""
-	})
-	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+
+	_, err := hasher.Write([]byte(r.RateLimitConfig.Namespace))
+	if err != nil {
+		return 0, err
+	}
+	_, err = hasher.Write([]byte(r.RateLimitConfig.Name))
+	if err != nil {
+		return 0, err
+	}
+	_, err = hasher.Write([]byte(r.RateLimitConfig.UID))
+	if err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range r.Labels {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+	}
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range r.Annotations {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	_, err = r.RateLimitConfig.Spec.Hash(hasher)
 	if err != nil {
 		return 0, err
 	}

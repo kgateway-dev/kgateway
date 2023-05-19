@@ -6,6 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+
+	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 
 	"github.com/ghodss/yaml"
@@ -17,13 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// List of pods in which we could find the Gloo (OS) version
-var glooOSPods = map[string]bool{
-	"gateway":   true,
-	"ingress":   true,
-	"discovery": true,
-}
-
 func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, error) {
 	var bootstrapConfig envoy_config_bootstrap.Bootstrap
 	bootstrapConfig, err := unmarshalYAMLConfig(config)
@@ -32,8 +30,12 @@ func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, err
 
 func getIstiodContainer(ctx context.Context, namespace string) (corev1.Container, error) {
 	var c corev1.Container
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
+	if err != nil {
+		return c, err
+	}
+	client := helpers.MustKubeClientWithKubecontext(kubecontext)
+	_, err = client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return c, err
 	}
@@ -66,7 +68,7 @@ func getImageVersion(container corev1.Container) (string, error) {
 	return img[1], nil
 }
 
-//getIstioMetaMeshID returns the set value or default value 'cluster.local' if unset
+// getIstioMetaMeshID returns the set value or default value 'cluster.local' if unset
 func getIstioMetaMeshID(istioMetaMeshID string) string {
 	var result = ""
 
@@ -79,7 +81,7 @@ func getIstioMetaMeshID(istioMetaMeshID string) string {
 	return result
 }
 
-//getIstioMetaClusterID returns the set value or default value 'Kubernetes' if unset
+// getIstioMetaClusterID returns the set value or default value 'Kubernetes' if unset
 func getIstioMetaClusterID(istioMetaClusterID string) string {
 	var result = ""
 
@@ -113,33 +115,39 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 	return "third-party-jwt"
 }
 
-// getGlooVersion gets the version of gloo currently running
+// GetGlooVersion gets the version of gloo currently running
 // in the given namespace, by checking the gloo deployment.
-func getGlooVersion(ctx context.Context, namespace string) (string, error) {
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
+	kubecontext, err := contextoptions.KubecontextFrom(ctx)
 	if err != nil {
 		return "", err
 	}
-	deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
+	sv := versioncmd.NewKube(namespace, kubecontext)
+	server, err := sv.Get(ctx)
 	if err != nil {
 		return "", err
 	}
+	openSourceVersions, err := prerun.GetOpenSourceVersions(server)
+	if err != nil {
+		return "", err
+	}
+	if len(openSourceVersions) == 0 {
+		return "", ErrGlooVerUndetermined
+	}
+	// There shouldn't be multiple gloo versions in a single namespace but it's also probably fine
+	if len(openSourceVersions) > 1 {
+		fmt.Printf("Found multiple gloo versions, picking %s", openSourceVersions[0].String())
+	}
+	return openSourceVersions[0].String(), nil
+}
 
-	// For each deployment
-	for _, deployment := range deployments.Items {
-		// If it's a Gloo OS pod
-		if _, ok := glooOSPods[deployment.Name]; ok {
-			containers := deployment.Spec.Template.Spec.Containers
-			// Grab the container named the same as deploy (in case of eg istio sidecars)
-			for _, container := range containers {
-				if container.Name == deployment.Name {
-					return getImageVersion(container)
-				}
-			}
-		}
+// GetGlooVersionWithoutV mirrors the above function but returns the version without the leading 'v'
+func GetGlooVersionWithoutV(ctx context.Context, namespace string) (string, error) {
+	version, err := GetGlooVersion(ctx, namespace)
+	if err == nil {
+		return version[1:], nil
 	}
-	return "", ErrGlooVerUndetermined
+	return version, err
 }
 
 // unmarshalYAMLConfig converts from an envoy

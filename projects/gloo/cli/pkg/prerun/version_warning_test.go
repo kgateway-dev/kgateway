@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/versionutils"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 )
@@ -101,7 +101,7 @@ var _ = Describe("version command", func() {
 	It("should not warn when the versions match exactly", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_12,
-			Name:     prerun.ContainerNameToCheckAnnotation,
+			Name:     "gloo",
 			Registry: "test-registry",
 		}})
 
@@ -112,7 +112,7 @@ var _ = Describe("version command", func() {
 	It("should not warn when the versions differ only by patch version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_13,
-			Name:     prerun.ContainerNameToCheckAnnotation,
+			Name:     "gloo",
 			Registry: "test-registry",
 		}})
 
@@ -120,10 +120,30 @@ var _ = Describe("version command", func() {
 		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions differ only by patch version")
 	})
 
+	It("should warn when the versions differ on the gloo-ee pod", func() {
+		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
+			Tag:      v_21_0,
+			Name:     "gloo-ee",
+			Registry: "test-registry",
+			OssTag:   v_21_0,
+		}})
+
+		mismatches := []*versionutils.Version{{
+			Major: 0,
+			Minor: 21,
+			Patch: 0,
+		}}
+
+		expectedOutputLines = []string{
+			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
+		}
+
+		err = prerun.WarnOnMismatch(ctx, binaryName, versionGetter, logger)
+	})
 	It("should warn when the versions differ by minor version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_21_0,
-			Name:     prerun.ContainerNameToCheckAnnotation,
+			Name:     "gloo",
 			Registry: "test-registry",
 			OssTag:   v_21_0,
 		}})
@@ -144,7 +164,7 @@ var _ = Describe("version command", func() {
 	It("should warn when the versions differ by major version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_1_0_0,
-			Name:     prerun.ContainerNameToCheckAnnotation,
+			Name:     "gloo",
 			Registry: "test-registry",
 			OssTag:   v_1_0_0,
 		}})
@@ -187,7 +207,7 @@ var _ = Describe("version command", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
 			{
 				Tag:      v_20_12,
-				Name:     prerun.ContainerNameToCheckAnnotation,
+				Name:     "gloo",
 				Registry: "test-registry",
 			},
 			{

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package solo.io.envoy.config.trace.v3;
+
+import "udpa/annotations/migrate.proto";
+import "udpa/annotations/status.proto";
+import "udpa/annotations/versioning.proto";
+import "validate/validate.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
+option java_package = "io.envoyproxy.solo.io.envoy.config.trace.v3";
+option java_outer_classname = "OpentelemetryProto";
+option java_multiple_files = true;
+option (solo.io.udpa.annotations.file_migrate).move_to_package = "envoy.extensions.tracers.opentelemetry.v4alpha";
+option (solo.io.udpa.annotations.file_status).package_version_status = ACTIVE;
+
+// [#protodoc-title: OpenTelemetry tracer]
+
+// Configuration for the OpenTelemetry tracer.
+// [#extension: envoy.tracers.opentelemetry]
+message OpenTelemetryConfig {
+  option (solo.io.udpa.annotations.versioning).previous_message_type =
+      "envoy.config.trace.v2.OpenTelemetryConfig";
+
+  // The cluster to use for submitting traces to the OpenTelemetry agent.
+  oneof collector_cluster {
+    // The upstream to use for submitting traces to the OpenTelemetry agent.
+    core.solo.io.ResourceRef collector_upstream_ref = 1;
+    // The name of the Envoy cluster to use for submitting traces to the
+    // OpenTelemetry agent
+    string cluster_name = 2;
+  }
+}
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3";
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+option (extproto.equal_all) = true;
+

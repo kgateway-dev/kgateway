@@ -10,8 +10,8 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 )
 
 // ensure the imports are used
@@ -188,6 +188,50 @@ func (m *ListenerTracingSettings) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			} else {
 				if _, err = hasher.Write([]byte("DatadogConfig")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ListenerTracingSettings_OpenTelemetryConfig:
+
+		if h, ok := interface{}(m.GetOpenTelemetryConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("OpenTelemetryConfig")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetOpenTelemetryConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("OpenTelemetryConfig")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *ListenerTracingSettings_OpenCensusConfig:
+
+		if h, ok := interface{}(m.GetOpenCensusConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("OpenCensusConfig")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetOpenCensusConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("OpenCensusConfig")); err != nil {
 					return 0, err
 				}
 				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {

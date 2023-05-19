@@ -1,0 +1,5 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: golang.org/x
+    dependencyRepo: tools
+    dependencyTag: v0.7.0

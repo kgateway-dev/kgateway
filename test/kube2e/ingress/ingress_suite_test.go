@@ -3,36 +3,29 @@ package ingress_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
 func TestIngress(t *testing.T) {
-	if os.Getenv("KUBE2E_TESTS") != "ingress" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'ingress' in your env.")
-		return
-	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Ingress Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Ingress Suite")
 }
 
 var (
@@ -42,19 +35,11 @@ var (
 )
 
 var _ = BeforeSuite(func() {
-	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred())
 	ctx, cancel = context.WithCancel(context.Background())
-
+	var err error
 	randomNumber := time.Now().Unix() % 10000
-	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
-		defaults.RootDir = filepath.Join(cwd, "../../..")
-		defaults.HelmChartName = "gloo"
-		defaults.InstallNamespace = "ingress-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
-		return defaults
-	})
+	testHelper, err = kube2e.GetTestHelper(ctx, "ingress-test-"+fmt.Sprintf("%d-%d", randomNumber, parallel.GetParallelProcessCount()))
 	Expect(err).NotTo(HaveOccurred())
-
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
@@ -68,7 +53,7 @@ var _ = BeforeSuite(func() {
 })
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+	values, err := os.CreateTemp("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	// disabling panic threshold

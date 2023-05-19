@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7668
+    resolvesIssue: false
+    description: >
+      Exempt [dynamic forward proxies](https://www.solo.io/blog/dynamic-forward-proxy-with-gloo-edge/) from being auto-censure by enabling the [replaceInvalidRoutes](https://docs.solo.io/gloo-edge/latest/guides/traffic_management/configuration_validation/invalid_route_replacement/) feature

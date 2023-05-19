@@ -16,6 +16,8 @@ weight: 5
 - [AzureSecret](#azuresecret)
 - [TlsSecret](#tlssecret)
 - [HeaderSecret](#headersecret)
+- [AccountCredentialsSecret](#accountcredentialssecret)
+- [EncryptionKeySecret](#encryptionkeysecret)
   
 
 
@@ -46,8 +48,10 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 "azure": .gloo.solo.io.AzureSecret
 "tls": .gloo.solo.io.TlsSecret
 "oauth": .enterprise.gloo.solo.io.OauthSecret
-"apiKey": .enterprise.gloo.solo.io.ApiKeySecret
+"apiKey": .enterprise.gloo.solo.io.ApiKey
 "header": .gloo.solo.io.HeaderSecret
+"credentials": .gloo.solo.io.AccountCredentialsSecret
+"encryption": .gloo.solo.io.EncryptionKeySecret
 "extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 
@@ -55,13 +59,15 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, or `extensions` can be set. |
-| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, `tls`, `oauth`, `apiKey`, `header`, or `extensions` can be set. |
-| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, `azure`, `oauth`, `apiKey`, `header`, or `extensions` can be set. |
-| `oauth` | [.enterprise.gloo.solo.io.OauthSecret](../enterprise/options/extauth/v1/extauth.proto.sk/#oauthsecret) | Enterprise-only: OAuth secret configuration. Only one of `oauth`, `aws`, `azure`, `tls`, `apiKey`, `header`, or `extensions` can be set. |
-| `apiKey` | [.enterprise.gloo.solo.io.ApiKeySecret](../enterprise/options/extauth/v1/extauth.proto.sk/#apikeysecret) | Enterprise-only: ApiKey secret configuration. Only one of `apiKey`, `aws`, `azure`, `tls`, `oauth`, `header`, or `extensions` can be set. |
-| `header` | [.gloo.solo.io.HeaderSecret](../secret.proto.sk/#headersecret) | Secrets for use in header payloads (e.g. in the Envoy healthcheck API). Only one of `header`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, or `extensions` can be set. |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. Only one of `extensions`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, or `header` can be set. |
+| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, `credentials`, `encryption`, or `extensions` can be set. |
+| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, `tls`, `oauth`, `apiKey`, `header`, `credentials`, `encryption`, or `extensions` can be set. |
+| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, `azure`, `oauth`, `apiKey`, `header`, `credentials`, `encryption`, or `extensions` can be set. |
+| `oauth` | [.enterprise.gloo.solo.io.OauthSecret](../enterprise/options/extauth/v1/extauth.proto.sk/#oauthsecret) | Enterprise-only: OAuth secret configuration. Only one of `oauth`, `aws`, `azure`, `tls`, `apiKey`, `header`, `credentials`, `encryption`, or `extensions` can be set. |
+| `apiKey` | [.enterprise.gloo.solo.io.ApiKey](../enterprise/options/extauth/v1/extauth.proto.sk/#apikey) | Enterprise-only: ApiKey secret configuration. Only one of `apiKey`, `aws`, `azure`, `tls`, `oauth`, `header`, `credentials`, `encryption`, or `extensions` can be set. |
+| `header` | [.gloo.solo.io.HeaderSecret](../secret.proto.sk/#headersecret) | Secrets for use in header payloads (e.g. in the Envoy healthcheck API). Only one of `header`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `credentials`, `encryption`, or `extensions` can be set. |
+| `credentials` | [.gloo.solo.io.AccountCredentialsSecret](../secret.proto.sk/#accountcredentialssecret) | Secrets to represent user/secret pairs. Used to authenticate to LDAP service accounts and hold shared secrets for HMAC auth. Only one of `credentials`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, `encryption`, or `extensions` can be set. |
+| `encryption` | [.gloo.solo.io.EncryptionKeySecret](../secret.proto.sk/#encryptionkeysecret) | Enterprise-only: Secrets used to encrypt messages and data. Used to encrypt and decrypt session values in Ext-Auth. Only one of `encryption`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, `credentials`, or `extensions` can be set. |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. Only one of `extensions`, `aws`, `azure`, `tls`, `oauth`, `apiKey`, `header`, `credentials`, or `encryption` can be set. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 
 
@@ -161,14 +167,16 @@ metadata:
 "certChain": string
 "privateKey": string
 "rootCa": string
+"ocspStaple": bytes
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `certChain` | `string` | provided by `glooctl create secret tls`. |
-| `privateKey` | `string` | provided by `glooctl create secret tls`. |
-| `rootCa` | `string` | provided by `glooctl create secret tls`. |
+| `certChain` | `string` | provided by `glooctl create secret tls`, and stored as `tls.crt` in the secret. |
+| `privateKey` | `string` | provided by `glooctl create secret tls`, and stored as `tls.key` in the secret. |
+| `rootCa` | `string` | provided by `glooctl create secret tls`, and stored as `ca.crt` in the secret. |
+| `ocspStaple` | `bytes` | ocsp staple is a der-encoded binary structure provided by `glooctl create secret tls`, and stored as `tls.ocsp-staple` in the secret. |
 
 
 
@@ -186,6 +194,46 @@ metadata:
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `headers` | `map<string, string>` | A collection of header name to header value mappings, each representing an additional header that could be added to a request. Provided by `glooctl create secret header`. |
+
+
+
+
+---
+### AccountCredentialsSecret
+
+ 
+Secret to represent any kind of a username/secretname and password/secret combination
+Used by LDAP auth to store service account credentials and by HMAC auth to keep shared secrets.
+
+```yaml
+"username": string
+"password": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `username` | `string` |  |
+| `password` | `string` |  |
+
+
+
+
+---
+### EncryptionKeySecret
+
+ 
+Secret used for key encryption.
+This is used for encrypting Session Values.
+
+```yaml
+"key": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `key` | `string` | the key used to encrypt session values. This must be 32 bytes in length. |
 
 
 

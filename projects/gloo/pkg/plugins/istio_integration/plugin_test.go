@@ -1,16 +1,11 @@
 package istio_integration_test
 
 import (
-	"context"
-
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/istio_integration"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -22,25 +17,15 @@ var _ = Describe("Plugin", func() {
 		upstreamName     = "test-us"
 		glooNamespace    = "ns"
 	)
+
 	var (
-		usClient     v1.UpstreamClient
-		kubeUpstream *v1.Upstream
-		cancel       context.CancelFunc
-		ctx          context.Context
-		err          error
+		upstreams v1.UpstreamList
 	)
+
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		resourceClientFactory := &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		}
-		usClient, err = v1.NewUpstreamClient(ctx, resourceClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		kubeUpstream = makeKubeUpstream(upstreamName, glooNamespace, serviceName, serviceNamespace)
-		_, err = usClient.Write(kubeUpstream, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
+		upstreams = v1.UpstreamList{makeKubeUpstream(upstreamName, glooNamespace, serviceName, serviceNamespace)}
 	})
-	AfterEach(func() { cancel() })
+
 	It("Gets the host from a kube destination", func() {
 		destination := &v1.RouteAction_Single{
 			Single: &v1.Destination{
@@ -54,7 +39,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		host, err := istio_integration.GetHostFromDestination(destination, usClient)
+		host, err := istio_integration.GetHostFromDestination(destination, upstreams)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(host).To(Equal(rewrittenHost))
 	})
@@ -69,7 +54,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		host, err := istio_integration.GetHostFromDestination(destination, usClient)
+		host, err := istio_integration.GetHostFromDestination(destination, upstreams)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(host).To(Equal(rewrittenHost))
 	})

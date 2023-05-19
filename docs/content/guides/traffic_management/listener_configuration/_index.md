@@ -51,18 +51,14 @@ status: # collapsed for brevity
 
 ### Verify your configuration
 
-To verify that your configuration was accepted, inspect the proxy CRs. They should have the values you specified. 
+To verify that your configuration was accepted, inspect the proxy.
 
 ```bash
-kubectl get proxy  --all-namespaces -o yaml
+glooctl get proxy -n gloo-system gateway-proxy -o yaml
 ```
 
-{{< highlight yaml "hl_lines=11-15" >}}
-apiVersion: v1
-items:
-- apiVersion: gloo.solo.io/v1
-  kind: Proxy
-  metadata: # collapsed for brevity
+{{< highlight yaml "hl_lines=6-10" >}}
+...
   spec:
     listeners:
     - bindAddress: '::'

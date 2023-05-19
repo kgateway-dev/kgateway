@@ -1,0 +1,10 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-kit/issues/529
+    resolvesIssue: false
+    description: >
+      Upgrade to solo-kit version which fixes status reporting for multiple namespaces.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.30.9

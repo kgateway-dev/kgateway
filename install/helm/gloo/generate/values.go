@@ -23,17 +23,18 @@ type Config struct {
 }
 
 type Global struct {
-	Image             *Image           `json:"image,omitempty"`
-	Extensions        interface{}      `json:"extensions,omitempty"`
-	GlooRbac          *Rbac            `json:"glooRbac,omitempty"`
-	GlooStats         Stats            `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
-	GlooMtls          Mtls             `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
-	IstioSDS          IstioSDS         `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	IstioIntegration  IstioIntegration `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
-	ExtraSpecs        *bool            `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
-	ExtauthCustomYaml *bool            `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
-	Console           interface{}      `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
-	Graphql           interface{}      `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
+	Image             *Image             `json:"image,omitempty"`
+	Extensions        interface{}        `json:"extensions,omitempty"`
+	GlooRbac          *Rbac              `json:"glooRbac,omitempty"`
+	GlooStats         Stats              `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo Edge pods. Can be overridden by individual deployments"`
+	GlooMtls          Mtls               `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication"`
+	IstioSDS          IstioSDS           `json:"istioSDS,omitempty" desc:"Config used for installing Gloo Edge with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	IstioIntegration  IstioIntegration   `json:"istioIntegration,omitempty" desc:"Configs user to manage Gloo pod visibility for Istio's' automatic discovery and sidecar injection."`
+	ExtraSpecs        *bool              `json:"extraSpecs,omitempty" desc:"Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise."`
+	ExtauthCustomYaml *bool              `json:"extauthCustomYaml,omitempty" desc:"Inject whatever yaml exists in .Values.global.extensions.extAuth into settings.spec.extauth, instead of structured yaml (which is enterprise only). Defaults to true in open source, and false in enterprise"`
+	Console           interface{}        `json:"console,omitempty" desc:"Configuration options for the Enterprise Console (UI)."`
+	Graphql           interface{}        `json:"graphql,omitempty" desc:"(Enterprise Only): GraphQL configuration options."`
+	ConfigMaps        []*GlobalConfigMap `json:"configMaps,omitempty" desc:"Config used to create ConfigMaps at install time to store arbitrary data."`
 }
 
 type Namespace struct {
@@ -51,6 +52,7 @@ type Image struct {
 	Tag        *string `json:"tag,omitempty"  desc:"The image tag for the container."`
 	Repository *string `json:"repository,omitempty"  desc:"The image repository (name) for the container."`
 	Digest     *string `json:"digest,omitempty"  desc:"The hash digest of the container's image, ie. sha256:12345...."`
+	FipsDigest *string `json:"fipsDigest,omitempty"  desc:"The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true"`
 	Registry   *string `json:"registry,omitempty" desc:"The image hostname prefix and registry, such as quay.io/solo-io."`
 	PullPolicy *string `json:"pullPolicy,omitempty"  desc:"The image pull policy for the container. For default values, see the Kubernetes docs: https://kubernetes.io/docs/concepts/containers/images/#imagepullpolicy-defaulting"`
 	PullSecret *string `json:"pullSecret,omitempty" desc:"The image pull secret to use for the container, in the same namespace as the container pod."`
@@ -76,12 +78,19 @@ type PodSpec struct {
 	Tolerations       []*appsv1.Toleration   `json:"tolerations,omitempty"`
 	Affinity          map[string]interface{} `json:"affinity,omitempty"`
 	HostAliases       []interface{}          `json:"hostAliases,omitempty"`
+	InitContainers    []interface{}          `json:"initContainers,omitempty" desc:"[InitContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the deployment."`
 }
 
 type JobSpec struct {
 	*PodSpec
-	ActiveDeadlineSeconds   *int `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
-	TtlSecondsAfterFinished *int `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	ActiveDeadlineSeconds   *int              `json:"activeDeadlineSeconds,omitempty" desc:"Deadline in seconds for Kubernetes jobs."`
+	BackoffLimit            *int              `json:"backoffLimit,omitempty" desc:"Specifies the number of retries before marking this job failed. In kubernetes, defaults to 6"`
+	Completions             *int              `json:"completions,omitempty" desc:"Specifies the desired number of successfully finished pods the job should be run with."`
+	ManualSelector          *bool             `json:"manualSelector,omitempty" desc:"Controls generation of pod labels and pod selectors."`
+	Parallelism             *int              `json:"parallelism,omitempty" desc:"Specifies the maximum desired number of pods the job should run at any given time."`
+	TtlSecondsAfterFinished *int              `json:"ttlSecondsAfterFinished,omitempty" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	ExtraPodLabels          map[string]string `json:"extraPodLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job."`
+	ExtraPodAnnotations     map[string]string `json:"extraPodAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job."`
 }
 
 type DeploymentSpecSansResources struct {
@@ -181,20 +190,23 @@ type KnativeProxyInternal struct {
 }
 
 type Settings struct {
-	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
-	WriteNamespace                *string              `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
-	Integrations                  *Integrations        `json:"integrations,omitempty"`
-	Create                        *bool                `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
-	Extensions                    interface{}          `json:"extensions,omitempty"`
-	SingleNamespace               *bool                `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo Edge to handle invalid configuration"`
-	Linkerd                       *bool                `json:"linkerd,omitempty" desc:"Enable automatic Linkerd integration in Gloo Edge"`
-	DisableProxyGarbageCollection *bool                `json:"disableProxyGarbageCollection,omitempty" desc:"Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration."`
-	RegexMaxProgramSize           *uint32              `json:"regexMaxProgramSize,omitempty" desc:"Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 100."`
-	DisableKubernetesDestinations *bool                `json:"disableKubernetesDestinations,omitempty" desc:"Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
-	Aws                           AwsSettings          `json:"aws,omitempty"`
-	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
-	EnableRestEds                 *bool                `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Defaults to false."`
+	WatchNamespaces               []string                `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for Gloo Edge to watch for services and CRDs. Empty list means all namespaces"`
+	WriteNamespace                *string                 `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Edge Discovery."`
+	Integrations                  *Integrations           `json:"integrations,omitempty"`
+	Create                        *bool                   `json:"create,omitempty" desc:"create a Settings CRD which provides bootstrap configuration to Gloo Edge controllers"`
+	Extensions                    interface{}             `json:"extensions,omitempty"`
+	SingleNamespace               *bool                   `json:"singleNamespace,omitempty" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	InvalidConfigPolicy           *InvalidConfigPolicy    `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo Edge to handle invalid configuration"`
+	Linkerd                       *bool                   `json:"linkerd,omitempty" desc:"Enable automatic Linkerd integration in Gloo Edge"`
+	DisableProxyGarbageCollection *bool                   `json:"disableProxyGarbageCollection,omitempty" desc:"Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration."`
+	RegexMaxProgramSize           *uint32                 `json:"regexMaxProgramSize,omitempty" desc:"Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 1024."`
+	DisableKubernetesDestinations *bool                   `json:"disableKubernetesDestinations,omitempty" desc:"Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
+	Aws                           AwsSettings             `json:"aws,omitempty"`
+	RateLimit                     interface{}             `json:"rateLimit,omitempty" desc:"Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
+	RatelimitServer               interface{}             `json:"ratelimitServer,omitempty" desc:"External Ratelimit Server configuration for Gloo Edge Open Sources’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://docs.solo.io/gloo-edge/main/guides/security/rate_limiting/)"`
+	CircuitBreakers               CircuitBreakersSettings `json:"circuitBreakers,omitempty" desc:"Set this to configure the circuit breaker settings for Gloo."`
+	EnableRestEds                 *bool                   `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Defaults to false."`
+	DevMode                       *bool                   `json:"devMode,omitempty" desc:"Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not reccomended for production."`
 	*KubeResourceOverride
 }
 
@@ -204,6 +216,14 @@ type AwsSettings struct {
 	StsCredentialsRegion            *string   `json:"stsCredentialsRegion,omitempty" desc:"Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint."`
 	PropagateOriginalRouting        *bool     `json:"propagateOriginalRouting,omitempty" desc:"Send downstream path and method as x-envoy-original-path and x-envoy-original-method headers on the request to AWS lambda."`
 	CredentialRefreshDelay          *Duration `json:"credential_refresh_delay,omitempty" desc:"Adds a timed refresh to for ServiceAccount credentials in addition to the default filewatch."`
+	FallbackToFirstFunction         *bool     `json:"fallbackToFirstFunction,omitempty" desc:"It will use the first function which if discovery is enabled the first function is the first function name alphabetically from the last discovery run. Defaults to false."`
+}
+
+type CircuitBreakersSettings struct {
+	MaxConnections     *uint32 `json:"maxConnections,omitempty" desc:"Set this field to specify the maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
+	MaxPendingRequests *uint32 `json:"maxPendingRequests,omitempty" desc:"Set this field to specfify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024."`
+	MaxRequests        *uint32 `json:"maxRequests,omitempty" desc:"Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024."`
+	MaxRetries         *uint32 `json:"maxRetries,omitempty" desc:"Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3."`
 }
 
 type InvalidConfigPolicy struct {
@@ -213,41 +233,62 @@ type InvalidConfigPolicy struct {
 }
 
 type Gloo struct {
-	Deployment     *GlooDeployment `json:"deployment,omitempty"`
-	ServiceAccount `json:"serviceAccount,omitempty"`
-	SplitLogOutput *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
-	GlooService    *KubeResourceOverride `json:"service,omitempty"`
-	LogLevel       *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	Deployment            *GlooDeployment `json:"deployment,omitempty"`
+	ServiceAccount        `json:"serviceAccount,omitempty"`
+	SplitLogOutput        *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
+	GlooService           *KubeResourceOverride `json:"service,omitempty"`
+	LogLevel              *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	DisableLeaderElection *bool                 `json:"disableLeaderElection,omitempty" desc:"Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo"`
+}
+
+type SecurityOpts struct {
+	MergePolicy *string `json:"mergePolicy,omitempty" desc:"How to combine the defined security policy with the default security policy. Valid values are \"\", \"no-merge\", and \"helm-merge\". If defined as an empty string or \"no-merge\", use the defined security context as is.  If \"helm-merge\", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is \"\"."`
+}
+type PodSecurityContext struct {
+	*appsv1.PodSecurityContext
+	*SecurityOpts
+}
+
+type SecurityContext struct {
+	*appsv1.SecurityContext
+	*SecurityOpts
 }
 
 type GlooDeployment struct {
-	Image                 *Image            `json:"image,omitempty"`
-	XdsPort               *int              `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	RestXdsPort           *uint32           `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
-	ValidationPort        *int              `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	ProxyDebugPort        *int              `json:"proxyDebugPort,omitempty" desc:"port where gloo serves gRPC Proxy contents to glooctl"`
-	Stats                 *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
-	FloatingUserId        *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser             *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	ExternalTrafficPolicy *string           `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
-	ExtraGlooLabels       map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
-	ExtraGlooAnnotations  map[string]string `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
-	LivenessProbeEnabled  *bool             `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
-	OssImageTag           *string           `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
+	XdsPort               *int                `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy."`
+	RestXdsPort           *uint32             `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy."`
+	ValidationPort        *int                `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway."`
+	ProxyDebugPort        *int                `json:"proxyDebugPort,omitempty" desc:"port where gloo serves gRPC Proxy contents to glooctl."`
+	Stats                 *Stats              `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod."`
+	FloatingUserId        *bool               `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If a SecurityContext is defined for the container, this value is not applied for the container."`
+	RunAsUser             *float64            `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container."`
+	ExternalTrafficPolicy *string             `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service."`
+	ExtraGlooLabels       map[string]string   `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
+	ExtraGlooAnnotations  map[string]string   `json:"extraGlooAnnotations,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the primary gloo deployment."`
+	LivenessProbeEnabled  *bool               `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe for Gloo Edge (default is false)."`
+	OssImageTag           *string             `json:"ossImageTag,omitempty" desc:"Used for debugging. The version of Gloo OSS that the current version of Gloo Enterprise was built with."`
+	PodSecurityContext    *PodSecurityContext `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gloo deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See [pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core) for details."`
 	*DeploymentSpec
+	*GlooDeploymentContainer
+}
+
+type GlooDeploymentContainer struct {
+	Image                        *Image           `json:"image,omitempty"`
+	GlooContainerSecurityContext *SecurityContext `json:"glooContainerSecurityContext,omitempty" desc:"securityContext the for gloo container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type Discovery struct {
 	Deployment     *DiscoveryDeployment `json:"deployment,omitempty"`
 	FdsMode        *string              `json:"fdsMode,omitempty" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
 	UdsOptions     *UdsOptions          `json:"udsOptions,omitempty" desc:"Configuration options for the Upstream Discovery Service (UDS)."`
+	FdsOptions     *FdsOptions          `json:"fdsOptions,omitempty" desc:"Configuration options for the Function Discovery Service (FDS)."`
 	Enabled        *bool                `json:"enabled,omitempty" desc:"enable Discovery features"`
 	ServiceAccount `json:"serviceAccount,omitempty" `
 	LogLevel       *string `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 }
 
 type DiscoveryDeployment struct {
-	Image                     Image             `json:"image,omitempty"`
+	Image                     *Image            `json:"image,omitempty"`
 	Stats                     Stats             `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
 	FloatingUserId            *bool             `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
 	RunAsUser                 *float64          `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
@@ -264,19 +305,24 @@ type UdsOptions struct {
 	WatchLabels map[string]string `json:"watchLabels,omitempty" desc:"Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS."`
 }
 
+// Configuration options for the Function Discovery Service (FDS).
+type FdsOptions struct {
+	GraphqlEnabled *bool `json:"graphqlEnabled,omitempty" desc:"Enable GraphQL schema generation on the function discovery service. Defaults to true."`
+}
+
 type Gateway struct {
-	Enabled                       *bool             `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway features"`
-	Validation                    GatewayValidation `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
-	CertGenJob                    *CertGenJob       `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	RolloutJob                    *RolloutJob       `json:"rolloutJob,omitempty" desc:"This job waits for the 'gloo' deployment to successfully roll out (if the validation webhook is enabled), and then applies the Gloo Edge custom resources."`
-	CleanupJob                    *CleanupJob       `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled."`
-	UpdateValues                  *bool             `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
-	ProxyServiceAccount           ServiceAccount    `json:"proxyServiceAccount,omitempty" `
-	ReadGatewaysFromAllNamespaces *bool             `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
-	CompressedProxySpec           *bool             `json:"compressedProxySpec,omitempty" desc:"if true, enables compression for the Proxy CRD spec"`
-	LogLevel                      *string           `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
-	PersistProxySpec              *bool             `json:"persistProxySpec,omitempty" desc:"Enable writing Proxy CRD to etcd. Disabled by default for performance."`
-	Service                       *KubeResourceOverride
+	Enabled                        *bool             `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway features"`
+	Validation                     GatewayValidation `json:"validation,omitempty" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
+	CertGenJob                     *CertGenJob       `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	RolloutJob                     *RolloutJob       `json:"rolloutJob,omitempty" desc:"This job waits for the 'gloo' deployment to successfully roll out (if the validation webhook is enabled), and then applies the Gloo Edge custom resources."`
+	CleanupJob                     *CleanupJob       `json:"cleanupJob,omitempty" desc:"This job cleans up resources that are not deleted by Helm when Gloo Edge is uninstalled."`
+	UpdateValues                   *bool             `json:"updateValues,omitempty" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	ProxyServiceAccount            ServiceAccount    `json:"proxyServiceAccount,omitempty" `
+	ReadGatewaysFromAllNamespaces  *bool             `json:"readGatewaysFromAllNamespaces,omitempty" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
+	IsolateVirtualHostsBySslConfig *bool             `json:"isolateVirtualHostsBySslConfig,omitempty" desc:"if true, Added support for the envoy.filters.listener.tls_inspector listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting."`
+	CompressedProxySpec            *bool             `json:"compressedProxySpec,omitempty" desc:"if true, enables compression for the Proxy CRD spec"`
+	PersistProxySpec               *bool             `json:"persistProxySpec,omitempty" desc:"Enable writing Proxy CRD to etcd. Disabled by default for performance."`
+	Service                        *KubeResourceOverride
 }
 
 type ServiceAccount struct {
@@ -289,6 +335,7 @@ type GatewayValidation struct {
 	Enabled                          *bool    `json:"enabled,omitempty" desc:"enable Gloo Edge API Gateway validation hook (default true)"`
 	AlwaysAcceptResources            *bool    `json:"alwaysAcceptResources,omitempty" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
 	AllowWarnings                    *bool    `json:"allowWarnings,omitempty" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
+	ServerEnabled                    *bool    `json:"serverEnabled,omitempty" desc:"By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as warn_route_short_circuiting and disable_transformation_validation."`
 	DisableTransformationValidation  *bool    `json:"disableTransformationValidation,omitempty" desc:"set this to true to disable transformation validation. This may bring signifigant performance benefits if using many transformations, at the cost of possibly incorrect transformations being sent to Envoy. When using this value make sure to pre-validate transformations."`
 	WarnRouteShortCircuiting         *bool    `json:"warnRouteShortCircuiting,omitempty" desc:"Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo Edge will start assigning warnings to resources that would result in route short-circuiting within a virtual host."`
 	SecretName                       *string  `json:"secretName,omitempty" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
@@ -301,6 +348,7 @@ type GatewayValidation struct {
 type Webhook struct {
 	Enabled          *bool             `json:"enabled,omitempty" desc:"enable validation webhook (default true)"`
 	DisableHelmHook  *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
+	TimeoutSeconds   *int              `json:"timeoutSeconds,omitempty" desc:"the timeout for the webhook, defaults to 10"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
 	*KubeResourceOverride
 }
@@ -370,6 +418,7 @@ type GatewayProxy struct {
 	Service                        *GatewayProxyService         `json:"service,omitempty"`
 	AntiAffinity                   *bool                        `json:"antiAffinity,omitempty" desc:"configure anti affinity such that pods are preferably not co-located"`
 	Affinity                       map[string]interface{}       `json:"affinity,omitempty"`
+	TopologySpreadConstraints      []interface{}                `json:"topologySpreadConstraints,omitempty" desc:"configure topologySpreadConstraints for gateway proxy pods"`
 	Tracing                        *Tracing                     `json:"tracing,omitempty"`
 	GatewaySettings                *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
 	ExtraEnvoyArgs                 []string                     `json:"extraEnvoyArgs,omitempty" desc:"Envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
@@ -395,9 +444,11 @@ type GatewayProxy struct {
 	IstioMetaMeshId                *string                      `json:"istioMetaMeshId,omitempty" desc:"ISTIO_META_MESH_ID Environment Variable. Defaults to \"cluster.local\""`
 	IstioMetaClusterId             *string                      `json:"istioMetaClusterId,omitempty" desc:"ISTIO_META_CLUSTER_ID Environment Variable. Defaults to \"Kubernetes\""`
 	IstioDiscoveryAddress          *string                      `json:"istioDiscoveryAddress,omitempty" desc:"discoveryAddress field of the PROXY_CONFIG environment variable. Defaults to \"istiod.istio-system.svc:15012\""`
-	LogLevel                       *string                      `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	EnvoyLogLevel                  *string                      `json:"envoyLogLevel,omitempty" desc:"Level at which the pod should log. Options include \"trace\", \"info\", \"debug\", \"warn\", \"error\", \"critical\" and \"off\". Default level is info"`
 	XdsServiceAddress              *string                      `json:"xdsServiceAddress,omitempty" desc:"The k8s service name for the xds server. Defaults to gloo."`
 	XdsServicePort                 *uint32                      `json:"xdsServicePort,omitempty" desc:"The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay."`
+	TcpKeepaliveTimeSeconds        *uint32                      `json:"tcpKeepaliveTimeSeconds,omitempty" desc:"The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60. See here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive"`
+	DisableCoreDumps               *bool                        `json:"disableCoreDumps,omitempty" desc:"If set to true, Envoy will not generate core dumps in the event of a crash. Defaults to false"`
 	*KubeResourceOverride
 }
 
@@ -429,7 +480,7 @@ type GatewayProxyDeployment struct {
 }
 
 type HorizontalPodAutoscaler struct {
-	ApiVersion                     *string                  `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1 or autoscaling/v2beta2."`
+	ApiVersion                     *string                  `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2."`
 	MinReplicas                    *int32                   `json:"minReplicas,omitempty" desc:"minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down."`
 	MaxReplicas                    *int32                   `json:"maxReplicas,omitempty" desc:"maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas."`
 	TargetCPUUtilizationPercentage *int32                   `json:"targetCPUUtilizationPercentage,omitempty" desc:"target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1"`
@@ -450,28 +501,31 @@ type DaemonSetSpec struct {
 }
 
 type GatewayProxyPodTemplate struct {
-	Image                         *Image                `json:"image,omitempty"`
-	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
-	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
-	ExtraPorts                    []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
-	ExtraAnnotations              map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
-	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	HttpPort                      *int                  `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port."`
+	HttpsPort                     *int                  `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port."`
+	ExtraPorts                    []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod."`
+	ExtraAnnotations              map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod."`
+	NodeName                      *string               `json:"nodeName,omitempty" desc:"name of node to run on."`
+	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes."`
 	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitempty"`
 	Probes                        *bool                 `json:"probes,omitempty" desc:"Set to true to enable a readiness probe (default is false). Then, you can also enable a liveness probe."`
 	LivenessProbeEnabled          *bool                 `json:"livenessProbeEnabled,omitempty" desc:"Set to true to enable a liveness probe (default is false)."`
 	Resources                     *ResourceRequirements `json:"resources,omitempty"`
-	DisableNetBind                *bool                 `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
-	RunUnprivileged               *bool                 `json:"runUnprivileged,omitempty" desc:"run Envoy as an unprivileged user"`
-	FloatingUserId                *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
-	RunAsUser                     *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
-	FsGroup                       *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	DisableNetBind                *bool                 `json:"disableNetBind,omitempty" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024. If podSecurityContext is defined, this value is not applied."`
+	RunUnprivileged               *bool                 `json:"runUnprivileged,omitempty" desc:"run Envoy as an unprivileged user. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container."`
+	FloatingUserId                *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container. If podSecurityContext is defined, this value is not applied."`
+	RunAsUser                     *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101. If a SecurityContext is defined for the pod or container, this value is not applied for the pod/container."`
+	FsGroup                       *float64              `json:"fsGroup,omitempty" desc:"Explicitly set the group ID for volume ownership. Default is 10101. If podSecurityContext is defined, this value is not applied."`
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
-	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
+	TerminationGracePeriodSeconds *int                  `json:"terminationGracePeriodSeconds,omitempty" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info."`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitempty"`
 	CustomLivenessProbe           *appsv1.Probe         `json:"customLivenessProbe,omitempty"`
 	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo edge gateway-proxy deployment."`
-	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true"`
+	ExtraContainers               []interface{}         `json:"extraContainers,omitempty" desc:"Extra [containers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of containers on the gateway proxy deployment."`
+	ExtraInitContainers           []interface{}         `json:"extraInitContainers,omitempty" desc:"Extra [initContainers](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers) to be added to the array of initContainers on the gateway proxy deployment."`
+	EnablePodSecurityContext      *bool                 `json:"enablePodSecurityContext,omitempty" desc:"Whether or not to render the pod security context. Default is true."`
+	PodSecurityContext            *PodSecurityContext   `json:"podSecurityContext,omitempty" desc:"podSecurityContext for the gateway proxy deployment. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, or FsGroup.  See [pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#podsecuritycontext-v1-core) for details."`
+	*GlooDeploymentContainer
 }
 
 type GracefulShutdownSpec struct {
@@ -526,10 +580,6 @@ type AccessLogger struct {
 	*DeploymentSpec
 }
 
-type GatewayProxyConfigMap struct {
-	Data map[string]string `json:"data,omitempty"`
-}
-
 type Ingress struct {
 	Enabled             *bool              `json:"enabled,omitempty"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
@@ -582,6 +632,12 @@ type Service struct {
 	*KubeResourceOverride
 }
 
+type GlobalConfigMap struct {
+	Name      *string           `json:"name,omitempty" desc:"Name of the ConfigMap to create (required)."`
+	Namespace *string           `json:"namespace,omitempty" desc:"Namespace in which to create the ConfigMap. If empty, defaults to Gloo Edge install namespace."`
+	Data      map[string]string `json:"data,omitempty" desc:"Key-value pairs of ConfigMap data."`
+}
+
 type ConfigMap struct {
 	Data map[string]string `json:"data,omitempty"`
 	*KubeResourceOverride
@@ -611,15 +667,18 @@ type Mtls struct {
 }
 
 type SdsContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image           *Image           `json:"image,omitempty"`
+	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for sds gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type EnvoySidecarContainer struct {
-	Image *Image `json:"image,omitempty"`
+	Image           *Image           `json:"image,omitempty"`
+	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for envoy-sidecar gloo deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See [security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core) for details."`
 }
 
 type IstioProxyContainer struct {
-	Image *Image `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
+	Image           *Image           `json:"image,omitempty" desc:"Istio-proxy image to use for mTLS"`
+	SecurityContext *SecurityContext `json:"securityContext,omitempty" desc:"securityContext for istio-proxy deployment container. If this is defined it supercedes any values set in FloatingUserId, RunAsUser, DisableNetBind, RunUnprivileged. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#securitycontext-v1-core for details."`
 }
 
 type IstioSDS struct {

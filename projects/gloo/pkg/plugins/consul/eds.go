@@ -96,11 +96,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 			if opts.Ctx.Err() != nil {
 				return false
 			}
-			select {
-			case <-opts.Ctx.Done():
-				return false
-			case allEndpointsListChan <- endpoints:
-			}
+			allEndpointsListChan <- endpoints
 			return true
 		}
 
@@ -222,7 +218,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				// cancel the watches we need to cancel
 				for dc, svcsMap := range dcToSvcsToCancel {
-					for svc, _ := range svcsMap {
+					for svc := range svcsMap {
 						if _, ok := dcEndpointWatches[dc]; !ok {
 							// developer logic error, skip to prevent panic
 							logger.DPanicf("tried to cancel watch for endpoints in unknown data center: %s", dc)
@@ -346,6 +342,7 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 							ctxDead = true
 							return nil
 						}
+
 						endpoints, queryMeta, err = p.client.Service(svcName, "", queryOpts.WithContext(ctx))
 						return err
 					},
@@ -384,6 +381,7 @@ func (p *plugin) watchEndpointsInDataCenter(ctx context.Context, dataCenter, svc
 				} else {
 					lastIndex = queryMeta.LastIndex
 				}
+
 				endpointsChan <- tuple
 			}
 		}

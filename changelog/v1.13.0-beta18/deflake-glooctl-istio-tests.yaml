@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Deflake Glooctl Istio Inject/Uninject kube2e tests
+    issueLink: https://github.com/solo-io/gloo/issues/4428

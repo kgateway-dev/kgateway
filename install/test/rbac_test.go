@@ -3,7 +3,9 @@ package test
 import (
 	"fmt"
 
-	. "github.com/onsi/ginkgo"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -193,7 +195,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"upstreams"},
-								Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
+								Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -266,27 +268,22 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"upstreams", "upstreamgroups", "proxies"},
-								Verbs:     []string{"get", "list", "watch", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 							{
 								APIGroups: []string{"enterprise.gloo.solo.io"},
 								Resources: []string{"authconfigs"},
-								Verbs:     []string{"get", "list", "watch", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 							{
 								APIGroups: []string{"ratelimit.solo.io"},
 								Resources: []string{"ratelimitconfigs", "ratelimitconfigs/status"},
-								Verbs:     []string{"get", "list", "watch", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch", "update"},
 							},
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
 								Resources: []string{"graphqlapis", "graphqlapis/status"},
-								Verbs:     []string{"get", "list", "watch", "update"},
-							},
-							{
-								APIGroups: []string{""},
-								Resources: []string{"configmaps"},
-								Verbs:     []string{"get", "update"},
+								Verbs:     []string{"get", "list", "watch", "patch", "update"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -418,7 +415,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"graphql.gloo.solo.io"},
 								Resources: []string{"graphqlapis", "graphqlapis/status"},
-								Verbs:     []string{"get", "list", "watch", "update", "create"},
+								Verbs:     []string{"get", "list", "watch", "update", "patch", "create"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -491,7 +488,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"settings"},
-								Verbs:     []string{"get", "list", "watch", "create"},
+								Verbs:     []string{"get", "list", "watch"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -560,6 +557,239 @@ var _ = Describe("RBAC Test", func() {
 				})
 			})
 
+			Context("certgen job", func() {
+				It("Cluster scope", func() {
+					prepareMakefile("global.glooRbac.namespaced=false")
+					By("roles", func() {
+						testManifest.ExpectClusterRole(&rbacv1.ClusterRole{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ClusterRole",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "gloo-gateway-secret-create-gloo-system",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Rules: []rbacv1.PolicyRule{
+								{
+									Verbs:           []string{"create", "get", "update"},
+									APIGroups:       []string{""},
+									Resources:       []string{"secrets"},
+									ResourceNames:   nil,
+									NonResourceURLs: nil,
+								}},
+							AggregationRule: nil,
+						})
+						testManifest.ExpectClusterRole(&rbacv1.ClusterRole{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ClusterRole",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "gloo-gateway-vwc-update-gloo-system",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Rules: []rbacv1.PolicyRule{
+								{
+									Verbs:           []string{"get", "update"},
+									APIGroups:       []string{"admissionregistration.k8s.io"},
+									Resources:       []string{"validatingwebhookconfigurations"},
+									ResourceNames:   nil,
+									NonResourceURLs: nil,
+								}},
+							AggregationRule: nil,
+						})
+					})
+					By("role bindings", func() {
+						testManifest.ExpectClusterRoleBinding(&rbacv1.ClusterRoleBinding{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ClusterRoleBinding",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "gloo-gateway-secret-create-gloo-system",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Subjects: []rbacv1.Subject{{
+								Kind:      "ServiceAccount",
+								APIGroup:  "",
+								Name:      "certgen",
+								Namespace: "gloo-system",
+							}},
+							RoleRef: rbacv1.RoleRef{
+								APIGroup: "rbac.authorization.k8s.io",
+								Kind:     "ClusterRole",
+								Name:     "gloo-gateway-secret-create-gloo-system",
+							},
+						})
+						testManifest.ExpectClusterRoleBinding(&rbacv1.ClusterRoleBinding{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ClusterRoleBinding",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "gloo-gateway-vwc-update-gloo-system",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Subjects: []rbacv1.Subject{{
+								Kind:      "ServiceAccount",
+								APIGroup:  "",
+								Name:      "certgen",
+								Namespace: "gloo-system",
+							}},
+							RoleRef: rbacv1.RoleRef{
+								APIGroup: "rbac.authorization.k8s.io",
+								Kind:     "ClusterRole",
+								Name:     "gloo-gateway-vwc-update-gloo-system",
+							},
+						})
+					})
+				})
+				It("Namespace scope", func() {
+					prepareMakefile("global.glooRbac.namespaced=true")
+					By("roles", func() {
+						testManifest.ExpectRole(&rbacv1.Role{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Role",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "gloo-gateway-secret-create",
+								Namespace: "gloo-system",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Rules: []rbacv1.PolicyRule{{
+								Verbs:           []string{"create", "get", "update"},
+								APIGroups:       []string{""},
+								Resources:       []string{"secrets"},
+								ResourceNames:   nil,
+								NonResourceURLs: nil,
+							}},
+						})
+						testManifest.ExpectClusterRole(&rbacv1.ClusterRole{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ClusterRole",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "gloo-gateway-vwc-update",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Rules: []rbacv1.PolicyRule{
+								{
+									Verbs:           []string{"get", "update"},
+									APIGroups:       []string{"admissionregistration.k8s.io"},
+									Resources:       []string{"validatingwebhookconfigurations"},
+									ResourceNames:   nil,
+									NonResourceURLs: nil,
+								}},
+							AggregationRule: nil,
+						})
+					})
+					By("role bindings", func() {
+						testManifest.ExpectRoleBinding(&rbacv1.RoleBinding{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "RoleBinding",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      "gloo-gateway-secret-create",
+								Namespace: "gloo-system",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Subjects: []rbacv1.Subject{{
+								Kind:      "ServiceAccount",
+								APIGroup:  "",
+								Name:      "certgen",
+								Namespace: "gloo-system",
+							}},
+							RoleRef: rbacv1.RoleRef{
+								APIGroup: "rbac.authorization.k8s.io",
+								Kind:     "Role",
+								Name:     "gloo-gateway-secret-create",
+							},
+						})
+						testManifest.ExpectClusterRoleBinding(&rbacv1.ClusterRoleBinding{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "ClusterRoleBinding",
+								APIVersion: "rbac.authorization.k8s.io/v1",
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "gloo-gateway-vwc-update",
+								Labels: map[string]string{
+									"app":  "gloo",
+									"gloo": "rbac",
+								},
+								Annotations: map[string]string{
+									"helm.sh/hook-weight": "5",
+									"helm.sh/hook":        "pre-install,pre-upgrade",
+								},
+							},
+							Subjects: []rbacv1.Subject{{
+								Kind:      "ServiceAccount",
+								APIGroup:  "",
+								Name:      "certgen",
+								Namespace: "gloo-system",
+							}},
+							RoleRef: rbacv1.RoleRef{
+								APIGroup: "rbac.authorization.k8s.io",
+								Kind:     "ClusterRole",
+								Name:     "gloo-gateway-vwc-update",
+							},
+						})
+					})
+				})
+			})
+
 			Context("gloo-resource-mutator", func() {
 				BeforeEach(func() {
 					resourceBuilder = ResourceBuilder{
@@ -572,7 +802,7 @@ var _ = Describe("RBAC Test", func() {
 							{
 								APIGroups: []string{"gloo.solo.io"},
 								Resources: []string{"proxies"},
-								Verbs:     []string{"get", "list", "watch", "create", "update", "delete"},
+								Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{
@@ -637,12 +867,8 @@ var _ = Describe("RBAC Test", func() {
 						Rules: []rbacv1.PolicyRule{
 							{
 								APIGroups: []string{"gateway.solo.io"},
-								Resources: []string{"gateways", "httpgateways", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
-								Verbs:     []string{"get", "list", "watch", "update"},
-							}, {
-								APIGroups: []string{"gateway.solo.io"},
-								Resources: []string{"gateways"},
-								Verbs:     []string{"create"},
+								Resources: []string{"gateways", "httpgateways", "tcpgateways", "virtualservices", "routetables", "virtualhostoptions", "routeoptions"},
+								Verbs:     []string{"get", "list", "watch", "patch"},
 							},
 						},
 						RoleRef: rbacv1.RoleRef{

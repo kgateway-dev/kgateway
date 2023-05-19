@@ -58,7 +58,7 @@ func (s *selector) SelectRouteTables(action *gatewayv1.DelegateAction, parentNam
 
 	if routeTableRef := getRouteTableRef(action); routeTableRef != nil {
 		// missing refs should only result in a warning
-		// this allows resources to be applied asynchronously
+		// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 		routeTable, err := s.toSearch.Find((*routeTableRef).Strings())
 		if err != nil {
 			return nil, RouteTableMissingWarning(*routeTableRef)

@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7218
+    description: Expose `gateway.validation.webhook.timeoutSeconds` as a means of setting `timeoutSeconds` on the gloo-gateway-validation-webhook

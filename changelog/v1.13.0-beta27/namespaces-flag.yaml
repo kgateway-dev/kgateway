@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/1299
+    description: >-
+      Added a `--resource-namespaces` flag to `glooctl check` to only scan custom resources in the specified watched namespaces.
+      Added a `--pod-selector` flag to specify a label selector for pod checking in the install namespace.

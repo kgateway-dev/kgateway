@@ -3,41 +3,35 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
 	"time"
 
-	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+
+	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmission"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/test/kube2e"
 
 	testutils "github.com/solo-io/k8s-utils/testutils/kube"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/client-go/rest"
 
 	"k8s.io/apimachinery/pkg/labels"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -57,32 +51,17 @@ var _ = Describe("Robustness tests", func() {
 	// Therefore, we opted to collapse that Test Suite into this file. If in the future there are a larger set
 	// of tests, we can evaluate re-opening that Test Suite.
 
-	const (
-		gatewayProxy = defaults.GatewayProxyName
-		gatewayPort  = int(80)
-	)
-
 	var (
-		ctx    context.Context
-		cancel context.CancelFunc
-		cfg    *rest.Config
-		cache  kube.SharedCache
-
-		kubeClient           kubernetes.Interface
-		proxyClient          gloov1.ProxyClient
-		virtualServiceClient gatewayv1.VirtualServiceClient
-		statusClient         resources.StatusClient
-
-		appName        = "echo-app-for-robustness-test"
-		appDeployment  *appsv1.Deployment
-		appService     *corev1.Service
-		virtualService *gatewayv1.VirtualService
+		appName       = "echo-app-for-robustness-test"
+		appDeployment *appsv1.Deployment
+		appService    *corev1.Service
+		appVs         *gatewayv1.VirtualService
 
 		err error
 
 		envoyDeployment = &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "gloo-system",
+				Namespace: namespace,
 				Name:      "gateway-proxy",
 				Labels:    map[string]string{"gloo": "gateway-proxy"},
 			},
@@ -98,9 +77,10 @@ var _ = Describe("Robustness tests", func() {
 				},
 			},
 		}
+
 		glooDeployment = &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "gloo-system",
+				Namespace: namespace,
 				Name:      "gloo",
 				Labels:    map[string]string{"gloo": "gloo"},
 			},
@@ -116,147 +96,89 @@ var _ = Describe("Robustness tests", func() {
 				},
 			},
 		}
+
+		glooResources *gloosnapshot.ApiSnapshot
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-
-		cfg, err = kubeutils.GetConfig("", "")
+		appDeployment, appService, err = createEchoDeploymentAndService(resourceClientset.KubeClients(), testHelper.InstallNamespace, appName)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubeClient, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
+		appVs = helpers.NewVirtualServiceBuilder().
+			WithName(appName).
+			WithNamespace(testHelper.InstallNamespace).
+			WithDomain("app").
+			WithRoutePrefixMatcher("route", "/1").
+			WithRouteActionToSingleDestination("route",
+				&gloov1.Destination{
+					DestinationType: &gloov1.Destination_Kube{
+						Kube: &gloov1.KubernetesServiceDestination{
+							Ref: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      appService.Name,
+							},
+							Port: 5678,
+						},
+					},
+				}).
+			Build()
 
-		cache = kube.NewKubeCache(ctx)
-		virtualServiceClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gatewayv1.VirtualServiceCrd,
-			Cfg:         cfg,
-			SharedCache: cache,
+		// The set of resources that these tests will generate
+		glooResources = &gloosnapshot.ApiSnapshot{
+			VirtualServices: gatewayv1.VirtualServiceList{
+				appVs,
+			},
 		}
-		proxyClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gloov1.ProxyCrd,
-			Cfg:         cfg,
-			SharedCache: cache,
-		}
-
-		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(ctx, virtualServiceClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		err = virtualServiceClient.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		proxyClient, err = gloov1.NewProxyClient(ctx, proxyClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		err = proxyClient.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		statusClient = gloostatusutils.GetStatusClientForNamespace(namespace)
-
-		appDeployment, appService, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName)
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+		_ = resourceClientset.KubeClients().AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
 		Eventually(func() bool {
-			deployments, err := kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
+			deployments, err := resourceClientset.KubeClients().AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
 			Expect(err).NotTo(HaveOccurred())
 			return len(deployments.Items) == 0
 		}, "15s", "0.5s").Should(BeTrue())
 
-		_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+		_ = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
 		Eventually(func() bool {
-			services, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
+			services, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName}).String()})
 			Expect(err).NotTo(HaveOccurred())
 			return len(services.Items) == 0
 		}, "15s", "0.5s").Should(BeTrue())
-
-		cancel()
 	})
+
+	JustBeforeEach(func() {
+		err = snapshotWriter.WriteSnapshot(glooResources, clients.WriteOpts{
+			Ctx:               ctx,
+			OverwriteExisting: false,
+		})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	JustAfterEach(func() {
+		err = snapshotWriter.DeleteSnapshot(glooResources, clients.DeleteOpts{
+			Ctx:            ctx,
+			IgnoreNotExist: true,
+		})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	// labelSelector is a string map e.g. gloo=gateway-proxy
+	findPodNamesByLabel := func(ctx context.Context, ns, labelSelector string) []string {
+		pl, err := resourceClientset.KubeClients().CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(pl.Items).NotTo(BeEmpty())
+		var names []string
+		for _, item := range pl.Items {
+			names = append(names, item.Name)
+		}
+		return names
+	}
 
 	Context("Updates Envoy endpoints, even if proxy is invalid", func() {
 
-		BeforeEach(func() {
-			virtualService = &gatewayv1.VirtualService{
-				Metadata: &core.Metadata{
-					Name:      "echo-vs",
-					Namespace: testHelper.InstallNamespace,
-				},
-				VirtualHost: &gatewayv1.VirtualHost{
-					Domains: []string{"*"},
-					Routes: []*gatewayv1.Route{
-						{
-							Matchers: []*matchers.Matcher{{
-								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/1",
-								},
-							}},
-							Action: &gatewayv1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Kube{
-												Kube: &gloov1.KubernetesServiceDestination{
-													Ref: &core.ResourceRef{
-														Namespace: appService.Namespace,
-														Name:      appService.Name,
-													},
-													Port: 5678,
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			}
-		})
-
-		JustBeforeEach(func() {
-			var vsList gatewayv1.VirtualServiceList
-			Eventually(func() bool {
-				vsList, err = virtualServiceClient.List(appService.Namespace, clients.ListOpts{})
-				if err != nil {
-					return false
-				}
-				if len(vsList) == 0 {
-					return true
-				}
-				for _, vs := range vsList {
-					virtualServiceClient.Delete(appService.Namespace, vs.GetMetadata().Name, clients.DeleteOpts{})
-				}
-
-				return false
-
-			}, "12s", "1s").Should(BeTrue())
-			Eventually(func() error {
-				_, writeErr := virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx})
-				return writeErr
-			}, "12s", "1s").ShouldNot(HaveOccurred())
-
-			// Ensure we can route to the service
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/1",
-				Method:            "GET",
-				Host:              gatewayProxy,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 1,
-				WithoutStats:      true,
-			}, expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
-		})
-
-		AfterEach(func() {
-			_ = virtualServiceClient.Delete(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-				return virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
-			}, "15s", "0.5s")
-		})
-
-		forceProxyIntoWarningState := func(virtualService *gatewayv1.VirtualService) {
-			virtualService, err = virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+		forceProxyIntoWarningState := func(originalVs *gatewayv1.VirtualService) {
+			virtualService, err := resourceClientset.VirtualServiceClient().Read(originalVs.GetMetadata().GetNamespace(), originalVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 
 			// required to prevent gateway webhook from rejecting
@@ -287,28 +209,40 @@ var _ = Describe("Robustness tests", func() {
 				},
 			})
 
-			virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient, statusClient)
+			statusClient := gloostatusutils.GetStatusClientForNamespace(testHelper.InstallNamespace)
+			virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(resourceClientset.VirtualServiceClient(), statusClient)
 			err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			helpers.EventuallyResourceWarning(func() (resources.InputResource, error) {
-				return proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-			}, 20*time.Second, 1*time.Second)
+				return resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			})
 		}
 
 		It("works", func() {
-			// we already verify that the initial curl works in the BeforeEach()
+			By("Ensure we can route to the service")
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/1",
+				Method:            "GET",
+				Host:              "app",
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1,
+				WithoutStats:      true,
+			}, expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
+
 			By("force proxy into warning state")
-			forceProxyIntoWarningState(virtualService)
+			forceProxyIntoWarningState(appVs)
 
 			By("force an update of the service endpoints")
-			initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
+			initialEndpointIPs := endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
 
-			scaleDeploymentTo(kubeClient, appDeployment, 0)
-			scaleDeploymentTo(kubeClient, appDeployment, 1)
+			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 0)
+			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 1)
 
 			Eventually(func() []string {
-				return endpointIPsForKubeService(kubeClient, appService)
+				return endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
 			}, 20*time.Second, 1*time.Second).Should(And(
 				HaveLen(len(initialEndpointIPs)),
 				Not(BeEquivalentTo(initialEndpointIPs)),
@@ -319,7 +253,7 @@ var _ = Describe("Robustness tests", func() {
 				Protocol:          "http",
 				Path:              "/1",
 				Method:            "GET",
-				Host:              gatewayProxy,
+				Host:              "app",
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 1,
@@ -336,10 +270,10 @@ var _ = Describe("Robustness tests", func() {
 			)
 
 			BeforeEach(func() {
-				appDeployment2, appService2, err = createEchoDeploymentAndService(kubeClient, testHelper.InstallNamespace, appName2)
+				appDeployment2, appService2, err = createEchoDeploymentAndService(resourceClientset.KubeClients(), testHelper.InstallNamespace, appName2)
 				Expect(err).NotTo(HaveOccurred())
 
-				virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
+				appVs.VirtualHost.Routes = append(appVs.VirtualHost.Routes, &gatewayv1.Route{
 					Matchers: []*matchers.Matcher{{
 						PathSpecifier: &matchers.Matcher_Prefix{
 							Prefix: "/2",
@@ -352,7 +286,7 @@ var _ = Describe("Robustness tests", func() {
 									DestinationType: &gloov1.Destination_Kube{
 										Kube: &gloov1.KubernetesServiceDestination{
 											Ref: &core.ResourceRef{
-												Namespace: appService2.Namespace,
+												Namespace: testHelper.InstallNamespace,
 												Name:      appService2.Name,
 											},
 											Port: 5678,
@@ -363,19 +297,21 @@ var _ = Describe("Robustness tests", func() {
 						},
 					},
 				})
+
+				glooResources.VirtualServices = gatewayv1.VirtualServiceList{appVs}
 			})
 
 			AfterEach(func() {
-				_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment2.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				_ = resourceClientset.KubeClients().AppsV1().Deployments(testHelper.InstallNamespace).Delete(ctx, appDeployment2.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
 				Eventually(func() bool {
-					deployments, err := kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName2}).String()})
+					deployments, err := resourceClientset.KubeClients().AppsV1().Deployments(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName2}).String()})
 					Expect(err).NotTo(HaveOccurred())
 					return len(deployments.Items) == 0
 				}, "15s", "0.5s").Should(BeTrue())
 
-				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
+				_ = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{GracePeriodSeconds: pointerToInt64(0)})
 				Eventually(func() bool {
-					services, err := kubeClient.CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName2}).String()})
+					services, err := resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: labels.SelectorFromSet(map[string]string{"app": appName2}).String()})
 					Expect(err).NotTo(HaveOccurred())
 					return len(services.Items) == 0
 				}, "15s", "0.5s").Should(BeTrue())
@@ -386,7 +322,7 @@ var _ = Describe("Robustness tests", func() {
 					Protocol:          "http",
 					Path:              "/1",
 					Method:            "GET",
-					Host:              gatewayProxy,
+					Host:              "app",
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					ConnectionTimeout: 1,
@@ -399,7 +335,7 @@ var _ = Describe("Robustness tests", func() {
 					Protocol:          "http",
 					Path:              "/2",
 					Method:            "GET",
-					Host:              gatewayProxy,
+					Host:              "app",
 					Service:           gatewayProxy,
 					Port:              gatewayPort,
 					ConnectionTimeout: 1,
@@ -416,27 +352,35 @@ var _ = Describe("Robustness tests", func() {
 			}
 
 			assertCanRouteSvc1NotSvc2 := func() {
-				By("assert we can route to svc1 and not to svc2")
-				// Ensure we can route to the first service
-				testHelper.CurlEventuallyShouldRespond(firstRouteCurlOpts(), expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
-				Consistently(func() (string, error) {
-					return testHelper.Curl(firstRouteCurlOpts())
-				}, "5s", "1s").Should(ContainSubstring(expectedResponse(appName)))
+				Eventually(func(g Gomega) {
+					By("assert we can route to svc1")
+					validRouteResponse := expectedResponse(appName)
+					g.Eventually(func() (string, error) {
+						return testHelper.Curl(firstRouteCurlOpts())
+					}, "30s", "1s").Should(ContainSubstring(validRouteResponse))
+					g.Consistently(func() (string, error) {
+						return testHelper.Curl(firstRouteCurlOpts())
+					}, "5s", "1s").Should(ContainSubstring(validRouteResponse))
 
-				// can no longer route to appName2 since its k8s service has been removed
-				Eventually(func() (string, error) {
-					return testHelper.Curl(secondRouteCurlOpts())
-				}, "30s", "1s").Should(BeEmpty())
-				Consistently(func() (string, error) {
-					return testHelper.Curl(secondRouteCurlOpts())
-				}, "5s", "1s").Should(BeEmpty())
+					// can no longer route to appName2 since its k8s service has been removed
+					// we have invalid route replacement enabled, so we should receive the response from the fallback cluster
+					By("assert we can not route to svc2")
+					invalidRouteResponse := "Gloo Gateway has invalid configuration."
+					g.Eventually(func() (string, error) {
+						return testHelper.Curl(secondRouteCurlOpts())
+					}, "30s", "1s").Should(ContainSubstring(invalidRouteResponse))
+					g.Consistently(func() (string, error) {
+						return testHelper.Curl(secondRouteCurlOpts())
+					}, "5s", "1s").Should(ContainSubstring(invalidRouteResponse))
+
+				}, "30s")
 			}
 
 			It("works", func() {
 				assertCanRouteSvc1AndSvc2()
 
 				// Delete the k8s service behind the second echo app
-				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
+				err = resourceClientset.KubeClients().CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				assertCanRouteSvc1NotSvc2()
@@ -444,17 +388,17 @@ var _ = Describe("Robustness tests", func() {
 
 			It("works, even with deleted services", func() {
 				// Delete the k8s service behind the second echo app
-				err = kubeClient.CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
+				err = resourceClientset.KubeClients().CoreV1().Services(appService2.Namespace).Delete(ctx, appService2.Name, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				assertCanRouteSvc1NotSvc2()
 
 				// roll pods to ensure we are resilient to pod restarts
 				By("bounce gloo and envoy")
-				scaleDeploymentTo(kubeClient, glooDeployment, 0)
-				scaleDeploymentTo(kubeClient, envoyDeployment, 0)
-				scaleDeploymentTo(kubeClient, glooDeployment, 1)
-				scaleDeploymentTo(kubeClient, envoyDeployment, 1)
+				scaleDeploymentTo(resourceClientset.KubeClients(), glooDeployment, 0)
+				scaleDeploymentTo(resourceClientset.KubeClients(), envoyDeployment, 0)
+				scaleDeploymentTo(resourceClientset.KubeClients(), glooDeployment, 1)
+				scaleDeploymentTo(resourceClientset.KubeClients(), envoyDeployment, 1)
 
 				assertCanRouteSvc1NotSvc2()
 			})
@@ -462,22 +406,34 @@ var _ = Describe("Robustness tests", func() {
 		})
 
 		It("works, even when snapshot cache is reset", func() {
+			By("Ensure we can route to the service")
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/1",
+				Method:            "GET",
+				Host:              "app",
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1,
+				WithoutStats:      true,
+			}, expectedResponse(appName), 1, 45*time.Second, 1*time.Second)
+
 			By("force proxy into warning state")
-			forceProxyIntoWarningState(virtualService)
+			forceProxyIntoWarningState(appVs)
 
 			By("delete gloo pod, ensuring the snapshot cache is reset")
-			scaleDeploymentTo(kubeClient, glooDeployment, 0)
-			scaleDeploymentTo(kubeClient, glooDeployment, 1)
+			scaleDeploymentTo(resourceClientset.KubeClients(), glooDeployment, 0)
+			scaleDeploymentTo(resourceClientset.KubeClients(), glooDeployment, 1)
 
 			By("force an update of the service endpoints")
 			var initialEndpointIPs, newEndpointIPs []string
-			initialEndpointIPs = endpointIPsForKubeService(kubeClient, appService)
+			initialEndpointIPs = endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
 
-			scaleDeploymentTo(kubeClient, appDeployment, 0)
-			scaleDeploymentTo(kubeClient, appDeployment, 1)
+			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 0)
+			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 1)
 
 			Eventually(func() []string {
-				newEndpointIPs = endpointIPsForKubeService(kubeClient, appService)
+				newEndpointIPs = endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
 				return newEndpointIPs
 			}, 20*time.Second, 1*time.Second).Should(And(
 				HaveLen(len(initialEndpointIPs)),
@@ -485,10 +441,10 @@ var _ = Describe("Robustness tests", func() {
 			))
 
 			By("verify that the new endpoints have been propagated to Envoy")
-			gatewayProxyPodName := testutils.FindPodNameByLabel(cfg, ctx, testHelper.InstallNamespace, "gloo=gateway-proxy")
+			gatewayProxyPodName := findPodNamesByLabel(ctx, testHelper.InstallNamespace, "gloo=gateway-proxy")[0]
 			envoyClustersPath := "http://localhost:19000/clusters" // TODO - this should live in envoy test service
 			Eventually(func() bool {
-				clusters := testutils.CurlWithEphemeralPodStable(ctx, ioutil.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
+				clusters := testutils.CurlWithEphemeralPodStable(ctx, io.Discard, "", testHelper.InstallNamespace, gatewayProxyPodName, envoyClustersPath)
 
 				fmt.Println(fmt.Sprintf("initial endpoint ips %+v", initialEndpointIPs))
 
@@ -513,151 +469,6 @@ var _ = Describe("Robustness tests", func() {
 
 		})
 
-		Context("xds-relay", func() {
-			const (
-				xdsRelayReplicas = 5
-				envoyReplicas    = 8
-			)
-			var (
-				xdsRelayDeployment = &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
-						Name:      "xds-relay",
-						Labels:    map[string]string{"app": "xds-relay"},
-					},
-					Spec: appsv1.DeploymentSpec{
-						Replicas: pointerToInt32(1),
-						Selector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{"app": "xds-relay"},
-						},
-						Template: corev1.PodTemplateSpec{
-							ObjectMeta: metav1.ObjectMeta{
-								Labels: map[string]string{"app": "xds-relay"},
-							},
-						},
-					},
-				}
-				// labelSelector is a string map e.g. gloo=gateway-proxy
-				findPodNamesByLabel = func(cfg *rest.Config, ctx context.Context, ns, labelSelector string) []string {
-					clientset, err := kubernetes.NewForConfig(cfg)
-					Expect(err).NotTo(HaveOccurred())
-					pl, err := clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: labelSelector})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(pl.Items).NotTo(BeEmpty())
-					var names []string
-					for _, item := range pl.Items {
-						names = append(names, item.Name)
-					}
-					return names
-				}
-				findEchoAppClusterEndpoints = func(podName, expectedEndpoints string) int {
-					clusters, portFwdCmd, err := cliutils.PortForwardGet(ctx, defaults2.GlooSystem, podName, "19000", "19000", true, "/clusters")
-					if err != nil {
-						fmt.Println(err)
-					}
-					if portFwdCmd.Process != nil {
-						defer portFwdCmd.Process.Release()
-						defer portFwdCmd.Process.Kill()
-					}
-					echoAppClusterEndpoints := regexp.MustCompile(fmt.Sprintf("\ngloo-system-echo-app-for-robustness-test-5678_gloo-system::%s:5678::", expectedEndpoints))
-					matches := echoAppClusterEndpoints.FindAllStringIndex(clusters, -1)
-					fmt.Println(fmt.Sprintf("Number of cluster stats for echo app (i.e., checking for endpoints) on clusters page: %d", len(matches)))
-					return len(matches)
-				}
-			)
-
-			It("works, even if gloo is scaled to zero and envoy is bounced", func() {
-
-				if os.Getenv("USE_XDS_RELAY") != "true" {
-					Skip("skipping test that only passes with xds relay enabled")
-				}
-
-				By("verify that the endpoints have been propagated to Envoy")
-				// we already verify that the initial curl works in the BeforeEach()
-
-				// scale to five replicas, envoy already connected to our initial xds-relay replica so the
-				// other four will have stale caches
-				scaleDeploymentTo(kubeClient, xdsRelayDeployment, xdsRelayReplicas)
-
-				By("scale gloo to zero")
-				scaleDeploymentTo(kubeClient, glooDeployment, 0)
-
-				By("bounce envoy")
-				scaleDeploymentTo(kubeClient, envoyDeployment, 0)
-				// scale to eight replicas to ensure / maximize likelihood that at least one of the new envoys
-				// will connect to an xds-relay replica with a cold cache. xds-relay should disconnect on the cache
-				// miss and envoy will retry until it hits our xds-relay with the warm cache
-				scaleDeploymentTo(kubeClient, envoyDeployment, envoyReplicas)
-
-				// this asserts that at least one envoy has the correct endpoints
-				By("verify that the endpoints have been propagated to Envoy by xds relay")
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/1",
-					Method:            "GET",
-					Host:              gatewayProxy,
-					Service:           gatewayProxy,
-					Port:              gatewayPort,
-					ConnectionTimeout: 1,
-					WithoutStats:      true,
-				}, expectedResponse(appName), 1, 30*time.Second, 1*time.Second)
-
-				envoyPodNames := findPodNamesByLabel(cfg, ctx, defaults2.GlooSystem, "gloo=gateway-proxy")
-				Expect(envoyPodNames).To(HaveLen(envoyReplicas))
-
-				initialEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
-				Expect(initialEndpointIPs).To(HaveLen(1))
-
-				// this asserts that at all envoys have the correct endpoints.
-				// envoy may need to retry until it hits xds relay with the warm cache, hence the 45s timeout.
-				for _, envoyPodName := range envoyPodNames {
-					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
-					Eventually(func() int {
-						return findEchoAppClusterEndpoints(envoyPodName, initialEndpointIPs[0])
-					}, "45s", "1s").Should(BeNumerically(">", 0))
-				}
-
-				By("reconnects to upstream gloo after scaling up, new endpoints are picked up")
-				scaleDeploymentTo(kubeClient, glooDeployment, 1)
-
-				By("force an update of the service endpoints")
-				scaleDeploymentTo(kubeClient, appDeployment, 0)
-				scaleDeploymentTo(kubeClient, appDeployment, 1)
-
-				Eventually(func() []string {
-					return endpointIPsForKubeService(kubeClient, appService)
-				}, 20*time.Second, 1*time.Second).Should(And(
-					HaveLen(len(initialEndpointIPs)),
-					Not(BeEquivalentTo(initialEndpointIPs)),
-				))
-
-				// this asserts that at least one envoy has the correct endpoints
-				By("verify that the new endpoints have been propagated to envoy by xds relay from gloo")
-				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-					Protocol:          "http",
-					Path:              "/1",
-					Method:            "GET",
-					Host:              gatewayProxy,
-					Service:           gatewayProxy,
-					Port:              gatewayPort,
-					ConnectionTimeout: 1,
-					WithoutStats:      true,
-				}, expectedResponse(appName), 1, 60*time.Second, 1*time.Second)
-
-				newEndpointIPs := endpointIPsForKubeService(kubeClient, appService)
-				Expect(newEndpointIPs).To(HaveLen(1))
-
-				// this asserts that at all envoys have the correct endpoints.
-				// should be quicker than before, we already connected to the warm xds-relay
-				// (and all xds relays should be able to reconnect to origin regardless).
-				for _, envoyPodName := range envoyPodNames {
-					fmt.Println(fmt.Sprintf("Checking for endpoints for %v", envoyPodName))
-					Eventually(func() int {
-						return findEchoAppClusterEndpoints(envoyPodName, newEndpointIPs[0])
-					}, "15s", "1s").Should(BeNumerically(">", 0))
-				}
-			})
-		})
 	})
 
 })
@@ -748,18 +559,20 @@ func endpointIPsForKubeService(kubeClient kubernetes.Interface, svc *corev1.Serv
 	return ips
 }
 
-func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deployment, replicas int32) {
+func scaleDeploymentTo(kubeClient kubernetes.Interface, deploymentToScale *appsv1.Deployment, replicas int32) {
 	// Do this in an Eventually block, as the update sometimes fails due to concurrent modification
+	scaleCtx := context.Background()
+	deploymentNamespace := deploymentToScale.Namespace
 	EventuallyWithOffset(1, func() error {
 		// Get deployment
-		deployment, err := kubeClient.AppsV1().Deployments(deployment.Namespace).Get(ctx, deployment.Name, metav1.GetOptions{})
+		deployment, err := kubeClient.AppsV1().Deployments(deploymentNamespace).Get(scaleCtx, deploymentToScale.Name, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}
 
 		// Scale it
 		deployment.Spec.Replicas = pointerToInt32(replicas)
-		deployment, err = kubeClient.AppsV1().Deployments(deployment.Namespace).Update(ctx, deployment, metav1.UpdateOptions{})
+		_, err = kubeClient.AppsV1().Deployments(deploymentNamespace).Update(scaleCtx, deployment, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -768,8 +581,8 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 
 	// Wait for expected running pod number
 	EventuallyWithOffset(1, func() error {
-		listOpts := metav1.ListOptions{LabelSelector: labels.SelectorFromSet(deployment.Spec.Selector.MatchLabels).String()}
-		pods, err := kubeClient.CoreV1().Pods(deployment.Namespace).List(ctx, listOpts)
+		listOpts := metav1.ListOptions{LabelSelector: labels.SelectorFromSet(deploymentToScale.Spec.Selector.MatchLabels).String()}
+		pods, err := kubeClient.CoreV1().Pods(deploymentNamespace).List(scaleCtx, listOpts)
 		if err != nil {
 			return err
 		}

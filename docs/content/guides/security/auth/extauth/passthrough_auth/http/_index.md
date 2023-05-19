@@ -4,10 +4,6 @@ weight: 10
 description: Authenticating using an external Http service. 
 ---
 
-{{% notice note %}}
-The Http Passthrough feature was introduced with **Gloo Edge Enterprise**, release 1.9.0-beta4. If you are using an earlier version, this tutorial will not work.
-{{% /notice %}}
-
 When using Gloo Edge's external authentication server, it may be convenient to authenticate requests with your own HTTP server.
 By creating requests from the external authentication server to your own authentication component, Gloo Edge can use your authentication server
 to authenticate requests.
@@ -56,7 +52,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-The source code for the Http service can be found in the Gloo Edge repository [here](https://github.com/solo-io/gloo/tree/master/docs/examples/http-passthrough-auth).
+The source code for the Http service can be found in the Gloo Edge repository [here](https://github.com/solo-io/gloo/tree/main/docs/examples/http-passthrough-auth).
 
 Once we create the authentication service, we also want to apply the following Service to assign it a static cluster IP.
 {{< highlight shell >}}
@@ -128,6 +124,11 @@ spec:
 EOF
 {{< /highlight >}}
 
+{{% notice note %}}
+Passthrough services also allow for failing "open" through the [`failureModeAllow`]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" >}}) field. 
+By setting this field to `true`, the auth service responds with an `OK` if either your server returns a `5XX` response or the request times out.
+{{% /notice %}}
+
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
 {{< highlight shell "hl_lines=21-25" >}}
@@ -161,6 +162,17 @@ EOF
 
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
 inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#inheritance-rules" >}}) it.
+
+### Metrics
+
+{{% notice note %}}
+For more information on how Gloo Edge handles observability and metrics, view our [observability introduction]({{< versioned_link_path fromRoot="/introduction/observability/" >}}).
+{{% /notice %}}
+
+* Failure Mode Allow
+  * Metric Name: `extauth.solo.io/http_passthrough_bypass_failure`
+  * Description: The number of times a server error or timeout occurred and was bypassed through the `failure_mode_allow=true` setting
+
 
 ### Logging
 

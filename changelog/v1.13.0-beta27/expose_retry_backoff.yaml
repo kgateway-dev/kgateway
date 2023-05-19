@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6933
+    description: Expose the ability to set retry backoff policy's intervals. This can be set at the gateway, vs, or even the route level. 

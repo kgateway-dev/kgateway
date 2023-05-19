@@ -31,6 +31,80 @@ spec:
                   properties:
                     apiKeyAuth:
                       properties:
+                        aerospikeApikeyStorage:
+                          properties:
+                            allowInsecure:
+                              type: boolean
+                            batchSize:
+                              format: int32
+                              type: integer
+                            certPath:
+                              type: string
+                            commitAll:
+                              format: int32
+                              type: integer
+                            commitMaster:
+                              format: int32
+                              type: integer
+                            hostname:
+                              type: string
+                            keyPath:
+                              type: string
+                            namespace:
+                              type: string
+                            nodeTlsName:
+                              type: string
+                            port:
+                              format: int32
+                              type: integer
+                            readModeAp:
+                              properties:
+                                readModeApAll:
+                                  format: int32
+                                  type: integer
+                                readModeApOne:
+                                  format: int32
+                                  type: integer
+                              type: object
+                            readModeSc:
+                              properties:
+                                readModeScAllowUnavailable:
+                                  format: int32
+                                  type: integer
+                                readModeScLinearize:
+                                  format: int32
+                                  type: integer
+                                readModeScReplica:
+                                  format: int32
+                                  type: integer
+                                readModeScSession:
+                                  format: int32
+                                  type: integer
+                              type: object
+                            rootCaPath:
+                              type: string
+                            set:
+                              type: string
+                            tlsCurveGroups:
+                              items:
+                                properties:
+                                  curveP256:
+                                    format: int32
+                                    type: integer
+                                  curveP384:
+                                    format: int32
+                                    type: integer
+                                  curveP521:
+                                    format: int32
+                                    type: integer
+                                  x25519:
+                                    format: int32
+                                    type: integer
+                                type: object
+                              type: array
+                            tlsVersion:
+                              type: string
+                          type: object
                         apiKeySecretRefs:
                           items:
                             properties:
@@ -50,6 +124,31 @@ spec:
                               required:
                                 type: boolean
                             type: object
+                          type: object
+                        headersFromMetadataEntry:
+                          additionalProperties:
+                            properties:
+                              name:
+                                type: string
+                              required:
+                                type: boolean
+                            type: object
+                          type: object
+                        k8sSecretApikeyStorage:
+                          properties:
+                            apiKeySecretRefs:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              type: array
+                            labelSelector:
+                              additionalProperties:
+                                type: string
+                              type: object
                           type: object
                         labelSelector:
                           additionalProperties:
@@ -73,6 +172,23 @@ spec:
                         realm:
                           type: string
                       type: object
+                    hmacAuth:
+                      properties:
+                        parametersInHeaders:
+                          type: object
+                        secretRefs:
+                          properties:
+                            secretRefs:
+                              items:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              type: array
+                          type: object
+                      type: object
                     jwt:
                       maxProperties: 0
                       type: object
@@ -86,6 +202,18 @@ spec:
                           type: array
                         disableGroupChecking:
                           type: boolean
+                        groupLookupSettings:
+                          properties:
+                            checkGroupsWithServiceAccount:
+                              type: boolean
+                            credentialsSecretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                          type: object
                         membershipAttributeName:
                           type: string
                         pool:
@@ -202,6 +330,122 @@ spec:
                               type: object
                             userinfoUrl:
                               type: string
+                          type: object
+                        oauth2:
+                          properties:
+                            afterLogoutUrl:
+                              type: string
+                            appUrl:
+                              type: string
+                            authEndpoint:
+                              type: string
+                            authEndpointQueryParams:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            callbackPath:
+                              type: string
+                            clientId:
+                              type: string
+                            clientSecretRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            logoutPath:
+                              type: string
+                            revocationEndpoint:
+                              type: string
+                            scopes:
+                              items:
+                                type: string
+                              type: array
+                            session:
+                              properties:
+                                cipherConfig:
+                                  properties:
+                                    keyRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                  type: object
+                                cookie:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    keyPrefix:
+                                      type: string
+                                    targetDomain:
+                                      type: string
+                                  type: object
+                                cookieOptions:
+                                  properties:
+                                    domain:
+                                      type: string
+                                    httpOnly:
+                                      nullable: true
+                                      type: boolean
+                                    maxAge:
+                                      maximum: 4294967295
+                                      minimum: 0
+                                      nullable: true
+                                      type: integer
+                                    notSecure:
+                                      type: boolean
+                                    path:
+                                      nullable: true
+                                      type: string
+                                    sameSite:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                  type: object
+                                failOnFetchFailure:
+                                  type: boolean
+                                redis:
+                                  properties:
+                                    allowRefreshing:
+                                      nullable: true
+                                      type: boolean
+                                    cookieName:
+                                      type: string
+                                    headerName:
+                                      type: string
+                                    keyPrefix:
+                                      type: string
+                                    options:
+                                      properties:
+                                        db:
+                                          format: int32
+                                          type: integer
+                                        host:
+                                          type: string
+                                        poolSize:
+                                          format: int32
+                                          type: integer
+                                        socketType:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        tlsCertMountPath:
+                                          type: string
+                                      type: object
+                                    preExpiryBuffer:
+                                      type: string
+                                    targetDomain:
+                                      type: string
+                                  type: object
+                              type: object
+                            tokenEndpoint:
+                              type: string
+                            tokenEndpointQueryParams:
+                              additionalProperties:
+                                type: string
+                              type: object
                           type: object
                         oidcAuthorizationCode:
                           properties:
@@ -325,6 +569,16 @@ spec:
                               type: array
                             session:
                               properties:
+                                cipherConfig:
+                                  properties:
+                                    keyRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                  type: object
                                 cookie:
                                   properties:
                                     allowRefreshing:
@@ -364,6 +618,8 @@ spec:
                                       nullable: true
                                       type: boolean
                                     cookieName:
+                                      type: string
+                                    headerName:
                                       type: string
                                     keyPrefix:
                                       type: string
@@ -421,12 +677,16 @@ spec:
                         config:
                           type: object
                           x-kubernetes-preserve-unknown-fields: true
+                        failureModeAllow:
+                          type: boolean
                         grpc:
                           properties:
                             address:
                               type: string
                             connectionTimeout:
                               type: string
+                            tlsConfig:
+                              type: object
                           type: object
                         http:
                           properties:
@@ -492,6 +752,12 @@ spec:
                 type: object
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object

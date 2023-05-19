@@ -30,7 +30,7 @@ weight: 5
 
  
 Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
-[clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) in Envoy terminology.
+[clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto) in Envoy terminology.
 Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
 Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 
@@ -62,6 +62,9 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "httpConnectSslConfig": .gloo.solo.io.UpstreamSslConfig
 "httpConnectHeaders": []gloo.solo.io.HeaderValue
 "ignoreHealthOnHostRemoval": .google.protobuf.BoolValue
+"respectDnsTtl": .google.protobuf.BoolValue
+"dnsRefreshRate": .google.protobuf.Duration
+"proxyProtocolVersion": .google.protobuf.StringValue
 
 ```
 
@@ -70,9 +73,9 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `namespacedStatuses` | [.core.solo.io.NamespacedStatuses](../../../../../../solo-kit/api/v1/status.proto.sk/#namespacedstatuses) | NamespacedStatuses indicates the validation status of this resource. NamespacedStatuses is read-only by clients, and set by gloo during validation. |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |
 | `discoveryMetadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk/#discoverymetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |
-| `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) | SslConfig contains the options necessary to configure envoy to originate TLS to an upstream. |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |
-| `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk/#loadbalancerconfig) |  |
+| `sslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl/ssl.proto.sk/#upstreamsslconfig) | SslConfig contains the options necessary to configure envoy to originate TLS to an upstream. |
+| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used. if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers) will be used. |
+| `loadBalancerConfig` | [.gloo.solo.io.LoadBalancerConfig](../load_balancer.proto.sk/#loadbalancerconfig) | Settings for the load balancer that sends requests to the Upstream. The load balancing method is set to round robin by default. |
 | `healthChecks` | [[]solo.io.envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |
 | `outlierDetection` | [.solo.io.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |
 | `kube` | [.kubernetes.options.gloo.solo.io.UpstreamSpec](../options/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, `consul`, or `awsEc2` can be set. |
@@ -91,9 +94,12 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `maxConcurrentStreams` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | (UInt32Value) Maximum concurrent streams allowed for peer on one HTTP/2 connection. Valid values range from 1 to 2147483647 (2^31 - 1) and defaults to 2147483647. Requires UseHttp2 to be true to be acknowledged. |
 | `overrideStreamErrorOnInvalidHttpMessage` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allows invalid HTTP messaging and headers. When this option is disabled (default), then the whole HTTP/2 connection is terminated upon receiving invalid HEADERS frame. However, when this option is enabled, only the offending stream is terminated. This overrides any HCM :ref:`stream_error_on_invalid_http_messaging <envoy_v3_api_field_extensions.filters.network.http_connection_manager.v3.HttpConnectionManager.stream_error_on_invalid_http_message>` See `RFC7540, sec. 8.1 <https://tools.ietf.org/html/rfc7540#section-8.1>`_ for details. |
 | `httpProxyHostname` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Tells envoy that the upstream is an HTTP proxy (e.g., another proxy in a DMZ) that supports HTTP Connect. This configuration sets the hostname used as part of the HTTP Connect request. For example, setting to: host.com:443 and making a request routed to the upstream such as `curl <envoy>:<port>/v1` would result in the following request: CONNECT host.com:443 HTTP/1.1 host: host.com:443 GET /v1 HTTP/1.1 host: <envoy>:<port> user-agent: curl/7.64.1 accept: */* Note: if setting this field to a hostname rather than IP:PORT, you may want to also set `host_rewrite` on the route. |
-| `httpConnectSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) | HttpConnectSslConfig contains the options necessary to configure envoy to originate TLS to an HTTP Connect proxy. If you also want to ensure the bytes proxied by the HTTP Connect proxy are encrypted, you should also specify `ssl_config`. |
+| `httpConnectSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl/ssl.proto.sk/#upstreamsslconfig) | HttpConnectSslConfig contains the options necessary to configure envoy to originate TLS to an HTTP Connect proxy. If you also want to ensure the bytes proxied by the HTTP Connect proxy are encrypted, you should also specify `ssl_config`. |
 | `httpConnectHeaders` | [[]gloo.solo.io.HeaderValue](../upstream.proto.sk/#headervalue) | HttpConnectHeaders specifies the headers sent with the initial HTTP Connect request. |
 | `ignoreHealthOnHostRemoval` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | (bool) If set to true, Envoy will ignore the health value of a host when processing its removal from service discovery. This means that if active health checking is used, Envoy will not wait for the endpoint to go unhealthy before removing it. |
+| `respectDnsTtl` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, Service Discovery update period will be triggered once the TTL is expired. If minimum TTL of all records is 0 then dns_refresh_rate will be used. |
+| `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Service Discovery DNS Refresh Rate. Minimum value is 1 ms. Values below the minimum are considered invalid. Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid. |
+| `proxyProtocolVersion` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Proxy Protocol Version to add when communicating with the upstream. If unset will not wrap the transport socket. These are of the format "V1" or "V2". |
 
 
 

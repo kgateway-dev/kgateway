@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4434
+  resolvesIssue: false
+  description: >-
+    Update AWS lambda guide to include requestTransformation, responseTransformation, and wrapAsApiGateway.
+    Also note the mutual exclusivity between the wrap/unwrap features and the transformation features.

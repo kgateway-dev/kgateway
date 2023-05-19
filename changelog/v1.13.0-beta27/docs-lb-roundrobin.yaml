@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Adds info about round robin being the default lb config method.
+  issueLink: https://github.com/solo-io/gloo/issues/6922

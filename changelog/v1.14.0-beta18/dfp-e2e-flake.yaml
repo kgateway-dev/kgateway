@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8019
+    resolvesIssue: true
+    description: >-
+      Update the default http client timeout used in tests. When the client timeout is less than the server
+      response time, we can see `Client.Timeout exceeded while awaiting headers`

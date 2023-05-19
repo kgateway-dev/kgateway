@@ -2,14 +2,14 @@ package syncer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/types"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -27,6 +26,11 @@ import (
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+const (
+	// The port used to expose a developer server
+	devModePort = 10010
 )
 
 var (
@@ -68,6 +72,7 @@ func measureResource(ctx context.Context, resource string, len int) {
 	}
 }
 
+// syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot, allReports reporter.ResourceReports) {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
@@ -173,14 +178,37 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapsh
 	logger.Debugf("gloo reports to be written: %v", allReports)
 }
 
+// ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode
+// https://github.com/solo-io/gloo/issues/6494
 func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
+
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = fmt.Fprintf(w, "%v", "Developer API")
+	})
 	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.xdsCache))
+		_, _ = fmt.Fprintf(w, "%+v", prettify(s.xdsCache.GetStatusKeys()))
+	})
+	r.HandleFunc("/xds/{key}", func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		xdsCacheKey := vars["key"]
+
+		xdsSnapshot, _ := s.xdsCache.GetSnapshot(xdsCacheKey)
+		_, _ = fmt.Fprintf(w, "%+v", prettify(xdsSnapshot))
 	})
 	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))
+		_, _ = fmt.Fprintf(w, "%+v", prettify(s.latestSnap))
 	})
-	return http.ListenAndServe(":10010", r)
+
+	return http.ListenAndServe(fmt.Sprintf(":%d", devModePort), r)
+}
+
+func prettify(original interface{}) string {
+	b, err := json.MarshalIndent(original, "", "    ")
+	if err != nil {
+		return ""
+	}
+
+	return string(b)
 }

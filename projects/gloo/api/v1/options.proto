@@ -31,6 +31,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
@@ -80,6 +81,25 @@ message ListenerOptions {
 
     // Enable ProxyProtocol support for this listener.
     proxy_protocol.options.gloo.solo.io.ProxyProtocol proxy_protocol = 5;
+
+    // Configuration for listener connection balancing.
+    ConnectionBalanceConfig connection_balance_config = 6;
+}
+
+// Configuration for listener connection balancing.
+message ConnectionBalanceConfig {
+
+    // A connection balancer implementation that does exact balancing. This means that a lock is
+    // held during balancing so that connection counts are nearly exactly balanced between worker
+    // threads. This is "nearly" exact in the sense that a connection might close in parallel thus
+    // making the counts incorrect, but this should be rectified on the next accept. This balancer
+    // sacrifices accept throughput for accuracy and should be used when there are a small number of
+    // connections that rarely cycle (e.g., service mesh gRPC egress).
+    message ExactBalance {
+    }
+
+
+    ExactBalance exact_balance = 1;
 }
 
 message RouteConfigurationOptions {
@@ -160,6 +180,10 @@ message HttpListenerOptions {
     google.protobuf.BoolValue leftmost_xff_address = 16;
 
     dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
+
+    // Router is an extension of the envoy http filters
+    // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
+    Router router = 18;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -323,7 +347,7 @@ message RouteOptions {
     // See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) for additional information about configuring tracing with Gloo Edge.
     tracing.options.gloo.solo.io.RouteTracingSettings tracing = 7;
     // Specifies traffic shadowing configuration for the route.
-    // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
+    // See here for additional information on Envoy's shadowing capabilities: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-api-msg-route-routeaction-requestmirrorpolicy
     shadowing.options.gloo.solo.io.RouteShadowing shadowing = 8;
     // Append/Remove headers on Requests or Responses on this Route
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 9;
@@ -336,6 +360,10 @@ message RouteOptions {
         // This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is
         // of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames)
         google.protobuf.BoolValue auto_host_rewrite = 19;
+
+        // Indicates that during forwarding, the host header will be swapped with the result of the regex 
+        // substitution executed on path value with query and fragment removed.
+        .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute host_rewrite_path_regex = 101;
     };
     // Defines a CORS policy for the route
     // If a CORS policy is also defined on the route's virtual host, the policies are merged.
@@ -449,6 +477,38 @@ message RouteOptions {
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-regex-rewrite)
     // for more details about the `regex_rewrite` attribute
     .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute regex_rewrite = 27;
+
+    // This is a 1:1 translation to the [Envoy API described here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
+    message MaxStreamDuration {
+        // Specifies the maximum duration allowed for streams on the route. If not specified, the value
+        // from the [max_stream_duration](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-v3-api-field-config-core-v3-httpprotocoloptions-max-stream-duration)
+        // field in [HttpConnectionManager.common_http_protocol_options](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-common-http-protocol-options)
+        // is used. If this field is set explicitly to zero, any HttpConnectionManager max_stream_duration timeout will be disabled for this route.
+        google.protobuf.Duration max_stream_duration = 1;
+
+        // If present, and the request contains a [grpc-timeout header](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md), use that value as the
+        // `max_stream_duration`, but limit the applied timeout to the maximum value specified here.
+        // If set to 0, the `grpc-timeout` header is used without modification.
+        google.protobuf.Duration grpc_timeout_header_max = 2;
+
+        // If present, Envoy will adjust the timeout provided by the `grpc-timeout` header by
+        // subtracting the provided duration from the header. This is useful for allowing Envoy to set
+        // its global timeout to be less than that of the deadline imposed by the calling client, which
+        // makes it more likely that Envoy will handle the timeout instead of having the call canceled
+        // by the client. If, after applying the offset, the resulting timeout is zero or negative,
+        // the stream will timeout immediately.
+        google.protobuf.Duration grpc_timeout_header_offset = 3;
+    }
+
+    // Settings for maximum durations and timeouts for streams on the route.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-routeaction-maxstreamduration)
+    MaxStreamDuration max_stream_duration = 28;
+
+    // Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
+    // although the Gateway's [httpConnectionManagerSettings](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#httpconnectionmanagersettings)
+    // wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured.
+    // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout)
+    google.protobuf.Duration idle_timeout = 29;
 }
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {

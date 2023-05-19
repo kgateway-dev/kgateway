@@ -11,6 +11,9 @@ option (extproto.clone_all) = true;
 
 // Parameters for matching routes to requests received by a Gloo-managed proxy
 message Matcher {
+    message ConnectMatcher {
+    }
+
     oneof path_specifier {
         // If specified, the route is a prefix rule meaning that the prefix must
         // match the beginning of the *:path* header.
@@ -35,8 +38,18 @@ message Matcher {
         //
         // Note that the complexity of the regex is constrained by the regex engine's "program size" setting.
         // If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
-        // in the `GlooOptions` section of your `Settings` resource
+        // in the `GlooOptions` section of your `Settings` resource (The gloo default is 1024)
         string regex = 3;
+
+        // If this is used as the matcher, the matcher will only match CONNECT requests.
+        // Note that this will not match HTTP/2 upgrade-style CONNECT requests
+        // (WebSocket and the like) as they are normalized in Envoy as HTTP/1.1 style
+        // upgrades.
+        // This is the only way to match CONNECT requests for HTTP/1.1. For HTTP/2,
+        // where CONNECT requests may have a path, the path matchers will work if
+        // there is a path present.
+        // Note that CONNECT support is currently considered alpha in Envoy.
+        ConnectMatcher connect_matcher = 9;
     }
 
     // Indicates that prefix/path matching should be case sensitive. The default is true.

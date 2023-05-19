@@ -11,7 +11,7 @@ After you have a cluster, you can install Gloo Edge through the command line wit
 
 {{< tabs >}}
 {{% tab name="glooctl"%}}
-1. Install `glooctl`. The steps vary on your operating system.
+1. Install `glooctl`. The steps vary by operating system.
    * Linux or macOS
      ```shell
      curl -sL https://run.solo.io/gloo/install | sh
@@ -33,13 +33,9 @@ After you have a cluster, you can install Gloo Edge through the command line wit
    helm repo add gloo https://storage.googleapis.com/solo-public-helm
    helm repo update
    ```
-2. Create the namespace for the Gloo Edge components.
+2. Install the Helm chart. This command creates the `gloo-system` namespace and installs the Gloo Edge components into it.
    ```shell
-   kubectl create namespace gloo-system
-   ```
-3. Install the Helm chart.
-   ```shell
-   helm install gloo gloo/gloo --namespace gloo-system
+   helm install gloo gloo/gloo --namespace gloo-system --create-namespace
    ```
 {{% /tab %}}
 {{< /tabs >}}

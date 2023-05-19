@@ -12,7 +12,7 @@ import (
 	"math/big"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/certutils"
 	v1 "k8s.io/api/core/v1"

@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -13,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	rest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
@@ -20,8 +23,7 @@ import (
 
 	kubev1 "k8s.io/api/core/v1"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -264,9 +266,9 @@ var _ = Describe("UdsConvert", func() {
 						DiscoveryMetadata: &v1.DiscoveryMetadata{
 							Labels: labels,
 						},
-						SslConfig: &v1.UpstreamSslConfig{
-							SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-								SslFiles: &v1.SSLFiles{
+						SslConfig: &ssl.UpstreamSslConfig{
+							SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+								SslFiles: &ssl.SSLFiles{
 									TlsCert: "certA",
 									TlsKey:  "testKey",
 								},
@@ -279,9 +281,9 @@ var _ = Describe("UdsConvert", func() {
 					actualSslConfig := up.GetSslConfig()
 					Expect(actualSslConfig).NotTo(BeNil())
 
-					expectedSslConfig := &v1.UpstreamSslConfig{
-						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-							SslFiles: &v1.SSLFiles{
+					expectedSslConfig := &ssl.UpstreamSslConfig{
+						SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+							SslFiles: &ssl.SSLFiles{
 								TlsCert: "certB",
 								RootCa:  "ca",
 							},
@@ -321,9 +323,9 @@ var _ = Describe("UdsConvert", func() {
 						DiscoveryMetadata: &v1.DiscoveryMetadata{
 							Labels: labels,
 						},
-						SslConfig: &v1.UpstreamSslConfig{
-							SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-								SslFiles: &v1.SSLFiles{
+						SslConfig: &ssl.UpstreamSslConfig{
+							SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+								SslFiles: &ssl.SSLFiles{
 									TlsCert: "certA",
 									TlsKey:  "testKey",
 								},
@@ -336,9 +338,9 @@ var _ = Describe("UdsConvert", func() {
 					actualSslConfig := up.GetSslConfig()
 					Expect(actualSslConfig).NotTo(BeNil())
 
-					expectedSslConfig := &v1.UpstreamSslConfig{
-						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-							SslFiles: &v1.SSLFiles{
+					expectedSslConfig := &ssl.UpstreamSslConfig{
+						SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+							SslFiles: &ssl.SSLFiles{
 								TlsCert: "certB",
 								TlsKey:  "testKey",
 								RootCa:  "ca",
@@ -446,8 +448,8 @@ var _ = Describe("UdsConvert", func() {
 						}
 					}`,
 				}, &v1.Upstream{
-					SslConfig: &v1.UpstreamSslConfig{
-						SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SslConfig: &ssl.UpstreamSslConfig{
+						SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
 						},
 					},
@@ -463,9 +465,9 @@ var _ = Describe("UdsConvert", func() {
 						}
 					}`,
 				}, &v1.Upstream{
-					SslConfig: &v1.UpstreamSslConfig{
-						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-							SslFiles: &v1.SSLFiles{
+					SslConfig: &ssl.UpstreamSslConfig{
+						SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+							SslFiles: &ssl.SSLFiles{
 								TlsCert: "cert",
 								TlsKey:  "key",
 								RootCa:  "ca",
@@ -498,6 +500,24 @@ var _ = Describe("UdsConvert", func() {
 				}, &v1.Upstream{
 					IgnoreHealthOnHostRemoval: &wrappers.BoolValue{
 						Value: true,
+					},
+				}),
+				Entry("Using RespectDnsTtl", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"respect_dns_ttl": true
+					}`,
+				}, &v1.Upstream{
+					RespectDnsTtl: &wrappers.BoolValue{
+						Value: true,
+					},
+				}),
+				Entry("Using DnsRefreshRate", map[string]string{
+					serviceconverter.GlooAnnotationPrefix: `{
+						"dns_refresh_rate": "10s"
+					}`,
+				}, &v1.Upstream{
+					DnsRefreshRate: &durationpb.Duration{
+						Seconds: 10,
 					},
 				}),
 				Entry("Using CircuitBreakers", map[string]string{
@@ -547,8 +567,8 @@ var _ = Describe("UdsConvert", func() {
 						}
 					}`,
 				}, &v1.Upstream{
-					SslConfig: &v1.UpstreamSslConfig{
-						SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SslConfig: &ssl.UpstreamSslConfig{
+						SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test"},
 						},
 					},
@@ -564,9 +584,9 @@ var _ = Describe("UdsConvert", func() {
 						}
 					}`,
 				}, &v1.Upstream{
-					SslConfig: &v1.UpstreamSslConfig{
-						SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-							SslFiles: &v1.SSLFiles{
+					SslConfig: &ssl.UpstreamSslConfig{
+						SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+							SslFiles: &ssl.SSLFiles{
 								TlsCert: "cert",
 								TlsKey:  "key",
 								RootCa:  "ca",
@@ -648,7 +668,7 @@ func testSetUseHttp2Converter() {
 }
 
 func testSetSslConfig() {
-	DescribeTable("should create upstream with upstreamSslConfig when SSL annotations are present", func(annotations map[string]string, expectedCfg *v1.UpstreamSslConfig) {
+	DescribeTable("should create upstream with upstreamSslConfig when SSL annotations are present", func(annotations map[string]string, expectedCfg *ssl.UpstreamSslConfig) {
 		svc := &kubev1.Service{
 			Spec: kubev1.ServiceSpec{},
 			ObjectMeta: metav1.ObjectMeta{
@@ -672,15 +692,15 @@ func testSetSslConfig() {
 	},
 		Entry("using ssl secret", map[string]string{
 			serviceconverter.GlooSslSecretAnnotation: "mysecret",
-		}, &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+		}, &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test-ns"},
 			},
 		}),
 		Entry("using ssl secret on the target port", map[string]string{
 			serviceconverter.GlooSslSecretAnnotation: "123:mysecret",
-		}, &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+		}, &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{Name: "mysecret", Namespace: "test-ns"},
 			},
 		}),
@@ -691,9 +711,9 @@ func testSetSslConfig() {
 			serviceconverter.GlooSslTlsCertAnnotation: "cert",
 			serviceconverter.GlooSslTlsKeyAnnotation:  "key",
 			serviceconverter.GlooSslRootCaAnnotation:  "ca",
-		}, &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-				SslFiles: &v1.SSLFiles{
+		}, &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+				SslFiles: &ssl.SSLFiles{
 					TlsCert: "cert",
 					TlsKey:  "key",
 					RootCa:  "ca",
@@ -704,9 +724,9 @@ func testSetSslConfig() {
 			serviceconverter.GlooSslTlsCertAnnotation: "123:cert",
 			serviceconverter.GlooSslTlsKeyAnnotation:  "123:key",
 			serviceconverter.GlooSslRootCaAnnotation:  "123:ca",
-		}, &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-				SslFiles: &v1.SSLFiles{
+		}, &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+				SslFiles: &ssl.SSLFiles{
 					TlsCert: "cert",
 					TlsKey:  "key",
 					RootCa:  "ca",

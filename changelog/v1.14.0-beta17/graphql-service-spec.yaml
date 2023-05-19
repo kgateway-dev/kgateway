@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7685
+    resolvesIssue: false
+    description: |
+      Updating the API to provide GraphQL Service Specs for Upstreams.

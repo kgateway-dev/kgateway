@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6833
+    resolvesIssue: false
+    description: >
+      Update the prometheus kube-state-metrics deployment name to `glooe-prometheus-kube-state-metrics-v2` to align with
+      the rename done as part of the k8s 1.25 upgrade.

@@ -33,7 +33,7 @@ type FoundResponse struct {
 	Match []Match
 }
 
-func GetCities() ([]string, []string, []string, []string) {
+func GetCities() ([]string, []string, []string, []string, error) {
 	var cities, countries, subcountry, geonameids []string
 	csvPath := "/usr/local/bin/world_cities.csv"
 	if envPath := os.Getenv("CITY_CSV_PATH"); envPath != "" {
@@ -41,7 +41,9 @@ func GetCities() ([]string, []string, []string, []string) {
 	}
 	csvfile, err := os.Open(csvPath)
 	if err != nil {
-		log.Fatalln("Couldn't open the csv file", err)
+		log.Println("Couldn't open the csv file", err)
+		return nil, nil, nil, nil, err
+
 	}
 	r := csv.NewReader(csvfile)
 	for {
@@ -50,14 +52,15 @@ func GetCities() ([]string, []string, []string, []string) {
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return nil, nil, nil, nil, err
 		}
 		cities = append(cities, strings.ToLower(record[0]))
 		countries = append(countries, record[1])
 		subcountry = append(subcountry, record[2])
 		geonameids = append(geonameids, record[3])
 	}
-	return cities, countries, subcountry, geonameids
+	return cities, countries, subcountry, geonameids, nil
 }
 
 // Fuzzy finds city in list of city names
@@ -76,7 +79,11 @@ func FindCity(cities []string, query string) (bool, []int) {
 
 // RunServer run a little demo server
 func RunServer() {
-	cities, countries, subcountry, geonameids := GetCities()
+	cities, countries, subcountry, geonameids, err := GetCities()
+	if err != nil {
+		fmt.Println("exiting with error", err)
+		return
+	}
 	soapServer := soap.NewServer()
 	soapServer.RegisterHandler(
 		"/",
@@ -112,7 +119,7 @@ func RunServer() {
 			return
 		},
 	)
-	err := soapServer.ListenAndServe(":8080")
+	err = soapServer.ListenAndServe(":8080")
 	fmt.Println("exiting with error", err)
 }
 

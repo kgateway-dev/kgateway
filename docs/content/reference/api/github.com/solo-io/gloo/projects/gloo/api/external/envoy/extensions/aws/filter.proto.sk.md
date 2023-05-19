@@ -40,6 +40,7 @@ http calls to AWS Lambda invocations.
 "emptyBodyOverride": .google.protobuf.StringValue
 "unwrapAsAlb": bool
 "transformerConfig": .solo.io.envoy.config.core.v3.TypedExtensionConfig
+"requestTransformerConfig": .solo.io.envoy.config.core.v3.TypedExtensionConfig
 
 ```
 
@@ -49,8 +50,9 @@ http calls to AWS Lambda invocations.
 | `qualifier` | `string` | The qualifier of the function (defaults to $LATEST if not specified). |
 | `async` | `bool` | Invocation type - async or regular. |
 | `emptyBodyOverride` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Optional default body if the body is empty. By default on default body is used if the body empty, and an empty body will be sent upstream. |
-| `unwrapAsAlb` | `bool` | Unwrap responses as AWS ALB does. Expects json lambda responses to construct response. Intended to ease migration when previously using alb to invoke Lambdas. When set on a route the filter will not stream data on the encoding step. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Defaults to false. |
+| `unwrapAsAlb` | `bool` | Deprecated. Use transformer_config to specify an AWS Lambda response transformer instead. Unwrap responses as AWS ALB does. Expects json lambda responses to construct response. Intended to ease migration when previously using alb to invoke Lambdas. When set on a route the filter will not stream data on the encoding step. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Defaults to false. |
 | `transformerConfig` | [.solo.io.envoy.config.core.v3.TypedExtensionConfig](../../../config/core/v3/extension.proto.sk/#typedextensionconfig) | transformer configuration used to process response data cannot be configured simultaneously with unwrap_as_alb. |
+| `requestTransformerConfig` | [.solo.io.envoy.config.core.v3.TypedExtensionConfig](../../../config/core/v3/extension.proto.sk/#typedextensionconfig) | This is a transformer config, as defined in api.envoy.config.filter.http.transformation.v2 used to process request data. |
 
 
 

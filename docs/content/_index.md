@@ -5,6 +5,8 @@ title: Gloo Edge
 
 # An Envoy-Powered API Gateway
 
+{{% notice note %}}[Gloo Gateway](https://docs.solo.io/gloo-gateway) is the latest open source-based, API gateway product by Solo.io. As part of Gloo Platform, you get observability, multitenancy, and multicluster support from Day 1, alongside seamless integration with Gloo Mesh and Gloo Network. Still want the Envoy-based Gloo Edge API gateway? Continue reading these docs!{{% /notice %}}
+
 ## What is Gloo Edge
 
 Gloo Edge is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo Edge is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo Edge is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.

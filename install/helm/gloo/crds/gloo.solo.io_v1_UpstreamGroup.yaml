@@ -58,6 +58,8 @@ spec:
                                   type: boolean
                                 unwrapAsApiGateway:
                                   type: boolean
+                                wrapAsApiGateway:
+                                  type: boolean
                               type: object
                             azure:
                               properties:
@@ -361,6 +363,8 @@ spec:
                                           caseSensitive:
                                             nullable: true
                                             type: boolean
+                                          connectMatcher:
+                                            type: object
                                           exact:
                                             type: string
                                           headers:
@@ -697,6 +701,8 @@ spec:
                                           caseSensitive:
                                             nullable: true
                                             type: boolean
+                                          connectMatcher:
+                                            type: object
                                           exact:
                                             type: string
                                           headers:
@@ -1219,6 +1225,12 @@ spec:
                 type: object
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object

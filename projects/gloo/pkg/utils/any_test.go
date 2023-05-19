@@ -1,7 +1,8 @@
 package utils_test
 
 import (
-	. "github.com/onsi/ginkgo"
+	"github.com/golang/protobuf/proto"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -40,4 +41,9 @@ var _ = Describe("Any", func() {
 		Expect(msg2.(*structpb.Struct).Fields["test"].GetStringValue()).To(Equal(msg.Fields["test"].GetStringValue()))
 	})
 
+	It("fails with nil message", func() {
+		var msg proto.Message
+		_, err := MessageToAny(msg)
+		Expect(err).To(MatchError("MessageToAny: message cannot be nil"))
+	})
 })

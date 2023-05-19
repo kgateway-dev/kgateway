@@ -6,8 +6,9 @@ import (
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -18,6 +19,10 @@ import (
 	"github.com/solo-io/skv2/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/protobuf/proto"
+)
+
+const (
+	httpProxyHostname string = "host.com:443"
 )
 
 var _ = Describe("Plugin", func() {
@@ -33,7 +38,7 @@ var _ = Describe("Plugin", func() {
 				Namespace: "gloo-system",
 			},
 			SslConfig:         nil,
-			HttpProxyHostname: &wrappers.StringValue{Value: "host.com:443"},
+			HttpProxyHostname: &wrappers.StringValue{Value: httpProxyHostname},
 		}
 	)
 
@@ -54,6 +59,7 @@ var _ = Describe("Plugin", func() {
 						Domains: []string{"*"},
 						Routes: []*envoy_config_route_v3.Route{
 							{
+								Name: "testroute",
 								Match: &envoy_config_route_v3.RouteMatch{
 									PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{
 										Prefix: "/",
@@ -73,11 +79,13 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
+		// use UpstreamToClusterName to emulate a real translation loop.
+		clusterName := translator.UpstreamToClusterName(us.Metadata.Ref())
 		inClusters = []*envoy_config_cluster_v3.Cluster{
 			{
-				Name: "http_proxy",
+				Name: clusterName,
 				LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-					ClusterName: "http_proxy",
+					ClusterName: clusterName,
 					Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 						{
 							LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
@@ -129,6 +137,44 @@ var _ = Describe("Plugin", func() {
 		Expect(typedTcpConfig.GetCluster()).To(Equal(originalCluster), "should forward to original destination")
 	})
 
+	Context("UpstreamTlsContext", func() {
+		BeforeEach(func() {
+			// add an UpstreamTlsContext
+			cfg, err := utils.MessageToAny(&envoyauth.UpstreamTlsContext{
+				CommonTlsContext: &envoyauth.CommonTlsContext{},
+				Sni:              httpProxyHostname,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			inClusters[0].TransportSocket = &envoy_config_core_v3.TransportSocket{
+				Name: "",
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
+					TypedConfig: cfg,
+				},
+			}
+
+			inRoute := inRouteConfigurations[0].VirtualHosts[0].Routes[0]
+
+			// update route input with duplicate route, the duplicate points to the same upstream as existing
+			dupRoute := proto.Clone(inRoute).(*envoy_config_route_v3.Route)
+			dupRoute.Name = dupRoute.Name + "-duplicate"
+			dupRoute.Action = &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{
+					ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{
+						Cluster: translator.UpstreamToClusterName(us.Metadata.Ref()),
+					},
+				},
+			}
+			inRouteConfigurations[0].VirtualHosts[0].Routes = append(inRouteConfigurations[0].VirtualHosts[0].Routes, dupRoute)
+		})
+
+		It("should allow multiple routes to same upstream", func() {
+			p := tunneling.NewPlugin()
+			generatedClusters, _, _, _, err := p.GeneratedResources(params, inClusters, nil, inRouteConfigurations, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(generatedClusters).To(HaveLen(1), "should generate a single cluster for the upstream")
+			Expect(generatedClusters[0].GetTransportSocket()).ToNot(BeNil())
+		})
+	})
 	Context("multiple routes and clusters", func() {
 
 		BeforeEach(func() {
@@ -184,7 +230,6 @@ var _ = Describe("Plugin", func() {
 			generatedClusters[1].LoadAssignment.Endpoints[0].LbEndpoints[0] = nil
 
 			Expect(generatedClusters[0]).To(matchers.MatchProto(generatedClusters[1]), "generated clusters should be identical, barring name, clustername, endpoints")
-
 		})
 
 		It("should namespace generated listeners, avoiding duplicates", func() {
@@ -216,9 +261,7 @@ var _ = Describe("Plugin", func() {
 			generatedListeners[1].FilterChains[0].Filters[0].ConfigType = nil
 
 			Expect(generatedListeners[0]).To(matchers.MatchProto(generatedListeners[1]), "generated listeners should be identical, barring name, address, and tcp stats prefix")
-
 		})
-
 	})
 
 })

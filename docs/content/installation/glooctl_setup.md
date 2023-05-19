@@ -26,12 +26,12 @@ You can install the Gloo Edge command line, `glooctl`, to help install, configur
 
 ### Update glooctl CLI version {#update-glooctl}
 
-If you already installed `glooctl`, make sure to update `glooctl` to the same minor version as the version of Gloo Edge that is installed in your cluster. For example, if you're using Gloo Edge {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, you should use a {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} release of `glooctl`.
+If you already installed `glooctl`, make sure to update `glooctl` to the same minor version as the version of Gloo Edge that is installed in your cluster. For example, if you're using Gloo Edge 1.13.8, you should use a 1.13.8 release of `glooctl`.
 
 You can use the `glooctl upgrade` command to set the `--release` that you want to use. You can use this command to upgrade or roll back the `glooctl` version. For example, you might change versions during an upgrade process, or when you have multiple versions of Gloo Edge across clusters that you manage from the same workstation.
 
 ```bash
-glooctl upgrade --release v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+glooctl upgrade --release v1.13.8
 ```
 
 ### Verify the installation or update {#verify-glooctl}
@@ -42,9 +42,9 @@ You can verify the `glooctl` CLI is installed and running the appropriate versio
 glooctl version
 ```
 
-In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet!
+In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet.
 
 ```shell
-Client: {"version":"{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}"}
+Client: {"version":"1.13.8"}
 Server: version undefined, could not find any version of gloo running
 ```

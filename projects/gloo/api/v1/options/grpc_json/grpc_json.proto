@@ -3,6 +3,8 @@ syntax = "proto3";
 
 package grpc_json.options.gloo.solo.io;
 
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json";
 
 import "extproto/ext.proto";
@@ -42,20 +44,36 @@ message GrpcJsonTranscoder {
         bool preserve_proto_field_names = 4;
     }
 
+    // Allows the user to store the binary content of a [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set) in a ConfigMap.
+    message DescriptorConfigMap {
+
+        // A reference to a ConfigMap containing the base64-encoded binary content of a proto descriptor set.
+        // The ConfigMap must be in a namespace watched by Gloo Edge.
+        core.solo.io.ResourceRef config_map_ref = 1;
+        
+        // The ConfigMap data key whose value contains the proto descriptor set.
+        // If the ConfigMap contains multiple key-value pairs, this field is required.
+        // If the ConfigMap contains exactly one key-value pair, this field is optional.
+        string key = 2;
+    }
+
     oneof descriptor_set {
         option (validate.required) = true;
 
-        // Supplies the filename of
-        // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
-        // services.
+        // Supplies the filename of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set)
+        // for the gRPC services.
         string proto_descriptor = 1;
 
-        // Supplies the binary content of
-        // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
-        // services.
-        // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
+        // Supplies the binary content of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set)
+        // for the gRPC services.
+        // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes.
         bytes proto_descriptor_bin = 4;
+
+        // A reference to a ConfigMap containing the base64-encoded binary content of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set)
+        // for the gRPC services.
+        DescriptorConfigMap proto_descriptor_config_map = 10;
     }
+
 
     // A list of strings that
     // supplies the fully qualified service names (i.e. "package_name.service_name") that

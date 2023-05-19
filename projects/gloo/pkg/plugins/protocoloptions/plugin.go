@@ -9,6 +9,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolhelpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/httpprotocolvalidation"
 )
 
@@ -47,7 +48,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	//At this point we know that we are passing the Http2 settings - check to make sure we aren't incorrectly passing http1 at the same time
 	if in.GetProtocolSelection() == v1.Upstream_USE_CONFIGURED_PROTOCOL {
-		if in.GetConnectionConfig() != nil {
+		if in.GetConnectionConfig().GetHttp1ProtocolOptions() != nil {
 			return errors.Errorf(
 				"Both HTTP1 and HTTP2 options may only be configured with non-default 'Upstream_USE_DOWNSTREAM_PROTOCOL' specified for Protocol Selection")
 		}
@@ -83,19 +84,39 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	ose := in.GetOverrideStreamErrorOnInvalidHttpMessage()
 
-	protobuf := &envoy_extensions_upstreams_http_v3.HttpProtocolOptions{
-		UpstreamProtocolOptions: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
+	http2ProtocolOptions := &envoy_config_core_v3.Http2ProtocolOptions{
+		InitialStreamWindowSize:                 sws,
+		InitialConnectionWindowSize:             cws,
+		MaxConcurrentStreams:                    mcs,
+		OverrideStreamErrorOnInvalidHttpMessage: ose,
+	}
+
+	protobuf := &envoy_extensions_upstreams_http_v3.HttpProtocolOptions{}
+	if in.GetProtocolSelection() == v1.Upstream_USE_DOWNSTREAM_PROTOCOL {
+		var err error
+
+		http1ProtocolOptions := &envoy_config_core_v3.Http1ProtocolOptions{}
+		if in.GetConnectionConfig().GetHttp1ProtocolOptions() != nil {
+			http1ProtocolOptions, err = httpprotocolhelpers.ConvertHttp1(*in.GetConnectionConfig().GetHttp1ProtocolOptions())
+			if err != nil {
+				return err
+			}
+		}
+
+		protobuf.UpstreamProtocolOptions = &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_UseDownstreamProtocolConfig{
+			UseDownstreamProtocolConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_UseDownstreamHttpConfig{
+				HttpProtocolOptions:  http1ProtocolOptions,
+				Http2ProtocolOptions: http2ProtocolOptions,
+			},
+		}
+	} else {
+		protobuf.UpstreamProtocolOptions = &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_{
 			ExplicitHttpConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig{
 				ProtocolConfig: &envoy_extensions_upstreams_http_v3.HttpProtocolOptions_ExplicitHttpConfig_Http2ProtocolOptions{
-					Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{
-						InitialStreamWindowSize:                 sws,
-						InitialConnectionWindowSize:             cws,
-						MaxConcurrentStreams:                    mcs,
-						OverrideStreamErrorOnInvalidHttpMessage: ose,
-					},
+					Http2ProtocolOptions: http2ProtocolOptions,
 				},
 			},
-		},
+		}
 	}
 
 	err := pluginutils.SetExtensionProtocolOptions(out, "envoy.extensions.upstreams.http.v3.HttpProtocolOptions", protobuf)

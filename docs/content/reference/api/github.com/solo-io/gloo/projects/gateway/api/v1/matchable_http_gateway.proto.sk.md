@@ -67,7 +67,7 @@ and FilterChain configuration (MatchableHttpGateway CR)
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../../../gloo/api/external/envoy/config/core/v3/address.proto.sk/#cidrrange) | CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange. |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | Ssl configuration applied to the FilterChain: - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch) - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket. |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl/ssl.proto.sk/#sslconfig) | Ssl configuration applied to the FilterChain: - FilterChainMatch: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/listener/v3/listener_components.proto#config-listener-v3-filterchainmatch) - TransportSocket: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-v3-api-msg-config-core-v3-transportsocket. |
 
 
 

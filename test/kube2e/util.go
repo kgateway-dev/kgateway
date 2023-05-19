@@ -1,22 +1,20 @@
 package kube2e
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
-	"os/exec"
-	"regexp"
+	"path/filepath"
 	"runtime"
-	"strconv"
 	"time"
 
-	"github.com/solo-io/go-utils/testutils/goimpl"
-	"go.uber.org/zap/zapcore"
+	"github.com/onsi/ginkgo/v2"
+	"github.com/solo-io/go-utils/stats"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/test/gomega/assertions"
+
+	"github.com/solo-io/gloo/test/kube2e/upgrade"
+
+	"go.uber.org/zap/zapcore"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
@@ -49,15 +47,17 @@ func MustKubeClient() kubernetes.Interface {
 	return kubeClient
 }
 
-// Check that everything is OK by running `glooctl check`
+// GlooctlCheckEventuallyHealthy will run up until proved timeoutInterval or until gloo is reported as healthy
 func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
 	EventuallyWithOffset(offset, func() error {
+		contextWithCancel, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		opts := &options.Options{
 			Metadata: core.Metadata{
 				Namespace: testHelper.InstallNamespace,
 			},
 			Top: options.Top{
-				Ctx: context.Background(),
+				Ctx: contextWithCancel,
 			},
 		}
 		err := check.CheckResources(opts)
@@ -68,148 +68,30 @@ func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper
 	}, timeoutInterval, "5s").Should(BeNil())
 }
 
-func GetHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
-	Expect(err).NotTo(HaveOccurred())
-
-	// disabling usage statistics is not important to the functionality of the tests,
-	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
-	// install to a single namespace so we can run multiple invocations of the regression tests against the
-	// same cluster in CI.
-	_, err = values.Write([]byte(`
-global:
-  image:
-    pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
-settings:
-  singleNamespace: true
-  create: true
-  replaceInvalidRoutes: true
-gateway:
-  persistProxySpec: true
-gloo:
-  deployment:
-    replicas: 1
-gatewayProxies:
-  gatewayProxy:
-    healthyPanicThreshold: 0
-`))
-	Expect(err).NotTo(HaveOccurred())
-
-	err = values.Close()
-	Expect(err).NotTo(HaveOccurred())
-
-	return values.Name(), func() { _ = os.Remove(values.Name()) }
-}
-
 func EventuallyReachesConsistentState(installNamespace string) {
-	metricsPort := 9091
-	metricsPortString := strconv.Itoa(metricsPort)
-	portFwd := exec.Command(
-		"kubectl",
-		"port-forward",
-		"-n",
-		installNamespace,
-		"deployment/gloo",
-		metricsPortString)
-	portFwd.Stdout = os.Stderr
-	portFwd.Stderr = os.Stderr
-	err := portFwd.Start()
-	Expect(err).ToNot(HaveOccurred())
-
-	defer func() {
-		if portFwd.Process != nil {
-			portFwd.Process.Kill()
-		}
-	}()
+	// We port-forward the Gloo deployment stats port to inspect the metrics and log settings
+	glooStatsForwardConfig := assertions.StatsPortFwd{
+		ResourceName:      "deployment/gloo",
+		ResourceNamespace: installNamespace,
+		LocalPort:         stats.DefaultPort,
+		TargetPort:        stats.DefaultPort,
+	}
 
 	// Gloo components are configured to log to the Info level by default
-	EventuallyLogLevel(metricsPort, zapcore.InfoLevel)
+	logLevelAssertion := assertions.LogLevelAssertion(zapcore.InfoLevel)
 
-	EventuallyMetricsBecomeConsistent(1, metricsPort)
-}
+	// The emitter at some point should stabilize and not continue to increase the number of snapshots produced
+	// We choose 4 here as a bit of a magic number, but we feel comfortable that if 4 consecutive polls of the metrics
+	// endpoint returns that same value, then we have stabilized
+	identicalResultInARow := 4
+	emitterMetricAssertion, _ := assertions.IntStatisticReachesConsistentValueAssertion("api_gloosnapshot_gloo_solo_io_emitter_snap_out", identicalResultInARow)
 
-// Copied from: https://github.com/solo-io/go-utils/blob/176c4c008b4d7cde836269c7a817f657b6981236/testutils/assertions.go#L20
-func ExpectEqualProtoMessages(g Gomega, a, b proto.Message, optionalDescription ...interface{}) {
-	if proto.Equal(a, b) {
-		return
-	}
-
-	g.Expect(a.String()).To(Equal(b.String()), optionalDescription...)
-}
-
-func EventuallyMetricsBecomeConsistent(offset int, metricsPort int) {
-	// make sure we eventually reach an eventually consistent state
-	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
-
-	// wait for the initial snapOut reading to be present
-	var lastSnapOut = 0
-	EventuallyWithOffset(offset+1, func() int {
-		lastSnapOut = getSnapOut(metricsPort)
-		return lastSnapOut
-	}, "30s", eventuallyConsistentPollingInterval).Should(BeNumerically(">", 0),
-		"expected metrics to be found")
-
-	// wait for that snapOut reading to become consistent
-	consistentlyInARow := 0
-	EventuallyWithOffset(offset+1, func() int {
-		currentSnapOut := getSnapOut(metricsPort)
-		consistent := lastSnapOut == currentSnapOut
-		lastSnapOut = currentSnapOut
-		if consistent {
-			consistentlyInARow += 1
-		} else {
-			consistentlyInARow = 0
-		}
-		return consistentlyInARow
-	}, "80s", eventuallyConsistentPollingInterval).Should(Equal(4),
-		"expected metrics to be consistent")
-}
-
-// needs a port-forward of the metrics port before a call to this will work
-func getSnapOut(metricsPort int) int {
-	metricsPortString := strconv.Itoa(metricsPort)
-	var bodyResp string
-	Eventually(func() string {
-		res, err := http.Post("http://localhost:"+metricsPortString+"/metrics", "", nil)
-		if err != nil || res.StatusCode != 200 {
-			return ""
-		}
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		Expect(err).ToNot(HaveOccurred())
-		bodyResp = string(body)
-		return bodyResp
-	}, "5s", "1s").ShouldNot(BeEmpty())
-
-	findSnapOut, err := regexp.Compile("api_gloosnapshot_gloo_solo_io_emitter_snap_out ([\\d]+)")
-	if err != nil {
-		// No snapOut metrics were found, still starting up
-		return 0
-	}
-
-	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
-	Expect(matches).To(HaveLen(1))
-	snapOut, err := strconv.Atoi(matches[0][1])
-	Expect(err).NotTo(HaveOccurred())
-	return snapOut
-}
-
-// EventuallyLogLevel ensures that we can query the endpoint responsible for getting the current
-// log level of a gloo component, and updating the log level dynamically
-func EventuallyLogLevel(port int, logLevel zapcore.Level) {
-	url := fmt.Sprintf("http://localhost:%d/logging", port)
-	body := bytes.NewReader([]byte(url))
-
-	request, err := http.NewRequest(http.MethodGet, url, body)
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
-
-	expectedResponse := fmt.Sprintf("{\"level\":\"%s\"}\n", logLevel.String())
-	EventuallyWithOffset(1, func() (string, error) {
-		return goimpl.ExecuteRequest(request)
-	}, time.Second*5, time.Millisecond*100).Should(Equal(expectedResponse))
+	ginkgo.By("Gloo eventually reaches a consistent state")
+	offset := 1 // This method is called directly from a TestSuite
+	assertions.EventuallyWithOffsetStatisticsMatchAssertions(offset, glooStatsForwardConfig,
+		logLevelAssertion.WithOffset(offset),
+		emitterMetricAssertion.WithOffset(offset),
+	)
 }
 
 func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDisable bool, installNamespace string) {
@@ -265,6 +147,16 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 	waitForSettingsToPropagate()
 }
 
+func ToFile(content string) string {
+	f, err := os.CreateTemp("", "")
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	n, err := f.WriteString(content)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, n).To(Equal(len(content)))
+	_ = f.Close()
+	return f.Name()
+}
+
 // https://github.com/solo-io/gloo/issues/4043#issuecomment-772706604
 // We should move tests away from using the testrunner, and instead depend on EphemeralContainers.
 // The default response changed in later kube versions, which caused this value to change.
@@ -276,6 +168,44 @@ func GetSimpleTestRunnerHttpResponse() string {
 		return SimpleTestRunnerHttpResponseArm
 	} else {
 		return SimpleTestRunnerHttpResponse
+	}
+}
+
+// For nightly runs, we want to install a released version rather than using a locally built chart
+// To do this, set the environment variable RELEASED_VERSION with either a version name or "LATEST" to get the last release
+func GetTestReleasedVersion(ctx context.Context, repoName string) string {
+	var useVersion string
+	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
+		if useVersion == "LATEST" {
+			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
+			Expect(err).NotTo(HaveOccurred())
+			useVersion = current.String()
+		}
+	}
+	return useVersion
+}
+func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	if useVersion := GetTestReleasedVersion(ctx, "gloo"); useVersion != "" {
+		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			defaults.InstallNamespace = namespace
+			defaults.ReleasedVersion = useVersion
+			defaults.Verbose = true
+			return defaults
+		})
+	} else {
+		return helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
+			defaults.RootDir = filepath.Join(cwd, "../../..")
+			defaults.HelmChartName = "gloo"
+			defaults.InstallNamespace = namespace
+			defaults.Verbose = true
+			return defaults
+		})
 	}
 }
 

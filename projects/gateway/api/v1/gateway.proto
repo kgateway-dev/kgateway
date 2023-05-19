@@ -19,7 +19,7 @@ import "github.com/solo-io/gloo/projects/gateway/api/v1/http_gateway.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/selectors/selectors.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
@@ -77,14 +77,14 @@ message Gateway {
     *
     * Proxies have a one-to-many relationship with Envoy bootstrap configuration.
     * In order to connect to Gloo, the Envoy bootstrap configuration sets a `role` in
-    * the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-node)
+    * the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-api-msg-core-node)
     * Envoy instances announce their `role` to Gloo, which maps to the  `{{ .Namespace }}~{{ .Name }}`
     * of the Proxy resource.
     *
-    * The template for this value can be seen in the [Gloo Helm chart](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L22)
+    * The template for this value can be seen in the [Gloo Helm chart](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L22)
     *
     * Note: this field also accepts fields written in camel-case. They will be converted
-    * to kebab-case in the Proxy name. This allows use of the [Gateway Name Helm value](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/values-gateway-template.yaml#L47)
+    * to kebab-case in the Proxy name. This allows use of the [Gateway Name Helm value](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/values-gateway-template.yaml#L47)
     * for this field
     *
     * Defaults to `["gateway-proxy"]`
@@ -102,21 +102,24 @@ message TcpGateway {
     repeated gloo.solo.io.TcpHost tcp_hosts = 1;
     // TCP Gateway configuration
     gloo.solo.io.TcpListenerOptions options = 8;
-
 }
 
 message HybridGateway {
     // MatchedGateways can be used to define both HttpGateways and TcpGateways directly on the Gateway resource.
-    // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
-    // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
+    // If `MatchedGateways` is provided, then `DelegatedHttpGateways` and `DelegatedTcpGateways` are ignored.
     repeated MatchedGateway matched_gateways = 1;
 
     // DelegatedHttpGateways can be used to configure multiple HttpGateways
     // using the MatchableHttpGateway CR and select them on this Gateway
-    // using a resourceRef or label selection
-    // Only one of `MatchedGateways` or `DelegatedHttpGateways` should be provided.
-    // If more than one is provided only one will be checked with priority MatchedGateways, DelegatedHttpGateways
+    // using a resourceRef or label selection.
+    // If `MatchedGateways` is provided, then `DelegatedHttpGateways` is ignored.
     DelegatedHttpGateway delegated_http_gateways = 2;
+
+    // DelegatedTcpGateways can be used to configure multiple TcpGateways
+    // using the MatchableTcpGateway CR and select them on this Gateway
+    // using a resourceRef or label selection.
+    // If `MatchedGateways` is provided, then `DelegatedTcpGateways` is ignored.
+    DelegatedTcpGateway delegated_tcp_gateways = 3;
 }
 
 message DelegatedHttpGateway {
@@ -126,7 +129,7 @@ message DelegatedHttpGateway {
         // Delegate to the resource with the given `name` and `namespace.
         core.solo.io.ResourceRef ref = 3;
 
-        // Delegate to the MatchableHttpGateway that match the given selector.
+        // Delegate to the MatchableHttpGateways that match the given selector.
         selectors.core.gloo.solo.io.Selector selector = 4;
     }
 
@@ -144,6 +147,18 @@ message DelegatedHttpGateway {
 
     // Anscestry-level TLS/SSL traffic configuration.  Options specified here will be passed down to each `MatchableHttpGateway` that is matched via `selector` or `ref`.  From there, they are passed to all VirtualServices associated with said `MatchableHttpGateway`s.
     gloo.solo.io.SslConfig ssl_config = 2;
+}
+
+message DelegatedTcpGateway {
+
+    // How to select MatchableTcpGateways
+    oneof selection_type {
+        // Delegate to the resource with the given `name` and `namespace.
+        core.solo.io.ResourceRef ref = 1;
+
+        // Delegate to the MatchableTcpGateways that match the given selector.
+        selectors.core.gloo.solo.io.Selector selector = 2;
+    }
 }
 
 message MatchedGateway {
@@ -168,4 +183,10 @@ message Matcher {
     // CidrRange specifies an IP Address and a prefix length to construct the subnet mask for a CIDR range.
     // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-cidrrange
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+
+    // Enterprise-only: Passthrough cipher suites is an allow-list of OpenSSL cipher suite names for which TLS passthrough will be enabled.
+    // If a client does not support any ciphers that are natively supported by Envoy, but does support one of the ciphers in the passthrough list,
+    // then traffic will be routed via TCP Proxy to a destination specified by the TcpGateway, where TLS can then be terminated.
+    // This field is only applicable to TcpGateways.
+    repeated string passthrough_cipher_suites = 3;
 }

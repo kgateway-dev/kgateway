@@ -47,7 +47,7 @@ message UpstreamSpec {
     // If set, will use the EC2 public IP address. Defaults to the private IP address.
     bool public_ip = 4;
 
-    // If set, will use this port on EC2 instances. Defaults to port 80.
+    // If set, will use this port on EC2 instances. Defaults to 0.
     uint32 port = 5;
 }
 

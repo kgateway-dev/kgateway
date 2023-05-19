@@ -1,0 +1,13 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/7480
+    resolvesIssue: false
+    description: >
+      Add the existing `GrpcJsonTranscoder` API to the upstream `ServiceSpec` to allow configuring more of the options supported
+      by Envoy's GrpcJsonTranscoder filter with configuration on upstreams and to allow directly modifying proto descriptors on upstreams.
+  - type: BREAKING_CHANGE
+    issueLink: https://github.com/solo-io/gloo/issues/7487
+    resolvesIssue: false
+    description: >
+      Discovery creates upstreams for GRPC services using the new API. Mappings created on VirtualServices using instructions
+      from the grpc_to_rest guide will not be used in conjunction with the new API. 

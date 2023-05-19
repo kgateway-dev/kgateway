@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4410
+    description: Added CRON jobs for each LTS branch's regression tests
+    resolvesIssue: false

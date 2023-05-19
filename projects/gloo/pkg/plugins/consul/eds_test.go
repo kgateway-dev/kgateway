@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/solo-io/gloo/test/gomega/matchers"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
@@ -23,13 +25,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
@@ -89,7 +90,6 @@ var _ = Describe("Consul EDS", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			ctrl = gomock.NewController(T)
 
 			serviceMetaProducer = make(chan []*consul.ServiceMeta)
 			errorProducer = make(chan error)
@@ -245,6 +245,7 @@ var _ = Describe("Consul EDS", func() {
 				BeforeEach(func() {
 					testSvcCp := *testService
 					testSvcCpPtr := &testSvcCp // copy so no data races with test pollution (goroutines still reading this value as the next test writes it)
+
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
 							if q.Datacenter == dc2 {
@@ -255,7 +256,6 @@ var _ = Describe("Consul EDS", func() {
 				})
 
 				It("blocking queries cancel other watches", func() {
-
 					// queue up an update to the catalog svc
 					testServiceUpdated := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3457, 100) // port updated
 					consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
@@ -282,7 +282,6 @@ var _ = Describe("Consul EDS", func() {
 					})
 
 					endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
-
 					Expect(err).NotTo(HaveOccurred())
 
 					// Simulate the initial read when starting watch
@@ -306,7 +305,18 @@ var _ = Describe("Consul EDS", func() {
 						},
 					}
 
+					consulWatcherMock.EXPECT().Service(svc2, gomock.Any(), gomock.Any()).DoAndReturn(
+						func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+							if q.Datacenter == dc2 {
+								return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
+							}
+							return []*consulapi.CatalogService{}, &consulapi.QueryMeta{LastIndex: 1}, nil
+						}).AnyTimes()
 					serviceMetaProducer <- consulServiceSnapshot // removed svc1 and added svc2; this means we will close watch on svc1 and open a new one on svc2
+
+					// Provide time to let the snapshot be processed
+					Consistently(endpointsChan).ShouldNot(BeClosed())
+					Consistently(errorChan).ShouldNot(BeClosed())
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
@@ -407,7 +417,6 @@ var _ = Describe("Consul EDS", func() {
 		var (
 			ctx               context.Context
 			cancel            context.CancelFunc
-			ctrl              *gomock.Controller
 			consulWatcherMock *mock_consul.MockConsulWatcher
 
 			// Data center names
@@ -438,7 +447,6 @@ var _ = Describe("Consul EDS", func() {
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			ctrl = gomock.NewController(T)
 
 			serviceMetaProducer = make(chan []*consul.ServiceMeta)
 			errorProducer = make(chan error)
@@ -613,8 +621,6 @@ var _ = Describe("Consul EDS", func() {
 		})
 
 		AfterEach(func() {
-			ctrl.Finish()
-
 			if cancel != nil {
 				cancel()
 			}

@@ -3,11 +3,12 @@ package translator
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	ingresstype "github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
@@ -300,9 +301,9 @@ var _ = Describe("Translate", func() {
 								},
 							},
 						},
-						SslConfigurations: []*gloov1.SslConfig{
+						SslConfigurations: []*ssl.SslConfig{
 							{
-								SslSecrets: &gloov1.SslConfig_SecretRef{
+								SslSecrets: &ssl.SslConfig_SecretRef{
 									SecretRef: &core.ResourceRef{
 										Name:      "areallygreatsecret",
 										Namespace: "example",
@@ -367,9 +368,9 @@ var _ = Describe("Translate", func() {
 		proxy := translateProxy(ctx, "gloo-system", snap, false, "")
 
 		Expect(proxy.Listeners).To(HaveLen(1))
-		Expect(proxy.Listeners[0].SslConfigurations).To(Equal([]*gloov1.SslConfig{
+		Expect(proxy.Listeners[0].SslConfigurations).To(Equal([]*ssl.SslConfig{
 			{
-				SslSecrets: &gloov1.SslConfig_SecretRef{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "amoeba-api-ingress-secret",
 						Namespace: "amoeba-dev",
@@ -381,7 +382,7 @@ var _ = Describe("Translate", func() {
 				},
 			},
 			{
-				SslSecrets: &gloov1.SslConfig_SecretRef{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "amoeba-ui-ingress-secret",
 						Namespace: "amoeba-dev",

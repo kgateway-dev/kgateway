@@ -23,7 +23,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 				return eris.Wrapf(err, "parsing override values for ingress mode")
 			}
 
-			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
+			if err := NewInstaller(opts, DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				ExtraValues:    ingressOverrides,
 				Verbose:        opts.Top.Verbose,

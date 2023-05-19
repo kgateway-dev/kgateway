@@ -3,7 +3,7 @@ package debug_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	debug_api "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/debug"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

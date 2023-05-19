@@ -206,7 +206,7 @@ spec:
       jwt:
         providers:
           kube:
-            issuer: kubernetes/serviceaccount
+            issuer: https://kubernetes.default.svc.cluster.local
             jwks:
               local:
                 key: |

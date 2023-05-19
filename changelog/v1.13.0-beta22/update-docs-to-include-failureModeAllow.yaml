@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add `failureModeAllow` information to docs.
+    issueLink: https://github.com/solo-io/gloo/issues/5255
+    resolvesIssue: false

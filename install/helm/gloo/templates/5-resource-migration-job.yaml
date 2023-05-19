@@ -16,16 +16,26 @@ metadata:
     "helm.sh/hook-weight": "3" # run this job after the role/rolebinding is created, and before the validation webhook is upgraded
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
-  {{- with .Values.gateway.rolloutJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
     metadata:
       labels:
         gloo: resource-migration
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
+        {{- if .Values.gateway.rolloutJob.extraPodLabels }}
+        {{- range $key, $value := .Values.gateway.rolloutJob.extraPodLabels }}
+        {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
+        {{- end }}
+      {{- if or .Values.settings.linkerd .Values.gateway.rolloutJob.extraPodAnnotations }}
+      annotations:
+        {{- if .Values.settings.linkerd }}
+        "linkerd.io/inject": disabled
+        {{- end }}
+        {{- range $key, $value := .Values.gateway.rolloutJob.extraPodAnnotations }}
+        {{ $key | quote }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-migration
@@ -62,7 +72,6 @@ spec:
             kubectl annotate --overwrite gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/hook- helm.sh/hook-weight- meta.helm.sh/release-name- meta.helm.sh/release-namespace- helm.sh/resource-policy=keep || exit $?
             kubectl label gateways.gateway.solo.io -n {{ . }} -l app=gloo,app.kubernetes.io/managed-by=Helm app.kubernetes.io/managed-by- || exit $?
             {{- end }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.rolloutJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

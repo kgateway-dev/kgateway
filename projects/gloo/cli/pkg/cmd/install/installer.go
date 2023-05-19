@@ -62,8 +62,8 @@ const (
 )
 
 // NewInstaller consumes a helm client and sets up an installer for usage in glooctl.
-func NewInstaller(helmClient HelmClient) Installer {
-	client := helpers.MustKubeClient()
+func NewInstaller(opts *options.Options, helmClient HelmClient) Installer {
+	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	return NewInstallerWithWriter(helmClient, client.CoreV1().Namespaces(), os.Stdout)
 }
 

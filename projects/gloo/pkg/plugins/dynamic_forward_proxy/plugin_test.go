@@ -8,11 +8,13 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/dynamic_forward_proxy"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -153,6 +155,31 @@ var _ = Describe("dynamic forward proxy plugin", func() {
 				ResolverName: "resolverName",
 				Ipv4Compat:   true,
 			}))
+		})
+
+		It("Translates SslConfig", func() {
+			// create dummy snapshot
+			params.Snapshot = &gloosnapshot.ApiSnapshot{}
+
+			// create plugin
+			p := NewPlugin()
+			p.Init(initParams)
+
+			// inform plugin of listener
+			listener1 := listener.Clone().(*v1.HttpListener)
+			listener1.Options.DynamicForwardProxy.SslConfig = &ssl.UpstreamSslConfig{}
+			_, err := p.HttpFilters(params, listener1)
+			Expect(err).NotTo(HaveOccurred())
+
+			// use plugin to compute expected envoy cluster
+			clusters, _, _, _, _ := p.GeneratedResources(params, nil, nil, nil, nil)
+			Expect(clusters).To(HaveLen(1))
+
+			// evaluate contents of generated cluster
+			ts := clusters[0].GetTransportSocket()
+			Expect(ts).NotTo(BeNil())
+			Expect(ts.GetName()).To(Equal("envoy.transport_sockets.tls"))
+			Expect(ts.GetTypedConfig().GetTypeUrl()).To(Equal("type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext"))
 		})
 
 		It("cache config name is per dns cache config", func() {

@@ -1,12 +1,13 @@
-This guide assumes that you have installed Gloo Edge into the `gloo-system` namespace and that `glooctl` is installed on your
-machine. We will also use the [jq](https://stedolan.github.io/jq/) command line utility to pretty print JSON strings.
+This guide assumes that you installed the following components:
+* Gloo Edge in the `gloo-system` namespace in your cluster
+* The `glooctl` command line utility
+* The [jq](https://stedolan.github.io/jq/) command line utility to format JSON strings
 
-We will need an upstream service to serve as the target for the requests that we will send to test the Gloo Edge configurations 
-in this tutorial. To this end, we will use the publicly available [Postman Echo](https://postman-echo.com/) service. 
-It exposes a set of endpoints that are very useful for inspecting both the requests sent upstream and the resulting responses; 
-please refer to the [official documentation](https://docs.postman-echo.com/?version=latest) for more information about the service.
+You also need an upstream service to serve as the target for the requests that you send to test the Gloo Edge configurations 
+in this tutorial. You can use the publicly available [Postman Echo](https://postman-echo.com/) service. 
+Postman Echo exposes a set of endpoints that are very useful for inspecting both the requests sent upstream and the resulting responses. For more information about this service, see the [Postman Echo documentation](https://docs.postman-echo.com/?version=latest).
 
-Let's create a static upstream to represent the _postman-echo.com_ remote service.
+Create a static upstream to represent the _postman-echo.com_ remote service.
 
 ```yaml
 apiVersion: gloo.solo.io/v1

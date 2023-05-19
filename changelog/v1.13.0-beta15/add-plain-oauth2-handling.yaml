@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6985
+    resolvesIssue: false
+    description: >
+      Introduce Enterprise-Only API for Oauth2 (non-OIDC) support in Gloo Auth Configs.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6389
+    resolvesIssue: true
+    description: >
+      Fix e2e test "CSRF defined on listener defined on listener with shadow mode config [It] should succeed with allowed origin, unsafe request"

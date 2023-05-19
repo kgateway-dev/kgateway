@@ -19,6 +19,10 @@ var (
 	_ resources.Resource = new(Artifact)
 )
 
+func NewArtifactHashableResource() resources.HashableResource {
+	return new(Artifact)
+}
+
 func NewArtifact(namespace, name string) *Artifact {
 	artifact := &Artifact{}
 	artifact.SetMetadata(&core.Metadata{

@@ -1,26 +1,28 @@
 ---
 title: Service Failover
 description: Creating a failover service in Gloo Edge Federation
-weight: 30
+weight: 40
 ---
 
-When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically fail traffic over to a different Gloo Edge instance and Upstream. In this guide we will demonstrate that functionality by registering two clusters with Gloo Edge Federation. Then we will create a Kubernetes service on each cluster and verify it is available as an Upstream. We will create a FailoverScheme in Gloo Edge Federation with one Upstream as the primary and the second as a backup. Finally, we will simulate a failure of the primary Upstream and verify that the service fails over to the secondary.
+When an Upstream fails or becomes unhealthy, Gloo Edge Federation can automatically fail traffic over to a different Gloo Edge instance and Upstream. In this guide, you test this functionality by registering two clusters with Gloo Edge Federation. Then, you create a Kubernetes service on each cluster and verify it is available as an Upstream. You create a FailoverScheme in Gloo Edge Federation with one Upstream as the primary and the second as a backup. Finally, you simulate a failure of the primary Upstream and verify that the service fails over to the secondary.
+
+![Figure of Gloo Fed failover]({{% versioned_link_path fromRoot="/img/gloo-fed-arch-failover.png" %}})
 
 ## Prerequisites
 
-To successfully follow this Service Failover guide, you will need the following software available and configured on your system.
+To successfully follow this Service Failover guide, make sure that you have the following command line tools.
 
-* `kubectl` - Used to execute commands against the clusters
-* `glooctl` - Used to register the Kubernetes clusters with Gloo Edge Federation
-* `openssl`  - Generates certificates to enable mTLS between multiple Gloo Edge instances
+* `kubectl` - Execute commands against Kubernetes clusters
+* `glooctl` - Register the Kubernetes clusters with Gloo Edge Federation
+* `openssl`  - Generate certificates to enable mTLS between multiple Gloo Edge instances
 
-You will also need two Kubernetes clusters running Gloo Edge Enterprise and an installation of Gloo Edge Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo Edge on Kubernetes.
+You also need two Kubernetes clusters running Gloo Edge Enterprise and an installation of Gloo Edge Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo Edge on Kubernetes.
 
-For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
+This example assumes two clusters, `local` and `remote`. The local cluster is also running Gloo Edge Federation in addition to Gloo Edge Enterprise. The `kubectl` context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
 <!--federation demo hidden for now
 {{% notice tip %}}
-Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/demo/" %}}).
 {{% /notice%}}
 -->
 
@@ -35,8 +37,6 @@ gloo:
     gatewayProxy:
       failover:
         enabled: true
-      service:
-        type: NodePort
 ```
 
 An example helm command to upgrade Gloo Edge is:
@@ -46,11 +46,18 @@ helm upgrade gloo glooe/gloo-ee --namespace gloo-system --values enable-failover
 
 ## Configure Gloo Edge for Failover
 
-The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo Edge instances running on separate clusters. 
+The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo Edge instances running on separate clusters.
+
 
 ### Create the certificates and secrets for mTLS
 
-The following two commands will generate all of the certs necessary.
+To enable mTLS, you need to create two distinct Kubernetes secrets containing x509 certificates:
+- On the client side (the `gloo-fed` cluster), the Upstream CR automatically uses a client certificate that is named `failover-upstream`.
+- On the server side (the `gloo-fed-2` cluster), the Failover Gateway exposes a server certificate and also validates the client certificate with a CA cert (a truststore).
+
+![Figure of failover secrets]({{% versioned_link_path fromRoot="/img/gloo-fed-failover-secrets.png" %}})
+
+The following two commands generate all the necessary certificates.
 
 ```
 # Generate downstream cert and key

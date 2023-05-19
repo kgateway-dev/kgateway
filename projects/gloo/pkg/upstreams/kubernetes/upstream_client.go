@@ -2,6 +2,10 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/NoOpUpstreamClient"
+	"github.com/solo-io/go-utils/contextutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -22,23 +26,28 @@ type kubernetesUpstreamClient struct {
 }
 
 func (c *kubernetesUpstreamClient) BaseClient() skclients.ResourceClient {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return &NoOpUpstreamClient.NoOpUpstreamClient{}
 }
 
 func (c *kubernetesUpstreamClient) Register() error {
-	return nil
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) Read(namespace, name string, opts skclients.ReadOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) Write(resource *v1.Upstream, opts skclients.WriteOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) Delete(namespace, name string, opts skclients.DeleteOpts) error {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *kubernetesUpstreamClient) List(namespace string, opts skclients.ListOpts) (v1.UpstreamList, error) {

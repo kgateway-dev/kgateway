@@ -16,8 +16,8 @@ type ServiceSpecMutator interface {
 }
 
 /*
-	Add these two methods to any upstream spec that supports a ServiceSpec
-	describing the service represented by the upstream
+Add these two methods to any upstream spec that supports a ServiceSpec
+describing the service represented by the upstream
 */
 func (us *Upstream_Kube) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Kube.GetServiceSpec()

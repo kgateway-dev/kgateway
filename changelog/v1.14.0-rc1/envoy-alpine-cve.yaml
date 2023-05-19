@@ -1,0 +1,14 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.25.4-patch1
+    issueLink: https://github.com/solo-io/envoy-gloo-ee/issues/543
+    description: >
+      Update envoy-gloo to v1.25.4-patch1, pulling in upstream
+      cve fixes
+  - dependencyOwner: alpine
+    dependencyRepo: alpine
+    dependencyTag: 3.17.3
+    description: Update Alpine image for new libssl cves. 
+    type: DEPENDENCY_BUMP

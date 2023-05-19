@@ -2,11 +2,11 @@ package bootstrap_test
 
 import (
 	"context"
-	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/hashicorp/consul/api"
-	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
@@ -20,7 +20,7 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -63,7 +63,7 @@ var _ = Describe("Utils", func() {
 
 	Context("kube tests", func() {
 		BeforeEach(func() {
-			if os.Getenv("RUN_KUBE_TESTS") != "1" {
+			if !testutils.ShouldRunKubeTests() {
 				Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 			}
 		})
@@ -144,43 +144,28 @@ var _ = Describe("Utils", func() {
 	})
 
 	Context("consul tests", func() {
+
 		var (
-			consulFactory  *services.ConsulFactory
-			consulInstance *services.ConsulInstance
-			client         *api.Client
+			ctx    context.Context
+			cancel context.CancelFunc
 		)
 
-		BeforeSuite(func() {
-			var err error
-			consulFactory, err = services.NewConsulFactory()
-			Expect(err).NotTo(HaveOccurred())
-			client, err = api.NewClient(api.DefaultConfig())
-			Expect(err).NotTo(HaveOccurred())
-
-		})
-
-		AfterSuite(func() {
-			_ = consulFactory.Clean()
-		})
-
 		BeforeEach(func() {
-			if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+
+			if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
 				Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 				return
 			}
-			var err error
-			// Start Consul
-			consulInstance, err = consulFactory.NewConsulInstance()
-			Expect(err).NotTo(HaveOccurred())
-			err = consulInstance.Run()
+
+			ctx, cancel = context.WithCancel(context.Background())
+
+			consulInstance = consulFactory.MustConsulInstance()
+			err := consulInstance.Run(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		AfterEach(func() {
-			if consulInstance != nil {
-				err := consulInstance.Clean()
-				Expect(err).NotTo(HaveOccurred())
-			}
+			cancel()
 		})
 
 		Context("artifacts as consul key value", func() {

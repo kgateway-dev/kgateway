@@ -3,8 +3,7 @@ package translator_test
 import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -89,6 +88,29 @@ var _ = Describe("Route converter", func() {
 				Matchers: []*matchers.Matcher{{
 					PathSpecifier: &matchers.Matcher_Exact{
 						Exact: "/any",
+					},
+				}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &core.ResourceRef{
+								Name:      "any",
+								Namespace: "ns",
+							},
+						},
+					},
+				},
+			},
+			translator.MissingPrefixErr,
+			nil,
+			nil,
+		),
+
+		Entry("route has an connect matcher",
+			&v1.Route{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_ConnectMatcher_{
+						ConnectMatcher: &matchers.Matcher_ConnectMatcher{},
 					},
 				}},
 				Action: &v1.Route_DelegateAction{

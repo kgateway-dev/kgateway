@@ -20,5 +20,6 @@ message ProtocolUpgradeConfig {
     oneof upgrade_type {
         // Specification for websocket upgrade requests.
         ProtocolUpgradeSpec websocket = 1;
+        ProtocolUpgradeSpec connect = 2;
     }
 }

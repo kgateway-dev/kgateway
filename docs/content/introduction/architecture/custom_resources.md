@@ -4,7 +4,7 @@ description: An explanation of Custom Resource usage by Gloo Edge.
 weight: 40
 ---
 
-Gloo Edge uses native constructs in Kubernetes to store data, including ConfigMaps, Secrets, and Custom Resource (CRs). This document is meant to summarize what CRs are created by Gloo Edge during installation, and how these CRs interact with the other Gloo Edge objects to store configuration data in the cluster.
+Gloo Edge uses native constructs in Kubernetes to store data, including ConfigMaps, Secrets, and Custom Resources (CRs). This document is meant to summarize what CRs are created by Gloo Edge during installation, and how these CRs interact with the other Gloo Edge objects to store configuration data in the cluster.
 
 ---
 

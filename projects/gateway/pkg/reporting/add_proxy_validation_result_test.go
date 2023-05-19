@@ -3,9 +3,7 @@ package reporting_test
 import (
 	"context"
 
-	"github.com/onsi/ginkgo/extensions/table"
-
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -27,7 +25,7 @@ var _ = Describe("AddProxyValidationResult", func() {
 		ignored = "ignored"
 	)
 
-	table.DescribeTable("Adds ProxyValidation errors to ResourceReports",
+	DescribeTable("Adds ProxyValidation errors to ResourceReports",
 		func(translatorOptions translator.Opts) {
 			snap = samples.SimpleGlooSnapshot(translatorOptions.WriteNamespace)
 			tx := translator.NewDefaultTranslator(translatorOptions)
@@ -80,11 +78,11 @@ var _ = Describe("AddProxyValidationResult", func() {
 	* Route Error: InvalidMatcherError. Reason: bad route. Route Name: route-0`))
 			}
 		},
-		table.Entry("default translators", translator.Opts{
+		Entry("default translators", translator.Opts{
 			WriteNamespace:                 ignored,
 			IsolateVirtualHostsBySslConfig: false,
 		}),
-		table.Entry("isolated virtual hosts translators", translator.Opts{
+		Entry("isolated virtual hosts translators", translator.Opts{
 			WriteNamespace:                 ignored,
 			IsolateVirtualHostsBySslConfig: true,
 		}),

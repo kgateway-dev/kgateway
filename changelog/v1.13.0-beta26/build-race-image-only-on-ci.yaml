@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5471
+    resolvesIssue: false
+    description: >-
+      Add support for the race image, so that it can be built on M1 machines.
+      If running on arm64 (local-build) do not build the race image.

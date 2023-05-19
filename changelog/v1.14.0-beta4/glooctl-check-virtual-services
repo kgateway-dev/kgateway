@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7153
+    description: Glooctl check functions now report all resources regardless if they have statuses reported yet or not. Added error messages for resources with no statuses.
+

@@ -33,7 +33,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return err
 			}
 			if !opts.Top.Consul.UseConsul {
-				client := helpers.MustKubeClient()
+				client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 				_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, opts.Metadata.GetNamespace(), metav1.GetOptions{})
 				if err != nil {
 					if apierrors.IsNotFound(err) {

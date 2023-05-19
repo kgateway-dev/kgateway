@@ -2,6 +2,7 @@ package upstreams
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -16,6 +17,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 )
 
@@ -24,6 +26,11 @@ const (
 	sourceKube           = "kube"
 	sourceConsul         = "consul"
 	notImplementedErrMsg = "this operation is not supported by this client"
+)
+
+var (
+	// used in tests
+	TimerOverride <-chan time.Time
 )
 
 func NewHybridUpstreamClient(
@@ -70,15 +77,23 @@ func (c *hybridUpstreamClient) Register() error {
 }
 
 func (c *hybridUpstreamClient) Read(namespace, name string, opts clients.ReadOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Write(resource *v1.Upstream, opts clients.WriteOpts) (*v1.Upstream, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return fmt.Errorf(notImplementedErrMsg)
+}
+
+func (rc *hybridUpstreamClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (*v1.Upstream, error) {
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *hybridUpstreamClient) List(namespace string, opts clients.ListOpts) (v1.UpstreamList, error) {
@@ -141,25 +156,30 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 		})
 	}
 
-	upstreamsOut := make(chan v1.UpstreamList)
+	upstreamsOut := make(chan v1.UpstreamList, 1)
 
 	go func() {
 		var previousHash uint64
 
-		// return success for the sync (ie if there still needs changes its a false)
+		// return success for the sync (ie if there still needs changes or there is a hash error it's a false)
 		syncFunc := func() bool {
-			currentHash := current.hash()
-			if currentHash == previousHash {
+			currentHash, err := current.hash()
+			if currentHash == previousHash && err == nil {
 				return true
 			}
 			toSend := current.clone()
+
+			// empty the channel if not empty, as we only care about the latest
+			select {
+			case <-upstreamsOut:
+			default:
+			}
 
 			select {
 			case upstreamsOut <- toSend.toList():
 				previousHash = currentHash
 			default:
-				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
-					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
+				contextutils.LoggerFrom(ctx).DPanic("sending to a buffered channel blocked")
 				return false
 			}
 			return true
@@ -167,8 +187,12 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 
 		// First time - sync the current state
 		needsSync := syncFunc()
-		timer := time.NewTicker(time.Second * 1)
-
+		timerC := TimerOverride
+		if timerC == nil {
+			timer := time.NewTicker(time.Second * 1)
+			timerC = timer.C
+			defer timer.Stop()
+		}
 		for {
 			select {
 			case <-ctx.Done():
@@ -182,7 +206,11 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 					needsSync = true
 					current.setUpstreams(upstreamWithSource.source, upstreamWithSource.upstreams)
 				}
-			case <-timer.C:
+			case <-timerC:
+				if len(upstreamsOut) != 0 {
+					contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
+						"channel (must be full), retrying in 1s", zap.Uint64("list hash", previousHash))
+				}
 				if needsSync {
 
 					needsSync = !syncFunc()

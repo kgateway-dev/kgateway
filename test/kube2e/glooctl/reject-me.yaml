@@ -1,0 +1,17 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: reject-me
+  namespace: gloo-system
+spec:
+  virtualHost:
+    routes:
+      - matchers:
+          - headers:
+              - name: foo
+                value: bar
+        routeAction:
+          single:
+            upstream:
+              name: does-not-exist
+              namespace: gloo-system

@@ -1,0 +1,20 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4438
+  resolvesIssue: false
+  description: >-
+    Bring responseTransformation to parity with unwrapAsApiGateway in lambda filter
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/solo-projects/issues/4438
+  resolvesIssue: false
+  description: >-
+    responseTransformation will now extract headers and status code from response body in addition to the body.
+- type: BREAKING_CHANGE
+  issueLink: https://github.com/solo-io/solo-projects/issues/4438
+  resolvesIssue: false
+  description: >-
+    responseTransformation will no longer overwrite the content-type header to text/html.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.25.1-patch2

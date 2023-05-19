@@ -10,8 +10,8 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 )
 
 // ensure the imports are used
@@ -691,6 +691,14 @@ func (m *Matcher) Hash(hasher hash.Hash64) (uint64, error) {
 					return 0, err
 				}
 			}
+		}
+
+	}
+
+	for _, v := range m.GetPassthroughCipherSuites() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
 		}
 
 	}

@@ -2,9 +2,9 @@ package translator_test
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
@@ -12,7 +12,7 @@ var _ = Describe("MergeSslConfig", func() {
 
 	It("merges top-level SslConfig fields", func() {
 
-		dst := &v1.SslConfig{
+		dst := &ssl.SslConfig{
 			SniDomains:           []string{"dst"},
 			VerifySubjectAltName: nil,
 			OneWayTls: &wrappers.BoolValue{
@@ -20,14 +20,14 @@ var _ = Describe("MergeSslConfig", func() {
 			},
 		}
 
-		src := &v1.SslConfig{
+		src := &ssl.SslConfig{
 			SniDomains:           []string{"src"},
 			AlpnProtocols:        []string{"src"},
 			VerifySubjectAltName: []string{"src"},
 			OneWayTls:            nil,
 		}
 
-		expected := &v1.SslConfig{
+		expected := &ssl.SslConfig{
 			// dst and src value, src should not override
 			SniDomains: []string{"dst"},
 

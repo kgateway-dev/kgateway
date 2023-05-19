@@ -10,8 +10,8 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
 )
 
 // ensure the imports are used
@@ -234,6 +234,26 @@ func (m *LoadBalancerConfig_RoundRobin) Hash(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 
+	if h, ok := interface{}(m.GetSlowStartConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("SlowStartConfig")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSlowStartConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("SlowStartConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -253,6 +273,26 @@ func (m *LoadBalancerConfig_LeastRequest) Hash(hasher hash.Hash64) (uint64, erro
 	err = binary.Write(hasher, binary.LittleEndian, m.GetChoiceCount())
 	if err != nil {
 		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetSlowStartConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("SlowStartConfig")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSlowStartConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("SlowStartConfig")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
@@ -347,6 +387,82 @@ func (m *LoadBalancerConfig_Maglev) Hash(hasher hash.Hash64) (uint64, error) {
 	var err error
 	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_Maglev")); err != nil {
 		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *LoadBalancerConfig_SlowStartConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_SlowStartConfig")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetSlowStartWindow()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("SlowStartWindow")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetSlowStartWindow(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("SlowStartWindow")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetAggression()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Aggression")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAggression(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Aggression")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetMinWeightPercent()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("MinWeightPercent")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetMinWeightPercent(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("MinWeightPercent")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

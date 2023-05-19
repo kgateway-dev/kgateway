@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update upgrade test to not fail on first of new version.

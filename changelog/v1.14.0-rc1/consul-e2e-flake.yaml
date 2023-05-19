@@ -1,0 +1,23 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7932
+    resolvesIssue: true
+    description: Fix a flake in our consul_test which would cause inconsistent behavior in CI.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8003
+    resolvesIssue: false
+    description: >- 
+      Avoid a panic in the `ContainSubstrings` Gomega Matcher, by handling the case of a single
+      substring differently.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8043
+    resolvesIssue: true
+    description: >-
+      Cleanup the zipkin_test, by ensuring that we wrap the request and trace assertion in 
+      a single eventually, instead of separate assertions. This pattern is used elsewhere
+      in the file, but the one place it was not flaked. Also cleaned up the test to place
+      assertion descriptions in the proper place.
+  - type: NON_USER_FACING
+    description: >-
+      Delete unused test services. These services weren't being used in our tests and haven't
+      been updated in years so they were only misleading developers.

@@ -12,6 +12,7 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -23,8 +24,12 @@ const (
 )
 
 var (
-	TlsVersionNotFoundError = func(v v1.SslParameters_ProtocolVersion) error {
+	TlsVersionNotFoundError = func(v ssl.SslParameters_ProtocolVersion) error {
 		return eris.Errorf("tls version %v not found", v)
+	}
+
+	OcspStaplePolicyNotValidError = func(p ssl.SslConfig_OcspStaplePolicy) error {
+		return eris.Errorf("ocsp staple policy %v not a valid policy", p)
 	}
 
 	SslSecretNotFoundError = func(err error) error {
@@ -52,10 +57,10 @@ var (
 )
 
 type SslConfigTranslator interface {
-	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
-	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
+	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *ssl.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
+	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *ssl.SslConfig) (*envoyauth.DownstreamTlsContext, error)
 	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList, mustHaveCert bool) (*envoyauth.CommonTlsContext, error)
-	ResolveSslParamsConfig(params *v1.SslParameters) (*envoyauth.TlsParameters, error)
+	ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error)
 }
 
 type sslConfigTranslator struct {
@@ -65,7 +70,7 @@ func NewSslConfigTranslator() *sslConfigTranslator {
 	return &sslConfigTranslator{}
 }
 
-func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
+func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *ssl.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
 	common, err := s.ResolveCommonSslConfig(uc, secrets, false)
 	if err != nil {
 		return nil, err
@@ -77,7 +82,7 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc
 	}, nil
 }
 
-func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
+func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *ssl.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
 	common, err := s.ResolveCommonSslConfig(dc, secrets, true)
 	if err != nil {
 		return nil, err
@@ -102,27 +107,38 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if dc.GetDisableTlsSessionResumption().GetValue() {
 		out.SessionTicketKeysType = &envoyauth.DownstreamTlsContext_DisableStatelessSessionResumption{DisableStatelessSessionResumption: true}
 	}
+	ocspPolicy, err := convertOcspStaplePolicy(dc.GetOcspStaplePolicy())
+	if err != nil {
+		return nil, err
+	}
+	out.OcspStaplePolicy = ocspPolicy
 	return out, nil
 }
 
 type CertSource interface {
 	GetSecretRef() *core.ResourceRef
-	GetSslFiles() *v1.SSLFiles
-	GetSds() *v1.SDSConfig
+	GetSslFiles() *ssl.SSLFiles
+	GetSds() *ssl.SDSConfig
 	GetVerifySubjectAltName() []string
-	GetParameters() *v1.SslParameters
+	GetParameters() *ssl.SslParameters
 	GetAlpnProtocols() []string
 }
 
-func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
-	return func(s string) *envoycore.DataSource {
-		if !inlineDataSource {
+// stringDataSourceGenerator returns a function that returns an Envoy data source that uses the given string as the data source.
+// If inlineDataSource is false, the returned function returns a file data source. Otherwise, the returned function returns an inline-string data source.
+func stringDataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
+	// Return a file data source if inlineDataSource is false.
+	if !inlineDataSource {
+		return func(s string) *envoycore.DataSource {
 			return &envoycore.DataSource{
 				Specifier: &envoycore.DataSource_Filename{
 					Filename: s,
 				},
 			}
 		}
+	}
+
+	return func(s string) *envoycore.DataSource {
 		return &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_InlineString{
 				InlineString: s,
@@ -131,7 +147,16 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 	}
 }
 
-func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
+// byteDataSource returns an Envoy inline-bytes data source that uses the given byte slice as the data source.
+func byteDataSource(b []byte) *envoycore.DataSource {
+	return &envoycore.DataSource{
+		Specifier: &envoycore.DataSource_InlineBytes{
+			InlineBytes: b,
+		},
+	}
+}
+
+func buildSds(name string, sslSecrets *ssl.SDSConfig) *envoyauth.SdsSecretConfig {
 	if sslSecrets.GetCallCredentials() != nil {
 		// Deprecated way of building SDS. No longer used
 		// by anything in gloo but still enabled for now
@@ -183,7 +208,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 }
 
-func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
+func buildDeprecatedSDS(name string, sslSecrets *ssl.SDSConfig) *envoyauth.SdsSecretConfig {
 	config := &envoygrpccredential.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
@@ -236,7 +261,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 	}
 }
 
-func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, matchSan []*envoymatcher.StringMatcher) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) handleSds(sslSecrets *ssl.SDSConfig, matchSan []*envoymatcher.StringMatcher) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.GetCertificatesSecretName() == "" && sslSecrets.GetValidationContextName() == "" {
 		return nil, eris.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
@@ -272,7 +297,9 @@ func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, matchSan []*en
 
 func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList, mustHaveCert bool) (*envoyauth.CommonTlsContext, error) {
 	var (
-		certChain, privateKey, rootCa string
+		certChain, privateKey, rootCa, ocspStapleFile string
+		// An OCSP response (staple) is a DER-encoded binary file
+		ocspStaple []byte
 		// if using a Secret ref, we will inline the certs in the tls config
 		inlineDataSource bool
 	)
@@ -281,18 +308,20 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		var err error
 		inlineDataSource = true
 		ref := sslSecrets
-		certChain, privateKey, rootCa, err = getSslSecrets(*ref, secrets)
+		certChain, privateKey, rootCa, ocspStaple, err = getSslSecrets(*ref, secrets)
 		if err != nil {
 			return nil, err
 		}
-	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
-		certChain, privateKey, rootCa = sslSecrets.GetTlsCert(), sslSecrets.GetTlsKey(), sslSecrets.GetRootCa()
+	} else if sslFiles := cs.GetSslFiles(); sslFiles != nil {
+		certChain, privateKey, rootCa = sslFiles.GetTlsCert(), sslFiles.GetTlsKey(), sslFiles.GetRootCa()
+		// Since ocspStaple is []byte, but we want the file path, we're storing it in a separate string variable
+		ocspStapleFile = sslFiles.GetOcspStaple()
 		err := isValidSslKeyPair(certChain, privateKey, rootCa)
 		if err != nil {
 			return nil, InvalidTlsSecretError(nil, err)
 		}
-	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
-		tlsContext, err := s.handleSds(sslSecrets, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
+	} else if sslSds := cs.GetSds(); sslSds != nil {
+		tlsContext, err := s.handleSds(sslSds, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 		if err != nil {
 			return nil, err
 		}
@@ -310,9 +339,9 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		}
 	}
 
-	dataSource := dataSourceGenerator(inlineDataSource)
+	dataSource := stringDataSourceGenerator(inlineDataSource)
 
-	var certChainData, privateKeyData, rootCaData *envoycore.DataSource
+	var certChainData, privateKeyData, rootCaData, ocspStapleData *envoycore.DataSource
 
 	if certChain != "" {
 		certChainData = dataSource(certChain)
@@ -322,6 +351,12 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	}
 	if rootCa != "" {
 		rootCaData = dataSource(rootCa)
+	}
+	// If we have a filename for the ocsp staple, we want to fetch ocsp data from the file otherwise, we use the []byte data stored in ocspStaple.
+	if ocspStapleFile != "" {
+		ocspStapleData = dataSource(ocspStapleFile)
+	} else if ocspStaple != nil {
+		ocspStapleData = byteDataSource(ocspStaple)
 	}
 
 	tlsContext := &envoyauth.CommonTlsContext{
@@ -334,6 +369,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			{
 				CertificateChain: certChainData,
 				PrivateKey:       privateKeyData,
+				OcspStaple:       ocspStapleData,
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {
@@ -365,27 +401,28 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	return tlsContext, err
 }
 
-func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, error) {
+func getSslSecrets(ref core.ResourceRef, secrets v1.SecretList) (string, string, string, []byte, error) {
 	secret, err := secrets.Find(ref.Strings())
 	if err != nil {
-		return "", "", "", SslSecretNotFoundError(err)
+		return "", "", "", nil, SslSecretNotFoundError(err)
 	}
 
 	sslSecret, ok := secret.GetKind().(*v1.Secret_Tls)
 	if !ok {
-		return "", "", "", NotTlsSecretError(secret.GetMetadata().Ref())
+		return "", "", "", nil, NotTlsSecretError(secret.GetMetadata().Ref())
 	}
 
 	certChain := sslSecret.Tls.GetCertChain()
 	privateKey := sslSecret.Tls.GetPrivateKey()
 	rootCa := sslSecret.Tls.GetRootCa()
+	ocspStaple := sslSecret.Tls.GetOcspStaple()
 
 	err = isValidSslKeyPair(certChain, privateKey, rootCa)
 	if err != nil {
-		return "", "", "", InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
+		return "", "", "", nil, InvalidTlsSecretError(secret.GetMetadata().Ref(), err)
 	}
 
-	return certChain, privateKey, rootCa, nil
+	return certChain, privateKey, rootCa, ocspStaple, nil
 }
 
 func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
@@ -398,7 +435,7 @@ func isValidSslKeyPair(certChain, privateKey, rootCa string) error {
 	return err
 }
 
-func (s *sslConfigTranslator) ResolveSslParamsConfig(params *v1.SslParameters) (*envoyauth.TlsParameters, error) {
+func (s *sslConfigTranslator) ResolveSslParamsConfig(params *ssl.SslParameters) (*envoyauth.TlsParameters, error) {
 	if params == nil {
 		return nil, nil
 	}
@@ -420,21 +457,21 @@ func (s *sslConfigTranslator) ResolveSslParamsConfig(params *v1.SslParameters) (
 	}, nil
 }
 
-func convertVersion(v v1.SslParameters_ProtocolVersion) (envoyauth.TlsParameters_TlsProtocol, error) {
+func convertVersion(v ssl.SslParameters_ProtocolVersion) (envoyauth.TlsParameters_TlsProtocol, error) {
 	switch v {
-	case v1.SslParameters_TLS_AUTO:
+	case ssl.SslParameters_TLS_AUTO:
 		return envoyauth.TlsParameters_TLS_AUTO, nil
 	// TLS 1.0
-	case v1.SslParameters_TLSv1_0:
+	case ssl.SslParameters_TLSv1_0:
 		return envoyauth.TlsParameters_TLSv1_0, nil
 	// TLS 1.1
-	case v1.SslParameters_TLSv1_1:
+	case ssl.SslParameters_TLSv1_1:
 		return envoyauth.TlsParameters_TLSv1_1, nil
 	// TLS 1.2
-	case v1.SslParameters_TLSv1_2:
+	case ssl.SslParameters_TLSv1_2:
 		return envoyauth.TlsParameters_TLSv1_2, nil
 	// TLS 1.3
-	case v1.SslParameters_TLSv1_3:
+	case ssl.SslParameters_TLSv1_3:
 		return envoyauth.TlsParameters_TLSv1_3, nil
 	}
 
@@ -450,4 +487,18 @@ func verifySanListToMatchSanList(sanList []string) []*envoymatcher.StringMatcher
 		matchSanList = append(matchSanList, matchSan)
 	}
 	return matchSanList
+}
+
+func convertOcspStaplePolicy(policy ssl.SslConfig_OcspStaplePolicy) (envoyauth.DownstreamTlsContext_OcspStaplePolicy, error) {
+	switch policy {
+	case ssl.SslConfig_LENIENT_STAPLING:
+		return envoyauth.DownstreamTlsContext_LENIENT_STAPLING, nil
+	case ssl.SslConfig_STRICT_STAPLING:
+		return envoyauth.DownstreamTlsContext_STRICT_STAPLING, nil
+	case ssl.SslConfig_MUST_STAPLE:
+		return envoyauth.DownstreamTlsContext_MUST_STAPLE, nil
+	default:
+		// This should not occur. An invalid value should default to LENIENT_STAPLING.
+		return envoyauth.DownstreamTlsContext_LENIENT_STAPLING, OcspStaplePolicyNotValidError(policy)
+	}
 }

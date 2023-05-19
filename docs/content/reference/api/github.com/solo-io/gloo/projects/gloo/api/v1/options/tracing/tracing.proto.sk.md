@@ -40,6 +40,8 @@ See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) 
 "tracePercentages": .tracing.options.gloo.solo.io.TracePercentages
 "zipkinConfig": .solo.io.envoy.config.trace.v3.ZipkinConfig
 "datadogConfig": .solo.io.envoy.config.trace.v3.DatadogConfig
+"openTelemetryConfig": .solo.io.envoy.config.trace.v3.OpenTelemetryConfig
+"openCensusConfig": .solo.io.envoy.config.trace.v3.OpenCensusConfig
 "environmentVariablesForTags": []tracing.options.gloo.solo.io.TracingTagEnvironmentVariable
 "literalsForTags": []tracing.options.gloo.solo.io.TracingTagLiteral
 
@@ -50,8 +52,10 @@ See [here](https://docs.solo.io/gloo-edge/latest/guides/observability/tracing/) 
 | `requestHeadersForTags` | [[]google.protobuf.StringValue](../../../../../../../../protoc-gen-ext/external/google/protobuf/wrappers.proto.sk/#stringvalue) | Optional. If specified, Envoy will include the headers and header values for any matching request headers. |
 | `verbose` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Optional. If true, Envoy will include logs for streaming events. Default: false. |
 | `tracePercentages` | [.tracing.options.gloo.solo.io.TracePercentages](../tracing.proto.sk/#tracepercentages) | Requests can produce traces by random sampling or when the `x-client-trace-id` header is provided. TracePercentages defines the limits for random, forced, and overall tracing percentages. |
-| `zipkinConfig` | [.solo.io.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig` or `datadogConfig` can be set. |
-| `datadogConfig` | [.solo.io.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig` or `zipkinConfig` can be set. |
+| `zipkinConfig` | [.solo.io.envoy.config.trace.v3.ZipkinConfig](../../../../external/envoy/config/trace/v3/zipkin.proto.sk/#zipkinconfig) |  Only one of `zipkinConfig`, `datadogConfig`, `openTelemetryConfig`, or `openCensusConfig` can be set. |
+| `datadogConfig` | [.solo.io.envoy.config.trace.v3.DatadogConfig](../../../../external/envoy/config/trace/v3/datadog.proto.sk/#datadogconfig) |  Only one of `datadogConfig`, `zipkinConfig`, `openTelemetryConfig`, or `openCensusConfig` can be set. |
+| `openTelemetryConfig` | [.solo.io.envoy.config.trace.v3.OpenTelemetryConfig](../../../../external/envoy/config/trace/v3/opentelemetry.proto.sk/#opentelemetryconfig) |  Only one of `openTelemetryConfig`, `zipkinConfig`, `datadogConfig`, or `openCensusConfig` can be set. |
+| `openCensusConfig` | [.solo.io.envoy.config.trace.v3.OpenCensusConfig](../../../../external/envoy/config/trace/v3/opencensus.proto.sk/#opencensusconfig) |  Only one of `openCensusConfig`, `zipkinConfig`, `datadogConfig`, or `openTelemetryConfig` can be set. |
 | `environmentVariablesForTags` | [[]tracing.options.gloo.solo.io.TracingTagEnvironmentVariable](../tracing.proto.sk/#tracingtagenvironmentvariable) | Optional. If specified, Envoy will include the environment variables with the given tag as tracing tags. |
 | `literalsForTags` | [[]tracing.options.gloo.solo.io.TracingTagLiteral](../tracing.proto.sk/#tracingtagliteral) | Optional. If specified, Envoy will include the literals with the given tag as tracing tags. |
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"

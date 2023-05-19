@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -13,15 +12,14 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/pkg/errors"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
 
-	"github.com/onsi/ginkgo/reporters"
-
 	"github.com/ghodss/yaml"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
@@ -53,8 +51,7 @@ var (
 func TestHelm(t *testing.T) {
 	RegisterFailHandler(Fail)
 	testutils.RegisterCommonFailHandlers()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Helm Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Helm Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -72,7 +69,7 @@ type renderTestCase struct {
 var renderers = []renderTestCase{
 	{"Helm 3", helm3Renderer{
 		chartDir:          chartDir,
-		manifestOutputDir: "", // set to debugOutputDir when debugging locally
+		manifestOutputDir: "", // set to the value of the const debugOutputDir when debugging locally
 	}},
 }
 
@@ -108,13 +105,38 @@ func MustMakeReturnStdout(dir string, args ...string) string {
 	return stdout.String()
 }
 
+// MustGetVersion returns the VERSION that will be used to build the chart
 func MustGetVersion() string {
 	output := MustMakeReturnStdout(".", "-C", "../../", "print-VERSION") // use print-VERSION so version matches on forks
-	// sample output
-	// make: Entering directory '/var/home/kdorosh/git/forks/gloo'\n0.0.0-fork\nmake: Leaving directory '/var/home/kdorosh/git/forks/gloo'\n"
 	lines := strings.Split(output, "\n")
-	Expect(len(lines)).To(BeNumerically(">", 2))
-	return lines[1]
+
+	// output from a fork:
+	// <[]string | len:4, cap:4>: [
+	//	"make[1]: Entering directory '/workspace/gloo'",
+	//	"<VERSION>",
+	//	"make[1]: Leaving directory '/workspace/gloo'",
+	//	"",
+	// ]
+
+	// output from the gloo repo:
+	// <[]string | len:2, cap:2>: [
+	//	"<VERSION>",
+	//	"",
+	// ]
+
+	if len(lines) == 4 {
+		// This is being executed from a fork
+		return lines[1]
+	}
+
+	if len(lines) == 2 {
+		// This is being executed from the Gloo repo
+		return lines[0]
+	}
+
+	// Error loudly to prevent subtle failures
+	Fail(fmt.Sprintf("print-VERSION output returned unknown format. %v", lines))
+	return "version-not-found"
 }
 
 type helmValues struct {
@@ -141,14 +163,14 @@ type helm3Renderer struct {
 func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
 	rel, err := buildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in buildHelm3Release: %s", err.Error())
 	}
 
 	// the test manifest utils can only read from a file
 	var testManifestFile *os.File
 
 	if h3.manifestOutputDir == "" {
-		testManifestFile, err = ioutil.TempFile("", "*.yaml")
+		testManifestFile, err = os.CreateTemp("", "*.yaml")
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
 		defer func() {
 			_ = os.Remove(testManifestFile.Name())
@@ -181,26 +203,30 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 func buildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
 	chartRequested, err := loader.Load(chartDir)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failed to load chart directory: %s", err.Error())
 	}
 
 	helmValues, err := buildHelmValues(chartDir, values)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in buildHelmValues: %s", err.Error())
 	}
 
 	// Validate that the provided values match the Go types used to construct out docs
 	err = validateHelmValues(helmValues)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in validateHelmValues: %s", err.Error())
 	}
 
 	// Install the chart
 	installAction, err := createInstallAction(namespace)
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("failure in createInstallAction: %s", err.Error())
 	}
-	return installAction.Run(chartRequested, helmValues)
+	release, err := installAction.Run(chartRequested, helmValues)
+	if err != nil {
+		return nil, errors.Errorf("failure in installAction.run: %s", err.Error())
+	}
+	return release, err
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
@@ -239,13 +265,14 @@ func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}
 // Returns an error if a provided value is not included in the Go struct.
 //
 // Example:
-//  Failed to render manifest
-//      Unexpected error:
-//          <*errors.errorString | 0xc000fedf40>: {
-//              s: "error unmarshaling JSON: while decoding JSON: json: unknown field \"useTlsTagging\"",
-//          }
-//          error unmarshaling JSON: while decoding JSON: json: unknown field "useTlsTagging"
-//      occurred
+//
+//	Failed to render manifest
+//	    Unexpected error:
+//	        <*errors.errorString | 0xc000fedf40>: {
+//	            s: "error unmarshaling JSON: while decoding JSON: json: unknown field \"useTlsTagging\"",
+//	        }
+//	        error unmarshaling JSON: while decoding JSON: json: unknown field "useTlsTagging"
+//	    occurred
 //
 // This means that the unstructured values provided to the Helm chart contain a field `useTlsTagging`
 // but the Go struct does not contain that field.
@@ -269,7 +296,7 @@ func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
 func readValuesFile(filePath string) (map[string]interface{}, error) {
 	mapFromFile := map[string]interface{}{}
 
-	bytes, err := ioutil.ReadFile(filePath)
+	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}

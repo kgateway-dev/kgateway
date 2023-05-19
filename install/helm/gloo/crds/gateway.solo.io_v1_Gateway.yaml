@@ -202,6 +202,8 @@ spec:
                                     caseSensitive:
                                       nullable: true
                                       type: boolean
+                                    connectMatcher:
+                                      type: object
                                     exact:
                                       type: string
                                     headers:
@@ -340,6 +342,78 @@ spec:
                             type: object
                           saveUpstreamAddress:
                             type: boolean
+                          sslConfig:
+                            properties:
+                              allowRenegotiation:
+                                nullable: true
+                                type: boolean
+                              alpnProtocols:
+                                items:
+                                  type: string
+                                type: array
+                              parameters:
+                                properties:
+                                  cipherSuites:
+                                    items:
+                                      type: string
+                                    type: array
+                                  ecdhCurves:
+                                    items:
+                                      type: string
+                                    type: array
+                                  maximumProtocolVersion:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                  minimumProtocolVersion:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                type: object
+                              sds:
+                                properties:
+                                  callCredentials:
+                                    properties:
+                                      fileCredentialSource:
+                                        properties:
+                                          header:
+                                            type: string
+                                          tokenFileName:
+                                            type: string
+                                        type: object
+                                    type: object
+                                  certificatesSecretName:
+                                    type: string
+                                  clusterName:
+                                    type: string
+                                  targetUri:
+                                    type: string
+                                  validationContextName:
+                                    type: string
+                                type: object
+                              secretRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              sni:
+                                type: string
+                              sslFiles:
+                                properties:
+                                  ocspStaple:
+                                    type: string
+                                  rootCa:
+                                    type: string
+                                  tlsCert:
+                                    type: string
+                                  tlsKey:
+                                    type: string
+                                type: object
+                              verifySubjectAltName:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
                         type: object
                       extauth:
                         properties:
@@ -455,6 +529,18 @@ spec:
                           protoDescriptorBin:
                             format: byte
                             type: string
+                          protoDescriptorConfigMap:
+                            properties:
+                              configMapRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              key:
+                                type: string
+                            type: object
                           services:
                             items:
                               type: string
@@ -691,6 +777,79 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openCensusConfig:
+                                properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
+                                  incomingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  ocagentExporterEnabled:
+                                    type: boolean
+                                  outgoingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  traceConfig:
+                                    properties:
+                                      constantSampler:
+                                        properties:
+                                          decision:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                      maxNumberOfAnnotations:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfAttributes:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfLinks:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfMessageEvents:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      probabilitySampler:
+                                        properties:
+                                          samplingProbability:
+                                            type: number
+                                        type: object
+                                      rateLimitingSampler:
+                                        properties:
+                                          qps:
+                                            format: int64
+                                            type: integer
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                    type: object
+                                type: object
+                              openTelemetryConfig:
+                                properties:
+                                  clusterName:
+                                    type: string
+                                  collectorUpstreamRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                type: object
                               requestHeadersForTags:
                                 items:
                                   nullable: true
@@ -738,6 +897,12 @@ spec:
                           upgrades:
                             items:
                               properties:
+                                connect:
+                                  properties:
+                                    enabled:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
                                 websocket:
                                   properties:
                                     enabled:
@@ -808,6 +973,12 @@ spec:
                           requestTimeout:
                             type: string
                         type: object
+                      router:
+                        properties:
+                          suppressEnvoyHeaders:
+                            nullable: true
+                            type: boolean
+                        type: object
                       sanitizeClusterHeader:
                         nullable: true
                         type: boolean
@@ -822,6 +993,22 @@ spec:
                                 type: string
                                 x-kubernetes-int-or-string: true
                             type: object
+                          configMapRuleSets:
+                            items:
+                              properties:
+                                configMapRef:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                dataMapKeys:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: array
                           coreRuleSet:
                             properties:
                               customSettingsFile:
@@ -1113,6 +1300,79 @@ spec:
                                       type: string
                                   type: object
                                 type: array
+                              openCensusConfig:
+                                properties:
+                                  grpcAddress:
+                                    properties:
+                                      statPrefix:
+                                        type: string
+                                      targetUri:
+                                        type: string
+                                    type: object
+                                  httpAddress:
+                                    type: string
+                                  incomingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  ocagentExporterEnabled:
+                                    type: boolean
+                                  outgoingTraceContext:
+                                    items:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    type: array
+                                  traceConfig:
+                                    properties:
+                                      constantSampler:
+                                        properties:
+                                          decision:
+                                            type: string
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                      maxNumberOfAnnotations:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfAttributes:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfLinks:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      maxNumberOfMessageEvents:
+                                        format: int64
+                                        type: integer
+                                        x-kubernetes-int-or-string: true
+                                      probabilitySampler:
+                                        properties:
+                                          samplingProbability:
+                                            type: number
+                                        type: object
+                                      rateLimitingSampler:
+                                        properties:
+                                          qps:
+                                            format: int64
+                                            type: integer
+                                            x-kubernetes-int-or-string: true
+                                        type: object
+                                    type: object
+                                type: object
+                              openTelemetryConfig:
+                                properties:
+                                  clusterName:
+                                    type: string
+                                  collectorUpstreamRef:
+                                    properties:
+                                      name:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                    type: object
+                                type: object
                               requestHeadersForTags:
                                 items:
                                   nullable: true
@@ -1160,6 +1420,12 @@ spec:
                           upgrades:
                             items:
                               properties:
+                                connect:
+                                  properties:
+                                    enabled:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
                                 websocket:
                                   properties:
                                     enabled:
@@ -1232,6 +1498,9 @@ spec:
                           disableTlsSessionResumption:
                             nullable: true
                             type: boolean
+                          ocspStaplePolicy:
+                            type: string
+                            x-kubernetes-int-or-string: true
                           oneWayTls:
                             nullable: true
                             type: boolean
@@ -1286,6 +1555,8 @@ spec:
                             type: array
                           sslFiles:
                             properties:
+                              ocspStaple:
+                                type: string
                               rootCa:
                                 type: string
                               tlsCert:
@@ -1296,6 +1567,41 @@ spec:
                           transportSocketConnectTimeout:
                             type: string
                           verifySubjectAltName:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                    type: object
+                  delegatedTcpGateways:
+                    properties:
+                      ref:
+                        properties:
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                        type: object
+                      selector:
+                        properties:
+                          expressions:
+                            items:
+                              properties:
+                                key:
+                                  type: string
+                                operator:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
+                                values:
+                                  items:
+                                    type: string
+                                  type: array
+                              type: object
+                            type: array
+                          labels:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          namespaces:
                             items:
                               type: string
                             type: array
@@ -1478,6 +1784,8 @@ spec:
                                               caseSensitive:
                                                 nullable: true
                                                 type: boolean
+                                              connectMatcher:
+                                                type: object
                                               exact:
                                                 type: string
                                               headers:
@@ -1616,6 +1924,78 @@ spec:
                                       type: object
                                     saveUpstreamAddress:
                                       type: boolean
+                                    sslConfig:
+                                      properties:
+                                        allowRenegotiation:
+                                          nullable: true
+                                          type: boolean
+                                        alpnProtocols:
+                                          items:
+                                            type: string
+                                          type: array
+                                        parameters:
+                                          properties:
+                                            cipherSuites:
+                                              items:
+                                                type: string
+                                              type: array
+                                            ecdhCurves:
+                                              items:
+                                                type: string
+                                              type: array
+                                            maximumProtocolVersion:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
+                                            minimumProtocolVersion:
+                                              type: string
+                                              x-kubernetes-int-or-string: true
+                                          type: object
+                                        sds:
+                                          properties:
+                                            callCredentials:
+                                              properties:
+                                                fileCredentialSource:
+                                                  properties:
+                                                    header:
+                                                      type: string
+                                                    tokenFileName:
+                                                      type: string
+                                                  type: object
+                                              type: object
+                                            certificatesSecretName:
+                                              type: string
+                                            clusterName:
+                                              type: string
+                                            targetUri:
+                                              type: string
+                                            validationContextName:
+                                              type: string
+                                          type: object
+                                        secretRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        sni:
+                                          type: string
+                                        sslFiles:
+                                          properties:
+                                            ocspStaple:
+                                              type: string
+                                            rootCa:
+                                              type: string
+                                            tlsCert:
+                                              type: string
+                                            tlsKey:
+                                              type: string
+                                          type: object
+                                        verifySubjectAltName:
+                                          items:
+                                            type: string
+                                          type: array
+                                      type: object
                                   type: object
                                 extauth:
                                   properties:
@@ -1731,6 +2111,18 @@ spec:
                                     protoDescriptorBin:
                                       format: byte
                                       type: string
+                                    protoDescriptorConfigMap:
+                                      properties:
+                                        configMapRef:
+                                          properties:
+                                            name:
+                                              type: string
+                                            namespace:
+                                              type: string
+                                          type: object
+                                        key:
+                                          type: string
+                                      type: object
                                     services:
                                       items:
                                         type: string
@@ -1967,6 +2359,79 @@ spec:
                                                 type: string
                                             type: object
                                           type: array
+                                        openCensusConfig:
+                                          properties:
+                                            grpcAddress:
+                                              properties:
+                                                statPrefix:
+                                                  type: string
+                                                targetUri:
+                                                  type: string
+                                              type: object
+                                            httpAddress:
+                                              type: string
+                                            incomingTraceContext:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            ocagentExporterEnabled:
+                                              type: boolean
+                                            outgoingTraceContext:
+                                              items:
+                                                type: string
+                                                x-kubernetes-int-or-string: true
+                                              type: array
+                                            traceConfig:
+                                              properties:
+                                                constantSampler:
+                                                  properties:
+                                                    decision:
+                                                      type: string
+                                                      x-kubernetes-int-or-string: true
+                                                  type: object
+                                                maxNumberOfAnnotations:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfAttributes:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfLinks:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                maxNumberOfMessageEvents:
+                                                  format: int64
+                                                  type: integer
+                                                  x-kubernetes-int-or-string: true
+                                                probabilitySampler:
+                                                  properties:
+                                                    samplingProbability:
+                                                      type: number
+                                                  type: object
+                                                rateLimitingSampler:
+                                                  properties:
+                                                    qps:
+                                                      format: int64
+                                                      type: integer
+                                                      x-kubernetes-int-or-string: true
+                                                  type: object
+                                              type: object
+                                          type: object
+                                        openTelemetryConfig:
+                                          properties:
+                                            clusterName:
+                                              type: string
+                                            collectorUpstreamRef:
+                                              properties:
+                                                name:
+                                                  type: string
+                                                namespace:
+                                                  type: string
+                                              type: object
+                                          type: object
                                         requestHeadersForTags:
                                           items:
                                             nullable: true
@@ -2014,6 +2479,12 @@ spec:
                                     upgrades:
                                       items:
                                         properties:
+                                          connect:
+                                            properties:
+                                              enabled:
+                                                nullable: true
+                                                type: boolean
+                                            type: object
                                           websocket:
                                             properties:
                                               enabled:
@@ -2084,6 +2555,12 @@ spec:
                                     requestTimeout:
                                       type: string
                                   type: object
+                                router:
+                                  properties:
+                                    suppressEnvoyHeaders:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
                                 sanitizeClusterHeader:
                                   nullable: true
                                   type: boolean
@@ -2098,6 +2575,22 @@ spec:
                                           type: string
                                           x-kubernetes-int-or-string: true
                                       type: object
+                                    configMapRuleSets:
+                                      items:
+                                        properties:
+                                          configMapRef:
+                                            properties:
+                                              name:
+                                                type: string
+                                              namespace:
+                                                type: string
+                                            type: object
+                                          dataMapKeys:
+                                            items:
+                                              type: string
+                                            type: array
+                                        type: object
+                                      type: array
                                     coreRuleSet:
                                       properties:
                                         customSettingsFile:
@@ -2198,6 +2691,10 @@ spec:
                           type: object
                         matcher:
                           properties:
+                            passthroughCipherSuites:
+                              items:
+                                type: string
+                              type: array
                             sourcePrefixRanges:
                               items:
                                 properties:
@@ -2219,6 +2716,9 @@ spec:
                                 disableTlsSessionResumption:
                                   nullable: true
                                   type: boolean
+                                ocspStaplePolicy:
+                                  type: string
+                                  x-kubernetes-int-or-string: true
                                 oneWayTls:
                                   nullable: true
                                   type: boolean
@@ -2273,6 +2773,8 @@ spec:
                                   type: array
                                 sslFiles:
                                   properties:
+                                    ocspStaple:
+                                      type: string
                                     rootCa:
                                       type: string
                                     tlsCert:
@@ -2294,6 +2796,8 @@ spec:
                               properties:
                                 tcpProxySettings:
                                   properties:
+                                    accessLogFlushInterval:
+                                      type: string
                                     idleTimeout:
                                       type: string
                                     maxConnectAttempts:
@@ -2367,6 +2871,8 @@ spec:
                                                             unwrapAsAlb:
                                                               type: boolean
                                                             unwrapAsApiGateway:
+                                                              type: boolean
+                                                            wrapAsApiGateway:
                                                               type: boolean
                                                           type: object
                                                         azure:
@@ -2671,6 +3177,8 @@ spec:
                                                                       caseSensitive:
                                                                         nullable: true
                                                                         type: boolean
+                                                                      connectMatcher:
+                                                                        type: object
                                                                       exact:
                                                                         type: string
                                                                       headers:
@@ -3007,6 +3515,8 @@ spec:
                                                                       caseSensitive:
                                                                         nullable: true
                                                                         type: boolean
+                                                                      connectMatcher:
+                                                                        type: object
                                                                       exact:
                                                                         type: string
                                                                       headers:
@@ -3552,6 +4062,8 @@ spec:
                                                     type: boolean
                                                   unwrapAsApiGateway:
                                                     type: boolean
+                                                  wrapAsApiGateway:
+                                                    type: boolean
                                                 type: object
                                               azure:
                                                 properties:
@@ -3711,6 +4223,9 @@ spec:
                                       disableTlsSessionResumption:
                                         nullable: true
                                         type: boolean
+                                      ocspStaplePolicy:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
                                       oneWayTls:
                                         nullable: true
                                         type: boolean
@@ -3765,6 +4280,8 @@ spec:
                                         type: array
                                       sslFiles:
                                         properties:
+                                          ocspStaple:
+                                            type: string
                                           rootCa:
                                             type: string
                                           tlsCert:
@@ -3810,6 +4327,128 @@ spec:
                                 stringFormat:
                                   type: string
                               type: object
+                            filter:
+                              properties:
+                                andFilter:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                durationFilter:
+                                  properties:
+                                    comparison:
+                                      properties:
+                                        op:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        value:
+                                          properties:
+                                            defaultValue:
+                                              format: int32
+                                              type: integer
+                                            runtimeKey:
+                                              type: string
+                                          type: object
+                                      type: object
+                                  type: object
+                                grpcStatusFilter:
+                                  properties:
+                                    exclude:
+                                      type: boolean
+                                    statuses:
+                                      items:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
+                                      type: array
+                                  type: object
+                                headerFilter:
+                                  properties:
+                                    header:
+                                      properties:
+                                        exactMatch:
+                                          type: string
+                                        invertMatch:
+                                          type: boolean
+                                        name:
+                                          type: string
+                                        prefixMatch:
+                                          type: string
+                                        presentMatch:
+                                          type: boolean
+                                        rangeMatch:
+                                          properties:
+                                            end:
+                                              format: int64
+                                              type: integer
+                                              x-kubernetes-int-or-string: true
+                                            start:
+                                              format: int64
+                                              type: integer
+                                              x-kubernetes-int-or-string: true
+                                          type: object
+                                        safeRegexMatch:
+                                          properties:
+                                            googleRe2:
+                                              properties:
+                                                maxProgramSize:
+                                                  maximum: 4294967295
+                                                  minimum: 0
+                                                  nullable: true
+                                                  type: integer
+                                              type: object
+                                            regex:
+                                              type: string
+                                          type: object
+                                        suffixMatch:
+                                          type: string
+                                      type: object
+                                  type: object
+                                notHealthCheckFilter:
+                                  type: object
+                                orFilter:
+                                  type: object
+                                  x-kubernetes-preserve-unknown-fields: true
+                                responseFlagFilter:
+                                  properties:
+                                    flags:
+                                      items:
+                                        type: string
+                                      type: array
+                                  type: object
+                                runtimeFilter:
+                                  properties:
+                                    percentSampled:
+                                      properties:
+                                        denominator:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        numerator:
+                                          format: int32
+                                          type: integer
+                                      type: object
+                                    runtimeKey:
+                                      type: string
+                                    useIndependentRandomness:
+                                      type: boolean
+                                  type: object
+                                statusCodeFilter:
+                                  properties:
+                                    comparison:
+                                      properties:
+                                        op:
+                                          type: string
+                                          x-kubernetes-int-or-string: true
+                                        value:
+                                          properties:
+                                            defaultValue:
+                                              format: int32
+                                              type: integer
+                                            runtimeKey:
+                                              type: string
+                                          type: object
+                                      type: object
+                                  type: object
+                                traceableFilter:
+                                  type: object
+                              type: object
                             grpcService:
                               properties:
                                 additionalRequestHeadersToLog:
@@ -3831,6 +4470,11 @@ spec:
                               type: object
                           type: object
                         type: array
+                    type: object
+                  connectionBalanceConfig:
+                    properties:
+                      exactBalance:
+                        type: object
                     type: object
                   extensions:
                     properties:
@@ -3911,6 +4555,8 @@ spec:
                     properties:
                       tcpProxySettings:
                         properties:
+                          accessLogFlushInterval:
+                            type: string
                           idleTimeout:
                             type: string
                           maxConnectAttempts:
@@ -3984,6 +4630,8 @@ spec:
                                                   unwrapAsAlb:
                                                     type: boolean
                                                   unwrapAsApiGateway:
+                                                    type: boolean
+                                                  wrapAsApiGateway:
                                                     type: boolean
                                                 type: object
                                               azure:
@@ -4288,6 +4936,8 @@ spec:
                                                             caseSensitive:
                                                               nullable: true
                                                               type: boolean
+                                                            connectMatcher:
+                                                              type: object
                                                             exact:
                                                               type: string
                                                             headers:
@@ -4624,6 +5274,8 @@ spec:
                                                             caseSensitive:
                                                               nullable: true
                                                               type: boolean
+                                                            connectMatcher:
+                                                              type: object
                                                             exact:
                                                               type: string
                                                             headers:
@@ -5169,6 +5821,8 @@ spec:
                                           type: boolean
                                         unwrapAsApiGateway:
                                           type: boolean
+                                        wrapAsApiGateway:
+                                          type: boolean
                                       type: object
                                     azure:
                                       properties:
@@ -5328,6 +5982,9 @@ spec:
                             disableTlsSessionResumption:
                               nullable: true
                               type: boolean
+                            ocspStaplePolicy:
+                              type: string
+                              x-kubernetes-int-or-string: true
                             oneWayTls:
                               nullable: true
                               type: boolean
@@ -5382,6 +6039,8 @@ spec:
                               type: array
                             sslFiles:
                               properties:
+                                ocspStaple:
+                                  type: string
                                 rootCa:
                                   type: string
                                 tlsCert:
@@ -5404,6 +6063,12 @@ spec:
                 type: boolean
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object

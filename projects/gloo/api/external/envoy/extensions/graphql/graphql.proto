@@ -8,6 +8,7 @@ option java_package = "io.envoyproxy.envoy.config.filter.http.graphql.v2";
 option java_outer_classname = "GraphQLFilterProto";
 option java_multiple_files = true;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/any.proto";
 import "validate/validate.proto";
 
@@ -364,6 +365,19 @@ message Resolution {
   string stat_prefix = 3;
   // caching configuration, defaults to no caching
   CacheControl cache_control = 4;
+  // NOT IMPLEMENTED
+  // Variables that can be used as a part of transformations for this field's resolution.
+  // The key is the name of the variable, which is directly used in the transformation.
+  // The value defines where the variable value is extracted from on the GraphQL request.
+  // map<string, Extraction> variables = 5;
+  // NOT IMPLEMENTED
+  // Variable transformation that is run prior to the resolver result being passed to the
+  // GraphQL execution engine. This is primarily used to transform the result
+  // from the resolver, but all variables declared in the `variables` field are available here.
+  // In addition, variables that are returned from the resolver are also available here,
+  // with those variables taking naming precedence over variables declared at this level.
+  // VariableTransformation pre_execution_transform = 6;
+  reserved 5, 6;
 }
 
 // Resolvers for scalar, non-root fields rarely fetch data and instead usually populate data via the parent argument.

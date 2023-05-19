@@ -1,0 +1,22 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7202
+  fixesIssue: true
+  description: >-
+    Update validation webhook server and core gloo translation to use the same shared
+    translator with proper synchronization, which resolves some rare race conditions
+    when applying a bunch of resources at once (with validation enabled).
+- type: FIX
+  issueLink: https://github.com/solo-io/skv2/issues/375
+  fixesIssue: true
+  description: >-
+    Update construction of `RateLimitConfig` client construction to happen in `init()`
+    adding itself to the global scheme before any k8s watches start using the scheme,
+    which in rare cases could result in races.
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7213
+  fixesIssue: true
+  description: >-
+    Improve synchronization in validation admission webhook server to prevent races
+    when numerous resources are applied at once.
+

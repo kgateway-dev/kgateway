@@ -1,7 +1,7 @@
 package install
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -45,12 +45,14 @@ type HelmClient interface {
 }
 
 // an interface around Helm's action.Install struct
+//
 //go:generate mockgen -destination mocks/mock_helm_installation.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmInstallation
 type HelmInstallation interface {
 	Run(chrt *chart.Chart, vals map[string]interface{}) (*release.Release, error)
 }
 
 // an interface around Helm's action.Uninstall struct
+//
 //go:generate mockgen -destination mocks/mock_helm_uninstallation.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmUninstallation
 type HelmUninstallation interface {
 	Run(name string) (*release.UninstallReleaseResponse, error)
@@ -60,6 +62,7 @@ var _ HelmInstallation = &action.Install{}
 var _ HelmUninstallation = &action.Uninstall{}
 
 // an interface around Helm's action.List struct
+//
 //go:generate mockgen -destination mocks/mock_helm_release_list.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmReleaseListRunner
 type HelmReleaseListRunner interface {
 	Run() ([]*release.Release, error)
@@ -133,19 +136,19 @@ func (d *defaultHelmClient) DownloadChart(chartArchiveUri string) (*chart.Chart,
 	defer func() { _ = chartFileReader.Close() }()
 
 	// 2. Write chart to a temporary file
-	chartBytes, err := ioutil.ReadAll(chartFileReader)
+	chartBytes, err := io.ReadAll(chartFileReader)
 	if err != nil {
 		return nil, err
 	}
 
-	chartFile, err := ioutil.TempFile("", "gloo-helm-chart")
+	chartFile, err := os.CreateTemp("", "gloo-helm-chart")
 	if err != nil {
 		return nil, err
 	}
 	charFilePath := chartFile.Name()
 	defer func() { _ = os.RemoveAll(charFilePath) }()
 
-	if err := ioutil.WriteFile(charFilePath, chartBytes, tempChartFilePermissions); err != nil {
+	if err := os.WriteFile(charFilePath, chartBytes, tempChartFilePermissions); err != nil {
 		return nil, err
 	}
 

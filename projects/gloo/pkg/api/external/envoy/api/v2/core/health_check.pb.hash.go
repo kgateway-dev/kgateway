@@ -10,8 +10,10 @@ import (
 	"hash"
 	"hash/fnv"
 
-	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
+	"github.com/solo-io/protoc-gen-ext/pkg/hasher/hashstructure"
+
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 )
 
 // ensure the imports are used
@@ -23,6 +25,8 @@ var (
 	_ = fnv.New64
 	_ = hashstructure.Hash
 	_ = new(safe_hasher.SafeHasher)
+
+	_ = v3.RequestMethod(0)
 )
 
 // Hash function
@@ -497,6 +501,11 @@ func (m *HealthCheck_HttpHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetMethod())
+	if err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil

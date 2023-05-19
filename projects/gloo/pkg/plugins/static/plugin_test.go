@@ -4,17 +4,21 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	proxyproto "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	core1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 var _ = Describe("Plugin", func() {
@@ -195,15 +199,22 @@ var _ = Describe("Plugin", func() {
 			Expect(tlsContext()).ToNot(BeNil())
 		})
 
+		It("should not autoset ssl if usetls is false", func() {
+			upstreamSpec.UseTls = wrapperspb.Bool(false)
+			upstreamSpec.Hosts[0].Port = 443
+			p.ProcessUpstream(params, upstream, out)
+			Expect(tlsContext()).To(BeNil())
+		})
+
 		It("should allow configuring ssl", func() {
-			upstreamSpec.UseTls = true
+			upstreamSpec.UseTls = wrapperspb.Bool(true)
 			p.ProcessUpstream(params, upstream, out)
 			Expect(tlsContext()).ToNot(BeNil())
 		})
 
 		Context("should allow configuring ssl without settings.UpstreamOptions", func() {
 			BeforeEach(func() {
-				upstreamSpec.UseTls = true
+				upstreamSpec.UseTls = wrapperspb.Bool(true)
 				initParams.Settings = &v1.Settings{}
 			})
 
@@ -221,12 +232,12 @@ var _ = Describe("Plugin", func() {
 
 		Context("should allow configuring ssl with settings.UpstreamOptions", func() {
 			BeforeEach(func() {
-				upstreamSpec.UseTls = true
+				upstreamSpec.UseTls = wrapperspb.Bool(true)
 				initParams.Settings = &v1.Settings{
 					UpstreamOptions: &v1.UpstreamOptions{
-						SslParameters: &v1.SslParameters{
-							MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
-							MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+						SslParameters: &ssl.SslParameters{
+							MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+							MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 							CipherSuites:           []string{"cipher-test"},
 							EcdhCurves:             []string{"ec-dh-test"},
 						},
@@ -248,15 +259,15 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
-			var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+			var invalidProtocolVersion ssl.SslParameters_ProtocolVersion = 5 // INVALID
 
 			BeforeEach(func() {
-				upstreamSpec.UseTls = true
+				upstreamSpec.UseTls = wrapperspb.Bool(true)
 				initParams.Settings = &v1.Settings{
 					UpstreamOptions: &v1.UpstreamOptions{
-						SslParameters: &v1.SslParameters{
+						SslParameters: &ssl.SslParameters{
 							MinimumProtocolVersion: invalidProtocolVersion,
-							MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 							CipherSuites:           []string{"cipher-test"},
 							EcdhCurves:             []string{"ec-dh-test"},
 						},
@@ -272,13 +283,41 @@ var _ = Describe("Plugin", func() {
 
 		It("should not override existing tls config", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
+			typedConfig, err := utils.MessageToAny(existing)
+			Expect(err).ToNot(HaveOccurred())
 			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(existing)},
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 			}
-			upstreamSpec.UseTls = true
+			upstreamSpec.UseTls = wrapperspb.Bool(true)
 			p.ProcessUpstream(params, upstream, out)
 			Expect(tlsContext()).To(Equal(existing))
+		})
+
+		It("should set proxy protocol", func() {
+			upstreamSpec.UseTls = wrapperspb.Bool(true)
+			upstreamSpec.Hosts[0].SniAddr = "test"
+			upstream.ProxyProtocolVersion = &wrapperspb.StringValue{Value: "V1"}
+			initParams.Settings = &v1.Settings{
+				UpstreamOptions: &v1.UpstreamOptions{
+					SslParameters: &ssl.SslParameters{
+						MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+						MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
+						CipherSuites:           []string{"cipher-test"},
+						EcdhCurves:             []string{"ec-dh-test"},
+					},
+				},
+			}
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.TransportSocketMatches[0].Match).To(BeEquivalentTo(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[TransportSocketMatchKey]))
+			Expect(out.TransportSocketMatches[0].TransportSocket.Name).To(Equal("envoy.transport_sockets.upstream_proxy_protocol"))
+
+			pMsg := utils.MustAnyToMessage(out.TransportSocketMatches[0].GetTransportSocket().GetTypedConfig()).(*proxyproto.ProxyProtocolUpstreamTransport)
+			tlsMsg := utils.MustAnyToMessage(pMsg.GetTransportSocket().GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+
+			Expect(tlsMsg.Sni).To(Equal("test"))
+
 		})
 
 		ExpectSniMatchesToMatch := func() {
@@ -291,7 +330,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		It("should have sni per host", func() {
-			upstreamSpec.UseTls = true
+			upstreamSpec.UseTls = wrapperspb.Bool(true)
 			upstreamSpec.AutoSniRewrite = &wrappers.BoolValue{Value: false}
 			upstreamSpec.Hosts[0].SniAddr = "test"
 			upstreamSpec.Hosts = append(upstreamSpec.Hosts, &v1static.Host{
@@ -318,7 +357,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should have sni per host by default", func() {
-			upstreamSpec.UseTls = true
+			upstreamSpec.UseTls = wrapperspb.Bool(true)
 			upstreamSpec.Hosts[0].SniAddr = "test"
 			upstreamSpec.Hosts = append(upstreamSpec.Hosts, &v1static.Host{
 				Addr: "1.2.3.5",

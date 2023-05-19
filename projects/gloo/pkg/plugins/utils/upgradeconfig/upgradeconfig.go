@@ -9,6 +9,7 @@ import (
 
 const (
 	WebSocketUpgradeType = "websocket"
+	ConnectUpgradeType   = "CONNECT"
 )
 
 func ValidateHCMUpgradeConfigs(upgradeConfigs []*envoyhttp.HttpConnectionManager_UpgradeConfig) error {

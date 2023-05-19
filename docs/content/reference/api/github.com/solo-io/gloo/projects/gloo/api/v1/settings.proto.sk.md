@@ -15,12 +15,15 @@ weight: 5
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
+- [VaultAwsAuth](#vaultawsauth)
+- [VaultTlsConfig](#vaulttlsconfig)
 - [ConsulKv](#consulkv)
 - [KubernetesConfigmaps](#kubernetesconfigmaps)
 - [Directory](#directory)
 - [KnativeOptions](#knativeoptions)
 - [DiscoveryOptions](#discoveryoptions)
 - [UdsOptions](#udsoptions)
+- [FdsOptions](#fdsoptions)
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
@@ -184,21 +187,86 @@ Use [HashiCorp Vault](https://www.vaultproject.io/) as storage for secret data.
 "insecure": .google.protobuf.BoolValue
 "rootKey": string
 "pathPrefix": string
+"tlsConfig": .gloo.solo.io.Settings.VaultTlsConfig
+"accessToken": string
+"aws": .gloo.solo.io.Settings.VaultAwsAuth
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `token` | `string` | the Token used to authenticate to Vault. |
-| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io. |
+| `token` | `string` | DEPRECATED: use field accessToken the Token used to authenticate to Vault. |
+| `address` | `string` | address is the address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200). |
+| `caCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
+| `caPath` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
+| `clientCert` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault clientCert is the path to the certificate for Vault communication. |
+| `clientKey` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault clientKey is the path to the private key for Vault communication. |
+| `tlsServerName` | `string` | DEPRECATED: use field tls_config to configure TLS connection to Vault tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | DEPRECATED: use field tls_config to configure TLS connection to Vault When set to true, disables TLS verification. |
+| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to `gloo`. |
+| `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
+| `tlsConfig` | [.gloo.solo.io.Settings.VaultTlsConfig](../settings.proto.sk/#vaulttlsconfig) | Configure TLS options for client connection to Vault. This is only available when running Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad. |
+| `accessToken` | `string` |  Only one of `accessToken` or `aws` can be set. |
+| `aws` | [.gloo.solo.io.Settings.VaultAwsAuth](../settings.proto.sk/#vaultawsauth) |  Only one of `aws` or `accessToken` can be set. |
+
+
+
+
+---
+### VaultAwsAuth
+
+ 
+Configure Vault client to authenticate to server via AWS auth (IAM only).
+For more info see https://developer.hashicorp.com/vault/docs/auth/aws
+
+```yaml
+"vaultRole": string
+"region": string
+"iamServerIdHeader": string
+"mountPath": string
+"accessKeyId": string
+"secretAccessKey": string
+"sessionToken": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `vaultRole` | `string` | The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured. |
+| `region` | `string` | The AWS region to use for the login attempt. |
+| `iamServerIdHeader` | `string` | The IAM Server ID Header required to be included in the request. |
+| `mountPath` | `string` | The Vault path on which the AWS auth is mounted. |
+| `accessKeyId` | `string` | The Access Key ID as provided by the security credentials on the AWS IAM resource. |
+| `secretAccessKey` | `string` | The Secret Access Key as provided by the security credentials on the AWS IAM resource. |
+| `sessionToken` | `string` | The Session Token as provided by the security credentials on the AWS IAM resource. |
+
+
+
+
+---
+### VaultTlsConfig
+
+ 
+Settings to configure TLS-enabled Vault as a secret store
+
+```yaml
+"caCert": string
+"caPath": string
+"clientCert": string
+"clientKey": string
+"tlsServerName": string
+"insecure": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 | `caCert` | `string` | caCert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate. |
 | `caPath` | `string` | caPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate. |
 | `clientCert` | `string` | clientCert is the path to the certificate for Vault communication. |
 | `clientKey` | `string` | clientKey is the path to the private key for Vault communication. |
 | `tlsServerName` | `string` | tlsServerName, if set, is used to set the SNI host when connecting via TLS. |
-| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Insecure enables or disables SSL verification. |
-| `rootKey` | `string` | all keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Consul cluster defaults to `gloo`. |
-| `pathPrefix` | `string` | Optional: The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'. |
+| `insecure` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set to true, disables TLS verification. |
 
 
 
@@ -287,6 +355,7 @@ This option determines the root of the directory tree used to this end.
 ```yaml
 "fdsMode": .gloo.solo.io.Settings.DiscoveryOptions.FdsMode
 "udsOptions": .gloo.solo.io.Settings.DiscoveryOptions.UdsOptions
+"fdsOptions": .gloo.solo.io.Settings.DiscoveryOptions.FdsOptions
 
 ```
 
@@ -294,6 +363,7 @@ This option determines the root of the directory tree used to this end.
 | ----- | ---- | ----------- | 
 | `fdsMode` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsMode](../settings.proto.sk/#fdsmode) |  |
 | `udsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.UdsOptions](../settings.proto.sk/#udsoptions) |  |
+| `fdsOptions` | [.gloo.solo.io.Settings.DiscoveryOptions.FdsOptions](../settings.proto.sk/#fdsoptions) |  |
 
 
 
@@ -313,6 +383,23 @@ This option determines the root of the directory tree used to this end.
 | ----- | ---- | ----------- | 
 | `enabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable upstream discovery service. Defaults to true. |
 | `watchLabels` | `map<string, string>` | Map of labels to watch. Only services which match all of the selectors specified here will be discovered by UDS. |
+
+
+
+
+---
+### FdsOptions
+
+
+
+```yaml
+"graphqlEnabled": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `graphqlEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable function discovery service on GraphQL gRPC and OpenApi upstreams. Defaults to true. |
 
 
 
@@ -466,8 +553,8 @@ Provides overrides for the default configuration parameters used to interact wit
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `qPS` | `float` | The maximum queries-per-second Gloo can make to the Kubernetes API Server. |
-| `burst` | `int` | Maximum burst for throttle. When a steady state of QPS requests per second, this is an additional number of allowed, to allow for short bursts. |
+| `qPS` | `float` | The maximum queries-per-second Gloo can make to the Kubernetes API Server. Defaults to 50. |
+| `burst` | `int` | Maximum burst for throttle. When a steady state of QPS requests per second, this is an additional number of allowed, to allow for short bursts. Defaults to 100. |
 
 
 
@@ -541,7 +628,7 @@ When these properties are defined on a specific upstream, this configuration wil
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
+| `sslParameters` | [.gloo.solo.io.SslParameters](../ssl/ssl.proto.sk/#sslparameters) | Default ssl parameter configuration to use for upstreams. |
 | `globalAnnotations` | `map<string, string>` | Annotations to apply to all upstreams. |
 
 
@@ -603,6 +690,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "serviceAccountCredentials": .envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
 "propagateOriginalRouting": .google.protobuf.BoolValue
 "credentialRefreshDelay": .google.protobuf.Duration
+"fallbackToFirstFunction": .google.protobuf.BoolValue
 
 ```
 
@@ -612,6 +700,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `serviceAccountCredentials` | [.envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials](../../external/envoy/extensions/aws/filter.proto.sk/#serviceaccountcredentials) | Use projected service account token, and role arn to create temporary credentials with which to authenticate lambda requests. This functionality is meant to work along side EKS service account to IAM binding functionality as outlined here: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html If the following environment values are not present in the gateway-proxy, this option cannot be used. 1. AWS_WEB_IDENTITY_TOKEN_FILE 2. AWS_ROLE_ARN The role which will be assumed by the credentials will be the one specified by AWS_ROLE_ARN, however, this can also be overwritten in the AWS Upstream spec via the role_arn field If they are not specified envoy will NACK the config update, which will show up in the logs when running OS Gloo. When running Gloo enterprise it will be reflected in the prometheus stat: "glooe.solo.io/xds/nack" In order to specify the aws sts endpoint, both the cluster and uri must be set. This is due to an envoy limitation which cannot infer the host or path from the cluster, and therefore must be explicitly specified via the uri. Only one of `serviceAccountCredentials` or `enableCredentialsDiscovey` can be set. |
 | `propagateOriginalRouting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Send downstream path and method as `x-envoy-original-path` and `x-envoy-original-method` headers on the request to AWS lambda. Defaults to false. |
 | `credentialRefreshDelay` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Sets cadence for refreshing credentials for Service Account. Does nothing if Service account is not set. Does not affect the default filewatch for service account only augments it. Defaults to not refreshing on time period. Suggested is 15 minutes. |
+| `fallbackToFirstFunction` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Sets the unsafe behavior where a route can specify a lambda upstream but not set the function to target. It will use the first function which if discovery is enabled the first function is the first function name alphabetically from the last discovery run. This means that the lambda being pointed to could change. Defaults to false. |
 
 
 
@@ -708,6 +797,7 @@ options for configuring admission control / validation
 "warnRouteShortCircuiting": .google.protobuf.BoolValue
 "disableTransformationValidation": .google.protobuf.BoolValue
 "validationServerGrpcMaxSizeBytes": .google.protobuf.Int32Value
+"serverEnabled": .google.protobuf.BoolValue
 
 ```
 
@@ -716,12 +806,13 @@ options for configuring admission control / validation
 | `proxyValidationServerAddr` | `string` | Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988`. This field is required in order to enable fine-grained admission control. |
 | `validationWebhookTlsCert` | `string` | Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`. |
 | `validationWebhookTlsKey` | `string` | Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`. |
-| `ignoreGlooValidationFailure` | `bool` | When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |
+| `ignoreGlooValidationFailure` | `bool` | Deprecated: the Gateway and the Gloo pods are now merged together, there are no longer requests made to a Gloo Validation server. When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |
 | `alwaysAccept` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Always accept resources even if validation produced an error. Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat. Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage. |
 | `allowWarnings` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Accept resources if validation produced a warning (defaults to true). By setting to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. |
-| `warnRouteShortCircuiting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo will start assigning warnings to resources that would result in route short-circuiting within a virtual host, for example: - prefix routes that make later routes unreachable - regex routes that make later routes unreachable - duplicate matchers. |
-| `disableTransformationValidation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them. |
+| `warnRouteShortCircuiting` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Deprecated: See `server_enabled` and consider configuring it to `false` instead. Write a warning to route resources if validation produced a route ordering warning (defaults to false). By setting to true, this means that Gloo will start assigning warnings to resources that would result in route short-circuiting within a virtual host, for example: - prefix routes that make later routes unreachable - regex routes that make later routes unreachable - duplicate matchers. |
+| `disableTransformationValidation` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Deprecated: See `server_enabled` and consider configuring it to `false` instead. By default gloo will attempt to validate transformations by calling out to a local envoy binary in `validate` mode. Calling this local envoy binary can become slow when done many times during a single validation. Setting this to true will stop gloo from calling out to envoy to validate the transformations, which may speed up the validation time considerably, but may also cause the transformation config to fail after being sent to envoy. When disabling this, ensure that your transformations are valid prior to applying them. |
 | `validationServerGrpcMaxSizeBytes` | [.google.protobuf.Int32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/int-32-value) | By default, gRPC validation messages between gateway and gloo pods have a max message size of 100 MB. Setting this value sets the gRPC max message size in bytes for the gloo validation server. This should only be changed if necessary. If not included, the gRPC max message size will be the default of 100 MB. |
+| `serverEnabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By providing the validation field (parent of this object) the user is implicitly opting into validation. This field allows the user to opt out of the validation server, while still configuring pre-existing fields such as `warn_route_short_circuiting` and `disable_transformation_validation`. If not included, the validation server will be enabled. |
 
 
 

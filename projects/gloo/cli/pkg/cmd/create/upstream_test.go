@@ -3,18 +3,19 @@ package create_test
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
-
-	. "github.com/onsi/ginkgo"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	. "github.com/solo-io/solo-kit/test/matchers"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ = Describe("Upstream", func() {
@@ -75,6 +76,39 @@ var _ = Describe("Upstream", func() {
 			staticSpec := up.UpstreamType.(*v1.Upstream_Static).Static
 			expectedHosts := []*static.Host{{Addr: "jsonplaceholder.typicode.com", Port: 80}}
 			Expect(staticSpec.Hosts).To(Equal(expectedHosts))
+		})
+
+		It("should respect tls flag when true", func() {
+			err := testutils.Glooctl(`create upstream static static-tls --static-hosts "jsonplaceholder.typicode.com:443" --static-outbound-tls true`)
+			Expect(err).NotTo(HaveOccurred())
+
+			up := getUpstream("static-tls")
+			staticSpec := up.UpstreamType.(*v1.Upstream_Static).Static
+			Expect(staticSpec.UseTls).To(MatchProto(&wrappers.BoolValue{Value: true}))
+		})
+
+		It("should respect tls flag when false", func() {
+			err := testutils.Glooctl(`create upstream static static-tls --static-hosts "jsonplaceholder.typicode.com:443" --static-outbound-tls false`)
+			Expect(err).NotTo(HaveOccurred())
+
+			up := getUpstream("static-tls")
+			staticSpec := up.UpstreamType.(*v1.Upstream_Static).Static
+			Expect(staticSpec.UseTls).To(MatchProto(&wrappers.BoolValue{Value: false}))
+		})
+
+		It("should omit tls flag when not explicitly set", func() {
+			err := testutils.Glooctl(`create upstream static static-tls --static-hosts "jsonplaceholder.typicode.com:443"`)
+			Expect(err).NotTo(HaveOccurred())
+
+			up := getUpstream("static-tls")
+			staticSpec := up.UpstreamType.(*v1.Upstream_Static).Static
+			Expect(staticSpec.UseTls).To(BeNil())
+		})
+
+		It("should not accept non-boolean tls value", func() {
+			err := testutils.Glooctl(`create upstream static static-tls --static-hosts "jsonplaceholder.typicode.com:443" --static-outbound-tls asdf`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("invalid syntax"))
 		})
 	})
 

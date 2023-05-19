@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7577
+    resolvesIssue: false
+    description: >
+      Fix a couple of e2e tests which did not succeed on non-linux machines, and improve the clarity
+      of other e2e tests by using the same framework for writing tests.

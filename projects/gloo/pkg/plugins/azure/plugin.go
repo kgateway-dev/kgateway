@@ -54,6 +54,7 @@ func (p *plugin) Init(params plugins.InitParams) {
 	p.settings = params.Settings
 	p.ctx = params.Ctx
 	p.recordedUpstreams = make(map[string]*azure.UpstreamSpec)
+	p.apiKeys = make(map[string]string)
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
@@ -84,9 +85,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// TODO(yuval-k): Add verification context
 		Sni: hostname,
 	}
+	typedConfig, err := utils.MessageToAny(tlsContext)
+	if err != nil {
+		return err
+	}
 	out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
-		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
+		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
 
 	if azureUpstream.GetSecretRef().GetName() != "" {

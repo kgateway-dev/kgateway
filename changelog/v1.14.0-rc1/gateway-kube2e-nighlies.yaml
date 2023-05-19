@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7795
+    resolvesIssue: false
+    description: >-
+      Ensure that nightly Gateway Kube2e tests pass, when running earlier versions of Kubernetes.

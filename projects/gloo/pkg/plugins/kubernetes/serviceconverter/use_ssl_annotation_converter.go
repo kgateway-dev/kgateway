@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	kubev1 "k8s.io/api/core/v1"
 )
@@ -43,7 +44,7 @@ func (u *UseSslConverter) ConvertService(_ context.Context, svc *kubev1.Service,
 	return nil
 }
 
-func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePort) *v1.UpstreamSslConfig {
+func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePort) *ssl.UpstreamSslConfig {
 
 	if svc.Annotations == nil {
 		return nil
@@ -67,8 +68,8 @@ func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePor
 
 	switch {
 	case secretName != "":
-		return &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+		return &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{
 					Name:      secretName,
 					Namespace: svc.Namespace,
@@ -76,9 +77,9 @@ func upstreamSslConfigFromService(svc *kubev1.Service, svcPort kubev1.ServicePor
 			},
 		}
 	case tlsCert != "" || tlsKey != "" || rootCa != "":
-		return &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-				SslFiles: &v1.SSLFiles{
+		return &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+				SslFiles: &ssl.SSLFiles{
 					TlsCert: tlsCert,
 					TlsKey:  tlsKey,
 					RootCa:  rootCa,

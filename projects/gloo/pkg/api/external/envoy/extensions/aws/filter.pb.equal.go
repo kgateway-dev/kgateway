@@ -82,6 +82,16 @@ func (m *AWSLambdaPerRoute) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetRequestTransformerConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetRequestTransformerConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetRequestTransformerConfig(), target.GetRequestTransformerConfig()) {
+			return false
+		}
+	}
+
 	return true
 }
 

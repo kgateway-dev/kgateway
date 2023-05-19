@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/5462
+    description: >
+      Added a flag to glooctl check (--read-only) that prevents it from doing any port forwarding and checking of
+      resulting resources.

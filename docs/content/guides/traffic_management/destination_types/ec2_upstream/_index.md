@@ -59,44 +59,50 @@ The steps below will take you through the process of using the EC2 plugin to cre
 
 ## Prepare sample resources in AWS
 
-*Note, if you already have an EC2 instance you would like to route to and the necessary credentials configured, you can skip to the next section.*
+To route to an AWS EC2 instance, you must create an EC2 instance with a sample app and provide Gloo Edge with the appropriate AWS credentials to access the EC2 instance.
 
-#### Configure an EC2 instance
+{{% notice note %}}If you already have an EC2 instance you would like to route to and the necessary credentials configured, you can skip to the next section, [Create an EC2 Upstream](#create-an-ec2-upstream).{{% /notice %}}
 
-- Provision an EC2 instance
-  - Use an "amazon linux" image
-  - Configure the security group to allow http traffic on port 80
+### Configure an EC2 instance
 
-- Tag your instance with the following tags
-  - gloo-id: abcde123
-  - gloo-tag: group1
-  - version: v1.2.3
+Create an EC2 instance with a demo app.
 
-- Set up your EC2 instance
-  - Download a demo app: an http response code echo app
-    - This app responds to requests with the corresponding response code
-      - ex: http://[my-instance-ip]/?code=404 produces a `404` response
-  - Make the app executable
-  - Run it in the background
+1. Provision an EC2 instance
+   - Use an `amazon linux` image
+   - Configure the security group to allow http traffic on port 80.
 
-```bash
-wget https://mitch-solo-public.s3.amazonaws.com/echoapp2
-chmod +x echoapp2
-sudo ./echoapp2 --port 80 &
-```
+2. Tag your instance with the following tags
+   - `gloo-id: abcde123`
+   - `gloo-tag: group1`
+   - `version: v1.2.3`
 
-- Verify that you can reach the app
-  - `curl` the app, you should see a help menu for the app
+3. Set up your EC2 instance
+   - Download a demo app: `an http response code echo app`.
+   - This app responds to requests with the corresponding response code. For example, `http://[my-instance-ip]/?code=404` produces a `404` response.
+   - Make the app executable.
+   - Run the app in the background.
 
-```bash
-curl http://<instance-public-ip>/
-```
+   ```bash
+   wget https://mitch-solo-public.s3.amazonaws.com/echoapp2
+   chmod +x echoapp2
+   sudo ./echoapp2 --port 80 &
+   ```
 
-### Create a secret with AWS credentials
+4. Verify that you can reach the app. For example, if you send a `curl` request to the app, you get back a help menu for the app.
 
-- Gloo Edge needs AWS credentials to be able to find EC2 resources
-- Recommendation: create a set of credentials that only have access to the relevant resources.
-  - In this example, the secret we create only has access to resources with the `gloo-tag:group1` tag.
+   ```bash
+   curl http://<ec2-instance-public-ip>/
+   ```
+
+5. Create AWS credentials for the EC2 instance that you provide to Gloo Edge. You can choose from the following options:
+   * [Create a secret with your AWS access and secret keys](#creds-secret). This option might be good for quick tests or staging environments. In production environments, however, you typically do not want to store these keys in a secret in the cluster. Instead, use an AWS role.
+   * [Create an AWS role with the appropriate permissions](#creds-role). When you deploy your AWS environment in production, you can assing an AWS role with the appropriate permissions so that Gloo Edge can securely route to your AWS instances.
+
+### Create a secret with AWS credentials {#creds-secret}
+
+Gloo Edge needs AWS credentials to be able to find EC2 resources. As such, you can create a set of credentials that only have access to the relevant resources.
+
+In this example, the secret you create only has access to resources with the `gloo-tag:group1` tag.
 
 ```bash
 glooctl create secret aws \
@@ -106,67 +112,55 @@ glooctl create secret aws \
   --secret-key [aws_secret_access_key]
 ```
 
-### Create a role for Gloo Edge to assume on behalf of your Upstreams
+### Create a role for Gloo Edge to assume on behalf of your Upstreams {#creds-role}
 
-- For additional control over Gloo Edge's access to your resources and as an additional filter on your EC2 Upstream's list of
-available instances it is recommended that you credential your Upstreams with a low-access user account that has the
-ability to assume the specific role it requires.
-- When you provide both a secret ref and a Role ARN to your Upstream, Gloo Edge will call the AWS API with credentials
-composed from the user account associated with the secret and the provided role (via the AssumeRole feature).
+For more fine-grained control over Gloo Edge's access to your resources and as an additional filter on your EC2 Upstream's list of available instances, create an AWS role for Gloo Edge. This way, the credentials that Gloo Edge uses for your Upstreams are associated with a low-access user account that assumes the specific role with only the specific permissions that Gloo Edge needs.
 
-#### Create a role
-- To configure your AWS account with the relevant ARN Role, there are two steps to take (if you have not already done so):
-  - Create a policy that allows the policy holder to describe EC2 instances
-  - Create a role that contains that policy and trusts (ie: grants role assumption to) the Upstream's account 
+When you provide a secret reference or an AWS Role ARN to your Upstream, Gloo Edge calls the AWS API with the credentials composed from the user account associated with the secret or the provided role (via the `AssumeRole` feature).
 
-1. First create a role. In the AWS console:
-  - Navigate to IAM > Roles, choose "Create Role"
-  - Follow the interactive guide to create a role
-    - Choose "AWS account" as the type of trusted entity and provide the 12 digit account id of the account which holds
-    the EC2 instances you want to route to.
-1. Choose or create a policy for the role
+To configure your AWS account with the relevant ARN Role:
+1. Create an AWS role. In the AWS console:
+   1. Navigate to **IAM > Roles**, choose **Create Role**.
+   2. Follow the interactive guide to create a role.
+   3. Choose **AWS account** as the type of trusted entity.
+   4. Enter the 12-digit account ID of the account that has the EC2 instances that you want to route to.
+2. Choose or create a policy for the role. Example of a **Policy** that allows the role to describe EC2 instances:
+   ```json
+   {
+       "Version": "2012-10-17",
+       "Statement": [
+           {
+               "Sid": "VisualEditor0",
+               "Effect": "Allow",
+               "Action": "ec2:DescribeInstances",
+               "Resource": "*"
+           }
+       ]
+   }
+   ```
+3. Grant the Upstream's account access to the role. In the AWS console:
+   1. From **IAM > Roles**, select the role that you just created.
+   2. Click the **Trust relationships** tab.
+   3. Note the entries under the **Trusted entities** table.
+   4. Click **Edit trust relationship**.
+   5. Add your user/service account's ARN to the `Principal.AWS` list, as shown in the following example. Add the ARNs of each of the user accounts that you want to allow to assume this role.
 
-Example of a **Policy** that allows the role to describe EC2 instances:
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "VisualEditor0",
-            "Effect": "Allow",
-            "Action": "ec2:DescribeInstances",
-            "Resource": "*"
-        }
-    ]
-}
-```
-
-#### Allow your Upstream's user account to list EC2 instances
-- Now grant the Upstream's account access to the role you created. In the AWS console:
-  - Navigate to IAM > Roles, Select your role
-  - Select the "Trust relationships" tab
-      - Note the entries under the "Trusted entities" table
-  - Click "Edit trust relationship"
-  - Add your user/service account's ARN to the Principal.AWS list, as shown below
-
-An example of **Trust Relationship** follows (many other variants are possible). Add the ARNs of each of the user accounts that you want to allow to assume this role.
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": [
-          "arn:aws:iam::[account_id]:user/[user_id]"
-        ]
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-```
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": {
+           "AWS": [
+             "arn:aws:iam::[account_id]:user/[user_id]"
+           ]
+         },
+         "Action": "sts:AssumeRole"
+       }
+     ]
+   }
+   ```
 
 ---
 

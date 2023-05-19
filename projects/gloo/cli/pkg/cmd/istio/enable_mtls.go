@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 )
 
 const (
@@ -54,14 +54,14 @@ func istioEnableMTLS(args []string, opts *options.Options) error {
 		return errors.Wrapf(err, "Error upstream already has an sslConfig set")
 	}
 
-	up.SslConfig = &gloov1.UpstreamSslConfig{
+	up.SslConfig = &ssl.UpstreamSslConfig{
 		AlpnProtocols: []string{"istio"},
-		SslSecrets: &gloov1.UpstreamSslConfig_Sds{
-			Sds: &gloov1.SDSConfig{
+		SslSecrets: &ssl.UpstreamSslConfig_Sds{
+			Sds: &ssl.SDSConfig{
 				CertificatesSecretName: istioCertSecret,
 				ValidationContextName:  istioValidationContext,
 				TargetUri:              sdsTargetURI,
-				SdsBuilder: &gloov1.SDSConfig_ClusterName{
+				SdsBuilder: &ssl.SDSConfig_ClusterName{
 					ClusterName: sdsClusterName,
 				},
 			},

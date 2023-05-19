@@ -4,10 +4,9 @@ import (
 	"sort"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	routerv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/router/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
@@ -21,7 +20,7 @@ import (
 )
 
 type NetworkFilterTranslator interface {
-	ComputeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter
+	ComputeNetworkFilters(params plugins.Params) ([]*envoy_config_listener_v3.Filter, error)
 }
 
 var _ NetworkFilterTranslator = new(httpNetworkFilterTranslator)
@@ -61,10 +60,10 @@ func NewHttpListenerNetworkFilterTranslator(
 	}
 }
 
-func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) []*envoy_config_listener_v3.Filter {
+func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) ([]*envoy_config_listener_v3.Filter, error) {
 	// return if listener has no virtual hosts
 	if len(n.listener.GetVirtualHosts()) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var networkFilters []plugins.StagedNetworkFilter
@@ -90,12 +89,16 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 	}
 
 	// add the http connection manager filter after all the InAuth Listener Filters
+	networkFilter, err := n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params)
+	if err != nil {
+		return nil, err
+	}
 	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
-		NetworkFilter: n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params),
+		NetworkFilter: networkFilter,
 		Stage:         plugins.AfterStage(plugins.AuthZStage),
 	})
 
-	return sortNetworkFilters(networkFilters)
+	return sortNetworkFilters(networkFilters), nil
 }
 
 func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
@@ -121,13 +124,14 @@ type hcmNetworkFilterTranslator struct {
 	routeConfigName string
 }
 
-func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params) *envoy_config_listener_v3.Filter {
+func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params) (*envoy_config_listener_v3.Filter, error) {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_http_connection_manager")
 
 	// 1. Initialize the HCM
 	httpConnectionManager := h.initializeHCM()
 
 	// 2. Apply HttpFilters
+	var err error
 	httpConnectionManager.HttpFilters = h.computeHttpFilters(params)
 
 	// 3. Allow any HCM plugins to make their changes, with respect to any changes the core plugin made
@@ -142,10 +146,11 @@ func (h *hcmNetworkFilterTranslator) ComputeNetworkFilter(params plugins.Params)
 	// 4. Generate the typedConfig for the HCM
 	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnectionManager)
 	if err != nil {
-		panic(errors.Wrapf(err, "failed to convert proto message to struct"))
+		contextutils.LoggerFrom(params.Ctx).DPanic("failed to convert proto message to struct")
+		return nil, errors.Wrapf(err, "failed to convert proto message to struct")
 	}
 
-	return hcmFilter
+	return hcmFilter, nil
 }
 
 func (h *hcmNetworkFilterTranslator) initializeHCM() *envoyhttp.HttpConnectionManager {
@@ -204,14 +209,23 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	// As outlined by the Envoy docs, the last configured filter has to be a terminal filter.
 	// We set the Router filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#config-http-filters-router)
 	// as the terminal filter in Gloo Edge.
-	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{
-		Name: wellknown.Router,
-		ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-			TypedConfig: &any.Any{
-				TypeUrl: "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router",
-			},
-		},
-	})
+	routerV3 := routerv3.Router{}
+
+	if h.listener.GetOptions().GetRouter().GetSuppressEnvoyHeaders().GetValue() {
+		routerV3.SuppressEnvoyHeaders = true
+	}
+
+	newStagedFilter, err := plugins.NewStagedFilter(
+		wellknown.Router,
+		&routerV3,
+		plugins.AfterStage(plugins.RouteStage),
+	)
+
+	if err != nil {
+		validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+	}
+
+	envoyHttpFilters = append(envoyHttpFilters, newStagedFilter.HttpFilter)
 
 	return envoyHttpFilters
 }

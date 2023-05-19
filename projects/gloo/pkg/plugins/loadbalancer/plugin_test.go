@@ -8,7 +8,7 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -86,7 +86,6 @@ var _ = Describe("Plugin", func() {
 			Expect(out.GetLeastRequestLbConfig().ChoiceCount.Value).To(BeEquivalentTo(5))
 		})
 		It("should set lb policy p2c with default config", func() {
-
 			upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 				Type: &v1.LoadBalancerConfig_LeastRequest_{
 					LeastRequest: &v1.LoadBalancerConfig_LeastRequest{},
@@ -98,9 +97,49 @@ var _ = Describe("Plugin", func() {
 			Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LEAST_REQUEST))
 			Expect(out.GetLeastRequestLbConfig()).To(BeNil())
 		})
+		It("should set lb policy p2c with full config", func() {
+			upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+				Type: &v1.LoadBalancerConfig_LeastRequest_{
+					LeastRequest: &v1.LoadBalancerConfig_LeastRequest{
+						ChoiceCount: 5,
+						SlowStartConfig: &v1.LoadBalancerConfig_SlowStartConfig{
+							SlowStartWindow:  prototime.DurationToProto(time.Minute),
+							Aggression:       &wrappers.DoubleValue{Value: 2},
+							MinWeightPercent: &wrappers.DoubleValue{Value: 20},
+						},
+					},
+				},
+			}
+
+			sampleUpstream := *upstream
+			sampleInputResource := v1.UpstreamList{&sampleUpstream}.AsInputResources()[0]
+			yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
+			Expect(err).NotTo(HaveOccurred())
+			// sample user config
+			sampleInputYaml := `apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  creationTimestamp: null
+spec:
+  loadBalancerConfig:
+    leastRequest:
+      choiceCount: 5
+      slowStartConfig:
+        aggression: 2
+        minWeightPercent: 20
+        slowStartWindow: 60s
+status: {}
+`
+			Expect(yamlForm).To(Equal(sampleInputYaml))
+
+			err = plugin.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_LEAST_REQUEST))
+			Expect(out.GetLeastRequestLbConfig()).NotTo(BeNil())
+		})
 	})
 
-	It("should set lb policy round robin", func() {
+	It("should set lb policy round robin - basic config", func() {
 		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_RoundRobin_{
 				RoundRobin: &v1.LoadBalancerConfig_RoundRobin{},
@@ -109,6 +148,46 @@ var _ = Describe("Plugin", func() {
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_ROUND_ROBIN))
+		Expect(out.GetRoundRobinLbConfig()).To(BeNil())
+	})
+
+	It("should set lb policy round robin - full config", func() {
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			Type: &v1.LoadBalancerConfig_RoundRobin_{
+				RoundRobin: &v1.LoadBalancerConfig_RoundRobin{
+					SlowStartConfig: &v1.LoadBalancerConfig_SlowStartConfig{
+						SlowStartWindow:  prototime.DurationToProto(time.Hour),
+						Aggression:       &wrappers.DoubleValue{Value: 2},
+						MinWeightPercent: &wrappers.DoubleValue{Value: 20},
+					},
+				},
+			},
+		}
+
+		sampleUpstream := *upstream
+		sampleInputResource := v1.UpstreamList{&sampleUpstream}.AsInputResources()[0]
+		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
+		Expect(err).NotTo(HaveOccurred())
+		// sample user config
+		sampleInputYaml := `apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  creationTimestamp: null
+spec:
+  loadBalancerConfig:
+    roundRobin:
+      slowStartConfig:
+        aggression: 2
+        minWeightPercent: 20
+        slowStartWindow: 3600s
+status: {}
+`
+		Expect(yamlForm).To(Equal(sampleInputYaml))
+
+		err = plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.LbPolicy).To(Equal(envoy_config_cluster_v3.Cluster_ROUND_ROBIN))
+		Expect(out.GetRoundRobinLbConfig()).NotTo(BeNil())
 	})
 
 	It("should set lb policy ring hash - basic config", func() {

@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4191
+    resolvesIssue: false
+    description: follow-up to prior nightlies PRs to update docs

@@ -387,7 +387,7 @@ RUN chmod +x $VERIFY_SCRIPT
 RUN $VERIFY_SCRIPT -pluginDir plugins -manifest plugins/plugin_manifest.yaml
 
 # This stage builds the final image containing just the plugin .so files. It can really be any linux/amd64 image.
-FROM alpine:3.10.1
+FROM alpine:3.17.3
 
 # Copy compiled plugin file from previous stage
 RUN mkdir /compiled-auth-plugins
@@ -569,7 +569,7 @@ type AuthorizationResponse struct {
 You can see that it wraps the Envoy [CheckResponse](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkresponse) 
 type. Gloo Edge conforms to the Envoy API semantics when merging headers in plugin chains. If you go to the linked Envoy docs 
 page and inspect the [OkHttpResponse](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-okhttpresponse) 
-object, you will see that it consists of just an array of [HeadersValueOption objects](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-headervalueoption).
+object, you will see that it consists of just an array of [HeadersValueOption objects](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/base.proto#envoy-api-msg-core-headervalueoption).
 A `HeadersValueOption` associates a header value with an `Append` flag. The flag determines whether the header will 
 overridden or appended to the one in the request.
 

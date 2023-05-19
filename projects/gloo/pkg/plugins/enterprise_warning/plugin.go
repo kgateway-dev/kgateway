@@ -155,9 +155,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	return nil, GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
-//
 // advanced_http
-//
 func isAdvancedHttpConfiguredOnUpstream(in *v1.Upstream) bool {
 	for _, host := range in.GetStatic().GetHosts() {
 		if host.GetHealthCheckConfig().GetPath() != "" {
@@ -177,30 +175,22 @@ func isAdvancedHttpConfiguredOnUpstream(in *v1.Upstream) bool {
 	return false
 }
 
-//
 // caching
-//
 func isCachingConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetCaching() != nil
 }
 
-//
 // dlp
-//
 func isDlpConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetDlp() != nil
 }
 
-//
 // failover
-//
 func isFailoverConfiguredOnUpstream(in *v1.Upstream) bool {
 	return in.GetFailover() != nil
 }
 
-//
 // jwt
-//
 func isJwtConfiguredOnVirtualHost(in *v1.VirtualHost) bool {
 	return in.GetOptions().GetJwtConfig() != nil
 }
@@ -209,23 +199,17 @@ func isJwtConfiguredOnRoute(in *v1.Route) bool {
 	return in.GetOptions().GetJwtConfig() != nil
 }
 
-//
 // leftmost_xff_address
-//
 func isLeftmostXffAddressConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetLeftmostXffAddress() != nil
 }
 
-//
 // proxy_latency
-//
 func isProxyLatencyConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetProxyLatency() != nil
 }
 
-//
 // rbac
-//
 func isRbacConfiguredOnVirtualHost(in *v1.VirtualHost) bool {
 	return in.GetOptions().GetRbac() != nil
 }
@@ -234,16 +218,12 @@ func isRbacConfiguredOnRoute(in *v1.Route) bool {
 	return in.GetOptions().GetRbac() != nil
 }
 
-//
 // sanitize_cluster_header
-//
 func isSanitizeClusterHeaderConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetSanitizeClusterHeader() != nil
 }
 
-//
 // waf
-//
 func isWafConfiguredOnVirtualHost(in *v1.VirtualHost) bool {
 	return in.GetOptions().GetWaf() != nil
 }
@@ -256,16 +236,12 @@ func isWafConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetWaf() != nil
 }
 
-//
 // wasm
-//
 func isWasmConfiguredOnListener(in *v1.HttpListener) bool {
 	return in.GetOptions().GetWasm() != nil
 }
 
-//
 // aws
-//
 func isEnterpriseAWSConfiguredOnRoute(in *v1.Route) bool {
 	var awsDestinationSpecs []*aws.DestinationSpec
 
@@ -280,7 +256,7 @@ func isEnterpriseAWSConfiguredOnRoute(in *v1.Route) bool {
 	}
 
 	for _, awsDestinationSpec := range awsDestinationSpecs {
-		if awsDestinationSpec.GetUnwrapAsApiGateway() {
+		if awsDestinationSpec.GetWrapAsApiGateway() {
 			// this is an enterprise only feature
 			return true
 		}

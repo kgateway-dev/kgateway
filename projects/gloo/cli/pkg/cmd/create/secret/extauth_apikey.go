@@ -133,7 +133,7 @@ func createApiKeySecret(ctx context.Context, meta *core.Metadata, input apiKeySe
 	secret := &gloov1.Secret{
 		Metadata: meta,
 		Kind: &gloov1.Secret_ApiKey{
-			ApiKey: &v1.ApiKeySecret{
+			ApiKey: &v1.ApiKey{
 				ApiKey: input.ApiKey,
 			},
 		},

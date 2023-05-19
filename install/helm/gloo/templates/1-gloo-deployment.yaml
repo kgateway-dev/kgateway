@@ -42,7 +42,10 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- include "gloo.pullSecret" $image | nindent 6 -}}
+{{ with .Values.gloo.deployment.podSecurityContext }}
+{{- include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 6 -}}
+{{- end }}
+{{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
       {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
       volumes:
@@ -77,11 +80,11 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
-        securityContext:
-          runAsNonRoot: true
-          {{- if not .Values.gloo.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
-          {{- end }}
+        {{- $securityDefaults := dict "runAsNonRoot" true }}
+        {{- if not .Values.gloo.deployment.floatingUserId }}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
+        {{- end }}
+{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults) | indent 8 }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -97,11 +100,12 @@ spec:
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
-          tcpSocket:
-            port: {{ .Values.gloo.deployment.xdsPort }}
+          httpGet:
+            path: /healthz
+            port: 8765
           initialDelaySeconds: 3
           periodSeconds: 10
-          failureThreshold: 10
+          failureThreshold: 3
 {{- end}}
         volumeMounts:
         - mountPath: /etc/envoy
@@ -119,11 +123,11 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
-        securityContext:
-          runAsNonRoot: true
-          {{- if not .Values.gloo.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
-          {{- end }}
+        {{- $securityDefaults := dict "runAsNonRoot" true }}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
+        {{- end -}}
+{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults) | nindent 8 }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -155,19 +159,16 @@ spec:
             cpu: 500m
             memory: 256Mi
 {{- end}}
-        securityContext:
-          readOnlyRootFilesystem: true
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
-          {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
-          {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
-          {{- if not .Values.gloo.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser) -}}
-          {{- end }}
-          capabilities:
-            drop:
-            - ALL
+        {{- $capabilities := dict "drop" (list "ALL") -}}
+        {{- $securityDefaults := dict "runAsNonRoot" true "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- /* set floatingUserId to true in the helm install to let the pod be assigned a dynamic user ID */ -}}
+        {{- /* see https://github.com/helm/helm/issues/1707#issuecomment-520357573 */ -}}
+        {{- /* the user id may be set quite high -- openshift wants userids that may get printed as scientific notation */}}
+        {{- /* If you specify your own securityContext, floatingUserId will have no effect  */}}
+        {{- if not .Values.gloo.deployment.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
+        {{- end -}}
+        {{- include "gloo.securityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
@@ -189,6 +190,11 @@ spec:
         {{- if and $statsConfig.enabled $statsConfig.podMonitorEnabled }}
         - name: http-monitoring
           containerPort: 9091
+        {{- end }}
+        {{- if .Values.settings.devMode }}
+        - containerPort: 10010
+          name: dev-admin
+          protocol: TCP
         {{- end }}
         volumeMounts:
         {{- if and .Values.gateway.validation.enabled .Values.gateway.enabled }}
@@ -233,6 +239,10 @@ spec:
           - name: ENABLE_ISTIO_INTEGRATION
             value: "true"
         {{- end}}
+        {{- if .Values.gloo.disableLeaderElection }}
+          - name: DISABLE_LEADER_ELECTION
+            value: "true"
+        {{- end}}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
@@ -242,8 +252,9 @@ spec:
           failureThreshold: 3
 {{- if .Values.gloo.deployment.livenessProbeEnabled }}
         livenessProbe:
-          tcpSocket:
-            port: {{ .Values.gloo.deployment.xdsPort }}
+          httpGet:
+            path: /healthz
+            port: 8765
           initialDelaySeconds: 3
           periodSeconds: 10
           failureThreshold: 3

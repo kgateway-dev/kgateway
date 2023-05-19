@@ -1,209 +1,105 @@
 package e2e_test
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/testutils"
 
+	"github.com/solo-io/gloo/test/gomega/matchers"
+
+	"github.com/solo-io/gloo/test/e2e"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
 var _ = Describe("Fault Injection", func() {
 
 	var (
-		testClients services.TestClients
-		ctx         context.Context
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		ctx, _ = context.WithCancel(context.Background())
-		t := services.RunGateway(ctx, true)
-		testClients = t
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
-	Context("with envoy", func() {
+	AfterEach(func() {
+		testContext.AfterEach()
+	})
 
-		var (
-			envoyInstance *services.EnvoyInstance
-			up            *gloov1.Upstream
-			opts          clients.WriteOpts
-		)
+	JustBeforeEach(func() {
+		testContext.JustBeforeEach()
+	})
 
-		setupProxy := func(proxy *gloov1.Proxy, up *gloov1.Upstream) error {
-			proxyCli := testClients.ProxyClient
-			_, err := proxyCli.Write(proxy, opts)
-			return err
-		}
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
+	})
 
-		envoyPort := services.NextBindPort()
+	Context("Envoy Abort Fault", func() {
 
-		setupInitialProxy := func() {
-			proxy := getGlooProxyWithVersion(nil, nil, envoyPort, up, "")
-			err := setupProxy(proxy, up)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(func() error {
-				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
-				if err != nil {
-					return err
+		It("works", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+					Faults: &fault.RouteFaults{
+						Abort: &fault.RouteAbort{
+							HttpStatus: uint32(503),
+							Percentage: float32(100),
+						},
+					},
 				}
-				return nil
-			}, "20s", ".1s").Should(BeNil())
-		}
+				return vs
+			})
 
-		setupUpstream := func() {
-			tu := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-			// drain channel as we dont care about it
-			go func() {
-				for range tu.C {
-				}
-			}()
-			var opts clients.WriteOpts
-			up = tu.Upstream
-			_, err := testClients.UpstreamClient.Write(up, opts)
-			Expect(err).NotTo(HaveOccurred())
-		}
-
-		BeforeEach(func() {
-			var err error
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
-
-			err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
-			Expect(err).NotTo(HaveOccurred())
-
-			setupUpstream()
-			setupInitialProxy()
+			requestBuilder := testContext.GetHttpRequestBuilder()
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusServiceUnavailable,
+					Body:       "fault filter abort",
+				}))
+			}, "5s", ".5s").Should(Succeed())
 		})
+	})
 
-		AfterEach(func() {
-			if envoyInstance != nil {
-				envoyInstance.Clean()
-			}
-		})
+	Context("Envoy Delay Fault", func() {
 
-		It("should cause envoy abort fault", func() {
-			abort := &fault.RouteAbort{
-				HttpStatus: uint32(503),
-				Percentage: float32(100),
-			}
-
-			Eventually(func() error {
-				proxy, err := getGlooProxy(testClients, abort, nil, envoyPort, up)
-				if err != nil {
-					return err
+		It("works", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+					Faults: &fault.RouteFaults{
+						Delay: &fault.RouteDelay{
+							FixedDelay: prototime.DurationToProto(time.Second * 3),
+							Percentage: float32(100),
+						},
+					},
 				}
-				opts.OverwriteExisting = true
-				return setupProxy(proxy, up)
-			}, "20s", ".1s").Should(BeNil())
+				return vs
+			})
 
-			Eventually(func() error {
-				res, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
-				if err != nil {
-					return err
-				}
-				if res.StatusCode != http.StatusServiceUnavailable {
-					return errors.New(fmt.Sprintf("%v is not ServiceUnavailable", res.StatusCode))
-				}
-				return nil
-			}, "20s", ".1s").Should(BeNil())
-		})
-
-		It("should cause envoy delay fault", func() {
-			fixedDelay := prototime.DurationToProto(time.Second * 3)
-			delay := &fault.RouteDelay{
-				FixedDelay: fixedDelay,
-				Percentage: float32(100),
-			}
-
-			Eventually(func() error {
-				proxy, err := getGlooProxy(testClients, nil, delay, envoyPort, up)
-				if err != nil {
-					return err
-				}
-				opts.OverwriteExisting = true
-				return setupProxy(proxy, up)
-			}, "20s", ".1s").Should(BeNil())
-
-			Eventually(func() error {
+			// We need a client with a longer timeout than efault to allow for the fixed delay
+			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
+			requestBuilder := testContext.GetHttpRequestBuilder()
+			Eventually(func(g Gomega) {
 				start := time.Now()
-				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
-				if err != nil {
-					return err
-				}
+				response, err := httpClient.Do(requestBuilder.Build())
 				elapsed := time.Now().Sub(start)
+
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(response).Should(matchers.HaveOkResponse())
+
 				// This test regularly flakes, and the error is usually of the form:
 				// "Elapsed time 2.998280684s not longer than delay 3s"
 				// There's a small precision issue when communicating with Envoy, so including a small
 				// margin of error to eliminate the test flake.
 				marginOfError := 100 * time.Millisecond
-				if elapsed+marginOfError < (3 * time.Second) {
-					return errors.New(fmt.Sprintf("Elapsed time %s not longer than delay %s", elapsed.String(), fixedDelay.String()))
-				}
-				return nil
-			}, "20s", ".1s").Should(BeNil())
+				g.Expect(elapsed + marginOfError).To(BeNumerically(">", 3*time.Second))
+			}, "20s", ".1s").Should(Succeed())
 
 		})
 	})
 })
-
-func getGlooProxy(testClients services.TestClients, abort *fault.RouteAbort, delay *fault.RouteDelay, envoyPort uint32, up *gloov1.Upstream) (*gloov1.Proxy, error) {
-	readProxy, err := testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
-	if err != nil {
-		return nil, err
-	}
-	return getGlooProxyWithVersion(abort, delay, envoyPort, up, readProxy.Metadata.ResourceVersion), nil
-}
-
-func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, envoyPort uint32, up *gloov1.Upstream, resourceVersion string) *gloov1.Proxy {
-	return &gloov1.Proxy{
-		Metadata: &core.Metadata{
-			Name:            "proxy",
-			Namespace:       "default",
-			ResourceVersion: resourceVersion,
-		},
-		Listeners: []*gloov1.Listener{{
-			Name:        "listener",
-			BindAddress: "127.0.0.1",
-			BindPort:    envoyPort,
-			ListenerType: &gloov1.Listener_HttpListener{
-				HttpListener: &gloov1.HttpListener{
-					VirtualHosts: []*gloov1.VirtualHost{{
-						Name:    "virt1",
-						Domains: []string{"*"},
-						Routes: []*gloov1.Route{{
-							Action: &gloov1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: up.Metadata.Ref(),
-											},
-										},
-									},
-								},
-							},
-							Options: &gloov1.RouteOptions{
-								Faults: &fault.RouteFaults{
-									Abort: abort,
-									Delay: delay,
-								},
-							},
-						}},
-						Options: &gloov1.VirtualHostOptions{},
-					}},
-				},
-			},
-		}},
-	}
-}

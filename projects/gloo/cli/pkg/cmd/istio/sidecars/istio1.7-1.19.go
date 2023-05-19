@@ -134,7 +134,7 @@ func generateIstio17to119Sidecar(version, jwtPolicy string, istioMetaMeshID stri
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		ReadinessProbe: &corev1.Probe{
 			FailureThreshold: 30,
-			Handler: corev1.Handler{
+			ProbeHandler: corev1.ProbeHandler{
 				HTTPGet: &corev1.HTTPGetAction{
 					Path:   "/healthz/ready",
 					Port:   intstr.FromInt(15021),

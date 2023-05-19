@@ -2,13 +2,14 @@ package syncer
 
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
@@ -128,8 +129,9 @@ var _ = Describe("selectUpstreamsForDiscovery", func() {
 	})
 
 	Context("RunFDS", func() {
-		It("returns an error when both UDS and FDS are disabled", func() {
-			opts := bootstrap.Opts{
+		var opts bootstrap.Opts
+		BeforeEach(func() {
+			opts = bootstrap.Opts{
 				Settings: &gloov1.Settings{
 					Metadata: &core.Metadata{
 						Name:      "test-settings",
@@ -139,11 +141,25 @@ var _ = Describe("selectUpstreamsForDiscovery", func() {
 						UdsOptions: &gloov1.Settings_DiscoveryOptions_UdsOptions{
 							Enabled: &wrappers.BoolValue{Value: false},
 						},
-						FdsMode: gloov1.Settings_DiscoveryOptions_DISABLED,
 					},
 				},
 			}
+		})
+		It("returns an error when both UDS and FDS are disabled", func() {
+			opts.Settings.GetDiscovery().FdsMode = gloov1.Settings_DiscoveryOptions_DISABLED
 			Expect(RunFDS(opts)).To(HaveOccurred())
+		})
+		It("excludes nil discovery factories from the array", func() {
+			discoveryFactoryFunc := func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory {
+				return nil
+			}
+			discoveryFactorySliceFunc := func(opts bootstrap.Opts) []fds.FunctionDiscoveryFactory {
+				return nil
+			}
+			Expect(GetFunctionDiscoveriesWithExtensionsAndRegistry(opts, discoveryFactorySliceFunc, Extensions{
+				DiscoveryFactoryFuncs: []func(opts bootstrap.Opts) fds.FunctionDiscoveryFactory{discoveryFactoryFunc},
+			})).To(HaveLen(0))
+
 		})
 	})
 })

@@ -70,7 +70,8 @@ static_resources:
                 port_value: 9977
     http2_protocol_options: {}
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
     type: STRICT_DNS
     respect_dns_ttl: true
   - name: rest_xds_cluster
@@ -86,7 +87,8 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9976
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
     type: STRICT_DNS
     respect_dns_ttl: true
   - name: wasm-cache
@@ -101,7 +103,8 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9979
     upstream_connection_options:
-      tcp_keepalive: {}
+      tcp_keepalive:
+        keepalive_time: 60
     type: STRICT_DNS
     respect_dns_ttl: true
   - name: admin_port_cluster

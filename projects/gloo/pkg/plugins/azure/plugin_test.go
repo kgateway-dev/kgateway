@@ -10,11 +10,12 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	azureplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -150,9 +151,9 @@ var _ = Describe("Plugin", func() {
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
-							SslParameters: &v1.SslParameters{
-								MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
-								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							SslParameters: &ssl.SslParameters{
+								MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+								MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
 							},
@@ -181,14 +182,14 @@ var _ = Describe("Plugin", func() {
 
 			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
 
-				var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+				var invalidProtocolVersion ssl.SslParameters_ProtocolVersion = 5 // INVALID
 
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
-							SslParameters: &v1.SslParameters{
+							SslParameters: &ssl.SslParameters{
 								MinimumProtocolVersion: invalidProtocolVersion,
-								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
 							},

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -22,6 +21,7 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -79,13 +79,13 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = consulInstance.Run()
+		err = consulInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start Vault
 		vaultInstance, err = vaultFactory.NewVaultInstance()
 		Expect(err).NotTo(HaveOccurred())
-		err = vaultInstance.Run()
+		err = vaultInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInstance.EnableSecretEngine(customSecretEngine)
 		Expect(err).NotTo(HaveOccurred())
@@ -93,7 +93,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
 
 		// write settings telling Gloo to use consul/vault
-		settingsDir, err = ioutil.TempDir("", "")
+		settingsDir, err = os.MkdirTemp("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, proxyDebugPort, writeNamespace, vaultSecretSource)
@@ -124,8 +124,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 		go func() {
 			defer GinkgoRecover()
+
 			// Start Gloo
-			err = setup.StartGlooInTest(ctx)
+			err = setup.Main(ctx)
 			Expect(err).NotTo(HaveOccurred())
 		}()
 		go func() {
@@ -170,14 +171,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	})
 
 	AfterEach(func() {
-		if consulInstance != nil {
-			err = consulInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
-		if vaultInstance != nil {
-			err = vaultInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
 		envoyInstance.Clean()
 
 		os.RemoveAll(settingsDir)
@@ -282,8 +275,8 @@ func makeSslVirtualService(vsNamespace string, secret *core.ResourceRef) *v1.Vir
 				},
 			}},
 		},
-		SslConfig: &gloov1.SslConfig{
-			SslSecrets: &gloov1.SslConfig_SecretRef{
+		SslConfig: &ssl.SslConfig{
+			SslSecrets: &ssl.SslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{
 					Name:      secret.Name,
 					Namespace: secret.Namespace,
@@ -382,5 +375,5 @@ func writeSettings(
 	if err := os.MkdirAll(filepath.Join(settingsDir, "artifacts", "default"), 0755); err != nil {
 		return nil, err
 	}
-	return settings, ioutil.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
+	return settings, os.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
 }

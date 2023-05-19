@@ -63,6 +63,8 @@ spec:
                                       type: object
                                     spanName:
                                       type: string
+                                    timeout:
+                                      type: string
                                     upstreamRef:
                                       properties:
                                         name:
@@ -110,6 +112,8 @@ spec:
                                           type: object
                                       type: object
                                     spanName:
+                                      type: string
+                                    timeout:
                                       type: string
                                     upstreamRef:
                                       properties:
@@ -218,6 +222,12 @@ spec:
                 type: object
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object

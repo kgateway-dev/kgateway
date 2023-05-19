@@ -2,10 +2,11 @@ package consul
 
 import (
 	"github.com/golang/protobuf/proto"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulPkg "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/test/matchers"
@@ -69,8 +70,8 @@ var _ = Describe("Conversions", func() {
 				Name:      UpstreamNamePrefix + "svc-1-tls",
 				Namespace: defaults.GlooSystem,
 			},
-			SslConfig: &v1.UpstreamSslConfig{
-				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+			SslConfig: &ssl.UpstreamSslConfig{
+				SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "rootName",
 						Namespace: "rootNs",
@@ -122,8 +123,8 @@ var _ = Describe("Conversions", func() {
 					Name:      UpstreamNamePrefix + "svc-1-tls",
 					Namespace: defaults.GlooSystem,
 				},
-				SslConfig: &v1.UpstreamSslConfig{
-					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+				SslConfig: &ssl.UpstreamSslConfig{
+					SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
 							Name:      "rootName",
 							Namespace: "rootNs",

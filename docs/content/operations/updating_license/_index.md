@@ -14,48 +14,13 @@ When you first install Gloo Edge in your cluster, confirm the license key expira
 
 ## Confirm that your license expired
 
-Whether you're a prospective user using a trial license or a full Gloo Edge subscriber, this license can expire. When it does, you may see certain Gloo Edge pods start to display errors that are new to you.
+Whether you're a prospective user using a trial license or a full Gloo Edge subscriber, this license can expire. When it does, you may see warnings on your Gloo Edge deployments that are new to you.
 
-For example, from the following [k9s](https://k9scli.io/) display, you can see that certain `gloo-system` pods fall into a `CrashLoopBackoff` state.
-
-![k9s Display with Expired License]({{% versioned_link_path fromRoot="/img/k9s-license-expired.png" %}})
-
-Next, you can use `glooctl check` to confirm that the deployments have errors.
-
-```bash
-% glooctl check
-Checking deployments... 3 Errors!
-Checking pods... 6 Errors!
-Checking upstreams... OK
-Checking upstream groups... OK
-Checking auth configs... OK
-Checking rate limit configs... OK
-Checking VirtualHostOptions... OK
-Checking RouteOptions... OK
-Checking secrets... OK
-Checking virtual services... OK
-Checking gateways... OK
-Checking proxies... Skipping due to an error in checking deployments
-Skipping due to an error in checking deployments
-Error: 11 errors occurred:
-	* Deployment gloo-fed in namespace gloo-system is not available! Message: Deployment does not have minimum availability.
-	* Deployment gloo-fed-console in namespace gloo-system is not available! Message: Deployment does not have minimum availability.
-	* Deployment observability in namespace gloo-system is not available! Message: Deployment does not have minimum availability.
-	* Pod gloo-fed-6f58b97cb6-5qktr in namespace gloo-system is not ready! Message: containers with unready status: [gloo-fed]
-	* Not all containers in pod gloo-fed-6f58b97cb6-5qktr in namespace gloo-system are ready! Message: containers with unready status: [gloo-fed]
-	* Pod gloo-fed-console-845767f58-tvl4k in namespace gloo-system is not ready! Message: containers with unready status: [apiserver]
-	* Not all containers in pod gloo-fed-console-845767f58-tvl4k in namespace gloo-system are ready! Message: containers with unready status: [apiserver]
-	* Pod observability-958575cf6-fkhsw in namespace gloo-system is not ready! Message: containers with unready status: [observability]
-	* Not all containers in pod observability-958575cf6-fkhsw in namespace gloo-system are ready! Message: containers with unready status: [observability]
-	* proxy check was skipped due to an error in checking deployments
-* xds metrics check was skipped due to an error in checking deployments
-```
-
-Finally, to get a more precise diagnosis, look at the logs for the failing `observability` deployment.
+For example, when your license expires, you may see the following logs on the `observability` deployment:
 
 ```bash
 % kubectl logs deploy/observability -n gloo-system
-{"level":"fatal","ts":1628879186.1552186,"logger":"observability","caller":"cmd/main.go:24","msg":"License is invalid or expired, crashing - license expired","version":"1.8.0","stacktrace":"main.main\n\t/workspace/solo-projects/projects/observability/cmd/main.go:24\nruntime.main\n\t/usr/local/go/src/runtime/proc.go:225"}
+{"level":"warn","ts":"2023-03-23T18:36:16.282Z","caller":"setup/setup.go:85","msg":"LICENSE WARNING: License expired, please contact support to renew."}
 ```
 
 You can confirm that the license key is expired by copying and pasting your current license key into the [jwt.io debugger](http://jwt.io). Note that the date indicated by the `exp` header is in the past.
@@ -70,21 +35,18 @@ The Gloo Edge Enterprise license is installed by default into a Kubernetes `Secr
 
 1. Save the new license key in an environment variable.
    ```bash
-   export GLOO_KEY=<your-new-enterprise-key-string>
+   export GLOO_LICENSE_KEY=<your-new-enterprise-key-string>
    ```
 
-2. Encode the license key in base64.
+2. Update the `license` secret with the new key.
    ```sh
-   export GLOO_KEY_BASE64=$(echo $GLOO_KEY | base64 -w 0)
-   echo $GLOO_KEY_BASE64
+   kubectl create secret generic --save-config -n gloo-system license --from-literal=license-key=$GLOO_LICENSE_KEY --dry-run=client -o yaml | kubectl apply -f - 
    ```
 
-3. Patch the `license` secret with the base64-encoded key.
-   ```sh
-   kubectl patch secret license -n gloo-system -p="{\"data\":{\"license-key\": \"$GLOO_KEY_BASE64\"}}" -v=1
+3. Restart the Gloo deployment to pick up the license secret changes.
+   ```bash
+   kubectl -n gloo-system rollout restart deploy/gloo
    ```
-
-If successful, this script should respond with: `secret/license patched`.
 
 ## Verify the New License
 
@@ -105,3 +67,14 @@ Taking a fresh look at the k9s console shows us that all three of the failing po
 ![k9s Display with Refreshed License]({{% versioned_link_path fromRoot="/img/k9s-license-refreshed.png" %}})
 
 Congratulations! You have successfully replaced your Gloo Edge Enterprise license key.
+
+## Updating legacy-formatted licenses
+
+The internal format of licenses has been recently updated. If your license was created prior to this change, you might see warnings about the deprecated license format similar to the following:
+
+```bash
+% kubectl logs deploy/observability -n gloo-system
+{"level":"warn","ts":"2023-03-23T18:56:48.554Z","logger":"observability","caller":"client/client.go:195","msg":"Your gloo license graphql addon is outdated. Please contact support to update your license.","version":"1.14.0-beta10"}
+```
+
+Gloo Edge still functions correctly, as both the new and deprecated license formats are accepted. If you want to remove the warning in the logs, you can contact support to get a new license key.

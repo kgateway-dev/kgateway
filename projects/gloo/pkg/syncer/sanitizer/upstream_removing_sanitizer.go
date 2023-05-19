@@ -22,7 +22,10 @@ var (
 	_ XdsSanitizer = new(UpstreamRemovingSanitizer)
 )
 
-type UpstreamRemovingSanitizer struct{}
+type UpstreamRemovingSanitizer struct {
+	// note to devs: this can be called in parallel by the validation webhook and main translation loops at the same time
+	// any stateful fields should be protected by a mutex
+}
 
 func NewUpstreamRemovingSanitizer() *UpstreamRemovingSanitizer {
 	return &UpstreamRemovingSanitizer{}
@@ -31,7 +34,6 @@ func NewUpstreamRemovingSanitizer() *UpstreamRemovingSanitizer {
 // If there are any errors on upstreams, this function tries to remove the correspondent clusters and endpoints from
 // the xDS snapshot. If the snapshot is still consistent after these mutations and there are no errors related to other
 // resources, we are good to send it to Envoy.
-//
 func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 	ctx context.Context,
 	glooSnapshot *v1snap.ApiSnapshot,

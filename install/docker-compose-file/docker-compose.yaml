@@ -1,9 +1,8 @@
 version: '3'
 
 services:
-
   gloo:
-    image: ${GLOO_REPO:-quay.io/solo-io}/gloo:${GLOO_VERSION:-1.10.0}
+    image: ${GLOO_REPO:-quay.io/solo-io}/gloo:${GLOO_VERSION:-1.14.0-beta1}
     working_dir: /
     command:
     - "--dir=/data/"
@@ -11,10 +10,11 @@ services:
     - ./data:/data/
     ports:
     - "9977:9977"
+    - "10010:10010" # port exposed by `settings.devMode=true`
     restart: always
 
   gateway-proxy:
-    image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.10.0}
+    image: ${GLOO_REPO:-quay.io/solo-io}/gloo-envoy-wrapper:${GLOO_VERSION:-1.14.0-beta1}
     entrypoint: ["envoy"]
     command: ["-c", "/config/envoy.yaml", "--disable-hot-restart"]
     volumes:

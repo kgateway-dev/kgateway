@@ -1,0 +1,11 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: solo-kit
+  dependencyTag: v0.30.4
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7169
+  resolvesIssue: false
+  description: >-
+    Optimizes rate-limit hash calculation. This can help speed-up start-up time when there are many rate limit configurations.
+    Part of https://github.com/solo-io/gloo/issues/7169.

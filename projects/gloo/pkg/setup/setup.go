@@ -18,10 +18,6 @@ func Main(customCtx context.Context) error {
 	return startSetupLoop(customCtx)
 }
 
-func StartGlooInTest(customCtx context.Context) error {
-	return startSetupLoop(customCtx)
-}
-
 func startSetupLoop(ctx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
 		LoggerName:  "gloo",
@@ -45,6 +41,8 @@ func startSetupLoop(ctx context.Context) error {
 			OnStoppedLeading: func() {
 				// Kill app if we lose leadership, we need to be VERY sure we don't continue
 				// any leader election processes.
+				// https://github.com/solo-io/gloo/issues/7346
+				// There is follow-up work to handle lost leadership more gracefully
 				contextutils.LoggerFrom(ctx).Fatalf("lost leadership, quitting app")
 			},
 		},

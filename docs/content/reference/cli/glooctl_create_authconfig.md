@@ -25,6 +25,8 @@ glooctl create authconfig [flags]
       --enable-oidc-auth                            enable oidc auth features for this virtual service
       --enable-opa-auth                             enable opa auth features for this virtual service
   -h, --help                                        help for authconfig
+      --name string                                 name of the resource to read or write
+  -n, --namespace string                            namespace for reading or writing resources (default "gloo-system")
       --oidc-auth-app-url string                    the public url of your app
       --oidc-auth-callback-path string              the callback path. relative to the app url. (default "/oidc-gloo-callback")
       --oidc-auth-client-id string                  client id as registered with id provider
@@ -48,9 +50,8 @@ glooctl create authconfig [flags]
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
       --dry-run                    print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
-      --name string                name of the resource to read or write
-  -n, --namespace string           namespace for reading or writing resources (default "gloo-system")
   -o, --output OutputType          output format: (yaml, json, table, kube-yaml, wide) (default table)
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
 ```

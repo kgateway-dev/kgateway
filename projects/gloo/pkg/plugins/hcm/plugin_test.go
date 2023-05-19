@@ -4,17 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol"
@@ -77,6 +78,7 @@ var _ = Describe("Plugin", func() {
 			DrainTimeout:          prototime.DurationToProto(time.Hour),
 			DelayedCloseTimeout:   prototime.DurationToProto(time.Hour),
 			ServerName:            &wrappers.StringValue{Value: "ServerName"},
+			NormalizePath:         &wrapperspb.BoolValue{Value: false},
 
 			AcceptHttp_10: &wrappers.BoolValue{Value: true},
 			HeaderFormat: &hcm.HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat{
@@ -262,6 +264,17 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
 	})
 
+	Context("Default Values", func() {
+		It("should contain the default value for NormalizePath", func() {
+			T := &wrapperspb.BoolValue{Value: true}
+			settings = &hcm.HttpConnectionManagerSettings{}
+			cfg := &envoyhttp.HttpConnectionManager{}
+			err := processHcmNetworkFilter(cfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.NormalizePath).To(Equal(T))
+		})
+	})
+
 	Context("Http2 passed", func() {
 		//validation uses the same shared code so no need to validate large and small for all fields
 		It(" should not accept connection streams that are too small", func() {
@@ -359,7 +372,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(BeNil())
 			defer expectedFieldsJsonFile.Close()
 
-			expectedFieldsJsonByteValue, err := ioutil.ReadAll(expectedFieldsJsonFile)
+			expectedFieldsJsonByteValue, err := io.ReadAll(expectedFieldsJsonFile)
 			Expect(err).To(BeNil())
 
 			var expectedFields []string

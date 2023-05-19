@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7148
+    resolvesIssue: false
+    description: >-
+      Ensure that any actions taken by a leader are executed after election changes.
+      Previously, any status updates that took place during an election, would not be reflected on resources
+      until another change took place after a leader was elected.

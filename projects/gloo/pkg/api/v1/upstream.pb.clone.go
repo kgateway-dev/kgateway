@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_duration "github.com/golang/protobuf/ptypes/duration"
+
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_api_v2_cluster "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
@@ -32,6 +34,8 @@ import (
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_pipe "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/pipe"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -74,9 +78,9 @@ func (m *Upstream) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetSslConfig()).(clone.Cloner); ok {
-		target.SslConfig = h.Clone().(*UpstreamSslConfig)
+		target.SslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
 	} else {
-		target.SslConfig = proto.Clone(m.GetSslConfig()).(*UpstreamSslConfig)
+		target.SslConfig = proto.Clone(m.GetSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
 	}
 
 	if h, ok := interface{}(m.GetCircuitBreakers()).(clone.Cloner); ok {
@@ -161,9 +165,9 @@ func (m *Upstream) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetHttpConnectSslConfig()).(clone.Cloner); ok {
-		target.HttpConnectSslConfig = h.Clone().(*UpstreamSslConfig)
+		target.HttpConnectSslConfig = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
 	} else {
-		target.HttpConnectSslConfig = proto.Clone(m.GetHttpConnectSslConfig()).(*UpstreamSslConfig)
+		target.HttpConnectSslConfig = proto.Clone(m.GetHttpConnectSslConfig()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.UpstreamSslConfig)
 	}
 
 	if m.GetHttpConnectHeaders() != nil {
@@ -183,6 +187,24 @@ func (m *Upstream) Clone() proto.Message {
 		target.IgnoreHealthOnHostRemoval = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.IgnoreHealthOnHostRemoval = proto.Clone(m.GetIgnoreHealthOnHostRemoval()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetRespectDnsTtl()).(clone.Cloner); ok {
+		target.RespectDnsTtl = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.RespectDnsTtl = proto.Clone(m.GetRespectDnsTtl()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetDnsRefreshRate()).(clone.Cloner); ok {
+		target.DnsRefreshRate = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.DnsRefreshRate = proto.Clone(m.GetDnsRefreshRate()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetProxyProtocolVersion()).(clone.Cloner); ok {
+		target.ProxyProtocolVersion = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.ProxyProtocolVersion = proto.Clone(m.GetProxyProtocolVersion()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	}
 
 	switch m.UpstreamType.(type) {

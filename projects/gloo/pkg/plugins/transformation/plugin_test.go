@@ -5,7 +5,7 @@ import (
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/any"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
@@ -23,15 +23,26 @@ import (
 
 var _ = Describe("Plugin", func() {
 	var (
+		ctx             context.Context
+		cancel          context.CancelFunc
 		p               plugins.Plugin
 		expected        *any.Any
 		outputTransform *envoytransformation.RouteTransformations
 	)
 
+	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+	})
+
+	AfterEach(func() {
+		cancel()
+	})
+
 	Context("translate transformations", func() {
+
 		BeforeEach(func() {
 			p = NewPlugin()
-			p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+			p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 		})
 
 		It("translates header body transform", func() {
@@ -106,7 +117,7 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+			p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 
 			inputTransform = &transformation.Transformations{
 				ClearRouteCache: true,
@@ -130,7 +141,13 @@ var _ = Describe("Plugin", func() {
 
 		It("sets transformation config for weighted destinations", func() {
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{
+				VirtualHostParams: plugins.VirtualHostParams{
+					Params: plugins.Params{
+						Ctx: ctx,
+					},
+				},
+			}, &v1.WeightedDestination{
 				Options: &v1.WeightedDestinationOptions{
 					Transformations: inputTransform,
 				},
@@ -140,7 +157,11 @@ var _ = Describe("Plugin", func() {
 		})
 		It("repeatedly sets transformation config for virtual hosts", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
-			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{
+				Params: plugins.Params{
+					Ctx: ctx,
+				},
+			}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Transformations: inputTransform,
 				},
@@ -149,7 +170,11 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 
 			out2 := &envoy_config_route_v3.VirtualHost{}
-			err2 := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			err2 := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{
+				Params: plugins.Params{
+					Ctx: ctx,
+				},
+			}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					Transformations: inputTransform,
 				},
@@ -159,7 +184,13 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for routes", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{
+				VirtualHostParams: plugins.VirtualHostParams{
+					Params: plugins.Params{
+						Ctx: ctx,
+					},
+				},
+			}, &v1.Route{
 				Options: &v1.RouteOptions{
 					Transformations: inputTransform,
 				},
@@ -168,7 +199,7 @@ var _ = Describe("Plugin", func() {
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 		})
 		It("sets only one filter when no early filters exist", func() {
-			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, nil)
+			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{Ctx: ctx}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(filters)).To(Equal(1))
 			value := filters[0].HttpFilter.GetTypedConfig().GetValue()
@@ -183,7 +214,7 @@ var _ = Describe("Plugin", func() {
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
-			p.Init(plugins.InitParams{Ctx: context.TODO(), Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
+			p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}}}})
 
 			var err error
 			earlyStageFilterConfig, err = utils.MessageToAny(&envoytransformation.FilterTransformations{
@@ -371,7 +402,11 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for vhosts", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
-			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			err := p.(plugins.VirtualHostPlugin).ProcessVirtualHost(plugins.VirtualHostParams{
+				Params: plugins.Params{
+					Ctx: ctx,
+				},
+			}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
 					StagedTransformations: inputTransform,
 				},
@@ -381,7 +416,13 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for routes", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{
+				VirtualHostParams: plugins.VirtualHostParams{
+					Params: plugins.Params{
+						Ctx: ctx,
+					},
+				},
+			}, &v1.Route{
 				Options: &v1.RouteOptions{
 					StagedTransformations: inputTransform,
 				},
@@ -391,7 +432,13 @@ var _ = Describe("Plugin", func() {
 		})
 		It("sets transformation config for weighted dest", func() {
 			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
-			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+			err := p.(plugins.WeightedDestinationPlugin).ProcessWeightedDestination(plugins.RouteParams{
+				VirtualHostParams: plugins.VirtualHostParams{
+					Params: plugins.Params{
+						Ctx: ctx,
+					},
+				},
+			}, &v1.WeightedDestination{
 				Options: &v1.WeightedDestinationOptions{
 					StagedTransformations: inputTransform,
 				},
@@ -401,12 +448,16 @@ var _ = Describe("Plugin", func() {
 		})
 		It("should add both filter to the chain when early transformations exist", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			err := p.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{
+				Params: plugins.Params{
+					Ctx: ctx,
+				},
+			}}, &v1.Route{
 				Options: &v1.RouteOptions{
 					StagedTransformations: inputTransform,
 				},
 			}, out)
-			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, nil)
+			filters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{Ctx: ctx}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(filters)).To(Equal(2))
 			value := filters[0].HttpFilter.GetTypedConfig()

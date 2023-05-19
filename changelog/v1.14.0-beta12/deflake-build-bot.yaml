@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7222
+    resolvesIssue: false
+    description: >-
+      De-flake some unit tests which have failed since adding `randomize` flags to test pipeline.

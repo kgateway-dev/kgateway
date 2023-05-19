@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: Adds a new setting to disable GraphQL discovery to the API.
+  issueLink: https://github.com/solo-io/gloo/issues/7344
+  resolvesIssue: false

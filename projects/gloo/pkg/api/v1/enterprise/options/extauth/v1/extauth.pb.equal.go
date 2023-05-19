@@ -525,6 +525,143 @@ func (m *BasicAuth) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *HmacAuth) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HmacAuth)
+	if !ok {
+		that2, ok := that.(HmacAuth)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.SecretStorage.(type) {
+
+	case *HmacAuth_SecretRefs:
+		if _, ok := target.SecretStorage.(*HmacAuth_SecretRefs); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSecretRefs()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretRefs()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSecretRefs(), target.GetSecretRefs()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.SecretStorage != target.SecretStorage {
+			return false
+		}
+	}
+
+	switch m.ImplementationType.(type) {
+
+	case *HmacAuth_ParametersInHeaders:
+		if _, ok := target.ImplementationType.(*HmacAuth_ParametersInHeaders); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetParametersInHeaders()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetParametersInHeaders()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetParametersInHeaders(), target.GetParametersInHeaders()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ImplementationType != target.ImplementationType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *SecretRefList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*SecretRefList)
+	if !ok {
+		that2, ok := that.(SecretRefList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSecretRefs()) != len(target.GetSecretRefs()) {
+		return false
+	}
+	for idx, v := range m.GetSecretRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSecretRefs()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HmacParametersInHeaders) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HmacParametersInHeaders)
+	if !ok {
+		that2, ok := that.(HmacParametersInHeaders)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OAuth) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -649,6 +786,21 @@ func (m *OAuth2) Equal(that interface{}) bool {
 			}
 		}
 
+	case *OAuth2_Oauth2:
+		if _, ok := target.OauthType.(*OAuth2_Oauth2); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOauth2()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOauth2()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOauth2(), target.GetOauth2()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.OauthType != target.OauthType {
@@ -734,6 +886,16 @@ func (m *UserSession) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetCookieOptions(), target.GetCookieOptions()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetCipherConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCipherConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCipherConfig(), target.GetCipherConfig()) {
 			return false
 		}
 	}
@@ -1240,6 +1402,115 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *PlainOAuth2) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PlainOAuth2)
+	if !ok {
+		that2, ok := that.(PlainOAuth2)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClientSecretRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClientSecretRef(), target.GetClientSecretRef()) {
+			return false
+		}
+	}
+
+	if len(m.GetAuthEndpointQueryParams()) != len(target.GetAuthEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetAuthEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetAuthEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetScopes()) != len(target.GetScopes()) {
+		return false
+	}
+	for idx, v := range m.GetScopes() {
+
+		if strings.Compare(v, target.GetScopes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSession(), target.GetSession()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthEndpoint(), target.GetAuthEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTokenEndpoint(), target.GetTokenEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *JwtValidation) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1614,6 +1885,300 @@ func (m *ApiKeyAuth) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetHeadersFromMetadataEntry()) != len(target.GetHeadersFromMetadataEntry()) {
+		return false
+	}
+	for k, v := range m.GetHeadersFromMetadataEntry() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHeadersFromMetadataEntry()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetHeadersFromMetadataEntry()[k]) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.StorageBackend.(type) {
+
+	case *ApiKeyAuth_K8SSecretApikeyStorage:
+		if _, ok := target.StorageBackend.(*ApiKeyAuth_K8SSecretApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetK8SSecretApikeyStorage(), target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		}
+
+	case *ApiKeyAuth_AerospikeApikeyStorage:
+		if _, ok := target.StorageBackend.(*ApiKeyAuth_AerospikeApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAerospikeApikeyStorage(), target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.StorageBackend != target.StorageBackend {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *K8SSecretApiKeyStorage) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*K8SSecretApiKeyStorage)
+	if !ok {
+		that2, ok := that.(K8SSecretApiKeyStorage)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetLabelSelector()) != len(target.GetLabelSelector()) {
+		return false
+	}
+	for k, v := range m.GetLabelSelector() {
+
+		if strings.Compare(v, target.GetLabelSelector()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetApiKeySecretRefs()) != len(target.GetApiKeySecretRefs()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeySecretRefs() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeySecretRefs()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeySecretRefs()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorage)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorage)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetHostname(), target.GetHostname()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetNamespace(), target.GetNamespace()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSet(), target.GetSet()) != 0 {
+		return false
+	}
+
+	if m.GetPort() != target.GetPort() {
+		return false
+	}
+
+	if m.GetBatchSize() != target.GetBatchSize() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetReadModeSc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadModeSc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReadModeSc(), target.GetReadModeSc()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetReadModeAp()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetReadModeAp()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetReadModeAp(), target.GetReadModeAp()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetNodeTlsName(), target.GetNodeTlsName()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCertPath(), target.GetCertPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetKeyPath(), target.GetKeyPath()) != 0 {
+		return false
+	}
+
+	if m.GetAllowInsecure() != target.GetAllowInsecure() {
+		return false
+	}
+
+	if strings.Compare(m.GetRootCaPath(), target.GetRootCaPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTlsVersion(), target.GetTlsVersion()) != 0 {
+		return false
+	}
+
+	if len(m.GetTlsCurveGroups()) != len(target.GetTlsCurveGroups()) {
+		return false
+	}
+	for idx, v := range m.GetTlsCurveGroups() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTlsCurveGroups()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTlsCurveGroups()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	switch m.CommitLevel.(type) {
+
+	case *AerospikeApiKeyStorage_CommitAll:
+		if _, ok := target.CommitLevel.(*AerospikeApiKeyStorage_CommitAll); !ok {
+			return false
+		}
+
+		if m.GetCommitAll() != target.GetCommitAll() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorage_CommitMaster:
+		if _, ok := target.CommitLevel.(*AerospikeApiKeyStorage_CommitMaster); !ok {
+			return false
+		}
+
+		if m.GetCommitMaster() != target.GetCommitMaster() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.CommitLevel != target.CommitLevel {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKey) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKey)
+	if !ok {
+		that2, ok := that.(ApiKey)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetApiKey(), target.GetApiKey()) != 0 {
+		return false
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetMetadata()) != len(target.GetMetadata()) {
+		return false
+	}
+	for k, v := range m.GetMetadata() {
+
+		if strings.Compare(v, target.GetMetadata()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetUuid(), target.GetUuid()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -1635,10 +2200,6 @@ func (m *ApiKeySecret) Equal(that interface{}) bool {
 	if target == nil {
 		return m == nil
 	} else if m == nil {
-		return false
-	}
-
-	if m.GetGenerateApiKey() != target.GetGenerateApiKey() {
 		return false
 	}
 
@@ -1816,6 +2377,54 @@ func (m *Ldap) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGroupLookupSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGroupLookupSettings(), target.GetGroupLookupSettings()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *LdapServiceAccount) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*LdapServiceAccount)
+	if !ok {
+		that2, ok := that.(LdapServiceAccount)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetCredentialsSecretRef()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCredentialsSecretRef()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCredentialsSecretRef(), target.GetCredentialsSecretRef()) {
+			return false
+		}
+	}
+
+	if m.GetCheckGroupsWithServiceAccount() != target.GetCheckGroupsWithServiceAccount() {
+		return false
+	}
+
 	return true
 }
 
@@ -1848,6 +2457,10 @@ func (m *PassThroughAuth) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetConfig(), target.GetConfig()) {
 			return false
 		}
+	}
+
+	if m.GetFailureModeAllow() != target.GetFailureModeAllow() {
+		return false
 	}
 
 	switch m.Protocol.(type) {
@@ -1925,6 +2538,40 @@ func (m *PassThroughGrpc) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetConnectionTimeout(), target.GetConnectionTimeout()) {
 			return false
 		}
+	}
+
+	if h, ok := interface{}(m.GetTlsConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTlsConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTlsConfig(), target.GetTlsConfig()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PassThroughGrpcTLSConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PassThroughGrpcTLSConfig)
+	if !ok {
+		that2, ok := that.(PassThroughGrpcTLSConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true
@@ -2041,6 +2688,353 @@ func (m *ExtAuthConfig) Equal(that interface{}) bool {
 	}
 
 	if m.GetFailOnRedirect() != target.GetFailOnRedirect() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyCreateRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyCreateRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyCreateRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyCreateResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyCreateResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyCreateResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyReadRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyReadRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyReadRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyReadResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyReadResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyReadResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyUpdateRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyUpdateRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyUpdateRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetUpsert() != target.GetUpsert() {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyUpdateResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyUpdateResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyUpdateResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetApiKeys()) != len(target.GetApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetApiKeys() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApiKeys()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetApiKeys()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyDeleteRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyDeleteRequest)
+	if !ok {
+		that2, ok := that.(ApiKeyDeleteRequest)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetRawApiKeys()) != len(target.GetRawApiKeys()) {
+		return false
+	}
+	for idx, v := range m.GetRawApiKeys() {
+
+		if strings.Compare(v, target.GetRawApiKeys()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetLabels()) != len(target.GetLabels()) {
+		return false
+	}
+	for idx, v := range m.GetLabels() {
+
+		if strings.Compare(v, target.GetLabels()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyDeleteResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyDeleteResponse)
+	if !ok {
+		that2, ok := that.(ApiKeyDeleteResponse)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
 		return false
 	}
 
@@ -2211,6 +3205,21 @@ func (m *AuthConfig_Config) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetPassThroughAuth(), target.GetPassThroughAuth()) {
+				return false
+			}
+		}
+
+	case *AuthConfig_Config_HmacAuth:
+		if _, ok := target.AuthConfig.(*AuthConfig_Config_HmacAuth); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHmacAuth()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHmacAuth()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHmacAuth(), target.GetHmacAuth()) {
 				return false
 			}
 		}
@@ -2517,6 +3526,10 @@ func (m *UserSession_RedisSession) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
+		return false
+	}
+
 	return true
 }
 
@@ -2581,6 +3594,54 @@ func (m *UserSession_CookieOptions) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetDomain(), target.GetDomain()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *UserSession_CipherConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*UserSession_CipherConfig)
+	if !ok {
+		that2, ok := that.(UserSession_CipherConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Key.(type) {
+
+	case *UserSession_CipherConfig_KeyRef:
+		if _, ok := target.Key.(*UserSession_CipherConfig_KeyRef); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetKeyRef()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetKeyRef()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetKeyRef(), target.GetKeyRef()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Key != target.Key {
+			return false
+		}
 	}
 
 	return true
@@ -2778,6 +3839,227 @@ func (m *ApiKeyAuth_SecretKey) Equal(that interface{}) bool {
 
 	if m.GetRequired() != target.GetRequired() {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ApiKeyAuth_MetadataEntry) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ApiKeyAuth_MetadataEntry)
+	if !ok {
+		that2, ok := that.(ApiKeyAuth_MetadataEntry)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetName(), target.GetName()) != 0 {
+		return false
+	}
+
+	if m.GetRequired() != target.GetRequired() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageReadModeSc) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageReadModeSc)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageReadModeSc)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ReadModeSc.(type) {
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScSession:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScSession); !ok {
+			return false
+		}
+
+		if m.GetReadModeScSession() != target.GetReadModeScSession() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScLinearize); !ok {
+			return false
+		}
+
+		if m.GetReadModeScLinearize() != target.GetReadModeScLinearize() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScReplica:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScReplica); !ok {
+			return false
+		}
+
+		if m.GetReadModeScReplica() != target.GetReadModeScReplica() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable:
+		if _, ok := target.ReadModeSc.(*AerospikeApiKeyStorageReadModeSc_ReadModeScAllowUnavailable); !ok {
+			return false
+		}
+
+		if m.GetReadModeScAllowUnavailable() != target.GetReadModeScAllowUnavailable() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ReadModeSc != target.ReadModeSc {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageReadModeAp) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageReadModeAp)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageReadModeAp)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.ReadModeAp.(type) {
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApOne:
+		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorageReadModeAp_ReadModeApOne); !ok {
+			return false
+		}
+
+		if m.GetReadModeApOne() != target.GetReadModeApOne() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageReadModeAp_ReadModeApAll:
+		if _, ok := target.ReadModeAp.(*AerospikeApiKeyStorageReadModeAp_ReadModeApAll); !ok {
+			return false
+		}
+
+		if m.GetReadModeApAll() != target.GetReadModeApAll() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ReadModeAp != target.ReadModeAp {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *AerospikeApiKeyStorageTlsCurveID) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*AerospikeApiKeyStorageTlsCurveID)
+	if !ok {
+		that2, ok := that.(AerospikeApiKeyStorageTlsCurveID)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.CurveId.(type) {
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP256:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_CurveP256); !ok {
+			return false
+		}
+
+		if m.GetCurveP256() != target.GetCurveP256() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP384:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_CurveP384); !ok {
+			return false
+		}
+
+		if m.GetCurveP384() != target.GetCurveP384() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_CurveP521:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_CurveP521); !ok {
+			return false
+		}
+
+		if m.GetCurveP521() != target.GetCurveP521() {
+			return false
+		}
+
+	case *AerospikeApiKeyStorageTlsCurveID_X_25519:
+		if _, ok := target.CurveId.(*AerospikeApiKeyStorageTlsCurveID_X_25519); !ok {
+			return false
+		}
+
+		if m.GetX_25519() != target.GetX_25519() {
+			return false
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.CurveId != target.CurveId {
+			return false
+		}
 	}
 
 	return true
@@ -3002,6 +4284,93 @@ func (m *ExtAuthConfig_OAuthConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ExtAuthConfig_UserSessionConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_UserSessionConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_UserSessionConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetFailOnFetchFailure() != target.GetFailOnFetchFailure() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetCookieOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCookieOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCookieOptions(), target.GetCookieOptions()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetCipherConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetCipherConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetCipherConfig(), target.GetCipherConfig()) {
+			return false
+		}
+	}
+
+	switch m.Session.(type) {
+
+	case *ExtAuthConfig_UserSessionConfig_Cookie:
+		if _, ok := target.Session.(*ExtAuthConfig_UserSessionConfig_Cookie); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetCookie()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetCookie()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetCookie(), target.GetCookie()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_UserSessionConfig_Redis:
+		if _, ok := target.Session.(*ExtAuthConfig_UserSessionConfig_Redis); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetRedis()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetRedis()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetRedis(), target.GetRedis()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Session != target.Session {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -3161,6 +4530,16 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	}
 
+	if h, ok := interface{}(m.GetUserSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUserSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUserSession(), target.GetUserSession()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -3275,6 +4654,119 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig) Equal(that interface{}) bool
 }
 
 // Equal function
+func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_PlainOAuth2Config)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_PlainOAuth2Config)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClientId(), target.GetClientId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
+		return false
+	}
+
+	if len(m.GetAuthEndpointQueryParams()) != len(target.GetAuthEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetAuthEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetAuthEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAppUrl(), target.GetAppUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCallbackPath(), target.GetCallbackPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetScopes()) != len(target.GetScopes()) {
+		return false
+	}
+	for idx, v := range m.GetScopes() {
+
+		if strings.Compare(v, target.GetScopes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSession(), target.GetSession()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetLogoutPath(), target.GetLogoutPath()) != 0 {
+		return false
+	}
+
+	if len(m.GetTokenEndpointQueryParams()) != len(target.GetTokenEndpointQueryParams()) {
+		return false
+	}
+	for k, v := range m.GetTokenEndpointQueryParams() {
+
+		if strings.Compare(v, target.GetTokenEndpointQueryParams()[k]) != 0 {
+			return false
+		}
+
+	}
+
+	if strings.Compare(m.GetAfterLogoutUrl(), target.GetAfterLogoutUrl()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAuthEndpoint(), target.GetAuthEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTokenEndpoint(), target.GetTokenEndpoint()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetUserSession()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUserSession()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUserSession(), target.GetUserSession()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -3323,6 +4815,21 @@ func (m *ExtAuthConfig_OAuth2Config) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(m.GetAccessTokenValidationConfig(), target.GetAccessTokenValidationConfig()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_OAuth2Config_Oauth2Config:
+		if _, ok := target.OauthType.(*ExtAuthConfig_OAuth2Config_Oauth2Config); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetOauth2Config()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetOauth2Config()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetOauth2Config(), target.GetOauth2Config()) {
 				return false
 			}
 		}
@@ -3390,6 +4897,45 @@ func (m *ExtAuthConfig_ApiKeyAuthConfig) Equal(that interface{}) bool {
 
 	}
 
+	switch m.StorageBackend.(type) {
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_K8SSecretApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetK8SSecretApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetK8SSecretApikeyStorage(), target.GetK8SSecretApikeyStorage()) {
+				return false
+			}
+		}
+
+	case *ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage:
+		if _, ok := target.StorageBackend.(*ExtAuthConfig_ApiKeyAuthConfig_AerospikeApikeyStorage); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAerospikeApikeyStorage()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAerospikeApikeyStorage(), target.GetAerospikeApikeyStorage()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.StorageBackend != target.StorageBackend {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -3437,6 +4983,224 @@ func (m *ExtAuthConfig_OpaAuthConfig) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_LdapConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_LdapConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_LdapConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetAddress(), target.GetAddress()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetUserDnTemplate(), target.GetUserDnTemplate()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMembershipAttributeName(), target.GetMembershipAttributeName()) != 0 {
+		return false
+	}
+
+	if len(m.GetAllowedGroups()) != len(target.GetAllowedGroups()) {
+		return false
+	}
+	for idx, v := range m.GetAllowedGroups() {
+
+		if strings.Compare(v, target.GetAllowedGroups()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetPool()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPool()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPool(), target.GetPool()) {
+			return false
+		}
+	}
+
+	if strings.Compare(m.GetSearchFilter(), target.GetSearchFilter()) != 0 {
+		return false
+	}
+
+	if m.GetDisableGroupChecking() != target.GetDisableGroupChecking() {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetGroupLookupSettings()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGroupLookupSettings()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGroupLookupSettings(), target.GetGroupLookupSettings()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_LdapServiceAccountConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_LdapServiceAccountConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_LdapServiceAccountConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetUsername(), target.GetUsername()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetPassword(), target.GetPassword()) != 0 {
+		return false
+	}
+
+	if m.GetCheckGroupsWithServiceAccount() != target.GetCheckGroupsWithServiceAccount() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_HmacAuthConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_HmacAuthConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_HmacAuthConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.SecretStorage.(type) {
+
+	case *ExtAuthConfig_HmacAuthConfig_SecretList:
+		if _, ok := target.SecretStorage.(*ExtAuthConfig_HmacAuthConfig_SecretList); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSecretList()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSecretList()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSecretList(), target.GetSecretList()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.SecretStorage != target.SecretStorage {
+			return false
+		}
+	}
+
+	switch m.ImplementationType.(type) {
+
+	case *ExtAuthConfig_HmacAuthConfig_ParametersInHeaders:
+		if _, ok := target.ImplementationType.(*ExtAuthConfig_HmacAuthConfig_ParametersInHeaders); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetParametersInHeaders()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetParametersInHeaders()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetParametersInHeaders(), target.GetParametersInHeaders()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.ImplementationType != target.ImplementationType {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_InMemorySecretList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_InMemorySecretList)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_InMemorySecretList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSecretList()) != len(target.GetSecretList()) {
+		return false
+	}
+	for k, v := range m.GetSecretList() {
+
+		if strings.Compare(v, target.GetSecretList()[k]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
@@ -3580,6 +5344,21 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ExtAuthConfig_Config_LdapInternal:
+		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_LdapInternal); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetLdapInternal()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetLdapInternal()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetLdapInternal(), target.GetLdapInternal()) {
+				return false
+			}
+		}
+
 	case *ExtAuthConfig_Config_Jwt:
 		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_Jwt); !ok {
 			return false
@@ -3610,11 +5389,54 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ExtAuthConfig_Config_HmacAuth:
+		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_HmacAuth); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetHmacAuth()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetHmacAuth()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetHmacAuth(), target.GetHmacAuth()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.AuthConfig != target.AuthConfig {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *ExtAuthConfig_UserSessionConfig_CipherConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ExtAuthConfig_UserSessionConfig_CipherConfig)
+	if !ok {
+		that2, ok := that.(ExtAuthConfig_UserSessionConfig_CipherConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
 	}
 
 	return true

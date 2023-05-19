@@ -16,6 +16,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
+	check_crds "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check-crds"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
@@ -99,6 +100,9 @@ func GlooCli() *cobra.Command {
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
 		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", DefaultConfigPath, "set the path to the glooctl config file")
 		flagutils.AddConsulConfigFlags(pflags, &opts.Top.Consul)
+		flagutils.AddKubeContextFlag(pflags, &opts.Top.KubeContext)
+
+		opts.Top.Ctx = context.WithValue(opts.Top.Ctx, "top", opts.Top.ContextAccessible)
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
@@ -115,6 +119,7 @@ func GlooCli() *cobra.Command {
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
 			check.RootCmd(opts),
+			check_crds.RootCmd(opts),
 			debug.RootCmd(opts),
 			versioncmd.RootCmd(opts),
 			dashboard.RootCmd(opts),

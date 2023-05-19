@@ -67,7 +67,7 @@ message HttpConnectionManagerSettings {
     google.protobuf.BoolValue strip_any_host_port = 36;
 
 
-    // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
+    // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-api-msg-core-http1protocoloptions
     google.protobuf.BoolValue accept_http_10 = 15;
     google.protobuf.StringValue default_host_for_http_10 = 16;
 
@@ -77,7 +77,7 @@ message HttpConnectionManagerSettings {
     google.protobuf.BoolValue enable_trailers = 35;
 
     oneof header_format {
-        // Formats the RESPONSE HEADER by proper casing words: the first character and any character following
+        // Formats the REQUEST HEADER by proper casing words: the first character and any character following
         // a special character will be capitalized if it's an alpha character. For example,
         // "content-type" becomes "Content-Type", and "foo$b#$are" becomes "Foo$B#$Are".
         // Note that while this results in most headers following conventional casing, certain headers
@@ -85,7 +85,7 @@ message HttpConnectionManagerSettings {
         google.protobuf.BoolValue proper_case_header_key_format = 22;
 
         // Generates configuration for a stateful formatter extension that allows using received headers to
-        // affect the output of encoding headers. Specifically: preserving RESPONSE HEADER case during proxying.
+        // affect the output of encoding headers. Specifically: preserving REQUEST HEADER case during proxying.
         google.protobuf.BoolValue preserve_case_header_key_format = 31;
     }
     
@@ -194,7 +194,7 @@ message HttpConnectionManagerSettings {
     // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
     google.protobuf.BoolValue merge_slashes = 29;
 
-    // Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing?
+    // Should paths be normalized according to RFC 3986 before any processing of requests by HTTP filters or routing? Defaults to True.
     // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto
     google.protobuf.BoolValue normalize_path = 30;
 

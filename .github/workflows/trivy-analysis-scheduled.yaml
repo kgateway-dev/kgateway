@@ -1,61 +1,43 @@
 name: security-scan-scheduled
-env:
-    SLACK_DEBUG_TESTING: false   # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
+
 on:
   # allow for version to be manually specified under actions page
   workflow_dispatch: {}
   schedule:
     # Monday 4am EST so as to hope for this to complete prior to a 9 AM check 
     - cron: "0 8 * * 1"
+
+env:
+  SLACK_DEBUG_TESTING: false   # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
+  GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
 jobs:
   scan-images:
     name: Trivy Scan
     runs-on: ubuntu-22.04
     steps:
-      - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.4.1
-        with:
-          access_token: ${{ github.token }}
-      - name: Free disk space
+      - name: Install Trivy (latest)
         run: |
-          echo "Before clearing disk space:"
-          df -h
-
-          # https://github.com/actions/virtual-environments/issues/709
-          sudo apt-get clean
-
-          # Clean up pre-installed tools
-          # https://github.com/actions/virtual-environments/issues/1918
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-          echo "After clearing disk space:"
-          df -h
-      - name: Install Trivy (0.30.3)
-        run: |
-          wget https://github.com/aquasecurity/trivy/releases/download/v0.30.3/trivy_0.30.3_Linux-64bit.deb
-          sudo dpkg -i trivy_0.30.3_Linux-64bit.deb
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.18.2
-        id: go
+          TRIVY_VERSION=$(curl --silent "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/') 
+          echo Using Trivy v${TRIVY_VERSION}
+          wget https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.deb
+          sudo dpkg -i trivy_${TRIVY_VERSION}_Linux-64bit.deb
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
       - name: Setup - gcloud / gsutil
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GLOO_VULN_REPORTER }}'
+      - name: Setup Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v0
         with:
-          service_account_key: ${{ secrets.GLOO_VULN_REPORTER }}
           project_id: solo-public
-          export_default_credentials: true
       - name: Run and Push Security Scan Files to Google Cloud Bucket
         env:
           SCAN_DIR: _output/scans
-          IMAGE_REPO: quay.io/solo-io
-          MIN_SCANNED_VERSION: 'v1.9.0'
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          IMAGE_REGISTRY: quay.io/solo-io
+          MIN_SCANNED_VERSION: 'v1.11.0' # ⚠️ you should also change docs-gen.yaml ⚠️
         run: |
           mkdir -p $SCAN_DIR
           make run-security-scan

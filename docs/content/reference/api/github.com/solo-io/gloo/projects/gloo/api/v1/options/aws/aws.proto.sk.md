@@ -40,6 +40,7 @@ in a particular region
 "roleArn": string
 "awsAccountId": string
 "disableRoleChaining": bool
+"destinationOverrides": .aws.options.gloo.solo.io.DestinationSpec
 
 ```
 
@@ -51,6 +52,7 @@ in a particular region
 | `roleArn` | `string` | (Optional): role_arn to use when assuming a role for a given request via STS. If set this role_arn will override the value found in AWS_ROLE_ARN This option will only be respected if STS credentials are enabled. To enable STS credential fetching see Settings.Gloo.AwsOptions in settings.proto. |
 | `awsAccountId` | `string` | (Optional): The AWS Account ID to use while calling if using resource based access. |
 | `disableRoleChaining` | `bool` | Optional override to disable role chaining;. |
+| `destinationOverrides` | [.aws.options.gloo.solo.io.DestinationSpec](../aws.proto.sk/#destinationspec) | Specifies AWS DestinationSpec configuration overrides for any route targeting this upstream. Note that the route in question must have an AWS DestinationSpec to be affected and this will only set things that are non-falsey as overrides. |
 
 
 
@@ -93,6 +95,7 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 "responseTransformation": bool
 "unwrapAsAlb": bool
 "unwrapAsApiGateway": bool
+"wrapAsApiGateway": bool
 
 ```
 
@@ -100,10 +103,11 @@ Each Lambda Function Spec contains data necessary for Gloo to invoke Lambda func
 | ----- | ---- | ----------- | 
 | `logicalName` | `string` | The Logical Name of the LambdaFunctionSpec to be invoked. |
 | `invocationStyle` | [.aws.options.gloo.solo.io.DestinationSpec.InvocationStyle](../aws.proto.sk/#invocationstyle) | Can be either Sync or Async. |
-| `requestTransformation` | `bool` | Include headers, querystring, request path, and request method in the event payload sent to aws lambda. |
-| `responseTransformation` | `bool` | de-jsonify response bodies returned from aws lambda. |
-| `unwrapAsAlb` | `bool` | Unwrap the response as if the proxy was an ALB. Intended to ease migration when previously using alb to invoke Lambdas. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided. If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway. |
-| `unwrapAsApiGateway` | `bool` | Enterprise-Only Unwrap the response as if the proxy was an AWS API Gateway. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `unwrapAsAlb` or `unwrapAsApiGateway` should be provided. If more than one is provided only one will be checked with priority unwrapAsAlb, unwrapAsApiGateway. |
+| `requestTransformation` | `bool` | Include headers, multi-value headers, querystring, querystring parameters, multi-value querystring parameters, request path, and request method in the event payload sent to aws lambda Only one of `requestTransformation` or `wrapAsApiGateway` should be provided. |
+| `responseTransformation` | `bool` | Deprecated. Use unwrapAsApiGateway. |
+| `unwrapAsAlb` | `bool` | Unwrap the response as if the proxy was an ALB. Intended to ease migration when previously using ALB to invoke Lambdas. For further information see below link for the expected format when true. https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided. |
+| `unwrapAsApiGateway` | `bool` | Unwrap the response as if the proxy was an AWS API Gateway. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `unwrapAsAlb` or `unwrapAsApiGateway` may be provided. |
+| `wrapAsApiGateway` | `bool` | Enterprise-Only Wrap the request into AWS API Gateway event format. Intended to ease migration when previously using API Gateway to invoke Lambdas. Only one of `requestTransformation` or `wrapAsApiGateway` should be provided. |
 
 
 

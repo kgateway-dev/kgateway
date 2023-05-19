@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: security-scan-scheduled job now always gets the latest version of trivy
+    issueLink: https://github.com/solo-io/gloo/issues/7845

@@ -4,22 +4,22 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	installcmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 )
 
 var _ = Describe("Debug", func() {
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 	})
@@ -42,12 +42,12 @@ var _ = Describe("Debug", func() {
 			opts.Metadata.Namespace = "gloo-system"
 			opts.Top.Zip = true
 
-			dir, err := ioutil.TempDir("", "testDir")
+			dir, err := os.MkdirTemp("", "testDir")
 			Expect(err).NotTo(HaveOccurred())
 			defer os.RemoveAll(dir)
 			opts.Top.File = filepath.Join(dir, "log.tgz")
 
-			err = DebugLogs(&opts, ioutil.Discard)
+			err = DebugLogs(&opts, io.Discard)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = os.Stat(opts.Top.File)
@@ -62,12 +62,12 @@ var _ = Describe("Debug", func() {
 			opts.Metadata.Namespace = "gloo-system"
 			opts.Top.Zip = false
 
-			dir, err := ioutil.TempDir("", "testDir")
+			dir, err := os.MkdirTemp("", "testDir")
 			Expect(err).NotTo(HaveOccurred())
 			defer os.RemoveAll(dir)
 			opts.Top.File = filepath.Join(dir, "log.txt")
 
-			err = DebugLogs(&opts, ioutil.Discard)
+			err = DebugLogs(&opts, io.Discard)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = os.Stat(opts.Top.File)
@@ -80,7 +80,7 @@ var _ = Describe("Debug", func() {
 
 	Context("yaml dumper", func() {
 		var (
-			kubeCli        *install.MockKubectl
+			kubeCli        *testutil.MockKubectl
 			expectedOutput []string
 			importantKinds = append(append([]string{}, installcmd.GlooNamespacedKinds...), installcmd.GlooCrdNames...)
 		)
@@ -94,7 +94,7 @@ var _ = Describe("Debug", func() {
 		})
 
 		It("should attempt to retrieve all the important Kinds", func() {
-			tempFile, err := ioutil.TempFile("", "")
+			tempFile, err := os.CreateTemp("", "")
 			Expect(err).NotTo(HaveOccurred())
 			defer os.Remove(tempFile.Name())
 
@@ -106,12 +106,12 @@ var _ = Describe("Debug", func() {
 			// don't really care what the returned data is, just want len(cmd) lines returned
 			expectedOutput = strings.Split(strings.Repeat("dummy-data-ignore_", len(cmds)), "_")
 
-			kubeCli = install.NewMockKubectl(cmds, expectedOutput)
+			kubeCli = testutil.NewMockKubectl(cmds, expectedOutput)
 
 			err = DumpYaml(tempFile.Name(), "test-namespace", kubeCli)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to dump yaml without returning an error")
 
-			writtenBytes, err := ioutil.ReadFile(tempFile.Name())
+			writtenBytes, err := os.ReadFile(tempFile.Name())
 
 			Expect(err).NotTo(HaveOccurred(), "Should be able to read the temp yaml file")
 			Expect(writtenBytes).NotTo(BeEmpty(), "Should have written a nonzero number of bytes")

@@ -1,63 +1,46 @@
 package create_test
 
 import (
+	"context"
 	"log"
-	"os"
 
-	"github.com/hashicorp/consul/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/gloo/test/services"
+	cliutils "github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"github.com/solo-io/gloo/test/testutils"
 )
 
 var _ = Describe("Create", func() {
-	if os.Getenv("RUN_CONSUL_TESTS") != "1" {
+	if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
 		log.Print("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 		return
 	}
 
 	var (
-		consulFactory  *services.ConsulFactory
-		consulInstance *services.ConsulInstance
-		client         *api.Client
+		ctx    context.Context
+		cancel context.CancelFunc
 	)
-
-	BeforeSuite(func() {
-		var err error
-		consulFactory, err = services.NewConsulFactory()
-		Expect(err).NotTo(HaveOccurred())
-		client, err = api.NewClient(api.DefaultConfig())
-		Expect(err).NotTo(HaveOccurred())
-
-	})
-
-	AfterSuite(func() {
-		_ = consulFactory.Clean()
-	})
 
 	BeforeEach(func() {
 		helpers.UseDefaultClients()
-		var err error
-		// Start Consul
-		consulInstance, err = consulFactory.NewConsulInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = consulInstance.Run()
+
+		ctx, cancel = context.WithCancel(context.Background())
+
+		consulInstance = consulFactory.MustConsulInstance()
+		err := consulInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		if consulInstance != nil {
-			err := consulInstance.Clean()
-			Expect(err).NotTo(HaveOccurred())
-		}
 		helpers.UseDefaultClients()
+
+		cancel()
 	})
 
 	Context("consul storage backend", func() {
 		It("does upstreams and upstreamGroups", func() {
-			err := testutils.Glooctl("create upstream static" +
+			err := cliutils.Glooctl("create upstream static" +
 				" --static-hosts jsonplaceholder.typicode.com:80 " +
 				"--name json-upstream --use-consul")
 			Expect(err).NotTo(HaveOccurred())
@@ -65,14 +48,14 @@ var _ = Describe("Create", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(kv).NotTo(BeNil())
 
-			err = testutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.json-upstream=1 --use-consul")
+			err = cliutils.Glooctl("create upstreamgroup test --namespace gloo-system --weighted-upstreams gloo-system.json-upstream=1 --use-consul")
 			Expect(err).NotTo(HaveOccurred())
 			kv, _, err = client.KV().Get("gloo/gloo.solo.io/v1/UpstreamGroup/gloo-system/test", nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(kv).NotTo(BeNil())
 		})
 		It("does virtualServices", func() {
-			err := testutils.Glooctl("create virtualservice --name test --domains foo.bar,baz.qux --use-consul")
+			err := cliutils.Glooctl("create virtualservice --name test --domains foo.bar,baz.qux --use-consul")
 			Expect(err).NotTo(HaveOccurred())
 			kv, _, err := client.KV().Get("gloo/gateway.solo.io/v1/VirtualService/gloo-system/test", nil)
 			Expect(err).NotTo(HaveOccurred())

@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/4069
+    resolvesIssue: false
+    description: |
+     Post status update rate limit CRs would crash the control plane when they needed a status added.
+     This will cause a single cycle of the control plane whenever the crs needed updating.

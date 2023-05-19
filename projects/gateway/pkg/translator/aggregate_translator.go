@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
@@ -70,12 +71,13 @@ func (a *AggregateTranslator) computeAggregateListenerForHttpGateway(params Para
 	builder := newBuilder()
 	if gateway.GetSsl() {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for sslConfig, virtualServiceList := range virtualServicesBySslConfig {
+		orderedSslConfigs, virtualServicesBySslConfig := GroupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
+			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			virtualHosts := a.VirtualServiceTranslator.ComputeVirtualHosts(params, gateway, virtualServiceList, proxyName)
 			httpOptions := httpGateway.GetOptions()
 			matcher := &gloov1.Matcher{
-				SslConfig:          sslConfig,
+				SslConfig:          vsSslConfig,
 				SourcePrefixRanges: nil, // not supported for HttpListener
 			}
 
@@ -117,7 +119,7 @@ func (a *AggregateTranslator) computeAggregateListenerForHybridGateway(params Pa
 		aggregateListener = a.computeListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
 		if len(aggregateListener.GetHttpFilterChains()) == 0 {
 			// missing refs should only result in a warning
-			// this allows resources to be applied asynchronously
+			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 			params.reports.AddWarning(gateway, EmptyHybridGatewayMessage)
 			return nil
 		}
@@ -147,8 +149,9 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 
 			if gatewaySsl != nil {
 				// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-				virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-				for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+				orderedSslConfigs, virtualServicesBySslConfig := GroupVirtualServicesBySslConfig(virtualServices)
+				for _, vsSslConfig := range orderedSslConfigs {
+					virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 					// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 					// any shared fields. The Gateway is purely used to define default values.
 					reconciledSslConfig := mergeSslConfig(gatewaySsl, vsSslConfig, false)
@@ -219,7 +222,7 @@ func (a *AggregateTranslator) processMatchableGateway(
 	listenerOptions := reconcileGatewayLevelHCMConfig(parentGateway, matchableHttpGateway)
 
 	// reconcile the ssl configuration that is shared by Gateway and MatchableHttpGateways
-	var sslConfig *gloov1.SslConfig
+	var sslConfig *ssl.SslConfig
 	if sslGateway {
 		sslConfig = reconcileGatewayLevelSslConfig(parentGateway, matchableHttpGateway)
 	}
@@ -228,8 +231,9 @@ func (a *AggregateTranslator) processMatchableGateway(
 
 	if sslGateway {
 		// for an ssl gateway, create an HttpFilterChain per unique SslConfig
-		virtualServicesBySslConfig := groupVirtualServicesBySslConfig(virtualServices)
-		for vsSslConfig, virtualServiceList := range virtualServicesBySslConfig {
+		orderedSslConfigs, virtualServicesBySslConfig := GroupVirtualServicesBySslConfig(virtualServices)
+		for _, vsSslConfig := range orderedSslConfigs {
+			virtualServiceList := virtualServicesBySslConfig[vsSslConfig]
 			// SslConfig is evaluated by having the VS definition merged into the Gateway, and overriding
 			// any shared fields. The Gateway is purely used to define default values.
 			reconciledSslConfig := mergeSslConfig(sslConfig, vsSslConfig, false)
@@ -281,13 +285,13 @@ func reconcileGatewayLevelHCMConfig(parentGateway *v1.Gateway, matchableHttpGate
 
 // A Gateway and MatchableHttpGateway share configuration
 // reconcileGatewayLevelConfig establishes the reconciled set of options
-func reconcileGatewayLevelSslConfig(parentGateway *v1.Gateway, matchableHttpGateway *v1.MatchableHttpGateway) *gloov1.SslConfig {
+func reconcileGatewayLevelSslConfig(parentGateway *v1.Gateway, matchableHttpGateway *v1.MatchableHttpGateway) *ssl.SslConfig {
 	// v ---- inheritance logic ---- v
 	preventChildOverrides := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetPreventChildOverrides()
 
 	// SslConfig
 	parentSslConfig := parentGateway.GetHybridGateway().GetDelegatedHttpGateways().GetSslConfig()
-	var childSslConfig *gloov1.SslConfig
+	var childSslConfig *ssl.SslConfig
 	if matchableHttpGateway.GetMatcher() != nil {
 		childSslConfig = matchableHttpGateway.GetMatcher().GetSslConfig()
 	}

@@ -56,6 +56,8 @@ func main() {
 				// These messages are recursive, and will cause codegen to enter an infinite loop
 				"core.solo.io.Status",
 				"ratelimit.api.solo.io.Descriptor",
+				"als.options.gloo.solo.io.AndFilter",
+				"als.options.gloo.solo.io.OrFilter",
 
 				// These messages are part of our internal API, and therefore aren't required
 				// Also they are quite large and can cause the Proxy CRD to become too large,

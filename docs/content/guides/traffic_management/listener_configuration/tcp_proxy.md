@@ -108,28 +108,14 @@ gloo-system   gateway-ssl   26h
 gloo-system   tcp           5s
 ```
 
-The above gateway will be read in by Gloo Edge, which will combine it with the other gateways into a Proxy resource.
-To make sure that the configuration has been translated properly run:
+Gloo Edge reads and combines the gateway configuration with the other gateways into an Envoy proxy configuration. To make sure that the configuration has been translated properly, check the proxy.
 
 ```shell script
-kubectl get proxies.gloo.solo.io -n gloo-system -oyaml
+glooctl get proxy <proxy> -o yaml
 ```
 
-{{< highlight yaml "hl_lines=19-26" >}}
-apiVersion: v1
-items:
-- apiVersion: gloo.solo.io/v1
-  kind: Proxy
-  metadata:
-    creationTimestamp: "2019-07-05T16:01:14Z"
-    generation: 48
-    labels:
-      created_by: gateway
-    name: gateway-proxy
-    namespace: gloo-system
-    resourceVersion: "150947"
-    selfLink: /apis/gloo.solo.io/v1/namespaces/gloo-system/proxies/gateway-proxy
-    uid: 1d7b84d2-9f3e-11e9-8766-3e49e0c5bb1c
+{{< highlight yaml "hl_lines=6-13" >}}
+...
   spec:
     listeners:
     - bindAddress: '::'

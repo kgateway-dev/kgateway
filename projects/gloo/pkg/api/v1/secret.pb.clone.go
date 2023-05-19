@@ -97,11 +97,11 @@ func (m *Secret) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetApiKey()).(clone.Cloner); ok {
 			target.Kind = &Secret_ApiKey{
-				ApiKey: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1.ApiKeySecret),
+				ApiKey: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1.ApiKey),
 			}
 		} else {
 			target.Kind = &Secret_ApiKey{
-				ApiKey: proto.Clone(m.GetApiKey()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1.ApiKeySecret),
+				ApiKey: proto.Clone(m.GetApiKey()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1.ApiKey),
 			}
 		}
 
@@ -114,6 +114,30 @@ func (m *Secret) Clone() proto.Message {
 		} else {
 			target.Kind = &Secret_Header{
 				Header: proto.Clone(m.GetHeader()).(*HeaderSecret),
+			}
+		}
+
+	case *Secret_Credentials:
+
+		if h, ok := interface{}(m.GetCredentials()).(clone.Cloner); ok {
+			target.Kind = &Secret_Credentials{
+				Credentials: h.Clone().(*AccountCredentialsSecret),
+			}
+		} else {
+			target.Kind = &Secret_Credentials{
+				Credentials: proto.Clone(m.GetCredentials()).(*AccountCredentialsSecret),
+			}
+		}
+
+	case *Secret_Encryption:
+
+		if h, ok := interface{}(m.GetEncryption()).(clone.Cloner); ok {
+			target.Kind = &Secret_Encryption{
+				Encryption: h.Clone().(*EncryptionKeySecret),
+			}
+		} else {
+			target.Kind = &Secret_Encryption{
+				Encryption: proto.Clone(m.GetEncryption()).(*EncryptionKeySecret),
 			}
 		}
 
@@ -185,6 +209,11 @@ func (m *TlsSecret) Clone() proto.Message {
 
 	target.RootCa = m.GetRootCa()
 
+	if m.GetOcspStaple() != nil {
+		target.OcspStaple = make([]byte, len(m.GetOcspStaple()))
+		copy(target.OcspStaple, m.GetOcspStaple())
+	}
+
 	return target
 }
 
@@ -204,6 +233,34 @@ func (m *HeaderSecret) Clone() proto.Message {
 
 		}
 	}
+
+	return target
+}
+
+// Clone function
+func (m *AccountCredentialsSecret) Clone() proto.Message {
+	var target *AccountCredentialsSecret
+	if m == nil {
+		return target
+	}
+	target = &AccountCredentialsSecret{}
+
+	target.Username = m.GetUsername()
+
+	target.Password = m.GetPassword()
+
+	return target
+}
+
+// Clone function
+func (m *EncryptionKeySecret) Clone() proto.Message {
+	var target *EncryptionKeySecret
+	if m == nil {
+		return target
+	}
+	target = &EncryptionKeySecret{}
+
+	target.Key = m.GetKey()
 
 	return target
 }

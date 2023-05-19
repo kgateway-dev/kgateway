@@ -1,6 +1,7 @@
 package pluginutils
 
 import (
+	"errors"
 	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -31,7 +32,7 @@ func DestinationUpstreams(snap *v1snap.ApiSnapshot, in *v1.RouteAction) ([]core.
 		}
 		return destinationsToRefs(upstreamGroup.GetDestinations())
 	}
-	panic("invalid route")
+	return nil, errors.New("invalid route")
 }
 
 func destinationsToRefs(destinations []*v1.WeightedDestination) ([]core.ResourceRef, error) {

@@ -38,7 +38,7 @@ You can use either the [gRPC Passthrough Auth]({{% versioned_link_path fromRoot=
 
 ### Option B - Using namedExtAuth
 
-In Gloo Edge Enterprise version 1.9 or later, you can define additional ExtAuthZ servers in the Gloo Edge settings.
+In Gloo Edge Enterprise, you can define additional ExtAuthZ servers in the Gloo Edge settings.
 For that, you must register your authorization servers in the "default" `Settings` custom resource, as shown in the following example. For more information, see the [API reference](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#settings).
 
 
@@ -99,7 +99,7 @@ For both the **Passthrough Auth** option and the **namedExtAuth** option, you mu
 
 * [Envoy external auth proto](https://github.com/envoyproxy/envoy/blob/main/api/envoy/service/auth/v3/external_auth.proto)
 * [gRPC Passthrough Auth guide]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/passthrough_auth/grpc/" %}})
-* [GitHub repo with Go examples](https://github.com/solo-io/gloo/tree/master/docs/examples/grpc-passthrough-auth/pkg/auth/v3)
+* [GitHub repo with Go examples](https://github.com/solo-io/gloo/tree/main/docs/examples/grpc-passthrough-auth/pkg/auth/v3)
 
 ## Managing headers
 

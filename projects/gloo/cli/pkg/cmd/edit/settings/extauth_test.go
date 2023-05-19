@@ -3,8 +3,9 @@ package settings_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -27,22 +28,14 @@ var _ = Describe("Extauth", func() {
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
-		// create a settings object
+
 		settings = testutils.GetTestSettings()
 		settingsClient = helpers.MustSettingsClient(ctx)
-
 		_, err := settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() { cancel() })
-
-	extAuthExtension := func() *extauthpb.Settings {
-		var err error
-		settings, err = settingsClient.Read(settings.Metadata.Namespace, settings.Metadata.Name, clients.ReadOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		return settings.Extauth
-	}
 
 	DescribeTable("should edit extauth config",
 		func(cmd string, expected *extauthpb.Settings) {
@@ -52,7 +45,7 @@ var _ = Describe("Extauth", func() {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
 
-			extension := extAuthExtension()
+			extension := readExtAuthSettings(settingsClient)
 			Expect(extension).To(matchers.MatchProto(expected))
 
 			// check that the rest of the settings were not changed.
@@ -107,6 +100,9 @@ var _ = Describe("Extauth", func() {
 		})
 
 		It("should enabled auth on route", func() {
+			// Assertions are performed in a separate goroutine, so we copy the values to avoid race conditions
+			settingsClientCpy := settingsClient
+
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString("Use default namespace (gloo-system)?")
 				c.SendLine("")
@@ -120,7 +116,7 @@ var _ = Describe("Extauth", func() {
 			}, func() {
 				err := testutils.Glooctl("edit settings externalauth -i")
 				Expect(err).NotTo(HaveOccurred())
-				extension := extAuthExtension()
+				extension := readExtAuthSettings(settingsClientCpy)
 				Expect(extension).To(matchers.MatchProto(&extauthpb.Settings{
 					ExtauthzServerRef: &core.ResourceRef{
 						Name:      "extauth",
@@ -132,3 +128,9 @@ var _ = Describe("Extauth", func() {
 
 	})
 })
+
+func readExtAuthSettings(settingsClient gloov1.SettingsClient) *extauthpb.Settings {
+	settings, err := settingsClient.Read(defaults.GlooSystem, "default", clients.ReadOpts{})
+	Expect(err).NotTo(HaveOccurred())
+	return settings.Extauth
+}

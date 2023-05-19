@@ -1,0 +1,5 @@
+CHANGELOG:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7489
+    resolvesIssue: false
+    description: Updates the rate limiter doc with information about the Aerospike integration.

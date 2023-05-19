@@ -18,6 +18,7 @@ weight: 5
 - [RingHashConfig](#ringhashconfig)
 - [RingHash](#ringhash)
 - [Maglev](#maglev)
+- [SlowStartConfig](#slowstartconfig)
   
 
 
@@ -32,8 +33,7 @@ weight: 5
 ### LoadBalancerConfig
 
  
-LoadBalancerConfig is the settings for the load balancer used to send request to the Upstream 
-endpoints.
+LoadBalancerConfig is the settings for the load balancer used to send requests to the Upstream endpoints.
 
 ```yaml
 "healthyPanicThreshold": .google.protobuf.DoubleValue
@@ -51,7 +51,7 @@ endpoints.
 | ----- | ---- | ----------- | 
 | `healthyPanicThreshold` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts reaches this percentage, envoy disregards health information. see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html). |
 | `updateMergeWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | This allows batch updates of endpoints health/weight/metadata that happen during a time window. this help lower cpu usage when endpoint change rate is high. defaults to 1 second. Set to 0 to disable and have changes applied immediately. |
-| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk/#roundrobin) | Use round robin for load balancing. Only one of `roundRobin`, `leastRequest`, `random`, `ringHash`, or `maglev` can be set. |
+| `roundRobin` | [.gloo.solo.io.LoadBalancerConfig.RoundRobin](../load_balancer.proto.sk/#roundrobin) | Use round robin for load balancing. Round robin is the default load balancing method. Only one of `roundRobin`, `leastRequest`, `random`, `ringHash`, or `maglev` can be set. |
 | `leastRequest` | [.gloo.solo.io.LoadBalancerConfig.LeastRequest](../load_balancer.proto.sk/#leastrequest) | Use least request for load balancing. Only one of `leastRequest`, `roundRobin`, `random`, `ringHash`, or `maglev` can be set. |
 | `random` | [.gloo.solo.io.LoadBalancerConfig.Random](../load_balancer.proto.sk/#random) | Use random for load balancing. Only one of `random`, `roundRobin`, `leastRequest`, `ringHash`, or `maglev` can be set. |
 | `ringHash` | [.gloo.solo.io.LoadBalancerConfig.RingHash](../load_balancer.proto.sk/#ringhash) | Use ring hash for load balancing. Only one of `ringHash`, `roundRobin`, `leastRequest`, `random`, or `maglev` can be set. |
@@ -67,11 +67,13 @@ endpoints.
 
 
 ```yaml
+"slowStartConfig": .gloo.solo.io.LoadBalancerConfig.SlowStartConfig
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+| `slowStartConfig` | [.gloo.solo.io.LoadBalancerConfig.SlowStartConfig](../load_balancer.proto.sk/#slowstartconfig) | Configuration for slow start mode. If this configuration is not set, slow start will not be not enabled. |
 
 
 
@@ -83,12 +85,14 @@ endpoints.
 
 ```yaml
 "choiceCount": int
+"slowStartConfig": .gloo.solo.io.LoadBalancerConfig.SlowStartConfig
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `choiceCount` | `int` | How many choices to take into account. defaults to 2. |
+| `slowStartConfig` | [.gloo.solo.io.LoadBalancerConfig.SlowStartConfig](../load_balancer.proto.sk/#slowstartconfig) | Configuration for slow start mode. If this configuration is not set, slow start will not be not enabled. |
 
 
 
@@ -156,6 +160,27 @@ Customizes the parameters used in the hashing algorithm to refine performance or
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
+
+
+
+
+---
+### SlowStartConfig
+
+
+
+```yaml
+"slowStartWindow": .google.protobuf.Duration
+"aggression": .google.protobuf.DoubleValue
+"minWeightPercent": .google.protobuf.DoubleValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `slowStartWindow` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Represents the size of slow start window. If set, the newly created host remains in slow start mode starting from its creation time for the duration of slow start window. |
+| `aggression` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | This parameter controls the speed of traffic increase over the slow start window. Defaults to 1.0, so that endpoint would get linearly increasing amount of traffic. When increasing the value for this parameter, the speed of traffic ramp-up increases non-linearly. The value of aggression parameter should be greater than 0.0. By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve. During slow start window, effective weight of an endpoint would be scaled with time factor and aggression: ``new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))``, where ``time_factor=(time_since_start_seconds / slow_start_time_seconds)``. As time progresses, more and more traffic would be sent to endpoint, which is in slow start window. Once host exits slow start, time_factor and aggression no longer affect its weight. |
+| `minWeightPercent` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Configures the minimum percentage of origin weight that avoids too small new weight, which may cause endpoints in slow start mode receive no traffic in slow start window. If not specified, the default is 10%. |
 
 
 

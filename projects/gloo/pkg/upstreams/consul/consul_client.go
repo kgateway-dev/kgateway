@@ -31,7 +31,7 @@ type clientWrapper struct {
 	api *consulapi.Client
 }
 
-//NewConsulClientWrapper wraps the original consul client to allow for access in testing + simplification of calls
+// NewConsulClientWrapper wraps the original consul client to allow for access in testing + simplification of calls
 func NewConsulClientWrapper(consulClient *consulapi.Client) ClientWrapper {
 	return &clientWrapper{consulClient}
 }
@@ -129,7 +129,7 @@ func (c *consul) filterDataCenters(dataCenters []string) []string {
 }
 
 // Filters out the services that do not have matching tags from the service_tags_allowlist
-//input from services is a map of service name to slice of tags
+// input from services is a map of service name to slice of tags
 func (c *consul) filterServices(services map[string][]string) map[string][]string {
 	//if there is no allowlist, allow for all services
 	if len(c.serviceTagsAllowlist) == 0 {

@@ -1,0 +1,1 @@
+All routes: Refer to the RateLimitConfig in the options for the virtual host, such as in the following example YAML configuration in GitHub.

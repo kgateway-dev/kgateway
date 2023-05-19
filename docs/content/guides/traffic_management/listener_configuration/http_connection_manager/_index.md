@@ -80,7 +80,7 @@ However, if you are using Gloo Edge Enterprise you can use our [observability]({
 
 ### Advanced listener configuration
 
-Gloo Edge exposes Envoy's powerful configuration capabilities with the HTTP Connection Manager. The details of these fields can be found [here](https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man) and [here](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions)
+Gloo Edge exposes Envoy's powerful configuration capabilities with the HTTP Connection Manager. The details of these fields can be found [here](https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man) and [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#envoy-api-msg-core-http1protocoloptions)
 
 Below, see a reference configuration specification to demonstrate the structure of the expected YAML.
 

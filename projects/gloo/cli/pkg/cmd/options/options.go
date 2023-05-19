@@ -3,14 +3,16 @@ package options
 import (
 	"context"
 	"sort"
+	"strconv"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
-	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/rotisserie/eris"
-	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -32,20 +34,16 @@ type Options struct {
 	Remove    Remove
 	Cluster   Cluster
 	Check     Check
+	CheckCRD  CheckCRD
 }
-
 type Top struct {
-	Interactive    bool
-	File           string
-	CheckName      []string
-	Output         printTypes.OutputType
-	Ctx            context.Context
-	Verbose        bool   // currently only used by install and uninstall, sends kubectl command output to terminal
-	KubeConfig     string // file to use for kube config, if not standard one.
-	Zip            bool
-	ErrorsOnly     bool
-	ConfigFilePath string
-	Consul         Consul // use consul as config backend
+	contextoptions.ContextAccessible
+	CheckName          []string
+	Output             printTypes.OutputType
+	Ctx                context.Context
+	Zip                bool
+	PodSelector        string   // label selector for pod scanning
+	ResourceNamespaces []string // namespaces in which to check custom resources
 }
 
 type HelmInstall struct {
@@ -114,13 +112,6 @@ type Edit struct {
 }
 
 type Route struct {
-}
-
-type Consul struct {
-	UseConsul       bool // enable consul config clients
-	RootKey         string
-	AllowStaleReads bool
-	Client          func() (*api.Client, error)
 }
 
 type Vault struct {
@@ -352,8 +343,36 @@ type Selector struct {
 type InputStaticSpec struct {
 	Hosts []string
 	// Attempt to use outbound TLS
-	// Gloo will automatically set this to true for port 443
-	UseTls bool
+	// If not explicitly set, Gloo will automatically set this to true for port 443
+	UseTls UseTls
+}
+
+type UseTls struct {
+	Value *bool
+}
+
+// methods to implement pflag Value interface https://github.com/spf13/pflag/blob/d5e0c0615acee7028e1e2740a11102313be88de1/flag.go#L187
+func (u *UseTls) String() string {
+	if u == nil || u.Value == nil {
+		return "<nil>"
+	}
+	return strconv.FormatBool(*u.Value)
+}
+
+func (u *UseTls) Set(s string) error {
+	if u == nil {
+		return eris.New("nil pointer")
+	}
+	b, err := strconv.ParseBool(s)
+	if err != nil {
+		return err
+	}
+	u.Value = &b
+	return nil
+}
+
+func (u *UseTls) Type() string {
+	return "bool"
 }
 
 const (
@@ -447,6 +466,12 @@ type Register struct {
 }
 
 type Check struct {
-	// The maximum length of time to wait before giving up on a secret request. A value of zero means no timeout.
-	SecretClientTimeout time.Duration
+	// The maximum length of time alloted to `glooctl check`. A value of zero means no timeout.
+	CheckTimeout time.Duration
+}
+
+type CheckCRD struct {
+	Version    string
+	LocalChart string
+	ShowYaml   bool
 }

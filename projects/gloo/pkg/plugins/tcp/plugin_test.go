@@ -1,26 +1,27 @@
 package tcp_test
 
 import (
+	"strings"
 	"time"
 
-	envoy_extensions_filters_network_sni_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-
+	envoy_extensions_filters_network_sni_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/sni_cluster/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	mock_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -135,42 +136,78 @@ var _ = Describe("Plugin", func() {
 			return p.CreateTcpFilterChains(plugins.Params{Snapshot: snap}, listener, tcpListener)
 		}
 
-		It("can copy over tcp plugin settings", func() {
-			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
-				Name: "one",
-				Destination: &v1.TcpHost_TcpAction{
-					Destination: &v1.TcpHost_TcpAction_Single{
-						Single: &v1.Destination{
-							DestinationType: &v1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Name:      "one",
-									Namespace: ns,
+		Context("can copy over tcp plugin settings", func() {
+
+			It("works with simple settings", func() {
+				tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
+					Name: "one",
+					Destination: &v1.TcpHost_TcpAction{
+						Destination: &v1.TcpHost_TcpAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Name:      "one",
+										Namespace: ns,
+									},
 								},
 							},
 						},
 					},
-				},
+				})
+
+				filterChains, err := createFilterChains()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filterChains).To(HaveLen(1))
+
+				var cfg envoytcp.TcpProxy
+				err = translatorutil.ParseTypedConfig(filterChains[0].Filters[0], &cfg)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(cfg.IdleTimeout).To(matchers.MatchProto(tcps.IdleTimeout))
+				Expect(cfg.MaxConnectAttempts).To(matchers.MatchProto(tcps.MaxConnectAttempts))
+				Expect(cfg.TunnelingConfig.GetHostname()).To(Equal(tcps.TunnelingConfig.GetHostname()))
+
+				hta := cfg.TunnelingConfig.HeadersToAdd
+				Expect(len(hta)).To(Equal(1))
+
+				tcpHeaders := tcps.TunnelingConfig.HeadersToAdd[0]
+				Expect(hta[0].Header.Key).To(Equal(tcpHeaders.Header.Key))
+				Expect(hta[0].Header.Value).To(Equal(tcpHeaders.Header.Value))
+				Expect(hta[0].Append.Value).To(Equal(tcpHeaders.Append.Value))
+
+				tcps.AccessLogFlushInterval = &duration.Duration{Seconds: 5}
+				filterChains, err = createFilterChains()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filterChains).To(HaveLen(1))
+
+				err = translatorutil.ParseTypedConfig(filterChains[0].Filters[0], &cfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(cfg.AccessLogFlushInterval).To(matchers.MatchProto(tcps.AccessLogFlushInterval))
+
 			})
+			It("rejects invalid settings", func() {
+				tcps.AccessLogFlushInterval = &duration.Duration{Nanos: 5}
+				tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
+					Name: "one",
+					Destination: &v1.TcpHost_TcpAction{
+						Destination: &v1.TcpHost_TcpAction_Single{
+							Single: &v1.Destination{
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Name:      "one",
+										Namespace: ns,
+									},
+								},
+							},
+						},
+					},
+				})
 
-			filterChains, err := createFilterChains()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(filterChains).To(HaveLen(1))
+				_, err := createFilterChains()
+				Expect(err).To(HaveOccurred())
+				Expect(strings.Contains(err.Error(), "access log flush interval must have minimum of 1ms")).To(BeTrue())
 
-			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseTypedConfig(filterChains[0].Filters[0], &cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(cfg.IdleTimeout).To(matchers.MatchProto(tcps.IdleTimeout))
-			Expect(cfg.MaxConnectAttempts).To(matchers.MatchProto(tcps.MaxConnectAttempts))
-			Expect(cfg.TunnelingConfig.GetHostname()).To(Equal(tcps.TunnelingConfig.GetHostname()))
-
-			hta := cfg.TunnelingConfig.HeadersToAdd
-			Expect(len(hta)).To(Equal(1))
-
-			tcpHeaders := tcps.TunnelingConfig.HeadersToAdd[0]
-			Expect(hta[0].Header.Key).To(Equal(tcpHeaders.Header.Key))
-			Expect(hta[0].Header.Value).To(Equal(tcpHeaders.Header.Value))
-			Expect(hta[0].Append.Value).To(Equal(tcpHeaders.Append.Value))
+			})
 		})
 
 		It("can transform a single destination", func() {
@@ -264,8 +301,8 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("can add the forward sni cluster name filter", func() {
-			sslConfig := &v1.SslConfig{
-				SslSecrets: &v1.SslConfig_SecretRef{
+			sslConfig := &ssl.SslConfig{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "name",
 						Namespace: "namespace",
@@ -304,8 +341,8 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should propagate proided `transport_socket_connect_timeout` to Envoy", func() {
-			sslConfig := &v1.SslConfig{
-				SslSecrets: &v1.SslConfig_SecretRef{
+			sslConfig := &ssl.SslConfig{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: &core.ResourceRef{
 						Name:      "name",
 						Namespace: "namespace",

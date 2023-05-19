@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7795
+    resolvesIssue: false
+    description: >
+      Remove xds-relay code from Gateway Kube2e tests as it is no longer a supported feature and
+      was dead code in our tests.

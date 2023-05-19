@@ -1,0 +1,11 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6402
+    resolvesIssue: false
+    description: >-
+      Exposes the RespectDnsTtl and DnsRefreshRate fields in the Upstream API.
+      For DnsRefreshRate, If the DNS refresh rate is specified and the cluster type is
+      either STRICT_DNS, or LOGICAL_DNS, this value is used as the cluster’s DNS refresh rate.
+      The RespectDnsTtl is an optional configuration for setting cluster’s DNS refresh rate.
+      If the value is set to true, cluster’s DNS refresh rate will be set to resource record’s
+      TTL which comes from DNS resolution.

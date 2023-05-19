@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Weekly doc fixes such as links, grammar, typos, and version updates.
+    issueLink: https://github.com/solo-io/gloo/issues/6961

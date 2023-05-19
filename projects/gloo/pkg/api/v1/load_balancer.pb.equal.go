@@ -198,6 +198,16 @@ func (m *LoadBalancerConfig_RoundRobin) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetSlowStartConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSlowStartConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSlowStartConfig(), target.GetSlowStartConfig()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -224,6 +234,16 @@ func (m *LoadBalancerConfig_LeastRequest) Equal(that interface{}) bool {
 
 	if m.GetChoiceCount() != target.GetChoiceCount() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetSlowStartConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSlowStartConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSlowStartConfig(), target.GetSlowStartConfig()) {
+			return false
+		}
 	}
 
 	return true
@@ -338,6 +358,60 @@ func (m *LoadBalancerConfig_Maglev) Equal(that interface{}) bool {
 		return m == nil
 	} else if m == nil {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *LoadBalancerConfig_SlowStartConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*LoadBalancerConfig_SlowStartConfig)
+	if !ok {
+		that2, ok := that.(LoadBalancerConfig_SlowStartConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetSlowStartWindow()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSlowStartWindow()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSlowStartWindow(), target.GetSlowStartWindow()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAggression()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAggression()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAggression(), target.GetAggression()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetMinWeightPercent()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMinWeightPercent()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMinWeightPercent(), target.GetMinWeightPercent()) {
+			return false
+		}
 	}
 
 	return true

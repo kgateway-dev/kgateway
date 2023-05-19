@@ -299,7 +299,6 @@ func (u *updaterUpdater) Run() error {
 	upstreamSave := func(m UpstreamMutator) error {
 		return u.saveUpstream(m)
 	}
-
 	resolvedUrl, resolvedErr := u.parent.resolver.Resolve(u.upstream)
 	if len(discoveriesForUpstream) == 0 {
 		// TODO: this is probably not going to work unless the upstream type will also have the method required
@@ -328,6 +327,20 @@ func (u *updaterUpdater) Run() error {
 				serviceSpecUpstream, ok := upstream.GetUpstreamType().(v1.ServiceSpecSetter)
 				if !ok {
 					return errors.New("can't set spec")
+				}
+				existingUs, ok := upstream.GetUpstreamType().(v1.ServiceSpecGetter)
+				// Check to see if the upstream already has a service spec and if we are trying to apply the new grpc API over the old one
+				// This is currently specific to the case where we are upgrading to 1.14
+				// In the future we might want general case handling of not changing the type on previously discovered upstreams
+				if ok {
+					if existingUs.GetServiceSpec() != nil {
+						if _, ok := existingUs.GetServiceSpec().GetPluginType().(*plugins.ServiceSpec_Grpc); ok {
+							if _, ok = r.spec.GetPluginType().(*plugins.ServiceSpec_GrpcJsonTranscoder); ok {
+								//TODO error should have migration instructions
+								return errors.New("Upstream using deprecated GRPC API found, will not update")
+							}
+						}
+					}
 				}
 				serviceSpecUpstream.SetServiceSpec(r.spec)
 				return nil

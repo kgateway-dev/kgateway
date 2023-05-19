@@ -3,7 +3,7 @@ package settingsutil_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -17,14 +17,15 @@ var _ = Describe("Settings", func() {
 		ctx := context.Background()
 
 		ctx = WithSettings(ctx, settings)
-
-		Expect(FromContext(ctx)).To(Equal(settings))
+		expectedSettings := MaybeFromContext(ctx)
+		Expect(expectedSettings).To(Equal(settings))
 	})
 
-	It("should panic when no settings", func() {
+	It("should return nil when no settings", func() {
 		ctx := context.Background()
 
-		Expect(func() { FromContext(ctx) }).Should(Panic())
+		expectedSettings := MaybeFromContext(ctx)
+		Expect(expectedSettings).To(BeNil())
 	})
 
 	It("should not when no settings with MaybeFromContext", func() {

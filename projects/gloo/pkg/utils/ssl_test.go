@@ -6,11 +6,12 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/constants"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -20,8 +21,8 @@ import (
 var _ = Describe("Ssl", func() {
 
 	var (
-		upstreamCfg            *v1.UpstreamSslConfig
-		downstreamCfg          *v1.SslConfig
+		upstreamCfg            *ssl.UpstreamSslConfig
+		downstreamCfg          *ssl.SslConfig
 		tlsSecret              *v1.TlsSecret
 		secret                 *v1.Secret
 		secrets                v1.SecretList
@@ -35,20 +36,20 @@ var _ = Describe("Ssl", func() {
 
 	Context("files", func() {
 		BeforeEach(func() {
-			upstreamCfg = &v1.UpstreamSslConfig{
+			upstreamCfg = &ssl.UpstreamSslConfig{
 				Sni: "test.com",
-				SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-					SslFiles: &v1.SSLFiles{
+				SslSecrets: &ssl.UpstreamSslConfig_SslFiles{
+					SslFiles: &ssl.SSLFiles{
 						TlsCert: gloohelpers.Certificate(),
 						TlsKey:  gloohelpers.PrivateKey(),
 						RootCa:  gloohelpers.Certificate(),
 					},
 				},
 			}
-			downstreamCfg = &v1.SslConfig{
+			downstreamCfg = &ssl.SslConfig{
 				SniDomains: []string{"test.com", "test1.com"},
-				SslSecrets: &v1.SslConfig_SslFiles{
-					SslFiles: &v1.SSLFiles{
+				SslSecrets: &ssl.SslConfig_SslFiles{
+					SslFiles: &ssl.SSLFiles{
 						TlsCert: gloohelpers.Certificate(),
 						TlsKey:  gloohelpers.PrivateKey(),
 						RootCa:  gloohelpers.Certificate(),
@@ -69,7 +70,7 @@ var _ = Describe("Ssl", func() {
 
 		Context("san", func() {
 			It("should error with san and not rootca", func() {
-				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
+				upstreamCfg.SslSecrets.(*ssl.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).To(Equal(RootCaMustBeProvidedError))
@@ -85,8 +86,8 @@ var _ = Describe("Ssl", func() {
 
 			It("should _not_ error with only a rootca", func() {
 				// rootca, tlscert, and tlskey are set in a beforeEach.  Explicitly UNsetting cert+key:
-				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.TlsCert = ""
-				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.TlsKey = ""
+				upstreamCfg.SslSecrets.(*ssl.UpstreamSslConfig_SslFiles).SslFiles.TlsCert = ""
+				upstreamCfg.SslSecrets.(*ssl.UpstreamSslConfig_SslFiles).SslFiles.TlsKey = ""
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -110,15 +111,15 @@ var _ = Describe("Ssl", func() {
 			}
 			ref := secret.Metadata.Ref()
 			secrets = v1.SecretList{secret}
-			upstreamCfg = &v1.UpstreamSslConfig{
+			upstreamCfg = &ssl.UpstreamSslConfig{
 				Sni: "test.com",
-				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+				SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 					SecretRef: ref,
 				},
 			}
-			downstreamCfg = &v1.SslConfig{
+			downstreamCfg = &ssl.SslConfig{
 				SniDomains: []string{"test.com", "test1.com"},
-				SslSecrets: &v1.SslConfig_SecretRef{
+				SslSecrets: &ssl.SslConfig_SecretRef{
 					SecretRef: ref,
 				},
 			}
@@ -278,6 +279,44 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.AllowRenegotiation).To(BeTrue())
 		})
 
+		Context("ocsp", func() {
+			Context("staple policy", func() {
+				It("should default to LENIENT_STAPLING for ocsp staple policy", func() {
+					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.OcspStaplePolicy).To(Equal(envoyauth.DownstreamTlsContext_LENIENT_STAPLING))
+				})
+
+				It("should default to LENIENT_STAPLING if staple policy does not exist", func() {
+					downstreamCfg.OcspStaplePolicy = ssl.SslConfig_OcspStaplePolicy(ssl.SslConfig_OcspStaplePolicy_value["INVALID"])
+					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.OcspStaplePolicy).To(Equal(envoyauth.DownstreamTlsContext_LENIENT_STAPLING))
+				})
+
+				DescribeTable("set ocsp staple policy when provided", func(policy ssl.SslConfig_OcspStaplePolicy, expected envoyauth.DownstreamTlsContext_OcspStaplePolicy) {
+					downstreamCfg.OcspStaplePolicy = policy
+					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.OcspStaplePolicy).To(Equal(expected))
+				},
+					Entry("MUST_STAPLE", ssl.SslConfig_MUST_STAPLE, envoyauth.DownstreamTlsContext_MUST_STAPLE),
+					Entry("LENIENT_STAPLING", ssl.SslConfig_LENIENT_STAPLING, envoyauth.DownstreamTlsContext_LENIENT_STAPLING),
+					Entry("STRICT_STAPLING", ssl.SslConfig_STRICT_STAPLING, envoyauth.DownstreamTlsContext_STRICT_STAPLING),
+				)
+			})
+
+			// Not testing that the staple is set, as it is a generated `der` file from an OCSP server, which should be tested in an E2E test.
+			Context("staple response", func() {
+				It("should not set ocsp staple if none is provided", func() {
+					cfg, err := configTranslator.ResolveCommonSslConfig(downstreamCfg, secrets, true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(cfg.TlsCertificates)).To(Equal(1))
+					Expect(cfg.TlsCertificates[0].OcspStaple).To(BeNil())
+				})
+			})
+		})
+
 		Context("san", func() {
 			It("should error with san and not rootca", func() {
 				tlsSecret.RootCa = ""
@@ -306,9 +345,9 @@ var _ = Describe("Ssl", func() {
 		Context("tls params", func() {
 
 			It("should add TLS Params when provided", func() {
-				upstreamCfg.Parameters = &v1.SslParameters{
-					MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
-					MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+				upstreamCfg.Parameters = &ssl.SslParameters{
+					MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+					MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 					CipherSuites:           []string{"cipher-test"},
 					EcdhCurves:             []string{"ec-dh-test"},
 				}
@@ -328,16 +367,16 @@ var _ = Describe("Ssl", func() {
 
 	Context("sds", func() {
 		var (
-			sdsConfig *v1.SDSConfig
+			sdsConfig *ssl.SDSConfig
 		)
 		BeforeEach(func() {
-			sdsConfig = &v1.SDSConfig{
+			sdsConfig = &ssl.SDSConfig{
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
 			}
-			upstreamCfg = &v1.UpstreamSslConfig{
+			upstreamCfg = &ssl.UpstreamSslConfig{
 				Sni: "test.com",
-				SslSecrets: &v1.UpstreamSslConfig_Sds{
+				SslSecrets: &ssl.UpstreamSslConfig_Sds{
 					Sds: sdsConfig,
 				},
 			}
@@ -366,13 +405,13 @@ var _ = Describe("Ssl", func() {
 		})
 
 		It("should have a sds setup with a custom cluster name", func() {
-			cfgCustomCluster := &v1.UpstreamSslConfig{
+			cfgCustomCluster := &ssl.UpstreamSslConfig{
 				Sni: "test.com",
-				SslSecrets: &v1.UpstreamSslConfig_Sds{
-					Sds: &v1.SDSConfig{
+				SslSecrets: &ssl.UpstreamSslConfig_Sds{
+					Sds: &ssl.SDSConfig{
 						CertificatesSecretName: "CertificatesSecretName",
 						ValidationContextName:  "ValidationContextName",
-						SdsBuilder: &v1.SDSConfig_ClusterName{
+						SdsBuilder: &ssl.SDSConfig_ClusterName{
 							ClusterName: "custom-cluster",
 						},
 					},
@@ -434,7 +473,7 @@ var _ = Describe("Ssl", func() {
 
 			When("TargetUri and ClusterName are specified", func() {
 				BeforeEach(func() {
-					sdsConfig.SdsBuilder = &v1.SDSConfig_ClusterName{
+					sdsConfig.SdsBuilder = &ssl.SDSConfig_ClusterName{
 						ClusterName: "custom-cluster",
 					}
 				})
@@ -481,24 +520,24 @@ var _ = Describe("Ssl", func() {
 
 	Context("sds with tokenFile", func() {
 		var (
-			sdsConfig *v1.SDSConfig
+			sdsConfig *ssl.SDSConfig
 		)
 		BeforeEach(func() {
-			sdsConfig = &v1.SDSConfig{
+			sdsConfig = &ssl.SDSConfig{
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
-				SdsBuilder: &v1.SDSConfig_CallCredentials{
-					CallCredentials: &v1.CallCredentials{
-						FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
+				SdsBuilder: &ssl.SDSConfig_CallCredentials{
+					CallCredentials: &ssl.CallCredentials{
+						FileCredentialSource: &ssl.CallCredentials_FileCredentialSource{
 							TokenFileName: "TokenFileName",
 							Header:        "Header",
 						},
 					},
 				},
 			}
-			upstreamCfg = &v1.UpstreamSslConfig{
+			upstreamCfg = &ssl.UpstreamSslConfig{
 				Sni: "test.com",
-				SslSecrets: &v1.UpstreamSslConfig_Sds{
+				SslSecrets: &ssl.UpstreamSslConfig_Sds{
 					Sds: sdsConfig,
 				},
 			}
@@ -573,7 +612,7 @@ var _ = Describe("Ssl", func() {
 		})
 
 		It("should return nil for nil SslParameters", func() {
-			var sslParameters *v1.SslParameters
+			var sslParameters *ssl.SslParameters
 			tlsParams, err := configTranslator.ResolveSslParamsConfig(sslParameters)
 
 			Expect(err).To(BeNil())
@@ -581,9 +620,9 @@ var _ = Describe("Ssl", func() {
 		})
 
 		It("should return TlsParameters for valid SslParameters", func() {
-			sslParameters := &v1.SslParameters{
-				MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
-				MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+			sslParameters := &ssl.SslParameters{
+				MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+				MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 				CipherSuites:           []string{"cipher-test"},
 				EcdhCurves:             []string{"ec-dh-test"},
 			}
@@ -597,11 +636,11 @@ var _ = Describe("Ssl", func() {
 		})
 
 		It("should error for invalid SslParameters", func() {
-			var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+			var invalidProtocolVersion ssl.SslParameters_ProtocolVersion = 5 // INVALID
 
-			sslParameters := &v1.SslParameters{
+			sslParameters := &ssl.SslParameters{
 				MinimumProtocolVersion: invalidProtocolVersion,
-				MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+				MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 				CipherSuites:           []string{"cipher-test"},
 				EcdhCurves:             []string{"ec-dh-test"},
 			}

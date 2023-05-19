@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 var (
@@ -63,7 +64,13 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 	out.PathWithEscapedSlashesAction = envoyhttp.HttpConnectionManager_PathWithEscapedSlashesAction(in.GetPathWithEscapedSlashesAction())
 	out.CodecType = envoyhttp.HttpConnectionManager_CodecType(in.GetCodecType())
 	out.MergeSlashes = in.GetMergeSlashes().GetValue()
-	out.NormalizePath = in.GetNormalizePath()
+
+	// default to true as per RFC 3986
+	if in.GetNormalizePath() == nil {
+		out.NormalizePath = &wrapperspb.BoolValue{Value: true}
+	} else {
+		out.NormalizePath = in.GetNormalizePath()
+	}
 
 	if in.GetAcceptHttp_10().GetValue() {
 		out.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
@@ -83,11 +90,15 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			},
 		}
 	} else if in.GetPreserveCaseHeaderKeyFormat().GetValue() {
+		typedConfig, err := utils.MessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{})
+		if err != nil {
+			return err
+		}
 		out.GetHttpProtocolOptions().HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
 			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_StatefulFormatter{
 				StatefulFormatter: &envoycore.TypedExtensionConfig{
 					Name:        PreserveCasePlugin,
-					TypedConfig: utils.MustMessageToAny(&envoy_extensions_http_header_formatters_preserve_case_v3.PreserveCaseFormatterConfig{}),
+					TypedConfig: typedConfig,
 				},
 			},
 		}
@@ -250,6 +261,11 @@ func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, 
 			}
 
 			webSocketUpgradeSpecified = true
+		case *protocol_upgrade.ProtocolUpgradeConfig_Connect:
+			out.GetUpgradeConfigs()[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
+				UpgradeType: upgradeconfig.ConnectUpgradeType,
+				Enabled:     config.GetConnect().GetEnabled(),
+			}
 		default:
 			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 		}

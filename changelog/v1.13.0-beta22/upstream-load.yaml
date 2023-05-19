@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/solo-projects/issues/4120
+  fixesIssue: true
+  description: |
+    Fix an issue where upstream propagation was delayed when updating a large amount of new objects.

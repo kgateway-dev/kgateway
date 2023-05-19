@@ -27,7 +27,8 @@ const (
 
 // translatorSyncerExtension is the Open Source variant of the Enterprise translatorSyncerExtension for RateLimit
 // TODO (sam-heilbron)
-// 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
+//
+//	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
 //	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
 type translatorSyncerExtension struct{}
 
@@ -56,6 +57,10 @@ func (s *translatorSyncerExtension) Sync(
 	}
 
 	reports.Accept(snap.Proxies.AsInputResources()...)
+
+	for _, rlc := range snap.Ratelimitconfigs {
+		reports.AddError(rlc, enterpriseOnlyError("RateLimitConfig"))
+	}
 
 	for _, proxy := range snap.Proxies {
 		for _, listener := range proxy.GetListeners() {

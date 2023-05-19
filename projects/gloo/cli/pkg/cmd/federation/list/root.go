@@ -22,7 +22,7 @@ func RootCmd(opts *options.Options) *cobra.Command {
 		Use:   constants.CLUSTER_LIST_COMMAND.Use,
 		Short: constants.CLUSTER_LIST_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			secretClient := helpers.MustKubeClient().CoreV1().Secrets(opts.Cluster.FederationNamespace)
+			secretClient := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext).CoreV1().Secrets(opts.Cluster.FederationNamespace)
 			secrets, err := secretClient.List(opts.Top.Ctx, metav1.ListOptions{})
 			if err != nil {
 				return errors.Wrapf(err, "Failed to list clusters.")

@@ -77,8 +77,8 @@ Defines a configuration for generating outgoing requests for a resolver.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `resultRoot` | `string` | Sets the "root" of the upstream response to be turned into a graphql type by the graphql server. For example, if the graphql type is: type Simple { name String } and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`, the graphql server will not be able to marshal the upstream response into the Simple graphql type because it doesn't know where the relevant data is. If we set result_root to "data.simple", we can give the graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants. |
-| `setters` | `map<string, string>` | Field-specific mapping for a graphql field to a JSON path in the upstream response. For example, if the graphql type is: type Person { firstname String lastname String fullname String } and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`, the graphql server will not be able to marshal the upstream response into the Person graphql type because of the nested `lastname` field. We can use a simple setter here: setters: lastname: '{$body.details.lastname}' fullname: '{$body.details.firstname} {$body.details.lastname}' and the graphql server will be able to extract data for a field given the path to the relevant data in the upstream JSON response. We don't need to have a setter for the `firstname` field because the JSON response has that field in a position the graphql server can understand automatically. So far only the $body keyword is supported, but in the future we may add support for others such as $headers. |
+| `resultRoot` | `string` | Sets the "root" of the upstream response to be turned into a graphql type by the graphql server. For example, if the graphql type is: type Simple { name String } and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`, the graphql server will not be able to marshal the upstream response into the Simple graphql type because it does not know where the relevant data is. If we set result_root to "data.simple", we can give the graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants. |
+| `setters` | `map<string, string>` | Field-specific mapping for a graphql field to a JSON path in the upstream response. For example, if the graphql type is: type Person { firstname String lastname String fullname String } and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`, the graphql server will not be able to marshal the upstream response into the Person graphql type because of the nested `lastname` field. We can use a simple setter here: setters: lastname: '{$body.details.lastname}' fullname: '{$body.details.firstname} {$body.details.lastname}' and the graphql server will be able to extract data for a field given the path to the relevant data in the upstream JSON response. We do not need to have a setter for the `firstname` field because the JSON response has that field in a position the graphql server can understand automatically. So far only the $body keyword is supported, but in the future we may add support for others such as $headers. |
 
 
 
@@ -118,6 +118,7 @@ control-plane API
 "request": .graphql.gloo.solo.io.RequestTemplate
 "response": .graphql.gloo.solo.io.ResponseTemplate
 "spanName": string
+"timeout": .google.protobuf.Duration
 
 ```
 
@@ -127,6 +128,7 @@ control-plane API
 | `request` | [.graphql.gloo.solo.io.RequestTemplate](../graphql.proto.sk/#requesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `response` | [.graphql.gloo.solo.io.ResponseTemplate](../graphql.proto.sk/#responsetemplate) | configuration used to modify the response from the REST API before being handled by the graphql server. |
 | `spanName` | `string` |  |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. If unset, the upstream connection timeout or a default of 1 second will be used. |
 
 
 
@@ -148,7 +150,7 @@ Is a Schema Extension
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoRefsList` can be set. |
-| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
+| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml cannot handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoRefsList` can be set. |
 | `protoRefsList` | [.graphql.gloo.solo.io.GrpcDescriptorRegistry.ProtoRefs](../graphql.proto.sk/#protorefs) | Allows the user to put proto descriptor set binary content in configmaps; The descriptor set binary content in these config maps must be base64 encoded Generating the proto descriptor binary and base64 encoding it can be done using the following command `protoc ./your-proto-here.proto --proto_path . --descriptor_set_out="/dev/stdout" --include_imports | base64`. Only one of `protoRefsList`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
 
 
@@ -181,6 +183,7 @@ control-plane API
 "upstreamRef": .core.solo.io.ResourceRef
 "requestTransform": .graphql.gloo.solo.io.GrpcRequestTemplate
 "spanName": string
+"timeout": .google.protobuf.Duration
 
 ```
 
@@ -189,6 +192,7 @@ control-plane API
 | `upstreamRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `requestTransform` | [.graphql.gloo.solo.io.GrpcRequestTemplate](../graphql.proto.sk/#grpcrequesttemplate) | configuration used to compose the outgoing request to a REST API. |
 | `spanName` | `string` |  |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout to use for this resolver. If unset, the upstream connection timeout or a default of 1 second will be used. |
 
 
 
@@ -226,7 +230,7 @@ control-plane API
 | ----- | ---- | ----------- | 
 | `name` | `string` | name of the GraphQLApi subschema. |
 | `namespace` | `string` | namespace of the GraphQLApi subschema. |
-| `typeMerge` | `map<string, .graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig>` | Type merge configuration for this subschema. Let's say this subschema is a Users service schema and provides the User type (with a query to fetch a user given the username) ```gql type Query { GetUser(username: String): User } type User { username: String firstName: String lastName: String } ``` and another subschema, e.g. Reviews schema, may have a partial User type: ```gql type Review { author: User } type User { username: String } ``` We want to provide the relevant information from this Users service schema, so that another API that can give us a partial User type (with the username) will then be able to have access to the full user type. With the correct type merging config under the Users subschema, e.g.: ```yaml type_merge: User: selection_set: '{ username }' query_name: 'GetUser' args: username: username ``` the stitched schema will now be able to provide the full user type to all types that require it. In this case, we can now get the first name of an author from the Review.author field even though the Reviews schema doesn't provide the full User type. |
+| `typeMerge` | `map<string, .graphql.gloo.solo.io.StitchedSchema.SubschemaConfig.TypeMergeConfig>` | Type merge configuration for this subschema. Let's say this subschema is a Users service schema and provides the User type (with a query to fetch a user given the username) ```gql type Query { GetUser(username: String): User } type User { username: String firstName: String lastName: String } ``` and another subschema, e.g. Reviews schema, may have a partial User type: ```gql type Review { author: User } type User { username: String } ``` We want to provide the relevant information from this Users service schema, so that another API that can give us a partial User type (with the username) will then be able to have access to the full user type. With the correct type merging config under the Users subschema, e.g.: ```yaml type_merge: User: selection_set: '{ username }' query_name: 'GetUser' args: username: username ``` the stitched schema will now be able to provide the full user type to all types that require it. In this case, we can now get the first name of an author from the Review.author field even though the Reviews schema does not provide the full User type. |
 
 
 
@@ -314,7 +318,7 @@ If a field with the same name does not exist in the parent, null will be used.
 | ----- | ---- | ----------- | 
 | `restResolver` | [.graphql.gloo.solo.io.RESTResolver](../graphql.proto.sk/#restresolver) | REST resolver used to translate and send graphql requests to a REST upstream. Only one of `restResolver`, `grpcResolver`, or `mockResolver` can be set. |
 | `grpcResolver` | [.graphql.gloo.solo.io.GrpcResolver](../graphql.proto.sk/#grpcresolver) | gRPC resolver used to translate and send graphql requests to a gRPC upstream. Only one of `grpcResolver`, `restResolver`, or `mockResolver` can be set. |
-| `mockResolver` | [.graphql.gloo.solo.io.MockResolver](../graphql.proto.sk/#mockresolver) | Resolver used to mock responses from an upstream. This resolver doesn't make a call out to an upstream, but can mock responses either synchronously or with a delay. Additionally, can be used to mock errors from an upstream. Only one of `mockResolver`, `restResolver`, or `grpcResolver` can be set. |
+| `mockResolver` | [.graphql.gloo.solo.io.MockResolver](../graphql.proto.sk/#mockresolver) | Resolver used to mock responses from an upstream. This resolver does not make a call out to an upstream, but can mock responses either synchronously or with a delay. Additionally, can be used to mock errors from an upstream. Only one of `mockResolver`, `restResolver`, or `grpcResolver` can be set. |
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The stats prefix which will be used for this resolver. If empty, will generate a stats prefix ${RESOLVER_NAME}. |
 
 

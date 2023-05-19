@@ -12,6 +12,7 @@ weight: 5
 
 
 - [Settings](#settings)
+- [RuleSetFromConfigMap](#rulesetfromconfigmap)
 - [CoreRuleSet](#coreruleset)
   
 
@@ -33,6 +34,7 @@ weight: 5
 "customInterventionMessage": string
 "coreRuleSet": .waf.options.gloo.solo.io.CoreRuleSet
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
+"configMapRuleSets": []waf.options.gloo.solo.io.RuleSetFromConfigMap
 "auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
 "requestHeadersOnly": bool
 "responseHeadersOnly": bool
@@ -44,10 +46,30 @@ weight: 5
 | `disabled` | `bool` | Disable waf on this resource (if omitted defaults to false). If a route/virtual host is configured with WAF, you must explicitly disable its WAF, i.e., it will not inherit the disabled status of its parent. |
 | `customInterventionMessage` | `string` | Custom massage to display if an intervention occurs. |
 | `coreRuleSet` | [.waf.options.gloo.solo.io.CoreRuleSet](../waf.proto.sk/#coreruleset) | Add OWASP core rule set if nil will not be added. |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets rules to add. |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../../../../../external/envoy/extensions/waf/waf.proto.sk/#ruleset) | Custom rule sets to add. Any subsequent changes to the rules in these files are not automatically updated. To update rules from files, version and update the file name. If you want dynamically updated rules, use the `configMapRuleSets` option instead. |
+| `configMapRuleSets` | [[]waf.options.gloo.solo.io.RuleSetFromConfigMap](../waf.proto.sk/#rulesetfromconfigmap) | Kubernetes configmaps with the rule sets that you want to use. The rules must be in the value of the key-value mappings in the `data` field of the configmap. Subsequent updates to the configmap values are dynamically updated in the configuration. |
 | `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../../../../../external/envoy/extensions/waf/waf.proto.sk/#auditlogging) | Audit Log settings. |
 | `requestHeadersOnly` | `bool` | Only process request headers, not buffering the request body. |
 | `responseHeadersOnly` | `bool` | Only process response headers, not buffering the response body. |
+
+
+
+
+---
+### RuleSetFromConfigMap
+
+
+
+```yaml
+"configMapRef": .core.solo.io.ResourceRef
+"dataMapKeys": []string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `configMapRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The Kubernetes configmap that has the rule sets as values in the `data` section. |
+| `dataMapKeys` | `[]string` | The ConfigMap might have multiple key-value pairs in the `data` section, such as when you create the ConfigMap from multiple files. Each value in a key-value pair may contain 0 or more rules. You can use the `dataMapKey` field to select which keys to use, and the order you want them applied. If this field is included, only the rules from the specified keys are applied, in the specified order. Any rules contained in the value of keys not included are ignored. If this field is not included, all of the keys in the `data` section of the ConfigMap are sorted alphabetically, and all of the rules are included in the resulting order. The order of key-value pairs might differ from the order in which they appear in the ConfigMap (note, the rules within each mapping stay in the same order as they appear in the ConfigMap). |
 
 
 
@@ -66,7 +88,7 @@ weight: 5
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `customSettingsString` | `string` | String representing the core rule set custom config options. Only one of `customSettingsString` or `customSettingsFile` can be set. |
-| `customSettingsFile` | `string` | String representing the core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |
+| `customSettingsFile` | `string` | String representing a file location with core rule set custom config options. Only one of `customSettingsFile` or `customSettingsString` can be set. |
 
 
 

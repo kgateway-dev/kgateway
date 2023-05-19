@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4312
+    resolvesIssue: false
+    description: simplify return branches of upgrade.GetUpgradeVersions

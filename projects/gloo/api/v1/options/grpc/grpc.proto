@@ -9,15 +9,17 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
 
 // Service spec describing GRPC upstreams. This will usually be filled
 // automatically via function discovery (if the upstream supports reflection).
 // If your upstream service is a GRPC service, use this service spec (an empty
 // spec is fine), to make sure that traffic to it is routed with http2.
+// Deprecated: prefer using GrpcJsonTranscoder
 message ServiceSpec {
 
   // Descriptors that contain information of the services listed below.
-  // this is a serialized google.protobuf.FileDescriptorSet
+  // this is a serialized google.protobuf.FileDescriptorSet. These will be discovered if FDS is enabled and may be modified by Gloo.
   bytes descriptors = 1;
 
   // Describes a grpc service
@@ -30,13 +32,13 @@ message ServiceSpec {
     repeated string function_names = 3;
   }
 
-  // List of services used by this upstream. For a grpc upstream where you don't
-  // need to use Gloo's function routing, this can be an empty list. These
-  // services must be present in the descriptors.
-  repeated GrpcService grpc_services = 2;
+  // List of services used by this upstream. These services must be present in the descriptors.
+  repeated GrpcService grpc_services = 2 [deprecated = true];
+
 }
 
 // This is only for upstream with Grpc service spec.
+// Deprecated: prefer providing descriptors on Upstream in GrpcJsonTranscoder
 message DestinationSpec {
   // The proto package of the function.
   string package = 1;

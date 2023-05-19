@@ -37,7 +37,7 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			return nil, nil
 		}
 
-		apiKeySecret := &extauthv1.ApiKeySecret{
+		apiKeySecret := &extauthv1.ApiKey{
 			ApiKey: string(apiKey),
 		}
 

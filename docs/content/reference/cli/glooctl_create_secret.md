@@ -19,7 +19,7 @@ glooctl create secret [flags]
 ```
   -h, --help                           help for secret
       --use-vault                      use Vault Key-Value storage as the backend for reading and writing secrets
-      --vault-address string           address of the Vault server. This should be a complete  URL such as "http://vault.example.com". Use with --use-vault (default "https://127.0.0.1:8200")
+      --vault-address string           address of the Vault server. This should be a complete URL such as "http://vault.example.com". Use with --use-vault (default "https://127.0.0.1:8200")
       --vault-ca-cert string           CACert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate.Use with --use-vault
       --vault-ca-path string           CAPath is the path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate.Use with --use-vault
       --vault-client-cert string       ClientCert is the path to the certificate for Vault communication.Use with --use-vault
@@ -28,7 +28,7 @@ glooctl create secret [flags]
       --vault-root-key string          key prefix for Vault key-value storage inside a storage engine. (default "gloo")
       --vault-tls-insecure             Insecure enables or disables SSL verification.Use with --use-vault
       --vault-tls-server-name string   TLSServerName, if set, is used to set the SNI host when connecting via TLS.Use with --use-vault
-      --vault-token string             address of the Vault server. This should be a complete  URL such as "http://vault.example.com". Use with --use-vault
+      --vault-token string             The root token to authenticate with a Vault server. Use with --use-vault
 ```
 
 ### Options inherited from parent commands
@@ -43,6 +43,7 @@ glooctl create secret [flags]
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
       --dry-run                    print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")
@@ -54,8 +55,10 @@ glooctl create secret [flags]
 
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource
 * [glooctl create secret apikey](../glooctl_create_secret_apikey)	 - Create an ApiKey secret with the given name (Enterprise)
+* [glooctl create secret authcredentials](../glooctl_create_secret_authcredentials)	 - Create an AuthenticationCredentials secret with the given name (Enterprise)
 * [glooctl create secret aws](../glooctl_create_secret_aws)	 - Create an AWS secret with the given name
 * [glooctl create secret azure](../glooctl_create_secret_azure)	 - Create an Azure secret with the given name
+* [glooctl create secret encryptionkey](../glooctl_create_secret_encryptionkey)	 - Create an encryption key secret with the given name
 * [glooctl create secret header](../glooctl_create_secret_header)	 - Create a header secret with the given name
 * [glooctl create secret oauth](../glooctl_create_secret_oauth)	 - Create an OAuth secret with the given name (Enterprise)
 * [glooctl create secret tls](../glooctl_create_secret_tls)	 - Create a secret with the given name

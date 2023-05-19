@@ -24,16 +24,17 @@ A dashboard showing whole-cluster metrics can be found in the `gloo/Envoy Statis
 Gloo Edge Enterprise's observability component generates a dashboard per watched upstream. These dashboards are updated and recreated every time an upstream changes. It renders a Go template that can be found in a configmap, which gets loaded into the `observability` pod's env at startup:
 
 ```bash
-~ > kubectl -n gloo-system get cm glooe-observability-config -o yaml | head -n 10
+~ > kubectl -n gloo-system get cm gloo-observability-config -o yaml | head -n 10
 apiVersion: v1
 data:
-  DASHBOARD_JSON_TEMPLATE: |
+  GRAFANA_URL: http://glooe-grafana.gloo-system.svc.cluster.local:80
+  UPSTREAM_DASHBOARD_JSON_TEMPLATE: |2
+
     {
       "annotations": {
         "list": [
           {
             "builtIn": 1,
-            "datasource": "-- Grafana --",
 ```
 If you want to customize how these per-upstream dashboards look, you can provide your own template to use by writing a Grafana dashboard JSON representation to that config map key. Currently the only available variables that are available when the Go template is rendered are:
 

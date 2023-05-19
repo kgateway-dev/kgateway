@@ -13,6 +13,7 @@ import (
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -47,6 +48,8 @@ var (
 	UnknownTransformationType = func(transformation interface{}) error {
 		return fmt.Errorf("unknown transformation type %T", transformation)
 	}
+	mCacheHits   = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_hits", "The number of cache hits while validating transformation config")
+	mCacheMisses = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
 )
 
 type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
@@ -314,10 +317,19 @@ func (p *Plugin) validateTransformation(
 
 	// This transformation has already been validated, return the result
 	if err, ok := p.validationLruCache.Get(transformHash); ok {
+		utils.MeasureOne(
+			ctx,
+			mCacheHits,
+		)
 		// Error may be nil here since it's just the cached result
 		// so return it as a nil err after cast worst case.
 		errCasted, _ := err.(error)
 		return errCasted
+	} else {
+		utils.MeasureOne(
+			ctx,
+			mCacheMisses,
+		)
 	}
 
 	err = bootstrap.ValidateBootstrap(ctx, p.settings, FilterName, transformations)
@@ -423,6 +435,10 @@ func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoyro
 	case *matchers.Matcher_Prefix:
 		out.PathSpecifier = &envoyroutev3.RouteMatch_Prefix{
 			Prefix: path.Prefix,
+		}
+	case *matchers.Matcher_ConnectMatcher_:
+		out.PathSpecifier = &envoyroutev3.RouteMatch_ConnectMatcher_{
+			ConnectMatcher: &envoyroutev3.RouteMatch_ConnectMatcher{},
 		}
 	}
 }

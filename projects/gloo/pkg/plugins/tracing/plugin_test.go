@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	v12 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoytrace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -8,7 +10,7 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	envoytrace_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/trace/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -394,6 +396,207 @@ var _ = Describe("Plugin", func() {
 			})
 		})
 
+		Describe("when opencensus provider config", func() {
+			It("translates the plugin correctly using OcagentAddress", func() {
+
+				expectedHttpAddress := "localhost:10000"
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_OpenCensusConfig{
+							OpenCensusConfig: &envoytrace_gloo.OpenCensusConfig{
+								TraceConfig: &envoytrace_gloo.TraceConfig{
+									Sampler: &envoytrace_gloo.TraceConfig_ConstantSampler{
+										ConstantSampler: &envoytrace_gloo.ConstantSampler{
+											Decision: envoytrace_gloo.ConstantSampler_ALWAYS_ON,
+										},
+									},
+									MaxNumberOfAttributes:    5,
+									MaxNumberOfAnnotations:   10,
+									MaxNumberOfMessageEvents: 15,
+									MaxNumberOfLinks:         20,
+								},
+								OcagentExporterEnabled: true,
+								OcagentAddress: &envoytrace_gloo.OpenCensusConfig_HttpAddress{
+									HttpAddress: expectedHttpAddress,
+								},
+								IncomingTraceContext: nil,
+								OutgoingTraceContext: nil,
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.OpenCensusConfig{
+					TraceConfig: &v12.TraceConfig{
+						Sampler: &v12.TraceConfig_ConstantSampler{
+							ConstantSampler: &v12.ConstantSampler{
+								Decision: v12.ConstantSampler_ALWAYS_ON,
+							},
+						},
+						MaxNumberOfAttributes:    5,
+						MaxNumberOfAnnotations:   10,
+						MaxNumberOfMessageEvents: 15,
+						MaxNumberOfLinks:         20,
+					},
+					OcagentExporterEnabled: true,
+					OcagentAddress:         expectedHttpAddress,
+					OcagentGrpcService:     nil,
+					IncomingTraceContext:   nil,
+					OutgoingTraceContext:   nil,
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.opencensus",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+
+			It("translates the plugin correctly using OcagentGrpcService", func() {
+
+				sampleGrpcTargetUri := "sampleGrpcTargetUri"
+				sampleGrpcStatPrefix := "sampleGrpcStatPrefix"
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_OpenCensusConfig{
+							OpenCensusConfig: &envoytrace_gloo.OpenCensusConfig{
+								TraceConfig: &envoytrace_gloo.TraceConfig{
+									Sampler: &envoytrace_gloo.TraceConfig_ConstantSampler{
+										ConstantSampler: &envoytrace_gloo.ConstantSampler{
+											Decision: envoytrace_gloo.ConstantSampler_ALWAYS_ON,
+										},
+									},
+									MaxNumberOfAttributes:    5,
+									MaxNumberOfAnnotations:   10,
+									MaxNumberOfMessageEvents: 15,
+									MaxNumberOfLinks:         20,
+								},
+								OcagentExporterEnabled: true,
+								OcagentAddress: &envoytrace_gloo.OpenCensusConfig_GrpcAddress{
+									GrpcAddress: &envoytrace_gloo.OpenCensusConfig_OcagentGrpcAddress{
+										TargetUri:  sampleGrpcTargetUri,
+										StatPrefix: sampleGrpcStatPrefix,
+									},
+								},
+								IncomingTraceContext: []envoytrace_gloo.OpenCensusConfig_TraceContext{
+									envoytrace_gloo.OpenCensusConfig_NONE,
+									envoytrace_gloo.OpenCensusConfig_TRACE_CONTEXT,
+									envoytrace_gloo.OpenCensusConfig_GRPC_TRACE_BIN,
+									envoytrace_gloo.OpenCensusConfig_CLOUD_TRACE_CONTEXT,
+									envoytrace_gloo.OpenCensusConfig_B3,
+								},
+								OutgoingTraceContext: []envoytrace_gloo.OpenCensusConfig_TraceContext{
+									envoytrace_gloo.OpenCensusConfig_B3,
+									envoytrace_gloo.OpenCensusConfig_CLOUD_TRACE_CONTEXT,
+									envoytrace_gloo.OpenCensusConfig_GRPC_TRACE_BIN,
+									envoytrace_gloo.OpenCensusConfig_TRACE_CONTEXT,
+									envoytrace_gloo.OpenCensusConfig_NONE,
+								},
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.OpenCensusConfig{
+					TraceConfig: &v12.TraceConfig{
+						Sampler: &v12.TraceConfig_ConstantSampler{
+							ConstantSampler: &v12.ConstantSampler{
+								Decision: v12.ConstantSampler_ALWAYS_ON,
+							},
+						},
+						MaxNumberOfAttributes:    5,
+						MaxNumberOfAnnotations:   10,
+						MaxNumberOfMessageEvents: 15,
+						MaxNumberOfLinks:         20,
+					},
+					OcagentExporterEnabled: true,
+					OcagentAddress:         "",
+					OcagentGrpcService: &envoy_config_core_v3.GrpcService{
+						TargetSpecifier: &envoy_config_core_v3.GrpcService_GoogleGrpc_{
+							GoogleGrpc: &envoy_config_core_v3.GrpcService_GoogleGrpc{
+								TargetUri:  sampleGrpcTargetUri,
+								StatPrefix: sampleGrpcStatPrefix,
+							},
+						},
+					},
+					IncomingTraceContext: []envoytrace.OpenCensusConfig_TraceContext{
+						envoytrace.OpenCensusConfig_NONE,
+						envoytrace.OpenCensusConfig_TRACE_CONTEXT,
+						envoytrace.OpenCensusConfig_GRPC_TRACE_BIN,
+						envoytrace.OpenCensusConfig_CLOUD_TRACE_CONTEXT,
+						envoytrace.OpenCensusConfig_B3,
+					},
+					OutgoingTraceContext: []envoytrace.OpenCensusConfig_TraceContext{
+						envoytrace.OpenCensusConfig_B3,
+						envoytrace.OpenCensusConfig_CLOUD_TRACE_CONTEXT,
+						envoytrace.OpenCensusConfig_GRPC_TRACE_BIN,
+						envoytrace.OpenCensusConfig_TRACE_CONTEXT,
+						envoytrace.OpenCensusConfig_NONE,
+					},
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.opencensus",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+		})
+
+		Describe("when opentelemetry provider config", func() {
+			It("translates the plugin correctly", func() {
+
+				testClusterName := "test-cluster"
+				cfg := &envoyhttp.HttpConnectionManager{}
+				hcmSettings = &hcm.HttpConnectionManagerSettings{
+					Tracing: &tracing.ListenerTracingSettings{
+						ProviderConfig: &tracing.ListenerTracingSettings_OpenTelemetryConfig{
+							OpenTelemetryConfig: &envoytrace_gloo.OpenTelemetryConfig{
+								CollectorCluster: &envoytrace_gloo.OpenTelemetryConfig_ClusterName{
+									ClusterName: testClusterName,
+								},
+							},
+						},
+					},
+				}
+				err := processHcmNetworkFilter(cfg)
+				Expect(err).To(BeNil())
+
+				expectedEnvoyConfig := &envoytrace.OpenTelemetryConfig{
+					GrpcService: &envoy_config_core_v3.GrpcService{
+						TargetSpecifier: &envoy_config_core_v3.GrpcService_EnvoyGrpc_{
+							EnvoyGrpc: &envoy_config_core_v3.GrpcService_EnvoyGrpc{
+								ClusterName: testClusterName,
+							},
+						},
+					},
+				}
+				expectedEnvoyConfigMarshalled, _ := ptypes.MarshalAny(expectedEnvoyConfig)
+				expectedEnvoyTracingProvider := &envoytrace.Tracing_Http{
+					Name: "envoy.tracers.opentelemetry",
+					ConfigType: &envoytrace.Tracing_Http_TypedConfig{
+						TypedConfig: expectedEnvoyConfigMarshalled,
+					},
+				}
+				Expect(cfg.Tracing.Provider.GetName()).To(Equal(expectedEnvoyTracingProvider.GetName()))
+				Expect(cfg.Tracing.Provider.GetTypedConfig()).To(Equal(expectedEnvoyTracingProvider.GetTypedConfig()))
+			})
+		})
+
 	})
 
 	It("should update routes properly", func() {
@@ -447,5 +650,4 @@ var _ = Describe("Plugin", func() {
 		Expect(outFull.Tracing.RandomSampling.Numerator / 10000).To(Equal(uint32(20)))
 		Expect(outFull.Tracing.OverallSampling.Numerator / 10000).To(Equal(uint32(30)))
 	})
-
 })

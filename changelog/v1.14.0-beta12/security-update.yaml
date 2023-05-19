@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Create .trivyignore file and ignore CVE-2022-41721, a vulnerability in golang.org/x/net.
+      This vulnerability is not exploitable in Gloo, as it is not used in the gateway-proxy image and none of the handlers exposed by the control plane are vulnerable to these types of requests.
+    issueLink: https://github.com/solo-io/gloo/issues/7757

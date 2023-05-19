@@ -35,33 +35,44 @@ func main() {
 
 	validateReleaseVersionOfCli()
 
-	assets := make([]githubutils.ReleaseAssetSpec, 6)
-	assets[0] = githubutils.ReleaseAssetSpec{
-		Name:       "glooctl-linux-amd64",
-		ParentPath: buildDir,
-		UploadSHA:  true,
-	}
-	assets[1] = githubutils.ReleaseAssetSpec{
-		Name:       "glooctl-darwin-amd64",
-		ParentPath: buildDir,
-		UploadSHA:  true,
-	}
-	assets[2] = githubutils.ReleaseAssetSpec{
-		Name:       "glooctl-windows-amd64.exe",
-		ParentPath: buildDir,
-		UploadSHA:  true,
-	}
-	assets[3] = githubutils.ReleaseAssetSpec{
-		Name:       "gloo-gateway.yaml",
-		ParentPath: "install",
-	}
-	assets[4] = githubutils.ReleaseAssetSpec{
-		Name:       "gloo-ingress.yaml",
-		ParentPath: "install",
-	}
-	assets[5] = githubutils.ReleaseAssetSpec{
-		Name:       "gloo-knative.yaml",
-		ParentPath: "install",
+	assets := []githubutils.ReleaseAssetSpec{
+		{
+			Name:       "glooctl-linux-amd64",
+			ParentPath: buildDir,
+			UploadSHA:  true,
+		},
+		{
+			Name:       "glooctl-linux-arm64",
+			ParentPath: buildDir,
+			UploadSHA:  true,
+		},
+		{
+			Name:       "glooctl-darwin-amd64",
+			ParentPath: buildDir,
+			UploadSHA:  true,
+		},
+		{
+			Name:       "glooctl-darwin-arm64",
+			ParentPath: buildDir,
+			UploadSHA:  true,
+		},
+		{
+			Name:       "glooctl-windows-amd64.exe",
+			ParentPath: buildDir,
+			UploadSHA:  true,
+		},
+		{
+			Name:       "gloo-gateway.yaml",
+			ParentPath: "install",
+		},
+		{
+			Name:       "gloo-ingress.yaml",
+			ParentPath: "install",
+		},
+		{
+			Name:       "gloo-knative.yaml",
+			ParentPath: "install",
+		},
 	}
 
 	spec := githubutils.UploadReleaseAssetSpec{
@@ -89,7 +100,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:       "homebrew-tap", // assumes this repo is forked from PRRepoOwner
 			PRRepoOwner:    repoOwner,      // Make PR to this repo
 			PRRepoName:     "homebrew-tap",
-			PRBranch:       "master",
+			PRBranch:       "main",
 			PRDescription:  "",
 			PRCommitName:   "Solo-io Bot",
 			PRCommitEmail:  "bot@solo.io",
@@ -105,7 +116,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:        "fish-food",
 			PRRepoOwner:     "fishworks",
 			PRRepoName:      "fish-food",
-			PRBranch:        "master",
+			PRBranch:        "main",
 			PRDescription:   "",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",
@@ -122,7 +133,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:        "homebrew-core",
 			PRRepoOwner:     "homebrew",
 			PRRepoName:      "homebrew-core",
-			PRBranch:        "master",
+			PRBranch:        "main",
 			PRDescription:   "Created by Solo-io Bot",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",

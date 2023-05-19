@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
@@ -42,7 +42,8 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	// defined by the name of those resources.
 
 	var (
-		ctx = context.TODO()
+		ctx    context.Context
+		cancel context.CancelFunc
 
 		snap         *gloov1snap.ApiSnapshot
 		proxy        *gloov1.Proxy
@@ -51,9 +52,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		ns           = "namespace"
 		us           = &core.ResourceRef{Name: "upstream-name", Namespace: ns}
 
-		proxyClient, _ = gloov1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
-			Cache: memory.NewInMemoryResourceCache(),
-		})
+		proxyClient gloov1.ProxyClient
 
 		validationClient func(
 			context.Context,
@@ -66,7 +65,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 
 	genProxyWithTranslatorOpts := func(opts translator.Opts) {
 		tx := translator.NewDefaultTranslator(opts)
-		proxy, reports = tx.Translate(context.TODO(), "proxy-name", snap, snap.Gateways)
+		proxy, reports = tx.Translate(ctx, "proxy-name", snap, snap.Gateways)
 
 		proxyToWrite = GeneratedProxies{proxy: reports}
 	}
@@ -86,6 +85,14 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	}
 
 	BeforeEach(func() {
+		var err error
+		ctx, cancel = context.WithCancel(context.Background())
+
+		proxyClient, err = gloov1.NewProxyClient(ctx, &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		})
+		Expect(err).NotTo(HaveOccurred())
+
 		validationClient = func(_ context.Context, req *validation.GlooValidationServiceRequest) (*validation.GlooValidationServiceResponse, error) {
 			return &validation.GlooValidationServiceResponse{
 				ValidationReports: []*validation.ValidationReport{
@@ -104,6 +111,10 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		genProxy()
 	})
 
+	AfterEach(func() {
+		cancel()
+	})
+
 	addErr := func(resource resources.InputResource) {
 		rpt := reports[resource]
 		rpt.Errors = errors.Errorf("i did an oopsie")
@@ -116,7 +127,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	}
 
 	getProxy := func() *gloov1.Proxy {
-		px, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+		px, err := proxyClient.Read(proxy.GetMetadata().GetNamespace(), proxy.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		return px
 	}
@@ -129,11 +140,11 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 				reconcile()
 
 				px := getProxy()
-
 				Expect(px.Listeners).To(HaveLen(3))
 				Expect(px.Listeners).NotTo(ContainName(proxy.Listeners[0].Name))
 			})
 		})
+
 		Context("a virtual service has a reported error", func() {
 
 			It("only creates the valid virtual hosts", func() {

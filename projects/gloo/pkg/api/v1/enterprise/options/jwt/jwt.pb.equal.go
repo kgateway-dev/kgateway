@@ -263,6 +263,16 @@ func (m *Provider) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetClockSkewSeconds()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClockSkewSeconds()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClockSkewSeconds(), target.GetClockSkewSeconds()) {
+			return false
+		}
+	}
+
 	return true
 }
 

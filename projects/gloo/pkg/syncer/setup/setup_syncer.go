@@ -29,6 +29,7 @@ import (
 	gloostatusutils "github.com/solo-io/gloo/pkg/utils/statusutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	syncerValidation "github.com/solo-io/gloo/projects/gloo/pkg/syncer/validation"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -92,7 +93,8 @@ func NewSetupFunc() setuputils.SetupFunc {
 }
 
 // used outside of this repo
-//noinspection GoUnusedExportedFunction
+//
+//goland:noinspection GoUnusedExportedFunction
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)
@@ -213,7 +215,6 @@ func getAddr(addr string) (*net.TCPAddr, error) {
 }
 
 func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, memCache memory.InMemoryResourceCache, settings *v1.Settings, identity leaderelector.Identity) error {
-
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
 		xdsAddr = DefaultXdsBindAddr
@@ -540,6 +541,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if err := matchableHttpGatewayClient.Register(); err != nil {
 		return err
 	}
+
+	matchableTcpGatewayClient, err := gateway.NewMatchableTcpGatewayClient(watchOpts.Ctx, opts.MatchableTcpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableTcpGatewayClient.Register(); err != nil {
+		return err
+	}
+
 	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
 	if err != nil {
 		return err
@@ -561,9 +571,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 
-	discoveryPluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
+	pluginRegistry := extensions.PluginRegistryFactory(watchOpts.Ctx)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range discoveryPluginRegistry.GetPlugins() {
+	for _, plug := range pluginRegistry.GetPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			disc.Init(plugins.InitParams{Ctx: watchOpts.Ctx, Settings: opts.Settings})
@@ -625,6 +635,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		virtualHostOptionClient,
 		routeOptionClient,
 		matchableHttpGatewayClient,
+		matchableTcpGatewayClient,
 		graphqlApiClient,
 		extensions.ApiEmitterChannel,
 	)
@@ -637,6 +648,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		authConfigClient.BaseClient(),
 		gatewayClient.BaseClient(),
 		matchableHttpGatewayClient.BaseClient(),
+		matchableTcpGatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		rtClient.BaseClient(),
 		virtualHostOptionClient.BaseClient(),
@@ -725,29 +737,42 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		ConfigStatusMetricOpts:         nil,
 		IsolateVirtualHostsBySslConfig: opts.Settings.GetGateway().GetIsolateVirtualHostsBySslConfig().GetValue(),
 	}
-	var (
-		ignoreProxyValidationFailure bool
-		allowWarnings                bool
-	)
-	if gwOpts.Validation != nil && opts.GatewayControllerEnabled {
-		ignoreProxyValidationFailure = gwOpts.Validation.IgnoreProxyValidationFailure
-		allowWarnings = gwOpts.Validation.AllowWarnings
+
+	resourceHasher := translator.EnvoyCacheResourcesListToFnvHash
+
+	// Set up the syncer extensions
+	syncerExtensionParams := syncer.TranslatorSyncerExtensionParams{
+		RateLimitServiceSettings: &ratelimit.ServiceSettings{
+			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
+			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
+		},
+		Hasher: resourceHasher,
+	}
+	var syncerExtensions []syncer.TranslatorSyncerExtension
+	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
+		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
+		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	resourceHasher := translator.MustEnvoyCacheResourcesListToFnvHash
-
-	t := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory, resourceHasher)
-
+	sharedTranslator := translator.NewTranslatorWithHasher(sslutils.NewSslConfigTranslator(), opts.Settings, extensions.PluginRegistryFactory(watchOpts.Ctx), resourceHasher)
 	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
 	if err != nil {
 		return err
 	}
 
-	xdsSanitizer := sanitizer.XdsSanitizers{
+	xdsSanitizers := sanitizer.XdsSanitizers{
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
 	}
-	validator := validation.NewValidator(watchOpts.Ctx, t, xdsSanitizer)
+
+	vc := validation.ValidatorConfig{
+		Ctx: watchOpts.Ctx,
+		GlooValidatorConfig: validation.GlooValidatorConfig{
+			XdsSanitizer: xdsSanitizers,
+			Translator:   sharedTranslator,
+		},
+	}
+	validator := validation.NewValidator(vc)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
@@ -773,31 +798,36 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	} else {
 		logger.Debugf("Gateway translation is disabled. Proxies are provided from another source")
 	}
-	gwValidationSyncer := gwvalidation.NewValidator(gwvalidation.NewValidatorConfig(
-		gatewayTranslator,
-		validator.Validate,
-		ignoreProxyValidationFailure,
-		allowWarnings,
-	))
 
-	// Set up the syncer extensions
-	syncerExtensionParams := syncer.TranslatorSyncerExtensionParams{
-		RateLimitServiceSettings: ratelimit.ServiceSettings{
-			Descriptors:    opts.Settings.GetRatelimit().GetDescriptors(),
-			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
-		},
-		Hasher: resourceHasher,
+	// filter the list of extensions to only include the rate limit extension for validation
+	syncerValidatorExtensions := []syncer.TranslatorSyncerExtension{}
+	for _, ext := range syncerExtensions {
+		// currently only supporting ratelimit extension in validation
+		if ext.ID() == ratelimitExt.ServerRole {
+			syncerValidatorExtensions = append(syncerValidatorExtensions, ext)
+		}
 	}
-	var syncerExtensions []syncer.TranslatorSyncerExtension
-	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension := syncerExtensionFactory(watchOpts.Ctx, syncerExtensionParams)
-		syncerExtensions = append(syncerExtensions, syncerExtension)
+	// create a validator to validate extensions
+	extensionValidator := syncerValidation.NewValidator(syncerValidatorExtensions, opts.Settings)
+
+	validationConfig := gwvalidation.ValidatorConfig{
+		Translator:         gatewayTranslator,
+		GlooValidator:      validator.ValidateGloo,
+		ExtensionValidator: extensionValidator,
 	}
+	if gwOpts.Validation != nil {
+		valOpts := gwOpts.Validation
+		if opts.GatewayControllerEnabled {
+			validationConfig.AllowWarnings = valOpts.AllowWarnings
+		}
+	}
+	gwValidationSyncer := gwvalidation.NewValidator(validationConfig)
 
 	translationSync := syncer.NewTranslatorSyncer(
-		t,
+		opts.WatchOpts.Ctx,
+		sharedTranslator,
 		opts.ControlPlane.SnapshotCache,
-		xdsSanitizer,
+		xdsSanitizers,
 		rpt,
 		opts.DevMode,
 		syncerExtensions,
@@ -832,70 +862,74 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		}
 	}()
 
-	//Start the validation webhook
-	validationServerErr := make(chan error, 1)
-	if gwOpts.Validation != nil {
-		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
-		// ReadGatewaysFromAllNamespaces is false
-		if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
-			foundSelf := false
-			for _, namespace := range opts.WatchNamespaces {
-				if gwOpts.GlooNamespace == namespace {
-					foundSelf = true
-					break
+	validationMustStart := os.Getenv("VALIDATION_MUST_START")
+	// only starting validation server if the env var is true or empty (previously, it always started, so this avoids causing unwanted changes for users)
+	if validationMustStart == "true" || validationMustStart == "" {
+		// Start the validation webhook
+		validationServerErr := make(chan error, 1)
+		if gwOpts.Validation != nil {
+			// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
+			// ReadGatewaysFromAllNamespaces is false
+			if !gwOpts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
+				foundSelf := false
+				for _, namespace := range opts.WatchNamespaces {
+					if gwOpts.GlooNamespace == namespace {
+						foundSelf = true
+						break
+					}
+				}
+				if !foundSelf {
+					return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
+						"to false, but the non-empty settings.watchNamespaces "+
+						"list (%s) did not contain this gloo instance's own namespace: %s.",
+						strings.Join(opts.WatchNamespaces, ", "), gwOpts.GlooNamespace)
 				}
 			}
-			if !foundSelf {
-				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
-					"to false, but the non-empty settings.watchNamespaces "+
-					"list (%s) did not contain this gloo instance's own namespace: %s.",
-					strings.Join(opts.WatchNamespaces, ", "), gwOpts.GlooNamespace)
-			}
-		}
 
-		validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
-			k8sadmission.NewWebhookConfig(
-				watchOpts.Ctx,
-				gwValidationSyncer,
-				gwOpts.WatchNamespaces,
-				gwOpts.Validation.ValidatingWebhookPort,
-				gwOpts.Validation.ValidatingWebhookCertPath,
-				gwOpts.Validation.ValidatingWebhookKeyPath,
-				gwOpts.Validation.AlwaysAcceptResources,
-				gwOpts.ReadGatewaysFromAllNamespaces,
-				gwOpts.GlooNamespace,
-			),
-		)
-		if err != nil {
-			return errors.Wrapf(err, "creating validating webhook")
-		}
-
-		go func() {
-			// close out validation server when context is cancelled
-			<-watchOpts.Ctx.Done()
-			validationWebhook.Close()
-		}()
-		go func() {
-			contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
-				zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
-				zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
-				zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
+			validationWebhook, err := k8sadmission.NewGatewayValidatingWebhook(
+				k8sadmission.NewWebhookConfig(
+					watchOpts.Ctx,
+					gwValidationSyncer,
+					gwOpts.WatchNamespaces,
+					gwOpts.Validation.ValidatingWebhookPort,
+					gwOpts.Validation.ValidatingWebhookCertPath,
+					gwOpts.Validation.ValidatingWebhookKeyPath,
+					gwOpts.Validation.AlwaysAcceptResources,
+					gwOpts.ReadGatewaysFromAllNamespaces,
+					gwOpts.GlooNamespace,
+				),
 			)
-			if err := validationWebhook.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-				select {
-				case validationServerErr <- err:
-				default:
-					logger.DPanicw("failed to start validation webhook server", zap.Error(err))
-				}
+			if err != nil {
+				return errors.Wrapf(err, "creating validating webhook")
 			}
-		}()
-	}
 
-	// give the validation server 100ms to start
-	select {
-	case err := <-validationServerErr:
-		return errors.Wrapf(err, "failed to start validation webhook server")
-	case <-time.After(time.Millisecond * 100):
+			go func() {
+				// close out validation server when context is cancelled
+				<-watchOpts.Ctx.Done()
+				validationWebhook.Close()
+			}()
+			go func() {
+				contextutils.LoggerFrom(watchOpts.Ctx).Infow("starting gateway validation server",
+					zap.Int("port", gwOpts.Validation.ValidatingWebhookPort),
+					zap.String("cert", gwOpts.Validation.ValidatingWebhookCertPath),
+					zap.String("key", gwOpts.Validation.ValidatingWebhookKeyPath),
+				)
+				if err := validationWebhook.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+					select {
+					case validationServerErr <- err:
+					default:
+						logger.DPanicw("failed to start validation webhook server", zap.Error(err))
+					}
+				}
+			}()
+		}
+
+		// give the validation server 100ms to start
+		select {
+		case err := <-validationServerErr:
+			return errors.Wrapf(err, "failed to start validation webhook server")
+		case <-time.After(time.Millisecond * 100):
+		}
 	}
 
 	go func() {
@@ -1073,15 +1107,28 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
+
+	matchableTcpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableTcpGatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	var validation *gwtranslator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
+
+	validationServerEnabled := validationCfg != nil // default to true if validation top level field is set
+	if validationCfg.GetServerEnabled() != nil {
+		// allow user to explicitly disable validation server
+		validationServerEnabled = validationCfg.GetServerEnabled().GetValue()
+	}
+
 	var gatewayMode bool
 	if settings.GetGateway().GetEnableGatewayController() != nil {
 		gatewayMode = settings.GetGateway().GetEnableGatewayController().GetValue()
 	} else {
 		gatewayMode = true
 	}
-	if validationCfg != nil && gatewayMode {
+	if validationServerEnabled && gatewayMode {
 		alwaysAcceptResources := AcceptAllResourcesByDefault
 
 		if alwaysAccept := validationCfg.GetAlwaysAccept(); alwaysAccept != nil {
@@ -1099,7 +1146,6 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 			ValidatingWebhookPort:        gwdefaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
 			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
-			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
 			AlwaysAcceptResources:        alwaysAcceptResources,
 			AllowWarnings:                allowWarnings,
 			WarnOnRouteShortCircuiting:   validationCfg.GetWarnRouteShortCircuiting().GetValue(),
@@ -1144,6 +1190,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		RouteOptions:                 routeOptionFactory,
 		Gateways:                     gatewayFactory,
 		MatchableHttpGateways:        matchableHttpGatewayFactory,
+		MatchableTcpGateways:         matchableTcpGatewayFactory,
 		KubeCoreCache:                kubeCoreCache,
 		ValidationOpts:               validation,
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,

@@ -2,12 +2,13 @@ package syncer_test
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
 
 	gloo_translator "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/statusutils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils/metrics"
@@ -29,6 +30,8 @@ import (
 var _ = Describe("Translate Proxy", func() {
 
 	var (
+		ctx            context.Context
+		cancel         context.CancelFunc
 		xdsCache       *MockXdsCache
 		sanitizer      *MockXdsSanitizer
 		syncer         v1snap.ApiSyncer
@@ -36,8 +39,6 @@ var _ = Describe("Translate Proxy", func() {
 		settings       *v1.Settings
 		upstreamClient clients.ResourceClient
 		proxyClient    v1.ProxyClient
-		ctx            context.Context
-		cancel         context.CancelFunc
 		proxyName      = "proxy-name"
 		ns             = "any-ns"
 		ref            = "syncer-test"
@@ -75,7 +76,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), upstreamClient)
 
-		syncer = NewTranslatorSyncer(&mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -86,15 +87,21 @@ var _ = Describe("Translate Proxy", func() {
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxies, err := proxyClient.List(proxy.GetMetadata().Namespace, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(proxies).To(HaveLen(1))
-		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
-			State:      2,
-			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
-			ReportedBy: ref,
-		}))
+		Eventually(func() (bool, error) {
+			proxies, err := proxyClient.List(ns, clients.ListOpts{})
+			if err != nil {
+				return false, err
+			}
+			if len(proxies) != 1 {
+				return false, fmt.Errorf("expected 1 proxy, got %v", len(proxies))
+			}
+			expectedStatus := &core.Status{
+				State:      2,
+				Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
+				ReportedBy: ref,
+			}
+			return expectedStatus.Equal(statusClient.GetStatus(proxies[0])), nil
+		}, "2s", "0.1s").Should(BeTrue())
 
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
 		Expect(xdsCache.Called).To(BeTrue())
@@ -104,24 +111,30 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(&mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{false, false, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 
 	AfterEach(func() { cancel() })
 
 	It("writes the reports the translator spits out and calls SetSnapshot on the cache", func() {
-		proxies, err := proxyClient.List(ns, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(proxies).To(HaveLen(1))
-		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
-			State:      1,
-			ReportedBy: ref,
-		}))
+
+		Eventually(func() (bool, error) {
+			proxies, err := proxyClient.List(ns, clients.ListOpts{})
+			if err != nil {
+				return false, err
+			}
+			if len(proxies) != 1 {
+				return false, fmt.Errorf("expected 1 proxy, got %v", len(proxies))
+			}
+			expectedStatus := &core.Status{
+				State:      1,
+				ReportedBy: ref,
+			}
+			return expectedStatus.Equal(statusClient.GetStatus(proxies[0])), nil
+		}, "2s", "0.1s").Should(BeTrue())
 
 		Expect(xdsCache.Called).To(BeTrue())
 	})
@@ -139,6 +152,8 @@ var _ = Describe("Translate Proxy", func() {
 var _ = Describe("Translate multiple proxies with errors", func() {
 
 	var (
+		ctx            context.Context
+		cancel         context.CancelFunc
 		xdsCache       *MockXdsCache
 		sanitizer      *MockXdsSanitizer
 		syncer         v1snap.ApiSyncer
@@ -185,6 +200,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 	}
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		var err error
 		xdsCache = &MockXdsCache{}
 		sanitizer = &MockXdsSanitizer{}
@@ -226,7 +242,7 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 
 		rep := reporter.NewReporter(ref, statusClient, proxyClient.BaseClient(), usClient)
 
-		syncer = NewTranslatorSyncer(&mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
+		syncer = NewTranslatorSyncer(ctx, &mockTranslator{true, true, nil}, xdsCache, sanitizer, rep, false, nil, settings, statusMetrics, nil, proxyClient, "", singlereplica.Identity())
 		snap = &v1snap.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy1,
@@ -246,15 +262,21 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
-		proxies, err := proxyClient.List(proxy1.GetMetadata().Namespace, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(proxies).To(HaveLen(2))
-		Expect(proxies[0]).To(BeAssignableToTypeOf(&v1.Proxy{}))
-		Expect(statusClient.GetStatus(proxies[0])).To(Equal(&core.Status{
-			State:      2,
-			Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
-			ReportedBy: ref,
-		}))
+		Eventually(func() (bool, error) {
+			proxies, err := proxyClient.List(proxy1.GetMetadata().Namespace, clients.ListOpts{})
+			if err != nil {
+				return false, err
+			}
+			if len(proxies) != 2 {
+				return false, fmt.Errorf("expected 2 proxies, got %v", len(proxies))
+			}
+			expectedStatus := &core.Status{
+				State:      2,
+				Reason:     "1 error occurred:\n\t* hi, how ya doin'?\n\n",
+				ReportedBy: ref,
+			}
+			return expectedStatus.Equal(statusClient.GetStatus(proxies[0])), nil
+		}, "2s", "0.1s").Should(BeTrue())
 
 		// NilSnapshot is always consistent, so snapshot will always be set as part of endpoints update
 		Expect(xdsCache.Called).To(BeTrue())
@@ -263,23 +285,33 @@ var _ = Describe("Translate multiple proxies with errors", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	AfterEach(func() {
+		cancel()
+	})
+
 	It("handles reporting errors on multiple proxies sharing an upstream reporting 2 different errors", func() {
 		// Testing the scenario where we have multiple proxies,
 		// each of which should report a different unique error on an upstream.
+
 		proxies, err := proxyClient.List(ns, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
+
 		proxiesShouldHaveErrors(proxies, 2)
 
 		writeUniqueErrsToUpstreams()
 
-		upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(statusClient.GetStatus(upstreams[0])).To(Equal(&core.Status{
-			State:      2,
-			Reason:     "2 errors occurred:\n\t* upstream is bad - determined by proxy-name1\n\t* upstream is bad - determined by proxy-name2\n\n",
-			ReportedBy: ref,
-		}))
+		Eventually(func() (bool, error) {
+			upstreams, err := upstreamClient.List(ns, clients.ListOpts{})
+			if err != nil {
+				return false, err
+			}
+			expectedStatus := &core.Status{
+				State:      2,
+				Reason:     "2 errors occurred:\n\t* upstream is bad - determined by proxy-name1\n\t* upstream is bad - determined by proxy-name2\n\n",
+				ReportedBy: ref,
+			}
+			return expectedStatus.Equal(statusClient.GetStatus(upstreams[0])), nil
+		}, "2s", "0.1s").Should(BeTrue())
 
 		Expect(xdsCache.Called).To(BeTrue())
 	})

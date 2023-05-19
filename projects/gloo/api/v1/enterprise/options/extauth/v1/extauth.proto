@@ -57,6 +57,7 @@ message AuthConfig {
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 11;
             PassThroughAuth pass_through_auth = 12;
+            HmacAuth hmac_auth = 13;
         }
     }
 
@@ -265,6 +266,25 @@ message BasicAuth {
     Apr apr = 2;
 }
 
+// HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages.
+// It conforms to https://www.ietf.org/rfc/rfc2104.txt
+message HmacAuth {
+    // Configuration for how secrets are stored.
+    oneof secret_storage {
+        SecretRefList secret_refs = 1;
+    }
+    // Algorithm to use to turn the request into a hashable string
+    oneof implementation_type{
+        HmacParametersInHeaders parameters_in_headers = 2;
+    }
+}
+message SecretRefList {
+    // list of secrets as registered with the issuer
+    repeated core.solo.io.ResourceRef secret_refs = 1;
+}
+// Extract the HMAC parameters from the HTTP headers and use SHA-1 hashing
+message HmacParametersInHeaders {}
+
 // Deprecated: Prefer OAuth2
 message OAuth {
     // your client id as registered with the issuer
@@ -306,6 +326,12 @@ message OAuth2 {
         // - URI query parameter e.g. access_token=mytoken123
         // - and (preferably) secure cookies
         AccessTokenValidation access_token_validation = 2;
+
+        // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+        // provide issuer location and let Gloo handle Oauth2 flow for you.
+        // requests authorized by validating the contents of access token.
+        // Prefer to use OIDC for better security.
+        PlainOAuth2 oauth2 = 3;
     }
 }
 
@@ -337,8 +363,8 @@ message RedisOptions {
 
 message UserSession {
     message InternalSession {
-        // When set, refresh expired id-tokens using the refresh-token. Defaults to false.
-        // Explicitly set to true to enable refreshing.
+        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
+        // Defaults to false. To enable refreshing, set to true.
         google.protobuf.BoolValue allow_refreshing = 1;
         // Prefix to append to cookie keys, such as for separate domain and subdomain prefixes.
         // Cookie keys are stored in the form `<key_prefix>_<cookie_name>`.
@@ -356,8 +382,8 @@ message UserSession {
         string key_prefix = 2;
         // Cookie name to set and store the session id. If empty the default "__session" is used.
         string cookie_name = 3;
-        // When set, refresh expired id-tokens using the refresh-token. Defaults to true.
-        // Explicitly set to false to disable refreshing.
+        // Refresh expired id-tokens using the refresh-token. The tokens refreshes when the client issues a call.
+        // Defaults to true. To disable refreshing, set to false.
         google.protobuf.BoolValue allow_refreshing = 4;
         // Specifies a time buffer in which an id-token will be refreshed prior to its
         // actual expiration. Defaults to 2 seconds. A duration of 0 will only refresh
@@ -368,6 +394,10 @@ message UserSession {
         // If the target domain is provided will prevent requests that do not match the target domain according to
         // the domain matching specifications in RFC 6265. For more information, see https://datatracker.ietf.org/doc/html/rfc6265#section-5.1.3
         string target_domain = 6;
+
+        // If set, the name of the header that will include the randomly generated session id
+        // This would be used as part of the code exchange with the Oauth2 token endpoint
+        string header_name = 7;
     }
 
     // should we fail auth flow when failing to get a session from redis, or allow it to continue,
@@ -414,6 +444,17 @@ message UserSession {
         // Use redis to store the tokens and just store a random id in the cookie.
         RedisSession redis = 4;
     }
+    // the cipher config is used to encrypt session cookie values.  This is currently only available for OIDC.
+    message CipherConfig {
+        // to enable the cipher encryption, the key has to be present. Note that the key has to be found and 32 bytes in 
+        // length for the authconfig to not be rejected.
+        oneof key {
+            // The key reference used for the cipher. The reference must be a Kubernetes Secret of type `gloo.solo.io.EncryptionKeySecret`.
+            core.solo.io.ResourceRef key_ref = 1;
+        }
+    }
+    // the cipher config enables the symmetric key encryption of the cookie values of the user session.
+    CipherConfig cipher_config = 5;
 }
 
 message HeaderConfiguration {
@@ -597,9 +638,10 @@ message OidcAuthorizationCode {
     // add optional configuration for validation of the access token received during the OIDC flow
     // AccessTokenValidation access_token_validation = 8;
 
+    // DEPRECATED: Prefer the RedisSession.HeaderName field
     // If set, the randomly generated session id will be sent to the token endpoint as part of the code exchange
     // The session id is used as the key for sessions in Redis
-    string session_id_header_name = 16;
+    string session_id_header_name = 16 [deprecated = true];
 
     // If set, CallbackPath will be evaluated as a regular expression
     bool parse_callback_path_as_regex = 17;
@@ -616,6 +658,57 @@ message OidcAuthorizationCode {
 
     // If specified, the matching claims from the ID token and/or access token will be emitted as dynamic metadata.
     ClaimsToMetadata claims_to_metadata = 20;
+}
+
+message PlainOAuth2 {
+    // Your client ID as registered with the issuer
+    string client_id = 1;
+
+    // Your client secret as registered with the issuer
+    core.solo.io.ResourceRef client_secret_ref = 2;
+
+    // Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
+    // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+    // to set the `code_challenge` and `code_challenge_method`.
+    map<string, string> auth_endpoint_query_params = 3;
+
+    // Where to redirect after successful auth, if Gloo can't determine the original URL.
+    // Set this field to your publicly available app URL.
+    string app_url = 4;
+
+    // A callback path relative to the app URL to be used for OAuth2 callbacks.
+    // Do not use this path in the application itself.
+    string callback_path = 5;
+
+    // Scopes to request for.
+    repeated string scopes = 6;
+
+    // Configuration related to the user session.
+    UserSession session = 7;
+
+    // A path relative to the app URL to use for logging out from an OAuth2 session.
+    // Do not use this path in the application itself.
+    // If not provided, logout functionality is disabled.
+    string logout_path = 8;
+
+    // Extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
+    // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+    // to set the `code_verifier`.
+    map<string, string> token_endpoint_query_params = 9;
+
+    // URL to redirect to after logout.
+    // Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
+    string after_logout_url = 10;
+
+    // The URL of the provider authorization endpoint.
+    string auth_endpoint = 11;
+
+    // The URL of the provider token endpoint.
+    string token_endpoint = 12;
+
+    // The URL of the provider token revocation endpoint.
+    // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
+    string revocation_endpoint = 13;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -705,7 +798,7 @@ message AccessTokenValidation {
         string introspection_url = 1 [deprecated = true];
 
         // Validate access tokens that conform to the
-        // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+        // [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
         JwtValidation jwt = 2;
 
         // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
@@ -779,7 +872,74 @@ message ClaimsToMetadata {
     }
 }
 
+// Defines how API keys are validated.
+//
+// When the provided API key token has been successfully validated, it's token will be
+// added to the `AuthorizationRequest` state under the "api_key_value" key name.
 message ApiKeyAuth {
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+    // will be overwritten if values are specified in the storage backend.
+    // Identify all valid API key secrets that match the provided label selector.
+    // API key secrets must be in one of the watch namespaces for gloo to locate them.
+    map<string, string> label_selector = 1 [deprecated = true];
+
+    // DEPRECATED: use K8sSecretApiKeyStorage to configure secrets storage backend. Values here
+    // will be overwritten if values are specified in the storage backend.
+    // A way to directly reference API key secrets. This configuration can be useful for testing,
+    // but in general the more flexible label selector should be preferred.
+    repeated core.solo.io.ResourceRef api_key_secret_refs = 2 [deprecated = true];
+
+    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
+    // with this name. This field is optional; if not provided it defaults to `api-key`.
+    string header_name = 3;
+
+    // DEPRECATED: use headers_from_metadata_entry
+    map<string, SecretKey> headers_from_metadata = 4 [deprecated = true];
+
+    // API key structures might contain additional data (e.g. the ID of the user that the API key belongs to)
+    // in the form of extra fields included in the API key metadata structure.
+    // This configuration can be used to add this data to the headers of successfully authenticated requests.
+    // Each key in the map represents the name of header to be added; the corresponding value determines the key
+    // in the API key metadata structure that will be inspected to determine the value for the header.
+    //
+    // When the provided API key token has been successfully validated, and this field has been configured, then
+    // any extra API key metadata fields that were able to be discovered will be added to the `AuthorizationRequest`
+    // state under the key name that was configured. For example, using the `x-user-name` string as the header name,
+    // and referencing an existing "user-email" API key metadata entry will result in the value of this "user-email"
+    // metadata entry being accessable in other auth modules in the `AuthorizationRequest.State["x-user-name"]` key.
+    // This behavior allows other modules (e.g. OPA) to build more powerful rules to further validate the contents
+    // of the extra API key metadata than what's possible using the standalone API key module.
+    map<string, MetadataEntry> headers_from_metadata_entry = 5;
+
+    oneof storage_backend {
+        K8sSecretApiKeyStorage k8s_secret_apikey_storage = 6;
+        AerospikeApiKeyStorage aerospike_apikey_storage = 7;
+    }
+
+    // DEPRECATED: use generalized MetadataEntry
+    message SecretKey {
+        // DEPRECATED
+        // (Required) The key of the API key metadata entry to inspect.
+        string name = 1;
+        // DEPRECATED
+        // If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key.
+        // Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added
+        // to the request.
+        bool required = 2;
+    }
+
+    // For the K8s secret backend, this data is stored as key-value data in the secret itself.
+    // For the Aerospike backend, this data is stored as bins on the key's record
+    message MetadataEntry {
+        // (Required) The key of the API key metadata entry to inspect.
+        string name = 1;
+        // If this field is set to `true`, Gloo will reject an API key structure that does not contain data for the given key.
+        // Defaults to `false`. In this case, if an API key structure does not contain the requested data, no header will be added
+        // to the request.
+        bool required = 2;
+    }
+}
+message K8sSecretApiKeyStorage {
     // Identify all valid API key secrets that match the provided label selector.<br/>
     // API key secrets must be in one of the watch namespaces for gloo to locate them.
     map<string, string> label_selector = 1;
@@ -787,39 +947,111 @@ message ApiKeyAuth {
     // A way to directly reference API key secrets. This configuration can be useful for testing,
     // but in general the more flexible label selector should be preferred.
     repeated core.solo.io.ResourceRef api_key_secret_refs = 2;
+}
 
-    // When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key in a header
-    // with this name. This field is optional; if not provided it defaults to `api-key`.
-    string header_name = 3;
+message AerospikeApiKeyStorage {
+    // The IP address or hostname of one of the cluster members of your Aerospike database. The address must be reachable from Gloo Edge, such as in a virtual machine with a public IP address or in a pod in the cluster.
+    // The client automatically discovers other members of the cluster after establishing a connection.
+	string hostname = 1;
+    // The Aerospike namespace of the database. Defaults to "solo-namespace".
+	string namespace = 2;
+    // The Aerospike set to use for storage of API keys. Defaults to "apikeys".
+	string set = 3;
+    // The port on which to connect to the Aerospike server. Defaults to 3000.
+	int32 port = 4;
+    // The size of the batch, which is the number of keys sent in the request. Defaults to 5000.
+	int32 batch_size = 5;
 
-    // API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to)
-    // in the form of extra keys included in the secret's `data` field.
-    // This configuration can be used to add this data to the headers of successfully authenticated requests.
-    // Each key in the map represents the name of header to be added; the corresponding value determines the key
-    // in the secret data that will be inspected to determine the value for the header.
-    map<string, SecretKey> headers_from_metadata = 4;
+	// The write settings for guaranteed consistency when committing a transaction on the Aerospike server. For more information, see the [Aerospike commit policy](https://github.com/aerospike/aerospike-client-go/blob/master/commit_policy.go).
+    // Defaults to "commit_all".
+    oneof commit_level {
+        // "commit_all" indicates that the server waits until successfully committing the master and all replicas.
+        uint32 commit_all = 6;
+        // "commit_master" indicates that the server waits until successfully committing the master only.
+        uint32 commit_master = 7;
+    }
 
-    message SecretKey {
-        // (Required) The key of the secret data entry to inspect.
-        string name = 1;
-        // If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key.
-        // Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added
-        // to the request.
-        bool required = 2;
+    // The read settings for strong consistency (SC). For possible values, see the [Aerospike read mode SC](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_sc.go).
+    // Defaults to "read_mode_sc_session".
+    readModeSc read_mode_sc = 8;
+    message readModeSc {
+        oneof read_mode_sc {
+            // The session ensures this client sees only an increasing sequence of record versions.
+            // Server reads only from master, which is the default.
+            uint32 read_mode_sc_session = 1;
+            // "linearize" ensures that ALL clients see only an increasing sequence of record versions.
+            // "server" reads only from master.
+            uint32 read_mode_sc_linearize = 2;
+
+            // "replica" indicates that the server can read from master or any full (non-migrating) replica.
+            // An increasing sequence of record versions is not guaranteed.
+            uint32 read_mode_sc_replica = 3;
+
+            // "allow_unavailable" indicates that the server can read from master or any full (non-migrating) replica or from unavailable
+            // partitions. An increasing sequence of record versions is not guaranteed.
+            uint32 read_mode_sc_allow_unavailable = 4;
+        }
+    }
+
+    // The read settings for availability (AP). For possible values, see the [Aerospike read mode AP](https://github.com/aerospike/aerospike-client-go/blob/master/read_mode_ap.go).
+    // Defaults to "read_mode_ap_one".
+    readModeAp read_mode_ap = 9;
+    message readModeAp {
+        oneof read_mode_ap {
+            // "one" indicates that a single node is involved in the read operation.
+            uint32 read_mode_ap_one = 1;
+
+            // "all" indicates that all duplicate nodes are consulted in
+            // the read operation.
+            uint32 read_mode_ap_all = 2;
+        }
+    }
+
+	// TLS settings to enable mutual TLS (mTLS) on the server side. These configuration options must match what you configured in your Aerospike setup. For more information, see the Aerospike [security](https://docs.aerospike.com/server/guide/security/tls) and [network TLS](https://docs.aerospike.com/server/operations/configure/network/tls) guides.
+    // The subject name of the TLS authority. For more information, see the [Aerospike docs](https://docs.aerospike.com/reference/configuration#tls-name).
+	string node_tls_name = 10;
+    // The path to the TLS certfiicate.
+	string cert_path = 11;
+    // The path to the key.
+	string key_path = 12;
+	// The TLS insecure setting. If set to `true`, the authority of the certificate on the client's end is not authenticated. You might use insecure mode in non-production environments when the certificate is not known.
+	bool allow_insecure = 13;
+	// If the root certificate authority (CA) is not set, add the system certs by default.
+	string root_ca_path = 14;
+	// The TLS version. Versions 1.0, 1.1, 1.2, and 1.3 are supported. Defaults to 1.3
+	string tls_version = 15;
+	// The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8).
+    repeated tlsCurveID tls_curve_groups = 16;
+    message tlsCurveID {
+        oneof curve_id {
+            uint32 curve_p256 = 1;
+            uint32 curve_p384 = 2;
+            uint32 curve_p521 = 3;
+            uint32 x_25519 = 4;
+        }
     }
 }
 
-message ApiKeySecret {
-    // If true, generate an API key.
-    // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
-    bool generate_api_key = 1 [deprecated = true];
-    // The value of the API key.
+message ApiKey {
+    // The string value of the API key.
     string api_key = 2;
-    // A list of labels (key=value) for the apikey secret.<br/>
-    // These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret.
-    // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
-    repeated string labels = 3 [deprecated = true];
-    // If the secret data contains entries in addition to the API key one, they will be copied to this field.
+    // A list of labels (key=value) for the apikey secret.
+    // These labels are used by the storage driver to facilitate lookups by label
+    repeated string labels = 3;
+    // additional data the client needs associated with this API key
+    map<string, string> metadata = 4;
+    // Optional: Unique identifier for the API key
+    string uuid = 5;
+}
+
+// DEPRECATED: use ApiKey
+message ApiKeySecret {
+    // The string value of the API key.
+    string api_key = 2;
+    // A list of labels (key=value) for the apikey secret.
+    // These labels are used by the storage driver to facilitate lookups by label
+    repeated string labels = 3;
+    // additional data the client needs associated with this API key
     map<string, string> metadata = 4;
 }
 
@@ -852,7 +1084,7 @@ message OpaAuthOptions {
 message Ldap {
 
     // Configuration properties for pooling connections to the LDAP server. If the pool is exhausted when a connection
-    // is requested (meaning that all the polled connections are in use), the connection will be created on the fly.
+    // is requested (meaning that all the pooled connections are in use), the connection will be created on the fly.
     message ConnectionPool {
         // Maximum number connections that are pooled at any give time. The default value is 5.
         google.protobuf.UInt32Value maxSize = 1;
@@ -888,8 +1120,18 @@ message Ldap {
     // and disables validation for the membership attribute of the user entry.
     // Group checking is enabled by default.
     bool disable_group_checking = 7;
+
+    // Settings for using a separate service account for looking up group membership
+    // To use this, you also need to configure credentials in a secret
+    LdapServiceAccount group_lookup_settings = 8;
 }
 
+message LdapServiceAccount {
+    // Reference to an AccountCredentialsSecret to use to authenticate as the service account
+    core.solo.io.ResourceRef credentials_secret_ref = 1;
+    // If true, Gloo will use the service account to check group membership
+    bool check_groups_with_service_account = 2;
+}
 // Authorizes requests by querying a custom extauth server.
 message PassThroughAuth {
 
@@ -901,6 +1143,10 @@ message PassThroughAuth {
     // Custom config to be passed per request to the passthrough auth service.
     google.protobuf.Struct config = 4;
 
+    // If set to true, the service will accept client request even if the communication with
+    //  the authorization service has failed, or if the authorization service has returned a server error.
+    // Defaults to false.
+    bool failure_mode_allow = 5;
 }
 
 // Authorizes requests by querying a custom extauth grpc server
@@ -913,6 +1159,12 @@ message PassThroughGrpc {
 
     // Timeout for the auth server to respond. Defaults to 5s
     google.protobuf.Duration connection_timeout = 2;
+
+    // TLS config for the Grpc passthrough, if not configured the connection will use insecure.
+    PassThroughGrpcTLSConfig tlsConfig =3;
+}
+// TLS configuration for the extauth grpc passthrough connection
+message PassThroughGrpcTLSConfig {
 }
 
 // Authorizes requests by making a POST HTTP/1 request to a custom HTTP auth server
@@ -1010,6 +1262,9 @@ message PassThroughHttp {
 /*
 @solo-kit:xds-service=ExtAuthDiscoveryService
 @solo-kit:resource.no_references
+
+This is an internal API used to share configuration between gloo-ee and extauth. Although this API is only used in gloo-ee,
+rules about breaking changes still apply to ensure we do not get errors during upgrade and downgrade.
  */
 message ExtAuthConfig {
 
@@ -1018,7 +1273,6 @@ message ExtAuthConfig {
     // Any request to the external auth server includes an identifier that is matched against this field to determine
     // which AuthConfig should be applied to it.
     string auth_config_ref_name = 1;
-
     // Deprecated, prefer OAuth2Config
     message OAuthConfig {
         // your client id as registered with the issuer
@@ -1045,6 +1299,27 @@ message ExtAuthConfig {
         // scopes to request in addition to the openid scope.
         repeated string scopes = 6 [deprecated = true];
 
+    }
+
+    message UserSessionConfig {
+        // should we fail auth flow when failing to get a session from redis, or allow it to continue,
+        // potentially starting a new auth flow and setting a new session.
+        bool fail_on_fetch_failure = 1;
+        // Set-Cookie options
+        UserSession.CookieOptions cookie_options = 2;
+        oneof session {
+            // Set the tokens in the cookie itself. No need for server side state.
+            UserSession.InternalSession cookie = 3;
+            // Use redis to store the tokens and just store a random id in the cookie.
+            UserSession.RedisSession redis = 4;
+        }
+        message CipherConfig {
+            // to enable the cipher encryption, the key has to be present.
+            // Note that the key has to be found and 32 bytes in length for the authconfig to not be rejected.
+            string key = 1 [(extproto.sensitive) = true];
+        }
+        // the cipher config enables the symmetric key encryption of the cookie values of the user session.
+        CipherConfig cipher_config = 5;
     }
 
     message OidcAuthorizationCodeConfig {
@@ -1089,7 +1364,8 @@ message ExtAuthConfig {
         // scopes to request in addition to the openid scope.
         repeated string scopes = 7;
 
-        UserSession session = 8;
+        // DEPRECATED: use userSessionConfig [userSession]
+        UserSession session = 8 [deprecated = true];
 
         // Configures headers added to requests.
         HeaderConfiguration headers = 10;
@@ -1151,6 +1427,9 @@ message ExtAuthConfig {
         // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
         // in the OIDC documentation.
         EndSessionProperties end_session_properties = 19;
+
+        // Configuration related to the user session.
+        UserSessionConfig user_session = 20;
     }
 
     message AccessTokenValidationConfig {
@@ -1239,7 +1518,7 @@ message ExtAuthConfig {
             string introspection_url = 1 [deprecated = true];
 
             // Validate access tokens that conform to the
-            // [JSON Web Token (JWT)](https://tools.ietf.org/html/rfc7519) specification.
+            // [JSON Web Token (JWT)](https://datatracker.ietf.org/doc/rfc7662/) specification.
             JwtValidation jwt = 2;
 
             // Defines how (opaque) access tokens, received from the oauth authorization endpoint, are validated
@@ -1280,6 +1559,60 @@ message ExtAuthConfig {
         }
     }
 
+    message PlainOAuth2Config {
+        // Your client ID as registered with the issuer
+        string client_id = 1;
+
+        // Your client secret as registered with the issuer
+        string client_secret = 2 [(extproto.sensitive) = true];
+
+        // Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
+        // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+        // to set the `code_challenge` and `code_challenge_method`.
+        map<string, string> auth_endpoint_query_params = 3;
+
+        // Where to redirect after successful auth, if Gloo can't determine the original URL.
+        // Set this field to your publicly available app URL.
+        string app_url = 4;
+
+        // A callback path relative to the app URL to be used for OAuth2 callbacks.
+        // Do not use this path in the application itself.
+        string callback_path = 5;
+
+        // Scopes to request for.
+        repeated string scopes = 6;
+
+        // DEPRECATED: use userSessionConfig [userSession]
+        UserSession session = 7 [deprecated = true];
+
+        // A path relative to the app URL to use for logging out from an OAuth2 session.
+        // Do not use this path in the application itself.
+        // If not provided, logout functionality is disabled.
+        string logout_path = 8;
+
+        // Extra query parameters to apply to the Ext-Auth service's token request to the identity provider.
+        // These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/)
+        // to set the `code_verifier`.
+        map<string, string> token_endpoint_query_params = 9;
+
+        // URL to redirect to after logout.
+        // Set this field to a publicly available URL. If not provided, this value defaults to the `app_url` value.
+        string after_logout_url = 10;
+
+        // The URL of the provider authorization endpoint.
+        string auth_endpoint = 11;
+
+        // The URL of the provider token endpoint.
+        string token_endpoint = 12;
+
+        // The URL of the provider token revocation endpoint.
+        // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
+        string revocation_endpoint = 13;
+
+        // Configuration related to the user session.
+        UserSessionConfig user_session = 14;
+    }
+
     message OAuth2Config {
         reserved 2;
 
@@ -1296,6 +1629,12 @@ message ExtAuthConfig {
             // - URI query parameter e.g. access_token=mytoken123
             // - and (preferably) secure cookies
             AccessTokenValidationConfig access_token_validation_config = 3;
+
+            // Enterprise-Only: THIS FEATURE IS IN TECH PREVIEW. APIs are versioned as alpha and subject to change.
+            // provide issuer location and let Gloo handle Oauth2 flow for you.
+            // requests authorized by validating the contents of access token.
+            // Prefer to use OIDC for better security.
+            PlainOAuth2Config oauth2_config = 4;
         }
     }
 
@@ -1303,14 +1642,14 @@ message ExtAuthConfig {
     message ApiKeyAuthConfig {
 
         message KeyMetadata {
-            // The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
+            // The user is mapped as the name of `Secret` which contains the `ApiKey`
             string username = 1;
-            // The metadata present on the `ApiKeySecret`.
+            // The metadata present on the `ApiKey`.
             map<string, string> metadata = 2;
         }
 
         // A mapping of valid API keys to their associated metadata.
-        // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
+        // This map is automatically populated with the information from the relevant `ApiKey`s.
         map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive) = true];
 
         // (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
@@ -1321,6 +1660,12 @@ message ExtAuthConfig {
         // Each entry represents a header to add: the key is the name of the header, and the
         // value is the key that will be used to look up the data entry in the key metadata.
         map<string, string> headers_from_key_metadata = 3;
+
+        oneof storage_backend {
+            K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
+            AerospikeApiKeyStorage aerospike_apikey_storage = 5;
+        }
+
     }
 
     message OpaAuthConfig {
@@ -1335,7 +1680,62 @@ message ExtAuthConfig {
         // Additional Options for Opa Auth configuration.
         OpaAuthOptions options = 3;
     }
+    message LdapConfig {
 
+        // Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
+        string address = 1;
+
+        // Template to build user entry distinguished names (DN). This must contains a single occurrence of the "%s" placeholder.
+        // When processing a request, Gloo will substitute the name of the user (extracted from the auth header) for the
+        // placeholder and issue a search request with the resulting DN as baseDN (and 'base' search scope).
+        // E.g. "uid=%s,ou=people,dc=solo,dc=io"
+        string userDnTemplate = 2;
+
+        // Case-insensitive name of the attribute that contains the names of the groups an entry is member of. Gloo will look
+        // for attributes with the given name to determine which groups the user entry belongs to. Defaults to 'memberOf' if not provided.
+        string membershipAttributeName = 3;
+
+        // In order for the request to be authenticated, the membership attribute (e.g. *memberOf*) on the user entry must
+        // contain at least of one of the group DNs specified via this option.
+        // E.g. []string{ "cn=managers,ou=groups,dc=solo,dc=io", "cn=developers,ou=groups,dc=solo,dc=io" }
+        repeated string allowedGroups = 4;
+
+        // Use this property to tune the pool of connections to the LDAP server that Gloo maintains.
+        Ldap.ConnectionPool pool = 5;
+
+        // Use to set a custom filter when searching a member. Defaults to "(uid=*)".
+        string searchFilter = 6;
+
+        // Disables group checking, regardless of the value for allowedGroups,
+        // and disables validation for the membership attribute of the user entry.
+        // Group checking is enabled by default.
+        bool disable_group_checking = 7;
+
+        // Settings for using a separate service account for looking up group membership
+        // To use this, you also need to configure credentials
+        LdapServiceAccountConfig group_lookup_settings = 8;
+    }
+    message LdapServiceAccountConfig {
+        // username and password are taken from the secret during gloo-ee translation
+        string username = 1 [(extproto.sensitive) = true];
+        string password = 2 [(extproto.sensitive) = true];
+        // If true, Gloo will use the service account to check group membership
+        bool check_groups_with_service_account = 3;
+    }
+    message HmacAuthConfig {
+        oneof secret_storage {
+            InMemorySecretList secret_list = 1;
+        }
+        // Algorithm to use to turn the request into a hashable string
+        oneof implementation_type{
+            HmacParametersInHeaders parameters_in_headers = 2;
+        }
+
+    }
+    message InMemorySecretList {
+        // list of username/password pairs taken from secrets during gloo-ee translation
+        map<string, string> secret_list = 1 [(extproto.sensitive) = true];
+    }
     message Config {
 
         reserved 1, 2;
@@ -1353,12 +1753,15 @@ message ExtAuthConfig {
             ApiKeyAuthConfig api_key_auth = 5;
             AuthPlugin plugin_auth = 6;
             OpaAuthConfig opa_auth = 7;
-            Ldap ldap = 8;
+            Ldap ldap = 8 [deprecated = true];
+            // Used for LDAP configurations that need service account credentials saved in a secret.
+            LdapConfig ldap_internal = 14;
             // This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication.
             // If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config.
             // In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour.
             google.protobuf.Empty jwt = 12;
             PassThroughAuth pass_through_auth = 13;
+            HmacAuthConfig hmac_auth = 15;
         }
     }
 
@@ -1373,6 +1776,7 @@ message ExtAuthConfig {
     // How to handle processing of named configs within an auth config chain.
     // An example config might be: `( basic1 || basic2 || (oidc1 && !oidc2) )`
     // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+    // Defaults to an empty string, which is interpreted as `and`-ing the configs.
     google.protobuf.StringValue boolean_expr = 10;
 
     // How the service should handle a redirect response from an OIDC issuer. In the default false mode,
@@ -1398,4 +1802,38 @@ service ExtAuthDiscoveryService {
       body : "*"
     };
     }
+}
+
+message ApiKeyCreateRequest {
+    repeated ApiKey api_keys = 1;
+    repeated string raw_api_keys = 2;
+}
+message ApiKeyCreateResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyReadRequest {
+    repeated string raw_api_keys = 1;
+    repeated string labels = 2;
+}
+message ApiKeyReadResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyUpdateRequest {
+    bool upsert = 1;
+    repeated ApiKey api_keys = 2;
+    repeated string raw_api_keys = 3;
+}
+message ApiKeyUpdateResponse {
+    repeated ApiKey api_keys = 1;
+}
+message ApiKeyDeleteRequest {
+    repeated string raw_api_keys = 1;
+    repeated string labels = 2;
+}
+message ApiKeyDeleteResponse {}
+service ApiKeyService {
+    rpc Create (ApiKeyCreateRequest) returns (ApiKeyCreateResponse) {}
+    rpc Read (ApiKeyReadRequest) returns (ApiKeyReadResponse) {}
+    rpc Update (ApiKeyUpdateRequest) returns (ApiKeyUpdateResponse) {}
+    rpc Delete (ApiKeyDeleteRequest) returns (ApiKeyDeleteResponse) {}
 }

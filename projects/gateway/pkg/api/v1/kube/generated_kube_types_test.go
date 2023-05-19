@@ -2,8 +2,8 @@ package kube_test
 
 import (
 	"context"
-	"os"
 
+	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -18,7 +18,7 @@ import (
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -42,7 +42,7 @@ var _ = Describe("Generated Kube Code", func() {
 	)
 
 	BeforeEach(func() {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if !testutils.ShouldRunKubeTests() {
 			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		}
 
@@ -86,9 +86,6 @@ var _ = Describe("Generated Kube Code", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
-			return
-		}
 		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, gloov1.UpstreamCrd.FullName(), v1.DeleteOptions{})
 		_ = apiExts.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(ctx, gatewayv1.VirtualServiceCrd.FullName(), v1.DeleteOptions{})
 		cancel()
@@ -133,9 +130,19 @@ var _ = Describe("Generated Kube Code", func() {
 			},
 		}
 
+		// this fixes a flake in v1.14.x. This flake occurs when we try to
+		// `glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})` create the resource.
+		// I do not know why this resource already exists, but this fixes it.
+		resourceName := "petstore-static"
+		err := glooV1Client.Upstreams("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+		resourceName = "my-routes"
+		err = gatewayV1Client.VirtualServices("default").Delete(ctx, resourceName, v1.DeleteOptions{})
+		Expect(err).To(Or(Not(HaveOccurred()), MatchError(ContainSubstring("not found")), MatchError(ContainSubstring("already exists"))))
+
 		// ensure we can write the with kube clients
 
-		_, err := glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
+		_, err = glooV1Client.Upstreams(us.Namespace).Create(ctx, us, v1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = gatewayV1Client.VirtualServices(vs.Namespace).Create(ctx, vs, v1.CreateOptions{})

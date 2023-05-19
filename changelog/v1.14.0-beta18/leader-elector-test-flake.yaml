@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7988
+    resolvesIssue: false
+    description: >
+      Resolve an issue with our leader election test that led to flakes in CI, also make the election selection loop less tight. This is unlikely to change things but may potentially avoid a busy for loop or just clean up the code.

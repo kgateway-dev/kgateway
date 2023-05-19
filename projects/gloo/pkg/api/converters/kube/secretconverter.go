@@ -13,12 +13,18 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const OCSPStapleKey = "tls.ocsp-staple"
+
 var GlooSecretConverterChain = NewSecretConverterChain(
 	new(TLSSecretConverter),
 	new(AwsSecretConverter),
 	new(APIKeySecretConverter),
 	new(OAuthSecretConverter),
+	new(AccountCredentialsSecretConverter),
 	new(OpaqueSecretConverter),
+	// added the encryption secret primarily for usersession cookie encryption. This enables us to
+	// create and update the key used for encryption.
+	new(EncryptionSecretConverter),
 	// the header converter needs to run last because it has a fall-back to convert any opaque k8s secret with
 	// non-empty data into a gloo header secret
 	new(HeaderSecretConverter),
@@ -74,6 +80,7 @@ func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 					PrivateKey: string(secret.Data[kubev1.TLSPrivateKeyKey]),
 					CertChain:  string(secret.Data[kubev1.TLSCertKey]),
 					RootCa:     string(secret.Data[kubev1.ServiceAccountRootCAKey]),
+					OcspStaple: secret.Data[OCSPStapleKey],
 				},
 			},
 			Metadata: kubeutils.FromKubeMeta(secret.ObjectMeta, true),
@@ -102,6 +109,10 @@ func (t *TLSSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 
 			if tlsGlooSecret.Tls.GetRootCa() != "" {
 				kubeSecret.Data[kubev1.ServiceAccountRootCAKey] = []byte(tlsGlooSecret.Tls.GetRootCa())
+			}
+
+			if tlsGlooSecret.Tls.GetOcspStaple() != nil {
+				kubeSecret.Data[OCSPStapleKey] = tlsGlooSecret.Tls.GetOcspStaple()
 			}
 
 			return kubeSecret, nil
@@ -133,7 +144,6 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 			Metadata: &skcore.Metadata{
 				Name:        secret.Name,
 				Namespace:   secret.Namespace,
-				Cluster:     secret.ClusterName,
 				Labels:      secret.Labels,
 				Annotations: secret.Annotations,
 			},

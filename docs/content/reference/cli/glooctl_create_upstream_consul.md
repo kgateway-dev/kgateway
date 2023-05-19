@@ -35,6 +35,7 @@ glooctl create upstream consul [flags]
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
       --dry-run                    print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")

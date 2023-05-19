@@ -91,7 +91,7 @@ If you plan to install Gloo Edge Enterprise, you will need to enable certain per
 
 ```bash
 oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-server -n gloo-system 
-oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics  -n gloo-system 
+oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics-v2 -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z default -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
@@ -109,7 +109,7 @@ Kind is ideal for getting started with Gloo Edge on your personal workstation.  
 We advise customizing kind cluster creation slightly to make it easier to access your services from your host workstation.  Since services deployed in kind are inside a Docker container, you cannot easily access them.  It is more convenient if you expose ports from inside the container to your host machine.
 
 ```bash
-cat <<EOF | kind create cluster --name kind --image kindest/node:v1.22.4 --config=-
+cat <<EOF | kind create cluster --name kind --image kindest/node:v1.25.3 --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
@@ -128,7 +128,7 @@ Note that Kind's docker container will be publishing ports 31500 (for http) and 
 
 ```
 Creating cluster "kind" ...
- ✓ Ensuring node image (kindest/node:v1.18.2) 🖼
+ ✓ Ensuring node image (kindest/node:v1.25.3) 🖼
  ✓ Preparing nodes 📦
  ✓ Writing configuration 📜
  ✓ Starting control-plane 🕹️
@@ -285,62 +285,51 @@ gatewayProxies:
 
 ## Google Kubernetes Engine (GKE)
 
-Google Kubernetes Engine is Google Cloud's managed Kubernetes service. GKE can run both development and production workloads depending on its size and configuration. You can find more details on GKE [here](https://cloud.google.com/kubernetes-engine/docs/quickstart).
+Google Kubernetes Engine (GKE) is Google Cloud's managed Kubernetes service. GKE can run both development and production workloads, depending on the size and configuration of the clusters that you create. For more information, see the [GKE docs](https://cloud.google.com/kubernetes-engine/docs/quickstart).
 
-You will need to deploy a GKE cluster. The default settings in the `clusters create` command should be sufficient for installing Gloo Edge and going through the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). The commands below can be run as-is, although you may want to change the zone (*us-central1-a*) and cluster name (*myGKECluster*).
+{{% notice note %}}
+Using a private network-only GKE cluster? A private cluster cannot access container repositories outside of Google. Follow the [Basic GKE example](https://cloud.google.com/nat/docs/gke-example) to configure the private cluster to use Cloud NAT for internet access. The Gloo Edge containers are hosted on Quay.io. A private cluster requires firewall rules to be in place for the API server on the master nodes to talk to the Gloo Edge pods. Create a firewall rule allowing TCP traffic on port 8443 from the *master address range* to tag for the worker node VMs. For more information, check out [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters).
+{{% /notice %}}
 
-These commands can be run locally if you have the [Google Cloud SDK](https://cloud.google.com/sdk/) installed or using the Cloud Shell from the [GCP Console](https://console.cloud.google.com). The Cloud Shell already has `kubectl` installed along with the Google Cloud SDK.
+1. Create a GKE cluster. You can use the default settings in the `gcloud clusters create` command for a cluster that can run Gloo Edge and the [Traffic Management guides]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). You can use the `gcloud` CLI locally if you have the [Google Cloud SDK](https://cloud.google.com/sdk/) or by using the Cloud Shell from the [GCP Console](https://console.cloud.google.com). The Cloud Shell already has `kubectl` installed along with the Google Cloud SDK. If you want, update the zone (*us-central1-a*) and cluster name (*myGKECluster*).
+   ```bash
+   gcloud container clusters create myGKECluster \
+     --zone=us-central1-a
+   ```
+   Example output:
+   ```console
+   kubeconfig entry generated for YOUR-CLUSTER-NAME.
+   NAME          LOCATION       MASTER_VERSION  MASTER_IP        MACHINE_TYPE   NODE_VERSION   NUM_NODES  STATUS
+   myGKECluster  us-central1-a  1.24.9-gke.3200 XXX.XXX.XXX.XXX  n1-standard-1  1.24.9-gke.3200 3          RUNNING
+   ```
+2. Set your `kubectl` context to the newly created cluster. 
 
-Example GKE cluster creation:
+   ```bash
+   gcloud container clusters get-credentials myGKECluster \
+     --zone=us-central1-a
+   ```
+   Example output:
+   ```console
+   Fetching cluster endpoint and auth data.
+   kubeconfig entry generated for myGKECluster.
+   ```
 
-```bash
-gcloud container clusters create myGKECluster \
-  --zone=us-central1-a
-```
+3. Verify the current `kubectl` context.
 
-```console
-kubeconfig entry generated for YOUR-CLUSTER-NAME.
-NAME          LOCATION       MASTER_VERSION  MASTER_IP        MACHINE_TYPE   NODE_VERSION   NUM_NODES  STATUS
-myGKECluster  us-central1-a  1.13.11-gke.9   XXX.XXX.XXX.XXX  n1-standard-1  1.13.11-gke.9  3          RUNNING
-```
+   ```bash
+   kubectl config current-context
+   ```
+   
+   The command should return `gke_YOUR-PROJECT-ID_us-central1-a_myGKECluster` as the context.
 
-Next you will need to make sure that your `kubectl` context is correctly set to the newly created cluster. 
+4. Set up the cluster admin cluster role so that you have permissions to install Gloo Edge.
 
-```bash
-gcloud container clusters get-credentials myGKECluster \
-  --zone=us-central1-a
-```
-
-```console
-Fetching cluster endpoint and auth data.
-kubeconfig entry generated for myGKECluster.
-```
-
-You can retrieve the current context by running the command below.
-
-```bash
-kubectl config current-context
-```
-
-The command should return `gke_YOUR-PROJECT-ID_us-central1-a_myGKECluster` as the context.
-
-For installation, you need to be an admin-user, so use the following commands:
-
-```bash
-kubectl create clusterrolebinding cluster-admin-binding \
-    --clusterrole cluster-admin \
-    --user $(gcloud config get-value account)
-```
-
-### Private clusters
-
-Deploying Gloo Edge in a private GKE cluster requires some additional configuration. 
-
-A private cluster cannot access container repositories outside of Google. You will need to configure the private cluster to use Cloud NAT for internet access. You can follow the [Basic GKE example](https://cloud.google.com/nat/docs/gke-example) in the docs from Google. The Gloo Edge containers are hosted on Quay.io.
-
-A private cluster requires firewall rules to be in place for the API server on the master node(s) to talk to the Gloo Edge pods. Create a firewall rule allowing TCP traffic on port 8443 from the *master address range* to tag for the worker node VMs. You can follow [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters) for more information.
-
-Now you're all set to install Gloo Edge, simply follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+   ```bash
+   kubectl create clusterrolebinding cluster-admin-binding \
+       --clusterrole cluster-admin \
+       --user $(gcloud config get-value account)
+   ```
+Now you're all set to install Gloo Edge! Follow the Gloo Edge installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 

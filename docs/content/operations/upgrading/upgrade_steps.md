@@ -30,12 +30,12 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
 2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
-3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.11 from 1.9 or older, you must upgrade incrementally. For example, you must first upgrade from 1.9 to 1.10, and then upgrade from 1.10 to 1.11.
+3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.13 from 1.11 or older, you must upgrade incrementally. For example, you must first upgrade from 1.11 to 1.12, and then upgrade from 1.12 to 1.13.
 4. Review the version-specific upgrade docs.
+   * [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
    * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
    * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
-   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
 5. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Enterprise-only: Understand the open source dependencies.
@@ -62,7 +62,7 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 * **Non-Kubernetes**: Configure [health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}}) on Envoy. Then, configure your load balancer to leverage these health checks, so that requests stop going to Envoy when it begins draining connections.
 
 {{% notice tip %}}
-If upgrading from version 1.9.0 or later, use a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/canary" >}}) to make sure that the newer version works as you expect before upgrading.
+Try a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/canary" >}}) to make sure that the newer version works as you expect before upgrading.
 {{% /notice %}}
 
 ## Step 2: Upgrade glooctl
@@ -138,10 +138,10 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 ## Step 3: Apply minor version-specific changes
 
 Each minor version might add custom resource definitions (CRDs) that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
-   * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
-   * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
-   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
-   * [1.9.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.9/" >}})
+* [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
+* [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
+* [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
+* [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
 
 ## Step 4: Upgrade Gloo Edge
 
@@ -176,39 +176,39 @@ The following steps assume that you already installed Gloo Edge as a Helm releas
 
 1. Upgrade the Helm release.
 
-   **Gloo Edge Open Source example:**
-   ```shell script
-   helm repo update
-   helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
-   ```
+   * **Gloo Edge Open Source example:**
+     ```shell script
+     helm repo update
+     helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
+     ```
 
-   Example output:
-   ```
-   Release "gloo" has been upgraded. Happy Helming!
-   NAME: gloo
-   LAST DEPLOYED: Thu Dec 12 12:22:16 2019
-   NAMESPACE: gloo-system
-   STATUS: deployed
-   REVISION: 2
-   TEST SUITE: None
-   ```
+     Example output:
+     ```
+     Release "gloo" has been upgraded. Happy Helming!
+     NAME: gloo
+     LAST DEPLOYED: Thu Dec 12 12:22:16 2019
+     NAMESPACE: gloo-system
+     STATUS: deployed
+     REVISION: 2
+     TEST SUITE: None
+     ```
 
-   **Gloo Edge Enterprise example:**
-   ```shell script
-   helm repo update
-   helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-   ```
+   * **Gloo Edge Enterprise example:**
+     ```shell script
+     helm repo update
+     helm upgrade -n gloo-system gloo glooe/gloo-ee --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
+     ```
 
-   Example output:
-   ```
-   Release "gloo" has been upgraded. Happy Helming!
-   NAME: gloo
-   LAST DEPLOYED: Thu Dec 12 12:22:16 2019
-   NAMESPACE: gloo-system
-   STATUS: deployed
-   REVISION: 2
-   TEST SUITE: None
-   ```
+     Example output:
+     ```
+     Release "glooe" has been upgraded. Happy Helming!
+     NAME: glooe
+     LAST DEPLOYED: Thu Dec 12 12:22:16 2019
+     NAMESPACE: gloo-system
+     STATUS: deployed
+     REVISION: 2
+     TEST SUITE: None
+     ```
 
 2. Verify that Gloo Edge runs the upgraded version.
    ```shell script

@@ -961,6 +961,155 @@ func (m *Settings_VaultSecrets) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetTlsConfig()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTlsConfig()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTlsConfig(), target.GetTlsConfig()) {
+			return false
+		}
+	}
+
+	switch m.AuthMethod.(type) {
+
+	case *Settings_VaultSecrets_AccessToken:
+		if _, ok := target.AuthMethod.(*Settings_VaultSecrets_AccessToken); !ok {
+			return false
+		}
+
+		if strings.Compare(m.GetAccessToken(), target.GetAccessToken()) != 0 {
+			return false
+		}
+
+	case *Settings_VaultSecrets_Aws:
+		if _, ok := target.AuthMethod.(*Settings_VaultSecrets_Aws); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetAws()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAws()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetAws(), target.GetAws()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.AuthMethod != target.AuthMethod {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultAwsAuth) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultAwsAuth)
+	if !ok {
+		that2, ok := that.(Settings_VaultAwsAuth)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetVaultRole(), target.GetVaultRole()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRegion(), target.GetRegion()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetIamServerIdHeader(), target.GetIamServerIdHeader()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetMountPath(), target.GetMountPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetAccessKeyId(), target.GetAccessKeyId()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSecretAccessKey(), target.GetSecretAccessKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetSessionToken(), target.GetSessionToken()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_VaultTlsConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_VaultTlsConfig)
+	if !ok {
+		that2, ok := that.(Settings_VaultTlsConfig)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetCaCert(), target.GetCaCert()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetCaPath(), target.GetCaPath()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientCert(), target.GetClientCert()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetClientKey(), target.GetClientKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetTlsServerName(), target.GetTlsServerName()) != 0 {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetInsecure()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetInsecure()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetInsecure(), target.GetInsecure()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -1111,6 +1260,16 @@ func (m *Settings_DiscoveryOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetUdsOptions(), target.GetUdsOptions()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetFdsOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFdsOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFdsOptions(), target.GetFdsOptions()) {
 			return false
 		}
 	}
@@ -1438,6 +1597,40 @@ func (m *Settings_DiscoveryOptions_UdsOptions) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *Settings_DiscoveryOptions_FdsOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_DiscoveryOptions_FdsOptions)
+	if !ok {
+		that2, ok := that.(Settings_DiscoveryOptions_FdsOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetGraphqlEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetGraphqlEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetGraphqlEnabled(), target.GetGraphqlEnabled()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Settings_ConsulConfiguration_ServiceDiscoveryOptions) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1614,6 +1807,16 @@ func (m *GlooOptions_AWSOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetFallbackToFirstFunction()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetFallbackToFirstFunction()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetFallbackToFirstFunction(), target.GetFallbackToFirstFunction()) {
+			return false
+		}
+	}
+
 	switch m.CredentialsFetcher.(type) {
 
 	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:
@@ -1769,6 +1972,16 @@ func (m *GatewayOptions_ValidationOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetValidationServerGrpcMaxSizeBytes(), target.GetValidationServerGrpcMaxSizeBytes()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetServerEnabled()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetServerEnabled()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetServerEnabled(), target.GetServerEnabled()) {
 			return false
 		}
 	}

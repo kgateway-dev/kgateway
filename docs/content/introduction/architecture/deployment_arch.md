@@ -23,7 +23,7 @@ Let's dig a bit deeper and see why you might use some of these architectures.
 
 ## Simple ingress to Kubernetes
 
-Gloo Edge can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo Edge]({{< versioned_link_path fromRoot="/guides/integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo Edge) functionality is not exposed through the Ingress API. Consider using [gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
+Gloo Edge can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo Edge]({{< versioned_link_path fromRoot="/guides/integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` spec. Note: a large portion of the Envoy (and Gloo Edge) functionality is not exposed through the Ingress API. Consider using [gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/ingress.png" %}})
 
@@ -61,7 +61,7 @@ A variation of the previous deployment pattern of sharding the gateway is by exp
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/bounded-context.png" %}})
 
-In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo Edge API specifically supports this (though API delegation). 
+In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo Edge API specifically supports this (through API delegation).
 
 ---
 
@@ -77,7 +77,7 @@ A service mesh doesn't inherently solve (nor should it) API-level challenges. Th
 
 ## Ingress for multi-tenant clusters like OpenShift
 
-OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenent SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster. 
+OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenant SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/multi-tenant-openshift.png" %}})
 

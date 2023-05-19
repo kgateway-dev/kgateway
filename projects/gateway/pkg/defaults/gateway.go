@@ -6,6 +6,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -105,7 +106,7 @@ func DefaultHybridSslGateway(writeNamespace string) *v1.Gateway {
 				{
 					Matcher: &v1.Matcher{
 						// Define a non-nil SslConfig
-						SslConfig: &gloov1.SslConfig{
+						SslConfig: &ssl.SslConfig{
 							TransportSocketConnectTimeout: &duration.Duration{
 								Seconds: 30,
 							},
@@ -122,7 +123,7 @@ func DefaultHybridSslGateway(writeNamespace string) *v1.Gateway {
 	return gw
 }
 
-func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *gloov1.SslConfig) *v1.MatchableHttpGateway {
+func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *ssl.SslConfig) *v1.MatchableHttpGateway {
 	return &v1.MatchableHttpGateway{
 		Metadata: &core.Metadata{
 			Name:        "matchable-http-gateway",
@@ -139,6 +140,13 @@ func DefaultMatchableHttpGateway(writeNamespace string, sslConfigMatch *gloov1.S
 }
 
 func DefaultVirtualService(namespace, name string) *v1.VirtualService {
+	return DirectResponseVirtualService(namespace, name, `Gloo and Envoy are configured correctly!
+
+	Delete the '`+name+` Virtual Service to get started. 	
+	`)
+}
+
+func DirectResponseVirtualService(namespace, name, body string) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: &core.Metadata{
 			Name:      name,
@@ -150,10 +158,7 @@ func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 				Matchers: []*matchers.Matcher{DefaultMatcher()},
 				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{
 					Status: 200,
-					Body: `Gloo and Envoy are configured correctly!
-
-Delete the '` + name + ` Virtual Service to get started. 	
-`,
+					Body:   body,
 				}},
 			}},
 		},

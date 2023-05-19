@@ -1,9 +1,13 @@
 package translator
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/solo-io/go-utils/contextutils"
+
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -21,7 +25,7 @@ import (
 )
 
 type FilterChainTranslator interface {
-	ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain
+	ComputeFilterChains(params plugins.Params) []*plugins.ExtendedFilterChain
 }
 
 var _ FilterChainTranslator = new(tcpFilterChainTranslator)
@@ -38,10 +42,12 @@ type tcpFilterChainTranslator struct {
 	report *validationapi.TcpListenerReport
 
 	// These values are optional (currently only available for HybridGateways)
-	sourcePrefixRanges []*v3.CidrRange
+	defaultSslConfig        *ssl.SslConfig
+	sourcePrefixRanges      []*v3.CidrRange
+	passthroughCipherSuites []string
 }
 
-func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
+func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*plugins.ExtendedFilterChain {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 
 	// 1. Run the tcp filter chain plugins
@@ -54,7 +60,23 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 			continue
 		}
 
-		filterChains = append(filterChains, pluginFilterChains...)
+		for _, pfc := range pluginFilterChains {
+			pfc := pfc
+			if t.defaultSslConfig != nil {
+				if pfc.GetFilterChainMatch() == nil {
+					pfc.FilterChainMatch = &envoy_config_listener_v3.FilterChainMatch{}
+				}
+
+				if pfc.GetFilterChainMatch().GetServerNames() == nil {
+					pfc.GetFilterChainMatch().ServerNames = []string{}
+				}
+
+				if len(pfc.GetFilterChainMatch().GetServerNames()) == 0 {
+					pfc.GetFilterChainMatch().ServerNames = t.defaultSslConfig.GetSniDomains()
+				}
+			}
+			filterChains = append(filterChains, pfc)
+		}
 	}
 
 	// 2. Apply SourcePrefixRange to FilterChainMatch, if defined
@@ -64,7 +86,13 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 		}
 	}
 
-	return filterChains
+	extFilterChains := make([]*plugins.ExtendedFilterChain, 0, len(filterChains))
+	for _, fc := range filterChains {
+		fc := fc
+		extFilterChains = append(extFilterChains, &plugins.ExtendedFilterChain{FilterChain: fc, PassthroughCipherSuites: t.passthroughCipherSuites})
+	}
+
+	return extFilterChains
 }
 
 // An httpFilterChainTranslator configures a single set of NetworkFilters
@@ -72,17 +100,21 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 type httpFilterChainTranslator struct {
 	parentReport            *validationapi.ListenerReport
 	networkFilterTranslator NetworkFilterTranslator
-	sslConfigurations       []*v1.SslConfig
+	sslConfigurations       []*ssl.SslConfig
 	sslConfigTranslator     utils.SslConfigTranslator
 
 	// These values are optional (currently only available for HybridListeners or AggregateListeners)
-	defaultSslConfig   *v1.SslConfig
+	defaultSslConfig   *ssl.SslConfig
 	sourcePrefixRanges []*v3.CidrRange
 }
 
-func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
+func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*plugins.ExtendedFilterChain {
 	// 1. Generate all the network filters (including the HttpConnectionManager)
-	networkFilters := h.networkFilterTranslator.ComputeNetworkFilters(params)
+	networkFilters, err := h.networkFilterTranslator.ComputeNetworkFilters(params)
+	if err != nil {
+		contextutils.LoggerFrom(context.Background()).DPanic(err)
+		return nil
+	}
 	if len(networkFilters) == 0 {
 		return nil
 	}
@@ -99,11 +131,15 @@ func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) [
 			applySourcePrefixRangesToFilterChain(fc, h.sourcePrefixRanges)
 		}
 	}
-
-	return filterChains
+	extFilters := make([]*plugins.ExtendedFilterChain, len(filterChains))
+	for _, fc := range filterChains {
+		fc := fc
+		extFilters = append(extFilters, &plugins.ExtendedFilterChain{FilterChain: fc})
+	}
+	return extFilters
 }
 
-func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslConfig {
+func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*ssl.SslConfig {
 	mergedSslConfigurations := ConsolidateSslConfigurations(h.sslConfigurations)
 
 	if h.defaultSslConfig == nil {
@@ -111,7 +147,7 @@ func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslC
 	}
 
 	// Merge each sslConfig with the default values
-	var sslConfigWithDefaults []*v1.SslConfig
+	var sslConfigWithDefaults []*ssl.SslConfig
 	for _, ssl := range mergedSslConfigurations {
 		sslConfigWithDefaults = append(sslConfigWithDefaults, MergeSslConfig(ssl, h.defaultSslConfig))
 	}
@@ -121,7 +157,7 @@ func (h *httpFilterChainTranslator) getSslConfigurationWithDefaults() []*v1.SslC
 func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 	snap *v1snap.ApiSnapshot,
 	networkFilters []*envoy_config_listener_v3.Filter,
-	sslConfigurations []*v1.SslConfig,
+	sslConfigurations []*ssl.SslConfig,
 ) []*envoy_config_listener_v3.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
@@ -141,11 +177,15 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 			continue
 		}
 
-		filterChain := newSslFilterChain(
+		filterChain, err := newSslFilterChain(
 			downstreamTlsContext,
 			sslConfig.GetSniDomains(),
 			networkFilters,
 			sslConfig.GetTransportSocketConnectTimeout())
+		if err != nil {
+			validation.AppendListenerError(h.parentReport, validationapi.ListenerReport_Error_SSLConfigError, err.Error())
+			continue
+		}
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
@@ -182,11 +222,14 @@ func newSslFilterChain(
 	sniDomains []string,
 	listenerFilters []*envoy_config_listener_v3.Filter,
 	timeout *duration.Duration,
-) *envoy_config_listener_v3.FilterChain {
+) (*envoy_config_listener_v3.FilterChain, error) {
 
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	clonedListenerFilters := cloneListenerFilters(listenerFilters)
-
+	typedConfig, err := utils.MessageToAny(downstreamTlsContext)
+	if err != nil {
+		return nil, err
+	}
 	return &envoy_config_listener_v3.FilterChain{
 		FilterChainMatch: &envoy_config_listener_v3.FilterChainMatch{
 			ServerNames: sniDomains,
@@ -194,10 +237,10 @@ func newSslFilterChain(
 		Filters: clonedListenerFilters,
 		TransportSocket: &envoy_config_core_v3.TransportSocket{
 			Name:       wellknown.TransportSocketTls,
-			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(downstreamTlsContext)},
+			ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 		},
 		TransportSocketConnectTimeout: timeout,
-	}
+	}, nil
 }
 
 func cloneListenerFilters(originalListenerFilters []*envoy_config_listener_v3.Filter) []*envoy_config_listener_v3.Filter {
@@ -213,11 +256,14 @@ type multiFilterChainTranslator struct {
 	translators []FilterChainTranslator
 }
 
-func (m *multiFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*envoy_config_listener_v3.FilterChain {
-	var outFilterChains []*envoy_config_listener_v3.FilterChain
+func (m *multiFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*plugins.ExtendedFilterChain {
+	var outFilterChains []*plugins.ExtendedFilterChain
 
 	for _, translator := range m.translators {
-		outFilterChains = append(outFilterChains, translator.ComputeFilterChains(params)...)
+		newFilterChains := translator.ComputeFilterChains(params)
+		if newFilterChains != nil {
+			outFilterChains = append(outFilterChains, newFilterChains...)
+		}
 	}
 
 	return outFilterChains

@@ -630,6 +630,21 @@ func (m *RouteMatch) Equal(that interface{}) bool {
 			return false
 		}
 
+	case *RouteMatch_ConnectMatcher_:
+		if _, ok := target.PathSpecifier.(*RouteMatch_ConnectMatcher_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetConnectMatcher()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetConnectMatcher()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetConnectMatcher(), target.GetConnectMatcher()) {
+				return false
+			}
+		}
+
 	default:
 		// m is nil but target is not nil
 		if m.PathSpecifier != target.PathSpecifier {
@@ -1765,6 +1780,30 @@ func (m *WeightedCluster_ClusterWeight) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *RouteMatch_ConnectMatcher) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*RouteMatch_ConnectMatcher)
+	if !ok {
+		that2, ok := that.(RouteMatch_ConnectMatcher)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
 	}
 
 	return true

@@ -23,6 +23,7 @@ glooctl is the unified CLI for Gloo.
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
   -h, --help                       help for glooctl
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
 ```
@@ -31,6 +32,7 @@ glooctl is the unified CLI for Gloo.
 
 * [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource
 * [glooctl check](../glooctl_check)	 - Checks Gloo resources for errors (requires Gloo running on Kubernetes)
+* [glooctl check-crds](../glooctl_check-crds)	 - Checks Gloos CRDs for consistency against an official (or local) helm charts CRDs
 * [glooctl cluster](../glooctl_cluster)	 - Cluster commands
 * [glooctl completion](../glooctl_completion)	 - generate auto completion for your shell
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource

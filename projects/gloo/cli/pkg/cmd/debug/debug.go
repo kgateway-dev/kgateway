@@ -3,7 +3,6 @@ package debug
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -136,7 +135,7 @@ func DumpYaml(fileToWrite, namespace string, kubeCli install.KubeCli) error {
 		_, err := fmt.Fprint(os.Stdout, allOutput)
 		return err
 	} else {
-		return ioutil.WriteFile(fileToWrite, []byte(allOutput), filePermissions)
+		return os.WriteFile(fileToWrite, []byte(allOutput), filePermissions)
 	}
 }
 
@@ -161,7 +160,7 @@ func displayLogs(w io.Writer, logs strings.Builder) error {
 }
 
 func setup(opts *options.Options) ([]*debugutils.LogsResponse, error) {
-	pods, err := helpers.MustKubeClient().CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
+	pods, err := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext).CoreV1().Pods(opts.Metadata.GetNamespace()).List(opts.Top.Ctx, metav1.ListOptions{
 		LabelSelector: "gloo",
 	})
 	if err != nil {

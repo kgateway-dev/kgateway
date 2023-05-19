@@ -16,6 +16,12 @@ type SnapshotSetter interface {
 	SetSnapshot(node string, snapshot envoycache.Snapshot)
 }
 
+// NoOpSnapshotSetter does nothing in it's interface
+type NoOpSnapshotSetter struct{}
+
+// SetSnapshot does nothing, it is a no-op function
+func (n *NoOpSnapshotSetter) SetSnapshot(node string, snapshot envoycache.Snapshot) {}
+
 // TranslatorSyncerExtension represents a custom sync behavior that updates an entry in the SnapshotCache
 type TranslatorSyncerExtension interface {
 	// ID returns the unique identifier for this TranslatorSyncerExtension
@@ -33,8 +39,8 @@ type TranslatorSyncerExtension interface {
 }
 
 type TranslatorSyncerExtensionParams struct {
-	Hasher                   func(resources []envoycache.Resource) uint64
-	RateLimitServiceSettings ratelimit.ServiceSettings
+	Hasher                   func(resources []envoycache.Resource) (uint64, error)
+	RateLimitServiceSettings *ratelimit.ServiceSettings
 }
 
 // TranslatorSyncerExtensionFactory generates TranslatorSyncerExtensions

@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7926
+    description: Reduce the number of places we specify the go version
+    resolvesIssue: false

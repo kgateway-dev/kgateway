@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -22,6 +21,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+)
+
+const (
+	defaultTimeout = 30 * time.Second
 )
 
 // GetResource identified by the given URI.
@@ -213,7 +216,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 		return "", nil, err
 	}
 
-	localCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	localCtx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
 	// wait for port-forward to be ready
@@ -238,7 +241,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 				time.Sleep(retryInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(res.Body)
+			b, err := io.ReadAll(res.Body)
 			if err != nil {
 				errs <- err
 				time.Sleep(retryInterval)

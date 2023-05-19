@@ -3,22 +3,23 @@ package test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/ghodss/yaml"
 	"github.com/onsi/gomega/format"
 
 	"github.com/golang/protobuf/proto"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
 	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
@@ -97,8 +98,17 @@ var _ = Describe("Helm Test", func() {
 			statsAnnotations map[string]string
 		)
 
+		expectCustomResourceSubstring := func(substr string, contains bool) {
+			configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+			Expect(configMap.Data).NotTo(BeNil())
+			if contains {
+				Expect(configMap.Data["custom-resources"]).To(ContainSubstring(substr))
+			} else {
+				Expect(configMap.Data["custom-resources"]).NotTo(ContainSubstring(substr))
+			}
+		}
 		BeforeEach(func() {
-			// Ensure that tests do not shares manifests by accident
+			// Ensure that tests do not share manifests by accident
 			testManifest = nil
 		})
 
@@ -335,6 +345,120 @@ var _ = Describe("Helm Test", func() {
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
 					Expect(resourcesTested).To(Equal(1), "Tested %d resources when we were expecting 1."+
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
+				})
+
+				Context("should be able to set custom labels and annotations on jobs", func() {
+					// creates a template from the specified valuesArgs, then confirms the jobs with the specified names
+					// have the expected labels and annotations
+					testJobLabelsAndAnnotations := func(valuesArgs []string, jobNames []string, expectedLabels map[string]string, expectedAnnotations map[string]string) {
+						// create the chart with the specified values args
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: valuesArgs,
+						})
+
+						// convert the job names we expect to be affected into a map, for easy lookup
+						expectedNames := map[string]bool{}
+						for _, name := range jobNames {
+							expectedNames[name] = true
+						}
+
+						testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+							// get jobs with the expected names
+							return resource.GetKind() == "Job" && expectedNames[resource.GetName()]
+						}).ExpectAll(func(job *unstructured.Unstructured) {
+							// convert the job to a structured object
+							jobObject, err := kuberesource.ConvertUnstructured(job)
+							ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+							structuredJob, ok := jobObject.(*jobsv1.Job)
+							ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+							// check the labels
+							jobLabels := structuredJob.Spec.Template.Labels
+							var foundTestValue = false
+							for label, expectedValue := range expectedLabels {
+								ExpectWithOffset(1, jobLabels[label]).To(Equal(expectedValue), fmt.Sprintf("Job %s expected test label to have"+
+									" value %s. Found value %s", job.GetName(), expectedValue, jobLabels[label]))
+								foundTestValue = true
+							}
+							ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in job %s", job.GetName()))
+
+							// check the annotations
+							jobAnnotations := structuredJob.Spec.Template.Annotations
+							foundTestValue = false
+							for label, expectedValue := range expectedAnnotations {
+								ExpectWithOffset(1, jobAnnotations[label]).To(Equal(expectedValue), fmt.Sprintf("Job %s expected test annotation to have"+
+									" value %s. Found value %s", job.GetName(), expectedValue, jobAnnotations[label]))
+								foundTestValue = true
+							}
+							ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test annotation 'foo2' in job %s", job.GetName()))
+						})
+					}
+
+					It("should be able to set custom labels and annotations on certGenJob", func() {
+						values := []string{
+							"gateway.certGenJob.extraPodLabels.foo=bar",
+							"gateway.certGenJob.extraPodAnnotations.foo2=baz",
+						}
+						jobNames := []string{
+							"gloo-mtls-certgen-cronjob",
+							"gloo-mtls-certgen",
+							"gateway-certgen",
+						}
+
+						expectedLabels := map[string]string{
+							"foo": "bar",
+						}
+
+						expectedAnnotations := map[string]string{
+							"foo2": "baz",
+						}
+
+						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
+
+					})
+
+					It("should be able to set custom labels and annotations on cleanupJob", func() {
+						values := []string{
+							"gateway.cleanupJob.extraPodLabels.foo=bar",
+							"gateway.cleanupJob.extraPodAnnotations.foo2=baz",
+						}
+
+						jobNames := []string{
+							"gloo-resource-cleanup",
+						}
+
+						expectedLabels := map[string]string{
+							"foo": "bar",
+						}
+
+						expectedAnnotations := map[string]string{
+							"foo2": "baz",
+						}
+
+						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
+					})
+
+					It("should be able to set custom labels and annotations on rolloutJob", func() {
+						values := []string{
+							"gateway.rolloutJob.extraPodLabels.foo=bar",
+							"gateway.rolloutJob.extraPodAnnotations.foo2=baz",
+						}
+
+						jobNames := []string{
+							"gloo-resource-rollout",
+							"gloo-resource-migration",
+						}
+
+						expectedLabels := map[string]string{
+							"foo": "bar",
+						}
+
+						expectedAnnotations := map[string]string{
+							"foo2": "baz",
+						}
+
+						testJobLabelsAndAnnotations(values, jobNames, expectedLabels, expectedAnnotations)
+					})
 				})
 
 				It("should set route prefix_rewrite in clusteringress-envoy-config from global.glooStats", func() {
@@ -729,6 +853,31 @@ var _ = Describe("Helm Test", func() {
 				})
 			})
 
+			Context("gloo with linkerd settings", func() {
+				var (
+					linkerdInjectionLabel = "linkerd.io/inject"
+				)
+				It("linkerd injection should always be disabled in job pod templates when linkerd is enabled", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.linkerd=true",
+						},
+					})
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Job"
+					}).ExpectAll(func(job *unstructured.Unstructured) {
+						jobObj, err := kuberesource.ConvertUnstructured(job)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+						structuredJob, ok := jobObj.(*jobsv1.Job)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+						val, ok := structuredJob.Spec.Template.ObjectMeta.Annotations[linkerdInjectionLabel]
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %s should contain an linkerd injection annotation", job.GetName()))
+						Expect(val).To(Equal("disabled"), fmt.Sprintf("Job %s should have an linkerd injection annotation with value of 'disabled'", job.GetName()))
+					})
+				})
+			})
+
 			Context("gloo with istio sds settings", func() {
 				var (
 					IstioInjectionLabel          = "sidecar.istio.io/inject"
@@ -941,7 +1090,6 @@ var _ = Describe("Helm Test", func() {
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
 							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
-							fmt.Sprintf("gatewayProxies.namedGatewayProxy.logLevel=debug"),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -993,7 +1141,6 @@ var _ = Describe("Helm Test", func() {
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
 							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
-							fmt.Sprintf("gatewayProxies.namedGatewayProxy.logLevel=debug"),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -1045,10 +1192,10 @@ var _ = Describe("Helm Test", func() {
 						}
 					})
 				})
-				It("should be able to disable istio injection on all job pod templates", func() {
+				It("istio injection should always be disabled in job pod templates", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
-							"global.istioIntegration.disableAutoinjection=true",
+							"global.istioIntegration.disableAutoinjection=false",
 							"global.glooMtls.enabled=true",
 						},
 					})
@@ -1262,66 +1409,62 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				Context("default gateways", func() {
-					// Gateways are not directly included in the helm manifest anymore; instead, a Job applies
-					// them via kubectl. In these tests, to confirm their existence we look for parts of the gateway
-					// yaml in the text of the job's command.
+					// Gateways are not directly included in the helm manifest anymore; instead, their contents are
+					// stored in a ConfigMap, and the resource rollout job mounts the ConfigMap as a file and applies
+					// the file via kubectl.
+					// In these tests, to confirm the existence of the Gateway CRs, we look for parts of the gateway
+					// yaml in ConfigMap data.
 
 					It("does not render when gatewaySettings is disabled", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting enabled=true, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting enabled=false, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
 					})
 
 					It("does not render when gatewayProxy is disabled", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting disabled=false, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, true)
 
 						// if explicitly setting disabled=true, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled", func() {
@@ -1332,9 +1475,8 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.disabled=true",
 							},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + "another-gateway-proxy"))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						expectCustomResourceSubstring("name: "+"another-gateway-proxy", false)
 
 						// when disabling default gateway and enabling custom gateway, only custom gateway should render
 						prepareMakefile(namespace, helmValues{
@@ -1343,9 +1485,8 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.disabled=false",
 							},
 						})
-						job = getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("name: " + "another-gateway-proxy"))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						expectCustomResourceSubstring("name: "+"another-gateway-proxy", true)
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled and custom disabled is not set", func() {
@@ -1356,9 +1497,8 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("name: " + defaults.GatewayProxyName))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("name: " + "another-gateway-proxy"))
+						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						expectCustomResourceSubstring("name: "+"another-gateway-proxy", true)
 					})
 
 					It("does not overwrite nodeSelectors specified for custom gateway proxy", func() {
@@ -1429,68 +1569,64 @@ metadata:
 
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						// gateway-proxy and gateway-proxy-ssl should both render
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace + `
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindAddress: "`+defaults.GatewayBindAddress+`"
   bindPort: 8080
   httpGateway: {}
   useProxyProto: false
   ssl: false
   proxyNames:
-  - ` + defaults.GatewayProxyName))
+  - `+defaults.GatewayProxyName, true)
 
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `-ssl
-  namespace: ` + namespace + `
+  name: `+defaults.GatewayProxyName+`-ssl
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
+  bindAddress: "`+defaults.GatewayBindAddress+`"
   bindPort: 8443
   httpGateway: {}
   useProxyProto: false
   ssl: true
   proxyNames:
-  - ` + defaults.GatewayProxyName))
+  - `+defaults.GatewayProxyName, true)
 					})
 
 					It("can disable rendering http/https gateways", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true"},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, false)
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `-ssl
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`-ssl
+  namespace: `+namespace, false)
 					})
 
 					It("can disable http gateway", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`
+  namespace: `+namespace, false)
 					})
 
 					It("disabling http gateway disables corresponding service port", func() {
@@ -1534,12 +1670,11 @@ metadata:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + `-ssl
-  namespace: ` + namespace))
+  name: `+defaults.GatewayProxyName+`-ssl
+  namespace: `+namespace, false)
 					})
 
 					It("disabling https gateway disables corresponding service port", func() {
@@ -1615,8 +1750,7 @@ spec:
   - gateway-proxy
 `
 						prepareMakefileFromValuesFile("values/val_gwp_http_hybrid_gateway.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 					})
 
 					It("sets https hybrid gateway", func() {
@@ -1662,8 +1796,7 @@ spec:
   proxyNames:
   - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_gwp_https_hybrid_gateway.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 					})
 
 					It("can set accessLoggingService", func() {
@@ -1692,8 +1825,7 @@ spec:
   proxyNames:
   - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
@@ -1719,7 +1851,7 @@ spec:
   ssl: ` + ssl + `
   proxyNames:
   - gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
+						expectCustomResourceSubstring(gwSslYaml, true)
 					})
 
 					It("can set tracing provider", func() {
@@ -1748,8 +1880,7 @@ spec:
   proxyNames:
   - gateway-proxy`
 						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
@@ -1775,7 +1906,7 @@ spec:
   ssl: ` + ssl + `
   proxyNames:
   - gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml))
+						expectCustomResourceSubstring(gwSslYaml, true)
 					})
 
 					It("gwp hpa disabled by default", func() {
@@ -1861,6 +1992,57 @@ apiVersion: autoscaling/v2beta2
 
 					})
 
+					It("can create gwp autoscaling/v2 hpa", func() {
+
+						prepareMakefileFromValuesFile("values/val_gwp_hpa_v2.yaml")
+
+						hpa := makeUnstructured(`
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app: gloo
+    gateway-proxy-id: gateway-proxy
+    gloo: gateway-proxy
+  name: gateway-proxy-hpa
+  namespace: gloo-system
+spec:
+  maxReplicas: 2
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gateway-proxy
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      stabilizationWindowSeconds: 300
+`)
+
+						testManifest.ExpectUnstructured("HorizontalPodAutoscaler", namespace, defaults.GatewayProxyName+"-hpa").To(BeEquivalentTo(hpa))
+
+					})
+
 					It("gwp pdb disabled by default", func() {
 						prepareMakefile(namespace, helmValues{})
 
@@ -1876,7 +2058,7 @@ apiVersion: autoscaling/v2beta2
 						})
 
 						pdb := makeUnstructured(`
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -1900,7 +2082,7 @@ spec:
 						})
 
 						pdb := makeUnstructured(`
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: gateway-proxy-pdb
@@ -1925,7 +2107,7 @@ spec:
 						})
 
 						pdbFormat := `
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: %s-pdb
@@ -1943,7 +2125,6 @@ spec:
 
 					It("can render with custom listener yaml", func() {
 						prepareMakefileFromValuesFile("values/val_custom_gateways.yaml")
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
 						gwYamls := []string{`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -2017,7 +2198,7 @@ spec:
   proxyNames:
   - test-name`}
 						for _, gwYaml := range gwYamls {
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+							expectCustomResourceSubstring(gwYaml, true)
 						}
 					})
 				})
@@ -2031,7 +2212,6 @@ spec:
 								"gatewayProxies.gatewayProxy.failover.port=15444",
 							},
 						})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
 						gwYaml := `apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -2053,13 +2233,12 @@ spec:
         forwardSniClusterName: {}
   proxyNames:
   - ` + defaults.GatewayProxyName
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwYaml))
+						expectCustomResourceSubstring(gwYaml, true)
 					})
 
 					It("by default will not render failover gateway", func() {
 						prepareMakefile(namespace, helmValues{})
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(defaults.GatewayProxyName + "-failover"))
+						expectCustomResourceSubstring(defaults.GatewayProxyName+"-failover", false)
 					})
 
 				})
@@ -2075,17 +2254,16 @@ spec:
 							})
 						})
 						It("uses default values for the gateway", func() {
-							job := getJob(testManifest, namespace, "gloo-resource-rollout")
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+							expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: another-gateway-proxy
-  namespace: ` + namespace + `
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
-  bindPort: 8080`))
+  bindAddress: "`+defaults.GatewayBindAddress+`"
+  bindPort: 8080`, true)
 						})
 						It("uses default values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -2104,12 +2282,8 @@ spec:
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("LoadBalancer")))
 						})
 						It("uses default values for the config map", func() {
-							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
-							configMapStr := configMap.(*v1.ConfigMap)
-							Expect(configMapStr.Data).ToNot(BeNil()) // Uses the default config data
+							configMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
+							Expect(configMap.Data).ToNot(BeNil()) // Uses the default config data
 						})
 					})
 
@@ -2125,17 +2299,16 @@ spec:
 							})
 						})
 						It("uses merged values for the gateway", func() {
-							job := getJob(testManifest, namespace, "gloo-resource-rollout")
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+							expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: another-gateway-proxy
-  namespace: ` + namespace + `
+  namespace: `+namespace+`
   labels:
     app: gloo
 spec:
-  bindAddress: "` + defaults.GatewayBindAddress + `"
-  bindPort: 9999`))
+  bindAddress: "`+defaults.GatewayBindAddress+`"
+  bindPort: 9999`, true)
 						})
 						It("uses merged values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -2154,12 +2327,8 @@ spec:
 							Expect(serviceStr.Spec.Type).To(Equal(v1.ServiceType("NodePort")))
 						})
 						It("uses merged values for the config map", func() {
-							configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, "another-gateway-proxy-envoy-config")
-							configMap, err := kuberesource.ConvertUnstructured(configMapUns)
-							Expect(err).NotTo(HaveOccurred())
-							Expect(configMap).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
-							configMapStr := configMap.(*v1.ConfigMap)
-							Expect(configMapStr.Data).To(Equal(map[string]string{"customData": "someData"}))
+							configMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
+							Expect(configMap.Data).To(Equal(map[string]string{"customData": "someData"}))
 						})
 					})
 
@@ -2201,22 +2370,21 @@ spec:
 						})
 					})
 					It("correctly merges custom gatewayproxy values", func() {
-						job := getJob(testManifest, namespace, "gloo-resource-rollout")
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: gateway-proxy
-  namespace: ` + namespace))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+  namespace: `+namespace, false)
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: first-gateway-proxy
-  namespace: ` + namespace))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring(`apiVersion: gateway.solo.io/v1
+  namespace: `+namespace, false)
+						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: second-gateway-proxy
-  namespace: ` + namespace))
+  namespace: `+namespace, false)
 
 						gwSslYaml1 := `apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -2252,8 +2420,8 @@ spec:
   ssl: true
   proxyNames:
   - second-gateway-proxy`
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml1))
-						Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(gwSslYaml2))
+						expectCustomResourceSubstring(gwSslYaml1, true)
+						expectCustomResourceSubstring(gwSslYaml2, true)
 					})
 				})
 
@@ -2548,6 +2716,12 @@ spec:
 							RunAsUser:                &defaultUser,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
+						deploy.Spec.Template.Spec.Containers[0].Env = append(
+							deploy.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_CORE_DUMPS",
+								Value: "false",
+							})
 						gatewayProxyDeployment = deploy
 					})
 
@@ -2583,6 +2757,28 @@ spec:
 								},
 							})
 							testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
+						})
+
+						It("can set the DISABLE_CORE_DUMPS environment variable", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{"gatewayProxies.gatewayProxy.disableCoreDumps=true"},
+							})
+							testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+								return resource.GetKind() == "Deployment" && resource.GetName() == "gateway-proxy"
+							}).ExpectAll(func(deployment *unstructured.Unstructured) {
+								deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+								Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+								structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+								Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+								Expect(structuredDeployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+								for _, envvar := range structuredDeployment.Spec.Template.Spec.Containers[0].Env {
+									if envvar.Name != "DISABLE_CORE_DUMPS" {
+										continue
+									}
+									Expect(envvar.Value).To(Equal("true"))
+								}
+							})
 						})
 
 						It("can explicitly disable hostNetwork", func() {
@@ -2782,6 +2978,24 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("sets topologySpreadConstraints", func() {
+
+						gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints = append(
+							gatewayProxyDeployment.Spec.Template.Spec.TopologySpreadConstraints,
+							v1.TopologySpreadConstraint{
+								MaxSkew:           1,
+								TopologyKey:       "zone",
+								WhenUnsatisfiable: "ScheduleAnyway",
+								LabelSelector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{"gloo": "gateway-proxy"},
+								},
+							})
+
+						prepareMakefileFromValuesFile("values/val_gwp_topologyspreadconstraints.yaml")
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("enables probes", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -2790,7 +3004,7 @@ spec:
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"wget", "-O", "/dev/null", "127.0.0.1:19000/ready",
@@ -2802,7 +3016,7 @@ spec:
 							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
@@ -2836,7 +3050,7 @@ spec:
 							},
 						})
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								HTTPGet: &v1.HTTPGetAction{
 									Path:   "/ready",
 									Port:   intstr.FromInt(19000),
@@ -2848,7 +3062,7 @@ spec:
 							FailureThreshold:    3,
 						}
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								HTTPGet: &v1.HTTPGetAction{
 									Path:   "/server_info",
 									Port:   intstr.FromInt(19000),
@@ -2883,7 +3097,7 @@ spec:
 						})
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-							PreStop: &v1.Handler{
+							PreStop: &v1.LifecycleHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"/bin/sh",
@@ -2906,7 +3120,7 @@ spec:
 						})
 
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
-							PreStop: &v1.Handler{
+							PreStop: &v1.LifecycleHandler{
 								Exec: &v1.ExecAction{
 									Command: []string{
 										"/bin/sh",
@@ -2954,6 +3168,47 @@ spec:
 							},
 						})
 
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can render Extra Containers", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers = append(gatewayProxyDeployment.Spec.Template.Spec.Containers, gatewayProxyDeployment.Spec.Template.Spec.Containers[0])
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0] = v1.Container{
+							Image: "gcr.io/solo-public",
+							Name:  "podName",
+							Command: []string{
+								"sh",
+								"-c",
+							},
+						}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].image=gcr.io/solo-public",
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].name=podName",
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].command[0]=sh",
+								"gatewayProxies.gatewayProxy.podTemplate.extraContainers[0].command[1]=-c",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can render Extra Init Containers", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.InitContainers = append(gatewayProxyDeployment.Spec.Template.Spec.InitContainers, v1.Container{
+							Image: "gcr.io/solo-public",
+							Name:  "podName",
+							Command: []string{
+								"sh",
+								"-c",
+							},
+						})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].image=gcr.io/solo-public",
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].name=podName",
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].command[0]=sh",
+								"gatewayProxies.gatewayProxy.podTemplate.extraInitContainers[0].command[1]=-c",
+							},
+						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -3282,13 +3537,13 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("can set log level env var", func() {
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env,
-							GetLogLevelEnvVar(),
+					It("can set envoy log level", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
+							"--log-level debug",
 						)
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"gatewayProxies.gatewayProxy.logLevel=debug"},
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.envoyLogLevel=debug"},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
@@ -3498,6 +3753,19 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("correctly sets the gateway circuitBreakers fields in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/gateway_circuit_breakers.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.circuitBreakers.maxConnections=1024",
+								"settings.circuitBreakers.maxPendingRequests=1024",
+								"settings.circuitBreakers.maxRequests=1024",
+								"settings.circuitBreakers.maxRetries=3",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 					It("always enables persisting proxy specs when not in gateway mode", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/disabled_gateway.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
@@ -3541,6 +3809,20 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("correctly allows setting ratelimitServer field.", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/ratelimit_server.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.ratelimitServer.ratelimitServerRef.name=ratelimit",
+								"settings.ratelimitServer.ratelimitServerRef.namespace=ratelimitns",
+								"settings.ratelimitServer.denyOnFail=true",
+								"settings.ratelimitServer.rateLimitBeforeAuth=true",
+								"settings.ratelimitServer.enableXRatelimitHeaders=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 
 					It("correctly sets the `disableProxyGarbageCollection` field in the settings", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_proxy_garbage_collection.yaml", namespace)
@@ -3549,6 +3831,14 @@ spec:
 							valuesArgs: []string{
 								"settings.disableProxyGarbageCollection=true",
 							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
+					It("correctly sets the `regexMaxProgramSize` field to the default of 1024 in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_regex_max_program_size_default.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
@@ -3593,6 +3883,16 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("can enable isolateVirtualHostsBySslConfig", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/isolate_virtual_hosts_by_ssl_config.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.isolateVirtualHostsBySslConfig=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
 
 					It("allows setting extauth", func() {
 						expectedYaml := makeUnstructured(`
@@ -3606,6 +3906,7 @@ metadata:
   namespace: gloo-system
 spec:
   gloo:
+    regexMaxProgramSize: 1024
     xdsBindAddr: "0.0.0.0:9977"
     restXdsBindAddr: "0.0.0.0:9976"
     proxyDebugBindAddr: "0.0.0.0:9966"
@@ -3625,10 +3926,12 @@ spec:
   gateway:
     readGatewaysFromAllNamespaces: false
     enableGatewayController: true
+    isolateVirtualHostsBySslConfig: false
     validation:
       proxyValidationServerAddr: gloo:9988
       alwaysAccept: true
       allowWarnings: true
+      serverEnabled: true
       disableTransformationValidation: false
       warnRouteShortCircuiting: false
       validationServerGrpcMaxSizeBytes: 104857600
@@ -3734,6 +4037,7 @@ spec:
 					})
 
 					It("creates the validating webhook configuration", func() {
+						timeoutSeconds := 5
 						vwc := makeUnstructured(`
 
 apiVersion: admissionregistration.k8s.io/v1
@@ -3758,7 +4062,11 @@ webhooks:
      - operations: [ "CREATE", "UPDATE", "DELETE" ]
        apiGroups: ["gateway.solo.io"]
        apiVersions: ["v1"]
-       resources: ["*"]
+       resources: ["virtualservices", "routetables"]
+     - operations: [ "CREATE", "UPDATE"]
+       apiGroups: ["gateway.solo.io"]
+       apiVersions: ["v1"]
+       resources: ["gateways"]
      - operations: [ "CREATE", "UPDATE", "DELETE" ]
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
@@ -3767,14 +4075,20 @@ webhooks:
        apiGroups: ["gloo.solo.io"]
        apiVersions: ["v1"]
        resources: ["secrets"]
+     - operations: [ "CREATE", "UPDATE", "DELETE" ]
+       apiGroups: ["ratelimit.solo.io"]
+       apiVersions: ["v1alpha1"]
+       resources: ["ratelimitconfigs"]
    sideEffects: None
    matchPolicy: Exact
+   timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
    admissionReviewVersions:
      - v1beta1
    failurePolicy: Ignore
-
 `)
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds)},
+						})
 						testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
 					})
 
@@ -3900,13 +4214,26 @@ metadata:
 							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl rollout"))
 						})
 
-						It("does not call kubectl apply when default gateways are disabled", func() {
+						It("configmap should contain gateway yaml when default gateways are enabled", func() {
+							prepareMakefile(namespace, helmValues{valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true",
+							}})
+
+							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+							Expect(configMap.Data).ToNot(BeNil())
+							Expect(configMap.Data["custom-resources"]).To(ContainSubstring("kind: Gateway"))
+							Expect(configMap.Data["has-custom-resources"]).To(Equal("true"))
+						})
+
+						It("configmap should not contain gateway yaml when default gateways are disabled", func() {
 							prepareMakefile(namespace, helmValues{valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false",
 							}})
-							job := getJob(testManifest, namespace, "gloo-resource-rollout")
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).NotTo(ContainSubstring("kubectl apply"))
-							Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring("no custom resources to apply"))
+
+							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+							Expect(configMap.Data).ToNot(BeNil())
+							Expect(configMap.Data["custom-resources"]).NotTo(ContainSubstring("kind:"))
+							Expect(configMap.Data["has-custom-resources"]).To(Equal("false"))
 						})
 
 						It("can disable rollout, migration, and cleanup jobs", func() {
@@ -3974,6 +4301,7 @@ spec:
   template:
     metadata:
       labels:
+        sidecar.istio.io/inject: "false"
         gloo: gateway-certgen
     spec:
       serviceAccountName: certgen
@@ -3990,7 +4318,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
           resources:
-            requests: 
+            requests:
               cpu: 250m
               memory: 64Mi
             limits:
@@ -4011,7 +4339,7 @@ spec:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-gateway-secret-create-vwc-update-` + namespace + `
+    name: gloo-gateway-secret-create-` + namespace + `
     labels:
         app: gloo
         gloo: rbac
@@ -4022,9 +4350,6 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   verbs: ["create", "get", "update"]
-- apiGroups: ["admissionregistration.k8s.io"]
-  resources: ["validatingwebhookconfigurations"]
-  verbs: ["get", "update"]
 `)
 						testManifest.ExpectUnstructured(clusterRole.GetKind(), clusterRole.GetNamespace(), clusterRole.GetName()).To(BeEquivalentTo(clusterRole))
 
@@ -4033,7 +4358,7 @@ rules:
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-gateway-secret-create-vwc-update-` + namespace + `
+  name: gloo-gateway-secret-create-` + namespace + `
   labels:
     app: gloo
     gloo: rbac
@@ -4046,7 +4371,7 @@ subjects:
   namespace: ` + namespace + `
 roleRef:
   kind: ClusterRole
-  name: gloo-gateway-secret-create-vwc-update-` + namespace + `
+  name: gloo-gateway-secret-create-` + namespace + `
   apiGroup: rbac.authorization.k8s.io
 ---
 `)
@@ -4203,7 +4528,7 @@ metadata:
 						}
 
 						deploy.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
-							Handler: v1.Handler{
+							ProbeHandler: v1.ProbeHandler{
 								TCPSocket: &v1.TCPSocketAction{
 									Port: intstr.FromInt(9977),
 								},
@@ -4286,6 +4611,18 @@ metadata:
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gloo.logLevel=debug"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
+					It("can set disable leader election env var", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							glooDeployment.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "DISABLE_LEADER_ELECTION",
+								Value: "true",
+							})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.disableLeaderElection=true"},
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
@@ -4538,6 +4875,16 @@ metadata:
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 
+					It("allows disabling FDS GraphQL discovery", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/graphql_fds_disabled.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.fdsOptions.graphqlEnabled=false",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("allows disabling upstream discovery", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/uds_disabled.yaml", namespace)
 						prepareMakefile(namespace, helmValues{
@@ -4610,6 +4957,58 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
+				It("should allow customising tcp keepalive on custom gateway proxies", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"",
+							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30",
+							"gatewayProxies.anotherGatewayProxy.tcpKeepaliveTimeSeconds=33",
+						},
+					})
+					gatewayProxyKeepaliveSeen := false
+					anotherGatewayProxyKeepaliveSeen := false
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("configMap %+v should be able to cast to a structured configMap", configMap))
+						configMapName := structuredConfigMap.GetName()
+						envoyConfig := structuredConfigMap.Data["envoy.yaml"]
+						if configMapName == "gateway-proxy-envoy-config" {
+							gatewayProxyKeepaliveSeen = true
+							Expect(envoyConfig).To(ContainSubstring("keepalive_time: 30"), "Should set custom value for gatewayProxy")
+						} else if configMapName == "another-gateway-proxy-envoy-config" {
+							anotherGatewayProxyKeepaliveSeen = true
+							Expect(envoyConfig).To(ContainSubstring("keepalive_time: 33"), "Should set custom value for another custom gatewayProxy value")
+						}
+					})
+					Expect(gatewayProxyKeepaliveSeen).To(BeTrue())
+					Expect(anotherGatewayProxyKeepaliveSeen).To(BeTrue())
+				})
+
+				It("should allow customising tcp keepalive", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"",
+							"gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds=30"},
+					})
+					byt, err := os.ReadFile("fixtures/envoy_config/tcp_keepalive.yaml")
+					Expect(err).ToNot(HaveOccurred())
+					envoyBootstrapYaml := string(byt)
+
+					envoyBootstrapSpec := make(map[string]string)
+					envoyBootstrapSpec["envoy.yaml"] = envoyBootstrapYaml
+
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      envoyBootstrapSpec,
+					}
+					envoyBootstrapCm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
+				})
+
 				It("is not created if disabled", func() {
 
 					prepareMakefile(namespace, helmValues{
@@ -4636,7 +5035,7 @@ metadata:
 				It("can create a gateway proxy with added static clusters", func() {
 					prepareMakefileFromValuesFile("values/val_static_clusters.yaml")
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/static_clusters.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/static_clusters.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -4661,7 +5060,7 @@ metadata:
 							"gatewayProxies.gatewayProxy.disabled=false"},
 					})
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/overload_manager.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/overload_manager.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -4682,7 +5081,7 @@ metadata:
 
 					prepareMakefileFromValuesFile("values/val_custom_bootstrap_extensions.yaml")
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/bootstrap_extensions.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -4703,7 +5102,7 @@ metadata:
 
 					prepareMakefileFromValuesFile("values/val_custom_static_bootstrap.yaml")
 
-					byt, err := ioutil.ReadFile("fixtures/envoy_config/custom_static_bootstrap.yaml")
+					byt, err := os.ReadFile("fixtures/envoy_config/custom_static_bootstrap.yaml")
 					Expect(err).ToNot(HaveOccurred())
 					envoyBootstrapYaml := string(byt)
 
@@ -4718,6 +5117,23 @@ metadata:
 					}
 					envoyBootstrapCm := cmRb.GetConfigMap()
 					testManifest.ExpectConfigMapWithYamlData(envoyBootstrapCm)
+				})
+
+				It("can create arbitrary configmaps", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.configMaps[0].name=my-config-map",
+							"global.configMaps[0].namespace=my-ns",
+							"global.configMaps[0].data.key1=value1",
+							"global.configMaps[0].data.key2=value2"},
+					})
+					cmRb := ResourceBuilder{
+						Namespace: "my-ns",
+						Name:      "my-config-map",
+						Labels:    map[string]string{"app": "gloo", "gloo": "gloo"},
+						Data:      map[string]string{"key1": "value1", "key2": "value2"},
+					}
+					cm := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(cm)
 				})
 
 				Describe("gateway proxy - AWS", func() {
@@ -5062,7 +5478,7 @@ metadata:
 												AllowPrivilegeEscalation: pointer.BoolPtr(false),
 											},
 											ReadinessProbe: &v1.Probe{
-												Handler: v1.Handler{
+												ProbeHandler: v1.ProbeHandler{
 													TCPSocket: &v1.TCPSocketAction{
 														Port: intstr.FromInt(9977),
 													},
@@ -5161,11 +5577,11 @@ metadata:
 
 					deployments.ExpectAll(func(resource *unstructured.Unstructured) {
 						rawDeploy, err := resource.MarshalJSON()
-						Expect(err).NotTo(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred(), "resource.MarshalJSON error")
 
 						deploy := appsv1.Deployment{}
 						err = json.Unmarshal(rawDeploy, &deploy)
-						Expect(err).NotTo(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred(), "json.Unmarshall error")
 
 						Expect(deploy.Spec.Template).NotTo(BeNil())
 
@@ -5219,7 +5635,7 @@ metadata:
 			})
 
 			Describe("Standard k8s values", func() {
-				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, priorityClassName, restartPolicy, on Deployments and Jobs",
+				DescribeTable("PodSpec affinity, tolerations, nodeName, hostAliases, nodeSelector, priorityClassName, restartPolicy, initContainers, on Deployments and Jobs",
 					func(kind string, resourceName string, value string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
@@ -5230,6 +5646,10 @@ metadata:
 								value + ".affinity.nodeAffinity=someNodeAffinity",
 								value + ".restartPolicy=someRestartPolicy",
 								value + ".priorityClassName=somePriorityClass",
+								value + ".initContainers[0].image=gcr.io/solo-public",
+								value + ".initContainers[0].name=containerName",
+								value + ".initContainers[0].command[0]=sh",
+								value + ".initContainers[0].command[1]=-c",
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5252,6 +5672,8 @@ metadata:
 								Expect(a).To(Equal(map[string]interface{}{"nodeAffinity": "someNodeAffinity"}))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "restartPolicy")...)
 								Expect(a).To(Equal("someRestartPolicy"))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "template", "spec", "initContainers")...)
+								Expect(a).To(Equal([]interface{}{map[string]interface{}{"image": "gcr.io/solo-public", "name": "containerName", "command": []interface{}{"sh", "-c"}}}))
 								return true
 							}
 							return false
@@ -5272,12 +5694,24 @@ metadata:
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
 				)
 
-				DescribeTable("can set activeDeadlineSeconds and ttlSecondsAfterFinished on Jobs",
+				const (
+					ACTIVE_DEADLINE_SECONDS    = 123
+					TTL_SECONDS_AFTER_FINISHED = 42
+					BACKOFF_LIMIT              = 10
+					COMPLETIONS                = 5
+					MANUAL_SELECTOR            = true
+					PARALLELISM                = 7
+				)
+				DescribeTable("can set JobSpec fields on Jobs",
 					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
-								jobValuesPrefix + ".activeDeadlineSeconds=123",
-								jobValuesPrefix + ".ttlSecondsAfterFinished=42",
+								jobValuesPrefix + ".activeDeadlineSeconds=" + strconv.Itoa(ACTIVE_DEADLINE_SECONDS),
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+								jobValuesPrefix + ".backoffLimit=" + strconv.Itoa(BACKOFF_LIMIT),
+								jobValuesPrefix + ".completions=" + strconv.Itoa(COMPLETIONS),
+								jobValuesPrefix + ".manualSelector=" + strconv.FormatBool(MANUAL_SELECTOR),
+								jobValuesPrefix + ".parallelism=" + strconv.Itoa(PARALLELISM),
 							}, extraArgs...),
 						})
 						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
@@ -5287,9 +5721,17 @@ metadata:
 							}
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "activeDeadlineSeconds")...)
-								Expect(a).To(Equal(int64(123)))
+								Expect(a).To(Equal(int64(ACTIVE_DEADLINE_SECONDS)))
 								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
-								Expect(a).To(Equal(int64(42)))
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "backoffLimit")...)
+								Expect(a).To(Equal(int64(BACKOFF_LIMIT)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "completions")...)
+								Expect(a).To(Equal(int64(COMPLETIONS)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "parallelism")...)
+								Expect(a).To(Equal(int64(PARALLELISM)))
+								a = getFieldFromUnstructured(u, append(prefixPath, "spec", "manualSelector")...)
+								Expect(a).To(Equal(MANUAL_SELECTOR))
 								return true
 							}
 							return false
@@ -5302,6 +5744,60 @@ metadata:
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
+				)
+
+				DescribeTable("setTtlAfterFinished=false suppresses ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=false",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(BeNil())
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+				)
+
+				DescribeTable("Setting setTtlAfterFinished=true includes ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
+								jobValuesPrefix + ".setTtlAfterFinished=true",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",
@@ -5330,6 +5826,418 @@ metadata:
 					Entry("resource migration job", "Job", "gloo-resource-migration"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
 				)
+
+				DescribeTable("overrides resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
+					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
+
+					// 2nd group of fields to test. Switch up the default 'no-merge' to the explict version
+					extraArgs = append([]string{
+						securityRoot + ".mergePolicy=no-merge",
+					}, extraArgs...)
+					helmValuesB := securityContextFieldsStripeGroupB(securityRoot, extraArgs...)
+
+					// First Group of fields to test
+					prepareMakefile(namespace, helmValuesA)
+
+					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext).To(Equal(
+						&v1.SecurityContext{
+							RunAsUser:                pointer.Int64(int64(1234)),
+							AllowPrivilegeEscalation: pointer.Bool(true),
+							ReadOnlyRootFilesystem:   pointer.Bool(true),
+							RunAsNonRoot:             pointer.Bool(true),
+							SELinuxOptions: &v1.SELinuxOptions{
+								Level: "seLevel",
+								Role:  "seRole",
+								Type:  "seType",
+								User:  "seUser",
+							},
+						},
+					))
+
+					prepareMakefile(namespace, helmValuesB)
+
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext).To(Equal(
+						&v1.SecurityContext{
+							Capabilities: &v1.Capabilities{
+								Add:  []v1.Capability{"ADD"},
+								Drop: []v1.Capability{"DROP"},
+							},
+							SeccompProfile: &v1.SeccompProfile{
+								LocalhostProfile: pointer.String("seccompLHP"),
+								Type:             "seccompType",
+							},
+							WindowsOptions: &v1.WindowsSecurityContextOptions{
+								GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+								GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+								RunAsUserName:          pointer.String("winUser"),
+								HostProcess:            pointer.Bool(true),
+							},
+						},
+					))
+				},
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+				)
+
+				DescribeTable("merges resources for container security contexts", func(resourceName string, containerName string, securityRoot string, extraArgs ...string) {
+					// First helm template generates the baseline
+					// Run once "plain" to get the baseline as generated with no helm values passed
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: extraArgs,
+					})
+
+					// Strip out the revelant security context
+					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					initialSecurityContext := container.SecurityContext
+					if initialSecurityContext == nil {
+						initialSecurityContext = &v1.SecurityContext{}
+					}
+					// Make a copy so we can restore it later
+					var initialSecurityContextClean *v1.SecurityContext
+					deepCopy(&initialSecurityContext, &initialSecurityContextClean)
+
+					// add "mergePolicy" to the security context
+					extraArgs = append([]string{
+						securityRoot + ".mergePolicy=helm-merge",
+					}, extraArgs...)
+
+					// Split the securityContext fields into two groups so each one gets tested as in and not in the values file
+					helmValuesA := securityContextFieldsStripeGroupA(securityRoot, extraArgs...)
+					helmValuesB := securityContextFieldsStripeGroupB(securityRoot, extraArgs...)
+
+					//
+					// Run again with security context A helm values applied
+					prepareMakefile(namespace, helmValuesA)
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+
+					// Test that all the values are set
+					Expect(container.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.RunAsNonRoot = pointer.Bool(true)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(1234))))
+					initialSecurityContext.RunAsUser = pointer.Int64(int64(1234))
+					Expect(container.SecurityContext.AllowPrivilegeEscalation).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.AllowPrivilegeEscalation = pointer.Bool(true)
+					Expect(container.SecurityContext.ReadOnlyRootFilesystem).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.ReadOnlyRootFilesystem = pointer.Bool(true)
+					expectedSELinuxOptions := &v1.SELinuxOptions{
+						Level: "seLevel",
+						Role:  "seRole",
+						Type:  "seType",
+						User:  "seUser",
+					}
+					Expect(container.SecurityContext.SELinuxOptions).To(Equal(expectedSELinuxOptions))
+					initialSecurityContext.SELinuxOptions = expectedSELinuxOptions
+
+					// We've test/updated all the fields we passed, so now we can compare the whole thing
+					Expect(container.SecurityContext).To(Equal(initialSecurityContext))
+
+					//
+					// Run again with security context B
+					prepareMakefile(namespace, helmValuesB)
+					initialSecurityContext = &v1.SecurityContext{}
+					deepCopy(&initialSecurityContextClean, &initialSecurityContext)
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+
+					// Test that all the values are set
+					expectedCapabilities := &v1.Capabilities{
+						Add:  []v1.Capability{"ADD"},
+						Drop: []v1.Capability{"DROP"},
+					}
+					Expect(container.SecurityContext.Capabilities).To(Equal(expectedCapabilities))
+					initialSecurityContext.Capabilities = expectedCapabilities
+					expectedSeccompProfile := &v1.SeccompProfile{
+						LocalhostProfile: pointer.String("seccompLHP"),
+						Type:             "seccompType",
+					}
+					Expect(container.SecurityContext.SeccompProfile).To(Equal(expectedSeccompProfile))
+					initialSecurityContext.SeccompProfile = expectedSeccompProfile
+					expectedWindowsOptions := &v1.WindowsSecurityContextOptions{
+						GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+						GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+						RunAsUserName:          pointer.String("winUser"),
+						HostProcess:            pointer.Bool(true),
+					}
+					Expect(container.SecurityContext.WindowsOptions).To(Equal(expectedWindowsOptions))
+					initialSecurityContext.WindowsOptions = expectedWindowsOptions
+
+					Expect(container.SecurityContext).To(Equal(initialSecurityContext))
+				},
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
+					Entry("7-gateway-proxy-deployment-sds", "gateway-proxy", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("1-gloo-deployment-gloo", "gloo", "gloo", "gloo.deployment.glooContainerSecurityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+				)
+
+				DescribeTable("overrides resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+					helmValuesA := podSecurityContextFieldsStripeGroupA(securityRoot, extraArgs...)
+
+					// 2nd group of fields to test. Switch up the default 'no-merge' to the explict version
+					extraArgs = append([]string{
+						securityRoot + ".mergePolicy=no-merge",
+					}, extraArgs...)
+					helmValuesB := podSecurityContextFieldsStripeGroupB(securityRoot, extraArgs...)
+
+					prepareMakefile(namespace, helmValuesA)
+					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
+
+					fsGroupChangePolicy := v1.PodFSGroupChangePolicy("fsGroupChangePolicyValue")
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(
+						&v1.PodSecurityContext{
+							FSGroup:             pointer.Int64(int64(101010)),
+							FSGroupChangePolicy: &fsGroupChangePolicy,
+							RunAsGroup:          pointer.Int64(int64(202020)),
+							RunAsNonRoot:        pointer.Bool(true),
+							RunAsUser:           pointer.Int64(int64(303030)),
+							SupplementalGroups:  []int64{int64(11), int64(22), int64(33)},
+							SELinuxOptions: &v1.SELinuxOptions{
+								Level: "seLevel",
+								Role:  "seRole",
+								Type:  "seType",
+								User:  "seUser",
+							},
+						},
+					))
+
+					prepareMakefile(namespace, helmValuesB)
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(
+						&v1.PodSecurityContext{
+							SeccompProfile: &v1.SeccompProfile{
+								LocalhostProfile: pointer.String("seccompLHP"),
+								Type:             "seccompType",
+							},
+							WindowsOptions: &v1.WindowsSecurityContextOptions{
+								GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+								GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+								RunAsUserName:          pointer.String("winUser"),
+								HostProcess:            pointer.Bool(true),
+							},
+							Sysctls: []v1.Sysctl{
+								{
+									Name:  "sysctlName",
+									Value: "sysctlValue",
+								},
+							},
+						},
+					))
+
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+				)
+
+				DescribeTable("merges resources for pod security contexts", func(resourceName string, securityRoot string, extraArgs ...string) {
+					// First run with no extra helm security context values
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: extraArgs,
+					})
+
+					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
+
+					initialSecurityContext := structuredDeployment.Spec.Template.Spec.SecurityContext
+					if initialSecurityContext == nil {
+						initialSecurityContext = &v1.PodSecurityContext{}
+					}
+
+					var initialSecurityContextClean *v1.PodSecurityContext
+					deepCopy(&initialSecurityContext, &initialSecurityContextClean)
+
+					extraArgs = append([]string{
+						securityRoot + ".mergePolicy=helm-merge",
+					}, extraArgs...)
+
+					fsGroupChangePolicy := v1.PodFSGroupChangePolicy("fsGroupChangePolicyValue")
+					// Test every field, so split it up so each is set in one test and not in the other
+					helmValuesA := podSecurityContextFieldsStripeGroupA(securityRoot, extraArgs...)
+					helmValuesB := podSecurityContextFieldsStripeGroupB(securityRoot, extraArgs...)
+
+					//
+					// Stripe group A
+					//
+					prepareMakefile(namespace, helmValuesA)
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+					// Find the relevant resource and test that its values were updated
+					// Apply the new values to the initial security context and compare. They should be the same
+
+					// Check the fields individually:
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.FSGroup).To(Equal(pointer.Int64(int64(101010))))
+					initialSecurityContext.FSGroup = pointer.Int64(int64(101010))
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.FSGroupChangePolicy).To(Equal(&fsGroupChangePolicy))
+					initialSecurityContext.FSGroupChangePolicy = &fsGroupChangePolicy
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsGroup).To(Equal(pointer.Int64(int64(202020))))
+					initialSecurityContext.RunAsGroup = pointer.Int64(int64(202020))
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsNonRoot).To(Equal(pointer.Bool(true)))
+					initialSecurityContext.RunAsNonRoot = pointer.Bool(true)
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(303030))))
+					initialSecurityContext.RunAsUser = pointer.Int64(int64(303030))
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SupplementalGroups).To(Equal(
+						[]int64{11, 22, 33}))
+					initialSecurityContext.SupplementalGroups = []int64{11, 22, 33}
+
+					expectedSELinuxOptions := &v1.SELinuxOptions{
+						Level: "seLevel",
+						Role:  "seRole",
+						Type:  "seType",
+						User:  "seUser",
+					}
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SELinuxOptions).To(Equal(expectedSELinuxOptions))
+					initialSecurityContext.SELinuxOptions = expectedSELinuxOptions
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
+
+					//
+					// Stripe Group B
+					//
+					initialSecurityContext = &v1.PodSecurityContext{}
+					deepCopy(&initialSecurityContextClean, &initialSecurityContext)
+					prepareMakefile(namespace, helmValuesB)
+
+					// Find the relevant resource and test that its values were updated
+					// Apply the new values to the initial security context and compare. They should be the same
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+
+					// Check the fields individually:
+					expectedSeccompProfile := &v1.SeccompProfile{
+						LocalhostProfile: pointer.String("seccompLHP"),
+						Type:             "seccompType",
+					}
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.SeccompProfile).To(Equal(expectedSeccompProfile))
+					initialSecurityContext.SeccompProfile = expectedSeccompProfile
+
+					expectedWindowsOptions := &v1.WindowsSecurityContextOptions{
+						GMSACredentialSpec:     pointer.String("winGmsaCredSpec"),
+						GMSACredentialSpecName: pointer.String("winGmsaCredSpecName"),
+						HostProcess:            pointer.Bool(true),
+						RunAsUserName:          pointer.String("winUser"),
+					}
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.WindowsOptions).To(Equal(expectedWindowsOptions))
+					initialSecurityContext.WindowsOptions = expectedWindowsOptions
+
+					expectedSysctls := []v1.Sysctl{
+						{
+							Name:  "sysctlName",
+							Value: "sysctlValue",
+						},
+					}
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.Sysctls).To(Equal(expectedSysctls))
+					initialSecurityContext.Sysctls = expectedSysctls
+
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext).To(Equal(initialSecurityContext))
+
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
+				)
+
+				DescribeTable("floatingUserID is properly applied (container)", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+					// Pass 1 - get with no changes
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=false",
+							securityRoot + ".runAsUser=30303",
+						}, extraArgs...),
+					})
+
+					container := getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
+
+					// Pass 2: floatingUserID=true
+					// Get the default user id
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+						}, extraArgs...),
+					})
+
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
+
+					// Pass 3: floatingUserID=true
+					// BUT also pass in an override for the runAsUser
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+							securityRoot + ".runAsUser=20202",
+							securityRoot + ".mergePolicy=helm-merge",
+						}, extraArgs...),
+					})
+
+					container = getContainer(testManifest, "Deployment", resourceName, containerName)
+					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(20202))))
+
+				},
+					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "gloo.deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
+					Entry("1-gloo-deployment-sds", "gloo", "sds", "gloo.deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"), //Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "gatewayProxies.gatewayProxy.podTemplate", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+				)
+
+				DescribeTable("floatingUserID is properly applied (pod)", func(resourceName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+					// Pass 1: floatingUserID=false
+					// Also set the runAsUser to something other than the default
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=false",
+							securityRoot + ".runAsUser=30303",
+						}, extraArgs...),
+					})
+
+					// The chart uses the passed user id
+					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
+
+					// Pass 2: floatingUserID=true
+					// The chart uses the default user id
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+						}, extraArgs...),
+					})
+
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
+
+					// // Pass 3: floatingUserID=true
+					// // BUT also pass in an override for the runAsUser
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: append([]string{
+							fpuidRoot + ".floatingUserID=true",
+							securityRoot + ".runAsUser=20202",
+							securityRoot + ".mergePolicy=helm-merge",
+						}, extraArgs...),
+					})
+
+					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(20202))))
+				},
+					Entry("7-gateway-proxy-deployment", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.podSecurityContext"),
+				)
+
+				It("should error on an invalid mergePolicy", func() {
+					values := helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.mergePolicy=invalid",
+						},
+					}
+					_, err := rendererTestCase.renderer.RenderManifest(namespace, values)
+					Expect(err).To(HaveOccurred(), "should error on an invalid mergePolicy")
+				})
+
 			})
 
 			Context("Kube resource overrides", func() {
@@ -5405,11 +6313,13 @@ metadata:
 					})
 					countFromResources := resources.NumResources()
 
-					// gloo custom resources are applied by a job so don't appear in the resources count.
-					job := getJob(testManifest, namespace, "gloo-resource-rollout")
-					countFromJob := strings.Count(job.Spec.Template.Spec.Containers[0].Command[2], "overriddenLabel: label")
+					// gloo custom resources are stored as yaml in a configmap so they don't appear in the resources count.
+					configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+					Expect(configMap.Data).ToNot(BeNil())
+					Expect(configMap.Data["custom-resources"]).NotTo(BeEmpty())
+					countFromConfigMap := strings.Count(configMap.Data["custom-resources"], "overriddenLabel: label")
 
-					Expect(countFromResources + countFromJob).To(Equal(len(proxies)))
+					Expect(countFromResources + countFromConfigMap).To(Equal(len(proxies)))
 				},
 					Entry("7-gateway-proxy-deployment", "kubeResourceOverride", nil),
 					Entry("8-default-gateways httpGateway", "gatewaySettings.httpGatewayKubeOverride", nil),
@@ -5428,8 +6338,7 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false"},
 					})
-					job := getJob(testManifest, namespace, "gloo-resource-rollout")
-					Expect(job.Spec.Template.Spec.Containers[0].Command[2]).To(ContainSubstring(`apiVersion: gateway.solo.io/v1
+					expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   labels:
@@ -5443,8 +6352,54 @@ spec:
   proxyNames:
   - gateway-proxy
   ssl: false
-  useProxyProto: false`))
+  useProxyProto: false`, true)
 				})
+			})
+
+			It("test devMode", func() {
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: append([]string{"settings.devMode=true"}),
+				})
+
+				resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+					// Check the gloo deployment container
+					if u.GetKind() == "Deployment" && u.GetName() == "gloo" {
+						deploymentObject, err := kuberesource.ConvertUnstructured(u)
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+
+						containers := structuredDeployment.Spec.Template.Spec.Containers
+						//a := getFieldFromUnstructured(u, []string{"spec", "template", "spec", "containers"}...)
+						Expect(containers).ToNot(BeNil())
+						Expect(containers).To(HaveLen(1), "should have exactly 1 container")
+						ports := containers[0].Ports
+
+						foundDevModePort := false
+						for _, port := range ports {
+							if port.Name == "dev-admin" && port.ContainerPort == 10010 {
+								foundDevModePort = true
+							}
+						}
+
+						Expect(foundDevModePort).To(Equal(true), "should have found the dev mode port")
+						return foundDevModePort
+					}
+					// Check the Settigns
+					if u.GetKind() == "Settings" && u.GetName() == "default" {
+						devMode := getFieldFromUnstructured(u, []string{"spec", "devMode"}...)
+						devModeBool, ok := devMode.(bool)
+						Expect(ok).To(BeTrue(), "devMode should be a bool")
+						Expect(devModeBool).To(BeTrue(), "should have found the dev mode port")
+						if devMode == true {
+							return true
+						}
+					}
+
+					return false
+				})
+
+				Expect(resources.NumResources()).To(Equal(2))
 			})
 
 		})
@@ -5528,8 +6483,8 @@ spec:
 
 		// Lines ending with whitespace causes malformatted config map (https://github.com/solo-io/gloo/issues/4645)
 		It("should not contain trailing whitespace", func() {
-			out, err := exec.Command("helm", "template", "../helm/gloo").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
+			out, err := exec.Command("helm", "template", "../helm/gloo").Output()
+			Expect(err).NotTo(HaveOccurred(), "Helm template Generation error")
 
 			lines := strings.Split(string(out), "\n")
 			// more descriptive fail message that prints out the manifest that includes the trailing whitespace
@@ -5540,15 +6495,14 @@ spec:
 					manifestStartingLine = idx
 					continue
 				}
-				// skip all the content within kubectl apply commands (used in the rollout job)
-				// since there is extra whitespace that can't be removed
-				if strings.Contains(line, "kubectl apply -f - <<EOF") {
+				// skip all the content within the custom resource configmap since there is extra whitespace
+				// that can't be removed
+				if strings.Contains(line, "custom-resources: |") {
 					skip = true
 					continue
 				}
-				if strings.TrimSpace(line) == "EOF" {
+				if strings.Contains(line, "has-custom-resources:") {
 					skip = false
-					continue
 				}
 				if !skip && strings.TrimRightFunc(line, unicode.IsSpace) != line {
 					Fail(strings.Join(lines[manifestStartingLine:idx+1], "\n") + "\n last line has whitespace")
@@ -5604,4 +6558,136 @@ func getJob(testManifest TestManifest, jobNamespace string, jobName string) *job
 	Expect(err).NotTo(HaveOccurred())
 	Expect(jobObj).To(BeAssignableToTypeOf(&jobsv1.Job{}))
 	return jobObj.(*jobsv1.Job)
+}
+
+func getConfigMap(testManifest TestManifest, namespace string, name string) *v1.ConfigMap {
+	configMapUns := testManifest.ExpectCustomResource("ConfigMap", namespace, name)
+	configMapObj, err := kuberesource.ConvertUnstructured(configMapUns)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(configMapObj).To(BeAssignableToTypeOf(&v1.ConfigMap{}))
+	return configMapObj.(*v1.ConfigMap)
+}
+
+// deepCopy deepcopies a to b using json marshaling
+// https://stackoverflow.com/questions/46790190/quicker-way-to-deepCopy-objects-in-golang-json-vs-gob
+func deepCopy(a, b interface{}) {
+	byt, _ := json.Marshal(a)
+	json.Unmarshal(byt, b)
+}
+
+/*
+podSecurityContextFieldsStripeGroupA/B are used to generate the values.yaml for the podSecurityContext tests.
+
+	We use the stripe groups so that with two tests we can cover all the fields in the podSecurityContext struct both with and without
+	overriding the default values. We do this in 2 places, to test the merge and the overwrite, so we'll just define them once here
+*/
+func podSecurityContextFieldsStripeGroupA(securityRoot string, extraArgs ...string) helmValues {
+	return helmValues{
+		valuesArgs: append([]string{
+			securityRoot + ".fsGroup=101010",
+			securityRoot + ".fsGroupChangePolicy=fsGroupChangePolicyValue",
+			securityRoot + ".runAsGroup=202020",
+			securityRoot + ".runAsNonRoot=true",
+			securityRoot + ".runAsUser=303030",
+			securityRoot + ".supplementalGroups={11,22,33}",
+			securityRoot + ".seLinuxOptions.level=seLevel",
+			securityRoot + ".seLinuxOptions.role=seRole",
+			securityRoot + ".seLinuxOptions.type=seType",
+			securityRoot + ".seLinuxOptions.user=seUser",
+		}, extraArgs...),
+	}
+}
+
+func podSecurityContextFieldsStripeGroupB(securityRoot string, extraArgs ...string) helmValues {
+	return helmValues{
+		valuesArgs: append([]string{
+			securityRoot + ".seccompProfile.localhostProfile=seccompLHP",
+			securityRoot + ".seccompProfile.type=seccompType",
+			securityRoot + ".windowsOptions.gmsaCredentialSpec=winGmsaCredSpec",
+			securityRoot + ".windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName",
+			securityRoot + ".windowsOptions.hostProcess=true",
+			securityRoot + ".windowsOptions.runAsUserName=winUser",
+			securityRoot + ".sysctls[0].name=sysctlName",
+			securityRoot + ".sysctls[0].value=sysctlValue",
+		}, extraArgs...),
+	}
+}
+
+func securityContextFieldsStripeGroupA(securityRoot string, extraArgs ...string) helmValues {
+	return helmValues{
+		valuesArgs: append([]string{
+			securityRoot + ".runAsNonRoot=true",
+			securityRoot + ".runAsUser=1234",
+			securityRoot + ".allowPrivilegeEscalation=true",
+			securityRoot + ".readOnlyRootFilesystem=true",
+			securityRoot + ".seLinuxOptions.level=seLevel",
+			securityRoot + ".seLinuxOptions.role=seRole",
+			securityRoot + ".seLinuxOptions.type=seType",
+			securityRoot + ".seLinuxOptions.user=seUser",
+		}, extraArgs...),
+	}
+}
+
+func securityContextFieldsStripeGroupB(securityRoot string, extraArgs ...string) helmValues {
+	return helmValues{
+		valuesArgs: append([]string{
+			securityRoot + ".capabilities.add={ADD}",
+			securityRoot + ".capabilities.drop={DROP}",
+			securityRoot + ".seccompProfile.localhostProfile=seccompLHP",
+			securityRoot + ".seccompProfile.type=seccompType",
+			securityRoot + ".windowsOptions.gmsaCredentialSpec=winGmsaCredSpec",
+			securityRoot + ".windowsOptions.gmsaCredentialSpecName=winGmsaCredSpecName",
+			securityRoot + ".windowsOptions.hostProcess=true",
+			securityRoot + ".windowsOptions.runAsUserName=winUser",
+		}, extraArgs...),
+	}
+}
+
+func getContainer(t TestManifest, kind string, resourceName string, containerName string) *v1.Container {
+	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
+		if u.GetKind() == kind && u.GetName() == resourceName {
+			return true
+		}
+		return false
+	})
+	Expect(resources.NumResources()).To(Equal(1))
+	var foundContainer v1.Container
+	resources.ExpectAll(func(deployment *unstructured.Unstructured) {
+		foundExpected := false
+		deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+		structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+		Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+		for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+			if container.Name == containerName {
+				foundExpected = true
+				foundContainer = container
+			}
+		}
+
+		Expect(foundExpected).To(Equal(true))
+	})
+
+	return &foundContainer
+}
+
+func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deployment {
+
+	structuredDeployment := &appsv1.Deployment{}
+
+	resources := t.SelectResources(func(u *unstructured.Unstructured) bool {
+		if u.GetKind() == "Deployment" && u.GetName() == resourceName {
+			deploymentObject, err := kuberesource.ConvertUnstructured(u)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
+			var ok bool
+			structuredDeployment, ok = deploymentObject.(*appsv1.Deployment)
+			Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
+			return true
+		}
+		return false
+	})
+	Expect(resources.NumResources()).To(Equal(1))
+
+	return structuredDeployment
 }

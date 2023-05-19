@@ -17,6 +17,7 @@ weight: 5
 - [WeightedCluster](#weightedcluster)
 - [ClusterWeight](#clusterweight)
 - [RouteMatch](#routematch)
+- [ConnectMatcher](#connectmatcher)
 - [GrpcRouteMatchOptions](#grpcroutematchoptions)
 - [CorsPolicy](#corspolicy)
 - [RouteAction](#routeaction)
@@ -243,6 +244,7 @@ weights.
 "prefix": string
 "path": string
 "regex": string
+"connectMatcher": .solo.io.envoy.api.v2.route.RouteMatch.ConnectMatcher
 "caseSensitive": .google.protobuf.BoolValue
 "runtimeFraction": .solo.io.envoy.api.v2.core.RuntimeFractionalPercent
 "headers": []solo.io.envoy.api.v2.route.HeaderMatcher
@@ -253,14 +255,30 @@ weights.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. Only one of `prefix`, `path`, or `regex` can be set. |
-| `path` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. Only one of `path`, `prefix`, or `regex` can be set. |
-| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a subsequence of the *:path* header matches the regex. The regex grammar is defined `here <https://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex */b[io]t* matches the path */bit* * The regex */b[io]t* matches the path */bot* * The regex */b[io]t* does not match the path */bite* * The regex */b[io]t* does not match the path */bit/bot*. Only one of `regex`, `prefix`, or `path` can be set. |
+| `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. Only one of `prefix`, `path`, `regex`, or `connectMatcher` can be set. |
+| `path` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. Only one of `path`, `prefix`, `regex`, or `connectMatcher` can be set. |
+| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a subsequence of the *:path* header matches the regex. The regex grammar is defined `here <https://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex */b[io]t* matches the path */bit* * The regex */b[io]t* matches the path */bot* * The regex */b[io]t* does not match the path */bite* * The regex */b[io]t* does not match the path */bit/bot*. Only one of `regex`, `prefix`, `path`, or `connectMatcher` can be set. |
+| `connectMatcher` | [.solo.io.envoy.api.v2.route.RouteMatch.ConnectMatcher](../route.proto.sk/#connectmatcher) | If this is used as the matcher, the matcher will only match CONNECT requests. Note that this will not match HTTP/2 upgrade-style CONNECT requests (WebSocket and the like) as they are normalized in Envoy as HTTP/1.1 style upgrades. This is the only way to match CONNECT requests for HTTP/1.1. For HTTP/2, where CONNECT requests may have a path, the path matchers will work if there is a path present. Note that CONNECT support is currently considered alpha in Envoy. Only one of `connectMatcher`, `prefix`, `path`, or `regex` can be set. |
 | `caseSensitive` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Indicates that prefix/path matching should be case insensitive. The default is true. |
 | `runtimeFraction` | [.solo.io.envoy.api.v2.core.RuntimeFractionalPercent](../../../../../github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#runtimefractionalpercent) | Indicates that the route should additionally match on a runtime key. Every time the route is considered for a match, it must also fall under the percentage of matches indicated by this field. For some fraction N/D, a random number in the range [0,D) is selected. If the number is <= the value of the numerator N, or if the key is not present, the default value, the router continues to evaluate the remaining match criteria. A runtime_fraction route configuration can be used to roll out route changes in a gradual manner without full code/config deploys. Refer to the `traffic shifting (config_http_conn_man_route_table_traffic_splitting_shift)` docs for additional documentation. Parsing this field is implemented such that the runtime key's data may be represented as a FractionalPercent proto represented as JSON/YAML and may also be represented as an integer with the assumption that the value is an integral percentage out of 100. For instance, a runtime key lookup returning the value "42" would parse as a FractionalPercent whose numerator is 42 and denominator is HUNDRED. This preserves legacy semantics. |
 | `headers` | [[]solo.io.envoy.api.v2.route.HeaderMatcher](../route.proto.sk/#headermatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |
 | `queryParameters` | [[]solo.io.envoy.api.v2.route.QueryParameterMatcher](../route.proto.sk/#queryparametermatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |
 | `grpc` | [.solo.io.envoy.api.v2.route.RouteMatch.GrpcRouteMatchOptions](../route.proto.sk/#grpcroutematchoptions) | If specified, only gRPC requests will be matched. The router will check that the content-type header has a application/grpc or one of the various application/grpc+ values. |
+
+
+
+
+---
+### ConnectMatcher
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
 
 
 

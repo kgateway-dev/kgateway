@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4396
+    resolvesIssue: true
+    description: >
+      Update trivy scans to only consider supported releases

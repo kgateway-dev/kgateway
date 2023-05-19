@@ -1,0 +1,5 @@
+changelog:
+    - type: NON_USER_FACING
+      description: update CI processes to stop consuming v1.10.x and -start- consuming v1.14.x
+      resolvesIssue: false
+      issueLink: https://github.com/solo-io/solo-projects/issues/4790

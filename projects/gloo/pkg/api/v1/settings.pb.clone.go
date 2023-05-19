@@ -29,6 +29,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -331,9 +333,9 @@ func (m *UpstreamOptions) Clone() proto.Message {
 	target = &UpstreamOptions{}
 
 	if h, ok := interface{}(m.GetSslParameters()).(clone.Cloner); ok {
-		target.SslParameters = h.Clone().(*SslParameters)
+		target.SslParameters = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslParameters)
 	} else {
-		target.SslParameters = proto.Clone(m.GetSslParameters()).(*SslParameters)
+		target.SslParameters = proto.Clone(m.GetSslParameters()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl.SslParameters)
 	}
 
 	if m.GetGlobalAnnotations() != nil {
@@ -589,6 +591,86 @@ func (m *Settings_VaultSecrets) Clone() proto.Message {
 
 	target.PathPrefix = m.GetPathPrefix()
 
+	if h, ok := interface{}(m.GetTlsConfig()).(clone.Cloner); ok {
+		target.TlsConfig = h.Clone().(*Settings_VaultTlsConfig)
+	} else {
+		target.TlsConfig = proto.Clone(m.GetTlsConfig()).(*Settings_VaultTlsConfig)
+	}
+
+	switch m.AuthMethod.(type) {
+
+	case *Settings_VaultSecrets_AccessToken:
+
+		target.AuthMethod = &Settings_VaultSecrets_AccessToken{
+			AccessToken: m.GetAccessToken(),
+		}
+
+	case *Settings_VaultSecrets_Aws:
+
+		if h, ok := interface{}(m.GetAws()).(clone.Cloner); ok {
+			target.AuthMethod = &Settings_VaultSecrets_Aws{
+				Aws: h.Clone().(*Settings_VaultAwsAuth),
+			}
+		} else {
+			target.AuthMethod = &Settings_VaultSecrets_Aws{
+				Aws: proto.Clone(m.GetAws()).(*Settings_VaultAwsAuth),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultAwsAuth) Clone() proto.Message {
+	var target *Settings_VaultAwsAuth
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultAwsAuth{}
+
+	target.VaultRole = m.GetVaultRole()
+
+	target.Region = m.GetRegion()
+
+	target.IamServerIdHeader = m.GetIamServerIdHeader()
+
+	target.MountPath = m.GetMountPath()
+
+	target.AccessKeyId = m.GetAccessKeyId()
+
+	target.SecretAccessKey = m.GetSecretAccessKey()
+
+	target.SessionToken = m.GetSessionToken()
+
+	return target
+}
+
+// Clone function
+func (m *Settings_VaultTlsConfig) Clone() proto.Message {
+	var target *Settings_VaultTlsConfig
+	if m == nil {
+		return target
+	}
+	target = &Settings_VaultTlsConfig{}
+
+	target.CaCert = m.GetCaCert()
+
+	target.CaPath = m.GetCaPath()
+
+	target.ClientCert = m.GetClientCert()
+
+	target.ClientKey = m.GetClientKey()
+
+	target.TlsServerName = m.GetTlsServerName()
+
+	if h, ok := interface{}(m.GetInsecure()).(clone.Cloner); ok {
+		target.Insecure = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.Insecure = proto.Clone(m.GetInsecure()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -660,6 +742,12 @@ func (m *Settings_DiscoveryOptions) Clone() proto.Message {
 		target.UdsOptions = h.Clone().(*Settings_DiscoveryOptions_UdsOptions)
 	} else {
 		target.UdsOptions = proto.Clone(m.GetUdsOptions()).(*Settings_DiscoveryOptions_UdsOptions)
+	}
+
+	if h, ok := interface{}(m.GetFdsOptions()).(clone.Cloner); ok {
+		target.FdsOptions = h.Clone().(*Settings_DiscoveryOptions_FdsOptions)
+	} else {
+		target.FdsOptions = proto.Clone(m.GetFdsOptions()).(*Settings_DiscoveryOptions_FdsOptions)
 	}
 
 	return target
@@ -842,6 +930,23 @@ func (m *Settings_DiscoveryOptions_UdsOptions) Clone() proto.Message {
 }
 
 // Clone function
+func (m *Settings_DiscoveryOptions_FdsOptions) Clone() proto.Message {
+	var target *Settings_DiscoveryOptions_FdsOptions
+	if m == nil {
+		return target
+	}
+	target = &Settings_DiscoveryOptions_FdsOptions{}
+
+	if h, ok := interface{}(m.GetGraphqlEnabled()).(clone.Cloner); ok {
+		target.GraphqlEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.GraphqlEnabled = proto.Clone(m.GetGraphqlEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *Settings_ConsulConfiguration_ServiceDiscoveryOptions) Clone() proto.Message {
 	var target *Settings_ConsulConfiguration_ServiceDiscoveryOptions
 	if m == nil {
@@ -933,6 +1038,12 @@ func (m *GlooOptions_AWSOptions) Clone() proto.Message {
 		target.CredentialRefreshDelay = proto.Clone(m.GetCredentialRefreshDelay()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	if h, ok := interface{}(m.GetFallbackToFirstFunction()).(clone.Cloner); ok {
+		target.FallbackToFirstFunction = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.FallbackToFirstFunction = proto.Clone(m.GetFallbackToFirstFunction()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.CredentialsFetcher.(type) {
 
 	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:
@@ -1019,6 +1130,12 @@ func (m *GatewayOptions_ValidationOptions) Clone() proto.Message {
 		target.ValidationServerGrpcMaxSizeBytes = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
 	} else {
 		target.ValidationServerGrpcMaxSizeBytes = proto.Clone(m.GetValidationServerGrpcMaxSizeBytes()).(*github_com_golang_protobuf_ptypes_wrappers.Int32Value)
+	}
+
+	if h, ok := interface{}(m.GetServerEnabled()).(clone.Cloner); ok {
+		target.ServerEnabled = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.ServerEnabled = proto.Clone(m.GetServerEnabled()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	return target

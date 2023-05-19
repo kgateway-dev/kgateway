@@ -104,7 +104,7 @@ As we just saw, we were able to reach the upstream without having to provide any
 
 #### Define an OPA policy 
 
-Let's create a Policy to control which actions are allowed on our service:
+Let's create a policy to control which actions are allowed on our service. 
 
 ```shell
 cat <<EOF > policy.rego
@@ -130,6 +130,10 @@ This policy:
 - allows requests if:
   - the path starts with `/api/pets` AND the http method is `GET` **OR**
   - the path is exactly `/api/pets/2` AND the http method is either `GET` or `DELETE`
+
+{{% notice note %}}
+If you decide to modify the policy example and add in your own allow rules, make sure to also use the `package test` value in your policy. 
+{{% /notice %}}
 
 #### Create an OPA AuthConfig CRD
 Gloo Edge expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the contents of the above policy file:
@@ -321,7 +325,10 @@ config:
     - 'http://localhost:8080/callback'
     name: 'GlooApp'
     secret: secretvalue
-  
+  # Allow dex to store the static list of clients in memory
+  enablePasswordDB: true
+    storage:
+      type: memory 
   # A static list of passwords to login the end user. By identifying here, dex
   # won't look in its underlying storage for passwords.
   staticPasswords:
@@ -342,15 +349,15 @@ This configures Dex with two static users. Notice the **client secret** with val
 
 Using this configuration, we can deploy Dex to our cluster using Helm.
 
-If `help repo list` doesn't list the `stable` repo, invoke:
+If `help repo list` doesn't list the `dex` repo, invoke:
 
 ```shell
-helm repo add stable https://charts.helm.sh/stable
+helm repo add dex https://charts.dexidp.io
 ```
 
 And then install dex (helm 3 command follows):
 ```shell
-helm install dex --namespace gloo-system stable/dex -f dex-values.yaml
+helm install dex --namespace gloo-system dex/dex -f dex-values.yaml
 ```
 
 #### Make the client secret accessible to Gloo Edge

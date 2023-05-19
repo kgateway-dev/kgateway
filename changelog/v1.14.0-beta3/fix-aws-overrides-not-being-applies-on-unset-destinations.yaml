@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fixes an issue where when a `destinationSpec` was not set for an aws route, the `upstream`'s `destinationOverrides` were not configured.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4274
+    resolvesIssue: false

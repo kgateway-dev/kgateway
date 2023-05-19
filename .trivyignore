@@ -3,7 +3,20 @@
 # https://github.com/emicklei/go-restful/pull/503
 CVE-2022-1996
 
-# https://github.com/advisories/GHSA-h3qm-jrrf-cgj3
-# This CVE is not exploitable in Gloo Edge, and a fix is not yet available in the library
-# https://github.com/solo-io/solo-projects/issues/4016
-CVE-2022-37315
+# These CVEs only impacts install of Gloo-Edge from Glooctl CLI.
+# Also Helm module is used in testing, which has no impact on exploitation.
+# Gloo-Edge data and control planes are not impacted at all by the helm module.
+# Glooctl is not a long running program, and does not affect future uses of Glooctl.
+# https://github.com/solo-io/gloo/issues/7598
+# https://github.com/helm/helm/security/advisories/GHSA-6rx9-889q-vv2r
+CVE-2022-23524
+# https://github.com/helm/helm/security/advisories/GHSA-53c4-hhmh-vw5q
+CVE-2022-23525
+# https://github.com/helm/helm/security/advisories/GHSA-67fx-wx78-jx33
+CVE-2022-23526
+
+# https://nvd.nist.gov/vuln/detail/CVE-2022-41721
+# Ignore this vulnerability; it does not affect the gateway-proxy image.
+# No handlers exposed by the control plane fall victim to this attack
+# because we do not use the maxBytesHandler
+CVE-2022-41721

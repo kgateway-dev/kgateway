@@ -24,7 +24,7 @@ import (
 
 func CheckMulticlusterResources(opts *options.Options) {
 	// check if the gloo fed deployment exists
-	client := helpers.MustKubeClient()
+	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.AppsV1().Deployments(opts.Metadata.GetNamespace()).Get(opts.Top.Ctx, "gloo-fed", metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -35,7 +35,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 		return
 	}
 
-	cfg, err := config.GetConfigWithContext("")
+	cfg, err := config.GetConfigWithContext(opts.Top.KubeContext)
 	if err != nil {
 		fmt.Printf("Warning: could not get kubernetes config to check multicluster resources: %v. "+
 			"Skipping Gloo Instance check.\n", err)

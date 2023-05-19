@@ -5,13 +5,17 @@ package v1
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/eventloop"
 	"github.com/solo-io/solo-kit/pkg/errors"
+	skstats "github.com/solo-io/solo-kit/pkg/stats"
 )
 
 // SyncDeciders Syncer which implements this interface
@@ -95,9 +99,17 @@ func (el *setupSimpleEventLoop) Run(ctx context.Context) (<-chan error, error) {
 						cancel()
 					}
 
+					startTime := time.Now()
 					ctx, span := trace.StartSpan(ctx, fmt.Sprintf("setup.gloo.solo.io.SimpleEventLoopSync-%T", syncer))
 					ctx, canc := context.WithCancel(ctx)
 					err := syncer.Sync(ctx, snapshot)
+					stats.RecordWithTags(
+						ctx,
+						[]tag.Mutator{
+							tag.Insert(skstats.SyncerNameKey, fmt.Sprintf("%T", syncer)),
+						},
+						mSetupSnapshotTimeSec.M(time.Now().Sub(startTime).Seconds()),
+					)
 					span.End()
 
 					if err != nil {

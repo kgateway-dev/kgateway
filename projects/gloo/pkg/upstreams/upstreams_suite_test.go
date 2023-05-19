@@ -8,8 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	corev1 "k8s.io/api/core/v1"
@@ -20,8 +19,7 @@ var T *testing.T
 func TestClients(t *testing.T) {
 	RegisterFailHandler(Fail)
 	T = t
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Hybrid Upstreams Client Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Hybrid Upstreams Client Suite")
 }
 
 var getService = func(name, namespace string, ports []int32) *skkube.Service {

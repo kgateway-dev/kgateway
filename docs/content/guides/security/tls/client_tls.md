@@ -7,7 +7,7 @@ description: Set up Gloo Edge to route to TLS-encrypted services
 You can configure Gloo Edge to use TLS or mTLS when connecting to upstream services.
 
 {{% notice note %}}
-For certificates that are issued by a trusted certificate authority (CA), the upstream automatically uses TLS when the port is set to 443, or the `useTls: true` setting is included in the static upstream spec. If the TLS certificate is not trusted or you want to verify the certificate, continue with the following sections.
+For certificates that are issued by a trusted certificate authority (CA), the upstream automatically uses TLS when the `useTls: true` setting is included in the static upstream spec, or the port is set to 443 (and `useTls` is not explicitly set to `false`). If the TLS certificate is not trusted or you want to verify the certificate, continue with the following sections.
 {{% /notice %}}
 
 ## Prepare sample environment

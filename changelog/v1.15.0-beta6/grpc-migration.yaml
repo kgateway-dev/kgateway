@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8080
+    resolvesIssue: false
+    description: Support mismatched versions of the gRPC transcoding API to make migration without downtime possible.

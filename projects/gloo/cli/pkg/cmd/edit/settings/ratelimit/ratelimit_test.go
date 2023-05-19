@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/golang/protobuf/ptypes"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/test/matchers"
 
@@ -22,77 +24,70 @@ import (
 var _ = Describe("RateLimit", func() {
 
 	var (
-		settings       *gloov1.Settings
-		rlSettings     ratelimitpb.Settings
+		ctx    context.Context
+		cancel context.CancelFunc
+
 		settingsClient gloov1.SettingsClient
-		ctx            context.Context
-		cancel         context.CancelFunc
 	)
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
-		// create a settings object
-		settingsClient = helpers.MustSettingsClient(ctx)
 
-		settings = &gloov1.Settings{
+		settingsClient = helpers.MustSettingsClient(ctx)
+		settings := &gloov1.Settings{
 			Metadata: &core.Metadata{
 				Name:      "default",
-				Namespace: "gloo-system",
+				Namespace: defaults.GlooSystem,
 			},
 		}
-		rlSettings = ratelimitpb.Settings{}
-		var err error
-		settings, err = settingsClient.Write(settings, clients.WriteOpts{})
+		_, err := settingsClient.Write(settings, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() { cancel() })
 
-	ReadSettings := func() {
-		var err error
-		settings, err = settingsClient.Read(settings.Metadata.Namespace, settings.Metadata.Name, clients.ReadOpts{})
-		ExpectWithOffset(2, err).NotTo(HaveOccurred())
-
-		Expect(settings.GetRatelimitServer()).ToNot(BeNil())
-		rlSettings = *settings.GetRatelimitServer()
-	}
-
 	Run := func(cmd string) {
 		err := testutils.Glooctl(cmd)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
-		ReadSettings()
 	}
 
 	It("should set timeout", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --request-timeout=1s")
+		rlSettings := readRateLimitSettings(ctx, settingsClient)
 		Expect(rlSettings.RequestTimeout).To(matchers.MatchProto(ptypes.DurationProto(time.Second)))
 	})
 	It("should set upstream", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --ratelimit-server-name=test --ratelimit-server-namespace=testns")
+		rlSettings := readRateLimitSettings(ctx, settingsClient)
 		Expect(rlSettings.RatelimitServerRef.Name).To(Equal("test"))
 		Expect(rlSettings.RatelimitServerRef.Namespace).To(Equal("testns"))
 	})
 
 	It("should set fail mode deny", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
+		rlSettings := readRateLimitSettings(ctx, settingsClient)
 		Expect(rlSettings.DenyOnFail).To(Equal(true))
 	})
 
 	It("should not reset fail mode deny set fail mode deny", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
 		Run("edit settings --name default --namespace gloo-system ratelimit --request-timeout=1s")
+		rlSettings := readRateLimitSettings(ctx, settingsClient)
 		Expect(rlSettings.DenyOnFail).To(Equal(true))
 	})
 
 	It("should not reset timeout change changing other things", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --request-timeout=1s")
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
+		rlSettings := readRateLimitSettings(ctx, settingsClient)
 		Expect(rlSettings.RequestTimeout).To(matchers.MatchProto(ptypes.DurationProto(time.Second)))
 	})
 
 	It("should not set fail mode deny when explicitly set", func() {
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=true")
 		Run("edit settings --name default --namespace gloo-system ratelimit --deny-on-failure=false")
+		rlSettings := readRateLimitSettings(ctx, settingsClient)
 		Expect(rlSettings.DenyOnFail).To(Equal(false))
 	})
 
@@ -119,6 +114,10 @@ var _ = Describe("RateLimit", func() {
 		})
 
 		It("should enabled auth on route", func() {
+			// Assertions are performed in a separate goroutine, so we copy the values to avoid race conditions
+			settingsClientCpy := settingsClient
+			ctxCpy := ctx
+
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString("Use default namespace (gloo-system)?")
 				c.SendLine("")
@@ -136,7 +135,12 @@ var _ = Describe("RateLimit", func() {
 			}, func() {
 				err := testutils.Glooctl("edit settings ratelimit -i")
 				Expect(err).NotTo(HaveOccurred())
-				ReadSettings()
+				settings, err := settingsClientCpy.Read(defaults.GlooSystem, "default", clients.ReadOpts{Ctx: ctxCpy})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(settings.GetRatelimitServer()).ToNot(BeNil())
+				rlSettings := *settings.GetRatelimitServer()
+
 				second := ptypes.DurationProto(time.Second)
 				expectedSettings := ratelimitpb.Settings{
 					DenyOnFail:     true,
@@ -146,10 +150,23 @@ var _ = Describe("RateLimit", func() {
 						Namespace: "gloo-system",
 					},
 				}
-				Expect(rlSettings).To(BeEquivalentTo(expectedSettings))
+
+				Expect(rlSettings.RatelimitServerRef).To(matchers.MatchProto(expectedSettings.RatelimitServerRef))
+				Expect(rlSettings.RequestTimeout).To(matchers.MatchProto(expectedSettings.RequestTimeout))
+				Expect(rlSettings.DenyOnFail).To(Equal(expectedSettings.DenyOnFail))
+				Expect(rlSettings.EnableXRatelimitHeaders).To(Equal(expectedSettings.EnableXRatelimitHeaders))
+				Expect(rlSettings.RateLimitBeforeAuth).To(Equal(expectedSettings.RateLimitBeforeAuth))
 			})
 		})
 
 	})
 
 })
+
+func readRateLimitSettings(ctx context.Context, settingsClient gloov1.SettingsClient) ratelimitpb.Settings {
+	settings, err := settingsClient.Read(defaults.GlooSystem, "default", clients.ReadOpts{Ctx: ctx})
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	ExpectWithOffset(1, settings.GetRatelimitServer()).ToNot(BeNil())
+	return *settings.GetRatelimitServer()
+}

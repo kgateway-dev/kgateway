@@ -16,18 +16,18 @@ Rate limits are defined on the virtual service or route specification as `spec.v
 
 ```yaml
 ratelimitBasic:
-  anonymous_limits:
-    requests_per_unit: 1000
+  anonymousLimits:
+    requestsPerUnit: 1000
     unit: HOUR
-  authorized_limits:
-    requests_per_unit: 200
+  authorizedLimits:
+    requestsPerUnit: 200
     unit: MINUTE
 ```
 
 - Rate limits can be set for anonymous requests, authorized requests, both, or neither.
-- `authorized_requests` represent the rate limits imposed on requests that are associated with a known user id. Note that this user id is included in the [external auth service's]({{% versioned_link_path fromRoot="/guides/security/auth/extauth" %}}) [AuthorizationResponse]({{% versioned_link_path fromRoot="/guides/dev/writing_auth_plugins/#header-propagation" %}}) in the `UserInfo.UserID` field.
-- `anonymous_requests` represent the rate limits imposed on requests that are not associated with a known user id. In this case, the limit is applied to the request's remote address.
-- `requests_per_unit` takes an integer value
+- `authorizedLimits` represent the rate limits imposed on requests that are associated with a known user id. Note that this user id is included in the [external auth service's]({{% versioned_link_path fromRoot="/guides/security/auth/extauth" %}}) [AuthorizationResponse]({{% versioned_link_path fromRoot="/guides/dev/writing_auth_plugins/#header-propagation" %}}) in the `UserInfo.UserID` field.
+- `anonymousLimits` represent the rate limits imposed on requests that are not associated with a known user id. In this case, the limit is applied to the request's remote address.
+- `requestsPerUnit` takes an integer value
 - `unit` must be one of these strings: `SECOND`, `MINUTE`, `HOUR`, `DAY`
 
 ### An example virtual service with rate limits enabled

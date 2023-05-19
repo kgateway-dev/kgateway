@@ -63,6 +63,16 @@ func (m *Failover) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetPolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPolicy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPolicy(), target.GetPolicy()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -261,6 +271,40 @@ func (m *Failover_PrioritizedLocality) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Failover_Policy) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Failover_Policy)
+	if !ok {
+		that2, ok := that.(Failover_Policy)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetOverprovisioningFactor()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetOverprovisioningFactor()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetOverprovisioningFactor(), target.GetOverprovisioningFactor()) {
+			return false
+		}
 	}
 
 	return true

@@ -5,10 +5,11 @@ import (
 	envoy_tls_inspector "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/listener/tls_inspector/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/empty"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
@@ -30,7 +31,7 @@ var _ = Describe("Plugin", func() {
 				ListenerType: &v1.Listener_HttpListener{
 					HttpListener: hl,
 				},
-				SslConfigurations: []*v1.SslConfig{},
+				SslConfigurations: []*ssl.SslConfig{},
 			}
 
 			filters := []*envoy_config_listener_v3.Filter{{}}
@@ -95,7 +96,7 @@ var _ = Describe("Plugin", func() {
 				ListenerType: &v1.Listener_TcpListener{
 					TcpListener: tl,
 				},
-				SslConfigurations: []*v1.SslConfig{},
+				SslConfigurations: []*ssl.SslConfig{},
 			}
 
 			filters := []*envoy_config_listener_v3.Filter{{}}
@@ -120,7 +121,7 @@ var _ = Describe("Plugin", func() {
 
 		It("Tcp Host Ssl Config is set, tls inspector is added", func() {
 			thost := &v1.TcpHost{
-				SslConfig: &v1.SslConfig{},
+				SslConfig: &ssl.SslConfig{},
 			}
 			tl := &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{thost},
@@ -226,7 +227,7 @@ var _ = Describe("Plugin", func() {
 							MatchedListeners: []*v1.MatchedListener{
 								{
 									Matcher: &v1.Matcher{
-										SslConfig: &v1.SslConfig{},
+										SslConfig: &ssl.SslConfig{},
 									},
 									ListenerType: &v1.MatchedListener_HttpListener{
 										HttpListener: hl,
@@ -301,7 +302,7 @@ var _ = Describe("Plugin", func() {
 							MatchedListeners: []*v1.MatchedListener{
 								{
 									Matcher: &v1.Matcher{
-										SslConfig: &v1.SslConfig{},
+										SslConfig: &ssl.SslConfig{},
 									},
 									ListenerType: &v1.MatchedListener_TcpListener{
 										TcpListener: tl,
@@ -334,7 +335,7 @@ var _ = Describe("Plugin", func() {
 
 			It("Tcp Host Ssl Config is set, tls inspector is added", func() {
 				thost := &v1.TcpHost{
-					SslConfig: &v1.SslConfig{},
+					SslConfig: &ssl.SslConfig{},
 				}
 				tl := &v1.TcpListener{
 					TcpHosts: []*v1.TcpHost{thost},
@@ -425,7 +426,7 @@ var _ = Describe("Plugin", func() {
 							MatchedListeners: []*v1.MatchedListener{
 								{
 									Matcher: &v1.Matcher{
-										SslConfig: &v1.SslConfig{},
+										SslConfig: &ssl.SslConfig{},
 									},
 									ListenerType: &v1.MatchedListener_TcpListener{
 										TcpListener: tl,
@@ -465,7 +466,7 @@ var _ = Describe("Plugin", func() {
 					AggregateListener: &v1.AggregateListener{
 						HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{
 							{Matcher: &v1.Matcher{
-								SslConfig: &v1.SslConfig{},
+								SslConfig: &ssl.SslConfig{},
 							}},
 						},
 					},

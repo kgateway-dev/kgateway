@@ -1,0 +1,34 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6988
+    description: Fix kube2e test "should process proxy with deprecated label"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7038
+    description: Ensure robustness tests clean up resources properly
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6932
+    description: Fix kube2e test "linkerd enabled updates routes"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6493
+    description: Fix kube2e test "gateway tests with virtual service with a mix of valid and invalid virtual services"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6472
+    description: Ensure tests create VirtualServices without wildcard domains
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5149
+    description: Fix kube2e test "can modify upstreams repeatedly, and endpoints don't lag via EDS"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/5495
+    description: >
+      Ensure tests write resources in an order the prevents the validation webhook from
+      rejecting requests.
+  - type: NON_USER_FACING
+    description: >
+      Update the Kube2e tests to use a snapshot model, where resources are written once at the
+      beginning of a test, and cleaned up at the end, to avoid test pollution.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2484
+    description: >
+      When a reference to a VirtualHostOption or RouteOption CR is not found, apply a warning on the
+      parent resource, where we previously applied an error. This follows the delegation
+      pattern established by RouteTables, and ensures that resources can be applied asynchronously.

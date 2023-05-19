@@ -293,6 +293,11 @@ spec:
                                     type: string
                                 type: object
                               type: array
+                            clockSkewSeconds:
+                              maximum: 4294967295
+                              minimum: 0
+                              nullable: true
+                              type: integer
                             issuer:
                               type: string
                             jwks:
@@ -367,6 +372,11 @@ spec:
                                         type: string
                                     type: object
                                   type: array
+                                clockSkewSeconds:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
                                 issuer:
                                   type: string
                                 jwks:
@@ -439,6 +449,11 @@ spec:
                                         type: string
                                     type: object
                                   type: array
+                                clockSkewSeconds:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
                                 issuer:
                                   type: string
                                 jwks:
@@ -1114,6 +1129,13 @@ spec:
                         type: integer
                       perTryTimeout:
                         type: string
+                      retryBackOff:
+                        properties:
+                          baseInterval:
+                            type: string
+                          maxInterval:
+                            type: string
+                        type: object
                       retryOn:
                         type: string
                     type: object
@@ -1131,6 +1153,8 @@ spec:
                                     caseSensitive:
                                       nullable: true
                                       type: boolean
+                                    connectMatcher:
+                                      type: object
                                     exact:
                                       type: string
                                     headers:
@@ -1467,6 +1491,8 @@ spec:
                                     caseSensitive:
                                       nullable: true
                                       type: boolean
+                                    connectMatcher:
+                                      type: object
                                     exact:
                                       type: string
                                     headers:
@@ -1996,6 +2022,22 @@ spec:
                             type: string
                             x-kubernetes-int-or-string: true
                         type: object
+                      configMapRuleSets:
+                        items:
+                          properties:
+                            configMapRef:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              type: object
+                            dataMapKeys:
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                        type: array
                       coreRuleSet:
                         properties:
                           customSettingsFile:
@@ -2028,6 +2070,12 @@ spec:
                 type: object
             type: object
           status:
+            default: {}
+            properties:
+              statuses:
+                default: {}
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             type: object
             x-kubernetes-preserve-unknown-fields: true
         type: object

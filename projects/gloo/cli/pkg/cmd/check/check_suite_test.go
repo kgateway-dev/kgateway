@@ -4,8 +4,7 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/solo-kit/pkg/utils/statusutils"
 )
@@ -27,6 +26,5 @@ var (
 
 func TestCheck(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Check Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Check Suite")
 }

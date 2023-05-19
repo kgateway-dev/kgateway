@@ -1,215 +1,113 @@
 package e2e_test
 
 import (
-	"bytes"
-	"compress/gzip"
-	"context"
-	"errors"
-	"fmt"
-	"io"
-	"io/ioutil"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+	"github.com/solo-io/gloo/test/gomega/transforms"
+	"github.com/solo-io/gloo/test/testutils"
+
 	"net/http"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
-
-	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloohelpers "github.com/solo-io/gloo/test/helpers"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/gloo/test/e2e"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloogzip "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 var _ = Describe("gzip", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
-		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
-		up            *gloov1.Upstream
-
-		writeNamespace = defaults.GlooSystem
+		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		var err error
-		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-
-		// run gloo
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableFds: true,
-				DisableUds: true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		// write gateways and wait for them to be created
-		err = gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-		Eventually(func() (gatewayv1.GatewayList, error) {
-			return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
-		}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
-
-		// run envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
-		Expect(err).NotTo(HaveOccurred())
-
-		// write a test upstream
-		// this is the upstream that will handle requests
-		testUs := v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		up = testUs.Upstream
-		_, err = testClients.UpstreamClient.Write(up, clients.WriteOpts{OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		testContext = testContextFactory.NewTestContext()
+		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		envoyInstance.Clean()
-		cancel()
+		testContext.AfterEach()
 	})
 
-	checkProxy := func() {
-		// ensure the proxy is created
-		Eventually(func() (*gloov1.Proxy, error) {
-			return testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
+	JustBeforeEach(func() {
+		testContext.JustBeforeEach()
+	})
 
-	checkVirtualService := func(testVs *gatewayv1.VirtualService) {
-		Eventually(func() (*gatewayv1.VirtualService, error) {
-			return testClients.VirtualServiceClient.Read(testVs.Metadata.GetNamespace(), testVs.Metadata.GetName(), clients.ReadOpts{})
-		}, "5s", "0.1s").ShouldNot(BeNil())
-	}
-
-	testRequest := func(jsonStr string) string {
-		By("Make request")
-		responseBody := ""
-		EventuallyWithOffset(1, func() error {
-			var json = []byte(jsonStr)
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
-			if err != nil {
-				return err
-			}
-			req.Header.Set("Accept-Encoding", "gzip")
-			req.Header.Set("Content-Type", "application/json")
-			res, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-			if res.StatusCode != 200 {
-				return errors.New(fmt.Sprintf("expected status code 200 got %v", res.StatusCode))
-			}
-			p := new(bytes.Buffer)
-			if _, err := io.Copy(p, res.Body); err != nil {
-				return err
-			}
-			defer res.Body.Close()
-			responseBody = p.String()
-			return nil
-		}, "10s", ".1s").Should(BeNil())
-		return responseBody
-	}
+	JustAfterEach(func() {
+		testContext.JustAfterEach()
+	})
 
 	Context("filter undefined", func() {
 
-		JustBeforeEach(func() {
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			_, err := testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
+		BeforeEach(func() {
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				Gzip: nil,
+			}
 
-			checkProxy()
-			checkVirtualService(testVs)
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
+			}
 		})
 
 		It("should return uncompressed json", func() {
-			// json needs to be longer than default content length to trigger
 			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReq := testRequest(jsonStr)
-			Expect(testReq).Should(Equal(jsonStr))
+			jsonRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithContentType("application/json").
+				WithAcceptEncoding("gzip").
+				WithPostBody(jsonStr)
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(jsonRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(jsonStr))
+			}, "5s", ".1s").Should(Succeed(), "json shorter than default content length is not compressed")
 		})
 	})
 
 	Context("filter defined", func() {
 
-		JustBeforeEach(func() {
-			gatewayClient := testClients.GatewayClient
-			gw, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			// build a gzip policy
-			gzipPolicy := &gloogzip.Gzip{
-				MemoryLevel: &wrappers.UInt32Value{
-					Value: 5,
-				},
-				CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
-				CompressionStrategy: gloogzip.Gzip_HUFFMAN,
-				WindowBits: &wrappers.UInt32Value{
-					Value: 12,
+		BeforeEach(func() {
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				Gzip: &gloogzip.Gzip{
+					MemoryLevel: &wrappers.UInt32Value{
+						Value: 5,
+					},
+					CompressionLevel:    gloogzip.Gzip_CompressionLevel_SPEED,
+					CompressionStrategy: gloogzip.Gzip_HUFFMAN,
+					WindowBits: &wrappers.UInt32Value{
+						Value: 12,
+					},
 				},
 			}
 
-			// update the listener to include the gzip policy
-			httpGateway := gw.GetHttpGateway()
-			httpGateway.Options = &gloov1.HttpListenerOptions{
-				Gzip: gzipPolicy,
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
 			}
-			_, err = gatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
-
-			// Wait until the gateway is written
-			Eventually(func() error {
-				readGateway, err := gatewayClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
-				if err != nil {
-					return err
-				}
-				if readGateway.GetHttpGateway() == nil || readGateway.GetHttpGateway().GetOptions() == nil || readGateway.GetHttpGateway().GetOptions().Gzip == nil {
-					return fmt.Errorf("gzip not set, new gateway is not yet written")
-				}
-				return nil
-			}, "15s", "0.5s").ShouldNot(HaveOccurred())
-
-			// write a virtual service so we have a proxy to our test upstream
-			testVs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
-			_, err = testClients.VirtualServiceClient.Write(testVs, clients.WriteOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			checkProxy()
-			checkVirtualService(testVs)
 		})
 
 		It("should return compressed json", func() {
-			// json needs to be longer than default content length to trigger
-			// len(short json) < 30
-			shortJsonStr := `{"value":"Hello, world!"}`
-			testShortReq := testRequest(shortJsonStr)
-			Expect(testShortReq).Should(Equal(shortJsonStr))
+			jsonRequestBuilder := testContext.GetHttpRequestBuilder().
+				WithContentType("application/json").
+				WithAcceptEncoding("gzip")
 
-			// raw json should be compressed
-			jsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
-			testReqBody := testRequest(jsonStr)
-			Expect(testReqBody).ShouldNot(Equal(jsonStr))
+			shortJsonStr := `{"value":"Hello, world!"}` // len(short json) < 30
+			shortRequestBuilder := jsonRequestBuilder.WithPostBody(shortJsonStr)
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(shortRequestBuilder.Build())).Should(matchers.HaveExactResponseBody(shortJsonStr))
+			}).Should(Succeed(), "json shorter than content length should not be compressed")
 
-			// decompressed json from response should equal original
-			reader, err := gzip.NewReader(bytes.NewBuffer([]byte(testReqBody)))
-			defer reader.Close()
-			Expect(err).NotTo(HaveOccurred())
-			body, err := ioutil.ReadAll(reader)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(body)).To(Equal(jsonStr))
+			longJsonStr := `{"value":"Hello, world! It's me. I've been wondering if after all these years you'd like to meet."}`
+			longRequestBuilder := jsonRequestBuilder.WithPostBody(longJsonStr)
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(longRequestBuilder.Build())).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       WithTransform(transforms.WithDecompressorTransform(), Equal(longJsonStr)),
+				}))
+			}).Should(Succeed(), "json longer than content length should be compressed")
 		})
 	})
 })

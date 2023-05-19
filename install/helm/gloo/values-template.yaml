@@ -39,6 +39,9 @@ settings:
   # If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes.
   # If true, Gloo will keep serving the routes from the last applied valid configuration.
   disableProxyGarbageCollection: false
+  # Envoy default max program size is 100 which is too often not enough for users. We will set all users to base value of 1024
+  # This can be overriden if users wish to be more stringent
+  regexMaxProgramSize: 1024
 gloo:
   deployment:
     image:
@@ -64,12 +67,14 @@ discovery:
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
+  isolateVirtualHostsBySslConfig: false
   validation:
     enabled: true
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
     allowWarnings: true
+    serverEnabled: true
     disableTransformationValidation: false
     warnRouteShortCircuiting: false
     validationServerGrpcMaxSizeBytes: 104857600
@@ -154,6 +159,8 @@ gatewayProxies:
       resourceMonitors: []
     globalDownstreamMaxConnections: 250000
     healthyPanicThreshold: 50
+    tcpKeepaliveTimeSeconds: 60
+    disableCoreDumps: false
     # intentionally unset, so we default to the gloo service address. if set, this overrides the derived gloo service address
     # xdsServiceAddress: xds-relay.default.svc.cluster.local
     # intentionally unset, so we default to the gloo service port. if set, this overrides .Values.gloo.deployment.xdsPort
@@ -230,3 +237,4 @@ global:
   # AddEnterpriseSettings and extauthCustomYaml control differences in the settings manifest between open source and enterprise
   AddEnterpriseSettings: false
   extauthCustomYaml: true
+  

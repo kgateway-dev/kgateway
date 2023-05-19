@@ -14,10 +14,10 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 HUGO_VERSION := 0.69.2
 
-SOLO_HUGO_THEME_REVISION := $(shell curl --silent "https://api.github.com/repos/solo-io/hugo-theme-soloio/releases/latest" | jq -esr 'if . == [] then null else .[] | .tag_name end')
+SOLO_HUGO_THEME_REVISION := v0.0.25
 
 # The minimum version to maintain in our public docs
-SECURITY_SCAN_MIN_VERSION ?= v1.9.0
+MIN_SCANNED_VERSION ?= v1.11.0
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -34,11 +34,13 @@ site-common: clean gloo-enterprise-version
 	GO111MODULE=on go run cmd/generate_docs.go gen-changelog-md -r glooe > content/static/content/glooe-changelog.docgen
 
 	# generate split security scans for gloo versions which HAVE received new split-templating updates
-	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
-	MIN_SCANNED_VERSION=$(SECURITY_SCAN_MIN_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
+	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r gloo > content/static/content/gloo-security-scan.docgen
+	MIN_SCANNED_VERSION=$(MIN_SCANNED_VERSION) GO111MODULE=on go run cmd/generate_docs.go gen-security-scan-md -r glooe > content/static/content/glooe-security-scan.docgen
 	cat content/static/content/gloo-security-scan.docgen
 	./split-file-by-delimiter.sh content/static/content/gloo-security-scan.docgen \\\*\\\*\\\*
 	./split-file-by-delimiter.sh content/static/content/glooe-security-scan.docgen \\\*\\\*\\\*
+
+	# get enterprise helm values based on contents of _output/gloo-enterprise-version
 	GO111MODULE=on go run cmd/generate_docs.go get-enterprise-helm-values > content/static/content/glooe-values.docgen
 	rm -f opensource.out enterprise.out
 
@@ -90,9 +92,8 @@ install-tools:
 build-site: clean
 	./build-docs.sh
 
-# Generate _output/gloo-enterprise-version.
-# NOTE: file paths in hack/find_latest_enterprise_version.go assume the current working 
-# directory is the root of the project, so we need to navigate up one level first.
+# Generate _output/gloo-enterprise-version based on the latest patch enterprise version
+# corresponding to content in changelog directory.
 .PHONY: gloo-enterprise-version
 gloo-enterprise-version:
 	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version.go

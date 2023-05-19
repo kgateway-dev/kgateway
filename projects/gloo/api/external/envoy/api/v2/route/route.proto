@@ -321,6 +321,9 @@ message WeightedCluster {
 }
 
 message RouteMatch {
+    message ConnectMatcher {
+    }
+
     oneof path_specifier {
         option (validate.required) = true;
 
@@ -345,6 +348,16 @@ message RouteMatch {
         // * The regex */b[io]t* does not match the path */bite*
         // * The regex */b[io]t* does not match the path */bit/bot*
         string regex = 3 [(validate.rules).string.max_bytes = 1024];
+
+        // If this is used as the matcher, the matcher will only match CONNECT requests.
+        // Note that this will not match HTTP/2 upgrade-style CONNECT requests
+        // (WebSocket and the like) as they are normalized in Envoy as HTTP/1.1 style
+        // upgrades.
+        // This is the only way to match CONNECT requests for HTTP/1.1. For HTTP/2,
+        // where CONNECT requests may have a path, the path matchers will work if
+        // there is a path present.
+        // Note that CONNECT support is currently considered alpha in Envoy.
+        ConnectMatcher connect_matcher = 10;
     }
 
     // Indicates that prefix/path matching should be case insensitive. The default
@@ -537,7 +550,7 @@ message RouteAction {
         // downstream or `custom (config_http_conn_man_headers_custom_request_headers)` header.
         // If header value is empty, host header is left intact.
         //
-                //
+        //
         //   Pay attention to the potential security implications of using this option. Provided header
         //   must come from trusted source.
         string auto_host_rewrite_header = 29;

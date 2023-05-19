@@ -9,6 +9,7 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -48,8 +49,8 @@ func UpstreamWithSecret(secret *v1.Secret) *v1.Upstream {
 				},
 			},
 		},
-		SslConfig: &v1.UpstreamSslConfig{
-			SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+		SslConfig: &ssl.UpstreamSslConfig{
+			SslSecrets: &ssl.UpstreamSslConfig_SecretRef{
 				SecretRef: &core.ResourceRef{
 					Name:      secret.GetMetadata().GetName(),
 					Namespace: secret.GetMetadata().GetNamespace(),
@@ -233,13 +234,17 @@ func SimpleGlooSnapshot(namespace string) *v1snap.ApiSnapshot {
 			},
 		},
 		VirtualServices: []*gwv1.VirtualService{
-			{
-				Metadata: &core.Metadata{Namespace: namespace, Name: "virtualservice"},
-				VirtualHost: &gwv1.VirtualHost{
-					Domains: []string{"*"},
-					Routes:  SimpleRoute(us.GetMetadata().Ref()),
-				},
-			},
+			SimpleVS(namespace, "virtualservice", "*", us.GetMetadata().Ref()),
+		},
+	}
+}
+
+func SimpleVS(namespace, name, domain string, upstreamRef *core.ResourceRef) *gwv1.VirtualService {
+	return &gwv1.VirtualService{
+		Metadata: &core.Metadata{Namespace: namespace, Name: name},
+		VirtualHost: &gwv1.VirtualHost{
+			Domains: []string{domain},
+			Routes:  SimpleRoute(upstreamRef),
 		},
 	}
 }

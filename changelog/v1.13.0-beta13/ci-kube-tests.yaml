@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6819
+    description: Fix kube2e test "Should be able to rotate a secret referenced on a sslConfig on a kube upstream"
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/6820
+    description: Fix e2e test "CSRF defined on listener only on listener [It] should succeed with allowed origin"

@@ -83,6 +83,8 @@ git clone https://github.com/solo-io/gloo
 git clone git@github.com:solo-io/gloo.git
 ```
 
+To run the `main.go` files locally in your system make sure to have a [`Kubernetes Cluster`](https://kubernetes.io/docs/setup/) running.
+
 You should now be able to run any `main.go` file in the Gloo Edge repository using:
 
 ```bash

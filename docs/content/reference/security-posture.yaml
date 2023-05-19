@@ -2,7 +2,7 @@
 # This file includes information for both Open Source 
 # and Enterprise versions of Gloo Edge.
 # For more information, see the docs: 
-# https://docs.solo.io/gloo-edge/master/reference/security-posture/
+# https://docs.solo.io/gloo-edge/main/reference/security-posture/
 #
 # Options are:
 # - data_plane_agnostic

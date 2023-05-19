@@ -4,18 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 
 	"github.com/avast/retry-go"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/test/setup"
 	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/chartutil"
 
@@ -48,11 +50,29 @@ const (
 	yamlJoiner = "\n---\n"
 )
 
+// copied over from solo-kit to avoid a dependency on ginkgo
+func kubectlOut(args ...string) (string, error) {
+	cmd := exec.Command("kubectl", args...)
+	cmd.Env = os.Environ()
+	// disable DEBUG=1 from getting through to kube
+	for i, pair := range cmd.Env {
+		if strings.HasPrefix(pair, "DEBUG") {
+			cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+			break
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("%s (%v)", out, err)
+	}
+	return string(out), err
+}
+
 func waitKnativeApiserviceReady() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	for {
-		stdout, err := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+		stdout, err := kubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
 		if err != nil {
 			contextutils.CliLogErrorw(ctx, "error getting apiserverice", "err", err)
 		}
@@ -114,7 +134,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 					return eris.Wrapf(err, "parsing override values for knative mode")
 				}
 
-				if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
+				if err := NewInstaller(opts, DefaultHelmClient()).Install(&InstallerConfig{
 					InstallCliArgs: &opts.Install,
 					ExtraValues:    knativeOverrides,
 					Verbose:        opts.Top.Verbose,
@@ -194,7 +214,11 @@ func checkKnativeInstallation(ctx context.Context, kubeclient ...kubernetes.Inte
 	if len(kubeclient) > 0 {
 		kc = kubeclient[0]
 	} else {
-		kc = helpers.MustKubeClient()
+		kubecontext, err := contextoptions.KubecontextFrom(ctx)
+		if err != nil {
+			return false, nil, err
+		}
+		kc = helpers.MustKubeClientWithKubecontext(kubecontext)
 	}
 	namespaces, err := kc.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
 	if err != nil {
@@ -271,7 +295,7 @@ func getManifestForInstallation(url string) (string, error) {
 		return "", err
 	}
 
-	raw, err := ioutil.ReadAll(response.Body)
+	raw, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
@@ -330,7 +354,8 @@ func removeIstioResources(manifest string) (string, error) {
 				outputObjectsYaml = append(outputObjectsYaml, string(rawYaml))
 			}
 		default:
-			panic(fmt.Sprintf("unknown object type %T parsed from yaml: \n%v ", object.obj, object.yaml))
+			contextutils.LoggerFrom(context.Background()).DPanic(fmt.Sprintf("unknown object type %T parsed from yaml: \n%v ", object.obj, object.yaml))
+			return "", eris.Errorf("unknown object type %T parsed from yaml: \n%v ", object.obj, object.yaml)
 		}
 	}
 

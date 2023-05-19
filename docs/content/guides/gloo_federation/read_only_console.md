@@ -1,7 +1,7 @@
 ---
 title: Read-only Console
 description: Accessing the Gloo Edge Federation read-only console
-weight: 50
+weight: 60
 ---
 
 The installation of Gloo Edge Federation includes a read-only console, providing a wealth of information about the Gloo Edge instances being managed by Gloo Edge Federation available at a glance. This guide will take you through the process of accessing the console and show you some of the features of the interface.
@@ -19,7 +19,7 @@ You will need at least one Kubernetes cluster running Gloo Edge Enterprise and G
 
 <!--federation demo hidden for now
 {{% notice tip %}}
-Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).
+Want to spin up a demo environment to quickly validate the federation process? Try out the [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/demo/" %}}).
 {{% /notice%}}
 -->
 

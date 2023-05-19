@@ -12,7 +12,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 )

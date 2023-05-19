@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/7582
+    resolvesIssue: false
+    description: |
+      Adding `topologySpreadConstraints` to gateway-proxy.

@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/any"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/shared"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -17,6 +18,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	kubewatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 )
@@ -168,6 +170,36 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 
 	// return a read object to update the resource version
 	return rc.Read(svcObj.Namespace, svcObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *ResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
+	namespace := inputResource.GetMetadata().GetNamespace()
+	if err := resources.ValidateName(name); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	opts = opts.WithDefaults()
+
+	data, err := shared.GetJsonPatchData(opts.Ctx, inputResource)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error getting status json patch data")
+	}
+	serviceObj, err := rc.kube.CoreV1().Services(namespace).Patch(opts.Ctx, name, types.JSONPatchType, data, metav1.PatchOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, errors.NewNotExistErr(namespace, name, err)
+		}
+		return nil, errors.Wrapf(err, "patching serviceObj from kubernetes")
+	}
+	resource, err := FromKube(serviceObj)
+	if err != nil {
+		return nil, err
+	}
+
+	if resource == nil {
+		return nil, errors.Errorf("serviceObj %v is not kind %v", name, rc.Kind())
+	}
+	return resource, nil
 }
 
 func (rc *ResourceClient) Delete(namespace, name string, opts clients.DeleteOpts) error {

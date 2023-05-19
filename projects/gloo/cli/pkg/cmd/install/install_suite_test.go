@@ -2,7 +2,6 @@ package install_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,8 +13,7 @@ import (
 
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gotestutils "github.com/solo-io/go-utils/testutils"
@@ -26,8 +24,7 @@ import (
 func TestInstall(t *testing.T) {
 	RegisterFailHandler(Fail)
 	gotestutils.RegisterCommonFailHandlers()
-	junitReporter := reporters.NewJUnitReporter("junit.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Install Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Install Suite")
 }
 
 var RootDir string
@@ -82,14 +79,14 @@ settings:
 
 	// Check all gloo crds are included in GlooCrdNames
 	crdDir := filepath.Join(RootDir, "/install/helm/gloo/crds")
-	files, err := ioutil.ReadDir(crdDir)
+	files, err := os.ReadDir(crdDir)
 	Expect(err).NotTo(HaveOccurred())
 	var crdNames []string
 	for _, f3 := range files {
 		ext := filepath.Ext(f3.Name())
 		// check file has manifest extension
 		if !f3.IsDir() && (strings.EqualFold(ext, ".yaml") || strings.EqualFold(ext, ".yml") || strings.EqualFold(ext, ".json")) {
-			manifest, err := ioutil.ReadFile(crdDir + "/" + f3.Name())
+			manifest, err := os.ReadFile(crdDir + "/" + f3.Name())
 			Expect(err).NotTo(HaveOccurred())
 			jsn, err := yaml.YAMLToJSON(manifest)
 			Expect(err).NotTo(HaveOccurred())

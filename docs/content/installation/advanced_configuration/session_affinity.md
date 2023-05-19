@@ -137,7 +137,7 @@ spec:
   - `ttl`, optional, if set, Envoy will create the specified cookie, if it is not present on the request
 6. Envoy can be configured to create cookies by setting the `ttl` parameter. If the specified cookie is not available on the request, Envoy will create it and add it to the response.
 
-For additional insights, please refer to Envoy's [route hash policy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-routeaction-hashpolicy).
+For additional insights, please refer to Envoy's [route hash policy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#route-routeaction-hashpolicy).
 
 ---
 

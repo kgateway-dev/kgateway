@@ -1,6 +1,15 @@
 #!/bin/bash
 
-# this file as adapted from here: https://github.com/envoyproxy/envoy/blob/master/tools/check_spelling.sh
+# Update March 2, 2023
+# This is a potentially powerful script, and one that has been running in CI but doing nothing:
+#   Step #1 - "check-spelling": cat: /workspace/gloo/ci/../ci/spelling_whitelist_words.txt: No such file or directory
+#   Step #1 - "check-spelling": cat: /workspace/gloo/ci/../ci/spelling_skip_files.txt: No such file or directory
+#   Step #1 - "check-spelling": find: paths must precede expression: `|'
+#   Step #1 - "check-spelling": Done
+# Leaving this script in the repository in case we want to use it in the future, but removing the execution
+# in our CI pipeline because it is a no-op
+
+# this file as adapted from here: https://github.com/envoyproxy/envoy/tree/main/tools/spelling
 
 # Applies requisite code formatters to the source tree
 # check_spelling.sh

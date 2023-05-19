@@ -1,9 +1,17 @@
 package upstreams
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/solo-io/gloo/pkg/utils"
+
 	"github.com/rotisserie/eris"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // This client implements only the `Kind` `Read` and `Write` functions and panics on all the other functions.
@@ -23,7 +31,13 @@ func (c *readOnlyUpstreamBaseClient) Kind() string {
 }
 
 func (c *readOnlyUpstreamBaseClient) NewResource() resources.Resource {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return &v1.Upstream{
+		Metadata: &core.Metadata{
+			Name:      "dev-error-placeholder",
+			Namespace: utils.GetPodNamespace(),
+		},
+	}
 }
 
 func (c *readOnlyUpstreamBaseClient) Register() error {
@@ -45,14 +59,26 @@ func (c *readOnlyUpstreamBaseClient) Write(resource resources.Resource, opts cli
 	return resources.Clone(resource), nil
 }
 
+func (c *readOnlyUpstreamBaseClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
+	name := inputResource.GetMetadata().GetName()
+	if isRealUpstream(name) {
+		return c.rc.ApplyStatus(statusClient, inputResource, opts)
+	}
+	// not a real upstream, so we don't need to apply status
+	return nil, nil
+}
+
 func (c *readOnlyUpstreamBaseClient) Delete(namespace, name string, opts clients.DeleteOpts) error {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, fmt.Errorf(notImplementedErrMsg)
 }
 
 func (c *readOnlyUpstreamBaseClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
-	panic(notImplementedErrMsg)
+	contextutils.LoggerFrom(context.Background()).DPanic(notImplementedErrMsg)
+	return nil, nil, fmt.Errorf(notImplementedErrMsg)
 }

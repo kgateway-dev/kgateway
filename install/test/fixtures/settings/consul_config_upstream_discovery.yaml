@@ -12,14 +12,17 @@ spec:
  gateway:
    enableGatewayController: true
    readGatewaysFromAllNamespaces: false
+   isolateVirtualHostsBySslConfig: false
    validation:
      alwaysAccept: true
      allowWarnings: true
+     serverEnabled: true
      disableTransformationValidation: false
      warnRouteShortCircuiting: false
      proxyValidationServerAddr: gloo:9988
      validationServerGrpcMaxSizeBytes: 104857600
  gloo:
+   regexMaxProgramSize: 1024
    enableRestEds: false
    xdsBindAddr: 0.0.0.0:9977
    restXdsBindAddr: 0.0.0.0:9976

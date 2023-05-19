@@ -11,13 +11,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/big"
 	"os"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 )
 
 var _ = Describe("certificateProvider", func() {
@@ -130,12 +129,12 @@ var _ = Describe("certificateProvider", func() {
 func createCertificate() (certFile, keyFile string, err error) {
 	err = nil
 	var file *os.File
-	file, err = ioutil.TempFile("", "cert")
+	file, err = os.CreateTemp("", "cert")
 	if err != nil {
 		return
 	}
 	certFile = file.Name()
-	file, err = ioutil.TempFile("", "key")
+	file, err = os.CreateTemp("", "key")
 	if err != nil {
 		return
 	}
@@ -168,7 +167,7 @@ func createNewCertificate(certFile, keyFile string) error {
 	}
 	out := &bytes.Buffer{}
 	pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
-	err = ioutil.WriteFile(certFile, out.Bytes(), 0644)
+	err = os.WriteFile(certFile, out.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
@@ -178,7 +177,7 @@ func createNewCertificate(certFile, keyFile string) error {
 		return err
 	}
 	pem.Encode(out, pemBlock)
-	err = ioutil.WriteFile(keyFile, out.Bytes(), 0644)
+	err = os.WriteFile(keyFile, out.Bytes(), 0644)
 	if err != nil {
 		return err
 	}

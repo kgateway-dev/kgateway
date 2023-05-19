@@ -5,6 +5,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/spf13/pflag"
@@ -12,13 +13,28 @@ import (
 )
 
 const (
-	OutputFlag = "output"
-	FileFlag   = "file"
-	DryRunFlag = "dry-run"
+	OutputFlag     = "output"
+	FileFlag       = "file"
+	DryRunFlag     = "dry-run"
+	VersionFlag    = "version"
+	LocalChartFlag = "local-chart"
+	ShowYamlFlag   = "show-yaml"
 )
 
 func AddCheckOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
 	set.VarP(outputType, OutputFlag, "o", "output format: (json, table)")
+}
+
+func AddVersionFlag(set *pflag.FlagSet, version *string) {
+	set.StringVarP(version, VersionFlag, "", "", "version of gloo's CRDs to check against")
+}
+
+func AddLocalChartFlag(set *pflag.FlagSet, localChart *string) {
+	set.StringVarP(localChart, LocalChartFlag, "", "", "check against CRDs in helm chart at path specified by this flag (supersedes --version)")
+}
+
+func AddShowYamlFlag(set *pflag.FlagSet, showYaml *bool) {
+	set.BoolVarP(showYaml, ShowYamlFlag, "", false, "show full yaml of both CRDs that differ")
 }
 
 func AddOutputFlag(set *pflag.FlagSet, outputType *printers.OutputType) {
@@ -44,7 +60,7 @@ func AddKubeConfigFlag(set *pflag.FlagSet, kubeConfig *string) {
 	set.StringVarP(kubeConfig, clientcmd.RecommendedConfigPathFlag, "", "", "kubeconfig to use, if not standard one")
 }
 
-func AddConsulConfigFlags(set *pflag.FlagSet, consul *options.Consul) {
+func AddConsulConfigFlags(set *pflag.FlagSet, consul *contextoptions.Consul) {
 	config := api.DefaultConfig()
 	set.BoolVar(&consul.UseConsul, "use-consul", false, "use Consul Key-Value storage as the "+
 		"backend for reading and writing config (VirtualServices, Upstreams, and Proxies)")
@@ -74,9 +90,9 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 	set.StringVar(&vault.PathPrefix, "vault-path-prefix", bootstrap.DefaultPathPrefix, "The Secrets Engine to which Vault should route traffic.")
 	set.StringVar(&vault.RootKey, "vault-root-key", bootstrap.DefaultRootKey, "key prefix for Vault key-value storage inside a storage engine.")
 
-	set.StringVar(&config.Address, "vault-address", config.Address, "address of the Vault server. This should be a complete  URL such as \"http://vault.example.com\". "+
+	set.StringVar(&config.Address, "vault-address", config.Address, "address of the Vault server. This should be a complete URL such as \"http://vault.example.com\". "+
 		"Use with --use-vault")
-	set.StringVar(&token, "vault-token", "", "address of the Vault server. This should be a complete  URL such as \"http://vault.example.com\". "+
+	set.StringVar(&token, "vault-token", "", "The root token to authenticate with a Vault server. "+
 		"Use with --use-vault")
 
 	set.StringVar(&tlsCfg.CACert, "vault-ca-cert", "", "CACert is the path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate."+

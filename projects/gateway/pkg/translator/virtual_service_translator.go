@@ -171,6 +171,9 @@ func getVirtualServicesForHttpGateway(
 	return virtualServicesForGateway
 }
 
+// HttpGatewayContainsVirtualService determines whether the VS has the same selector/expression matching and the same namespace
+// so that the two resources can co-exist.  A VS must match on these terms. Else see if the VS matches the same refs
+// that are currently on the gateway.
 func HttpGatewayContainsVirtualService(httpGateway *v1.HttpGateway, virtualService *v1.VirtualService, ssl bool) (bool, error) {
 	if ssl != hasSsl(virtualService) {
 		return false, nil
@@ -290,7 +293,7 @@ func (v *VirtualServiceTranslator) virtualServiceToVirtualHost(vs *v1.VirtualSer
 		Options: vs.GetVirtualHost().GetOptions(),
 	}
 
-	validateRoutes(vs, vh, reports)
+	validateRoutesRegex(vs, vh, reports)
 
 	if v.WarnOnRouteShortCircuiting {
 		validateRouteShortCircuiting(vs, vh, reports)
@@ -310,7 +313,9 @@ func (v *VirtualServiceTranslator) mergeDelegatedVirtualHostOptions(vs *v1.Virtu
 	for _, optionRef := range optionRefs {
 		vhOption, err := options.Find(optionRef.GetNamespace(), optionRef.GetName())
 		if err != nil {
-			reports.AddError(vs, err)
+			// missing refs should only result in a warning
+			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
+			reports.AddWarning(vs, err.Error())
 			continue
 		}
 		if vs.GetVirtualHost().GetOptions() == nil {
@@ -325,13 +330,30 @@ func VirtualHostName(vs *v1.VirtualService) string {
 	return fmt.Sprintf("%v.%v", vs.GetMetadata().GetNamespace(), vs.GetMetadata().GetName())
 }
 
-// this function is written with the assumption that the routes will not be modified afterwards,
+// this function is written with the assumption that the routes will not be modified afterward,
 // and are in their final sorted form
-func validateRoutes(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
+func validateRoutesRegex(vs *v1.VirtualService, vh *gloov1.VirtualHost, reports reporter.ResourceReports) {
 	for _, rt := range vh.GetRoutes() {
+		options := rt.GetOptions()
+		if options != nil {
+			// validate HostRewrite regex
+			if options.GetHostRewritePathRegex() != nil {
+				_, err := regexp.Compile(options.GetHostRewritePathRegex().GetPattern().GetRegex())
+				if err != nil {
+					reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
+				}
+			}
+			// validate RegexRewrite regex
+			if options.GetRegexRewrite() != nil {
+				_, err := regexp.Compile(options.GetRegexRewrite().GetPattern().GetRegex())
+				if err != nil {
+					reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
+				}
+			}
+		}
 		for _, matcher := range rt.GetMatchers() {
 			_, err := regexp.Compile(matcher.GetRegex())
-			if matcher.GetRegex() != "" && err != nil {
+			if err != nil {
 				reports.AddError(vs, InvalidRegexErr(vs.GetMetadata().Ref().Key(), err.Error()))
 			}
 		}
@@ -566,23 +588,23 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 }
 
 // special case to catch the following:
-//	- matchers:
-//	  - prefix: /foo
-//      headers:
-//	    - name: :method
-//        value: GET
-//        invertMatch: true
-//    directResponseAction:
-//      status: 405
-//      body: 'Invalid HTTP Method'
-//	...
-//	- matchers:
-//	  - methods:
-//	    - GET
-//	    - POST # this one cannot be reached
-//      prefix: /foo
-//    routeAction:
-//	    ....
+//   - matchers:
+//   - prefix: /foo
+//     headers:
+//   - name: :method
+//     value: GET
+//     invertMatch: true
+//     directResponseAction:
+//     status: 405
+//     body: 'Invalid HTTP Method'
+//     ...
+//   - matchers:
+//   - methods:
+//   - GET
+//   - POST # this one cannot be reached
+//     prefix: /foo
+//     routeAction:
+//     ....
 func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
 
 	// regex matches simple OR regex, e.g. (GET|POST|...)

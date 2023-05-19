@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/v2"
 )
 
 type NatsStreamingFactory struct {
@@ -81,7 +80,7 @@ func NewNatsStreamingFactory() (*NatsStreamingFactory, error) {
 		_, err := exec.LookPath(nats)
 		if err != nil {
 
-			tmpdir, err = ioutil.TempDir(os.Getenv("HELPER_TMP"), "nats")
+			tmpdir, err = os.MkdirTemp(os.Getenv("HELPER_TMP"), "nats")
 			if err != nil {
 				return nil, err
 			}
@@ -102,7 +101,7 @@ func NewNatsStreamingFactory() (*NatsStreamingFactory, error) {
 
 func (gf *NatsStreamingFactory) NewNatsStreamingInstance() (*NatsStreamingInstance, error) {
 
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "nats")
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "nats")
 	if err != nil {
 		return nil, err
 	}

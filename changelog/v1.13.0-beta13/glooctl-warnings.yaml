@@ -1,0 +1,7 @@
+changelog:
+ - type: FIX
+   issueLink: https://github.com/solo-io/gloo/issues/7076
+   resolvesIssue: false
+   description: >
+     Return lists of resources even when some have errors in glooctl check to avoid 
+     incorrect "missing ref" warnings.

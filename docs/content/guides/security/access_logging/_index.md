@@ -11,7 +11,7 @@ An access log may be written locally to a file or the `stdout` pipe in the proxy
 
 With Gloo Edge (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.
 
-### Data Available for Logging
+## Data Available for Logging
 
 Envoy exposes a lot of data that can be used when customizing access logs. Some common data properties available for both 
 TCP and HTTP access logging include:
@@ -20,26 +20,81 @@ TCP and HTTP access logging include:
 * Relevant envoy configuration, such as rate of sampling (if used)
 * Filter-specific context published to Envoy's dynamic metadata during the filter chain
 
-#### Additional HTTP Properties
+### Additional HTTP Properties
 
 When Envoy is used as an HTTP proxy a large amount of additional HTTP information is available for access logging, including:
 * Request data including the method, path, scheme, port, user agent, headers, body, and more 
 * Response data including the response code, headers, body, and trailers, as well as a string representation of the response code
 * Protocol version
 
-#### Additional TCP Properties
+### Additional TCP Properties
 
 Due to the limitations of the TCP protocol, the only additional data available for access logging when using Envoy as a TCP 
 proxy are connection properties: bytes received and sent. 
 
-### File-based Access Logging
+## File-based Access Logging
 
 File-based access logging can be enabled in Gloo Edge by customizing the **Gateway** CRD. For file-based access logs (also referred to 
 as file sink access logs), there are two main configurations to set:
 * Path: This is where the logs are written, either to `/dev/stdout` or to a file that is in a writable volume in the proxy container 
 * Format: This provides a log template for either string or json-formatted logs
 
-#### Outputting formatted strings
+## File-based Standard logging
+
+You can enable file-based standard logging (stdout/stderr) in Gloo Edge during [Helm installation]({{% versioned_link_path fromRoot="/reference/helm_chart_values/enterprise_helm_chart_values/" %}}). For more information about Envoy logging, see [the Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#envoy-logging).
+
+To enable, you use the `--log-path path` Helm setting in the `gloo.gatewayProxies.gatewayProxy.extraEnvoyArgs[]` parameter. Because the filesystem is read-only, you must also mount an additional volume in the `gateway-proxy` deployment.
+
+The following steps show an example for Gloo Edge Enterprise installations. Before you begin, set the Gloo Edge Enterprise version (`$VERSION`) and license key (`$YOUR_LICENSE_KEY`) as variables. For more information or open source steps, see the [Installation guide]({{% versioned_link_path fromRoot="/installation/" %}}).
+
+1. Prepare a Helm values configuration file with override settings such as the following.
+   ```yaml
+   gloo:
+     gatewayProxies:
+       gatewayProxy:
+         extraVolumes:
+         - name: gloo-logs
+           persistentVolumeClaim:
+             claimName: local-claim
+         extraProxyVolumeMounts:
+         - name: gloo-logs
+           mountPath: /var/log/gloo
+         extraEnvoyArgs: # Add extra arguments to Envoy.
+         -  --log-path /var/log/gloo/envoy_log
+   ```
+2. Upgrade or install the Gloo Edge Enterprise Helm chart with your override settings.
+   ```bash
+   helm upgrade --install gloo-edge gloo-ee/gloo-ee --namespace gloo-system --set-string license_key=$YOUR_LICENSE_KEY --version $VERSION -f value-overrides.yaml
+   ```
+3. Verify that the `gateway-proxy` deployment mounts the logs volumes.
+   ```bash
+   kubectl describe -n gloo-system deployment/gateway-proxy
+   ```
+
+   Example truncated output:
+   ```
+   Mounts:
+     /etc/envoy from envoy-config (rw)
+     /var/log/gloo from gloo-access (rw)
+   ```
+4. Log into the `gateway-proxy` container.
+   ```bash
+   kubectl exec -it -n gloo-system pods/$(kubectl get pod -l gloo=gateway-proxy -A -o jsonpath='{.items[0].metadata.name}') -- /bin/sh
+   ```
+5. Review the standard output logs in the log path that you added.
+   ```
+   tail /var/log/gloo/envoy_log
+   ```
+   
+   Example output:
+   ```
+   [2023-04-18 06:07:52.111][7][info][config] [external/envoy/source/server/configuration_impl.cc:113] loading stats configuration
+   [2023-04-18 06:07:52.111][7][info][main] [external/envoy/source/server/server.cc:897] starting main dispatch loop
+   [2023-04-18 06:07:52.112][7][info][runtime] [external/envoy/source/common/runtime/runtime_impl.cc:463] RTDS has finished initialization
+   [2023-04-18 06:07:52.112][7][info][upstream] [external/envoy/source/common/upstream/cluster_manager_impl.cc:221] cm init: initializing cds
+   ```
+
+## Outputting formatted strings
 
 To configure access logs on a specific Envoy listener that output string-formatted logs to a file, 
 we can add an access logging option to the corresponding Gateway CRD. 
@@ -79,7 +134,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy
 [2020-03-17T18:40:33.680Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "fe904bec-d2ba-4027-9aa3-fef74dbf927e" "35.196.131.38" "10.52.0.54:8080"
 ```
 
-#### Customizing the string format
+### Customizing the string format
 
 In the example above, the default string format was used. Alternatively, a custom string format can be provided explicitly:
 ```yaml
@@ -121,7 +176,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy
 
 For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-format-strings). 
 
-#### Outputting structured json
+### Outputting structured json
 
 Instead of outputting strings, the file sink access logger can be configured to log structured json instead. When 
 configuring structured json, the Envoy fields are referenced in the same way as in the string format, however a mapping to json 
@@ -165,7 +220,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy
 
 For more information about json format dictionaries, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#format-dictionaries).
 
-#### Outputting to a custom file
+### Outputting to a custom file
 
 Instead of outputting the string or json-formatted access logs to standard out, it may be preferable to log them to 
 a file local to the container. This requires a volume that is writable in the `gateway-proxy` container.
@@ -208,14 +263,14 @@ $ kubectl exec -n gloo-system -it deploy/gateway-proxy -- cat /dev/access-logs.j
 {"upstreamCluster":"default-petstore-8080_gloo-system","protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080","duration":"1"}
 ```
 
-### gRPC Access Logging
+## gRPC Access Logging
 
 The previous section reviewed the different ways you can configure access logging to output to a file local to the 
 proxy container. Alternatively, it may be desirable to configure Envoy to emit access logs to a gRPC endpoint. This would be
 a custom service deployed to your cluster that receives access log events and then does something with them - such 
 as writing them to a file in the access log gRPC service container, or sending them to an enterprise logging backend.
 
-#### Deploying the open source gRPC access logger
+### Deploying the open source gRPC access logger
 
 Open source Gloo Edge includes an optional gRPC access log server implementation that can be turned on and deployed using
 the following helm values:
@@ -294,9 +349,9 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy-access-logger
 {"level":"info","ts":"2020-03-18T20:18:12.400Z","logger":"access_log","caller":"runner/run.go:48","msg":"received http request","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > ","protocol_version":"HTTP11","request_path":"/","request_method":"GET","response_status":"value:403 "}
 ```
 
-The code for this server implementation is available [here](https://github.com/solo-io/gloo/tree/master/projects/accesslogger). 
+The code for this server implementation is available [here](https://github.com/solo-io/gloo/tree/main/projects/accesslogger). 
 
-#### Building a custom service
+### Building a custom service
 
 If you are building a custom access logging gRPC service, you will need get it deployed alongside Gloo Edge. The Envoy
 config (that Gloo Edge stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
@@ -309,7 +364,7 @@ to open an issue in the Gloo Edge repo to track improvements to the existing imp
 To verify your Envoy access logging configuration, use `glooctl check`. If there is a problem configuring the Envoy 
 listener with your custom access logging server, it should be reported there. 
 
-### Configuring multiple access logs 
+## Configuring multiple access logs 
 
 More than one access log can be configured for a single Envoy listener. Putting the examples above together, here is a configuration
 that includes four different access log outputs: a default string-formatted access log to standard out on the Envoy container, a default

@@ -1,7 +1,7 @@
 ---
 title: Shadowing
 weight: 110
-description: Enables traffic shadowing for the route.
+description: Enable traffic shadowing for the route.
 ---
 
 ## Why traffic shadowing?

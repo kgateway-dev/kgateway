@@ -39,6 +39,8 @@ func CreateCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobr
 	cmd.AddCommand(tlsCmd(opts))
 	cmd.AddCommand(ExtAuthApiKeyCmd(opts))
 	cmd.AddCommand(ExtAuthOathCmd(opts))
+	cmd.AddCommand(ExtAuthAccountCredentialsCmd(opts))
+	cmd.AddCommand(EncryptionKeyCmd(opts))
 	flagutils.AddVaultSecretFlags(cmd.PersistentFlags(), &opts.Create.Vault)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd

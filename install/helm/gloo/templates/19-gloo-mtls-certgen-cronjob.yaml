@@ -16,16 +16,26 @@ spec:
   schedule: {{ .Values.gateway.certGenJob.cron.schedule | quote }}
   jobTemplate:
     spec:
-      {{- with .Values.gateway.certGenJob.activeDeadlineSeconds }}
-      activeDeadlineSeconds: {{ . }}
-      {{- end }}
+      {{- include "gloo.jobSpecStandardFields" .Values.gateway.certGenJob | nindent 6 -}}
       template:
         metadata:
           labels:
             gloo: gloo-mtls-certs
-            {{- if .Values.global.istioIntegration.disableAutoinjection }}
             sidecar.istio.io/inject: "false"
+            {{- if .Values.gateway.certGenJob.extraPodLabels }}
+            {{- range $key, $value := .Values.gateway.certGenJob.extraPodLabels }}
+            {{ $key | quote }}: {{ $value | quote }}
             {{- end }}
+            {{- end }}
+          {{- if or .Values.settings.linkerd .Values.gateway.certGenJob.extraPodAnnotations }}
+          annotations:
+            {{- if .Values.settings.linkerd }}
+            "linkerd.io/inject": disabled
+            {{- end }}
+            {{- range $key, $value := .Values.gateway.certGenJob.extraPodAnnotations }}
+            {{ $key | quote }}: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
         spec:
           {{- include "gloo.pullSecret" $image | nindent 10 -}}
           serviceAccountName: certgen
@@ -51,9 +61,6 @@ spec:
                 - "--secret-name=gloo-mtls-certs"
                 - "--svc-name=gloo"
                 - "--force-rotation=true"
-      {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
-      ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
-      {{- end }}
 {{- end }} {{/* if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 

@@ -17,8 +17,6 @@ import (
 )
 
 //go:generate mockgen -destination ./mocks/kubesharedfactory_mock.go github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes KubePluginSharedFactory
-//go:generate gofmt -w ./mocks/
-//go:generate goimports -w ./mocks/
 
 type KubePluginSharedFactory interface {
 	EndpointsLister(ns string) kubelisters.EndpointsLister
@@ -41,6 +39,9 @@ func getInformerFactory(ctx context.Context, client kubernetes.Interface, watchN
 	}
 	kubePluginSharedFactory := startInformerFactory(ctx, client, watchNamespaces)
 	if kubePluginSharedFactory.initError != nil {
+		// This is an unrecoverable error (no shared informer factory means all of kube EDS won't work, which is
+		// probably the most valuable / important role for gloo) and  users know immediately about e.g. any rbac errors
+		// preventing this from working rather than this hiding in the logs
 		panic(kubePluginSharedFactory.initError)
 	}
 	return kubePluginSharedFactory

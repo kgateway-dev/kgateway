@@ -5,14 +5,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"hash"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"time"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/hashicorp/go-multierror"
 
@@ -21,8 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-
-	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/pkg/utils"
 
@@ -33,6 +29,7 @@ import (
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,12 +156,13 @@ func (l *debugLogger) Write(p []byte) (n int, err error) {
 }
 
 type gatewayValidationWebhook struct {
+	// everything living here MUST be synchronized to avoid data races
 	ctx                           context.Context
-	validator                     validation.Validator
-	watchNamespaces               []string
-	alwaysAccept                  bool
-	readGatewaysFromAllNamespaces bool
-	webhookNamespace              string
+	validator                     validation.Validator // the function calls are synchronized
+	watchNamespaces               []string             // we make a deep copy when we read this; original is read only so no races
+	alwaysAccept                  bool                 // read only so no races
+	readGatewaysFromAllNamespaces bool                 // read only so no races
+	webhookNamespace              string               // read only so no races
 }
 
 type AdmissionReviewWithProxies struct {
@@ -210,7 +208,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	var body []byte
 	if r.Body != nil {
-		if data, err := ioutil.ReadAll(r.Body); err == nil {
+		if data, err := io.ReadAll(r.Body); err == nil {
 			body = data
 		}
 		defer r.Body.Close()
@@ -296,7 +294,8 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	// check gateway requests for the same namespace as this webhook, regardless of the
 	// contents of watchNamespaces. It's assumed that if it's non-empty, watchNamespaces
 	// contains the webhook's own namespace, since this was checked during setup in setup_syncer.go
-	watchNamespaces := wh.watchNamespaces
+	watchNamespaces := make([]string, len(wh.watchNamespaces))
+	copy(watchNamespaces, wh.watchNamespaces) // important we make a deep copy
 	if gvk == gwv1.GatewayGVK && !wh.readGatewaysFromAllNamespaces && !utils.AllNamespaces(wh.watchNamespaces) {
 		watchNamespaces = []string{wh.webhookNamespace}
 	}
@@ -393,52 +392,57 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 	isDelete := admissionRequest.Operation == v1beta1.Delete
 	dryRun := isDryRun(admissionRequest)
 
-	switch gvk {
-	case ListGVK:
+	if gvk == ListGVK {
 		return wh.validateList(ctx, admissionRequest.Object.Raw, dryRun)
-	case gwv1.GatewayGVK:
-		if isDelete {
-			// we don't validate gateway deletion
-			break
-		}
-		return wh.validateGateway(ctx, admissionRequest)
-	case gwv1.VirtualServiceGVK:
-		if isDelete {
-			err := wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)
-			if err != nil {
-				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
-			}
-		} else {
-			return wh.validateVirtualService(ctx, admissionRequest)
-		}
-	case gwv1.RouteTableGVK:
-		if isDelete {
-			err := wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)
-			if err != nil {
-				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
-			}
-		} else {
-			return wh.validateRouteTable(ctx, admissionRequest)
-		}
-	case gloov1.UpstreamGVK:
-		if isDelete {
-			err := wh.validator.ValidateDeleteUpstream(ctx, ref, dryRun)
-			if err != nil {
-				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
-			}
-		} else {
-			return wh.validateUpstream(ctx, admissionRequest)
-		}
-	case gloov1.SecretGVK:
-		// We only support validation of secrets for DELETE operations
-		if isDelete {
-			err := wh.validator.ValidateDeleteSecret(ctx, ref, dryRun)
-			if err != nil {
-				return &validation.Reports{}, &multierror.Error{Errors: []error{err}}
-			}
-		}
+	}
+
+	if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
+		contextutils.LoggerFrom(ctx).Debugf("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+		return &validation.Reports{}, nil
+	}
+
+	if isDelete {
+		return wh.deleteRef(ctx, gvk, ref, admissionRequest)
+	}
+
+	return wh.validateGvk(ctx, gvk, ref, admissionRequest)
+}
+
+func (wh *gatewayValidationWebhook) deleteRef(ctx context.Context, gvk schema.GroupVersionKind, ref *core.ResourceRef, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
+	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
+
+	newResource := newResourceFunc()
+	newResource.SetMetadata(&core.Metadata{
+		Namespace: ref.GetNamespace(),
+		Name:      ref.GetName(),
+	})
+	err := wh.validator.ValidateDeletedGvk(ctx, gvk, newResource, isDryRun(admissionRequest))
+	if err != nil {
+		return nil, &multierror.Error{Errors: []error{errors.Wrapf(err, "failed validating the deletion of resource namespace: %s name: %s", ref.GetNamespace(), ref.GetName())}}
 	}
 	return &validation.Reports{}, nil
+}
+
+func (wh *gatewayValidationWebhook) validateGvk(ctx context.Context, gvk schema.GroupVersionKind, ref *core.ResourceRef, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
+	var reports *validation.Reports
+	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
+
+	newResource := newResourceFunc()
+	oldResource := newResourceFunc()
+
+	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, newResource, oldResource)
+	if shouldValidateErr != nil {
+		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
+	}
+	if !shouldValidate {
+		return nil, nil
+	}
+
+	reports, err := wh.validator.ValidateModifiedGvk(ctx, gvk, newResource, isDryRun(admissionRequest))
+	if err != nil {
+		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", newResource)}}
+	}
+	return reports, nil
 }
 
 func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, dryRun bool) (*validation.Reports, *multierror.Error) {
@@ -456,100 +460,11 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 	}
 	return reports, nil
 }
-func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
-	var (
-		gw, oldGw gwv1.Gateway
-		reports   *validation.Reports
-		err       error
-	)
 
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &gw, &oldGw)
-	if shouldValidateErr != nil {
-		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
-	}
-	if !shouldValidate {
-		return nil, nil
-	}
-
-	if reports, err = wh.validator.ValidateGateway(ctx, &gw, isDryRun(admissionRequest)); err != nil {
-		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", gw)}}
-	}
-	return reports, nil
-}
-
-func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
-	var (
-		vs, oldVs gwv1.VirtualService
-		reports   *validation.Reports
-		err       error
-	)
-
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &vs, &oldVs)
-	if shouldValidateErr != nil {
-		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
-	}
-	if !shouldValidate {
-		return nil, nil
-	}
-
-	if reports, err = wh.validator.ValidateVirtualService(ctx, &vs, isDryRun(admissionRequest)); err != nil {
-		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", vs)}}
-	}
-	return reports, nil
-}
-
-func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
-	var (
-		rt, oldRt gwv1.RouteTable
-		reports   *validation.Reports
-		err       error
-	)
-
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &rt, &oldRt)
-	if shouldValidateErr != nil {
-		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
-	}
-	if !shouldValidate {
-		return nil, nil
-	}
-
-	if reports, err = wh.validator.ValidateRouteTable(ctx, &rt, isDryRun(admissionRequest)); err != nil {
-		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", rt)}}
-	}
-	return reports, nil
-}
-
-func (wh *gatewayValidationWebhook) validateUpstream(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
-	var (
-		us, oldUs gloov1.Upstream
-		reports   *validation.Reports
-		err       error
-	)
-
-	shouldValidate, shouldValidateErr := wh.shouldValidateResource(ctx, admissionRequest, &us, &oldUs)
-	if shouldValidateErr != nil {
-		return nil, &multierror.Error{Errors: []error{shouldValidateErr}}
-	}
-	if !shouldValidate {
-		return nil, nil
-	}
-
-	if reports, err = wh.validator.ValidateUpstream(ctx, &us, isDryRun(admissionRequest)); err != nil {
-		return reports, &multierror.Error{Errors: []error{errors.Wrapf(err, "Validating %T failed", us)}}
-	}
-	return reports, nil
-}
-
-type HashableInputResource interface {
-	resources.InputResource
-	Hash(hasher hash.Hash64) (uint64, error)
-	MustHash() uint64
-}
-
-func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource, oldResource HashableInputResource) (bool, error) {
+func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, admissionRequest *v1beta1.AdmissionRequest, resource, oldResource resources.HashableResource) (bool, error) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	if err := protoutils.UnmarshalResource(admissionRequest.Object.Raw, resource); err != nil {
+	if err := validation.UnmarshalResource(admissionRequest.Object.Raw, resource); err != nil {
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 	if skipValidationCheck(resource.GetMetadata().GetAnnotations()) {
@@ -563,7 +478,7 @@ func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, 
 
 	// For update requests, we check to see if this is a status update
 	// If it is, we do not need to validate the resource
-	if err := protoutils.UnmarshalResource(admissionRequest.OldObject.Raw, oldResource); err != nil {
+	if err := validation.UnmarshalResource(admissionRequest.OldObject.Raw, oldResource); err != nil {
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
 

@@ -15,7 +15,9 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	upstream_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upstreamproxyprotocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
@@ -102,6 +104,8 @@ func (t *translatorInstance) initializeCluster(
 		ConnectTimeout:            ptypes.DurationProto(ClusterConnectionTimeout),
 		Http2ProtocolOptions:      getHttp2options(upstream),
 		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
+		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
+		DnsRefreshRate:            getDnsRefreshRate(upstream, reports),
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
@@ -110,10 +114,29 @@ func (t *translatorInstance) initializeCluster(
 		if err != nil {
 			reports.AddError(upstream, err)
 		} else {
-			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
-				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+			typedConfig, err := utils.MessageToAny(cfg)
+			if err != nil {
+				// TODO: Need to change the upstream to use a direct response action instead of leaving the upstream untouched
+				// Difficult because direct response is not on the upsrtream but on the virtual host
+				// The fallback listener would take much more piping as well
+				panic(err)
+			} else {
+				out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+					Name:       wellknown.TransportSocketTls,
+					ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+				}
 			}
+		}
+	}
+	// proxyprotocol may be wiped by some plugins that transform transport sockets
+	// see static and failover at time of writing.
+	if upstreamProxyProtocol := upstream.GetProxyProtocolVersion(); upstreamProxyProtocol != nil {
+
+		tp, err := upstream_proxy_protocol.WrapWithPProtocol(out.GetTransportSocket(), upstreamProxyProtocol.String())
+		if err != nil {
+			reports.AddError(upstream, err)
+		} else {
+			out.TransportSocket = tp
 		}
 	}
 
@@ -134,6 +157,8 @@ var (
 	NilFieldError = func(fieldName string) error {
 		return eris.Errorf("The field %s cannot be nil", fieldName)
 	}
+
+	minimumDnsRefreshRate = prototime.DurationToProto(time.Millisecond * 1)
 )
 
 func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
@@ -237,6 +262,12 @@ func validateCluster(c *envoy_config_cluster_v3.Cluster) error {
 			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
+
+	if c.GetDnsRefreshRate() != nil {
+		if clusterType != envoy_config_cluster_v3.Cluster_STRICT_DNS && clusterType != envoy_config_cluster_v3.Cluster_LOGICAL_DNS {
+			return eris.Errorf("DnsRefreshRate is only valid with STRICT_DNS or LOGICAL_DNS cluster type, found %v", clusterType)
+		}
+	}
 	return nil
 }
 
@@ -262,6 +293,24 @@ func getHttp2options(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions
 		return &envoy_config_core_v3.Http2ProtocolOptions{}
 	}
 	return nil
+}
+
+// getDnsRefreshRate returns the DnsRefreshRate for an Upstream:
+// - defined and valid: returns the duration
+// - defined and invalid: adds a warning and returns nil
+// - undefined: returns nil
+func getDnsRefreshRate(us *v1.Upstream, reports reporter.ResourceReports) *duration.Duration {
+	refreshRate := us.GetDnsRefreshRate()
+	if refreshRate == nil {
+		return nil
+	}
+
+	if refreshRate.AsDuration() < minimumDnsRefreshRate.AsDuration() {
+		reports.AddWarning(us, fmt.Sprintf("dnsRefreshRate was set below minimum requirement (%s), ignoring configuration", minimumDnsRefreshRate))
+		return nil
+	}
+
+	return refreshRate
 }
 
 // Validates routes that point to the current AWS lambda upstream
@@ -371,7 +420,7 @@ func validateRouteDestinationForValidLambdas(
 }
 
 // Apply defaults to UpstreamSslConfig
-func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *v1.UpstreamOptions) {
+func applyDefaultsToUpstreamSslConfig(sslConfig *ssl.UpstreamSslConfig, options *v1.UpstreamOptions) {
 	if options == nil {
 		return
 	}
@@ -381,3 +430,8 @@ func applyDefaultsToUpstreamSslConfig(sslConfig *v1.UpstreamSslConfig, options *
 		sslConfig.Parameters = options.GetSslParameters()
 	}
 }
+
+const (
+	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
+	upstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
+)

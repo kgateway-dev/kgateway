@@ -2,11 +2,12 @@ package kubeconverters_test
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -17,6 +18,15 @@ import (
 )
 
 var _ = Describe("SecretConverter", func() {
+	It("should have the correct number of converters with cli components", func() {
+		// note that this test does not confirm that the number of secrets are being used in the cli
+		converterField, ok := reflect.TypeOf(*GlooSecretConverterChain).FieldByName("converters")
+		Expect(ok).To(BeTrue())
+		convertersValue := reflect.ValueOf(*GlooSecretConverterChain).FieldByName(converterField.Name)
+		// NOTE: when adding a converter here, please add the glooctl command
+		// for the secret converter as well add to cli projects/gloo/cli/pkg/cmd/create/secret
+		Expect(convertersValue.Len()).To(Equal(8))
+	})
 	It("should convert kube secret to gloo secret", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
@@ -24,6 +34,7 @@ var _ = Describe("SecretConverter", func() {
 				kubev1.TLSCertKey:              []byte("cert"),
 				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+				OCSPStapleKey:                  []byte("ocsp"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -41,9 +52,10 @@ var _ = Describe("SecretConverter", func() {
 		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(secret.Data[kubev1.ServiceAccountRootCAKey]))
+		Expect(glooSecret.OcspStaple).To(BeEquivalentTo(secret.Data[OCSPStapleKey]))
 	})
 
-	It("should convert kube secret to gloo secret without optional root ca", func() {
+	It("should convert kube secret to gloo secret without optional root ca or optional ocsp staple", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{
@@ -66,6 +78,7 @@ var _ = Describe("SecretConverter", func() {
 		Expect(glooSecret.CertChain).To(BeEquivalentTo(secret.Data[kubev1.TLSCertKey]))
 		Expect(glooSecret.PrivateKey).To(BeEquivalentTo(secret.Data[kubev1.TLSPrivateKeyKey]))
 		Expect(glooSecret.RootCa).To(BeEquivalentTo(""))
+		Expect(glooSecret.OcspStaple).To(BeEquivalentTo(""))
 	})
 
 	It("should convert to gloo secret kube in gloo format", func() {
@@ -75,6 +88,7 @@ var _ = Describe("SecretConverter", func() {
 					PrivateKey: "key",
 					CertChain:  "cert",
 					RootCa:     "ca",
+					OcspStaple: []byte("ocsp"),
 				},
 			},
 			Metadata: &core.Metadata{
@@ -91,9 +105,10 @@ var _ = Describe("SecretConverter", func() {
 				Namespace: "ns",
 			},
 			Data: map[string][]byte{
-				"tls.key": []byte("key"),
-				"tls.crt": []byte("cert"),
-				"ca.crt":  []byte("ca"),
+				"tls.key":         []byte("key"),
+				"tls.crt":         []byte("cert"),
+				"ca.crt":          []byte("ca"),
+				"tls.ocsp-staple": []byte("ocsp"),
 			},
 			Type: "kubernetes.io/tls",
 		}))
@@ -106,6 +121,7 @@ var _ = Describe("SecretConverter", func() {
 				kubev1.TLSCertKey:              []byte("cert"),
 				kubev1.TLSPrivateKeyKey:        []byte("key"),
 				kubev1.ServiceAccountRootCAKey: []byte("ca"),
+				OCSPStapleKey:                  []byte("ocsp"),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            "s1",
@@ -124,7 +140,7 @@ var _ = Describe("SecretConverter", func() {
 
 	})
 
-	It("should round trip kube ssl secret back to kube ssl secret without optional root ca", func() {
+	It("should round trip kube ssl secret back to kube ssl secret without optional root ca or ocsp staple", func() {
 		secret := &kubev1.Secret{
 			Type: kubev1.SecretTypeTLS,
 			Data: map[string][]byte{

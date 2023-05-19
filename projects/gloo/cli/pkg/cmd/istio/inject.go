@@ -82,8 +82,7 @@ func istioInject(args []string, opts *options.Options) error {
 	istioMetaMeshID := getIstioMetaMeshID(opts.Istio.IstioMetaMeshId)
 	istioMetaClusterID := getIstioMetaClusterID(opts.Istio.IstioMetaClusterId)
 	istioDiscoveryAddress := getIstioDiscoveryAddress(opts.Istio.IstioDiscoveryAddress)
-
-	client := helpers.MustKubeClient()
+	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -167,7 +166,7 @@ func istioInject(args []string, opts *options.Options) error {
 
 // addSdsSidecar adds an SDS sidecar to the given deployment's containers
 func addSdsSidecar(ctx context.Context, deployment *appsv1.Deployment, glooNamespace string) error {
-	glooVersion, err := getGlooVersion(ctx, glooNamespace)
+	glooVersion, err := GetGlooVersion(ctx, glooNamespace)
 	if err != nil {
 		return ErrGlooVerUndetermined
 	}

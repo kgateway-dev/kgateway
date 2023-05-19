@@ -6,6 +6,7 @@ import (
 	envoyhttpfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 
@@ -69,18 +70,40 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		}
 		routeAbort := routeFaults.GetAbort()
 		routeDelay := routeFaults.GetDelay()
-		if routeAbort == nil && routeDelay == nil {
+		envoyAbort, err := toEnvoyAbort(routeAbort)
+		if err != nil {
+			return nil, err
+		}
+		envoyDelay, err := toEnvoyDelay(routeDelay)
+		if err != nil {
+			return nil, err
+		}
+
+		// neither were configured on the route so return without error
+		if envoyAbort == nil && envoyDelay == nil {
 			return nil, nil
 		}
+
+		// mark configured and return the wrapped envoy configuration
 		p.filterRequiredForListener[params.HttpListener] = struct{}{}
-		return generateEnvoyConfigForHttpFault(routeAbort, routeDelay), nil
+		return &envoyhttpfault.HTTPFault{
+			Abort: envoyAbort,
+			Delay: envoyDelay,
+		}, nil
 	}
 	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, wellknown.Fault, markFilterConfigFunc)
 }
 
-func toEnvoyAbort(abort *fault.RouteAbort) *envoyhttpfault.FaultAbort {
+// toEnvoyAbort converts the abort config from the gloo api to the envoy api.
+// Will error if there is config present but it is invalid.
+func toEnvoyAbort(abort *fault.RouteAbort) (*envoyhttpfault.FaultAbort, error) {
 	if abort == nil {
-		return nil
+		return nil, nil
+	}
+	// Validation really should catch this at proto level but sometimes things can sneak by
+	// https://github.com/envoyproxy/envoy/blob/bc8f0cd19f991a56269f1ea30b5b8d8d331da0dc/api/envoy/config/filter/http/fault/v2/fault.proto#L39
+	if abort.GetHttpStatus() >= 600 || abort.GetHttpStatus() < 200 {
+		return nil, errors.Errorf("invalid abort status code '%v', must be in range of [200,600)", abort.GetHttpStatus())
 	}
 	percentage := common.ToEnvoyPercentage(abort.GetPercentage())
 	errorType := &envoyhttpfault.FaultAbort_HttpStatus{
@@ -89,12 +112,19 @@ func toEnvoyAbort(abort *fault.RouteAbort) *envoyhttpfault.FaultAbort {
 	return &envoyhttpfault.FaultAbort{
 		Percentage: percentage,
 		ErrorType:  errorType,
-	}
+	}, nil
 }
 
-func toEnvoyDelay(delay *fault.RouteDelay) *envoyfault.FaultDelay {
+// toEnvoyDelay converts the delay config from the gloo api to the envoy api.
+// Will error if there is config present but it is invalid.
+func toEnvoyDelay(delay *fault.RouteDelay) (*envoyfault.FaultDelay, error) {
 	if delay == nil {
-		return nil
+		return nil, nil
+	}
+	// Validation really should catch this at proto level but sometimes things can sneak by
+	// https://github.com/envoyproxy/envoy/blob/bc8f0cd19f991a56269f1ea30b5b8d8d331da0dc/api/envoy/extensions/filters/common/fault/v3/fault.proto#L53
+	if delay.GetFixedDelay().GetSeconds() <= 0 {
+		return nil, errors.Errorf("invalid delay duration '%v', must be greater than 0", delay.GetFixedDelay())
 	}
 	percentage := common.ToEnvoyPercentage(delay.GetPercentage())
 	delaySpec := &envoyfault.FaultDelay_FixedDelay{
@@ -103,14 +133,5 @@ func toEnvoyDelay(delay *fault.RouteDelay) *envoyfault.FaultDelay {
 	return &envoyfault.FaultDelay{
 		Percentage:         percentage,
 		FaultDelaySecifier: delaySpec,
-	}
-}
-
-func generateEnvoyConfigForHttpFault(routeAbort *fault.RouteAbort, routeDelay *fault.RouteDelay) *envoyhttpfault.HTTPFault {
-	abort := toEnvoyAbort(routeAbort)
-	delay := toEnvoyDelay(routeDelay)
-	return &envoyhttpfault.HTTPFault{
-		Abort: abort,
-		Delay: delay,
-	}
+	}, nil
 }

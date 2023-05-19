@@ -58,6 +58,7 @@ EOF
 workingDir=$(pwd)
 docsSiteDir=$workingDir/ci
 tempContentDir=$docsSiteDir/temp
+tempChangelogDir=$docsSiteDir/temp_changelogs
 repoDir=$workingDir/gloo-temp
 
 mkdir -p $docsSiteDir
@@ -75,7 +76,7 @@ export PATH=$workingDir/_output/.bin:$PATH
 # DocsVersion: /gloo-edge/1.3.32
 # CodeVersion: 1.3.32
 # DocsVersions:
-#   - master
+#   - main
 #   - 1.6.0-beta8
 #   - 1.5.8
 # OldVersions:
@@ -104,7 +105,7 @@ function generateHugoVersionsYaml() {
 
 function generateSiteForVersion() {
   version=$1
-  latestMasterTag=$2
+  latestMainTag=$2
   echo "Generating site for version $version"
   cd $repoDir
   # Replace version with "latest" if it's the latest version. This enables URLs with "/latest/..."
@@ -112,16 +113,21 @@ function generateSiteForVersion() {
   then
     version="latest"
   fi
-  git checkout "$latestMasterTag"
+  git checkout "$latestMainTag"
 
   cd docs
   # Generate data/Solo.yaml file with version info populated.
   generateHugoVersionsYaml $version
 
-  # Replace the master's content directory with the version we're building
+  # Replace the main's content directory with the version we're building
   rm -r $repoDir/docs/content
   mkdir $repoDir/docs/content
   cp -a $tempContentDir/$version/. $repoDir/docs/content/
+
+  # replace the main's changelog directory with the changelogs for the version we're building
+  rm -r $repoDir/changelog
+  mkdir $repoDir/changelog
+  cp -a $tempChangelogDir/$version/. $repoDir/changelog/
 
   # Remove the file responsible for the "security scan too large" bug if necessary
   guilty_path="./content/reference/security-updates"
@@ -156,14 +162,14 @@ function generateSiteForVersion() {
 # Copies the /docs/content directory from the specified version ($1) and stores it in a temp location
 function getContentForVersion() {
   version=$1
-  latestMasterTag=$2
+  latestMainTag=$2
   echo "Getting site content for version $version"
   cd $repoDir
-  if [[ "$version" == "master" ]]
+  if [[ "$version" == "main" ]]
   then
-    git checkout "$latestMasterTag"
+    git checkout "$latestMainTag"
   else
-    git checkout tags/v"$version"
+    git checkout "$version"
   fi
   # Replace version with "latest" if it's the latest version. This enables URLs with "/latest/..."
   if [[ "$version" ==  "$latestVersion" ]]
@@ -172,42 +178,45 @@ function getContentForVersion() {
   fi
 
   cp -a $repoDir/docs/content/. $tempContentDir/$version/
+
+  mkdir -p $tempChangelogDir/$version
+  cp -a $repoDir/changelog/. $tempChangelogDir/$version/
 }
 
-# We build docs for all active and old version of Gloo, on pull requests (and merges) to master.
-# On pull requests to master by Solo developers, we want to run doc generation
-# against the commit that will become the latest master commit.
+# We build docs for all active and old version of Gloo, on pull requests (and merges) to main.
+# On pull requests to main by Solo developers, we want to run doc generation
+# against the commit that will become the latest main commit.
 # This will allow us to verify if the change we are introducing is valid.
 # Therefore, we use the head SHA on pull requests by Solo developers
-latestMasterTag="master"
-if [[ "$USE_PR_SHA_AS_MASTER" == "true" ]]
+latestMainTag="main"
+if [[ "$USE_PR_SHA_AS_MAIN" == "true" ]]
 then
-  latestMasterTag=$PULL_REQUEST_SHA
-  echo using $PULL_REQUEST_SHA, as this will be the next commit to master
+  latestMainTag=$PULL_REQUEST_SHA
+  echo using $PULL_REQUEST_SHA, as this will be the next commit to main
 fi
 
 # Obtain /docs/content dir from all versions
 for version in "${versions[@]}"
 do
-  getContentForVersion $version $latestMasterTag
+  getContentForVersion $version $latestMainTag
 done
 
 
 # Obtain /docs/content dir from all previous versions
 for version in "${oldVersions[@]}"
 do
-  getContentForVersion $version $latestMasterTag
+  getContentForVersion $version $latestMainTag
 done
 
 
 # Generate docs for all versions
 for version in "${versions[@]}"
 do
-  generateSiteForVersion $version $latestMasterTag
+  generateSiteForVersion $version $latestMainTag
 done
 
 # Generate docs for all previous versions
 for version in "${oldVersions[@]}"
 do
-  generateSiteForVersion $version $latestMasterTag
+  generateSiteForVersion $version $latestMainTag
 done

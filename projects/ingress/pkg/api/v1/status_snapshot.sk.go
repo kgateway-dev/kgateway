@@ -10,7 +10,9 @@ import (
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 type StatusSnapshot struct {
@@ -66,6 +68,77 @@ func (s StatusSnapshot) HashFields() []zap.Field {
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
+func (s *StatusSnapshot) GetResourcesList(resource resources.Resource) (resources.ResourceList, error) {
+	switch resource.(type) {
+	case *KubeService:
+		return s.Services.AsResources(), nil
+	case *Ingress:
+		return s.Ingresses.AsResources(), nil
+	default:
+		return resources.ResourceList{}, eris.New("did not contain the input resource type returning empty list")
+	}
+}
+
+func (s *StatusSnapshot) RemoveFromResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch resource.(type) {
+	case *KubeService:
+
+		for i, res := range s.Services {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Services = append(s.Services[:i], s.Services[i+1:]...)
+				break
+			}
+		}
+		return nil
+	case *Ingress:
+
+		for i, res := range s.Ingresses {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Ingresses = append(s.Ingresses[:i], s.Ingresses[i+1:]...)
+				break
+			}
+		}
+		return nil
+	default:
+		return eris.Errorf("did not remove the resource because its type does not exist [%T]", resource)
+	}
+}
+
+func (s *StatusSnapshot) UpsertToResourceList(resource resources.Resource) error {
+	refKey := resource.GetMetadata().Ref().Key()
+	switch typed := resource.(type) {
+	case *KubeService:
+		updated := false
+		for i, res := range s.Services {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Services[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Services = append(s.Services, typed)
+		}
+		s.Services.Sort()
+		return nil
+	case *Ingress:
+		updated := false
+		for i, res := range s.Ingresses {
+			if refKey == res.GetMetadata().Ref().Key() {
+				s.Ingresses[i] = typed
+				updated = true
+			}
+		}
+		if !updated {
+			s.Ingresses = append(s.Ingresses, typed)
+		}
+		s.Ingresses.Sort()
+		return nil
+	default:
+		return eris.Errorf("did not add/replace the resource type because it does not exist %T", resource)
+	}
+}
+
 type StatusSnapshotStringer struct {
 	Version   uint64
 	Services  []string
@@ -98,4 +171,9 @@ func (s StatusSnapshot) Stringer() StatusSnapshotStringer {
 		Services:  s.Services.NamespacesDotNames(),
 		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}
+}
+
+var StatusGvkToHashableResource = map[schema.GroupVersionKind]func() resources.HashableResource{
+	KubeServiceGVK: NewKubeServiceHashableResource,
+	IngressGVK:     NewIngressHashableResource,
 }

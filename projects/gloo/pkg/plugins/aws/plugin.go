@@ -6,6 +6,8 @@ import (
 	"os"
 	"unicode/utf8"
 
+	"github.com/hashicorp/go-multierror"
+
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -14,7 +16,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/hashicorp/go-multierror"
+	"github.com/imdario/mergo"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -27,6 +30,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -38,13 +42,16 @@ var (
 )
 
 const (
-	ExtensionName = "aws_lambda"
-	FilterName    = "io.solo.aws_lambda"
+	ExtensionName                 = "aws_lambda"
+	FilterName                    = "io.solo.aws_lambda"
+	ResponseTransformationName    = "io.solo.api_gateway.api_gateway_transformer"
+	ResponseTransformationTypeUrl = "type.googleapis.com/envoy.config.transformer.aws_lambda.v2.ApiGatewayTransformation"
 )
 
 // PerRouteConfigGenerator defines how to build the Per Route Configuration for a Lambda upstream
 // This enables the open source and enterprise definitions to differ, but still share the same core plugin functionality
-type PerRouteConfigGenerator func(destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error)
+type PerRouteConfigGenerator func(options *v1.GlooOptions_AWSOptions,
+	destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error)
 
 var (
 	pluginStage          = plugins.DuringStage(plugins.OutAuthStage)
@@ -59,16 +66,21 @@ type Plugin struct {
 	requiresTransformationFilter bool
 }
 
+// NewPlugin creates an instance of the aws plugin and sets the non-per run
+// configuration set by the perrouteconfiggenerator.
 func NewPlugin(perRouteConfigGenerator PerRouteConfigGenerator) plugins.Plugin {
 	return &Plugin{
 		perRouteConfigGenerator: perRouteConfigGenerator,
 	}
 }
 
+// Name is basically a seperate stringer that returns aws_lambda
 func (p *Plugin) Name() string {
 	return ExtensionName
 }
 
+// Init the per run configuration of the plugin including blowing away the known upstreams,
+// the current settings for the plugin, and whether we currently need transformation.
 func (p *Plugin) Init(params plugins.InitParams) {
 	p.recordedUpstreams = make(map[string]*aws.UpstreamSpec)
 	p.settings = params.Settings.GetGloo().GetAwsOptions()
@@ -83,7 +95,7 @@ func getLambdaHostname(s *aws.UpstreamSpec) string {
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 	upstreamSpec, ok := in.GetUpstreamType().(*v1.Upstream_Aws)
 	if !ok {
-		// not ours
+		// this is not an aws upstream so we disregard
 		return nil
 	}
 	// even if it failed, route should still be valid
@@ -96,6 +108,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Type: envoy_config_cluster_v3.Cluster_LOGICAL_DNS,
 	}
 	// TODO(yuval-k): why do we need to make sure we use ipv4 only dns?
+	// TODO(nfuden): Update to reasonable ipv6 https://aws.amazon.com/about-aws/whats-new/2021/12/aws-lambda-ipv6-endpoints-inbound-connections/
 	out.DnsLookupFamily = envoy_config_cluster_v3.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
@@ -108,50 +121,32 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
 	}
+	typedConfig, err := utils.MessageToAny(tlsContext)
+	if err != nil {
+		return err
+	}
 	out.TransportSocket = &envoy_config_core_v3.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
-		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
+		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 	}
 
-	var accessKey, sessionToken, secretKey string
+	// To utilize the aws lambda plugin much of the power comes via its secret management
+	// Check that one of the supported auth paradigms in enabled.
+	// Currently: static secret ref, credential discovery or ServiceAccountCreds such in eks
+
 	if upstreamSpec.Aws.GetSecretRef() == nil &&
 		!p.settings.GetEnableCredentialsDiscovey() &&
 		p.settings.GetServiceAccountCredentials() == nil {
 		return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true or enabling service account credentials if running in EKS")
 	}
 
+	// If static secret is set retrieve the information needed
+	var accessKey, sessionToken, secretKey string
 	if upstreamSpec.Aws.GetSecretRef() != nil {
-
-		secret, err := params.Snapshot.Secrets.Find(upstreamSpec.Aws.GetSecretRef().Strings())
+		accessKey, sessionToken, secretKey, err = deriveStaticSecret(params, upstreamSpec.Aws.GetSecretRef())
 		if err != nil {
-			return errors.Wrapf(err, "retrieving aws secret")
+			return err
 		}
-
-		awsSecrets, ok := secret.GetKind().(*v1.Secret_Aws)
-		if !ok {
-			return errors.Errorf("secret (%s.%s) is not an AWS secret", secret.GetMetadata().GetName(), secret.GetMetadata().GetNamespace())
-		}
-
-		var secretErrs error
-
-		accessKey = awsSecrets.Aws.GetAccessKey()
-		secretKey = awsSecrets.Aws.GetSecretKey()
-		sessionToken = awsSecrets.Aws.GetSessionToken()
-		if accessKey == "" || !utf8.Valid([]byte(accessKey)) {
-			secretErrs = multierror.Append(secretErrs, errors.Errorf("access_key is not a valid string"))
-		}
-		if secretKey == "" || !utf8.Valid([]byte(secretKey)) {
-			secretErrs = multierror.Append(secretErrs, errors.Errorf("secret_key is not a valid string"))
-		}
-		// Session key is optional
-		if sessionToken != "" && !utf8.Valid([]byte(sessionToken)) {
-			secretErrs = multierror.Append(secretErrs, errors.Errorf("session_key is not a valid string"))
-		}
-
-		if secretErrs != nil {
-			return secretErrs
-		}
-
 	}
 
 	lpe := &AWSLambdaProtocolExtension{
@@ -173,29 +168,67 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	err := pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName,
 		func(spec *v1.Destination) (proto.Message, error) {
-			// check if it's aws destination
-			if spec.GetDestinationSpec() == nil {
+			logger := contextutils.LoggerFrom(params.Ctx)
+			// local variable to avoid side effects for calls that are not to aws upstreams
+			dest := spec.GetDestinationSpec()
+			tryingNonExplicitAWSDest := dest == nil && p.settings.GetFallbackToFirstFunction().GetValue()
+
+			// users do not have to set the aws destination spec on the route if they have fallback enabled.
+			// check for this and update the local variable to not cause destination side effects until the end when we
+			// are sure that this is pointing to a valid aws upstream
+			if tryingNonExplicitAWSDest {
+				logger.Debug("no destinationSpec set with fallbackToFirstFunction enabled, processing as aws route")
+				dest = &v1.DestinationSpec{
+					DestinationType: &v1.DestinationSpec_Aws{
+						Aws: &aws.DestinationSpec{},
+					},
+				}
+			}
+
+			// it is incorrect to set lambda functionality on routes that do not have a lambda function specified
+			// unless we fallback. and the fallback case has been handled above. Therefore, skip.
+			if dest == nil {
 				return nil, nil
 			}
-			awsDestinationSpec, ok := spec.GetDestinationSpec().GetDestinationType().(*v1.DestinationSpec_Aws)
+			// check if the destination is an aws destinationtype and skip the function if not
+			awsDestinationSpec, ok := dest.GetDestinationType().(*v1.DestinationSpec_Aws)
 			if !ok {
 				return nil, nil
 			}
 
-			// get upstream
+			// warn user if they are using deprecated responseTransformation
+			if awsDestinationSpec.Aws.GetResponseTransformation() {
+				logger.Warn("field responseTransformation is deprecated; consider using unwrapAsApiGateway")
+			}
+
 			upstreamRef, err := upstreams.DestinationToUpstreamRef(spec)
 			if err != nil {
-				contextutils.LoggerFrom(params.Ctx).Error(err)
+				logger.Error(err)
 				return nil, err
 			}
+
+			// validate that the upstream is one that we have previously recorded as an aws upstream
 			lambdaSpec, ok := p.recordedUpstreams[translator.UpstreamToClusterName(upstreamRef)]
 			if !ok {
+				if tryingNonExplicitAWSDest {
+					// skip the lambda plugin as the route was not explicitly set to be an aws route
+					// so it is fine that this is not an aws upstream
+					return nil, nil
+				}
+				// error as we have a route that `thinks` its pointing to an aws upstream
+				// but the upstream does not believe that it is an aws upstream
 				err := errors.Errorf("%v is not an AWS upstream", *upstreamRef)
-				contextutils.LoggerFrom(params.Ctx).Error(err)
+				logger.Error(err)
 				return nil, err
 			}
-			// should be aws upstream
-			return p.perRouteConfigGenerator(awsDestinationSpec.Aws, lambdaSpec)
+
+			// persist that we are treating this as an aws route due to the
+			// upstream being a valid aws upstream
+			if tryingNonExplicitAWSDest {
+				spec.DestinationSpec = dest
+			}
+
+			return p.perRouteConfigGenerator(p.settings, awsDestinationSpec.Aws, lambdaSpec)
 		},
 	)
 
@@ -212,20 +245,24 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			if !ok {
 				return nil, nil
 			}
+			awsDestination := awsDestinationSpec.Aws
 
-			requiresRequestTransformation := awsDestinationSpec.Aws.GetRequestTransformation()
-			requiresResponseTransformation := awsDestinationSpec.Aws.GetResponseTransformation()
-			if !requiresRequestTransformation && !requiresResponseTransformation {
+			requiresRequestTransformation := awsDestination.GetRequestTransformation()
+
+			// We should have already mutated awsDestination.UnwrapAsApiGateway if awsDestination.ResponseTransformation
+			// is set to true. This is done in GenerateAWSLambdaRouteConfig
+			requiresUnwrap :=
+				// unwrapAsAlb is handled directly in the aws lambda filter rather than through a transformer.
+				// If both are set, we error in GenerateAWSLambdaRouteConfig.
+				awsDestination.GetUnwrapAsApiGateway()
+
+			if !requiresRequestTransformation && !requiresUnwrap {
 				return nil, nil
 			}
+
 			p.requiresTransformationFilter = true
 
-			transform := &envoy_transform.RouteTransformations_RouteTransformation{
-				Stage: transformation.AwsStageNumber,
-			}
 			var reqTransform *envoy_transform.Transformation
-			var respTransform *envoy_transform.Transformation
-
 			if requiresRequestTransformation {
 				reqTransform = &envoy_transform.Transformation{
 					TransformationType: &envoy_transform.Transformation_HeaderBodyTransform{
@@ -236,41 +273,19 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 				}
 			}
 
-			if requiresResponseTransformation {
-				respTransform = &envoy_transform.Transformation{
-					TransformationType: &envoy_transform.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-								Body: &envoy_transform.InjaTemplate{
-									Text: "{{body}}",
-								},
-							},
-							Headers: map[string]*envoy_transform.InjaTemplate{
-								"content-type": {
-									Text: "text/html",
-								},
-							},
+			var transform *envoy_transform.RouteTransformations_RouteTransformation
+			if requiresRequestTransformation {
+				// Early stage transform: place all headers in the request body
+				transform = &envoy_transform.RouteTransformations_RouteTransformation{
+					Stage: transformation.AwsStageNumber,
+					Match: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
+						RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
+							RequestTransformation: reqTransform,
 						},
 					},
 				}
-			}
-
-			if requiresRequestTransformation {
-				// Early stage transform: place all headers in the request body
-				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch_{
-					RequestMatch: &envoy_transform.RouteTransformations_RouteTransformation_RequestMatch{
-						RequestTransformation:  reqTransform,
-						ResponseTransformation: respTransform,
-					},
-				}
 			} else {
-				// if we got here, we have a response transform. otherwise, we would have returned early.
-				transform.Match = &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch_{
-					ResponseMatch: &envoy_transform.RouteTransformations_RouteTransformation_ResponseMatch{
-						ResponseTransformation: respTransform,
-					},
-				}
-
+				p.requiresTransformationFilter = false
 			}
 
 			var transforms envoy_transform.RouteTransformations
@@ -281,7 +296,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 					return nil, err
 				}
 			}
-			transforms.Transformations = append(transforms.GetTransformations(), transform)
+			if transform != nil {
+				transforms.Transformations = append(transforms.GetTransformations(), transform)
+			}
 			return &transforms, nil
 		},
 	)
@@ -330,35 +347,118 @@ func (p *Plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 	return filters, nil
 }
 
-func GenerateAWSLambdaRouteConfig(destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
+// GenerateAWSLambdaRouteConfig is an overridable way to handle destination logic for lambdas.
+// Passed in at plugin creation as it fulfills PerRouteConfigGenerator interface
+func GenerateAWSLambdaRouteConfig(options *v1.GlooOptions_AWSOptions, destination *aws.DestinationSpec, upstream *aws.UpstreamSpec) (*AWSLambdaPerRoute, error) {
+
+	// merge the non-default values (trues and non-zeros) from default onto destination
+	if destination != nil && upstream.GetDestinationOverrides() != nil {
+		mergo.Merge(destination, upstream.GetDestinationOverrides())
+	}
+
 	logicalName := destination.GetLogicalName()
-	for _, lambdaFunc := range upstream.GetLambdaFunctions() {
-		if lambdaFunc.GetLogicalName() == logicalName {
-			functionName := lambdaFunc.GetLambdaFunctionName()
-			if upstream.GetAwsAccountId() != "" {
-				awsRegion := upstream.GetRegion()
-				if awsRegion == "" {
-					awsRegion = os.Getenv("AWS_REGION")
-				}
-				// eg arn:aws:lambda:us-east-2:986112284769:function:simplerhello
-				functionName = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s",
-					awsRegion, upstream.GetAwsAccountId(), functionName)
-			}
+	if len(upstream.GetLambdaFunctions()) == 0 {
+		return nil, errors.Errorf("lambda points to upstream with no functions %v", logicalName)
+	}
 
-			lambdaRouteFunc := &AWSLambdaPerRoute{
-				Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
-				// we need to query escape per AWS spec:
-				// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
-				Qualifier:   url.QueryEscape(lambdaFunc.GetQualifier()),
-				Name:        url.QueryEscape(functionName),
-				UnwrapAsAlb: destination.GetUnwrapAsAlb(),
-
-				// TransformerConfig is intentionally not included as that is an enterprise only feature
-				TransformerConfig: nil,
-			}
-
-			return lambdaRouteFunc, nil
+	// Validate whether there is a function that conforms to our request
+	var lambdaFunc *aws.LambdaFunctionSpec
+	for _, candidateLambdaFunc := range upstream.GetLambdaFunctions() {
+		if candidateLambdaFunc.GetLogicalName() == logicalName {
+			lambdaFunc = candidateLambdaFunc
+			break
 		}
 	}
-	return nil, errors.Errorf("unknown lambda function %v", logicalName)
+
+	if lambdaFunc == nil {
+		// pull from options to see if we allow not setting the function on a route
+		// this is dangerous due to name ordering when discovery is on https://github.com/solo-io/gloo/tree/main/projects/discovery/pkg/fds/discoveries/aws/aws.go#L75
+		tryFallback := options.GetFallbackToFirstFunction().GetValue()
+		if !tryFallback {
+			return nil, errors.Errorf("unknown lambda function %v", logicalName)
+		}
+		// Check at the start of the function to make sure that there exists at least one function.
+		lambdaFunc = upstream.GetLambdaFunctions()[0]
+	}
+
+	functionName := lambdaFunc.GetLambdaFunctionName()
+
+	// Update the information to further format the function definition if requested
+	// Used for resource based access.
+	if upstream.GetAwsAccountId() != "" {
+		awsRegion := upstream.GetRegion()
+		if awsRegion == "" {
+			awsRegion = os.Getenv("AWS_REGION")
+		}
+		// eg arn:aws:lambda:us-east-2:986112284769:function:simplerhello
+		functionName = fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s",
+			awsRegion, upstream.GetAwsAccountId(), functionName)
+	}
+
+	// transparently use the unwrapAsApiGateway functionality for responseTransformation
+	if destination.GetResponseTransformation() {
+		destination.UnwrapAsApiGateway = true
+	}
+
+	// error if unwrapAsAlb and unwrapAsApiGateway are both configured
+	if destination.GetUnwrapAsAlb() && destination.GetUnwrapAsApiGateway() {
+		return nil, errors.Errorf("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set")
+	}
+
+	var transformerConfig *v3.TypedExtensionConfig
+	if destination.GetUnwrapAsApiGateway() {
+		transformerConfig = &v3.TypedExtensionConfig{
+			Name: ResponseTransformationName,
+			TypedConfig: &any.Any{
+				TypeUrl: ResponseTransformationTypeUrl,
+			},
+		}
+	}
+
+	// Convert the function that has been retrieved into a useable routefunction
+	lambdaRouteFunc := &AWSLambdaPerRoute{
+		Async: destination.GetInvocationStyle() == aws.DestinationSpec_ASYNC,
+		// we need to query escape per AWS spec:
+		// see the CanonicalQueryString section in here: https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html
+		Qualifier:         url.QueryEscape(lambdaFunc.GetQualifier()),
+		Name:              url.QueryEscape(functionName),
+		UnwrapAsAlb:       destination.GetUnwrapAsAlb(),
+		TransformerConfig: transformerConfig,
+	}
+
+	return lambdaRouteFunc, nil
+
+}
+
+// deriveStaticSecret from ingest if we are using a kubernetes secretref
+// Named returns with the derived string contents or an error due to retrieval or format.
+func deriveStaticSecret(params plugins.Params, secretRef *core.ResourceRef) (access, session, secret string, err error) {
+	glooSecret, err := params.Snapshot.Secrets.Find(secretRef.Strings())
+	if err != nil {
+		err = errors.Wrapf(err, "retrieving aws secret")
+		return
+	}
+
+	awsSecrets, ok := glooSecret.GetKind().(*v1.Secret_Aws)
+	if !ok {
+		err = errors.Errorf("secret (%s.%s) is not an AWS secret",
+			glooSecret.GetMetadata().GetName(), glooSecret.GetMetadata().GetNamespace())
+		return
+	}
+	// validate that the secret has field in string format and has an access_key and secret_key
+	access = awsSecrets.Aws.GetAccessKey()
+	secret = awsSecrets.Aws.GetSecretKey()
+	session = awsSecrets.Aws.GetSessionToken()
+	if access == "" || !utf8.Valid([]byte(access)) {
+		// err is nil here but this is still safe
+		err = multierror.Append(err, errors.Errorf("access_key is not a valid string"))
+	}
+	if secret == "" || !utf8.Valid([]byte(secret)) {
+		err = multierror.Append(err, errors.Errorf("secret_key is not a valid string"))
+	}
+	// Session key is optional
+	if session != "" && !utf8.Valid([]byte(session)) {
+		err = multierror.Append(err, errors.Errorf("session_key is not a valid string"))
+	}
+	return
 }

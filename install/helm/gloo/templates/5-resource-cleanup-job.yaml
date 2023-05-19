@@ -16,16 +16,26 @@ metadata:
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
     "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 spec:
-  {{- with .Values.gateway.cleanupJob.activeDeadlineSeconds }}
-  activeDeadlineSeconds: {{ . }}
-  {{- end }}
+  {{- include "gloo.jobSpecStandardFields" .Values.gateway.cleanupJob | nindent 2 -}}
   template:
     metadata:
       labels:
         gloo: resource-cleanup
-        {{- if .Values.global.istioIntegration.disableAutoinjection }}
         sidecar.istio.io/inject: "false"
+        {{- if .Values.gateway.cleanupJob.extraPodLabels }}
+        {{- range $key, $value := .Values.gateway.cleanupJob.extraPodLabels }}
+        {{ $key | quote }}: {{ $value | quote }}
         {{- end }}
+        {{- end }}
+      {{- if or .Values.settings.linkerd .Values.gateway.cleanupJob.extraPodAnnotations }}
+      annotations:
+        {{- if .Values.settings.linkerd }}
+        "linkerd.io/inject": disabled
+        {{- end }}
+        {{- range $key, $value := .Values.gateway.cleanupJob.extraPodAnnotations }}
+        {{ $key | quote }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}
     spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-cleanup
@@ -47,13 +57,18 @@ spec:
           - -c
           - |
             kubectl delete --ignore-not-found validatingwebhookconfigurations.admissionregistration.k8s.io gloo-gateway-validation-webhook-{{ .Release.Namespace }} || exit $?
+
+            if ! kubectl get crd upstreams.gloo.solo.io; then
+              echo "Could not find Upstream CRD. Gloo Edge CRDs may have already been deleted. Skipping cleanup of Gloo Edge resources."
+              exit 0
+            fi
+
             kubectl delete --ignore-not-found upstreams.gloo.solo.io -n {{ .Release.Namespace }} -l app=gloo || exit $?
 
             # gateways can be in multiple namespaces
             {{- range include "gloo.gatewayNamespaces" . | fromJsonArray }}
             kubectl delete --ignore-not-found gateways.gateway.solo.io -n {{ . }} -l app=gloo || exit $?
             {{- end }}
-  ttlSecondsAfterFinished: {{ .Values.gateway.cleanupJob.ttlSecondsAfterFinished }}
 {{- if .Values.global.glooRbac.create }}
 ---
 apiVersion: v1

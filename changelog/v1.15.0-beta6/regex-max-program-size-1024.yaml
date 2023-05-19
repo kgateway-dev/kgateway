@@ -1,0 +1,10 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8184
+    resolvesIssue: false
+    description: >-
+      Gloo edge will now use 1024 as the default value for settings.regexMaxProgramSize 
+      Envoy has a default of 100 and this is often not large enough for users. This size gives users more headroom for their regex patterns
+  - type: NON_USER_FACING
+    description: Update helm test fixtures to include the default `regexMaxProgramSize`.
+    resolvesIssue: false

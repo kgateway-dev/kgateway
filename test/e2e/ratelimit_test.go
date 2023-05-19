@@ -2,14 +2,15 @@ package e2e_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	"github.com/solo-io/gloo/test/gomega/matchers"
+
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v3"
@@ -25,7 +26,6 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -129,7 +129,6 @@ var _ = Describe("Rate Limit", func() {
 		ctx         context.Context
 		cancel      context.CancelFunc
 		testClients services.TestClients
-		cache       memory.InMemoryResourceCache
 	)
 
 	const (
@@ -141,7 +140,7 @@ var _ = Describe("Rate Limit", func() {
 		var (
 			envoyInstance *services.EnvoyInstance
 			testUpstream  *v1helpers.TestUpstream
-			envoyPort     = uint32(8081)
+			envoyPort     uint32
 			srv           *grpc.Server
 		)
 
@@ -149,6 +148,9 @@ var _ = Describe("Rate Limit", func() {
 			var err error
 			envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
+
+			envoyPort = defaults.HttpPort
+
 			// add the rl service as a static upstream
 			rlserver := &gloov1.Upstream{
 				Metadata: &core.Metadata{
@@ -172,7 +174,6 @@ var _ = Describe("Rate Limit", func() {
 			}
 
 			ctx, cancel = context.WithCancel(context.Background())
-			cache = memory.NewInMemoryResourceCache()
 			ro := &services.RunOptions{
 				NsToWrite: defaults.GlooSystem,
 				NsToWatch: []string{"default", defaults.GlooSystem},
@@ -181,7 +182,6 @@ var _ = Describe("Rate Limit", func() {
 					DisableUds:     true,
 					DisableFds:     true,
 				},
-				Cache: cache,
 				Settings: &gloov1.Settings{
 					RatelimitServer: rlSettings,
 				},
@@ -300,45 +300,24 @@ func EventuallyOk(hostname string, port uint32) {
 	// it's possible gloo upstreams hit after the proxy does
 	// (gloo resyncs once per second)
 	time.Sleep(3 * time.Second)
-	EventuallyWithOffset(1, func() error {
-		res, err := get(hostname, port)
-		if err != nil {
-			return err
-		}
-		if res.StatusCode != http.StatusOK {
-			return errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
-		}
-		return nil
-	}, "5s", ".1s").Should(BeNil())
+	EventuallyWithOffset(1, func(g Gomega) {
+		g.Expect(get(hostname, port)).To(matchers.HaveOkResponse())
+	}, "5s", ".1s").Should(Succeed())
 }
 
 func ConsistentlyNotRateLimited(hostname string, port uint32) {
 	// waiting for envoy to start, so that consistently works
 	EventuallyOk(hostname, port)
 
-	ConsistentlyWithOffset(1, func() error {
-		res, err := get(hostname, port)
-		if err != nil {
-			return err
-		}
-		if res.StatusCode != http.StatusOK {
-			return errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
-		}
-		return nil
-	}, "5s", ".1s").Should(BeNil())
+	ConsistentlyWithOffset(1, func(g Gomega) {
+		g.Expect(get(hostname, port)).To(matchers.HaveOkResponse())
+	}, "5s", ".1s").Should(Succeed())
 }
 
 func EventuallyRateLimited(hostname string, port uint32) {
-	EventuallyWithOffset(1, func() error {
-		res, err := get(hostname, port)
-		if err != nil {
-			return err
-		}
-		if res.StatusCode != http.StatusTooManyRequests {
-			return errors.New(fmt.Sprintf("%v is not TooManyRequests", res.StatusCode))
-		}
-		return nil
-	}, "5s", ".1s").Should(BeNil())
+	EventuallyWithOffset(1, func(g Gomega) {
+		g.Expect(get(hostname, port)).To(matchers.HaveStatusCode(http.StatusTooManyRequests))
+	}, "5s", ".1s").Should(Succeed())
 }
 
 func get(hostname string, port uint32) (*http.Response, error) {

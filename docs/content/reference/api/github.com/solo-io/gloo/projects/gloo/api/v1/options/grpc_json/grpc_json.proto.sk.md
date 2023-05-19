@@ -13,6 +13,7 @@ weight: 5
 
 - [GrpcJsonTranscoder](#grpcjsontranscoder)
 - [PrintOptions](#printoptions)
+- [DescriptorConfigMap](#descriptorconfigmap)
   
 
 
@@ -32,6 +33,7 @@ weight: 5
 ```yaml
 "protoDescriptor": string
 "protoDescriptorBin": bytes
+"protoDescriptorConfigMap": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.DescriptorConfigMap
 "services": []string
 "printOptions": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.PrintOptions
 "matchIncomingRequestRoute": bool
@@ -44,8 +46,9 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor` or `protoDescriptorBin` can be set. |
-| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin` or `protoDescriptor` can be set. |
+| `protoDescriptor` | `string` | Supplies the filename of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set) for the gRPC services. Only one of `protoDescriptor`, `protoDescriptorBin`, or `protoDescriptorConfigMap` can be set. |
+| `protoDescriptorBin` | `bytes` | Supplies the binary content of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set) for the gRPC services. Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes. Only one of `protoDescriptorBin`, `protoDescriptor`, or `protoDescriptorConfigMap` can be set. |
+| `protoDescriptorConfigMap` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.DescriptorConfigMap](../grpc_json.proto.sk/#descriptorconfigmap) | A reference to a ConfigMap containing the base64-encoded binary content of the [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set) for the gRPC services. Only one of `protoDescriptorConfigMap`, `protoDescriptor`, or `protoDescriptorBin` can be set. |
 | `services` | `[]string` | A list of strings that supplies the fully qualified service names (i.e. "package_name.service_name") that the transcoder will translate. If the service name doesn't exist in ``proto_descriptor``, Envoy will fail at startup. The ``proto_descriptor`` may contain more services than the service names specified here, but they won't be translated. |
 | `printOptions` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.PrintOptions](../grpc_json.proto.sk/#printoptions) | Control options for response JSON. These options are passed directly to `JsonPrintOptions <https://developers.google.com/protocol-buffers/docs/reference/cpp/ google.protobuf.util.json_util#JsonPrintOptions>`_. |
 | `matchIncomingRequestRoute` | `bool` | Set this value to true to keep the incoming request route after the outgoing headers are transformed to match the upstream gRPC service. Note that you cannot set this value to true with routes for gRPC services that are not transcoded. When set to false, Envoy does not match against the incoming request path. For more information, see the Envoy docs <https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#route-configs-for-transcoded-requests>. |
@@ -76,6 +79,26 @@ weight: 5
 | `alwaysPrintPrimitiveFields` | `bool` | Whether to always print primitive fields. By default primitive fields with default values will be omitted in JSON output. For example, an int32 field set to 0 will be omitted. Setting this flag to true will override the default behavior and print primitive fields regardless of their values. Defaults to false. |
 | `alwaysPrintEnumsAsInts` | `bool` | Whether to always print enums as ints. By default they are rendered as strings. Defaults to false. |
 | `preserveProtoFieldNames` | `bool` | Whether to preserve proto field names. By default protobuf will generate JSON field names using the ``json_name`` option, or lower camel case, in that order. Setting this flag will preserve the original field names. Defaults to false. |
+
+
+
+
+---
+### DescriptorConfigMap
+
+ 
+Allows the user to store the binary content of a [proto descriptor set](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter#config-grpc-json-generate-proto-descriptor-set) in a ConfigMap.
+
+```yaml
+"configMapRef": .core.solo.io.ResourceRef
+"key": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `configMapRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to a ConfigMap containing the base64-encoded binary content of a proto descriptor set. The ConfigMap must be in a namespace watched by Gloo Edge. |
+| `key` | `string` | The ConfigMap data key whose value contains the proto descriptor set. If the ConfigMap contains multiple key-value pairs, this field is required. If the ConfigMap contains exactly one key-value pair, this field is optional. |
 
 
 

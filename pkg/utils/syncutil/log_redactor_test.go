@@ -2,8 +2,7 @@ package syncutil_test
 
 import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -170,6 +169,45 @@ var _ = Describe("Log Redactor", func() {
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_Ldap{
 				Ldap: &xdsproto.Ldap{
 					AllowedGroups: []string{"test1", "test2"},
+				},
+			},
+		}},
+	}), Entry("hides ldap credentials from logs", "serviceusersecret", &xdsproto.ExtAuthConfig{
+		AuthConfigRefName: "ref-name",
+		Configs: []*xdsproto.ExtAuthConfig_Config{{
+			AuthConfig: &xdsproto.ExtAuthConfig_Config_LdapInternal{
+				LdapInternal: &xdsproto.ExtAuthConfig_LdapConfig{
+					GroupLookupSettings: &xdsproto.ExtAuthConfig_LdapServiceAccountConfig{
+						CheckGroupsWithServiceAccount: true,
+						Username:                      "serviceusersecretuser",
+						Password:                      "serviceusersecretpassword",
+					},
+				},
+			},
+		},
+		},
+	}), Entry("hides the hmac secrets from logs", "hmacsecret", &xdsproto.ExtAuthConfig{
+		Configs: []*xdsproto.ExtAuthConfig_Config{{
+			AuthConfig: &xdsproto.ExtAuthConfig_Config_HmacAuth{
+				HmacAuth: &xdsproto.ExtAuthConfig_HmacAuthConfig{
+					SecretStorage:      &xdsproto.ExtAuthConfig_HmacAuthConfig_SecretList{SecretList: &xdsproto.ExtAuthConfig_InMemorySecretList{SecretList: map[string]string{"hmacsecretuser": "hmacsecretpass"}}},
+					ImplementationType: &xdsproto.ExtAuthConfig_HmacAuthConfig_ParametersInHeaders{ParametersInHeaders: &xdsproto.HmacParametersInHeaders{}},
+				},
+			},
+		}},
+	}), Entry("hides the encryption key value from logs", "encryptionKey", &xdsproto.ExtAuthConfig{
+		Configs: []*xdsproto.ExtAuthConfig_Config{{
+			AuthConfig: &xdsproto.ExtAuthConfig_Config_Oauth2{
+				Oauth2: &xdsproto.ExtAuthConfig_OAuth2Config{
+					OauthType: &xdsproto.ExtAuthConfig_OAuth2Config_OidcAuthorizationCode{
+						OidcAuthorizationCode: &xdsproto.ExtAuthConfig_OidcAuthorizationCodeConfig{
+							UserSession: &xdsproto.ExtAuthConfig_UserSessionConfig{
+								CipherConfig: &xdsproto.ExtAuthConfig_UserSessionConfig_CipherConfig{
+									Key: "encryptionKey",
+								},
+							},
+						},
+					},
 				},
 			},
 		}},

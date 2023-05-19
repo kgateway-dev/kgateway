@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
@@ -11,13 +13,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/kubernetes/fake"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	kubev1 "k8s.io/api/core/v1"
-
-	"os"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,7 @@ import (
 var _ = Describe("Kubernetes", func() {
 
 	BeforeEach(func() {
-		if os.Getenv("RUN_KUBE_TESTS") != "1" {
+		if !testutils.ShouldRunKubeTests() {
 			Skip("This test creates kubernetes resources and is disabled by default. To enable, set RUN_KUBE_TESTS=1 in your env.")
 		}
 	})

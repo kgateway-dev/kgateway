@@ -12,6 +12,8 @@ import (
 
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
+
+	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // ensure the imports are used
@@ -87,6 +89,18 @@ func (m *GrpcJsonTranscoder) Clone() proto.Message {
 			}
 		}
 
+	case *GrpcJsonTranscoder_ProtoDescriptorConfigMap:
+
+		if h, ok := interface{}(m.GetProtoDescriptorConfigMap()).(clone.Cloner); ok {
+			target.DescriptorSet = &GrpcJsonTranscoder_ProtoDescriptorConfigMap{
+				ProtoDescriptorConfigMap: h.Clone().(*GrpcJsonTranscoder_DescriptorConfigMap),
+			}
+		} else {
+			target.DescriptorSet = &GrpcJsonTranscoder_ProtoDescriptorConfigMap{
+				ProtoDescriptorConfigMap: proto.Clone(m.GetProtoDescriptorConfigMap()).(*GrpcJsonTranscoder_DescriptorConfigMap),
+			}
+		}
+
 	}
 
 	return target
@@ -107,6 +121,25 @@ func (m *GrpcJsonTranscoder_PrintOptions) Clone() proto.Message {
 	target.AlwaysPrintEnumsAsInts = m.GetAlwaysPrintEnumsAsInts()
 
 	target.PreserveProtoFieldNames = m.GetPreserveProtoFieldNames()
+
+	return target
+}
+
+// Clone function
+func (m *GrpcJsonTranscoder_DescriptorConfigMap) Clone() proto.Message {
+	var target *GrpcJsonTranscoder_DescriptorConfigMap
+	if m == nil {
+		return target
+	}
+	target = &GrpcJsonTranscoder_DescriptorConfigMap{}
+
+	if h, ok := interface{}(m.GetConfigMapRef()).(clone.Cloner); ok {
+		target.ConfigMapRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ConfigMapRef = proto.Clone(m.GetConfigMapRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	target.Key = m.GetKey()
 
 	return target
 }

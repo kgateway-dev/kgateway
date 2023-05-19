@@ -29,33 +29,16 @@ weight: 10
 
 ## Overview
 
-In this document, we show how to use Gloo Edge with 
-[Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/config/filter/http/rate_limit/v2/rate_limit.proto). 
-We make the distinction here that this is "Envoy's" rate-limit API because Gloo Edge 
-[offers a much simpler rate-limit API]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/simple/" %}}) 
-as an alternative.
+Learn how to use Gloo Edge with [Envoy's rate-limit API](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/rate_limit_filter.html#).
 
 {{% notice note %}}
-Gloo Edge Enterprise includes a rate limit server based on the implementation [here](https://github.com/envoyproxy/ratelimit). 
-It is already installed when doing `glooctl install gateway enterprise --license-key=...` or 
-using the [Helm install]({{< versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" >}}). 
-To get your trial license key, go to <https://www.solo.io/gloo-trial>.
-
-<br /> 
-
-Open source Gloo Edge can take advantage of Envoy rate limiting, but requires users to build their own rate limit server to 
-implement the behavior described below. 
+This guide only includes Envoy-style rate limiting examples. To learn about other rate limiting options, install your environment, and set up the components that you need for rate limiting, see [Rate limiting setup]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/" >}}).
 {{% /notice %}}
 
-Two steps are needed to configure Gloo Edge to leverage the full Envoy Rate Limiter on your routes: 
+The Envoy API uses two components to define how rate limiting works. For more information on where to define these components in your Gloo Edge custom resources, see [Implement rate limiting]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/setup/#implement" >}}).
 
-1. In the Gloo Edge Settings manifest, you need to configure all of your 
-[rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration). 
-Descriptors describe your requests and are used to define the rate limits themselves.
-2. For each Virtual Service, you need to configure 
-[Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/route/route_components.proto#envoy-api-msg-route-ratelimit-action) 
-at the Virtual Service level, for each route, or both. 
-These actions define the relationship between a request and its generated descriptors.
+1. [Rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration) describe your requests and are used to define the rate limits themselves.
+2. [Rate limiting actions](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-msg-config-route-v3-ratelimit-action) define the relationship between a request and its generated descriptors. 
 
 ### Descriptors
 
@@ -81,70 +64,72 @@ the rate limiting service to signal throttling, i.e., the rate limiting actions 
 
 ## Simple Examples
 
-Let's go through a series of simple rate limiting examples to understand the basic options for defining rate limiting 
-descriptors and actions. Then, we'll go through more complex examples that use nested tuples of keys, to express more 
-realistic use cases. 
+Go through a series of simple rate limiting examples to understand the basic options for defining rate limiting descriptors and actions. Later, you can review more complex examples that use nested tuples of keys, to express more realistic use cases. 
 
 ### Generic Key
 
-A generic key is a specific string literal that will be used to match an action to a descriptor. For instance, we could
-use these descriptors in the Gloo Edge settings:
+A generic key is a specific string literal that is used to match an action to a descriptor. 
 
-```yaml
-spec:
-  ratelimit:
-    descriptors:
-      - key: generic_key
-        value: "per-second"
-        rateLimit:
-          requestsPerUnit: 2
-          unit: SECOND  
-```
-
-{{% notice note %}}
-To apply this as a patch, write it to a file called `patch.yaml`, then apply the patch with the following command: 
-`kubectl patch -n gloo-system settings default --type merge --patch "$(cat patch.yaml)"`.
-
-<br />
-
-This assumes you are trying to patch the default settings resource in the gloo-system namespace. All of the other examples
-on this page for can be applied in the same way. 
-{{% /notice %}}
-
-This defines a limit of 2 requests per second for any request that triggers an action on the generic key called `per-second`. 
-We could define that action on a virtual service like so:
-
-{{< highlight yaml "hl_lines=18-23" >}}
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: example
-  namespace: gloo-system
-spec:
-  virtualHost:
-    domains:
-      - '*'
-    routes:
-      - matchers:
-          - prefix: /
-        routeAction:
-          single:
-            upstream:
-              name: default-example-80
-              namespace: gloo-system
-        options:
-          ratelimit:
-            rateLimits:
-              - actions:
-                  - genericKey:
-                      descriptorValue: "per-second"
-{{< /highlight >}}
-
-{{% notice note %}}
-In Envoy, the rate limit config is typically written with snake case keys ("example_config") in the YAML, whereas in Gloo Edge and Kubernetes
-YAML keys typically use camel case ("exampleConfig"). We'll use camel case notation when writing YAML keys in Gloo Edge config here. 
-{{% /notice %}}
-
+1. {{< readfile file="static/content/rl-setup-before-you-begin" markdown="true">}}
+2. Prepare the descriptor that describes your rate limit rule. The following example defines a limit of 1 request per minute for any request that triggers an action on the generic key called `per-minute`. 
+   ```yaml
+   descriptors:
+     - key: generic_key
+       value: "per-minute"
+       rateLimit:
+         requestsPerUnit: 1
+         unit: MINUTE  
+   ```
+3. Prepare the action that matches the descriptor you just created. The following action matches on the `generic_key` descriptor key, as well as the `"per-minute"` descriptor key's value.
+   ```yaml
+   - actions:
+       - genericKey:
+           descriptorValue: "per-minute"
+   ```
+4. {{< readfile file="static/content/rl-setup-implement" markdown="true">}}
+   {{< tabs >}} 
+{{% tab name="Refer to RateLimitConfig (Enterprise-only)" %}}
+1. {{< readfile file="static/content/rl-setup-rlc-step" markdown="true">}} 
+   * [RateLimitConfig `rlc.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/rlc.yaml)
+2. {{< readfile file="static/content/rl-setup-rlc-vs-ov" markdown="true">}}
+   * {{< readfile file="static/content/rl-setup-rlc-vs-host" markdown="true">}}
+     * [VirtualService `rlc-vs-host.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/rlc-vs-host.yaml#L20-L24)
+   * {{< readfile file="static/content/rl-setup-rlc-vs-route" markdown="true">}}
+     * [VirtualService `rlc-vs-route.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/rlc-vs-route.yaml#L15-L18)
+{{% /tab %}} 
+{{% tab name="Enter directly in resources" %}}
+1. {{< readfile file="static/content/rl-setup-separate-settings" markdown="true">}}
+   * [Settings `settings.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/settings.yaml#L62-L68)
+2. {{< readfile file="static/content/rl-setup-separate-vs-ov" markdown="true">}}
+   * {{< readfile file="static/content/rl-setup-separate-vs-host" markdown="true">}}
+     * [VirtualService `vs-host.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/vs-host.yaml#L20-L25)
+   * {{< readfile file="static/content/rl-setup-separate-vs-route" markdown="true">}}
+     * [VirtualService `vs-route.yaml` example](https://github.com/solo-io/gloo-edge-use-cases/blob/main/docs/rate-limit/generic-key/vs-route.yaml#L15-L19)
+{{% /tab %}} 
+   {{< /tabs >}}
+5. {{< readfile file="static/content/rl-setup-check-vs" markdown="true">}}
+   ```
+   kubectl describe vs default -n gloo-system
+   ```
+6. Verify that your rate limit works.
+   1. Verify that you can reach your test app by sending a request.
+      ```sh
+      curl -v $(glooctl proxy url)/all-pets
+      ```
+      Example response:
+      ```
+      HTTP/1.1 200 OK
+      ...
+      [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+      ```
+   2. Repeat the request. Because the rate limiting rule that you set up limits the requests to 1 time per minute, the request is rate limited.
+      ```sh
+      curl -v $(glooctl proxy url)/all-pets
+      ```
+      Example response:
+      ```
+      HTTP/1.1 429 Too Many Requests
+      ```
 ### Header Values
 
 It may be desirable to create actions based on the value of a header, which is dynamic based on the request, rather than 

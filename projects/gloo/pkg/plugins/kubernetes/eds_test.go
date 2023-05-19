@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -47,7 +47,7 @@ var _ = Describe("Eds", func() {
 
 		mockCache.EXPECT().NamespacedServiceLister("bar").Return(nil)
 
-		watcher, err := newEndpointWatcherForUpstreams(func([]string) KubePluginSharedFactory { return mockSharedFactory }, mockCache, "foo", upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
+		watcher, err := newEndpointWatcherForUpstreams(func([]string) KubePluginSharedFactory { return mockSharedFactory }, mockCache, "foo", upstreamsToTrack, clients.WatchOpts{Ctx: ctx}, nil)
 		Expect(err).NotTo(HaveOccurred())
 		watcher.List("foo", clients.ListOpts{Ctx: ctx})
 		Expect(func() {}).NotTo(Panic())

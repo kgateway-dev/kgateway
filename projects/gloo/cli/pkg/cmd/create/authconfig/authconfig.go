@@ -165,6 +165,12 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 				ApiKeyAuth: &extauth.ApiKeyAuth{
 					LabelSelector:    labelSelector,
 					ApiKeySecretRefs: secretRefs,
+					StorageBackend: &extauth.ApiKeyAuth_K8SSecretApikeyStorage{
+						K8SSecretApikeyStorage: &extauth.K8SSecretApiKeyStorage{
+							LabelSelector:    labelSelector,
+							ApiKeySecretRefs: secretRefs,
+						},
+					},
 				},
 			},
 		}

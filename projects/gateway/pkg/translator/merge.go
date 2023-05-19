@@ -5,9 +5,13 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 // Merges the fields of src into dst.
@@ -91,52 +95,55 @@ func isEmptyValue(v reflect.Value) bool {
 	return false
 }
 
-func mergeSslConfig(parent, child *v1.SslConfig, preventChildOverrides bool) *v1.SslConfig {
-	// Clone to be safe, since we will mutate it
-	parentClone := proto.Clone(parent).(*v1.SslConfig)
-	childClone := proto.Clone(child).(*v1.SslConfig)
-
-	if childClone == nil {
+func mergeSslConfig(parent, child *ssl.SslConfig, preventChildOverrides bool) *ssl.SslConfig {
+	if child == nil {
 		// use parent exactly as-is
-		return parentClone
+		return proto.Clone(parent).(*ssl.SslConfig)
 	}
 	if parent == nil {
 		// use child exactly as-is
-		return childClone
+		return proto.Clone(child).(*ssl.SslConfig)
 	}
 
-	if preventChildOverrides {
-		// merge, preferring parent
-		mergo.Merge(childClone, parentClone, mergo.WithOverride)
-	} else {
-		// merge, preferring child
-		mergo.Merge(childClone, parentClone)
-	}
-
+	// Clone child to be safe, since we will mutate it
+	childClone := proto.Clone(child).(*ssl.SslConfig)
+	mergo.Merge(childClone, parent, mergo.WithTransformers(wrapperTransformer{preventChildOverrides}))
 	return childClone
 }
 
 func mergeHCMSettings(parent, child *hcm.HttpConnectionManagerSettings, preventChildOverrides bool) *hcm.HttpConnectionManagerSettings {
 	// Clone to be safe, since we will mutate it
-	parentClone := proto.Clone(parent).(*hcm.HttpConnectionManagerSettings)
-	childClone := proto.Clone(child).(*hcm.HttpConnectionManagerSettings)
-
-	if childClone == nil {
+	if child == nil {
 		// use parent exactly as-is
-		return parentClone
+		return proto.Clone(parent).(*hcm.HttpConnectionManagerSettings)
 	}
-	if parentClone == nil {
+	if parent == nil {
 		// use child exactly as-is
-		return childClone
+		return proto.Clone(child).(*hcm.HttpConnectionManagerSettings)
 	}
 
-	if preventChildOverrides {
-		// merge, preferring parent
-		mergo.Merge(childClone, parentClone, mergo.WithOverride)
-	} else {
-		// merge, preferring child
-		mergo.Merge(childClone, parentClone)
-	}
-
+	// Clone child to be safe, since we will mutate it
+	childClone := proto.Clone(child).(*hcm.HttpConnectionManagerSettings)
+	mergo.Merge(childClone, parent, mergo.WithTransformers(wrapperTransformer{preventChildOverrides}))
 	return childClone
+}
+
+type wrapperTransformer struct {
+	preventChildOverrides bool
+}
+
+func (t wrapperTransformer) Transformer(typ reflect.Type) func(dst, src reflect.Value) error {
+	if typ == reflect.TypeOf(wrappers.BoolValue{}) ||
+		typ == reflect.TypeOf(wrappers.StringValue{}) ||
+		typ == reflect.TypeOf(wrappers.UInt32Value{}) ||
+		typ == reflect.TypeOf(duration.Duration{}) ||
+		typ == reflect.TypeOf(core.ResourceRef{}) {
+		return func(dst, src reflect.Value) error {
+			if t.preventChildOverrides {
+				dst.Set(src)
+			}
+			return nil
+		}
+	}
+	return nil
 }

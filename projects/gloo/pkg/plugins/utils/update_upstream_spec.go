@@ -4,10 +4,10 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// for use by UDS plugins
+// UpdateUpstream is used by UDS plugins
 // copies parts of the UpstreamSpec that are not
-// set by discovery but may be set by the user or function discovery
-// so they are not overwritten when UDS resyncs
+// set by discovery but may be set by the user or function discovery.
+// This way they are not overwritten when UDS resyncs
 func UpdateUpstream(original, desired *v1.Upstream) {
 
 	// do not override ssl and subset config if none specified by discovery
@@ -71,5 +71,17 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 
 	if desired.GetIgnoreHealthOnHostRemoval() == nil {
 		desired.IgnoreHealthOnHostRemoval = original.GetIgnoreHealthOnHostRemoval()
+	}
+
+	if desired.GetRespectDnsTtl() == nil {
+		desired.RespectDnsTtl = original.GetRespectDnsTtl()
+	}
+
+	if desired.GetDnsRefreshRate() == nil {
+		desired.DnsRefreshRate = original.GetDnsRefreshRate()
+	}
+
+	if desired.GetProxyProtocolVersion() == nil {
+		desired.ProxyProtocolVersion = original.GetProxyProtocolVersion()
 	}
 }

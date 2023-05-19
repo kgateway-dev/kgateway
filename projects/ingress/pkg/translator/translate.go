@@ -9,6 +9,7 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -55,12 +56,12 @@ func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSn
 	virtualHostsHttp, secureVirtualHosts := virtualHosts(ctx, ingresses, upstreams, services, requireIngressClass, ingressClass)
 
 	var virtualHostsHttps []*gloov1.VirtualHost
-	var sslConfigs []*gloov1.SslConfig
+	var sslConfigs []*ssl.SslConfig
 	for _, svh := range secureVirtualHosts {
 		svh := svh
 		virtualHostsHttps = append(virtualHostsHttps, svh.vh)
-		sslConfigs = append(sslConfigs, &gloov1.SslConfig{
-			SslSecrets: &gloov1.SslConfig_SecretRef{
+		sslConfigs = append(sslConfigs, &ssl.SslConfig{
+			SslSecrets: &ssl.SslConfig_SecretRef{
 				SecretRef: &svh.secret,
 			},
 			SniDomains: svh.vh.GetDomains(),

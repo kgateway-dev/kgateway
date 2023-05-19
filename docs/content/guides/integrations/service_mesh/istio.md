@@ -35,13 +35,15 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm repo update
    ```
       
-3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. 
+3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. You can optionally add the `global.istioSDS.enabled` option to your overrides file to automatically renew the certificate that the sidecar uses before it expires. 
    ```yaml
    global:
      istioIntegration:
        labelInstallNamespace: true
        whitelistDiscovery: true
        enableIstioSidecarOnGateway: true
+     istioSDS:
+       enabled: true
    gatewayProxies:
      gatewayProxy:
        podTemplate: 
@@ -53,14 +55,9 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    {{< tabs >}} 
    {{< tab name="Install Gloo Edge">}}
 
-   1. Create the namespace where you want to install Gloo Edge. The following command creates the `gloo` namespace.
+   1. Install Gloo Edge with the settings in the `value-overrides.yaml` file. This command creates the `gloo-system` namespace and installs the Gloo Edge components into it.
       ```shell
-      kubectl create namespace gloo-system
-      ```
-   
-   2. Install Gloo Edge with the settings in the `value-overrides.yaml` file.  
-      ```shell
-      helm install gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
+      helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f value-overrides.yaml
       ```
    {{< /tab >}}
    {{< tab name="Upgrade Gloo Edge">}}
@@ -152,7 +149,7 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
    kind: VirtualService
    metadata:
      name: my-virtual-service
-    namespace: gloo-system
+     namespace: gloo-system
    spec:
      virtualHost:
        domains:

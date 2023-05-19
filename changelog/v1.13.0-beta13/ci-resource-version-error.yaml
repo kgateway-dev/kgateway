@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7044
+    resolvesIssue: false
+    description: Retry patch updates on resource version errors to protect against test flakes

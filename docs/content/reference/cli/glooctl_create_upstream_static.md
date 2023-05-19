@@ -20,7 +20,7 @@ glooctl create upstream static [flags]
   -h, --help                       help for static
       --service-spec-type string   if set, Gloo supports additional routing features to upstreams with a service spec. The service spec defines a set of features 
       --static-hosts strings       comma-separated list of hosts for the static upstream. these are hostnames or ips provided in the format IP:PORT or HOSTNAME:PORT. if :PORT is missing, it will default to :80
-      --static-outbound-tls        connections Gloo manages to this cluster will attempt to use TLS for outbound connections. Gloo will automatically set this to true for port 443
+      --static-outbound-tls        connections Gloo manages to this cluster will attempt to use TLS for outbound connections. If not specified, Gloo will automatically set this to true for port 443
 ```
 
 ### Options inherited from parent commands
@@ -35,6 +35,7 @@ glooctl create upstream static [flags]
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
       --dry-run                    print kubernetes-formatted yaml rather than creating or updating a resource
   -i, --interactive                use interactive mode
+      --kube-context string        kube context to use when interacting with kubernetes
       --kubeconfig string          kubeconfig to use, if not standard one
       --name string                name of the resource to read or write
   -n, --namespace string           namespace for reading or writing resources (default "gloo-system")

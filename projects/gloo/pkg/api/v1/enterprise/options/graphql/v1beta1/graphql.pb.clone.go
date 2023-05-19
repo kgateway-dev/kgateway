@@ -148,6 +148,12 @@ func (m *RESTResolver) Clone() proto.Message {
 
 	target.SpanName = m.GetSpanName()
 
+	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
+		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	return target
 }
 
@@ -219,6 +225,12 @@ func (m *GrpcResolver) Clone() proto.Message {
 	}
 
 	target.SpanName = m.GetSpanName()
+
+	if h, ok := interface{}(m.GetTimeout()).(clone.Cloner); ok {
+		target.Timeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
 
 	return target
 }

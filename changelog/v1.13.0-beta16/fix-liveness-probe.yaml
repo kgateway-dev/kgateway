@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/7197
+    resolvesIssue: true
+    description: >-
+      Updates the default gloo liveness probe (disabled by default) to use a new http server that always returns http 200 "ok".
+      The old probe would wait for xds before signalling health, which in large environments could lag while EDS is warming.
+      This could, in rare cases, cause the gloo pod to needless bounce while it was warming.

@@ -3,10 +3,12 @@ package authconfig_test
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/test/matchers"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/authconfig"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
@@ -24,20 +26,23 @@ var _ = Describe("AuthConfig", func() {
 	)
 
 	BeforeEach(func() {
-		helpers.UseMemoryClients()
 		ctx, cancel = context.WithCancel(context.Background())
-
 	})
 
 	AfterEach(func() {
+		// Cleanup AuthConfig so that subsequent tests aren't affected
+		deleteAuthConfig(ctx)
+
 		cancel()
 	})
 
 	// since getExtension depends on the ctx, these functions must be regenerated everytime we regenerate the context.
 	getExtension := func(ctx context.Context) []*extauthpb.AuthConfig_Config {
-		ac, err := helpers.MustAuthConfigClient(ctx).Read("gloo-system", "ac1", clients.ReadOpts{})
+		ac, err := helpers.MustAuthConfigClient(ctx).Read(defaults.GlooSystem, "ac1", clients.ReadOpts{
+			Ctx: ctx,
+		})
 		Expect(err).NotTo(HaveOccurred())
-		return ac.Configs
+		return ac.GetConfigs()
 	}
 
 	getOIDCConfig := func(ctx context.Context) *extauthpb.OAuth {
@@ -56,17 +61,20 @@ var _ = Describe("AuthConfig", func() {
 	}
 
 	DescribeTable("should create oidc authconfig",
-		func(ctx context.Context, cmd string, expected extauthpb.OAuth) {
+		func(cmd string, expected *extauthpb.OAuth) {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
 			oidc := getOIDCConfig(ctx)
-			Expect(*oidc).To(Equal(expected))
+			Expect(oidc).To(matchers.MatchProto(expected))
+
+			// Cleanup AuthConfig so each table entry can create one
+			deleteAuthConfig(ctx)
 		},
-		Entry("with oid config", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with oid config", "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com "+
 			"--oidc-auth-callback-path /cb",
-			extauthpb.OAuth{
+			&extauthpb.OAuth{
 				ClientId: "1",
 				ClientSecretRef: &core.ResourceRef{
 					Name:      "fake",
@@ -76,10 +84,10 @@ var _ = Describe("AuthConfig", func() {
 				IssuerUrl:    "http://issuer.example.com",
 				AppUrl:       "http://app.example.com",
 			}),
-		Entry("with default callback", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with default callback", "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com",
-			extauthpb.OAuth{
+			&extauthpb.OAuth{
 				ClientId: "1",
 				ClientSecretRef: &core.ResourceRef{
 					Name:      "fake",
@@ -89,11 +97,11 @@ var _ = Describe("AuthConfig", func() {
 				IssuerUrl:    "http://issuer.example.com",
 				AppUrl:       "http://app.example.com",
 			}),
-		Entry("with default scopes", ctx, "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
+		Entry("with default scopes", "create ac --name ac1 --enable-oidc-auth --oidc-auth-client-id "+
 			"1 --oidc-auth-app-url http://app.example.com --oidc-auth-client-secret-name fake "+
 			"--oidc-auth-client-secret-namespace fakens --oidc-auth-issuer-url http://issuer.example.com "+
 			"--oidc-scope=scope1 --oidc-scope=scope2",
-			extauthpb.OAuth{
+			&extauthpb.OAuth{
 				ClientId: "1",
 				ClientSecretRef: &core.ResourceRef{
 					Name:      "fake",
@@ -107,21 +115,29 @@ var _ = Describe("AuthConfig", func() {
 	)
 
 	DescribeTable("should create apikey authconfig",
-		func(ctx context.Context, cmd string, expected extauthpb.ApiKeyAuth) {
+		func(cmd string, expected *extauthpb.ApiKeyAuth) {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
 			apiKey := getApiKeyConfig(ctx)
-			Expect(*apiKey).To(Equal(expected))
+			Expect(apiKey).To(matchers.MatchProto(expected))
+
+			// Cleanup AuthConfig so each table entry can create one
+			deleteAuthConfig(ctx)
 		},
-		Entry("with apikey config -- label selector", ctx, "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- label selector", "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1",
-			extauthpb.ApiKeyAuth{
+			&extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
+				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+						LabelSelector: map[string]string{"k1": "v1"},
+					},
+				},
 			}),
 
-		Entry("with apikey config -- secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- secret refs", "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-secret-namespace ns1 --apikey-secret-name s1 ",
-			extauthpb.ApiKeyAuth{
+			&extauthpb.ApiKeyAuth{
 				LabelSelector: nil,
 				ApiKeySecretRefs: []*core.ResourceRef{
 					{
@@ -129,15 +145,37 @@ var _ = Describe("AuthConfig", func() {
 						Name:      "s1",
 					},
 				},
+				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+						LabelSelector: nil,
+						ApiKeySecretRefs: []*core.ResourceRef{
+							{
+								Namespace: "ns1",
+								Name:      "s1",
+							},
+						},
+					},
+				},
 			}),
-		Entry("with apikey config -- both groups & secret refs", ctx, "create ac --name ac1 --enable-apikey-auth "+
+		Entry("with apikey config -- both groups & secret refs", "create ac --name ac1 --enable-apikey-auth "+
 			"--apikey-label-selector k1=v1 --apikey-secret-namespace ns1 --apikey-secret-name s1 ",
-			extauthpb.ApiKeyAuth{
+			&extauthpb.ApiKeyAuth{
 				LabelSelector: map[string]string{"k1": "v1"},
 				ApiKeySecretRefs: []*core.ResourceRef{
 					{
 						Namespace: "ns1",
 						Name:      "s1",
+					},
+				},
+				StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+					K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+						LabelSelector: map[string]string{"k1": "v1"},
+						ApiKeySecretRefs: []*core.ResourceRef{
+							{
+								Namespace: "ns1",
+								Name:      "s1",
+							},
+						},
 					},
 				},
 			}),
@@ -159,20 +197,23 @@ var _ = Describe("AuthConfig", func() {
 	})
 
 	DescribeTable("should create opa authconfig",
-		func(ctx context.Context, cmd string, expected extauthpb.OpaAuth) {
+		func(cmd string, expected *extauthpb.OpaAuth) {
 			err := testutils.Glooctl(cmd)
 			Expect(err).NotTo(HaveOccurred())
 			opa := getOpaConfig(ctx)
-			Expect(*opa).To(Equal(expected))
+			Expect(opa).To(matchers.MatchProto(expected))
+
+			// Cleanup AuthConfig so each table entry can create one
+			deleteAuthConfig(ctx)
 		},
-		Entry("with opa query and no modules", ctx, "create ac --name ac1 --enable-opa-auth "+
+		Entry("with opa query and no modules", "create ac --name ac1 --enable-opa-auth "+
 			"--opa-query test",
-			extauthpb.OpaAuth{
+			&extauthpb.OpaAuth{
 				Query: "test",
 			}),
-		Entry("with opa query and some modules", ctx, "create ac --name ac1 --enable-opa-auth "+
+		Entry("with opa query and some modules", "create ac --name ac1 --enable-opa-auth "+
 			"--opa-query test --opa-module-ref ns1.name1 --opa-module-ref ns2.name2",
-			extauthpb.OpaAuth{
+			&extauthpb.OpaAuth{
 				Query:   "test",
 				Modules: []*core.ResourceRef{{Namespace: "ns1", Name: "name1"}, {Namespace: "ns2", Name: "name2"}},
 			}),
@@ -187,7 +228,7 @@ var _ = Describe("AuthConfig", func() {
 			"--enable-opa-auth --opa-query test --opa-module-ref ns1.name1 --opa-module-ref ns2.name2")
 		Expect(err).NotTo(HaveOccurred())
 
-		expected := extauthpb.OpaAuth{
+		expected := &extauthpb.OpaAuth{
 			Query:   "test",
 			Modules: []*core.ResourceRef{{Namespace: "ns1", Name: "name1"}, {Namespace: "ns2", Name: "name2"}},
 		}
@@ -196,8 +237,7 @@ var _ = Describe("AuthConfig", func() {
 		Expect(oidc).NotTo(BeNil())
 
 		opa := get2ndOpaConfig(ctx)
-		Expect(opa).NotTo(BeNil())
-		Expect(*opa).To(Equal(expected))
+		Expect(opa).To(matchers.MatchProto(expected))
 
 	})
 
@@ -330,6 +370,17 @@ var _ = Describe("AuthConfig", func() {
 							Name:      "s1",
 						},
 					},
+					StorageBackend: &extauthpb.ApiKeyAuth_K8SSecretApikeyStorage{
+						K8SSecretApikeyStorage: &extauthpb.K8SSecretApiKeyStorage{
+							LabelSelector: map[string]string{"k1": "v1"},
+							ApiKeySecretRefs: []*core.ResourceRef{
+								{
+									Namespace: "ns1",
+									Name:      "s1",
+								},
+							},
+						},
+					},
 				}
 				Expect(*apiKey).To(Equal(expected))
 
@@ -381,3 +432,11 @@ var _ = Describe("AuthConfig", func() {
 	})
 
 })
+
+func deleteAuthConfig(ctx context.Context) {
+	err := helpers.MustAuthConfigClient(ctx).Delete(defaults.GlooSystem, "ac1", clients.DeleteOpts{
+		IgnoreNotExist: true,
+		Ctx:            ctx,
+	})
+	Expect(err).NotTo(HaveOccurred())
+}

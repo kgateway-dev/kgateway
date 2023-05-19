@@ -1,7 +1,10 @@
 package aws_test
 
 import (
+	"context"
 	"net/url"
+
+	"github.com/onsi/gomega/types"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -9,7 +12,7 @@ import (
 	gogoproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoytransform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -17,6 +20,7 @@ import (
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	v1transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -35,6 +39,8 @@ const (
 var _ = Describe("Plugin", func() {
 
 	var (
+		ctx         context.Context
+		cancel      context.CancelFunc
 		initParams  plugins.InitParams
 		params      plugins.Params
 		vhostParams plugins.VirtualHostParams
@@ -47,6 +53,8 @@ var _ = Describe("Plugin", func() {
 	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
+		params.Ctx = ctx
 		awsPlugin = NewPlugin(GenerateAWSLambdaRouteConfig)
 
 		upstreamName := "up"
@@ -130,6 +138,10 @@ var _ = Describe("Plugin", func() {
 
 	JustBeforeEach(func() {
 		awsPlugin.Init(initParams)
+	})
+
+	AfterEach(func() {
+		cancel()
 	})
 
 	processProtocolOptions := func() {
@@ -234,9 +246,9 @@ var _ = Describe("Plugin", func() {
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
-							SslParameters: &v1.SslParameters{
-								MinimumProtocolVersion: v1.SslParameters_TLSv1_1,
-								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+							SslParameters: &ssl.SslParameters{
+								MinimumProtocolVersion: ssl.SslParameters_TLSv1_1,
+								MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
 							},
@@ -265,14 +277,14 @@ var _ = Describe("Plugin", func() {
 
 			Context("should error while configuring ssl with invalid tls versions in settings.UpstreamOptions", func() {
 
-				var invalidProtocolVersion v1.SslParameters_ProtocolVersion = 5 // INVALID
+				var invalidProtocolVersion ssl.SslParameters_ProtocolVersion = 5 // INVALID
 
 				BeforeEach(func() {
 					initParams.Settings = &v1.Settings{
 						UpstreamOptions: &v1.UpstreamOptions{
-							SslParameters: &v1.SslParameters{
+							SslParameters: &ssl.SslParameters{
 								MinimumProtocolVersion: invalidProtocolVersion,
-								MaximumProtocolVersion: v1.SslParameters_TLSv1_2,
+								MaximumProtocolVersion: ssl.SslParameters_TLSv1_2,
 								CipherSuites:           []string{"cipher-test"},
 								EcdhCurves:             []string{"ec-dh-test"},
 							},
@@ -287,6 +299,135 @@ var _ = Describe("Plugin", func() {
 			})
 
 		})
+	})
+
+	Context("no spec", func() {
+		var destination *v1.Destination
+		var curParams plugins.Params
+		defaultSettings := initParams.Settings
+		JustBeforeEach(func() {
+			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+			destination.DestinationSpec = nil
+			curParams = params.CopyWithoutContext()
+		})
+		// Force a cleanup to make it less likely to have pollution via programming error
+		JustAfterEach(func() {
+			initParams.Settings = defaultSettings
+		})
+
+		DescribeTable("processes as expected with various fallback settings", func(pluginSettings *v1.Settings, assertKeyExists types.GomegaMatcher) {
+			initParams.Settings = pluginSettings
+			awsPlugin.(*Plugin).Init(initParams)
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(outroute.TypedPerFilterConfig).To(assertKeyExists)
+		},
+			Entry("does not process without fallback set", defaultSettings, Not(HaveKey(FilterName))),
+			Entry("does not process with fallback set to false", &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: false},
+					},
+				},
+			}, Not(HaveKey(FilterName))),
+			Entry("does process with fallback set to true", &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: true},
+					},
+				},
+			}, HaveKey(FilterName)),
+		)
+
+		DescribeTable("response transform override", func(fallback bool, outrouteAssertions ...types.GomegaMatcher) {
+			initParams.Settings = &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: fallback},
+					},
+				},
+			}
+			awsPlugin.(*Plugin).Init(initParams)
+			destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+			destination.DestinationSpec = nil
+
+			upstream.GetAws().DestinationOverrides = &aws.DestinationSpec{ResponseTransformation: true}
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			// go through the list of outroute assertions passed
+			for _, assert := range outrouteAssertions {
+				Expect(outroute.TypedPerFilterConfig).To(assert)
+			}
+		},
+			Entry("gets applied with fallback enabled", true, HaveKey(FilterName), HaveKey(transformation.FilterName)),
+			Entry("does not get applies with fallback disabled", false, Not(HaveKey(FilterName)), Not(HaveKey(transformation.FilterName))),
+		)
+	})
+
+	Context("routes with params", func() {
+		// setup similar to the routes context but should exercise special params.
+		var curParams plugins.Params
+		defaultSettings := initParams.Settings
+		JustBeforeEach(func() {
+			curParams = params.CopyWithoutContext()
+		})
+		// Force a cleanup to make it less likely to have pollution via programming error
+		JustAfterEach(func() {
+			initParams.Settings = defaultSettings
+		})
+		It("should process if fallback exists", func() {
+			initParams.Settings = &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					AwsOptions: &v1.GlooOptions_AWSOptions{
+						FallbackToFirstFunction: &wrapperspb.BoolValue{Value: true},
+					},
+				},
+			}
+			awsPlugin.(*Plugin).Init(initParams)
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(curParams, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+		})
+	})
+
+	Context("route with defaults", func() {
+
+		It("should apply response transform override", func() {
+			upstream.GetAws().DestinationOverrides = &aws.DestinationSpec{ResponseTransformation: true}
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			// destination = route.Action.(*v1.Route_RouteAction).RouteAction.Destination.(*v1.RouteAction_Single).Single
+
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = false
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+		})
+		It("empty response override should not override route level", func() {
+			upstream.GetAws().DestinationOverrides = &aws.DestinationSpec{ResponseTransformation: false}
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+
+			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+		})
+
 	})
 
 	Context("routes", func() {
@@ -329,12 +470,63 @@ var _ = Describe("Plugin", func() {
 			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
 		})
 
+		getPerRouteConfig := func(outroute *envoy_config_route_v3.Route) *AWSLambdaPerRoute {
+			Expect(outroute.TypedPerFilterConfig).To(HaveKey(FilterName))
+			pfc := outroute.GetTypedPerFilterConfig()[FilterName]
+			var perRouteCfg AWSLambdaPerRoute
+			err := pfc.UnmarshalTo(&perRouteCfg)
+			Expect(err).NotTo(HaveOccurred())
+			return &perRouteCfg
+		}
+
+		It("should set route transformer when unwrapAsApiGateway=True && unwrapAsAlb=False", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = false
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetUnwrapAsAlb()).To(BeFalse())
+			Expect(cfg.GetTransformerConfig()).ToNot(BeNil())
+			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
+		})
+
+		It("should set route transformer when responseTransformation is true", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).NotTo(BeNil())
+			Expect(cfg.GetTransformerConfig().GetTypedConfig().GetTypeUrl()).To(Equal(ResponseTransformationTypeUrl))
+		})
+
+		It("should error when unwrapAsApiGateway=True && unwrapAsAlb=True", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = true
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).To(MatchError("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set"))
+		})
+
+		It("should not set route transformer when unwrapAsApiGateway=False && responseTransformation=False", func() {
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsApiGateway = false
+			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = false
+			err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg := getPerRouteConfig(outroute)
+			Expect(cfg.GetTransformerConfig()).To(BeNil())
+		})
+
 		Context("should interact well with transform plugin", func() {
+
 			var (
 				transformationPlugin *transformation.Plugin
 			)
+
 			BeforeEach(func() {
-				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().RequestTransformation = true
 				route.Options = &v1.RouteOptions{
 					StagedTransformations: &v1transformation.TransformationStages{
 						Regular: &v1transformation.RequestResponseTransformations{
@@ -346,7 +538,19 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				}
+				// The transformation plugin is responsible for validating transformations
+				// It does this by executing Envoy in validate mode
+				// This functionality is not necessary in our unit tests, so we disable it
 				transformationPlugin = transformation.NewPlugin()
+				initParams.Settings = &v1.Settings{
+					Gateway: &v1.GatewayOptions{
+						Validation: &v1.GatewayOptions_ValidationOptions{
+							DisableTransformationValidation: &wrapperspb.BoolValue{
+								Value: true,
+							},
+						},
+					},
+				}
 				transformationPlugin.Init(initParams)
 			})
 			verify := func() {
@@ -388,6 +592,22 @@ var _ = Describe("Plugin", func() {
 			Expect(cfg.UnwrapAsAlb).Should(Equal(true))
 			Expect(cfg.Async).Should(Equal(true))
 		})
+
+		When("unwrapping response", func() {
+			BeforeEach(func() {
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+			})
+			It("should not apply transformations", func() {
+				err := awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
+
+				msg, err := utils.AnyToMessage(outroute.GetTypedPerFilterConfig()[FilterName])
+				Expect(err).Should(BeNil())
+				cfg := msg.(*AWSLambdaPerRoute)
+				Expect(cfg.UnwrapAsAlb).Should(Equal(true))
+				Expect(cfg.GetTransformerConfig()).Should(BeNil())
+			})
+		})
 	})
 
 	Context("filters", func() {
@@ -410,16 +630,26 @@ var _ = Describe("Plugin", func() {
 			Expect(filters).To(BeEmpty())
 		})
 
-		It("should produce 2 filters when transformations are present", func() {
-			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
-			err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
-			Expect(err).NotTo(HaveOccurred())
+		When("transformations are present", func() {
+			It("should produce 2 filters when not unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().RequestTransformation = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).NotTo(HaveOccurred())
 
-			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(filters).To(HaveLen(2))
+				filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(filters).To(HaveLen(2))
+			})
+			It("should error when unwrapping", func() {
+				err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+				Expect(err).NotTo(HaveOccurred())
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+				route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().UnwrapAsAlb = true
+				err = awsPlugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
+				Expect(err).To(MatchError("only one of unwrapAsAlb and unwrapAsApiGateway/responseTransformation may be set"))
+			})
 		})
 	})
 

@@ -10,6 +10,10 @@ metadata:
   name: default
   namespace: {{ .Release.Namespace }}
 spec:
+{{- if .Values.settings.devMode }}
+  devMode:
+    {{ .Values.settings.devMode}}
+{{- end }}
   gloo:
 {{- if .Values.global.glooMtls.enabled }}
     xdsBindAddr: "127.0.0.1:9999"
@@ -33,6 +37,10 @@ spec:
 {{- if .Values.settings.regexMaxProgramSize }}
     regexMaxProgramSize: {{ .Values.settings.regexMaxProgramSize }}
 {{- end }}
+{{- if .Values.settings.circuitBreakers }}
+    circuitBreakers:
+{{ toYaml .Values.settings.circuitBreakers | indent 6}}
+{{- end }}
 {{- if .Values.settings.aws }}
     awsOptions:
 {{- if .Values.settings.aws.enableServiceAccountCredentials }}
@@ -53,6 +61,9 @@ spec:
 {{- if  .Values.settings.aws.propagateOriginalRouting }}
       propagateOriginalRouting: {{ .Values.settings.aws.propagateOriginalRouting }}
 {{- end }}
+  {{- if .Values.settings.aws.fallbackToFirstFunction }}
+      fallbackToFirstFunction: {{ .Values.settings.aws.fallbackToFirstFunction }}
+  {{- end }}
 {{- end }}
 
   {{- if .Values.settings.integrations.consul }}
@@ -87,6 +98,7 @@ spec:
 {{- end }}
 
   gateway:
+    isolateVirtualHostsBySslConfig: {{ .Values.gateway.isolateVirtualHostsBySslConfig }}
     readGatewaysFromAllNamespaces: {{ .Values.gateway.readGatewaysFromAllNamespaces }}
 {{- if or .Values.gateway.persistProxySpec (not .Values.gateway.enabled) }}
     persistProxySpec: true
@@ -101,6 +113,7 @@ spec:
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowWarnings: {{ .Values.gateway.validation.allowWarnings }}
+      serverEnabled: {{ .Values.gateway.validation.serverEnabled }}
       disableTransformationValidation: {{ .Values.gateway.validation.disableTransformationValidation }}
       warnRouteShortCircuiting: {{ .Values.gateway.validation.warnRouteShortCircuiting }}
       validationServerGrpcMaxSizeBytes: {{ .Values.gateway.validation.validationServerGrpcMaxSizeBytes }}
@@ -115,6 +128,10 @@ spec:
     udsOptions:
     {{- toYaml .Values.discovery.udsOptions | nindent 6 }}
 {{- end }} {{/* if .Values.discovery.udsOptions */}}
+{{- if .Values.discovery.fdsOptions }}
+    fdsOptions:
+    {{- toYaml .Values.discovery.fdsOptions | nindent 6 }}
+{{- end }} {{/* if .Values.discovery.fdsOptions */}}
 {{- end }} {{/* if .Values.discovery */}}
 
 {{- if .Values.settings.extensions }}
@@ -125,6 +142,11 @@ spec:
 {{- if .Values.settings.rateLimit }}
   ratelimit:
 {{- toYaml .Values.settings.rateLimit | nindent 4 }}
+{{- end }}
+
+{{- if .Values.settings.ratelimitServer }}
+  ratelimitServer:
+{{- toYaml .Values.settings.ratelimitServer | nindent 4 }}
 {{- end }}
 
 {{/* extauth have specified yaml in Enterprise (as opposed to generic yaml insertion for third party configs here) */}}
@@ -156,10 +178,10 @@ spec:
 {{- end }} {{/* if .Values.settings.create  */}}
 {{- end }} {{/* define "settings.settingsSpec" */}}
 
+
 {{/* Render template with yaml overrides */}}
 {{- $kubeResourceOverride := dict -}}
 {{- if .Values.settings -}}
 {{- $kubeResourceOverride = .Values.settings.kubeResourceOverride  -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $kubeResourceOverride "settings.settingsSpec") -}}
-

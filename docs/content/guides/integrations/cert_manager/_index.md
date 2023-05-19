@@ -20,7 +20,7 @@ Gloo Edge is installed, the proxy service is granted an external IP. This guide 
 
 ### Install Gloo Edge
 
-To install gloo, run:
+To install Gloo Edge, run:
 ```shell
 glooctl install gateway
 ```
@@ -32,43 +32,44 @@ You can install with static manifests or helm. For this example we will use the 
 
 ```shell
 kubectl create namespace cert-manager
-kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.14.3/cert-manager-legacy.yaml
+kubectl apply --validate=false -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
 ```
 
 ---
 
 ## Utilizing the ACME DNS-01 Challenge
 
-### Setup your DNS
+Start by allowing cert manager to configure DNS records in AWS.
+
+Choose between the following options:
+* Development and testing environments: Use an [**AWS key pair**](#using-an-aws-key-pair).
+* Production environments: Use [**IAM roles for service accounts (IRSA)**](#using-aws-irsa).
+
+For more details on the access requirements for cert-manager, especially for cross-account cases that are not covered in this guide, see the cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/). 
+
 
 In this example we used the domain name `test-123456789.solo.io`. We'll create an `A` record that maps to the IP address of the 
-gateway proxy that we installed with Gloo Edge.  
+gateway proxy that we installed with Gloo Edge.
 
 You can run these commands to update AWS route53 through the AWS command line tool 
 (remember to replace *HOSTED_ZONE* and *RECORD* with your values):
 
 ```shell
 export GLOO_HOST=$(kubectl get svc -l gloo=gateway-proxy -n gloo-system -o 'jsonpath={.items[0].status.loadBalancer.ingress[0].ip}')
-RECORD=test-123456789
-HOSTED_ZONE=solo.io.
-ZONEID=$(aws route53 list-hosted-zones|jq -r '.HostedZones[]|select(.Name == "'"$HOSTED_ZONE"'").Id')
-RS='{ "Changes": [{"Action": "UPSERT", "ResourceRecordSet":{"ResourceRecords":[{"Value": "'$GLOO_HOST'"}],"Type": "A","Name": "'$RECORD.$HOSTED_ZONE'","TTL": 300} } ]}'
-aws route53 change-resource-record-sets --hosted-zone-id $ZONEID --change-batch "$RS"
+export RECORD=test-123456789
+export HOSTED_ZONE=solo.io.
+export ROUTE53_ZONE_ID=$(aws route53 list-hosted-zones|jq -r '.HostedZones[]|select(.Name == "'"$HOSTED_ZONE"'").Id')
+export RS='{ "Changes": [{"Action": "UPSERT", "ResourceRecordSet":{"ResourceRecords":[{"Value": "'$GLOO_HOST'"}],"Type": "A","Name": "'$RECORD.$HOSTED_ZONE'","TTL": 300} } ]}'
+aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_ZONE_ID --change-batch "$RS"
 ```
 
-### Add a Service
+### Using an AWS key pair
 
-Add a service that will get exposed via Gloo Edge. In this document we will use the petclinic spring application. 
+#### Provide AWS account details to cert-manager
 
-```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
-```
+Allow cert-manager access to configure DNS records in AWS. See cert-manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager. 
 
-### Configure access to AWS
-
-We'll need to allow cert manager access to configure DNS records in AWS. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the access requirements for cert-manager. 
-
-Once you have configured access, we will need to add the access keys as a kubernetes secret, so that cert manager can access them:
+Once you have configured access, add the access keys as a Kubernetes secret, so that cert-manager can access them:
 
 ```shell
 export ACCESS_KEY_ID=...
@@ -76,7 +77,8 @@ export SECRET_ACCESS_KEY=...
 kubectl create secret generic aws-creds -n cert-manager --from-literal=access_key_id=$ACCESS_KEY_ID --from-literal=secret_access_key=$SECRET_ACCESS_KEY
 ```
 
-### Create a cluster issuer
+#### Create a cluster issuer
+
 Create a cluster issuer for Let's Encrypt with Route 53.
 
 ```shell
@@ -103,7 +105,128 @@ spec:
 EOF
 ```
 
-Wait until the cluster issuer is in ready state:
+### Using AWS IRSA
+
+For production-level setups, use IAM roles for service accounts (IRSA) to give cert manager the necessary access.
+
+**Before you begin**: Make sure that IRSA is enabled in your EKS cluster. For more information, see the [AWS IRSA documentation](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+
+#### Create role and policy
+
+For convenience, save the following information in environment variables:
+
+```shell
+export AWS_ACCOUNT=$(aws sts get-caller-identity --query Account | tr -d '"')
+export EKS_CLUSTER_NAME=my-eks-cluster-name
+export EKS_REGION=us-east-1
+export HOSTED_ZONE=solo.io.
+export ROUTE53_ZONE_ID=$(aws route53 list-hosted-zones|jq -r '.HostedZones[]|select(.Name == "'"$HOSTED_ZONE"'").Id')
+export EKS_HASH=$(aws eks describe-cluster --name ${EKS_CLUSTER_NAME} --query cluster.identity.oidc.issuer | cut -d '/' -f5 | tr -d '"')
+```
+
+Create a policy with the minimum-required access.
+
+```shell
+cat <<EOF > policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "route53:GetChange",
+      "Resource": "arn:aws:route53:::change/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "route53:ChangeResourceRecordSets",
+        "route53:ListResourceRecordSets"
+      ],
+      "Resource": "arn:aws:route53:::hostedzone/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "route53:ListHostedZonesByName",
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+
+aws iam create-policy \
+    --policy-name AwsCertManagerToRoute53 \
+    --policy-document file://policy.json
+```
+
+And attach this policy to a role.
+
+```shell
+cat <<EOF > trust-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Principal": {
+        "Federated": "arn:aws:iam::${AWS_ACCOUNT}:oidc-provider/oidc.eks.${EKS_REGION}.amazonaws.com/id/${EKS_HASH}"
+      },
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.${EKS_REGION}.amazonaws.com/id/${EKS_HASH}:sub": "system:serviceaccount:cert-manager:cert-manager"
+        }
+      }
+    }
+  ]
+}
+EOF
+
+aws iam create-role --role-name EksCertManagerRole --assume-role-policy-document file://trust-policy.json
+aws iam attach-role-policy --policy-arn arn:aws:iam::${AWS_ACCOUNT}:policy/AwsCertManagerToRoute53 --role-name EksCertManagerRole
+
+export IAM_ROLE_ARN=$(aws iam get-role --role-name EksCertManagerRole --query Role.Arn | tr -d '"')
+```
+
+Annotate the `cert-manager` service account to use this role to manage `route53` records.
+
+```bash
+kubectl annotate sa -n cert-manager cert-manager "eks.amazonaws.com/role-arn"="${IAM_ROLE_ARN}"
+```
+
+To enable the cert-manager deployment to read the ServiceAccount token, modify the cert-manager deployment to define new file system permissions with the following command. You can also make these changes by upgrading the Helm chart that you used to deployed cert-manager, which persists the changes across upgrades.
+
+```
+kubectl patch deployment -n cert-manager cert-manager --type "json" -p '[{"op":"add","path":"/spec/template/spec/securityContext/fsGroup","value":1001}]
+```
+
+#### Create a cluster issuer
+
+Finally, create a cluster issuer for Let's Encrypt with Route 53.
+
+```shell
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: aurelien.tison@solo.io
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - selector:
+        dnsZones:
+          - "${HOSTED_ZONE}"
+      dns01:
+        route53:
+          region: ${EKS_REGION}
+EOF
+```
+### Check the cluster issuer state
+
+Once account and rights have been defined, wait until the cluster issuer is in ready state:
 
 ```
 kubectl get clusterissuer letsencrypt-staging -o jsonpath='{.status.conditions[0].type}{"\n"}'

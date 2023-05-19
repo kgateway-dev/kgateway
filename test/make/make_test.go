@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -95,13 +95,7 @@ var _ = Describe("Make", func() {
 
 	Context("VERSION", func() {
 		It("should be set according to TAGGED_VERSION", func() {
-
-			out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-
-			remoteUrl := string(out)
-			if !strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") &&
-				!strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {
+			if !IsUpstreamOrigin() {
 				// we are on a fork
 				Skip("skip")
 			}
@@ -114,14 +108,9 @@ var _ = Describe("Make", func() {
 		})
 
 		It("should be set according to TEST_ASSET_ID", func() {
+			expectedVersion := "0.0.1-fork"
 
-			out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-
-			expectedVersion := "0.0.0-fork"
-			remoteUrl := string(out)
-			if strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") ||
-				strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {
+			if IsUpstreamOrigin() {
 				out, err := exec.Command("git", "describe", "--tags", "--abbrev=0").CombinedOutput()
 				Expect(err).NotTo(HaveOccurred())
 				gitDesc := strings.TrimSpace(string(out))
@@ -137,22 +126,19 @@ var _ = Describe("Make", func() {
 		})
 
 		It("neither TAGGED_VERSION nor TEST_ASSET_ID are set", func() {
-
-			out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-
-			remoteUrl := string(out)
-			if !strings.Contains(remoteUrl, "git@github.com:solo-io/gloo.git") &&
-				!strings.Contains(remoteUrl, "https://www.github.com/solo-io/gloo.git") {
+			if !IsUpstreamOrigin() {
 				// we are on a fork
 				Skip("skip")
 			}
 
-			out, err = exec.Command("git", "describe", "--tags", "--dirty").CombinedOutput()
+			out, err := exec.Command("git", "describe", "--tags", "--dirty").CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			gitDesc := strings.TrimSpace(string(out))
 			gitDesc = strings.TrimPrefix(gitDesc, "v")
-			ExpectMakeVarsWithEnvVars([]*EnvVar{}, []*MakeVar{
+			ExpectMakeVarsWithEnvVars([]*EnvVar{
+				{TaggedVersion, ""},
+				{TestAssetId, ""},
+			}, []*MakeVar{
 				{Version, gitDesc},
 			})
 		})
@@ -189,3 +175,31 @@ var _ = Describe("Make", func() {
 	})
 
 })
+
+// IsUpstreamOrigin returns true if the code is being executed from within the Gloo repo
+// Returns false, if being executed from a Fork
+func IsUpstreamOrigin() bool {
+	out, err := exec.Command("git", "remote", "get-url", "origin").CombinedOutput()
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	return isUpstreamOriginUrl(string(out))
+}
+
+func isUpstreamOriginUrl(remoteUrl string) bool {
+	// These upstreamUrls are pulled from the logic within our Makefile
+	upstreamUrls := []string{
+		"git@github.com:solo-io/gloo.git",         // UPSTREAM_ORIGIN_URL
+		"https://www.github.com/solo-io/gloo.git", // UPSTREAM_ORIGIN_URL_HTTPS
+		"ssh://git@github.com/solo-io/gloo",       // UPSTREAM_ORIGIN_URL_SSH
+	}
+
+	for _, possibleUpstreamUrl := range upstreamUrls {
+		if strings.Contains(remoteUrl, possibleUpstreamUrl) {
+			// match, we're running from within Gloo
+			return true
+		}
+	}
+
+	// no matches, we're running from within a fork
+	return false
+}

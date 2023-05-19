@@ -3,16 +3,20 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/solo-io/gloo/test/testutils"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -58,8 +62,13 @@ curl http://<instance-public-ip>/
 */
 
 var _ = Describe("AWS EC2 Plugin utils test", func() {
-
-	const region = "us-east-1"
+	if testutils.ShouldSkipTempDisabledTests() {
+		return
+	}
+	const (
+		region     = "us-east-1"
+		awsRoleArn = "AWS_ROLE_ARN"
+	)
 
 	var (
 		ctx           context.Context
@@ -79,7 +88,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		}
 
 		// role arn format: "arn:aws:iam::[account_number]:role/[role_name]"
-		roleArn = os.Getenv("AWS_ARN_ROLE_1")
+		roleArn = os.Getenv(awsRoleArn)
 		if roleArn == "" {
 			Skip("no AWS role ARN available")
 		}
@@ -150,7 +159,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			}
 
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				return "", eris.Wrapf(err, "unable to read body")
 			}
@@ -235,11 +244,23 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	})
 
 	BeforeEach(func() {
+		testutils.ValidateRequirementsAndNotifyGinkgo(
+			testutils.Kubernetes("Uses a Kubernetes client"),
+		)
+
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
-		testClients = services.RunGateway(ctx, true)
+		runOptions := &services.RunOptions{
+			NsToWrite: writeNamespace,
+			NsToWatch: []string{"default", writeNamespace},
+			WhatToRun: services.What{
+				DisableGateway: true,
+			},
+			KubeClient: kube2e.MustKubeClient(),
+		}
+		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()

@@ -1,0 +1,62 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7222
+    resolvesIssue: false
+    description: >
+      Upgrade Ginkgo from v1 to v2, using https://onsi.github.io/ginkgo/MIGRATING_TO_V2 as a helpful guide.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-list-licenses
+    dependencyTag: v0.1.4
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.24.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.3.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: protoc-gen-ext
+    dependencyTag: v0.0.18
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.31.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: ginkgo/v2
+    dependencyTag: v2.5.0
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: onsi
+    dependencyRepo: gomega
+    dependencyTag: v1.24.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apiextensions-apiserver
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apimachinery
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: client-go
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: api
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: code-generator
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: kubectl
+    dependencyTag: v0.23.16
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: sigs.k8s.io
+    dependencyRepo: controller-runtime
+    dependencyTag: v0.11.2

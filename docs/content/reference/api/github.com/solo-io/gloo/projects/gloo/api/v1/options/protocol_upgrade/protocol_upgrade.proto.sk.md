@@ -30,12 +30,14 @@ weight: 5
 
 ```yaml
 "websocket": .protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec
+"connect": .protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `websocket` | [.protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec](../protocol_upgrade.proto.sk/#protocolupgradespec) | Specification for websocket upgrade requests. |
+| `websocket` | [.protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec](../protocol_upgrade.proto.sk/#protocolupgradespec) | Specification for websocket upgrade requests. Only one of `websocket` or `connect` can be set. |
+| `connect` | [.protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig.ProtocolUpgradeSpec](../protocol_upgrade.proto.sk/#protocolupgradespec) |  Only one of `connect` or `websocket` can be set. |
 
 
 

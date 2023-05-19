@@ -1,0 +1,5 @@
+changelog:
+- type: BREAKING_CHANGE
+  description: Extract the generated files from `ssl.proto` into their own go package.  This is meant to support a follow-up PR by resolving a circular dependency where ssl can be used in more places.  This *will not* affect the regular operation of `gloo`.  Rather, it will impact consumers of the solo-apis repository, as paths will have changed.
+  issueLink: https://github.com/solo-io/gloo/issues/7693
+  resolvesIssue: false

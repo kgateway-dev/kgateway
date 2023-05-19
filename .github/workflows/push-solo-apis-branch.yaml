@@ -6,12 +6,14 @@ on:
   # so that developers do not need to run this step manually when a flake occurs
   workflow_dispatch:
     inputs:
-      release-tag-name:
-        description: 'Release Tag Name'
+      source-branch:
+        # The name of your remote branch that contains the API changes you would like to mirror
+        description: 'The branch that contains the relevant API change'
         required: true
         default: ''
-      release-branch:
-        description: 'Release Branch'
+      target-branch:
+        # The name of the remote branch that you would like to merge these API changes into (ie v1.13.x)
+        description: 'The LTS branch that these API changes are targeted for'
         required: true
         default: ''
 jobs:
@@ -19,98 +21,77 @@ jobs:
     name: Prepare Environment Variables
     runs-on: ubuntu-22.04
     outputs:
-      # The tag for the release commit (ie v1.8.0)
-      release-tag-name: ${{ steps.release-tag-name.outputs.value }}
+      # The Gloo Commit ID that contains the changes we are attempting to mirror
+      # On a manual trigger, this is branch name with your changes
+      # On a release, this is the tag for the release commit (ie v1.13.0)
+      source-commit: ${{ steps.source-commit.outputs.value }}
 
-      # The LTS branch that was released (ie v1.8.x)
-      release-branch: ${{ steps.release-branch.outputs.value }}
+      # The LTS branch that we are targeting these changes for (ie v1.13.x)
+      target-branch: ${{ steps.target-branch.outputs.value }}
 
       # The prefix used to differentiate LTS branches in solo-apis
       solo-apis-prefix: 'gloo'
     steps:
-    - id: release-tag-name
+    - id: source-commit
       run: |
-        RELEASE_TAG_NAME=${{ github.event.inputs.release-tag-name }}
+        SOURCE_COMMIT=${{ github.event.inputs.source-branch }}
         if [[ ${{ github.event_name == 'release' }} = true ]]; then
-          RELEASE_TAG_NAME=${{ github.event.release.tag_name }}
+          SOURCE_COMMIT=${{ github.event.release.tag_name }}
         fi
-        echo "::set-output name=value::$(echo $RELEASE_TAG_NAME)"
-    - id: release-branch
+        echo "value=$SOURCE_COMMIT" >> $GITHUB_OUTPUT
+    - id: target-branch
       run: |
-        RELEASE_BRANCH=${{ github.event.inputs.release-branch }}
+        TARGET_BRANCH=${{ github.event.inputs.target-branch }}
         if [[ ${{ github.event_name == 'release' }} = true ]]; then
-          RELEASE_BRANCH=${{ github.event.release.target_commitish }}
+          TARGET_BRANCH=${{ github.event.release.target_commitish }}
         fi
-        echo "::set-output name=value::$(echo $RELEASE_BRANCH)"
+        echo "value=$TARGET_BRANCH" >> $GITHUB_OUTPUT
   push-to-solo-apis-branch:
     needs: prepare-env
     env:
-      RELEASE_TAG_NAME: ${{ needs.prepare-env.outputs.release-tag-name }}
-      RELEASE_BRANCH: ${{ needs.prepare-env.outputs.release-branch }}
+      SOURCE_COMMIT: ${{ needs.prepare-env.outputs.source-commit }}
+      TARGET_BRANCH: ${{ needs.prepare-env.outputs.target-branch }}
       SOLO_APIS_PREFIX: ${{ needs.prepare-env.outputs.solo-apis-prefix }}
     name: Publish Gloo APIs
     runs-on: ubuntu-22.04
     steps:
-      - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.4.1
-        with:
-          access_token: ${{ github.token }}
-      - name: Free disk space
-        run: |
-          echo "Before clearing disk space:"
-          df -h
-
-          # https://github.com/actions/virtual-environments/issues/709
-          sudo apt-get clean
-
-          # Clean up pre-installed tools
-          # https://github.com/actions/virtual-environments/issues/1918
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-          echo "After clearing disk space:"
-          df -h
       - name: Install SSH Deploy key
         uses: webfactory/ssh-agent@v0.4.1
         with:
           ssh-private-key: ${{ secrets.SOLO_API_DEPLOY_KEY }}
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
         with:
-          go-version: 1.18.2
-        id: go
+          repository: solo-io/gloo
+          path: gloo
+          ref: ${{ env.SOURCE_COMMIT }}
+      - uses: ./gloo/.github/workflows/composite-actions/prep-go-runner
+        with:
+          working-directory: gloo
       - name: Install Protoc
-        uses: arduino/setup-protoc@v1.1.2
+        uses: arduino/setup-protoc@master
         with:
           version: '3.6.1'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-        with:
-          repository: solo-io/gloo
-          path: gloo
-          ref: ${{ env.RELEASE_TAG_NAME }}
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: solo-io/solo-apis
           path: solo-apis
           # Checkout the solo-apis LTS branch that tracks the Gloo LTS branch
           # NOTE: This will fail if the solo-apis LTS branch does not exist.
-          ref: '${{env.SOLO_APIS_PREFIX}}-${{ env.RELEASE_BRANCH }}'
+          ref: '${{env.SOLO_APIS_PREFIX}}-${{ env.TARGET_BRANCH }}'
       - name: Update solo-apis
         env:
           # The LTS branch in solo-apis that will hold the published apis (ie gloo-v1.8.x)
-          SOLO_APIS_DESTINATION_BRANCH: '${{env.SOLO_APIS_PREFIX}}-${{ env.RELEASE_BRANCH }}'
+          SOLO_APIS_DESTINATION_BRANCH: '${{env.SOLO_APIS_PREFIX}}-${{ env.TARGET_BRANCH }}'
           # The branch that this GHA will commit to.
-          # The branch name fits the following shape: sync-apis/${SOLO_API_LTS_BRANCH}/${SOLO_APIS_TAG_NAME}
+          # The branch name fits the following shape: sync-apis/${SOLO_API_LTS_BRANCH}/${SOURCE_COMMIT}
           # Using this structure, the solo-apis repo can run actions to generate pull requests to the proper LTS branch
           # and tag those branches after they merge.
           # For example, releasing v1.8.0 will create a pull request:
-          #   gloo-v1.8.x <-- sync-apis/gloo-v1.8.x/gloo-v1.8.0
-          SOLO_APIS_SOURCE_BRANCH: 'sync-apis/${{ env.SOLO_APIS_PREFIX }}-${{ env.RELEASE_BRANCH }}/${{ env.SOLO_APIS_PREFIX }}-${{ env.RELEASE_TAG_NAME }}'
+          #   gloo-v1.13.x <-- sync-apis/gloo-v1.13.x/gloo-v1.13.0
+          SOLO_APIS_SOURCE_BRANCH: 'sync-apis/${{ env.SOLO_APIS_PREFIX }}-${{ env.TARGET_BRANCH }}/${{ env.SOLO_APIS_PREFIX }}-${{ env.SOURCE_COMMIT }}'
           GIT_USER_NAME: soloio-bot
           GIT_USER_EMAIL: soloio-bot@github.com
         run: |

@@ -20,7 +20,15 @@ ClusterRole
 Expand the name of a container image, adding -fips to the name of the repo if configured.
 */}}
 {{- define "gloo.image" -}}
+{{- if and .fips .fipsDigest -}}
+{{- /*
+In consideration of https://github.com/solo-io/gloo/issues/7326, we want the ability for -fips images to use their own digests,
+rather than falling back (incorrectly) onto the digests of non-fips images
+*/ -}}
+{{ .registry }}/{{ .repository }}-fips:{{ .tag }}@{{ .fipsDigest }}
+{{- else -}}
 {{ .registry }}/{{ .repository }}{{ ternary "-fips" "" ( and (has .repository (list "gloo-ee" "extauth-ee" "gloo-ee-envoy-wrapper" "rate-limit-ee" )) (default false .fips)) }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}{{- if .digest -}}@{{ .digest }}{{- end -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "gloo.pullSecret" -}}
@@ -53,7 +61,71 @@ restartPolicy: {{ . }}
 {{- with .priorityClassName -}}
 priorityClassName: {{ . }}
 {{ end -}}
+{{- with .initContainers -}}
+initContainers: {{ toYaml . | nindent 2 }}
+{{ end -}}
 {{- end -}}
+
+{{- define "gloo.jobSpecStandardFields" -}}
+{{- with .activeDeadlineSeconds -}}
+activeDeadlineSeconds: {{ . }}
+{{ end -}}
+{{- with .backoffLimit -}}
+backoffLimit: {{ . }}
+{{ end -}}
+{{- with .completions -}}
+completions: {{ . }}
+{{ end -}}
+{{- with .manualSelector -}}
+manualSelector: {{ . }}
+{{ end -}}
+{{- with .parallelism -}}
+parallelism: {{ . }}
+{{ end -}}
+{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
+      The 'kindIs' comparision is how we can check for undefined */ -}}
+{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
+{{- with .ttlSecondsAfterFinished  -}}
+ttlSecondsAfterFinished: {{ . }}
+{{ end -}}
+{{- end -}}
+{{- end -}}
+
+{{- /* 
+This template is used to generate the gloo pod or container security context.
+It takes 2 values:
+  .values - the securityContext passed from the user in values.yaml
+  .defaults - the default securityContext for the pod or container
+
+  Depending upon the value of .values.merge, the securityContext will be merged with the defaults or completely replaced.
+  In a merge, the values in .values will override the defaults, following the logic of helm's merge function.
+Because of this, if a value is "true" in defaults it can not be modified with this method.
+*/ -}}
+{{- define "gloo.securityContext" }}
+{{- $securityContext := dict -}}
+{{- $overwrite := true -}}
+{{- if .values -}}
+  {{- if .values.mergePolicy }}
+    {{- if eq .values.mergePolicy "helm-merge" -}}
+      {{- $overwrite = false -}}
+    {{- else if ne .values.mergePolicy "no-merge" -}}
+      {{- fail printf "value '%s' is not an allowed value for mergePolicy. Allowed values are 'no-merge', 'helm-merge', or an empty string" .values.mergePolicy }}
+    {{- end -}}
+  {{- end }}
+{{- end -}}
+
+{{- if $overwrite -}}
+  {{- $securityContext = or .values .defaults (dict) -}}
+{{- else -}}
+  {{- $securityContext = merge .values .defaults }}
+{{- end }}
+{{- /* Remove "mergePolicy" if it exists because it is not a part of the kubernetes securityContext definition */ -}}
+{{- $securityContext = omit $securityContext "mergePolicy" -}}
+{{- with $securityContext -}}
+securityContext:{{ toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
 {{- /*
 This takes an array of three values:
 - the top context
@@ -85,7 +157,7 @@ Examples:
 │   - banana          │                       │                        │
 └─────────────────────┴───────────────────────┴────────────────────────┘
 
-gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/master/incubator/common/templates/_util.tpl).
+gloo.util.merge is a fork of a helm library chart function (https://github.com/helm/charts/blob/main/incubator/common/templates/_util.tpl).
 This includes some optimizations to speed up chart rendering time, and merges in a value (overrides) with a named template, unlike the upstream
 version, which merges two named templates.
 

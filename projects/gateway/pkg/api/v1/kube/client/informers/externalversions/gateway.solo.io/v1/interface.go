@@ -28,6 +28,8 @@ type Interface interface {
 	Gateways() GatewayInformer
 	// MatchableHttpGateways returns a MatchableHttpGatewayInformer.
 	MatchableHttpGateways() MatchableHttpGatewayInformer
+	// MatchableTcpGateways returns a MatchableTcpGatewayInformer.
+	MatchableTcpGateways() MatchableTcpGatewayInformer
 	// RouteOptions returns a RouteOptionInformer.
 	RouteOptions() RouteOptionInformer
 	// RouteTables returns a RouteTableInformer.
@@ -57,6 +59,11 @@ func (v *version) Gateways() GatewayInformer {
 // MatchableHttpGateways returns a MatchableHttpGatewayInformer.
 func (v *version) MatchableHttpGateways() MatchableHttpGatewayInformer {
 	return &matchableHttpGatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// MatchableTcpGateways returns a MatchableTcpGatewayInformer.
+func (v *version) MatchableTcpGateways() MatchableTcpGatewayInformer {
+	return &matchableTcpGatewayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // RouteOptions returns a RouteOptionInformer.

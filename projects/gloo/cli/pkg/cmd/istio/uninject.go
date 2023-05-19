@@ -59,8 +59,7 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 // as well as updating the gateway-proxy ConfigMap
 func istioUninject(args []string, opts *options.Options) error {
 	glooNS := opts.Metadata.GetNamespace()
-
-	client := helpers.MustKubeClient()
+	client := helpers.MustKubeClientWithKubecontext(opts.Top.KubeContext)
 	_, err := client.CoreV1().Namespaces().Get(opts.Top.Ctx, glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err

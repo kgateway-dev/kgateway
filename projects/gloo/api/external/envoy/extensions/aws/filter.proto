@@ -39,18 +39,23 @@ message AWSLambdaPerRoute {
   // body is used if the body empty, and an empty body will be sent upstream.
   google.protobuf.StringValue empty_body_override = 4;
 
+  // Deprecated. Use transformer_config to specify an AWS Lambda response transformer instead.
   // Unwrap responses as AWS ALB does.
   // Expects json lambda responses to construct response.
   // Intended to ease migration when previously using alb to invoke Lambdas.
-  // When set on a route the filter will not stream data on the encoding step. 
+  // When set on a route the filter will not stream data on the encoding step.
   // For further information see below link for the expected format when true.
   // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/lambda-functions.html
   // Defaults to false.
-  bool unwrap_as_alb = 5;
+  bool unwrap_as_alb = 5 [deprecated = true];
 
   // transformer configuration used to process response data
   // cannot be configured simultaneously with unwrap_as_alb
   .solo.io.envoy.config.core.v3.TypedExtensionConfig transformer_config = 6;
+
+  // This is a transformer config, as defined in api.envoy.config.filter.http.transformation.v2
+  // used to process request data.
+  .solo.io.envoy.config.core.v3.TypedExtensionConfig request_transformer_config = 7;
 }
 
 message AWSLambdaProtocolExtension {
@@ -114,7 +119,7 @@ message AWSLambdaConfig {
   }
 
   // Send downstream path and method as `x-envoy-original-path` and
-  // `x-envoy-original-method` headers on the request to AWS lambda. 
+  // `x-envoy-original-method` headers on the request to AWS lambda.
   // Defaults to false.
   bool propagate_original_routing = 3;
 
@@ -126,4 +131,5 @@ message AWSLambdaConfig {
 }
 
 message ApiGatewayTransformation {
-} 
+}
+

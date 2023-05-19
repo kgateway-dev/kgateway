@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/6771
+    description: >
+      Expose Envoy route option host_rewrite_path_regex, which indicates that during forwarding, the host header will be swapped with
+      the result of the regex substitution executed on path value with query and fragment removed. This is useful
+      for transitioning variable content between path segment and subdomain. Using this option will append the x-forwarded-host
+      header if append_x_forwarded_host is set. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto
+

@@ -8,7 +8,7 @@ import (
 
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	networkingv1 "k8s.io/api/networking/v1"

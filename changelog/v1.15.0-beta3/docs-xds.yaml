@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Removes xDS relay docs. Adds more information about setting TCP keepalives to prevent network connectivity issues, and links to an updated KCS article. Updates the upgrade page accordingly.

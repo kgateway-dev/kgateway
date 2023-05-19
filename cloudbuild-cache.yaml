@@ -1,3 +1,7 @@
+options:
+  env:
+    - "_GO_VERSION=1.20.1"
+
 steps:
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
@@ -8,21 +12,13 @@ steps:
     path: '/go/pkg'
   id: 'untar-mod-cache'
 
-- name: 'golang:1.18.2'
-  args: ['go', 'mod', 'download']
-  volumes: *vol
-  id: 'download'
-
-- name: 'golang:1.18.2'
-  args: ['go', 'mod', 'tidy']
-  volumes: *vol
-  id: 'tidy'
-
-- name: 'golang:1.18.2'
+- name: 'golang:${_GO_VERSION}'
   entrypoint: 'bash'
+  args:
+    - '-c'
+    - 'go mod download && go mod tidy && cd /go/pkg && tar -zvcf gloo-mod.tar.gz mod'
   volumes: *vol
-  args: ['-c', ' cd /go/pkg && tar -zvcf gloo-mod.tar.gz mod']
-  id: 'tar-cache'
+  id: 'download-tidy-cache'
 
 - name: gcr.io/cloud-builders/gsutil
   args: ['cp', '/go/pkg/gloo-mod.tar.gz', 'gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz']

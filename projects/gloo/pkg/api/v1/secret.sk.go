@@ -19,6 +19,10 @@ var (
 	_ resources.Resource = new(Secret)
 )
 
+func NewSecretHashableResource() resources.HashableResource {
+	return new(Secret)
+}
+
 func NewSecret(namespace, name string) *Secret {
 	secret := &Secret{}
 	secret.SetMetadata(&core.Metadata{

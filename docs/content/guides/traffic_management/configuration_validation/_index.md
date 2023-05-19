@@ -52,6 +52,42 @@ The proxy that *Gateways* and their *Virtual Services* will be applied to can be
 
 {{% /notice %}}
 
+## Monitoring the configuration status of Gloo resources
+
+When Gloo Edge fails to process a resource, the failure is reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}.
+You can configure Gloo Edge to publish metrics that record the configuration status of resources.
+
+In the `observabilityOptions` of the Settings CRD, you can enable status metrics by specifying the resource type and any labels to apply
+to the metric. The following example adds metrics for virtual services and
+upstreams, which both have labels that include the namespace and name of each individual resource:
+
+```yaml
+observabilityOptions:
+  configStatusMetricLabels:
+    Upstream.v1.gloo.solo.io:
+      labelToPath:
+        name: '{.metadata.name}'
+        namespace: '{.metadata.namespace}'
+    VirtualService.v1.gateway.solo.io:
+      labelToPath:
+        name: '{.metadata.name}'
+        namespace: '{.metadata.namespace}'
+```
+
+After you complete the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) 
+to generate some resources, you can see the metrics that you defined at <http://localhost:9091/metrics>. If the port
+forwarding is directed towards the Gloo pod, the `default-petstore-8080` upstream reports a healthy state:
+```
+validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
+```
+
+If the port forwarding is switched to the gateway pod, you can see the metrics defined for virtual services by
+revisiting the metrics endpoint: <http://localhost:9091/metrics>.
+```
+validation_gateway_solo_io_virtual_service_config_status{name="default",namespace="gloo-system"} 0
+```
+
+
 ## Warnings and Errors
 
 Gloo Edge processes an admitted config resource, it can report one of three status types on the resource:
@@ -74,7 +110,7 @@ which is invoked whenever a `gateway.solo.io` custom resource is created or modi
 {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}},
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
-The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Edge's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
+The [validating webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Edge's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
 by removing the `ValidatingWebhookConfiguration`.
 
 The webhook can be configured to perform strict or permissive validation, depending on the `gateway.validation.alwaysAccept` setting in the 
