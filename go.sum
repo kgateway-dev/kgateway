@@ -1401,8 +1401,8 @@ github.com/solo-io/go-utils v0.24.2 h1:nA3tlPwVwh3eK0gnnatSEDmKBYITK3IOnfyec/3XH
 github.com/solo-io/go-utils v0.24.2/go.mod h1:2ds5++iv1FGox0/aWz/DAiRYTIb6r4yiM+VSF7sAyL4=
 github.com/solo-io/k8s-utils v0.0.1/go.mod h1:53N9+9Gl2MwqIZJ7/ocA9gKvWt+6z7MPD2qKQix7oFE=
 github.com/solo-io/k8s-utils v0.0.8/go.mod h1:Cg2ymG0xhLdyS3NJ0D98yxiSWjAKYPNopzPTwVDl7e4=
-github.com/solo-io/k8s-utils v0.3.1-0.20230518135654-ebacc1f25c03 h1:b04dBbOeeRSIRJOJdk+BHU4hMlVoqWX66UE3LjwcGsk=
-github.com/solo-io/k8s-utils v0.3.1-0.20230518135654-ebacc1f25c03/go.mod h1:3WqFrZl+xGuzxXGcyaEiBiAXiBB8ab8FJ48CoikzBFo=
+github.com/solo-io/k8s-utils v0.4.0 h1:V6tNm4lvFJnwGP54Uq9Y+RFNLi+cfmaD1Ic7qmMYdy4=
+github.com/solo-io/k8s-utils v0.4.0/go.mod h1:3WqFrZl+xGuzxXGcyaEiBiAXiBB8ab8FJ48CoikzBFo=
 github.com/solo-io/protoc-gen-ext v0.0.13/go.mod h1:/U/jMDtVI7R6N323sfaUXK9Mmo54D7SY3pP7JtI/kMo=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=
 github.com/solo-io/protoc-gen-ext v0.0.18/go.mod h1:iGyCvmKmhJNXs5MgBcYFBF0om7LDnCVD2WwhOZGnqeA=
@@ -1413,8 +1413,8 @@ github.com/solo-io/skv2 v0.30.0/go.mod h1:2+ySJOxcW5gn8XlJ96eihI9s7WKHVY+stxhRqS
 github.com/solo-io/solo-apis v0.0.0-20230519143324-dc5deeca853a h1:H/YVvMmhpWgerHAzI3GZ55qHCD/oKns2n7fRkEJeIAM=
 github.com/solo-io/solo-apis v0.0.0-20230519143324-dc5deeca853a/go.mod h1:ABIDG5FMPK6xLkEhg9QLOG/AQoq6tbMIMhER3GUEa4M=
 github.com/solo-io/solo-kit v0.23.0/go.mod h1:uCOi8RQ3MetHXsRFvVKPzafYySUvFuPxB+gvo7ScRR8=
-github.com/solo-io/solo-kit v0.31.1-0.20230518153951-adc0e5f98619 h1:VKuerW0ihXGU9JzLtnlayPBnSdoXdxabqx3mM2xhPzY=
-github.com/solo-io/solo-kit v0.31.1-0.20230518153951-adc0e5f98619/go.mod h1:BTDa6vey0b9MJbMwuUZ+OdUXB7NQuoz5UzrWhjcJjeE=
+github.com/solo-io/solo-kit v0.32.0 h1:UeGgLQLZqEN5mNGi1zcK7qXX7GmqgCiifrAh5PKRPPs=
+github.com/solo-io/solo-kit v0.32.0/go.mod h1:b2N00xEJ9pTPZTgt7JXBDqqAISzMs1DZFQLnw4LyhlU=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=

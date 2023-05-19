@@ -52,17 +52,14 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.24.2
-	// todo (fabian) upgrade this when released
-	github.com/solo-io/k8s-utils v0.3.1-0.20230518135654-ebacc1f25c03
+	github.com/solo-io/k8s-utils v0.4.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.30.0
 
-	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
-	// todo (fabian) use 'gloo-repo-branch' tag when completed
+	// Pinned to the latest `gloo-repo-branch` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20230519143324-dc5deeca853a
-	// todo (fabian) use released update with k8s upgraded
-	github.com/solo-io/solo-kit v0.31.1-0.20230518153951-adc0e5f98619
+	github.com/solo-io/solo-kit v0.32.0
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
