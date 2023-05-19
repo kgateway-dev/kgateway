@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"io/ioutil"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -56,7 +54,7 @@ func NewConsulFactory() (*ConsulFactory, error) {
 	}
 
 	// try to grab one form docker...
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +72,7 @@ docker rm -f $CID
     `, consulDockerImage, consulDockerImage)
 	scriptFile := filepath.Join(tmpdir, "get_consul.sh")
 
-	err = ioutil.WriteFile(scriptFile, []byte(bash), 0755)
+	err = os.WriteFile(scriptFile, []byte(bash), 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +110,7 @@ func (ef *ConsulFactory) MustConsulInstance() *ConsulInstance {
 
 func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 	// try to grab one form docker...
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +148,7 @@ type ConsulInstance struct {
 
 func (i *ConsulInstance) AddConfig(svcId, content string) error {
 	fileName := filepath.Join(i.cfgDir, svcId+".json")
-	return ioutil.WriteFile(fileName, []byte(content), 0644)
+	return os.WriteFile(fileName, []byte(content), 0644)
 }
 
 func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) error {
@@ -257,7 +255,7 @@ func (i *ConsulInstance) RegisterLiveService(svcName, svcId, address string, tag
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	err = ioutil.WriteFile(fileName, content, 0644)
+	err = os.WriteFile(fileName, content, 0644)
 	if err != nil {
 		return err
 	}

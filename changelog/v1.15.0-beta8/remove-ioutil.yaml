@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Remove all calls to deprecated and outmoded `io/ioutil` package

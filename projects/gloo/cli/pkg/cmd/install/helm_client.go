@@ -1,7 +1,7 @@
 package install
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -136,19 +136,19 @@ func (d *defaultHelmClient) DownloadChart(chartArchiveUri string) (*chart.Chart,
 	defer func() { _ = chartFileReader.Close() }()
 
 	// 2. Write chart to a temporary file
-	chartBytes, err := ioutil.ReadAll(chartFileReader)
+	chartBytes, err := io.ReadAll(chartFileReader)
 	if err != nil {
 		return nil, err
 	}
 
-	chartFile, err := ioutil.TempFile("", "gloo-helm-chart")
+	chartFile, err := os.CreateTemp("", "gloo-helm-chart")
 	if err != nil {
 		return nil, err
 	}
 	charFilePath := chartFile.Name()
 	defer func() { _ = os.RemoveAll(charFilePath) }()
 
-	if err := ioutil.WriteFile(charFilePath, chartBytes, tempChartFilePermissions); err != nil {
+	if err := os.WriteFile(charFilePath, chartBytes, tempChartFilePermissions); err != nil {
 		return nil, err
 	}
 
