@@ -63,8 +63,14 @@ func (m *UpstreamSpec) Equal(that interface{}) bool {
 
 	}
 
-	if m.GetUseTls() != target.GetUseTls() {
-		return false
+	if h, ok := interface{}(m.GetUseTls()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUseTls()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUseTls(), target.GetUseTls()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetServiceSpec()).(equality.Equalizer); ok {

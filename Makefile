@@ -302,7 +302,7 @@ clean-solo-kit-gen:
 
 .PHONY: clean-cli-docs
 clean-cli-docs:
-	rm docs/content/reference/cli/glooctl*
+	rm docs/content/reference/cli/glooctl* || true # ignore error if file doesn't exist
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs

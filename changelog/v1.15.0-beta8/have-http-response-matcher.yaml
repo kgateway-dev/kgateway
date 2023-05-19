@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8003
+    resolvesIssue: false
+    description: >-
+      Stabilize the HaveHttpResponseMatcher to avoid a panic being thrown in the FailureMessage
+      when the AWS test fails
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4911
+    resolvesIssue: false
+    description: >-
+      Stabilize the most flake-prone open source non-kubernetes tests

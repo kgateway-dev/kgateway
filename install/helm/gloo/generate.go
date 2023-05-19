@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
 
 	"github.com/ghodss/yaml"
@@ -113,7 +112,7 @@ func generateChartYaml(version string) error {
 }
 
 func readYaml(path string, obj interface{}) error {
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrapf(err, "failed reading server config file: %s", path)
 	}
@@ -131,7 +130,7 @@ func writeYaml(obj interface{}, path string) error {
 		return errors.Wrapf(err, "failed marshaling config struct")
 	}
 
-	err = ioutil.WriteFile(path, bytes, os.ModePerm)
+	err = os.WriteFile(path, bytes, os.ModePerm)
 	if err != nil {
 		return errors.Wrapf(err, "failing writing config file")
 	}
@@ -139,7 +138,7 @@ func writeYaml(obj interface{}, path string) error {
 }
 
 func writeDocs(docs helmchart.HelmValues, path string) error {
-	err := ioutil.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
+	err := os.WriteFile(path, []byte(docs.ToMarkdown()), os.ModePerm)
 	if err != nil {
 		return errors.Wrapf(err, "failing writing helm values file")
 	}

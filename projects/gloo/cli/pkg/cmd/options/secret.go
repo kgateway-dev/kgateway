@@ -2,7 +2,7 @@ package options
 
 import (
 	"crypto/tls"
-	"io/ioutil"
+	"os"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
@@ -62,7 +62,7 @@ func (t *TlsSecret) ReadFiles() (*gloov1.TlsSecret, error) {
 	var rootCa []byte
 	if t.RootCaFilename != "" {
 		var err error
-		rootCa, err = ioutil.ReadFile(t.RootCaFilename)
+		rootCa, err = os.ReadFile(t.RootCaFilename)
 		if err != nil {
 			return &gloov1.TlsSecret{}, errors.Wrapf(err, "reading root ca file: %v", t.RootCaFilename)
 		}
@@ -70,7 +70,7 @@ func (t *TlsSecret) ReadFiles() (*gloov1.TlsSecret, error) {
 	var ocspStaple []byte
 	if t.OCSPStapleFilename != "" {
 		var err error
-		ocspStaple, err = ioutil.ReadFile(t.OCSPStapleFilename)
+		ocspStaple, err = os.ReadFile(t.OCSPStapleFilename)
 		if err != nil {
 			return &gloov1.TlsSecret{}, errors.Wrapf(err, "reading ocsp staple file: %v", t.OCSPStapleFilename)
 		}
@@ -79,11 +79,11 @@ func (t *TlsSecret) ReadFiles() (*gloov1.TlsSecret, error) {
 	var certChain []byte
 	if t.keyPairExists() {
 		var err error
-		privateKey, err = ioutil.ReadFile(t.PrivateKeyFilename)
+		privateKey, err = os.ReadFile(t.PrivateKeyFilename)
 		if err != nil {
 			return &gloov1.TlsSecret{}, errors.Wrapf(err, "reading private key file: %v", t.PrivateKeyFilename)
 		}
-		certChain, err = ioutil.ReadFile(t.CertChainFilename)
+		certChain, err = os.ReadFile(t.CertChainFilename)
 		if err != nil {
 			return &gloov1.TlsSecret{}, errors.Wrapf(err, "reading cert chain file: %v", t.CertChainFilename)
 		}

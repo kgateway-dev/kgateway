@@ -27,7 +27,7 @@ jobs:
                         { node: 'v1.26.3@sha256:61b92f38dff6ccc29969e7aa154d34e38b89443af1a2c14e6cfbd2df6419c66f', kubectl: 'v1.26.4', kind: 'v0.18.0', helm: 'v3.11.2' }]
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/regression-tests
+    - uses: ./.github/workflows/composite-actions/regression-tests
 
   regression_tests_14:
     name: v1.14.x regression tests

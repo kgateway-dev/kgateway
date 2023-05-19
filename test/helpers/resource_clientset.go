@@ -10,6 +10,7 @@ import (
 type ResourceClientSet interface {
 	GatewayClient() gatewayv1.GatewayClient
 	HttpGatewayClient() gatewayv1.MatchableHttpGatewayClient
+	TcpGatewayClient() gatewayv1.MatchableTcpGatewayClient
 	VirtualServiceClient() gatewayv1.VirtualServiceClient
 	RouteTableClient() gatewayv1.RouteTableClient
 	VirtualHostOptionClient() gatewayv1.VirtualHostOptionClient
