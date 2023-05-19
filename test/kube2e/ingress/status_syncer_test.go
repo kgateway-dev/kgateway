@@ -352,7 +352,9 @@ var _ = Describe("StatusSyncer", func() {
 					return nil, err
 				}
 				return ing.Status.LoadBalancer.Ingress, nil
-			}, time.Second*10).Should(Equal(svc.Status.LoadBalancer.Ingress))
+				// As of k8s 1.26, Ingresses have a status of IngressLoadBalancerStatus, whereas before it was LoadBalancerStatus.
+				// We need to do a lax `BeEquivalentTo` here which allows equality checking between different types.
+			}, time.Second*10).Should(BeEquivalentTo(svc.Status.LoadBalancer.Ingress))
 		})
 
 		It("errors when kube service ExternalName = localhost", func() {
