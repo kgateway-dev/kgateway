@@ -171,7 +171,7 @@ var _ = Describe("StatusSyncer", func() {
 
 			// note (ilackarms): unless running on a cloud provider that supports
 			// kube lb ingress, the status ips for the service and ingress will be empty
-			Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			Eventually(func() ([]networkingv1.IngressLoadBalancerIngress, error) {
 				ing, err := kubeIngressClient.Get(ctx, kubeIng.Name, metav1.GetOptions{})
 				if err != nil {
 					return nil, err
@@ -346,7 +346,7 @@ var _ = Describe("StatusSyncer", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			Eventually(func() ([]networkingv1.IngressLoadBalancerIngress, error) {
 				ing, err := kubeIngressClient.Get(ctx, kubeIng.Name, metav1.GetOptions{})
 				if err != nil {
 					return nil, err
@@ -480,7 +480,7 @@ var _ = Describe("StatusSyncer", func() {
 			}
 
 			// The only service that we have configured should be rejected
-			Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			Eventually(func() ([]networkingv1.IngressLoadBalancerIngress, error) {
 				ing, err := kubeIngressClient.Get(ctx, kubeIngress.Name, metav1.GetOptions{})
 				if err != nil {
 					return nil, err
