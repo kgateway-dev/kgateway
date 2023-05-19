@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -54,8 +53,10 @@ var _ = Describe("Artifact Client", func() {
 
 	})
 	AfterEach(func() {
+		err := kube.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+		Expect(err).NotTo(HaveOccurred())
+
 		cancel()
-		setup.TeardownKube(namespace)
 	})
 
 	Context("artifacts as config maps", func() {
