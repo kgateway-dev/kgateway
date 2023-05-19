@@ -2518,7 +2518,7 @@ type ClaimsToMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Use this field to extract claims from the ID token.
+	// Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.)
 	IdToken *ClaimsToMetadata_IdToken `protobuf:"bytes,1,opt,name=id_token,json=idToken,proto3" json:"id_token,omitempty"`
 	// Use this field to extract claims from the access token.
 	AccessToken *ClaimsToMetadata_AccessToken `protobuf:"bytes,2,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`

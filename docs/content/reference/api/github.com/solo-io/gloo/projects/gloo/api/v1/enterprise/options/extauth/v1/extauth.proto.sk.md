@@ -1004,7 +1004,7 @@ emitted as dynamic metadata.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `idToken` | [.enterprise.gloo.solo.io.ClaimsToMetadata.IdToken](../extauth.proto.sk/#idtoken) | Use this field to extract claims from the ID token. |
+| `idToken` | [.enterprise.gloo.solo.io.ClaimsToMetadata.IdToken](../extauth.proto.sk/#idtoken) | Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.). |
 | `accessToken` | [.enterprise.gloo.solo.io.ClaimsToMetadata.AccessToken](../extauth.proto.sk/#accesstoken) | Use this field to extract claims from the access token. |
 
 

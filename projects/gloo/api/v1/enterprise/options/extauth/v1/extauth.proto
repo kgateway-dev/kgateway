@@ -757,7 +757,7 @@ message OauthSecret {
 // emitted as dynamic metadata.
 message ClaimsToMetadata {
 
-    // Use this field to extract claims from the ID token.
+    // Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.)
     IdToken id_token = 1;
     // Use this field to extract claims from the access token.
     AccessToken access_token = 2;
