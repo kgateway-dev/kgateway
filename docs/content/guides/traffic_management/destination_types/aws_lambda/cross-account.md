@@ -19,16 +19,7 @@ Use AWS IAM Roles for Service Accounts (IRSA) to configure routing to functions 
 
 Create roles in your authentication and Lambda AWS accounts. In the account that you want to use to authenticate with AWS, you create a role that is used to assume the role in the Lambda account. In the account that contains the Lambda functions you want to route to, you create a role that is used to invoke the Lambda functions.
 
-1. Create the following resources for your authentication account. 
-   1. In your authentication account, create a role by following the steps in the [AWS Lambda with EKS ServiceAccounts guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}}). In this guide, you create a role that is associated with the ServiceAccount in your cluster. Make sure to note the ARN of this role, which you use in subsequent steps to create the Lambda account's role.
-   2. Create a Kubernetes secret that contains the access key and secret key for your authentication account.
-      ```sh
-      glooctl create secret aws \
-          --name 'aws-creds' \
-          --namespace gloo-system \
-          --access-key $ACCESS_KEY \
-          --secret-key $SECRET_KEY
-      ```
+1. In your authentication account, create a role by following the steps in the [AWS Lambda with EKS ServiceAccounts guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}}). In this guide, you create a role that is associated with the ServiceAccount in your cluster. Make sure to note the ARN of this role, which you use in subsequent steps to create the Lambda account's role.
 
 2. In your Lambda account, create the following resources.
    1. Choose an existing or create a new Lambda function that you want to route to.
@@ -88,9 +79,6 @@ Modify your Gloo Edge installation settings and upstream resources to support ro
    spec:
      aws:
        region: us-east-1
-       secretRef:
-         name: aws-creds
-         namespace: gloo-system
        roleArn: arn:aws:iam::123456789012:role/lambda-role
        lambdaFunctions:
        - lambdaFunctionName: target-name

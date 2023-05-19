@@ -67,10 +67,9 @@ spec:
   discoveryNamespace: gloo-system
   gloo:
     xdsBindAddr: 0.0.0.0:9977
-    gateway:
-      validation:
-        enabled: true
-        alwaysAcceptResources: false
+  gateway:
+    validation:
+      alwaysAcceptResources: false
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
