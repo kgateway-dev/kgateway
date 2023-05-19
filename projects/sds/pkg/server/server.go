@@ -5,8 +5,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"hash/fnv"
-	"io/ioutil"
 	"net"
+	"os"
 
 	"github.com/avast/retry-go"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -156,7 +156,7 @@ func readAndVerifyCert(certFilePath string) ([]byte, error) {
 	// Retry for a few seconds as a write may still be in progress
 	err = retry.Do(
 		func() error {
-			fileBytes, err = ioutil.ReadFile(certFilePath)
+			fileBytes, err = os.ReadFile(certFilePath)
 			if err != nil {
 				return err
 			}

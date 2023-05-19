@@ -2,7 +2,7 @@ package securityscanutils
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"k8s.io/apimachinery/pkg/util/version"
@@ -136,7 +136,7 @@ func GetSecurityScanReport(url string) (string, error) {
 
 	var report string
 	if resp.StatusCode == http.StatusOK {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyBytes, _ := io.ReadAll(resp.Body)
 		report = string(bodyBytes)
 	} else if resp.StatusCode == http.StatusNotFound {
 		// Older releases may be missing scan results

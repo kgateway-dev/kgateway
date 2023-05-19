@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -171,7 +170,7 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	var testManifestFile *os.File
 
 	if h3.manifestOutputDir == "" {
-		testManifestFile, err = ioutil.TempFile("", "*.yaml")
+		testManifestFile, err = os.CreateTemp("", "*.yaml")
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
 		defer func() {
 			_ = os.Remove(testManifestFile.Name())
@@ -297,7 +296,7 @@ func validateHelmValues(unstructuredHelmValues map[string]interface{}) error {
 func readValuesFile(filePath string) (map[string]interface{}, error) {
 	mapFromFile := map[string]interface{}{}
 
-	bytes, err := ioutil.ReadFile(filePath)
+	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
