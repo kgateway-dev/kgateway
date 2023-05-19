@@ -21,6 +21,10 @@ const (
 	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
 	InvalidTestReqsEnvVar = "INVALID_TEST_REQS"
 
+	// RunKubeTests is used to enable any tests which depend on Kubernetes. NOTE: Kubernetes back tests should
+	// be written into the kube2e suites, and those don't require this guard.
+	RunKubeTests = "RUN_KUBE_TESTS"
+
 	// RunVaultTests is used to enable any tests which depend on Vault.
 	RunVaultTests = "RUN_VAULT_TESTS"
 
@@ -54,6 +58,13 @@ func ShouldTearDown() bool {
 // both the tear down and install of Gloo Edge.
 func ShouldSkipInstall() bool {
 	return IsEnvTruthy(SkipInstall)
+}
+
+// ShouldRunKubeTests returns true if any tests which require a Kubernetes cluster should be executed
+// This may guard tests which are run using our old CloudBuilder infrastructure. In the future, all kube tests
+// should be written in our Kube2e suites, which are run with a kubernetes cluster
+func ShouldRunKubeTests() bool {
+	return IsEnvTruthy(RunKubeTests)
 }
 
 // ShouldSkipTempDisabledTests returns true if temporarily disabled tests should be skipped

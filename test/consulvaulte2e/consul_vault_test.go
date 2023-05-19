@@ -22,7 +22,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -99,14 +99,14 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, proxyDebugPort, writeNamespace, vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
 
-		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
+		consulClient, err = bootstrap_clients.ConsulClientForSettings(ctx, settings)
 		Expect(err).NotTo(HaveOccurred())
 
-		vaultClient, err = bootstrap.VaultClientForSettings(vaultSecretSource)
+		vaultClient, err = bootstrap_clients.VaultClientForSettings(vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
 
 		consulResources = &factory.ConsulResourceClientFactory{
-			RootKey:      bootstrap.DefaultRootKey,
+			RootKey:      bootstrap_clients.DefaultRootKey,
 			Consul:       consulClient,
 			QueryOptions: &consulapi.QueryOptions{RequireConsistent: true},
 		}
@@ -116,7 +116,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap_clients.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap_clients.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
@@ -323,7 +323,7 @@ func getVaultSecretSource(vaultInstance *services.VaultInstance, secretEngine st
 		Address:    vaultInstance.Address(),
 		Token:      vaultInstance.Token(),
 		PathPrefix: secretEngine,
-		RootKey:    bootstrap.DefaultRootKey,
+		RootKey:    bootstrap_clients.DefaultRootKey,
 	}
 }
 
