@@ -10,8 +10,6 @@ import (
 
 	"github.com/solo-io/gloo/test/testutils"
 
-	"github.com/solo-io/gloo/test/kube2e"
-
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -244,9 +242,6 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	})
 
 	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.Kubernetes("Uses a Kubernetes client"),
-		)
 
 		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
@@ -258,7 +253,6 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			WhatToRun: services.What{
 				DisableGateway: true,
 			},
-			KubeClient: kube2e.MustKubeClient(),
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
