@@ -71,7 +71,7 @@ To run the regression tests, your kubeconfig file must point to a running Kubern
 
 Use the same command that CI relies on:
 ```bash
-KUBE2E_TESTS=<test-to-run> make run-ci-regression-tests
+KUBE2E_TESTS=<test-to-run> make run-kube-e2e-tests
 ```
 
 #### Test Environment Variables

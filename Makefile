@@ -224,7 +224,7 @@ check-spelling:
 
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race --fail-fast -fail-on-pending --randomize-all
+GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=4
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
@@ -238,7 +238,7 @@ install-test-tools: check-go-version
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
-test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
@@ -250,16 +250,22 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
 run-tests: test
 
 .PHONY: run-e2e-tests
-run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
+run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
+run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
 run-e2e-tests: test
 
-.PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-test-tools ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
-run-ci-regression-tests: test
+.PHONY: run-hashicorp-e2e-tests
+run-hashicorp-e2e-tests: TEST_PKG = ./test/consulvaulte2e/
+run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
+run-hashicorp-e2e-tests: test
+
+.PHONY: run-kube-e2e-tests
+run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
+run-kube-e2e-tests: test
 
 #----------------------------------------------------------------------------------
 # Clean
@@ -296,7 +302,7 @@ clean-solo-kit-gen:
 
 .PHONY: clean-cli-docs
 clean-cli-docs:
-	rm docs/content/reference/cli/glooctl*
+	rm docs/content/reference/cli/glooctl* || true # ignore error if file doesn't exist
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
@@ -306,20 +312,34 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
+generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
 
-# Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
-# Glooctl enterprise docs are pushed from the private repo.
-# TODO(EItanya): make mockgen work for gloo
-$(OUTPUT_DIR)/.generated-code:
+.PHONY: go-generate-all
+go-generate-all: clean-vendor-any ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
 	GO111MODULE=on go generate ./...
+
+.PHONY: go-generate-apis
+go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
+	GO111MODULE=on go generate generate.go
+
+.PHONY: go-generate-mocks
+go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen in the repo
+	GO111MODULE=on go generate -run="mockgen" ./...
+
+.PHONY: generate-cli-docs
+generate-cli-docs: clean-cli-docs ## Generates documentation for glooctl
 	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+
+.PHONY: getter-check
+getter-check:
 	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
+
+.PHONY: mod-tidy
+mod-tidy:
 	go mod tidy
-	touch $@
 
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
@@ -331,6 +351,11 @@ verify-enterprise-protos:
 check-go-version:
 	./ci/check-go-version.sh
 
+.PHONY: generated-code-apis
+generated-code-apis: clean-solo-kit-gen go-generate-apis fmt ## Executes the targets necessary to generate formatted code from all protos
+
+.PHONY: generated-code-cleanup
+generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes the targets necessary to cleanup and format code
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -620,7 +645,7 @@ ifeq ($(RELEASE), "false")
 endif
 
 .PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)

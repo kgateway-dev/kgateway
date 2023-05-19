@@ -43,6 +43,7 @@ type Opts struct {
 	RouteTables                  factory.ResourceClientFactory
 	Gateways                     factory.ResourceClientFactory
 	MatchableHttpGateways        factory.ResourceClientFactory
+	MatchableTcpGateways         factory.ResourceClientFactory
 	VirtualHostOptions           factory.ResourceClientFactory
 	RouteOptions                 factory.ResourceClientFactory
 	KubeClient                   kubernetes.Interface

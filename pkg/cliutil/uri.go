@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -242,7 +241,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 				time.Sleep(retryInterval)
 				continue
 			}
-			b, err := ioutil.ReadAll(res.Body)
+			b, err := io.ReadAll(res.Body)
 			if err != nil {
 				errs <- err
 				time.Sleep(retryInterval)

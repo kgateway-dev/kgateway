@@ -1,7 +1,6 @@
 package downward
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,7 +12,7 @@ import (
 func CreateLocationReader(basedir string) func(string) ([]byte, error) {
 	return func(f string) ([]byte, error) {
 		fpath := filepath.Join(basedir, f)
-		return ioutil.ReadFile(fpath)
+		return os.ReadFile(fpath)
 	}
 }
 

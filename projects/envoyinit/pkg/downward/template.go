@@ -3,7 +3,6 @@ package downward
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"text/template"
 )
 
@@ -20,7 +19,7 @@ func NewInterpolator() Interpolator {
 type interpolator struct{}
 
 func (i *interpolator) InterpolateIO(in io.Reader, out io.Writer, data DownwardAPI) error {
-	inbyte, err := ioutil.ReadAll(in)
+	inbyte, err := io.ReadAll(in)
 	if err != nil {
 		return err
 	}
