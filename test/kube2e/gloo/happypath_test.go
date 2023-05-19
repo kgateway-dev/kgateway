@@ -22,7 +22,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
-	"github.com/solo-io/solo-kit/test/setup"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -110,7 +109,8 @@ var _ = Describe("Happy path", func() {
 
 				AfterEach(func() {
 					if namespace != "" {
-						_ = setup.TeardownKube(namespace)
+						err := kubeClient.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+						Expect(err).NotTo(HaveOccurred())
 					}
 				})
 
