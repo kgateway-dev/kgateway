@@ -23,7 +23,14 @@ func WrapWithPProtocol(oldTs *envoy_config_core_v3.TransportSocket, pPVerValStr 
 	}
 	pPVerVal, ok := envoy_config_core_v3.ProxyProtocolConfig_Version_value[pPVerValStr]
 	if !ok {
+		// attempt to unroll in case of implementor errors such as using .String()
+		if len(pPVerValStr) >= 2 && pPerValStr[0] == "\"" {
+			pPVerVal, ok = envoy_config_core_v3.ProxyProtocolConfig_Version_value[pPerValStr[1:len(pPVerValStr)-2)]]
+		
+		}
+		if !ok {
 		return oldTs, errors.Errorf("proxy protocol version %s is not supported", pPVerValStr)
+		}
 	}
 
 	// if unset envoy uses a raw buffer transport socket
