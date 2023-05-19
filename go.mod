@@ -50,18 +50,18 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.0
-	// todo (fabian) upgrade this
-	github.com/solo-io/k8s-utils v0.3.0
+	github.com/solo-io/go-utils v0.24.2
+	// todo (fabian) upgrade this when released
+	github.com/solo-io/k8s-utils v0.3.1-0.20230518135654-ebacc1f25c03
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.30.0
 
 	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
-	// todo (fabian) look into this... do we need to update this for the solo-apis with 1.26 k8s?
-	github.com/solo-io/solo-apis v0.0.0-20220923183548-9746539fc625
+	// todo (fabian) use 'gloo-repo-branch' tag when completed
+	github.com/solo-io/solo-apis v0.0.0-20230519143324-dc5deeca853a
 	// todo (fabian) use released update with k8s upgraded
-	github.com/solo-io/solo-kit v0.31.0
+	github.com/solo-io/solo-kit v0.31.1-0.20230518153951-adc0e5f98619
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -88,7 +88,7 @@ require (
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
-	sigs.k8s.io/controller-runtime v0.14.4
+	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.3.0
 )
 

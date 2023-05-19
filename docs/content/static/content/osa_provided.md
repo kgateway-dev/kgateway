@@ -42,7 +42,7 @@ Name|Version|License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
 [go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.0|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
-[go.uber.org/zap](https://go.uber.org/zap)|v1.21.0|MIT License
+[go.uber.org/zap](https://go.uber.org/zap)|v1.24.0|MIT License
 [x/crypto](https://golang.org/x/crypto)|v0.5.0|BSD 3-clause "New" or "Revised" License
 [x/sync](https://golang.org/x/sync)|v0.1.0|BSD 3-clause "New" or "Revised" License
 [x/tools](https://golang.org/x/tools)|v0.7.0|BSD 3-clause "New" or "Revised" License
@@ -51,17 +51,17 @@ Name|Version|License
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.28.1|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
 [helm/v3](https://helm.sh/helm/v3)|v3.11.2|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.25.8|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.25.8|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.25.8|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.25.8|Apache License 2.0
-[k8s.io/code-generator](https://k8s.io/code-generator)|v0.25.8|Apache License 2.0
-[k8s.io/component-base](https://k8s.io/component-base)|v0.25.8|Apache License 2.0
-[k8s.io/kubectl](https://k8s.io/kubectl)|v0.25.8|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20221107191617-1a15be271d1d|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.26.4|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.26.4|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.26.4|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.26.4|Apache License 2.0
+[k8s.io/code-generator](https://k8s.io/code-generator)|v0.26.4|Apache License 2.0
+[k8s.io/component-base](https://k8s.io/component-base)|v0.26.4|Apache License 2.0
+[k8s.io/kubectl](https://k8s.io/kubectl)|v0.26.4|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20221128185143-99ec85e7a448|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.13.1|Apache License 2.0
+[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.14.6|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.3.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License
