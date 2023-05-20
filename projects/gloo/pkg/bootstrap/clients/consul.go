@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 )
 
-// default query options for consul
+// DefaultConsulQueryOptions provides default query options for consul
 var DefaultConsulQueryOptions = &consulapi.QueryOptions{RequireConsistent: true, AllowStale: false}
 
 // ConsulClientForSettings constructs a Consul API client for the configuration
