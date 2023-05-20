@@ -15,7 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
-	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -153,7 +153,7 @@ func getSecretClient(ctx context.Context) v1.SecretClient {
 	mc := memory.NewInMemoryResourceCache()
 	var kubeCoreCache corecache.KubeCoreCache
 	settings := &v1.Settings{}
-	secretFactory, err := bootstrap_clients.SecretFactoryForSettings(ctx, settings, mc, &config, nil, &kubeCoreCache, nil, v1.SecretCrd.Plural)
+	secretFactory, err := bootstrap.SecretFactoryForSettings(ctx, settings, mc, &config, nil, &kubeCoreCache, nil, v1.SecretCrd.Plural)
 	Expect(err).NotTo(HaveOccurred())
 	secretClient, err := v1.NewSecretClient(ctx, secretFactory)
 	Expect(err).NotTo(HaveOccurred())

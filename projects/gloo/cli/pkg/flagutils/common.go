@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -64,7 +64,7 @@ func AddConsulConfigFlags(set *pflag.FlagSet, consul *contextoptions.Consul) {
 	config := api.DefaultConfig()
 	set.BoolVar(&consul.UseConsul, "use-consul", false, "use Consul Key-Value storage as the "+
 		"backend for reading and writing config (VirtualServices, Upstreams, and Proxies)")
-	set.StringVar(&consul.RootKey, "consul-root-key", bootstrap_clients.DefaultRootKey, "key prefix for for Consul key-value storage.")
+	set.StringVar(&consul.RootKey, "consul-root-key", clients.DefaultRootKey, "key prefix for for Consul key-value storage.")
 	set.StringVar(&config.Address, "consul-address", config.Address, "address of the Consul server. "+
 		"Use with --use-consul")
 	set.StringVar(&config.Scheme, "consul-scheme", config.Scheme, "URI scheme for the Consul server. "+
@@ -87,8 +87,8 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 
 	set.BoolVar(&vault.UseVault, "use-vault", false, "use Vault Key-Value storage as the "+
 		"backend for reading and writing secrets")
-	set.StringVar(&vault.PathPrefix, "vault-path-prefix", bootstrap_clients.DefaultPathPrefix, "The Secrets Engine to which Vault should route traffic.")
-	set.StringVar(&vault.RootKey, "vault-root-key", bootstrap_clients.DefaultRootKey, "key prefix for Vault key-value storage inside a storage engine.")
+	set.StringVar(&vault.PathPrefix, "vault-path-prefix", clients.DefaultPathPrefix, "The Secrets Engine to which Vault should route traffic.")
+	set.StringVar(&vault.RootKey, "vault-root-key", clients.DefaultRootKey, "key prefix for Vault key-value storage inside a storage engine.")
 
 	set.StringVar(&config.Address, "vault-address", config.Address, "address of the Vault server. This should be a complete URL such as \"http://vault.example.com\". "+
 		"Use with --use-vault")
