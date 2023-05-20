@@ -9,6 +9,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
@@ -103,7 +104,13 @@ func ArtifactFactoryForSettings(ctx context.Context,
 	)
 }
 
-// Deprecated. Use bootstrap/clients.
+// GetWriteNamespace checks the provided settings for the field `DiscoveryNamespace`
+// and defaults to `defaults.GlooSystem` if not found.
 func GetWriteNamespace(settings *v1.Settings) string {
-	return bootstrap_clients.GetWriteNamespace(settings)
+	writeNamespace := settings.GetDiscoveryNamespace()
+	if writeNamespace == "" {
+		writeNamespace = defaults.GlooSystem
+	}
+
+	return writeNamespace
 }
