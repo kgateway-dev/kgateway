@@ -34,6 +34,7 @@ type (
 	}
 )
 
+// NewConfigFactoryParams constructs a ConfigFactoryParams to pass into ConfigFactoryForSettings
 func NewConfigFactoryParams(settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
 	cache kube.SharedCache,
@@ -54,7 +55,9 @@ func NewConfigFactoryParams(settings *v1.Settings,
 	}
 }
 
-// sharedCache, resourceCrd+cfg OR consulClient must be non-nil
+// ConfigFactoryForSettings constructs a new ResourceClientFactory for Config
+// using Kubernetes, Directory, or Consul.
+// params.memory.sharedCache, resourceCrd+params.kube.restCfg OR params.consul.consulClient must be non-nil
 func ConfigFactoryForSettings(params ConfigFactoryParams, resourceCrd crd.Crd) (factory.ResourceClientFactory, error) {
 	settings := params.settings
 

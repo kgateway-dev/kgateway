@@ -15,7 +15,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// sharedCach OR resourceCrd+cfg must be non-nil
+// ArtifactFactoryForSettings constructs a new ResourceClientFactory for Artifacts
+// using Kubernetes, Directory, or Consul.
+// settings.ArtifactSource or sharedCache must be non-nil
 func ArtifactFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,

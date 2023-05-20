@@ -3,7 +3,6 @@ package clients
 import (
 	"context"
 
-	"github.com/hashicorp/consul/api"
 	consulapi "github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -13,8 +12,10 @@ import (
 // default query options for consul
 var DefaultConsulQueryOptions = &consulapi.QueryOptions{RequireConsistent: true, AllowStale: false}
 
-func ConsulClientForSettings(ctx context.Context, settings *v1.Settings) (*api.Client, error) {
-	cfg := api.DefaultConfig()
+// ConsulClientForSettings constructs a Consul API client for the configuration
+// provided in the settings parameter.
+func ConsulClientForSettings(ctx context.Context, settings *v1.Settings) (*consulapi.Client, error) {
+	cfg := consulapi.DefaultConfig()
 
 	consulSettings := settings.GetConsul()
 	if consulSettings != nil {
@@ -30,13 +31,13 @@ func ConsulClientForSettings(ctx context.Context, settings *v1.Settings) (*api.C
 		}
 		if user := consulSettings.GetUsername(); user != "" {
 			if cfg.HttpAuth == nil {
-				cfg.HttpAuth = &api.HttpBasicAuth{}
+				cfg.HttpAuth = &consulapi.HttpBasicAuth{}
 			}
 			cfg.HttpAuth.Username = user
 		}
 		if pass := consulSettings.GetPassword(); pass != "" {
 			if cfg.HttpAuth == nil {
-				cfg.HttpAuth = &api.HttpBasicAuth{}
+				cfg.HttpAuth = &consulapi.HttpBasicAuth{}
 			}
 			cfg.HttpAuth.Password = pass
 		}
@@ -64,5 +65,5 @@ func ConsulClientForSettings(ctx context.Context, settings *v1.Settings) (*api.C
 		}
 	}
 
-	return api.NewClient(cfg)
+	return consulapi.NewClient(cfg)
 }

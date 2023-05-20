@@ -14,6 +14,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// KubeServiceClientForSettings initializes a ServiceClient for the given
+// settings. If we are using Config in Kubernetes, we use a Kubernetes ServiceClient,
+// otherwise we use an in-memory client.
 func KubeServiceClientForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,

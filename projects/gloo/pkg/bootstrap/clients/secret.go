@@ -15,7 +15,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// sharedCache OR resourceCrd+cfg must be non-nil
+// SecretFactoryForSettings constructs a new ResourceClientFactory for Secrets
+// using Kubernetes, Directory, or Vault.
+// settings.SecretSource or sharedCache must be non-nil
 func SecretFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
