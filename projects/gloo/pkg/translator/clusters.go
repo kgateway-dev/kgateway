@@ -430,8 +430,3 @@ func applyDefaultsToUpstreamSslConfig(sslConfig *ssl.UpstreamSslConfig, options 
 		sslConfig.Parameters = options.GetSslParameters()
 	}
 }
-
-const (
-	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
-	upstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
-)

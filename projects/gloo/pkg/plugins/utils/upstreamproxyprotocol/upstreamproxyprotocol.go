@@ -12,7 +12,8 @@ import (
 
 const (
 	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
-	upstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
+	// UpstreamProxySocketName is the base name of the transport socket for proxy protocol on an upstream
+	UpstreamProxySocketName = "envoy.transport_sockets.upstream_proxy_protocol"
 )
 
 // WrapWithPPortocol wraps the upstream with a proxy protocol transport socket
@@ -56,7 +57,7 @@ func WrapWithPProtocol(oldTs *envoy_config_core_v3.TransportSocket, pPVerValStr 
 	typCfg.TypeUrl = "type.googleapis.com/" + proxyProtocolUpstreamClusterName // As of writing this is not in go-control-plane's well known
 
 	newTs := &envoy_config_core_v3.TransportSocket{
-		Name: upstreamProxySocketName,
+		Name: UpstreamProxySocketName,
 		// https://github.com/envoyproxy/envoy/blob/29b46144739578a72a8f18eb8eb0855e23426f6e/api/envoy/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto#L21
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
 			TypedConfig: typCfg,
