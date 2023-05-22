@@ -824,10 +824,17 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
-	if h, ok := interface{}(m.GetClaimsToMetadata()).(clone.Cloner); ok {
-		target.ClaimsToMetadata = h.Clone().(*ClaimsToMetadata)
-	} else {
-		target.ClaimsToMetadata = proto.Clone(m.GetClaimsToMetadata()).(*ClaimsToMetadata)
+	if m.GetClaimsToMetadata() != nil {
+		target.ClaimsToMetadata = make([]*ClaimsToMetadata, len(m.GetClaimsToMetadata()))
+		for idx, v := range m.GetClaimsToMetadata() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToMetadata[idx] = h.Clone().(*ClaimsToMetadata)
+			} else {
+				target.ClaimsToMetadata[idx] = proto.Clone(v).(*ClaimsToMetadata)
+			}
+
+		}
 	}
 
 	return target
@@ -979,10 +986,17 @@ func (m *AccessTokenValidation) Clone() proto.Message {
 		target.CacheTimeout = proto.Clone(m.GetCacheTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
-	if h, ok := interface{}(m.GetClaimsToMetadata()).(clone.Cloner); ok {
-		target.ClaimsToMetadata = h.Clone().(*ClaimsToMetadata)
-	} else {
-		target.ClaimsToMetadata = proto.Clone(m.GetClaimsToMetadata()).(*ClaimsToMetadata)
+	if m.GetClaimsToMetadata() != nil {
+		target.ClaimsToMetadata = make([]*ClaimsToMetadata, len(m.GetClaimsToMetadata()))
+		for idx, v := range m.GetClaimsToMetadata() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToMetadata[idx] = h.Clone().(*ClaimsToMetadata)
+			} else {
+				target.ClaimsToMetadata[idx] = proto.Clone(v).(*ClaimsToMetadata)
+			}
+
+		}
 	}
 
 	switch m.ValidationType.(type) {
@@ -1059,31 +1073,9 @@ func (m *ClaimsToMetadata) Clone() proto.Message {
 	}
 	target = &ClaimsToMetadata{}
 
-	if m.GetIdToken() != nil {
-		target.IdToken = make([]*ClaimsToMetadata_IdToken, len(m.GetIdToken()))
-		for idx, v := range m.GetIdToken() {
+	target.Claim = m.GetClaim()
 
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.IdToken[idx] = h.Clone().(*ClaimsToMetadata_IdToken)
-			} else {
-				target.IdToken[idx] = proto.Clone(v).(*ClaimsToMetadata_IdToken)
-			}
-
-		}
-	}
-
-	if m.GetAccessToken() != nil {
-		target.AccessToken = make([]*ClaimsToMetadata_AccessToken, len(m.GetAccessToken()))
-		for idx, v := range m.GetAccessToken() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.AccessToken[idx] = h.Clone().(*ClaimsToMetadata_AccessToken)
-			} else {
-				target.AccessToken[idx] = proto.Clone(v).(*ClaimsToMetadata_AccessToken)
-			}
-
-		}
-	}
+	target.MetadataKey = m.GetMetadataKey()
 
 	return target
 }
@@ -2235,36 +2227,6 @@ func (m *AccessTokenValidation_ScopeList) Clone() proto.Message {
 
 		}
 	}
-
-	return target
-}
-
-// Clone function
-func (m *ClaimsToMetadata_IdToken) Clone() proto.Message {
-	var target *ClaimsToMetadata_IdToken
-	if m == nil {
-		return target
-	}
-	target = &ClaimsToMetadata_IdToken{}
-
-	target.Claim = m.GetClaim()
-
-	target.MetadataKey = m.GetMetadataKey()
-
-	return target
-}
-
-// Clone function
-func (m *ClaimsToMetadata_AccessToken) Clone() proto.Message {
-	var target *ClaimsToMetadata_AccessToken
-	if m == nil {
-		return target
-	}
-	target = &ClaimsToMetadata_AccessToken{}
-
-	target.Claim = m.GetClaim()
-
-	target.MetadataKey = m.GetMetadataKey()
 
 	return target
 }

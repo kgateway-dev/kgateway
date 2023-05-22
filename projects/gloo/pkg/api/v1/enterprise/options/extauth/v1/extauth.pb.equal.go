@@ -1388,14 +1388,21 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetClaimsToMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetClaimsToMetadata()) {
-			return false
+	if len(m.GetClaimsToMetadata()) != len(target.GetClaimsToMetadata()) {
+		return false
+	}
+	for idx, v := range m.GetClaimsToMetadata() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClaimsToMetadata()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClaimsToMetadata()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetClaimsToMetadata(), target.GetClaimsToMetadata()) {
-			return false
-		}
+
 	}
 
 	return true
@@ -1658,14 +1665,21 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetClaimsToMetadata()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetClaimsToMetadata()) {
-			return false
+	if len(m.GetClaimsToMetadata()) != len(target.GetClaimsToMetadata()) {
+		return false
+	}
+	for idx, v := range m.GetClaimsToMetadata() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClaimsToMetadata()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClaimsToMetadata()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetClaimsToMetadata(), target.GetClaimsToMetadata()) {
-			return false
-		}
+
 	}
 
 	switch m.ValidationType.(type) {
@@ -1792,38 +1806,12 @@ func (m *ClaimsToMetadata) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetIdToken()) != len(target.GetIdToken()) {
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
 		return false
 	}
-	for idx, v := range m.GetIdToken() {
 
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetIdToken()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetIdToken()[idx]) {
-				return false
-			}
-		}
-
-	}
-
-	if len(m.GetAccessToken()) != len(target.GetAccessToken()) {
+	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
 		return false
-	}
-	for idx, v := range m.GetAccessToken() {
-
-		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetAccessToken()[idx]) {
-				return false
-			}
-		} else {
-			if !proto.Equal(v, target.GetAccessToken()[idx]) {
-				return false
-			}
-		}
-
 	}
 
 	return true
@@ -3757,70 +3745,6 @@ func (m *AccessTokenValidation_ScopeList) Equal(that interface{}) bool {
 			return false
 		}
 
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ClaimsToMetadata_IdToken) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ClaimsToMetadata_IdToken)
-	if !ok {
-		that2, ok := that.(ClaimsToMetadata_IdToken)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ClaimsToMetadata_AccessToken) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ClaimsToMetadata_AccessToken)
-	if !ok {
-		that2, ok := that.(ClaimsToMetadata_AccessToken)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
-		return false
-	}
-
-	if strings.Compare(m.GetMetadataKey(), target.GetMetadataKey()) != 0 {
-		return false
 	}
 
 	return true

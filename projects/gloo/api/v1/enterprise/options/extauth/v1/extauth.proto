@@ -656,8 +656,9 @@ message OidcAuthorizationCode {
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
 
-    // If specified, the matching claims from the ID token and/or access token will be emitted as dynamic metadata.
-    ClaimsToMetadata claims_to_metadata = 20;
+    // If specified, the matching claims from the ID token will be emitted as dynamic metadata.
+    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
+    repeated ClaimsToMetadata claims_to_metadata = 20;
 }
 
 message PlainOAuth2 {
@@ -834,8 +835,9 @@ message AccessTokenValidation {
         // in the future we may add other types of scope validation (e.g. predicate matching)
     }
 
-    // If specified, the matching claims from the access token will be emitted as dynamic metadata.
-    ClaimsToMetadata claims_to_metadata = 7;
+    // If specified, the matching claims from the access token will be emitted as dynamic metadata. This works for both opaque and JWT tokens.
+    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
+    repeated ClaimsToMetadata claims_to_metadata = 7;
 
     message ScopeList {
       repeated string scope = 1;
@@ -849,27 +851,11 @@ message OauthSecret {
 // ClaimsToMetadata allows claims to be extracted from the ID token and/or the access token and
 // emitted as dynamic metadata.
 message ClaimsToMetadata {
+    // The name of the claim to extract the value from
+    string claim = 1;
 
-    // Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.)
-    repeated IdToken id_token = 1;
-    // Use this field to extract claims from the access token.
-    repeated AccessToken access_token = 2;
-
-    message IdToken {
-        // The name of the claim to extract the value from
-        string claim = 1;
-
-        // The key to use for the dynamic metadata emitted
-        string metadata_key = 2;
-    }
-
-    message AccessToken {
-        // The name of the claim to extract the value from
-        string claim = 1;
-
-        // The key to use for the dynamic metadata emitted
-        string metadata_key = 2;
-    }
+    // The key to use for the dynamic metadata emitted
+    string metadata_key = 2;
 }
 
 // Defines how API keys are validated.

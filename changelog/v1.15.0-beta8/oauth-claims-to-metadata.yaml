@@ -1,7 +1,7 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/9513
     description: >
-      Enrich the OidcAuthorizationCode and AccessTokenValidation API to allow for claims 
+      Enrich the OidcAuthorizationCode and AccessTokenValidation API in the AuthConfig CRD to allow for claims 
       to be extracted from the token and added to the dynamic metadata.
     resolvesIssue: false

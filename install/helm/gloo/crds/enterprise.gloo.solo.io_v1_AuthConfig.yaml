@@ -270,26 +270,14 @@ spec:
                             cacheTimeout:
                               type: string
                             claimsToMetadata:
-                              properties:
-                                accessToken:
-                                  items:
-                                    properties:
-                                      claim:
-                                        type: string
-                                      metadataKey:
-                                        type: string
-                                    type: object
-                                  type: array
-                                idToken:
-                                  items:
-                                    properties:
-                                      claim:
-                                        type: string
-                                      metadataKey:
-                                        type: string
-                                    type: object
-                                  type: array
-                              type: object
+                              items:
+                                properties:
+                                  claim:
+                                    type: string
+                                  metadataKey:
+                                    type: string
+                                type: object
+                              type: array
                             introspection:
                               properties:
                                 clientId:
@@ -469,26 +457,14 @@ spec:
                             callbackPath:
                               type: string
                             claimsToMetadata:
-                              properties:
-                                accessToken:
-                                  items:
-                                    properties:
-                                      claim:
-                                        type: string
-                                      metadataKey:
-                                        type: string
-                                    type: object
-                                  type: array
-                                idToken:
-                                  items:
-                                    properties:
-                                      claim:
-                                        type: string
-                                      metadataKey:
-                                        type: string
-                                    type: object
-                                  type: array
-                              type: object
+                              items:
+                                properties:
+                                  claim:
+                                    type: string
+                                  metadataKey:
+                                    type: string
+                                type: object
+                              type: array
                             clientId:
                               type: string
                             clientSecretRef:
