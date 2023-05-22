@@ -1,7 +1,6 @@
 package gloo_test
 
 import (
-	"context"
 	"time"
 
 	"github.com/hashicorp/consul/api"
@@ -25,38 +24,35 @@ import (
 var _ = Describe("Artifact Client", func() {
 
 	var (
-		namespace     string
+		testNamespace string
 		cfg           *rest.Config
-		ctx           context.Context
-		cancel        context.CancelFunc
-		kube          kubernetes.Interface
+
+		kubeClient    kubernetes.Interface
 		kubeCoreCache corecache.KubeCoreCache
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		namespace = helpers.RandString(8)
 		var err error
+
+		testNamespace = helpers.RandString(8)
+		kubeClient = resourceClientset.KubeClients()
+
 		cfg, err = kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
-		kube, err = kubernetes.NewForConfig(cfg)
-		Expect(err).NotTo(HaveOccurred())
-		_, err = kube.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+		_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: namespace,
+				Name: testNamespace,
 			},
 		}, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		kubeCoreCache, err = corecache.NewKubeCoreCacheWithOptions(ctx, kube, time.Hour, []string{namespace})
+		kubeCoreCache, err = corecache.NewKubeCoreCacheWithOptions(ctx, kubeClient, time.Hour, []string{testNamespace})
 		Expect(err).NotTo(HaveOccurred())
 
 	})
 	AfterEach(func() {
-		err := kube.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+		err := kubeClient.CoreV1().Namespaces().Delete(ctx, testNamespace, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
-
-		cancel()
 	})
 
 	Context("artifacts as config maps", func() {
@@ -66,7 +62,7 @@ var _ = Describe("Artifact Client", func() {
 		)
 
 		BeforeEach(func() {
-			_, err := kube.CoreV1().ConfigMaps(namespace).Create(ctx,
+			_, err := kubeClient.CoreV1().ConfigMaps(testNamespace).Create(ctx,
 				&kubev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"},
 					Data: map[string]string{
 						"test": "data",
@@ -76,14 +72,14 @@ var _ = Describe("Artifact Client", func() {
 
 			settings := &v1.Settings{
 				ArtifactSource:  &v1.Settings_KubernetesArtifactSource{},
-				WatchNamespaces: []string{namespace},
+				WatchNamespaces: []string{testNamespace},
 			}
 
 			factory, err := ArtifactFactoryForSettings(ctx,
 				settings,
 				nil,
 				&cfg,
-				&kube,
+				&kubeClient,
 				&kubeCoreCache,
 				&api.Client{},
 				"artifacts")
@@ -93,7 +89,7 @@ var _ = Describe("Artifact Client", func() {
 		})
 
 		It("should work with artifacts", func() {
-			artifact, err := artifactClient.Read(namespace, "cfg", clients.ReadOpts{Ctx: ctx})
+			artifact, err := artifactClient.Read(testNamespace, "cfg", clients.ReadOpts{Ctx: ctx})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(artifact.GetMetadata().Name).To(Equal("cfg"))
 			Expect(artifact.Data["test"]).To(Equal("data"))
