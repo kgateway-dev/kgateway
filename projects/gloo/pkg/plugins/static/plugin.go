@@ -174,6 +174,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if out.GetTransportSocket() != nil {
 		// we may have to operate on a different pointer so lets store this for now
 		topTS := out.GetTransportSocket()
+		shouldMutate := false
 		// we have a transport socket and its not tls which was the former intention here
 		// given this we attempt to parse and mutate
 		if out.GetTransportSocket().GetName() == upstream_proxy_protocol.UpstreamProxySocketName {
@@ -189,33 +190,42 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 			topTS = typedTransport.GetTransportSocket()
 
-		}
-
-		for _, host := range spec.GetHosts() {
-
-			sniname := sniAddr(spec, host)
-			if sniname == "" {
-				continue
-			}
-			ts, err := mutateSni(topTS, sniname)
+			cfg, err := utils.AnyToMessage(topTS.GetTypedConfig())
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "static upstream cannot convert transport socket: %v", tcMsg)
 			}
 
-			if in.GetProxyProtocolVersion() != nil {
-				// reinstate the proxy protocol as we may wipe it out when we mutate the sni
-				newTs, err := upstream_proxy_protocol.WrapWithPProtocol(ts, in.GetProxyProtocolVersion().GetValue())
+			_, ok = cfg.(*envoyauth.UpstreamTlsContext)
+			shouldMutate = ok
+
+		}
+		if shouldMutate {
+			for _, host := range spec.GetHosts() {
+
+				sniname := sniAddr(spec, host)
+				if sniname == "" {
+					continue
+				}
+				ts, err := mutateSni(topTS, sniname)
 				if err != nil {
 					return err
 				}
-				ts = newTs
-			}
 
-			out.TransportSocketMatches = append(out.GetTransportSocketMatches(), &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
-				Name:            name(spec, host),
-				Match:           metadataMatch(spec, host),
-				TransportSocket: ts,
-			})
+				if in.GetProxyProtocolVersion() != nil {
+					// reinstate the proxy protocol as we may wipe it out when we mutate the sni
+					newTs, err := upstream_proxy_protocol.WrapWithPProtocol(ts, in.GetProxyProtocolVersion().GetValue())
+					if err != nil {
+						return err
+					}
+					ts = newTs
+				}
+
+				out.TransportSocketMatches = append(out.GetTransportSocketMatches(), &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+					Name:            name(spec, host),
+					Match:           metadataMatch(spec, host),
+					TransportSocket: ts,
+				})
+			}
 		}
 	}
 
