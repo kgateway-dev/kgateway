@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	ps "github.com/keybase/go-ps"
+	"github.com/shirou/gopsutil/v3/process"
 )
 
 type Runner struct {
@@ -17,12 +17,12 @@ type Runner struct {
 
 func (r *Runner) waitForExternalProcess() error {
 	for {
-		procs, err := ps.Processes()
+		procs, err := process.Processes()
 		if err != nil {
 			panic(err)
 		}
 		for _, proc := range procs {
-			str, err := proc.Path()
+			str, err := proc.Exe()
 			if err != nil {
 				continue
 			}
