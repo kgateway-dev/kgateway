@@ -14,8 +14,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -30,11 +28,8 @@ var _ = Describe("Debug", func() {
 		Context("stdout", func() {
 
 			It("should succeed", func() {
-				opts := options.Options{
-					Metadata: core.Metadata{
-						Namespace: gloodefaults.GlooSystem,
-					},
-				}
+				opts := options.Options{}
+				opts.Metadata.Namespace = gloodefaults.GlooSystem
 
 				var b bytes.Buffer
 				w := bufio.NewWriter(&b)
