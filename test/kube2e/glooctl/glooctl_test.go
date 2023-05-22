@@ -1,7 +1,6 @@
 package glooctl_test
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -9,7 +8,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -540,52 +538,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 	})
 
-	Context("debug", func() {
-
-	})
-
-	Context("log debugger", func() {
-
-		It("should create a tar file at location specified in --file when --zip is enabled", func() {
-			opts := options.Options{}
-			opts.Metadata.Namespace = "gloo-system"
-			opts.Top.Zip = true
-
-			dir, err := os.MkdirTemp("", "testDir")
-			Expect(err).NotTo(HaveOccurred())
-			defer os.RemoveAll(dir)
-			opts.Top.File = filepath.Join(dir, "log.tgz")
-
-			err = DebugLogs(&opts, io.Discard)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = os.Stat(opts.Top.File)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = os.RemoveAll(opts.Top.File)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("should create a text file at location specified in --file when --zip is not enabled", func() {
-			opts := options.Options{}
-			opts.Metadata.Namespace = "gloo-system"
-			opts.Top.Zip = false
-
-			dir, err := os.MkdirTemp("", "testDir")
-			Expect(err).NotTo(HaveOccurred())
-			defer os.RemoveAll(dir)
-			opts.Top.File = filepath.Join(dir, "log.txt")
-
-			err = DebugLogs(&opts, io.Discard)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = os.Stat(opts.Top.File)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = os.RemoveAll(opts.Top.File)
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
 })
 
 // runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
