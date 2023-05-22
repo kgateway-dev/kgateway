@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
