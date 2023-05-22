@@ -22,7 +22,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
