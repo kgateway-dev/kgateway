@@ -272,19 +272,23 @@ spec:
                             claimsToMetadata:
                               properties:
                                 accessToken:
-                                  properties:
-                                    claim:
-                                      type: string
-                                    metadataKey:
-                                      type: string
-                                  type: object
+                                  items:
+                                    properties:
+                                      claim:
+                                        type: string
+                                      metadataKey:
+                                        type: string
+                                    type: object
+                                  type: array
                                 idToken:
-                                  properties:
-                                    claim:
-                                      type: string
-                                    metadataKey:
-                                      type: string
-                                  type: object
+                                  items:
+                                    properties:
+                                      claim:
+                                        type: string
+                                      metadataKey:
+                                        type: string
+                                    type: object
+                                  type: array
                               type: object
                             introspection:
                               properties:
@@ -467,19 +471,23 @@ spec:
                             claimsToMetadata:
                               properties:
                                 accessToken:
-                                  properties:
-                                    claim:
-                                      type: string
-                                    metadataKey:
-                                      type: string
-                                  type: object
+                                  items:
+                                    properties:
+                                      claim:
+                                        type: string
+                                      metadataKey:
+                                        type: string
+                                    type: object
+                                  type: array
                                 idToken:
-                                  properties:
-                                    claim:
-                                      type: string
-                                    metadataKey:
-                                      type: string
-                                  type: object
+                                  items:
+                                    properties:
+                                      claim:
+                                        type: string
+                                      metadataKey:
+                                        type: string
+                                    type: object
+                                  type: array
                               type: object
                             clientId:
                               type: string

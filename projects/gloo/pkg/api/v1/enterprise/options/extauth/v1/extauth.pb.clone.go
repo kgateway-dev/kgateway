@@ -1059,16 +1059,30 @@ func (m *ClaimsToMetadata) Clone() proto.Message {
 	}
 	target = &ClaimsToMetadata{}
 
-	if h, ok := interface{}(m.GetIdToken()).(clone.Cloner); ok {
-		target.IdToken = h.Clone().(*ClaimsToMetadata_IdToken)
-	} else {
-		target.IdToken = proto.Clone(m.GetIdToken()).(*ClaimsToMetadata_IdToken)
+	if m.GetIdToken() != nil {
+		target.IdToken = make([]*ClaimsToMetadata_IdToken, len(m.GetIdToken()))
+		for idx, v := range m.GetIdToken() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.IdToken[idx] = h.Clone().(*ClaimsToMetadata_IdToken)
+			} else {
+				target.IdToken[idx] = proto.Clone(v).(*ClaimsToMetadata_IdToken)
+			}
+
+		}
 	}
 
-	if h, ok := interface{}(m.GetAccessToken()).(clone.Cloner); ok {
-		target.AccessToken = h.Clone().(*ClaimsToMetadata_AccessToken)
-	} else {
-		target.AccessToken = proto.Clone(m.GetAccessToken()).(*ClaimsToMetadata_AccessToken)
+	if m.GetAccessToken() != nil {
+		target.AccessToken = make([]*ClaimsToMetadata_AccessToken, len(m.GetAccessToken()))
+		for idx, v := range m.GetAccessToken() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.AccessToken[idx] = h.Clone().(*ClaimsToMetadata_AccessToken)
+			} else {
+				target.AccessToken[idx] = proto.Clone(v).(*ClaimsToMetadata_AccessToken)
+			}
+
+		}
 	}
 
 	return target

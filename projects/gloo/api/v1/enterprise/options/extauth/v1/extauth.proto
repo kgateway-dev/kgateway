@@ -851,9 +851,9 @@ message OauthSecret {
 message ClaimsToMetadata {
 
     // Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.)
-    IdToken id_token = 1;
+    repeated IdToken id_token = 1;
     // Use this field to extract claims from the access token.
-    AccessToken access_token = 2;
+    repeated AccessToken access_token = 2;
 
     message IdToken {
         // The name of the claim to extract the value from

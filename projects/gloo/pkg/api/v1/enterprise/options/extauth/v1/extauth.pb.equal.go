@@ -1792,24 +1792,38 @@ func (m *ClaimsToMetadata) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetIdToken()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetIdToken()) {
-			return false
+	if len(m.GetIdToken()) != len(target.GetIdToken()) {
+		return false
+	}
+	for idx, v := range m.GetIdToken() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetIdToken()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetIdToken()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetIdToken(), target.GetIdToken()) {
-			return false
-		}
+
 	}
 
-	if h, ok := interface{}(m.GetAccessToken()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAccessToken()) {
-			return false
+	if len(m.GetAccessToken()) != len(target.GetAccessToken()) {
+		return false
+	}
+	for idx, v := range m.GetAccessToken() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetAccessToken()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetAccessToken()[idx]) {
+				return false
+			}
 		}
-	} else {
-		if !proto.Equal(m.GetAccessToken(), target.GetAccessToken()) {
-			return false
-		}
+
 	}
 
 	return true

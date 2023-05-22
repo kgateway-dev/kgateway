@@ -1147,15 +1147,15 @@ ClaimsToMetadata allows claims to be extracted from the ID token and/or the acce
 emitted as dynamic metadata.
 
 ```yaml
-"idToken": .enterprise.gloo.solo.io.ClaimsToMetadata.IdToken
-"accessToken": .enterprise.gloo.solo.io.ClaimsToMetadata.AccessToken
+"idToken": []enterprise.gloo.solo.io.ClaimsToMetadata.IdToken
+"accessToken": []enterprise.gloo.solo.io.ClaimsToMetadata.AccessToken
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `idToken` | [.enterprise.gloo.solo.io.ClaimsToMetadata.IdToken](../extauth.proto.sk/#idtoken) | Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.). |
-| `accessToken` | [.enterprise.gloo.solo.io.ClaimsToMetadata.AccessToken](../extauth.proto.sk/#accesstoken) | Use this field to extract claims from the access token. |
+| `idToken` | [[]enterprise.gloo.solo.io.ClaimsToMetadata.IdToken](../extauth.proto.sk/#idtoken) | Use this field to extract claims from the ID token. (Note that this field only works when used with the OIDC flow.). |
+| `accessToken` | [[]enterprise.gloo.solo.io.ClaimsToMetadata.AccessToken](../extauth.proto.sk/#accesstoken) | Use this field to extract claims from the access token. |
 
 
 
