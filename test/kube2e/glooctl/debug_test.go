@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options/contextoptions"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -26,6 +28,7 @@ var _ = Describe("Debug", func() {
 	var (
 		tmpDir string
 	)
+
 	BeforeEach(func() {
 		var err error
 		tmpDir, err = os.MkdirTemp("", "testDir")
@@ -59,18 +62,17 @@ var _ = Describe("Debug", func() {
 				Namespace: gloodefaults.GlooSystem,
 			},
 			Top: options.Top{
+				ContextAccessible: contextoptions.ContextAccessible{
+					File: filepath.Join(tmpDir, "log.tgz"),
+				},
 				Zip: true,
 			},
 		}
-		opts.Top.File = filepath.Join(tmpDir, "log.tgz")
 
 		err := debug.DebugLogs(&opts, io.Discard)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = os.Stat(opts.Top.File)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.RemoveAll(opts.Top.File)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -80,18 +82,17 @@ var _ = Describe("Debug", func() {
 				Namespace: gloodefaults.GlooSystem,
 			},
 			Top: options.Top{
+				ContextAccessible: contextoptions.ContextAccessible{
+					File: filepath.Join(tmpDir, "log.txt"),
+				},
 				Zip: false,
 			},
 		}
-		opts.Top.File = filepath.Join(tmpDir, "log.txt")
 
 		err := debug.DebugLogs(&opts, io.Discard)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = os.Stat(opts.Top.File)
-		Expect(err).NotTo(HaveOccurred())
-
-		err = os.RemoveAll(opts.Top.File)
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
