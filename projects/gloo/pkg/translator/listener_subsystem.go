@@ -179,6 +179,10 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 			filterChainTranslator        FilterChainTranslator
 		)
 		matcher := matchedListener.GetMatcher()
+		if matcher == nil {
+			contextutils.LoggerFrom(ctx).Debugf("listener (%v) had a matched listener with a nil matcher", listener.GetName())
+			continue
+		}
 
 		switch listenerType := matchedListener.GetListenerType().(type) {
 		case *v1.MatchedListener_HttpListener:
@@ -244,8 +248,14 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 			routeConfigurationTranslator = &emptyRouteConfigurationTranslator{}
 		}
 
-		filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
-		routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+		// This should never happen unless the listener type is unknown or not fully supported
+		if filterChainTranslator != nil && routeConfigurationTranslator != nil {
+			filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
+			routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+		} else {
+			contextutils.LoggerFrom(ctx).DPanicf("listener (%v) had a matched listener with an unknown type (%T) ", listener.GetName(), matchedListener.GetListenerType())
+		}
+
 	}
 
 	listenerTranslator := &listenerTranslatorInstance{
