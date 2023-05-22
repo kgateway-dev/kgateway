@@ -24,8 +24,7 @@ import (
 )
 
 // SecretFactoryForSettings creates a resource client factory for provided config.
-// Implemented as secrets.MultiResourceClient regardless if there is just one
-// source configured.
+// Implemented as secrets.MultiResourceClient iff secretOptions API is configured.
 func SecretFactoryForSettings(ctx context.Context,
 	settings *v1.Settings,
 	sharedCache memory.InMemoryResourceCache,
@@ -102,7 +101,7 @@ func NewSecretResourceClientFactory(ctx context.Context,
 			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), pluralName),
 		}, nil
 	}
-	return nil, errors.Errorf("invalid config source type")
+	return nil, errors.Errorf("invalid config source type in secretSource")
 }
 
 type MultiSecretResourceClientFactory struct {
