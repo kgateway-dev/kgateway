@@ -45,7 +45,7 @@ var _ = Describe("Kubernetes Plugin", func() {
 		var err error
 
 		svcNamespace = helpers.RandString(8)
-		kubeClient := resourceClientset.KubeClients()
+		kubeClient = resourceClientset.KubeClients()
 
 		kubeCoreCache, err = kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
