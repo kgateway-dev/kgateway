@@ -12,6 +12,8 @@ weight: 5
 
 
 - [Settings](#settings) **Top-Level Resource**
+- [SecretOptions](#secretoptions)
+- [Source](#source)
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
@@ -69,6 +71,7 @@ Represents global settings for all the Gloo components.
 "kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
 "vaultSecretSource": .gloo.solo.io.Settings.VaultSecrets
 "directorySecretSource": .gloo.solo.io.Settings.Directory
+"secretOptions": .gloo.solo.io.Settings.SecretOptions
 "kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
 "directoryArtifactSource": .gloo.solo.io.Settings.Directory
 "consulKvArtifactSource": .gloo.solo.io.Settings.ConsulKv
@@ -108,6 +111,7 @@ Represents global settings for all the Gloo components.
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` can be set. |
 | `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, `kubernetesSecretSource`, or `directorySecretSource` can be set. |
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, `kubernetesSecretSource`, or `vaultSecretSource` can be set. |
+| `secretOptions` | [.gloo.solo.io.Settings.SecretOptions](../settings.proto.sk/#secretoptions) | Settings for secrets storage. NOTE: this API will be implemented in a follow-up PR. |
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
@@ -134,6 +138,44 @@ Represents global settings for all the Gloo components.
 | `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
 | `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
+
+
+
+
+---
+### SecretOptions
+
+
+
+```yaml
+"secretSources": []gloo.solo.io.Settings.SecretOptions.Source
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `secretSources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | List of configured secret sources. These clients will be initialized in parallel in indeterminate order. |
+
+
+
+
+---
+### Source
+
+
+
+```yaml
+"kubernetes": .gloo.solo.io.Settings.KubernetesSecrets
+"vault": .gloo.solo.io.Settings.VaultSecrets
+"directory": .gloo.solo.io.Settings.Directory
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `kubernetes` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetes`, `vault`, or `directory` can be set. |
+| `vault` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vault`, `kubernetes`, or `directory` can be set. |
+| `directory` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directory`, `kubernetes`, or `vault` can be set. |
 
 
 
