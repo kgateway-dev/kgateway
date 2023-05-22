@@ -177,7 +177,7 @@ var _ = Describe("StatusSyncer", func() {
 					return nil, err
 				}
 				return ing.Status.LoadBalancer.Ingress, nil
-			}, time.Second*10).Should(Equal(svc.Status.LoadBalancer.Ingress))
+			}, time.Second*10).Should(BeEquivalentTo(svc.Status.LoadBalancer.Ingress))
 		})
 
 	})
