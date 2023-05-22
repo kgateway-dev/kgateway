@@ -2151,6 +2151,9 @@ spec:
 			})
 
 			AfterAll(func() {
+				// important that we update the always accept setting after removing resources, or else we can have:
+				// "validation is disabled due to an invalid resource which has been written to storage.
+				// Please correct any Rejected resources to re-enable validation."
 				kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
 			})
 
@@ -2162,9 +2165,6 @@ spec:
 				)
 
 				BeforeEach(func() {
-					// disable strict validation, so that we can write persist invalid VirtualServices
-					kube2e.UpdateAlwaysAcceptSetting(ctx, true, testHelper.InstallNamespace)
-
 					validVs := helpers.NewVirtualServiceBuilder().
 						WithName(validVsName).
 						WithNamespace(testHelper.InstallNamespace).
@@ -2196,13 +2196,6 @@ spec:
 					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
 						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
 					})
-				})
-
-				AfterEach(func() {
-					// important that we update the always accept setting after removing resources, or else we can have:
-					// "validation is disabled due to an invalid resource which has been written to storage.
-					// Please correct any Rejected resources to re-enable validation."
-					kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
 				})
 
 				It("propagates the valid virtual services to envoy", func() {
@@ -2427,9 +2420,7 @@ spec:
 					// demand that a created ratelimit config _has_ a rejected status.
 					Eventually(func(g Gomega) error {
 						rlc, err := resourceClientset.RateLimitConfigClient().Read(rateLimitConfig.GetMetadata().GetNamespace(), rateLimitConfig.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-						if err != nil {
-							return err
-						}
+						g.Expect(err).NotTo(HaveOccurred())
 						g.Expect(rlc.Status.State).To(Equal(v1alpha1.RateLimitConfigStatus_REJECTED))
 						g.Expect(rlc.Status.Message).Should(ContainSubstring("enterprise-only"))
 						return nil
