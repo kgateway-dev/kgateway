@@ -148,13 +148,13 @@ Represents global settings for all the Gloo components.
 
 
 ```yaml
-"secretSources": []gloo.solo.io.Settings.SecretOptions.Source
+"sources": []gloo.solo.io.Settings.SecretOptions.Source
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `secretSources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | List of configured secret sources. These clients will be initialized in parallel in indeterminate order. |
+| `sources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | List of configured secret sources. These clients will be initialized in parallel in indeterminate order. |
 
 
 

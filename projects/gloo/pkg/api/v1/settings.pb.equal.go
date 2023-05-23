@@ -877,17 +877,17 @@ func (m *Settings_SecretOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetSecretSources()) != len(target.GetSecretSources()) {
+	if len(m.GetSources()) != len(target.GetSources()) {
 		return false
 	}
-	for idx, v := range m.GetSecretSources() {
+	for idx, v := range m.GetSources() {
 
 		if h, ok := interface{}(v).(equality.Equalizer); ok {
-			if !h.Equal(target.GetSecretSources()[idx]) {
+			if !h.Equal(target.GetSources()[idx]) {
 				return false
 			}
 		} else {
-			if !proto.Equal(v, target.GetSecretSources()[idx]) {
+			if !proto.Equal(v, target.GetSources()[idx]) {
 				return false
 			}
 		}

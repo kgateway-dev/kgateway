@@ -74,7 +74,7 @@ message Settings {
 
         // List of configured secret sources. These clients will be initialized
         // in parallel in indeterminate order.
-        repeated Source secret_sources = 1;
+        repeated Source sources = 1;
     }
 
     // Where to read artifacts from.

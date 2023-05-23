@@ -1288,7 +1288,7 @@ func (m *Settings_SecretOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	for _, v := range m.GetSecretSources() {
+	for _, v := range m.GetSources() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = hasher.Write([]byte("")); err != nil {

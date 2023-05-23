@@ -638,7 +638,7 @@ spec:
                 type: string
               secretOptions:
                 properties:
-                  secretSources:
+                  sources:
                     items:
                       properties:
                         directory:

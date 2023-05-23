@@ -551,14 +551,14 @@ func (m *Settings_SecretOptions) Clone() proto.Message {
 	}
 	target = &Settings_SecretOptions{}
 
-	if m.GetSecretSources() != nil {
-		target.SecretSources = make([]*Settings_SecretOptions_Source, len(m.GetSecretSources()))
-		for idx, v := range m.GetSecretSources() {
+	if m.GetSources() != nil {
+		target.Sources = make([]*Settings_SecretOptions_Source, len(m.GetSources()))
+		for idx, v := range m.GetSources() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.SecretSources[idx] = h.Clone().(*Settings_SecretOptions_Source)
+				target.Sources[idx] = h.Clone().(*Settings_SecretOptions_Source)
 			} else {
-				target.SecretSources[idx] = proto.Clone(v).(*Settings_SecretOptions_Source)
+				target.Sources[idx] = proto.Clone(v).(*Settings_SecretOptions_Source)
 			}
 
 		}
