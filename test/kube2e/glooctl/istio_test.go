@@ -130,7 +130,7 @@ var _ = Describe("Istio", Ordered, func() {
 		})
 
 		AfterEach(func() {
-			_, err := GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
+			_, err := GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams=true")
 			Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
 			EventuallyIstioUninjected()
@@ -172,7 +172,7 @@ var _ = Describe("Istio", Ordered, func() {
 				_, err := GlooctlOut("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
 
-				_, err = GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "true")
+				_, err = GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams=true")
 				Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
 
 				EventuallyIstioUninjected()
@@ -204,7 +204,7 @@ var _ = Describe("Istio", Ordered, func() {
 				_, err := GlooctlOut("istio", "enable-mtls", "--upstream", "default-petstore-8080", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls on the petstore upstream via sslConfig")
 
-				_, err = GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams", "false")
+				_, err = GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams=false")
 				Expect(err).To(HaveOccurred(), "should not be able to run 'glooctl istio uninject' without errors")
 			})
 
