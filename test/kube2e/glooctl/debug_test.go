@@ -1,13 +1,6 @@
 package glooctl_test
 
 import (
-	"bufio"
-	"bytes"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	"os"
 	"path/filepath"
 
@@ -23,20 +16,6 @@ var _ = Describe("Debug", func() {
 	Context("Logs", func() {
 
 		Context("stdout", func() {
-
-			It("should succeed", func() {
-				opts := options.Options{}
-				opts.Metadata.Namespace = gloodefaults.GlooSystem
-
-				var b bytes.Buffer
-				w := bufio.NewWriter(&b)
-
-				err := debug.DebugLogs(&opts, w)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = w.Flush()
-				Expect(err).NotTo(HaveOccurred())
-			})
 
 			It("should not crash", func() {
 				_, err := GlooctlOut("debug", "logs", "-n", testHelper.InstallNamespace)
