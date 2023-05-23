@@ -13,8 +13,6 @@ import (
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
-
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/helpers"
@@ -66,11 +64,8 @@ func StartTestHelper() {
 		installGloo()
 	}
 
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-
-	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
-	Expect(err).NotTo(HaveOccurred())
+	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
+	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 }

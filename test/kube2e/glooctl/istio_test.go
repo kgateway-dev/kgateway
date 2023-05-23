@@ -197,7 +197,7 @@ var _ = Describe("Istio", Ordered, func() {
 		BeforeEach(func() {
 			testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, petstoreSuccessfulResponse, 1, 10*time.Second, 1*time.Second)
 
-			_, err := runGlooctlCommand("istio", "inject", "--namespace", testHelper.InstallNamespace)
+			_, err := GlooctlOut("istio", "inject", "--namespace", testHelper.InstallNamespace)
 			Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio inject' without errors")
 
 			EventuallyIstioInjected()
