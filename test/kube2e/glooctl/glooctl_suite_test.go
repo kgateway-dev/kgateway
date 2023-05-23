@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils/exec"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -90,4 +92,12 @@ func uninstallGloo() {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
+}
+
+// GlooctlOut take a set of arguments for glooctl and then executes local glooctl with these arguments
+func GlooctlOut(args ...string) (string, error) {
+	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
+	glooctlCommand = append(glooctlCommand, args...)
+	// execute the command with verbose output
+	return exec.RunCommandOutput(testHelper.RootDir, true, glooctlCommand...)
 }
