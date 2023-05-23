@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var _ = Describe("Helm Test", func() {
+var _ = Describe("WebhookValidationConfiguration helm test", func() {
 	var allTests = func(rendererTestCase renderTestCase) {
 
 		var (
@@ -28,6 +28,7 @@ var _ = Describe("Helm Test", func() {
 			testManifest = tm
 		}
 
+		//
 		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
 			timeoutSeconds := 5
 
