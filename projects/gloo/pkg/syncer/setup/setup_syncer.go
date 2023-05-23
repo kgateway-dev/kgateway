@@ -339,7 +339,17 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 
 	var vaultClient *vaultapi.Client
-	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
+	vaultSettings := settings.GetVaultSecretSource()
+	if secretSources := settings.GetSecretOptions().GetSources(); secretSources != nil {
+		for i := range secretSources {
+			switch src := secretSources[i].GetSource().(type) {
+			case *v1.Settings_SecretOptions_Source_Vault:
+				vaultSettings = src.Vault
+			}
+		}
+
+	}
+	if vaultSettings != nil {
 		vaultClient, err = bootstrap_clients.VaultClientForSettings(vaultSettings)
 		if err != nil {
 			return err

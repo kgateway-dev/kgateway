@@ -153,12 +153,12 @@ func NewMultiSecretResourceClientFactory(secretSources []*v1.Settings_SecretOpti
 
 type asyncClientInitParams struct {
 	ctx             context.Context
-	wg              *sync.WaitGroup
 	multiClient     *MultiSecretResourceClient
 	f               factory.ResourceClientFactory
 	onInitialized   func(*MultiSecretResourceClient, clients.ResourceClient)
 	newClientParams factory.NewResourceClientParams
 	errChan         chan error
+	doneChan        chan struct{}
 }
 
 var initClientAsync = func(params *asyncClientInitParams) {
@@ -170,11 +170,7 @@ var initClientAsync = func(params *asyncClientInitParams) {
 
 	params.onInitialized(params.multiClient, c)
 
-	// Only report Done on success so we don't short-circuit the `wg.Wait()` with a failed init.
-	// Guard against NPE if wg goes out of scope in NewResourceClient
-	if params.wg != nil {
-		params.wg.Done()
-	}
+	params.doneChan <- struct{}{}
 }
 
 // NewResourceClient implements ResourceClientFactory by creating a new client with each sub-client initialized
@@ -183,16 +179,26 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 		return nil, ErrEmptySourceSlice
 	}
 
-	multiClient := &MultiSecretResourceClient{}
+	multiClient := &MultiSecretResourceClient{RWMutex: &sync.RWMutex{}}
 
-	// Create a WaitGroup to wait for at least one client to be initialized. Because
+	errChan := make(chan error)
+	// create a goroutine to receive on errChan so we can handle the possible case of a client
+	// failing to initialize after this function returns
+	loggedErrChan := make(chan error)
+	go func() {
+		logger := contextutils.LoggerFrom(ctx)
+		for errToLog := range errChan {
+			logger.Error(errToLog)
+			// DO_NOT_SUBMIT: emit metric for failed resource client initialization
+			loggedErrChan <- errToLog
+		}
+	}()
+
+	// Create a channel to receive the event that at least one client is initialized. Because
 	// some clients may rely on others to be initialized before themselves successfully
 	// finish initializing, we do not want to block on this race. We trust they will
 	// eventually become healthy or we will log loudly and emit metrics if they fail.
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-
-	errChan := make(chan error)
+	doneChan := make(chan struct{})
 
 	clientCallback := func(multiClient *MultiSecretResourceClient, boolFieldToSet *bool) func(multiClient *MultiSecretResourceClient, client clients.ResourceClient) {
 		return func(multiClient *MultiSecretResourceClient, client clients.ResourceClient) {
@@ -205,10 +211,11 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 
 	for _, v := range m.secretSources {
 		initParams := &asyncClientInitParams{
-			ctx:         ctx,
-			wg:          wg,
-			multiClient: multiClient,
-			errChan:     errChan,
+			newClientParams: params,
+			ctx:             ctx,
+			multiClient:     multiClient,
+			errChan:         errChan,
+			doneChan:        doneChan,
 		}
 
 		switch source := v.GetSource().(type) {
@@ -253,24 +260,16 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 		go initClientAsync(initParams)
 	}
 
-	// Construct a chan so we can use the `wg.Wait()` in a select
-	waitCh := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(waitCh)
-	}()
-
 	// We wait for at least one client to be initialized, then return our multiClient.
 	// Alternately, if we receive a number of errors equivalent to the number of clients
 	// we are trying to configure, then we know that all clients have failed to initialize.
 	multiErr := multierror.Error{}
 	for i := 0; i < len(m.secretSources); i++ {
 		select {
-		case <-waitCh:
+		// case <-waitCh:
+		case <-doneChan:
 			return multiClient, nil
 		case recvErr := <-errChan:
-			contextutils.LoggerFrom(ctx).Error(recvErr)
-			// DO_NOT_SUBMIT: emit metric for failed resource client initialization
 			multiErr.Errors = append(multiErr.Errors, recvErr)
 		}
 	}
@@ -353,7 +352,9 @@ func (m *MultiSecretResourceClient) Register() error {
 			return concreteClient.Register()
 		}
 	}
-	return errors.New("Register method only implemented on Kubernetes resource client")
+
+	// return no error since the EC2 plugin calls the Register() function
+	return nil
 }
 
 func (m *MultiSecretResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
