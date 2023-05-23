@@ -4,25 +4,26 @@ import (
 	"context"
 	"encoding/base64"
 
-	"github.com/solo-io/go-utils/contextutils"
-
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_http_grpc_json_transcoder_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/any"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 var (
 	_ plugins.Plugin           = new(plugin)
 	_ plugins.UpstreamPlugin   = new(plugin)
 	_ plugins.HttpFilterPlugin = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
 
 	NoConfigMapRefError = func() error {
 		return eris.Errorf("a configmap ref must be provided")
@@ -55,7 +56,10 @@ const (
 var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
 type plugin struct {
-	upstreamFilters []plugins.StagedHttpFilter
+	// Map of ResourceRef.Key() (namespace.name) for gRPC Upstreams --> grpcJsonTranscoder filter to add to routes
+	upstreamFilters map[string]plugins.StagedHttpFilter
+	// List of listeners that need an empty gRPC json filter that will be overridden by a route
+	affectedListeners map[*v1.HttpListener]int
 }
 
 func NewPlugin() *plugin {
@@ -66,8 +70,9 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) {
-	p.upstreamFilters = nil
+func (p *plugin) Init(params plugins.InitParams) {
+	p.upstreamFilters = make(map[string]plugins.StagedHttpFilter)
+	p.affectedListeners = make(map[*v1.HttpListener]int)
 }
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoy_config_cluster_v3.Cluster) error {
 
@@ -93,7 +98,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
-	p.upstreamFilters = append(p.upstreamFilters, grpcJsonFilter)
+	p.upstreamFilters[in.GetMetadata().Ref().Key()] = grpcJsonFilter
 	// GRPC transcoding always requires http2
 	if out.GetHttp2ProtocolOptions() == nil {
 		out.Http2ProtocolOptions = &envoy_config_core_v3.Http2ProtocolOptions{}
@@ -102,24 +107,59 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 }
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	grpcJsonConf := listener.GetOptions().GetGrpcJsonTranscoder()
-	if grpcJsonConf == nil {
-		contextutils.LoggerFrom(params.Ctx).Infof("returning filters from us %v", len(p.upstreamFilters))
-		return p.upstreamFilters, nil
+	if grpcJsonConf != nil {
+		// put the config from the gateway resource on the listener
+		envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, grpcJsonConf)
+		if err != nil {
+			return nil, err
+		}
+		grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
+		if err != nil {
+			return nil, eris.Wrapf(err, "generating filter config")
+		}
+		return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
+	} else if len(p.upstreamFilters) > 0 {
+		if _, ok := p.affectedListeners[listener]; !ok {
+			return nil, nil
+		}
+		// There needs to be a filter on the listener to be able to set filters on routes
+		// Envoy errors if this config is empty
+		emptyGlooConfig := &grpc_json.GrpcJsonTranscoder{
+			DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptor{ProtoDescriptor: "/to/override"},
+		}
+		envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, emptyGlooConfig)
+		if err != nil {
+			return nil, err
+		}
+		grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
+		if err != nil {
+			return nil, eris.Wrapf(err, "generating filter config")
+		}
+		return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
 	}
-
-	envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(params, grpcJsonConf)
-	if err != nil {
-		return nil, err
-	}
-
-	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
-	if err != nil {
-		return nil, eris.Wrapf(err, "generating filter config")
-	}
-	contextutils.LoggerFrom(params.Ctx).Infof("found json filters %v", len(p.upstreamFilters))
-	return append(p.upstreamFilters, grpcJsonFilter), nil
+	return nil, nil
 }
-
+func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
+	if len(p.upstreamFilters) == 0 {
+		return nil
+	}
+	routeUpstreams, err := pluginutils.DestinationUpstreams(params.Snapshot, in.GetRouteAction())
+	if err != nil {
+		return err
+	}
+	for _, us := range routeUpstreams {
+		if filter, ok := p.upstreamFilters[us.Key()]; ok {
+			if out.GetTypedPerFilterConfig() == nil {
+				out.TypedPerFilterConfig = make(map[string]*any.Any)
+			}
+			// Assume that a single route won't have upstreams with multiple different grpc configurations
+			out.GetTypedPerFilterConfig()[wellknown.GRPCJSONTranscoder] = filter.HttpFilter.GetTypedConfig()
+			p.affectedListeners[params.HttpListener] = 1
+			return nil
+		}
+	}
+	return nil
+}
 func translateGlooToEnvoyGrpcJson(params plugins.Params, grpcJsonConf *grpc_json.GrpcJsonTranscoder) (*envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder, error) {
 
 	envoyGrpcJsonConf := &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder{

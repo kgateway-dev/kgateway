@@ -48,6 +48,7 @@ import (
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
@@ -332,14 +333,14 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousProxyDebugServer.addr = proxyDebugAddr
 		s.previousProxyDebugServer.maxGrpcRecvSize = maxGrpcRecvSize
 	}
-	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
+	consulClient, err := bootstrap_clients.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}
 
 	var vaultClient *vaultapi.Client
 	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
-		vaultClient, err = bootstrap.VaultClientForSettings(vaultSettings)
+		vaultClient, err = bootstrap_clients.VaultClientForSettings(vaultSettings)
 		if err != nil {
 			return err
 		}
@@ -988,7 +989,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		kubeCoreCache corecache.KubeCoreCache
 	)
 
-	params := bootstrap.NewConfigFactoryParams(
+	params := bootstrap_clients.NewConfigFactoryParams(
 		settings,
 		memCache,
 		kubeCache,
@@ -996,12 +997,12 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		consulClient,
 	)
 
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
+	upstreamFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, v1.UpstreamCrd)
 	if err != nil {
 		return bootstrap.Opts{}, errors.Wrapf(err, "creating config source from settings")
 	}
 
-	kubeServiceClient, err := bootstrap.KubeServiceClientForSettings(
+	kubeServiceClient, err := bootstrap_clients.KubeServiceClientForSettings(
 		ctx,
 		settings,
 		memCache,
@@ -1020,7 +1021,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		doProxyCleanup(ctx, params, settings, writeNamespace)
 	}
 	if settings.GetGateway().GetPersistProxySpec().GetValue() {
-		proxyFactory, err = bootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
+		proxyFactory, err = bootstrap_clients.ConfigFactoryForSettings(params, v1.ProxyCrd)
 		if err != nil {
 			return bootstrap.Opts{}, err
 		}
@@ -1030,7 +1031,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		}
 	}
 
-	secretFactory, err := bootstrap.SecretFactoryForSettings(
+	secretFactory, err := bootstrap_clients.SecretFactoryForSettings(
 		ctx,
 		settings,
 		memCache,
@@ -1044,12 +1045,12 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
-	upstreamGroupFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamGroupCrd)
+	upstreamGroupFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, v1.UpstreamGroupCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
+	artifactFactory, err := bootstrap_clients.ArtifactFactoryForSettings(
 		ctx,
 		settings,
 		memCache,
@@ -1063,52 +1064,52 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
-	authConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
+	authConfigFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	rateLimitConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, rlv1alpha1.RateLimitConfigCrd)
+	rateLimitConfigFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, rlv1alpha1.RateLimitConfigCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
+	graphqlApiFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
+	virtualServiceFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
+	routeTableFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
+	virtualHostOptionFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
+	routeOptionFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
+	gatewayFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.GatewayCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
+	matchableHttpGatewayFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	matchableTcpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableTcpGatewayCrd)
+	matchableTcpGatewayFactory, err := bootstrap_clients.ConfigFactoryForSettings(params, gateway.MatchableTcpGatewayCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
