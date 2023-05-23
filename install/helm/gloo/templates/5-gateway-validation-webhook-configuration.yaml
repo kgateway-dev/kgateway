@@ -23,26 +23,37 @@ webhooks:
       namespace: {{ .Release.Namespace }}
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
+  {{ $skipAllDeleteValidation := has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources -}}
   rules:
-  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+  - operations: [ "CREATE", "UPDATE" 
+      {{- if and (not $skipAllDeleteValidation) (not (has "virtualservices" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}, "DELETE"{{ end }}]
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
-    resources: ["virtualservices", "routetables"]
+    resources: ["virtualservices"]
+  - operations: [ "CREATE", "UPDATE"
+      {{- if and (not $skipAllDeleteValidation) (not (has "routetables" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}, "DELETE"{{ end }}]
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["routetables"]
   - operations: [ "CREATE", "UPDATE"]
 {{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support 
 specific resources, we will manage the resources that the webhook receives via the helm configurations*/}}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["gateways"]
-  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+  - operations: [ "CREATE", "UPDATE"
+      {{- if and (not $skipAllDeleteValidation) (not (has "upstreams" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}, "DELETE"{{ end }}]
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["upstreams"]{{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
+ {{- if and (not $skipAllDeleteValidation) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
   - operations: [ "DELETE" ]
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["secrets"]
-  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+  {{- end }}
+  - operations: [ "CREATE", "UPDATE"
+      {{- if and (not $skipAllDeleteValidation) (not (has "ratelimitconfigs" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}, "DELETE"{{ end }}]
     apiGroups: ["ratelimit.solo.io"]
     apiVersions: ["v1alpha1"]
     resources: ["ratelimitconfigs"]
