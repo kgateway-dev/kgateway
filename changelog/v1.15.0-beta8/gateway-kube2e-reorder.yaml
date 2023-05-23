@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Group tests which modify validation settings into the same context. This makes it easier to understand
+      what our existing test coverage is, as well as ensure we can run these tests in order.
+    issueLink: https://github.com/solo-io/gloo/issues/7795
+    resolvesIssue: false
+  - type: NON_USER_FACING
+    description: Begin the work to deflake our most painful kube2e tests
+    issueLink: https://github.com/solo-io/solo-projects/issues/4913
+    resolvesIssue: false

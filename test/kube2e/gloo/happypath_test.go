@@ -1,7 +1,6 @@
 package gloo_test
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"strings"
@@ -31,8 +30,6 @@ import (
 var _ = Describe("Happy path", func() {
 
 	var (
-		ctx           context.Context
-		cancel        context.CancelFunc
 		testClients   services.TestClients
 		envoyInstance *services.EnvoyInstance
 		tu            *v1helpers.TestUpstream
@@ -61,7 +58,6 @@ var _ = Describe("Happy path", func() {
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
@@ -75,7 +71,6 @@ var _ = Describe("Happy path", func() {
 
 	AfterEach(func() {
 		envoyInstance.Clean()
-		cancel()
 	})
 
 	TestUpstreamReachable := func() {
