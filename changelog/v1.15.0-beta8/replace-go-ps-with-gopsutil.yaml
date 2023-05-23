@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Replace unmaintained `github.com/keybase/go-ps` with `github.com/shirou/gopsutil/v3/process`.
