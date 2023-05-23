@@ -13,12 +13,12 @@ settings:
     invalidRouteResponseBody: Gloo Gateway has invalid configuration.
 gateway:
   persistProxySpec: true
-  logLevel: info
+  logLevel: debug
   validation:
     allowWarnings: true
     alwaysAcceptResources: false
 gloo:
-  logLevel: info
+  logLevel: debug
   disableLeaderElection: false
   deployment:
     replicas: 2
