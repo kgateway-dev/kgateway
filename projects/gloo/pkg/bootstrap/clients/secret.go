@@ -189,7 +189,6 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 		logger := contextutils.LoggerFrom(ctx)
 		for errToLog := range errChan {
 			logger.Error(errToLog)
-			// DO_NOT_SUBMIT: emit metric for failed resource client initialization
 			loggedErrChan <- errToLog
 		}
 	}()

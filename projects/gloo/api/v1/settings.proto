@@ -50,7 +50,6 @@ message Settings {
         ConsulKv consul_kv_source = 21;
     };
 
-    // Deprecated: use secretOptions API
     // Determines where Gloo will read/write secrets from/to.
     oneof secret_source {
         KubernetesSecrets kubernetes_secret_source = 6;
@@ -59,6 +58,7 @@ message Settings {
     };
 
     // Settings for secrets storage.
+    // This API is experimental and not suitable for production use
     SecretOptions secret_options = 38;
 
     message SecretOptions {
