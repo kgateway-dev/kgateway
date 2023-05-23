@@ -1,8 +1,6 @@
 package gloo_test
 
 import (
-	"context"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 
@@ -19,9 +17,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,12 +28,9 @@ var _ = Describe("Generated Kube Code", func() {
 
 		upstreamClient       gloov1.UpstreamClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
-		ctx                  context.Context
-		cancel               context.CancelFunc
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
 		cfg, err := kubeutils.GetConfig("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -51,25 +43,8 @@ var _ = Describe("Generated Kube Code", func() {
 		glooV1Client, err = gloov1kube.NewForConfig(cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		kubeCache := kube.NewKubeCache(context.TODO())
-
-		upstreamClient, err = gloov1.NewUpstreamClient(ctx, &factory.KubeResourceClientFactory{
-			Crd:         gloov1.UpstreamCrd,
-			Cfg:         cfg,
-			SharedCache: kubeCache,
-		})
-		Expect(err).NotTo(HaveOccurred())
-
-		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(ctx, &factory.KubeResourceClientFactory{
-			Crd:         gatewayv1.VirtualServiceCrd,
-			Cfg:         cfg,
-			SharedCache: kubeCache,
-		})
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	AfterEach(func() {
-		cancel()
+		upstreamClient = resourceClientset.UpstreamClient()
+		virtualServiceClient = resourceClientset.VirtualServiceClient()
 	})
 
 	It("can read and write a gloo resource as a typed kube object", func() {
