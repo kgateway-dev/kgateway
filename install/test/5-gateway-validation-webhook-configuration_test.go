@@ -31,7 +31,8 @@ var _ = Describe("Helm Test", func() {
 		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
 			timeoutSeconds := 5
 
-			// This type of test can be a bit spooky because we're expecting 2 mechanically generated
+			// This type of test can be a bit spooky because we're expecting 2 auto-generated structures
+			// we never see to match. So we'll count the "DELETES" as a sanity check.
 			expectedDeletes := 5 - expectedRemoved
 			expectedChart := generateExpectedChart(timeoutSeconds, resources, expectedDeletes)
 
@@ -50,6 +51,7 @@ var _ = Describe("Helm Test", func() {
 			Entry("secrets", []string{"secrets"}, 1),
 			Entry("ratelimitconfigs", []string{"ratelimitconfigs"}, 1),
 			Entry("mutiple", []string{"virtualservices", "routetables", "secrets"}, 3),
+			Entry("mutiple (with removal)", []string{"ratelimitconfigs", "secrets"}, 2),
 			Entry("all", []string{"*"}, 5),
 			Entry("empty", []string{}, 0),
 		)

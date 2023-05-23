@@ -17,8 +17,11 @@ func DeleteOneByValue(slice []string, value string) []string {
 // a slice which has to be operated on
 // the index of the element to be deleted from the slice
 // return value as a slice of integers
+// If index is out of bounds, the original slice is returned.
 func DeleteAtIndex(slice []string, index int) []string {
-
+	if index < 0 || index >= len(slice) {
+		return slice
+	}
 	// Append function used to append elements to a slice
 	// first parameter as the slice to which the elements
 	// are to be added/appended second parameter is the

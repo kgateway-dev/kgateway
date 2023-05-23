@@ -9,5 +9,5 @@ import (
 
 func TestStringUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Regex Suite")
+	RunSpecs(t, "StringUtils Suite")
 }
