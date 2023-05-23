@@ -4,12 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -24,8 +22,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// Kubernetes tests for plugins from projects/gloo/pkg/plugins/kubernetes
-var _ = Describe("Plugins", func() {
+// Kubernetes tests for plugin from projects/gloo/pkg/plugins/kubernetes
+var _ = Describe("Kubernetes Plugin", func() {
 
 	var (
 		svcNamespace  string
@@ -41,21 +39,14 @@ var _ = Describe("Plugins", func() {
 			"tacos": "burritos",
 			"pizza": "frenchfries",
 		}
-
-		ctx    context.Context
-		cancel context.CancelFunc
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		ctx = settingsutil.WithSettings(ctx, &v1.Settings{})
+		var err error
 
 		svcNamespace = helpers.RandString(8)
+		kubeClient = resourceClientset.KubeClients()
 
-		cfg, err := kubeutils.GetConfig("", "")
-		Expect(err).NotTo(HaveOccurred())
-
-		kubeClient, err = kubernetes.NewForConfig(cfg)
 		kubeCoreCache, err = kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -143,8 +134,6 @@ var _ = Describe("Plugins", func() {
 	AfterEach(func() {
 		err := kubeClient.CoreV1().Namespaces().Delete(ctx, svcNamespace, metav1.DeleteOptions{})
 		Expect(err).NotTo(HaveOccurred())
-
-		cancel()
 	})
 
 	It("uses json keys when serializing", func() {
@@ -185,13 +174,26 @@ var _ = Describe("Plugins", func() {
 			}
 		}
 		plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
-		eds, errs, err := plug.WatchEndpoints(
+		endpoints, errs, err := plug.WatchEndpoints(
 			"",
 			v1.UpstreamList{makeUpstream("a"), makeUpstream("b"), makeUpstream("c")},
-			clients.WatchOpts{Ctx: ctx})
+			clients.WatchOpts{
+				Ctx:         ctx,
+				RefreshRate: time.Second,
+			})
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(eds, time.Second).Should(Receive(HaveLen(6)))
-		Consistently(errs).Should(Not(Receive()))
+		select {
+		case <-time.After(time.Second * 2):
+			Fail("no endpoints detected after 2s")
+		case endpointList := <-endpoints:
+			Expect(endpointList).To(HaveLen(6))
+			break
+		case err, ok := <-errs:
+			if !ok {
+				return
+			}
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 })

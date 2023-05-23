@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Ensure the Gloo Kube2e utility tests are consistent in how they manage context, setup resources
+      and wait for timeouts.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4913
+    resolvesIssue: false
