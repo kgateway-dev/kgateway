@@ -350,7 +350,7 @@ type Webhook struct {
 	DisableHelmHook               *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
 	TimeoutSeconds                *int              `json:"timeoutSeconds,omitempty" desc:"the timeout for the webhook, defaults to 10"`
 	ExtraAnnotations              map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
-	SkipDeleteValidationResources []string          `json:"skipDeleteValidationResources,omitempty" desc:"list of resources to skip deleting during cleanup job"`
+	SkipDeleteValidationResources []string          `json:"skipDeleteValidationResources,omitempty" desc:"resource types in this list will not use webhook valdaition for DELETEs"`
 	*KubeResourceOverride
 }
 
