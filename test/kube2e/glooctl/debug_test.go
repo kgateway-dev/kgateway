@@ -3,7 +3,6 @@ package glooctl_test
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -39,13 +38,8 @@ var _ = Describe("Debug", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
-			It("should not crash (logs)", func() {
-				_, err := GlooctlOut("debug logs")
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			It("should not crash (log)", func() {
-				_, err := GlooctlOut("debug log")
+			It("should not crash", func() {
+				_, err := GlooctlOut("debug", "logs", "-n", testHelper.InstallNamespace)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -70,7 +64,7 @@ var _ = Describe("Debug", func() {
 			It("should create a tar file at location specified in --file when --zip is enabled", func() {
 				outputFile := filepath.Join(tmpDir, "log.tgz")
 
-				_, err := GlooctlOut(fmt.Sprintf("debug logs -n %s --file %s --zip %s", testHelper.InstallNamespace, outputFile, "true"))
+				_, err := GlooctlOut("debug", "logs", "-n", testHelper.InstallNamespace, "--file", outputFile, "--zip", "true")
 				Expect(err).NotTo(HaveOccurred(), "glooctl command should have succeeded")
 
 				_, err = os.Stat(outputFile)
@@ -80,7 +74,7 @@ var _ = Describe("Debug", func() {
 			It("should create a text file at location specified in --file when --zip is not enabled", func() {
 				outputFile := filepath.Join(tmpDir, "log.txt")
 
-				_, err := GlooctlOut(fmt.Sprintf("debug logs -n %s --file %s --zip %s", testHelper.InstallNamespace, outputFile, "false"))
+				_, err := GlooctlOut("debug", "logs", "-n", testHelper.InstallNamespace, "--file", outputFile, "--zip", "false")
 				Expect(err).NotTo(HaveOccurred(), "glooctl command should have succeeded")
 
 				_, err = os.Stat(outputFile)
