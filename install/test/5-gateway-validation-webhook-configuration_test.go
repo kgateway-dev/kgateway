@@ -28,7 +28,7 @@ var _ = Describe("Helm Test", func() {
 			testManifest = tm
 		}
 
-		FDescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
+		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
 			timeoutSeconds := 5
 
 			// This type of test can be a bit spooky because we're expecting 2 mechanically generated
