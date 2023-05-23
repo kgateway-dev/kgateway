@@ -656,9 +656,14 @@ message OidcAuthorizationCode {
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
 
-    // If specified, the matching claims from the ID token will be emitted as dynamic metadata.
+    // Map of claims to metadata keys. Ie:
+    // claims_to_metadata:
+    //   iss: issuer
+    //   email: email
+    // claim values can be a bool, string, list, or object and can contain special characters.
+    // When specified, the matching claims from the ID token will be emitted as dynamic metadata.
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
-    repeated ClaimsToMetadata claims_to_metadata = 20;
+    map<string, string> claims_to_metadata = 20;
 }
 
 message PlainOAuth2 {
@@ -835,9 +840,14 @@ message AccessTokenValidation {
         // in the future we may add other types of scope validation (e.g. predicate matching)
     }
 
-    // If specified, the matching claims from the access token will be emitted as dynamic metadata. This works for both opaque and JWT tokens.
+    // Map of claims to metadata keys. Ie:
+    // claims_to_metadata:
+    //   iss: issuer
+    //   email: email
+    // claim values can be a bool, string, list, or object and can contain special characters.
+    // When specified, the matching claims from the access token will be emitted as dynamic metadata. This works for both opaque and JWT tokens.
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
-    repeated ClaimsToMetadata claims_to_metadata = 7;
+    map<string, string> claims_to_metadata = 7;
 
     message ScopeList {
       repeated string scope = 1;
@@ -846,16 +856,6 @@ message AccessTokenValidation {
 
 message OauthSecret {
     string client_secret = 1;
-}
-
-// ClaimsToMetadata allows claims to be extracted from the ID token and/or the access token and
-// emitted as dynamic metadata.
-message ClaimsToMetadata {
-    // The name of the claim to extract the value from
-    string claim = 1;
-
-    // The key to use for the dynamic metadata emitted
-    string metadata_key = 2;
 }
 
 // Defines how API keys are validated.

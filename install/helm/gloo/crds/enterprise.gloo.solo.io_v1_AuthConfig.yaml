@@ -270,14 +270,9 @@ spec:
                             cacheTimeout:
                               type: string
                             claimsToMetadata:
-                              items:
-                                properties:
-                                  claim:
-                                    type: string
-                                  metadataKey:
-                                    type: string
-                                type: object
-                              type: array
+                              additionalProperties:
+                                type: string
+                              type: object
                             introspection:
                               properties:
                                 clientId:
@@ -457,14 +452,9 @@ spec:
                             callbackPath:
                               type: string
                             claimsToMetadata:
-                              items:
-                                properties:
-                                  claim:
-                                    type: string
-                                  metadataKey:
-                                    type: string
-                                type: object
-                              type: array
+                              additionalProperties:
+                                type: string
+                              type: object
                             clientId:
                               type: string
                             clientSecretRef:
