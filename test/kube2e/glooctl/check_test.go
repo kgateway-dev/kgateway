@@ -301,10 +301,10 @@ var _ = Describe("Check", func() {
 
 	})
 
-	Context("gateway-proxy replicas", Ordered, func() {
+	Context("gateway-proxy replicas", func() {
 
-		BeforeAll(func() {
-			// Check that everything is OK
+		BeforeEach(func() {
+			// We scale up/down deployments in each test, so we need to be sure we are starting from a healthy point
 			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
@@ -359,10 +359,10 @@ var _ = Describe("Check", func() {
 
 	})
 
-	Context("error reporting/formatting", Ordered, func() {
+	Context("error reporting/formatting", func() {
 
-		BeforeAll(func() {
-			// Check that everything is OK
+		BeforeEach(func() {
+			// We apply resources in these tests, so we need to be sure we are starting from a healthy point
 			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
