@@ -657,14 +657,14 @@ message OidcAuthorizationCode {
     EndSessionProperties end_session_properties = 19;
 
     // Map of metadata key to claim. Ie:
-    // metadata_key_to_claim:
+    // metadata_keys_to_claim:
     //   issuer: iss
     //   email: email
     // When specified, the matching claims from the access token will be emitted as dynamic metadata.
     // Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`.
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
     // claim values can be a bool, string, or list.
-    map<string, string> metadata_key_to_claim = 20;
+    map<string, string> metadata_keys_to_claim = 20;
 }
 
 message PlainOAuth2 {
@@ -842,7 +842,7 @@ message AccessTokenValidation {
     }
 
     // Map of metadata key to claim. Ie:
-    // metadata_key_to_claim:
+    // metadata_keys_to_claim:
     //   issuer: iss
     //   email: email
     // When specified, the matching claims from the access token will be emitted as dynamic metadata.
@@ -850,7 +850,7 @@ message AccessTokenValidation {
     // Works when the access token is a JWT or when the access token is opaque.
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
     // claim values can be a bool, string, or list.
-    map<string, string> metadata_key_to_claim = 7;
+    map<string, string> metadata_keys_to_claim = 7;
 
     message ScopeList {
       repeated string scope = 1;

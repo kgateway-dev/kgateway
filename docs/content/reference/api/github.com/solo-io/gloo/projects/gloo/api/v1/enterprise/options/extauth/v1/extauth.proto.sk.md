@@ -896,7 +896,7 @@ The Method used to make the request.
 "parseCallbackPathAsRegex": bool
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
-"metadataKeyToClaim": map<string, string>
+"metadataKeysToClaim": map<string, string>
 
 ```
 
@@ -921,7 +921,7 @@ The Method used to make the request.
 | `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
-| `metadataKeyToClaim` | `map<string, string>` | Map of metadata key to claim. Ie: metadata_key_to_claim: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`). claim values can be a bool, string, or list. |
+| `metadataKeysToClaim` | `map<string, string>` | Map of metadata key to claim. Ie: metadata_keys_to_claim: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`). claim values can be a bool, string, or list. |
 
 
 
@@ -1085,7 +1085,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "userinfoUrl": string
 "cacheTimeout": .google.protobuf.Duration
 "requiredScopes": .enterprise.gloo.solo.io.AccessTokenValidation.ScopeList
-"metadataKeyToClaim": map<string, string>
+"metadataKeysToClaim": map<string, string>
 
 ```
 
@@ -1097,7 +1097,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `userinfoUrl` | `string` | The URL for the OIDC userinfo endpoint. If provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response (or cached response) will be added to the `AuthorizationRequest` state under the "introspection" key. This can be useful to leverage the userinfo response in, for example, an external auth server plugin. |
 | `cacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How long the token introspection and userinfo endpoint response for a specific access token should be kept in the in-memory cache. The result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. If omitted, defaults to 10 minutes. If zero, then no caching will be done. |
 | `requiredScopes` | [.enterprise.gloo.solo.io.AccessTokenValidation.ScopeList](../extauth.proto.sk/#scopelist) | Require access token to have all of the scopes in the given list. This configuration applies to both opaque and JWT tokens. In the case of opaque tokens, this will check the scopes returned in the "scope" member of introspection response (as described in [Section 2.2 of RFC7662](https://tools.ietf.org/html/rfc7662#section-2.2). In case of JWTs the scopes to be validated are expected to be contained in the "scope" claim of the token in the form of a space-separated string. Omitting this field means that scope validation will be skipped. |
-| `metadataKeyToClaim` | `map<string, string>` | Map of metadata key to claim. Ie: metadata_key_to_claim: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`. Works when the access token is a JWT or when the access token is opaque. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`). claim values can be a bool, string, or list. |
+| `metadataKeysToClaim` | `map<string, string>` | Map of metadata key to claim. Ie: metadata_keys_to_claim: issuer: iss email: email When specified, the matching claims from the access token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`. Works when the access token is a JWT or when the access token is opaque. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`). claim values can be a bool, string, or list. |
 
 
 

@@ -1388,12 +1388,12 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetMetadataKeyToClaim()) != len(target.GetMetadataKeyToClaim()) {
+	if len(m.GetMetadataKeysToClaim()) != len(target.GetMetadataKeysToClaim()) {
 		return false
 	}
-	for k, v := range m.GetMetadataKeyToClaim() {
+	for k, v := range m.GetMetadataKeysToClaim() {
 
-		if strings.Compare(v, target.GetMetadataKeyToClaim()[k]) != 0 {
+		if strings.Compare(v, target.GetMetadataKeysToClaim()[k]) != 0 {
 			return false
 		}
 
@@ -1659,12 +1659,12 @@ func (m *AccessTokenValidation) Equal(that interface{}) bool {
 		}
 	}
 
-	if len(m.GetMetadataKeyToClaim()) != len(target.GetMetadataKeyToClaim()) {
+	if len(m.GetMetadataKeysToClaim()) != len(target.GetMetadataKeysToClaim()) {
 		return false
 	}
-	for k, v := range m.GetMetadataKeyToClaim() {
+	for k, v := range m.GetMetadataKeysToClaim() {
 
-		if strings.Compare(v, target.GetMetadataKeyToClaim()[k]) != 0 {
+		if strings.Compare(v, target.GetMetadataKeysToClaim()[k]) != 0 {
 			return false
 		}
 

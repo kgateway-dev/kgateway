@@ -304,7 +304,7 @@ spec:
                                       type: string
                                   type: object
                               type: object
-                            metadataKeyToClaim:
+                            metadataKeysToClaim:
                               additionalProperties:
                                 type: string
                               type: object
@@ -531,7 +531,7 @@ spec:
                               type: object
                             logoutPath:
                               type: string
-                            metadataKeyToClaim:
+                            metadataKeysToClaim:
                               additionalProperties:
                                 type: string
                               type: object
