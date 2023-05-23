@@ -269,10 +269,6 @@ spec:
                           properties:
                             cacheTimeout:
                               type: string
-                            claimsToMetadata:
-                              additionalProperties:
-                                type: string
-                              type: object
                             introspection:
                               properties:
                                 clientId:
@@ -307,6 +303,10 @@ spec:
                                     url:
                                       type: string
                                   type: object
+                              type: object
+                            metadataKeyToClaim:
+                              additionalProperties:
+                                type: string
                               type: object
                             requiredScopes:
                               properties:
@@ -451,10 +451,6 @@ spec:
                               type: object
                             callbackPath:
                               type: string
-                            claimsToMetadata:
-                              additionalProperties:
-                                type: string
-                              type: object
                             clientId:
                               type: string
                             clientSecretRef:
@@ -535,6 +531,10 @@ spec:
                               type: object
                             logoutPath:
                               type: string
+                            metadataKeyToClaim:
+                              additionalProperties:
+                                type: string
+                              type: object
                             parseCallbackPathAsRegex:
                               type: boolean
                             scopes:

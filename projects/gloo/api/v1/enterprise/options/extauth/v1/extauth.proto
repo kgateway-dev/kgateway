@@ -656,14 +656,15 @@ message OidcAuthorizationCode {
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
 
-    // Map of claims to metadata keys. Ie:
-    // claims_to_metadata:
-    //   iss: issuer
+    // Map of metadata key to claim. Ie:
+    // metadata_key_to_claim:
+    //   issuer: iss
     //   email: email
-    // claim values can be a bool, string, or list and can contain special characters.
-    // When specified, the matching claims from the ID token will be emitted as dynamic metadata.
+    // When specified, the matching claims from the access token will be emitted as dynamic metadata.
+    // Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`.
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
-    map<string, string> claims_to_metadata = 20;
+    // claim values can be a bool, string, or list.
+    map<string, string> metadata_key_to_claim = 20;
 }
 
 message PlainOAuth2 {
@@ -840,14 +841,16 @@ message AccessTokenValidation {
         // in the future we may add other types of scope validation (e.g. predicate matching)
     }
 
-    // Map of claims to metadata keys. Ie:
-    // claims_to_metadata:
-    //   iss: issuer
+    // Map of metadata key to claim. Ie:
+    // metadata_key_to_claim:
+    //   issuer: iss
     //   email: email
-    // claim values can be a bool, string, or list and can contain special characters.
-    // When specified, the matching claims from the access token will be emitted as dynamic metadata. This works for both opaque and JWT tokens.
+    // When specified, the matching claims from the access token will be emitted as dynamic metadata.
+    // Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`.
+    // Works when the access token is a JWT or when the access token is opaque.
     // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
-    map<string, string> claims_to_metadata = 7;
+    // claim values can be a bool, string, or list.
+    map<string, string> metadata_key_to_claim = 7;
 
     message ScopeList {
       repeated string scope = 1;
