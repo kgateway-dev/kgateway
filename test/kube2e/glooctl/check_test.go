@@ -2,7 +2,6 @@ package glooctl_test
 
 import (
 	"os"
-	"path/filepath"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -11,17 +10,17 @@ import (
 	"github.com/solo-io/go-utils/testutils/exec"
 )
 
-var _ = Describe("Kube2e: glooctl", func() {
+var _ = Describe("Check", func() {
 
-	Context("check", func() {
+	Context("exclude", Ordered, func() {
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			// Check that everything is OK
 			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
 		It("all checks pass with OK status", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics")
+			output, err := GlooctlOut("check", "-x", "xds-metrics")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -36,7 +35,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude deployments", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,deployments")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,deployments")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).NotTo(ContainSubstring("Checking deployments..."))
@@ -52,7 +51,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude pods", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,pods")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,pods")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -68,7 +67,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude upstreams", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,upstreams,virtual-services")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,upstreams,virtual-services")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -83,7 +82,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude upstreamgroups", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,upstreamgroup")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,upstreamgroup")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -99,7 +98,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude auth-configs", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,auth-configs")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,auth-configs")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -115,7 +114,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude rate-limit-configs", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,rate-limit-configs")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,rate-limit-configs")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -131,7 +130,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude secrets", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,secrets")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,secrets")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -147,7 +146,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude virtual-services", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,virtual-services")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,virtual-services")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -163,7 +162,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude gateways", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,gateways")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,gateways")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -179,7 +178,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 		})
 
 		It("can exclude proxies", func() {
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics,proxies")
+			output, err := GlooctlOut("check", "-x", "xds-metrics,proxies")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -194,8 +193,47 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(output).NotTo(ContainSubstring("Checking proxies..."))
 		})
 
+	})
+
+	Context("timeouts", Ordered, func() {
+
+		BeforeAll(func() {
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		})
+
+		It("can set timeouts (too short)", func() {
+			values, err := os.CreateTemp("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = values.Write([]byte(`checkTimeoutSeconds: 1ns`))
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = GlooctlOut("check", "-c", values.Name())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("context deadline exceeded"))
+		})
+
+		It("can set timeouts (appropriately)", func() {
+			values, err := os.CreateTemp("", "*.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			_, err = values.Write([]byte(`checkTimeoutSeconds: 300s`))
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = GlooctlOut("check", "-c", values.Name())
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+	})
+
+	Context("read only", Ordered, func() {
+
+		BeforeAll(func() {
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		})
+
 		It("can run a read only check", func() {
-			output, err := runGlooctlCommand("check", "--read-only")
+			output, err := GlooctlOut("check", "--read-only")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -212,66 +250,120 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(output).To(ContainSubstring("Warning: checking xds with port forwarding is disabled"))
 		})
 
-		It("can set timeouts (too short)", func() {
-			values, err := os.CreateTemp("", "*.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			_, err = values.Write([]byte(`checkTimeoutSeconds: 1ns`))
-			Expect(err).NotTo(HaveOccurred())
+	})
 
-			_, err = runGlooctlCommand("check", "-c", values.Name())
+	Context("kube context", Ordered, func() {
+
+		BeforeAll(func() {
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		})
+
+		It("fails when scanning with invalid kubecontext", func() {
+			_, err := GlooctlOut("check", "--kube-context", "not-gloo-context")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("context deadline exceeded"))
+			Expect(err.Error()).To(ContainSubstring("Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"not-gloo-context\" does not exist"))
 		})
 
-		It("can set timeouts (appropriately)", func() {
-			values, err := os.CreateTemp("", "*.yaml")
+		It("succeeds with correct kubecontext", func() {
+			// The name of the cluster we run these tests in is "kind" which is why this test works
+			_, err := GlooctlOut("check", "--kube-context", "kind-kind")
 			Expect(err).NotTo(HaveOccurred())
-			_, err = values.Write([]byte(`checkTimeoutSeconds: 300s`))
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = runGlooctlCommand("check", "-c", values.Name())
-			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("fails if no gateway proxy deployments", func() {
-			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
-			Expect(err).ToNot(HaveOccurred())
-			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "public-gw", "-n", "gloo-system")
-			Expect(err).ToNot(HaveOccurred())
+	})
 
-			_, err = runGlooctlCommand("check", "-x", "xds-metrics")
+	Context("namespace", Ordered, func() {
+
+		BeforeAll(func() {
+			// Check that everything is OK
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		})
+
+		It("connection fails on incorrect namespace check", func() {
+			_, err := GlooctlOut("check", "-n", "not-gloo-system")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"))
+			Expect(err.Error()).To(ContainSubstring("Could not communicate with kubernetes cluster: namespaces \"not-gloo-system\" not found"))
 
-			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
-			Expect(err).ToNot(HaveOccurred())
-			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "public-gw", "-n", "gloo-system")
-			Expect(err).ToNot(HaveOccurred())
-		})
+			_, err = GlooctlOut("check", "-n", "default")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
 
-		It("warns if a given gateway proxy deployment has zero replicas", func() {
-			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
+			output, err := GlooctlOut("check", "-p", "not-gloo")
 			Expect(err).ToNot(HaveOccurred())
-
-			output, err := runGlooctlCommand("check", "-x", "xds-metrics")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(output).To(ContainSubstring("Checking deployments... OK"))
-			Expect(output).To(ContainSubstring("Checking pods... OK"))
-			Expect(output).To(ContainSubstring("Checking upstreams... OK"))
-			Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
-			Expect(output).To(ContainSubstring("Checking auth configs... OK"))
-			Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
-			Expect(output).To(ContainSubstring("Checking VirtualHostOptions... OK"))
-			Expect(output).To(ContainSubstring("Checking RouteOptions... OK"))
-			Expect(output).To(ContainSubstring("Checking secrets... OK"))
-			Expect(output).To(ContainSubstring("Checking virtual services... OK"))
-			Expect(output).To(ContainSubstring("Checking gateways... OK"))
-			Expect(output).To(ContainSubstring("Checking proxies... OK"))
-			Expect(output).To(ContainSubstring("Warning: gloo-system:gateway-proxy has zero replicas"))
+			Expect(output).To(ContainSubstring("Warning: The provided label selector (not-gloo) applies to no pods"))
 			Expect(output).To(ContainSubstring("No problems detected."))
 
-			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
-			Expect(err).ToNot(HaveOccurred())
+			_, err = GlooctlOut("check", "-r", "not-gloo-system")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
+		})
+
+	})
+
+	Context("gateway-proxy replicas", func() {
+
+		BeforeEach(func() {
+			// We scale up/down deployments in each test, so we need to be sure we are starting from a healthy point
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		})
+
+		When("there are 0 replicas of any gateway-proxy pod", func() {
+
+			It("fails", func() {
+				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "public-gw", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+
+				_, err = GlooctlOut("check", "-x", "xds-metrics")
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Gloo installation is incomplete: no active gateway-proxy pods exist in cluster"))
+
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "public-gw", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+		})
+
+		When("there are 0 replicas of the gateway-proxy deployment", func() {
+
+			It("warns", func() {
+				err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=0", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+
+				output, err := GlooctlOut("check", "-x", "xds-metrics")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(output).To(ContainSubstring("Checking deployments... OK"))
+				Expect(output).To(ContainSubstring("Checking pods... OK"))
+				Expect(output).To(ContainSubstring("Checking upstreams... OK"))
+				Expect(output).To(ContainSubstring("Checking upstream groups... OK"))
+				Expect(output).To(ContainSubstring("Checking auth configs... OK"))
+				Expect(output).To(ContainSubstring("Checking rate limit configs... OK"))
+				Expect(output).To(ContainSubstring("Checking VirtualHostOptions... OK"))
+				Expect(output).To(ContainSubstring("Checking RouteOptions... OK"))
+				Expect(output).To(ContainSubstring("Checking secrets... OK"))
+				Expect(output).To(ContainSubstring("Checking virtual services... OK"))
+				Expect(output).To(ContainSubstring("Checking gateways... OK"))
+				Expect(output).To(ContainSubstring("Checking proxies... OK"))
+				Expect(output).To(ContainSubstring("Warning: gloo-system:gateway-proxy has zero replicas"))
+				Expect(output).To(ContainSubstring("No problems detected."))
+
+				err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "scale", "--replicas=1", "deployment", "gateway-proxy", "-n", "gloo-system")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+		})
+
+	})
+
+	Context("error reporting/formatting", func() {
+
+		BeforeEach(func() {
+			// We apply resources in these tests, so we need to be sure we are starting from a healthy point
+			kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 		})
 
 		It("reports multiple errors at one time", func() {
@@ -279,7 +371,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", testHelper.RootDir+"/test/kube2e/glooctl/reject-me-too.yaml")
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = runGlooctlCommand("check")
+			_, err = GlooctlOut("check")
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("* Found rejected virtual service by 'gloo-system': default reject-me-too (Reason: 2 errors occurred:"))
 			Expect(err.Error()).To(ContainSubstring("* domain conflict: other virtual services that belong to the same Gateway as this one don't specify a domain (and thus default to '*'): [gloo-system.reject-me]"))
@@ -295,58 +387,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("connection fails on incorrect namespace check", func() {
-			_, err := runGlooctlCommand("check", "check", "-n", "not-gloo-system")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Could not communicate with kubernetes cluster: namespaces \"not-gloo-system\" not found"))
-
-			_, err = runGlooctlCommand("check", "-n", "default")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Warning: The provided label selector (gloo) applies to no pods"))
-
-			output, err := runGlooctlCommand("check", "-p", "not-gloo")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(output).To(ContainSubstring("Warning: The provided label selector (not-gloo) applies to no pods"))
-			Expect(output).To(ContainSubstring("No problems detected."))
-
-			_, err = runGlooctlCommand("check", "-r", "not-gloo-system")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("No namespaces specified are currently being watched (defaulting to 'gloo-system' namespace)"))
-		})
-
-		It("fails when scanning with invalid kubecontext", func() {
-			_, err := runGlooctlCommand("check", "check", "--kube-context", "not-gloo-context")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Could not get kubernetes client: Error retrieving Kubernetes configuration: context \"not-gloo-context\" does not exist"))
-		})
-
-		It("succeeds with correct kubecontext", func() {
-			_, err := runGlooctlCommand("check", "check", "--kube-context", "kind-kind")
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
-	Context("check-crds", func() {
-		It("validates correct CRDs", func() {
-			if testHelper.ReleasedVersion != "" {
-				_, err := runGlooctlCommand("check-crds", "--version", testHelper.ChartVersion())
-				Expect(err).ToNot(HaveOccurred())
-			} else {
-				chartUri := filepath.Join(testHelper.RootDir, testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
-				_, err := runGlooctlCommand("check-crds", "--local-chart", chartUri)
-				Expect(err).ToNot(HaveOccurred())
-			}
-		})
-		It("fails with CRD mismatch", func() {
-			_, err := runGlooctlCommand("check-crds", "--version", "1.9.0")
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("One or more CRDs are out of date"))
-		})
 	})
 
 })
-
-// runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
-func runGlooctlCommand(args ...string) (string, error) {
-	return GlooctlOut(args...)
-}
