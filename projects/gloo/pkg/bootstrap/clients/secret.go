@@ -46,7 +46,7 @@ func SecretFactoryForSettings(ctx context.Context,
 
 	// Use secretOptions API if it is defined
 	if secretOpts := settings.GetSecretOptions(); secretOpts != nil {
-		return NewMultiSecretResourceClientFactory(secretOpts.GetSecretSources(),
+		return NewMultiSecretResourceClientFactory(secretOpts.GetSources(),
 			sharedCache,
 			cfg,
 			clientset,
@@ -120,11 +120,11 @@ type MultiSecretResourceClientFactory struct {
 var (
 	// ErrNilSourceSlice indicates a nil slice of sources was passed to the factory,
 	// and we can therefore not initialize any sub-clients
-	ErrNilSourceSlice = errors.New("nil slice of secretSources")
+	ErrNilSourceSlice = errors.New("nil slice of secret sources")
 
 	// ErrEmptySourceSlice indicates the factory held an empty slice of sources while
 	// trying to create a new client, and we can therefore not initialize any sub-clients
-	ErrEmptySourceSlice = errors.New("empty slice of secretSources")
+	ErrEmptySourceSlice = errors.New("empty slice of secret sources")
 )
 
 // NewMultiSecretResourceClientFactory returns a resource client factory for a client

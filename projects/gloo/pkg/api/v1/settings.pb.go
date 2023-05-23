@@ -175,8 +175,8 @@ type Settings struct {
 	//	*Settings_DirectoryConfigSource
 	//	*Settings_ConsulKvSource
 	ConfigSource isSettings_ConfigSource `protobuf_oneof:"config_source"`
+	// Deprecated: use secretOptions API
 	// Determines where Gloo will read/write secrets from/to.
-	// When secretOptions API is fully implemented, this field will be deprecated.
 	//
 	// Types that are assignable to SecretSource:
 	//
@@ -185,7 +185,6 @@ type Settings struct {
 	//	*Settings_DirectorySecretSource
 	SecretSource isSettings_SecretSource `protobuf_oneof:"secret_source"`
 	// Settings for secrets storage.
-	// NOTE: this API will be implemented in a follow-up PR
 	SecretOptions *Settings_SecretOptions `protobuf:"bytes,38,opt,name=secret_options,json=secretOptions,proto3" json:"secret_options,omitempty"`
 	// Where to read artifacts from.
 	//
@@ -1190,8 +1189,8 @@ type Settings_SecretOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// List of configured secret sources. These clients will be initialized
-	// in parallel in indeterminate order.
+	// Required. List of configured secret sources. These clients will be initialized
+	// in parallel in an indeterminate order.
 	Sources []*Settings_SecretOptions_Source `protobuf:"bytes,1,rep,name=sources,proto3" json:"sources,omitempty"`
 }
 
