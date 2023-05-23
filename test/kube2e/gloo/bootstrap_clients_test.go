@@ -3,21 +3,22 @@ package gloo_test
 import (
 	"time"
 
+	"github.com/solo-io/solo-kit/test/helpers"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 
 	"github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/k8s-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/test/helpers"
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -27,7 +28,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 	Context("Kube Client Factory", func() {
 
-		It("should set kube rate limts", func() {
+		It("should set kube rate limits", func() {
 			var cfg *rest.Config
 			settings := &v1.Settings{
 				ConfigSource: &v1.Settings_KubernetesConfigSource{
@@ -40,7 +41,7 @@ var _ = Describe("Bootstrap Clients", func() {
 					},
 				},
 			}
-			params := NewConfigFactoryParams(
+			params := clients.NewConfigFactoryParams(
 				settings,
 				nil,
 				nil,
@@ -48,7 +49,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				nil,
 			)
 
-			kubefactory, err := ConfigFactoryForSettings(params, v1.UpstreamCrd)
+			kubefactory, err := clients.ConfigFactoryForSettings(params, v1.UpstreamCrd)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cfg).ToNot(BeNil())
@@ -64,8 +65,8 @@ var _ = Describe("Bootstrap Clients", func() {
 
 		var (
 			testNamespace string
-			cfg           *rest.Config
 
+			cfg           *rest.Config
 			kubeClient    kubernetes.Interface
 			kubeCoreCache corecache.KubeCoreCache
 		)
@@ -73,12 +74,11 @@ var _ = Describe("Bootstrap Clients", func() {
 		BeforeEach(func() {
 			var err error
 
-			testNamespace = helpers.RandString(8)
-			kubeClient = resourceClientset.KubeClients()
-
 			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
+			kubeClient = resourceClientset.KubeClients()
 
+			testNamespace = helpers.RandString(8)
 			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
@@ -89,6 +89,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 		})
+
 		AfterEach(func() {
 			err := kubeClient.CoreV1().Namespaces().Delete(ctx, testNamespace, metav1.DeleteOptions{})
 			Expect(err).NotTo(HaveOccurred())
@@ -102,7 +103,11 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			BeforeEach(func() {
 				_, err := kubeClient.CoreV1().ConfigMaps(testNamespace).Create(ctx,
-					&kubev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cfg"},
+					&kubev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "cfg",
+							Namespace: testNamespace,
+						},
 						Data: map[string]string{
 							"test": "data",
 						},
@@ -114,7 +119,7 @@ var _ = Describe("Bootstrap Clients", func() {
 					WatchNamespaces: []string{testNamespace},
 				}
 
-				factory, err := ArtifactFactoryForSettings(ctx,
+				factory, err := clients.ArtifactFactoryForSettings(ctx,
 					settings,
 					nil,
 					&cfg,
@@ -128,7 +133,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			})
 
 			It("should work with artifacts", func() {
-				artifact, err := artifactClient.Read(testNamespace, "cfg", clients.ReadOpts{Ctx: ctx})
+				artifact, err := artifactClient.Read(testNamespace, "cfg", skclients.ReadOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(artifact.GetMetadata().Name).To(Equal("cfg"))
 				Expect(artifact.Data["test"]).To(Equal("data"))

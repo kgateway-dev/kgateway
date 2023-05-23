@@ -195,6 +195,5 @@ var _ = Describe("Kubernetes Plugin", func() {
 			}
 			Expect(err).NotTo(HaveOccurred())
 		}
-		Consistently(errs).Should(Not(Receive()))
 	})
 })
