@@ -112,6 +112,17 @@ var _ = Describe("Istio", Ordered, func() {
 
 	Context("inject", func() {
 
+		BeforeEach(func() {
+			// We are assuming to be working from a clean slate, so there is no need to set anything up
+		})
+
+		AfterEach(func() {
+			_, err := GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams=true")
+			Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
+
+			EventuallyIstioUninjected()
+		})
+
 		It("works on gateway-pod", func() {
 			testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, petstoreSuccessfulResponse, 0, 60*time.Second, 1*time.Second)
 
@@ -129,13 +140,6 @@ var _ = Describe("Istio", Ordered, func() {
 			testHelper.CurlEventuallyShouldRespond(petstoreCurlOpts, petstoreSuccessfulResponse, 0, 60*time.Second, 1*time.Second)
 		})
 
-		AfterEach(func() {
-			_, err := GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams=true")
-			Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
-
-			EventuallyIstioUninjected()
-		})
-
 	})
 
 	Context("uninject (success)", func() {
@@ -150,6 +154,10 @@ var _ = Describe("Istio", Ordered, func() {
 
 			err = toggleStictModePetstore(false)
 			Expect(err).NotTo(HaveOccurred(), "should be able to disable mtls strict mode on the petstore app")
+		})
+
+		AfterEach(func() {
+			// We are assuming each test to uninject correctly, so there is nothing to clean up
 		})
 
 		When("no upstreams contain sds configuration", func() {
