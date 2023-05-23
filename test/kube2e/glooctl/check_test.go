@@ -359,7 +359,7 @@ var _ = Describe("Check", func() {
 
 	})
 
-	Context("error reporting/formatting", func() {
+	Context("error reporting/formatting", Ordered, func() {
 
 		BeforeAll(func() {
 			// Check that everything is OK
