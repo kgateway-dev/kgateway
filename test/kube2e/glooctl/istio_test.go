@@ -198,6 +198,13 @@ var _ = Describe("Istio", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
 		})
 
+		AfterEach(func() {
+			_, err := GlooctlOut("istio", "uninject", "--namespace", testHelper.InstallNamespace, "--include-upstreams=true")
+			Expect(err).NotTo(HaveOccurred(), "should be able to run 'glooctl istio uninject' without errors")
+
+			EventuallyIstioUninjected()
+		})
+
 		When("upstreams contain sds configuration and --include-upstreams=false", func() {
 
 			It("fails", func() {
