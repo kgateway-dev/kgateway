@@ -542,10 +542,7 @@ var _ = Describe("Kube2e: glooctl", func() {
 
 // runGlooctlCommand take a set of arguments for glooctl and then executes local glooctl with these arguments
 func runGlooctlCommand(args ...string) (string, error) {
-	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
-	glooctlCommand = append(glooctlCommand, args...)
-	// execute the command with verbose output
-	return exec.RunCommandOutput(testHelper.RootDir, true, glooctlCommand...)
+	return GlooctlOut(args...)
 }
 
 func toggleStictModePetstore(strictModeEnabled bool) error {
