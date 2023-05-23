@@ -101,12 +101,20 @@ func UpdateDisableTransformationValidationSetting(ctx context.Context, shouldDis
 	}, installNamespace)
 }
 
-// enable/disable strict validation
+// UpdateAlwaysAcceptSetting enables/disables strict validation
 func UpdateAlwaysAcceptSetting(ctx context.Context, alwaysAccept bool, installNamespace string) {
-	UpdateSettings(ctx, func(settings *v1.Settings) {
-		Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
-		settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{Value: alwaysAccept}
-	}, installNamespace)
+	UpdateSettingsWithPropagationDelay(
+		func(settings *v1.Settings) {
+			settings.GetGateway().GetValidation().AlwaysAccept = &wrappers.BoolValue{
+				Value: alwaysAccept,
+			}
+		},
+		func() {
+			// Not ideal, but just to be safe, that when we change AcceptAll config, it has time to propagate
+			time.Sleep(5 * time.Second)
+		},
+		ctx,
+		installNamespace)
 }
 
 func UpdateRestEdsSetting(ctx context.Context, enableRestEds bool, installNamespace string) {
