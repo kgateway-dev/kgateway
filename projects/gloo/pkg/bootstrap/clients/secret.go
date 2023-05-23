@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sync"
 
@@ -395,30 +396,26 @@ func (m *MultiSecretResourceClient) Watch(namespace string, opts clients.WatchOp
 }
 
 var (
-	errNotImplemented = func(ctx context.Context, method string) error {
-		err := errors.Wrap(ErrNotImplemented, method)
+	errNotImplMultiSecretClient = func(ctx context.Context, method string) error {
+		err := errors.Wrap(ErrNotImplemented, fmt.Sprintf("%s in MultiSecretResourceClient", method))
 		contextutils.LoggerFrom(ctx).DPanic(err.Error())
 
 		return err
 	}
-
-	// ErrNotImplemented indicates a call was made to an interface method which this
-	// multi-client has not implemented
-	ErrNotImplemented = errors.New("client method not implemented on MultiSecretResourceClient")
 )
 
 func (m *MultiSecretResourceClient) Read(namespace string, name string, opts clients.ReadOpts) (resources.Resource, error) {
-	return nil, errNotImplemented(opts.Ctx, "Read")
+	return nil, errNotImplMultiSecretClient(opts.Ctx, "Read")
 }
 
 func (m *MultiSecretResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
-	return nil, errNotImplemented(opts.Ctx, "Write")
+	return nil, errNotImplMultiSecretClient(opts.Ctx, "Write")
 }
 
 func (m *MultiSecretResourceClient) Delete(namespace string, name string, opts clients.DeleteOpts) error {
-	return errNotImplemented(opts.Ctx, "Delete")
+	return errNotImplMultiSecretClient(opts.Ctx, "Delete")
 }
 
 func (m *MultiSecretResourceClient) ApplyStatus(statusClient resources.StatusClient, inputResource resources.InputResource, opts clients.ApplyStatusOpts) (resources.Resource, error) {
-	return nil, errNotImplemented(opts.Ctx, "ApplyStatus")
+	return nil, errNotImplMultiSecretClient(opts.Ctx, "ApplyStatus")
 }
