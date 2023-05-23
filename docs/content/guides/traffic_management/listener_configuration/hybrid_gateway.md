@@ -148,16 +148,252 @@ client ip forbidden
 
 This is expected since the IP of our client is not `1.2.3.4`.
 
+## Pass TLS traffic through for deprecated cipher suites {#tls-passthrough}
+
+By default, Gloo Edge supports cipher suites that are available in Envoy. If you have an upstream service that can accept only cipher suites that are deprecated or not available in Envoy, you can configure Gloo Edge to pass TLS traffic through to your upstream directly. Because TLS traffic is not terminated at the gateway, the upstream service must be capable of terminating and unencrypting the incoming TLS connection.
+
+In this guide, you deploy a sample NGINX server and configure the server for HTTPS traffic. You use the server to try out the TLS passthrough feature for deprecated cipher suites.
+
+{{% notice tip %}}
+This guide assumes that you want to configure TLS passthrough in the gateway resource directly. If you have a hybrid gateway and you use the hybrid gateway delegation, follow the steps in [Pass TLS traffic through for depcrecated cipher suites with hybrid gateway delegation](#tls-passthrough-delegated). 
+{{% /notice %}}
+
+1. Create a root certificate for the `example.com` domain. You use this certificate to sign the certificate for your NGINX service later. 
+   ```shell
+   mkdir example_certs
+   openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -subj '/O=example Inc./CN=example.com' -keyout example_certs/example.com.key -out example_certs/example.com.crt
+   ```
+   
+2. Create a server certificate and private key for the `nginx.example.com` domain. 
+   ```
+   openssl req -out example_certs/nginx.example.com.csr -newkey rsa:2048 -nodes -keyout example_certs/nginx.example.com.key -subj "/CN=nginx.example.com/O=some organization"
+   openssl x509 -req -sha256 -days 365 -CA example_certs/example.com.crt -CAkey example_certs/example.com.key -set_serial 0 -in example_certs/nginx.example.com.csr -out example_certs/nginx.example.com.crt
+   ```
+
+3. Create a secret that stores the certificate and key for the NGINX server. 
+   ```shell
+   kubectl create secret tls nginx-server-certs \
+    --key example_certs/nginx.example.com.key \
+    --cert example_certs/nginx.example.com.crt
+   ```
+   
+4. Prepare your NGINX configuration. The following example configures NGINX for HTTPS traffic with the certificate that you created earlier.
+   ```shell
+   cat <<\EOF > ./nginx.conf
+   events {
+   }
+
+   http {
+     log_format main '$remote_addr - $remote_user [$time_local]  $status '
+     '"$request" $body_bytes_sent "$http_referer" '
+     '"$http_user_agent" "$http_x_forwarded_for"';
+     access_log /var/log/nginx/access.log main;
+     error_log  /var/log/nginx/error.log;
+
+     server {
+       listen 443 ssl;
+
+       root /usr/share/nginx/html;
+       index index.html;
+
+       server_name nginx.example.com;
+       ssl_certificate /etc/nginx-server-certs/tls.crt;
+       ssl_certificate_key /etc/nginx-server-certs/tls.key;
+     }
+   }
+   EOF
+   ```
+   
+5. Store the NGINX configuration in a configmap. 
+   ```shell
+   kubectl create configmap nginx-configmap --from-file=nginx.conf=./nginx.conf
+   ```
+
+6. Deploy the NGINX server. 
+   ```shell
+   kubectl apply -f- <<EOF
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: my-nginx
+     labels:
+       run: my-nginx
+   spec:
+     ports:
+     - port: 443
+       protocol: TCP
+     selector:
+       run: my-nginx
+   EOF
+   ```
+   ```yaml
+   kubectl apply -f- <<EOF
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: my-nginx
+   spec:
+     selector:
+       matchLabels:
+         run: my-nginx
+     replicas: 1
+     template:
+       metadata:
+         labels:
+           run: my-nginx
+           sidecar.istio.io/inject: "true"
+       spec:
+         containers:
+         - name: my-nginx
+           image: nginx
+           ports:
+           - containerPort: 443
+           volumeMounts:
+           - name: nginx-config
+             mountPath: /etc/nginx
+             readOnly: true
+           - name: nginx-server-certs
+             mountPath: /etc/nginx-server-certs
+             readOnly: true
+         volumes:
+         - name: nginx-config
+           configMap:
+             name: nginx-configmap
+         - name: nginx-server-certs
+           secret:
+             secretName: nginx-server-certs
+   EOF
+   ```
+
+7. Verify that an upstream was created for your nginx server.
+   ```sh
+   kubectl get upstream default-my-nginx-443 -n gloo-system 
+   ```
+
+8. Create a gateway resource and specify the deprecated cipher suites for which you want to pass TLS traffic through to your upstream in the `passthroughCipherSuites` field of your `tcpGateway`. 
+   ```yaml
+   kubectl apply -f- <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     name: gateway-proxy-ssl
+     namespace: gloo-system
+   spec:
+     bindAddress: '::'
+     bindPort: 8443
+     options:
+       accessLoggingService:
+         accessLog:
+         - fileSink:
+             path: /dev/shm/access_log.txt
+             stringFormat: >
+               [%START_TIME%] %REQUESTED_SERVER_NAME% %FILTER_STATE(io.solo.cipher_detection_info)%
+     hybridGateway:
+       matchedGateways:
+       - tcpGateway:
+           options:
+             tcpProxySettings:
+               accessLogFlushInterval: 2s
+           tcpHosts:
+           - destination:
+               single:
+                 upstream:
+                   name: default-my-nginx-443
+                   namespace: gloo-system
+             name: one
+         matcher:
+           passthroughCipherSuites:
+           - ECDHE-RSA-AES256-SHA384
+           - ECDHE-RSA-AES128-SHA256
+           - AES256-SHA256
+           - AES128-SHA256
+           sslConfig:
+             sniDomains:
+             - nginx.example.com
+     proxyNames:
+     - gateway-proxy
+     useProxyProto: false
+   EOF
+   ```
+
+9. Get the IP address of the gateway.
+   ```sh
+   export GATEWAY_IP=$(kubectl get svc -n gloo-system gateway-proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+   ```
+
+11. Send a request to the gateway. In your output, verify that you see the TLS handshake between the client and the gateway and that the cipher suite that you sent as part of the request is accepted. In addition, verify that you get back a 200 HTTP response code from the NGINX server and that you see the NGINX server certificate in your CLI output. 
+    ```sh
+    curl -vi --resolve nginx.example.com:443:${GATEWAY_IP} --cacert example_certs/nginx.example.com.crt --cipher "AES256-SHA256" "https://nginx.example.com:443"
+    ```
+
+    Example output: 
+    ```
+    * Added nginx.example.com:443:34.134.215.40 to DNS cache
+    * Hostname nginx.example.com was found in DNS cache
+    *   Trying 34.134.215.40:443...
+    * Connected to nginx.example.com (34.134.215.40) port 443 (#0)
+    * ALPN, offering h2
+    * ALPN, offering http/1.1
+    * Cipher selection: AES256-SHA256
+    * successfully set certificate verify locations:
+    *  CAfile: example_certs/nginx.example.com.crt
+    *  CApath: none
+    * TLSv1.2 (OUT), TLS handshake, Client hello (1):
+    * TLSv1.2 (IN), TLS handshake, Server hello (2):
+    * TLSv1.2 (IN), TLS handshake, Certificate (11):
+    * TLSv1.2 (IN), TLS handshake, Server finished (14):
+    * TLSv1.2 (OUT), TLS handshake, Client key exchange (16):
+    * TLSv1.2 (OUT), TLS change cipher, Change cipher spec (1):
+    * TLSv1.2 (OUT), TLS handshake, Finished (20):
+    * TLSv1.2 (IN), TLS change cipher, Change cipher spec (1):
+    * TLSv1.2 (IN), TLS handshake, Finished (20):
+    * SSL connection using TLSv1.2 / AES256-SHA256
+    * ALPN, server accepted to use http/1.1
+    * Server certificate:
+    *  subject: CN=nginx.example.com; O=some organization
+    *  start date: May 22 18:46:27 2023 GMT
+    *  expire date: May 21 18:46:27 2024 GMT
+    *  common name: nginx.example.com (matched)
+    *  issuer: O=example Inc.; CN=example.com
+    *  SSL certificate verify ok.
+    > GET / HTTP/1.1
+    > Host: nginx.example.com
+    > User-Agent: curl/7.77.0
+    > Accept: */*
+
+    * Mark bundle as not supporting multiuse
+    < HTTP/1.1 200 OK
+    HTTP/1.1 200 OK
+    ```
+
+12. Send another request to the gateway. This time, you provide a cipher that is not listed in the deprecated cipher suites. Note that the TLS connection fails as no supported cipher can be found in the request. 
+    ```sh
+    curl -vi --resolve nginx.example.com:443:${GATEWAY_IP} --cacert example_certs/nginx.example.com.crt --cipher "AES128" "https://nginx.example.com:443" 
+    ```
+
+    Example output: 
+    ```
+    * Added nginx.example.com:443:34.134.215.40 to DNS cache
+    * Hostname nginx.example.com was found in DNS cache
+    *   Trying 34.134.215.40:443...
+    * Connected to nginx.example.com (34.134.215.40) port 443 (#0)
+    * ALPN, offering h2
+    * ALPN, offering http/1.1
+    * Cipher selection: AES128
+    * successfully set certificate verify locations:
+    *  CAfile: example_certs/nginx.example.com.crt
+    *  CApath: none
+    * TLSv1.2 (OUT), TLS handshake, Client hello (1):
+    * LibreSSL SSL_connect: Connection reset by peer in connection to nginx.example.com:443 
+    * Closing connection 0
+    curl: (35) LibreSSL SSL_connect: Connection reset by peer in connection to nginx.example.com:443 
+    ```
+
 ## Hybrid Gateway Delegation
 
 {{% notice note %}}
 This feature is available in Gloo Edge version 1.10.x and later.
 {{% /notice %}}
-
-{{% notice warn %}}
-Hybrid Gateway delegation is supported only for HTTP Gateways.
-{{% /notice %}}
-
 
 With Hybrid Gateways, you can define multiple HTTP and TCP Gateways, each with distinct matching criteria, on a single Gateway CR.
 
@@ -193,7 +429,7 @@ We will use Hybrid Gateway delegation to achieve the same functionality that we 
    ```
 
 3. Confirm the MatchableHttpGateway was created.
-  ```bash
+   ```bash
    kubectl get -n gloo-system hgw client-ip-reject-gateway
    ```
 
@@ -214,167 +450,70 @@ We will use Hybrid Gateway delegation to achieve the same functionality that we 
            name: client-ip-reject-gateway
            namespace: gloo-system
      proxyNames:
-    - gateway-proxy
+     - gateway-proxy
      useProxyProto: false
    status: # collapsed for brevity
    {{< /highlight >}}
     
-5. Confirm expected routing behavior.
+5. Confirm expected routing behavior. We now have a Gateway which has matching and routing behavior defined in the `MatchableHttpGateway`. At this point, all requests (an empty matcher is treated as a match-all) are expected to be matched and delegated to the `client-ip-reject` Virtual Service.
 
-We now have a Gateway which has matching and routing behavior defined in the MatchableHttpGateway.
-
-At this point, all requests (an empty matcher is treated as a match-all) are expected to be matched and delegated to the `client-ip-reject` Virtual Service.
-
-```bash
-$ curl "$(glooctl proxy url)/all-pets"
-client ip forbidden
-```
+   ```bash
+   $ curl "$(glooctl proxy url)/all-pets"
+   client ip forbidden
+   ```
 
 {{% notice note %}}
 Although we demonstrate gateway delegation using reference selection in this guide, label selection is also supported.
 {{% /notice %}}
 
 
-### Pass through unsupported ciphers based on domains
+### Pass TLS traffic through for deprecated ciphers suites with hybrid gateway delegation {#tls-passthrough-delegated}
 
-You can use the Gloo Edge Hybrid Gateway delegation feature to set up one gateway that can perform both TLS termination for traffic with supported ciphers and TLS passthrough for traffic with unsupported ciphers based on domain names (SNI matching). To implement this capability, you use the `MatchableTCPGateway` and `MatchableHTTPGateway` resources as shown in the following table. 
+By default, Gloo Edge supports cipher suites that are available in Envoy. If you have an upstream service that can accept only cipher suites that are deprecated or not available in Envoy, you can configure Gloo Edge to pass TLS traffic through to your upstream directly. Because TLS traffic is not terminated at the gateway, the upstream service must be capable of terminating and unencrypting the incoming TLS connection.
 
-| Use case | Description | Gloo Edge resource to configure | 
-| -- | -- | -- | 
-| Cipher is supported in Envoy | When TLS traffic with a supported cipher is received, Envoy terminates the TLS connection and forwards the unencrypted HTTP traffic to the upstream server. You have the option to secure the connection from the gateway to the upstream server. For more information, see [Setting up Upstream TLS]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls/" >}}). | `MatchableHTTPGateway` |
-| Cipher is not supported in Envoy | To accept incoming TLS traffic for unsupported ciphers, you must add the list of unsupported ciphers and SNI domains for which you want to allow TLS passthrough to the `MatchableTCPGateway` resource. If traffic with an unsupproted cipher is received for that domain and the cipher is part of the passthrough cipher list, no TLS termination is performed by the gateway. Instead, traffic is passed through to the upstream by using Envoy's TCP proxy feature. Note that the upstream server must be capable of terminating the incoming TLS traffic. | `MatchableTCPGateway` | 
+In this guide, you deploy a sample NGINX server and configure the server for HTTPS traffic. You use the server to try out the TLS passthrough feature for deprecated cipher suites.
 
-1. Set up the petstore app that you use to test TLS termination for traffic with a supported cipher. 
-   1. Follow the steps to [deploy the petstore app and set up server-side TLS]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/" >}}). 
-   2. Create an upstream for the petstore app. In the upstream, you add the host name and port that you want to associate with this upstream. THIS SHOULD BE DONE BY THE EXAMPLE, BUT VERIFY. 
-      ```yaml
-      kubectl apply -f- <<EOF
-      apiVersion: gloo.solo.io/v1
-      kind: Upstream
-      metadata:
-        name: petstore-upstream
-        namespace: gloo-system
-      spec:
-        static:
-          hosts:
-            - addr: petstore.example.com
-              port: 443   
-      EOF
-      ```
-   
-   3. In your virtual service resource, add the cipher suites that you want to allow for the petstore app. Note that all of these ciphers are supported in Envoy. For a list of supported cipher suites, refer to the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/common.proto#extensions-transport-sockets-tls-v3-tlsparameters).
-      ```yaml
-      kubectl apply -f- <<EOF
-      apiVersion: gateway.solo.io/v1
-      kind: VirtualService
-      metadata:
-        name: default
-        namespace: gloo-system
-      spec:
-        sslConfig:
-          secretRef:
-            name: my-cert
-            namespace: gloo-system
-          alpnProtocols:
-            - "http/1.1"
-          parameters:
-            minimumProtocolVersion: TLSv1_2
-            maximumProtocolVersion: TLSv1_2
-            cipherSuites:
-              - "ECDHE-RSA-AES256-GCM-SHA384"
-              - "ECDHE-RSA-AES256-SHA"
-              - "ECDHE-RSA-AES128-GCM-SHA256"
-              - "ECDHE-RSA-AES128-SHA"
-              - "AES256-GCM-SHA384"
-              - "AES256-SHA"
-              - "AES128-GCM-SHA256"
-              - "AES128-SHA"
-          sniDomains:
-            - petstore.example.com
-        virtualHost:
-          domains:
-            - 'petstore.example.com'
-          routes:
-            - matchers:
-                - prefix: /
-              routeAction:
-                single:
-                  upstream:
-                    name: petstore-upstream
-                    namespace: gloo-system
-      EOF
-      ```
+{{% notice tip %}}
+This guide assumes that you want to use hybrid gateway delegatin to configure TLS passthrough for your upstream. If you want to put this configuration in your gateway directly, follow the steps in [Pass TLS traffic through for depcrecated cipher suites](#tls-passthrough). 
+{{% /notice %}}
 
-   4. Create a matchable HTTP gateway resource. 
-      ```yaml
-      kubectl apply -f- <<EOF
-      apiVersion: gateway.solo.io/v1
-      kind: MatchableHttpGateway
-      metadata:
-        name: http-gateway
-        namespace: gloo-system
-        labels:
-          protocol: https
-          tls: termination
-      spec:
-        httpGateway:
-          virtualServices:
-            - name: default
-              namespace: gloo-system
-      EOF
-      ```
+1. Follow steps 1-7 in [Pass TLS traffic through for deprecated cipher suites](#tls-passthrough) to deploy the NGINX server and set it up for HTTPS traffic. 
+2. Create a `MatchableTCPGateway` 
+   ```yaml
+   kubectl apply -f- <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: MatchableTcpGateway
+   metadata:
+     name: nginx-tpc-gateway
+     namespace: gloo-system
+     labels:
+       protocol: tcp
+       tls: passthrough
+   spec:
+     tcpGateway:
+       options:
+         tcpProxySettings:
+           accessLogFlushInterval: 2s
+       tcpHosts:
+       - destination:
+           single:
+             upstream:
+               name: default-my-nginx-443
+               namespace: gloo-system
+         name: one
+     matcher:
+       passthroughCipherSuites:
+       - ECDHE-RSA-AES256-SHA384
+       - ECDHE-RSA-AES128-SHA256
+       - AES256-SHA256
+       - AES128-SHA256
+       sslConfig:
+         sniDomains:
+         - nginx.example.com
+   EOF
+   ```
 
-2. Set up the hello world app that you use to test TLS passthrough for traffic with unsupported ciphers. 
-   1. Deploy the app. 
-   2. Create the upstream for the TLS passthrough app.  
-      ```yaml
-      kubectl apply -f- <<EOF
-      apiVersion: gloo.solo.io/v1
-      kind: Upstream 
-      metadata:
-        name: tls-passthrough
-        namespace: gloo-system
-      spec:
-        static:
-          hosts:
-            - addr: www.passthrough.com
-              port: 443
-          useTls: false
-        proxyProtocolVersion: V1
-      EOF
-      ```
-
-   3. Create a matchable TCP gateway resource, and add the domain name (`spec.matcher.sslConfig.sniDomains`) and the OpenSSL names of the passthrough ciphers (`spec.matcher.passthroughCipherSuites`) that you want to allow for this domain. In the `spec.tcpGateway.tcpHost` section, specify the upstream server that you want to forward incoming traffic to. Note that because the TLS connection is not terminated at the gateway, the upstream server must be capable of terminating the incoming TLS request. 
-      ```yaml
-      apiVersion: gateway.solo.io/v1
-      kind: MatchableTcpGateway
-      metadata:
-        name: tcp
-        namespace: gloo-system
-        labels:
-          protocol: tcp
-          tls: passthrough
-      spec:
-        tcpGateway:
-          tcpHosts:
-            - name: one
-              destination:
-                single:
-                  upstream:
-                    name: tcp-upstream
-                    namespace: gloo-system
-        matcher:
-          sslConfig:
-            sniDomains:
-              - www.passthrough.com
-          passthroughCipherSuites:  
-            - "ECDHE-RSA-AES256-SHA384" 
-            - "ECDHE-RSA-AES128-SHA256"
-            - "AES256-SHA256"
-            - "AES128-SHA256"
-      ```
-
-3. Create the Hybrid gateway resource and reference the matchable gateway resources that you created earlier.
+3. Create a gateway resource. In the `hybridGateway` section, add a `delegatedTcpGateways` section and make sure that the protocol is set to `tcp` and the TLS mode to `passthrough`. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -385,60 +524,97 @@ You can use the Gloo Edge Hybrid Gateway delegation feature to set up one gatewa
    spec:
      bindAddress: '::'
      bindPort: 8443
+     options:
+       accessLoggingService:
+         accessLog:
+         - fileSink:
+             path: /dev/shm/access_log.txt
+             stringFormat: >
+               [%START_TIME%] %REQUESTED_SERVER_NAME% %FILTER_STATE(io.solo.cipher_detection_info)%
      hybridGateway:
-       delegatedHttpGateways:
-         selector:
-           labels:
-             protocol: https
-             tls: termination
        delegatedTcpGateways:
          selector:
            labels:
              protocol: tcp
              tls: passthrough
      proxyNames:
-       - gateway-proxy-ssl
+     - gateway-proxy
      useProxyProto: false
    EOF
    ```
+  
+4. Get the IP address of the gateway.
+   ```sh
+   export GATEWAY_IP=$(kubectl get svc -n gloo-system gateway-proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+   ```
 
-4. Verify the routing behavior. 
-   1. Send a request to the `www.passthrough.com` domain with a cipher that is not part of the passthrough cipher list. 
-      ```sh
-      curl -vik --ciphers "ECDHE-RSA-AES256-SHA400" --resolve www.passthrough.com:443:$(glooctl proxy url) https://www.passthrough.com:443/hello
-      ```
+5. Send a request to the gateway. In your output, verify that you see the TLS handshake between the client and the gateway and that the cipher suite that you sent as part of the request is accepted. In addition, verify that you get back a 200 HTTP response code from the NGINX server and that you see the NGINX server certificate in your CLI output. 
+   ```sh
+   curl -vi --resolve nginx.example.com:443:${GATEWAY_IP} --cacert example_certs/nginx.example.com.crt --cipher "AES256-SHA256" "https://nginx.example.com:443"
+   ```
+  
+   Example output: 
+   ```
+   * Added nginx.example.com:443:34.134.215.40 to DNS cache
+   * Hostname nginx.example.com was found in DNS cache
+   *   Trying 34.134.215.40:443...
+   * Connected to nginx.example.com (34.134.215.40) port 443 (#0)
+   * ALPN, offering h2
+   * ALPN, offering http/1.1
+   * Cipher selection: AES256-SHA256
+   * successfully set certificate verify locations:
+   *  CAfile: example_certs/nginx.example.com.crt
+   *  CApath: none
+   * TLSv1.2 (OUT), TLS handshake, Client hello (1):
+   * TLSv1.2 (IN), TLS handshake, Server hello (2):
+   * TLSv1.2 (IN), TLS handshake, Certificate (11):
+   * TLSv1.2 (IN), TLS handshake, Server finished (14):
+   * TLSv1.2 (OUT), TLS handshake, Client key exchange (16):
+   * TLSv1.2 (OUT), TLS change cipher, Change cipher spec (1):
+   * TLSv1.2 (OUT), TLS handshake, Finished (20):
+   * TLSv1.2 (IN), TLS change cipher, Change cipher spec (1):
+   * TLSv1.2 (IN), TLS handshake, Finished (20):
+   * SSL connection using TLSv1.2 / AES256-SHA256
+   * ALPN, server accepted to use http/1.1
+   * Server certificate:
+   *  subject: CN=nginx.example.com; O=some organization
+   *  start date: May 22 18:46:27 2023 GMT
+   *  expire date: May 21 18:46:27 2024 GMT
+   *  common name: nginx.example.com (matched)
+   *  issuer: O=example Inc.; CN=example.com
+   *  SSL certificate verify ok.
+   > GET / HTTP/1.1
+   > Host: nginx.example.com
+   > User-Agent: curl/7.77.0
+   > Accept: */*
 
-      Example output: 
-      ```
-      ```
+   * Mark bundle as not supporting multiuse
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
+   ```
 
-   2. Send another request. This time, you provide a cipher that is part of the passthrough cipher list.
-      ```sh
-      curl -vik --ciphers "ECDHE-RSA-AES256-SHA384" --resolve www.passthrough.com:443:$(glooctl proxy url) https://www.passthrough.com:443/hello
-      ```
+6. Send another request to the gateway. This time, you provide a cipher that is not listed in the deprecated cipher suites. Note that the TLS connection fails as no supported cipher can be found in the request. 
+   ```sh
+   curl -vi --resolve nginx.example.com:443:${GATEWAY_IP} --cacert example_certs/nginx.example.com.crt --cipher "AES128" "https://nginx.example.com:443" 
+   ```
 
-      Example output: 
-      ```
-      ```
-
-   3. Send a request to the `petstore.example.com` domain with a cipher that is not part of the supported cipher list. 
-      ```sh
-      curl -vik --ciphers "ECDHE-RSA-AES256-SHA400" --resolve petstore.example.com:443:$(glooctl proxy url) https://petstore.example.com:443/pets
-      ```
-
-      Example output: 
-      ```
-      ```
-
-   4. Send another request. This time, you provide a cipher that is part of the supported cipher list. 
-      ```sh
-      curl -vik --ciphers "ECDHE-RSA-AES256-SHA" --resolve petstore.example.com:443:$(glooctl proxy url) https://petstore.example.com:443/pets
-      ```
-
-      Example output:
-      ```
-      ```
-   
+   Example output: 
+   ```
+   * Added nginx.example.com:443:34.134.215.40 to DNS cache
+   * Hostname nginx.example.com was found in DNS cache
+   *   Trying 34.134.215.40:443...
+   * Connected to nginx.example.com (34.134.215.40) port 443 (#0)
+   * ALPN, offering h2
+   * ALPN, offering http/1.1
+   * Cipher selection: AES128
+   * successfully set certificate verify locations:
+   *  CAfile: example_certs/nginx.example.com.crt
+   *  CApath: none
+   * TLSv1.2 (OUT), TLS handshake, Client hello (1):
+   * LibreSSL SSL_connect: Connection reset by peer in connection to nginx.example.com:443 
+   * Closing connection 0
+   curl: (35) LibreSSL SSL_connect: Connection reset by peer in connection to nginx.example.com:443 
+   ```
 
 ### How are SSL Configurations managed in Hybrid Gateways?
 
