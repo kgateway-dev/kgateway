@@ -7,8 +7,8 @@ import (
 	"os/exec"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	v34 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -93,26 +93,26 @@ func buildPerFilterBootstrapYaml(filterName string, msg proto.Message) (string, 
 		return "", err
 	}
 	bootstrap := &envoy_config_bootstrap_v3.Bootstrap{
-		Node: &v3.Node{
+		Node: &envoy_config_core_v3.Node{
 			Id:      "imspecial",
 			Cluster: "doesntmatter",
 		},
 		StaticResources: &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
-			Listeners: []*v34.Listener{
+			Listeners: []*envoy_config_listener_v3.Listener{
 				{
 					Name: "placeholder_listener",
-					Address: &v3.Address{
-						Address: &v3.Address_SocketAddress{SocketAddress: &v3.SocketAddress{
+					Address: &envoy_config_core_v3.Address{
+						Address: &envoy_config_core_v3.Address_SocketAddress{SocketAddress: &envoy_config_core_v3.SocketAddress{
 							Address:       "0.0.0.0",
-							PortSpecifier: &v3.SocketAddress_PortValue{PortValue: 8081},
+							PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{PortValue: 8081},
 						}},
 					},
-					FilterChains: []*v34.FilterChain{
+					FilterChains: []*envoy_config_listener_v3.FilterChain{
 						{
 							Name: "placeholder_filter_chain",
-							Filters: []*v34.Filter{
+							Filters: []*envoy_config_listener_v3.Filter{
 								{
-									ConfigType: &v34.Filter_TypedConfig{
+									ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
 										TypedConfig: hcmAny,
 									},
 									Name: wellknown.HTTPConnectionManager,

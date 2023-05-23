@@ -9,7 +9,7 @@ import (
 
 /*
 	These interfaces should be implemented by upstreams that support subset load balancing.
-	https://github.com/envoyproxy/envoy/blob/master/source/docs/subset_load_balancer.md
+	https://github.com/envoyproxy/envoy/blob/main/source/docs/subset_load_balancer.md
 */
 
 type SubsetSpecGetter interface {

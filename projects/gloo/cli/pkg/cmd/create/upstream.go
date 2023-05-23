@@ -4,30 +4,27 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	"github.com/solo-io/go-utils/cliutils"
-
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -310,13 +307,18 @@ func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
 				Port: port,
 			})
 		}
-		upstream.UpstreamType = &v1.Upstream_Static{
+		upType := &v1.Upstream_Static{
 			Static: &static.UpstreamSpec{
 				Hosts:       hosts,
-				UseTls:      input.Static.UseTls,
 				ServiceSpec: svcSpec,
 			},
 		}
+		if input.Static.UseTls.Value != nil {
+			// if left null then the static upstream will attempt to detect if it should use TLS
+			// based on whether its using port 443 or not
+			upType.Static.UseTls = &wrappers.BoolValue{Value: *input.Static.UseTls.Value}
+		}
+		upstream.UpstreamType = upType
 	}
 	return upstream, nil
 }

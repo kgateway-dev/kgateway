@@ -1306,6 +1306,9 @@ spec:
               protocolSelection:
                 type: string
                 x-kubernetes-int-or-string: true
+              proxyProtocolVersion:
+                nullable: true
+                type: string
               respectDnsTtl:
                 nullable: true
                 type: boolean
@@ -1571,6 +1574,7 @@ spec:
                         type: object
                     type: object
                   useTls:
+                    nullable: true
                     type: boolean
                 type: object
               useHttp2:

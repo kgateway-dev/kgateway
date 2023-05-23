@@ -1,6 +1,8 @@
 package grpcjson_test
 
 import (
+	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_http_grpc_json_transcoder_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -8,7 +10,9 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcjson"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -19,17 +23,17 @@ import (
 var _ = Describe("GrpcJson", func() {
 
 	var (
-		initParams plugins.InitParams
-	)
-
-	It("should add filter and translate fields", func() {
-		envoyGrpcJsonConf := &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder{
+		initParams       plugins.InitParams
+		glooGrpcJsonConf = &grpc_json.GrpcJsonTranscoder{
+			DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptor{ProtoDescriptor: "/path/to/file"},
+			Services:      []string{"main.Bookstore"},
+		}
+		envoyGrpcJsonConf = &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder{
 			DescriptorSet: &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptor{ProtoDescriptor: "/path/to/file"},
 			Services:      []string{"main.Bookstore"},
 		}
-		any, err := utils.MessageToAny(envoyGrpcJsonConf)
-		Expect(err).ToNot(HaveOccurred())
-		expectedFilter := []plugins.StagedHttpFilter{
+		any, _         = utils.MessageToAny(envoyGrpcJsonConf)
+		expectedFilter = []plugins.StagedHttpFilter{
 			{
 				HttpFilter: &envoyhttp.HttpFilter{
 					Name: wellknown.GRPCJSONTranscoder,
@@ -40,13 +44,13 @@ var _ = Describe("GrpcJson", func() {
 				Stage: plugins.BeforeStage(plugins.OutAuthStage),
 			},
 		}
+	)
+
+	It("should add filter and translate fields", func() {
 
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
-					DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptor{ProtoDescriptor: "/path/to/file"},
-					Services:      []string{"main.Bookstore"},
-				},
+				GrpcJsonTranscoder: glooGrpcJsonConf,
 			},
 		}
 
@@ -58,7 +62,123 @@ var _ = Describe("GrpcJson", func() {
 		Expect(f).To(HaveLen(1))
 		Expect(f).To(matchers.BeEquivalentToDiff(expectedFilter))
 	})
+	It("Adds filters for grpc upstreams on routes", func() {
+		us := &v1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "testUs",
+				Namespace: "gloo-system",
+			},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{
+					ServiceSpec: &options.ServiceSpec{
+						PluginType: &options.ServiceSpec_GrpcJsonTranscoder{
+							GrpcJsonTranscoder: glooGrpcJsonConf,
+						},
+					},
+				},
+			},
+		}
+		route := &v1.Route{
+			Name: "host1_route1",
+			Action: &v1.Route_RouteAction{
+				RouteAction: &v1.RouteAction{
+					Destination: &v1.RouteAction_Single{
+						Single: &v1.Destination{
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      us.Metadata.Name,
+									Namespace: us.Metadata.Namespace},
+							},
+						},
+					},
+				},
+			},
+		}
+		outRoute := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: &envoy_config_route_v3.RouteAction{},
+			},
+		}
+		vhost := &v1.VirtualHost{Routes: []*v1.Route{route}}
+		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{vhost}}
+		p := grpcjson.NewPlugin()
+		p.Init(initParams)
+		err := p.ProcessUpstream(plugins.Params{}, us, &envoy_config_cluster_v3.Cluster{})
+		Expect(err).NotTo(HaveOccurred())
+		err = p.ProcessRoute(plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{HttpListener: hl}}, route, outRoute)
+		Expect(err).NotTo(HaveOccurred())
+		routeFilter, ok := outRoute.TypedPerFilterConfig[wellknown.GRPCJSONTranscoder]
+		Expect(ok).To(BeTrue())
+		Expect(routeFilter).To(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
+		listenerFilter, err := p.HttpFilters(plugins.Params{}, hl)
+		Expect(err).NotTo(HaveOccurred())
 
+		Expect(listenerFilter).NotTo(BeNil())
+		Expect(listenerFilter).To(HaveLen(1))
+		// The filter should be a dummy filter to be overridden by route specific filters
+		Expect(listenerFilter[0]).NotTo(matchers.BeEquivalentToDiff(expectedFilter[0].HttpFilter.GetTypedConfig()))
+	})
+	It("Does not create an empty filter on listener when no routes with gRPC are not configured", func() {
+		us := &v1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "testUs",
+				Namespace: "gloo-system",
+			},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{},
+			},
+		}
+		route := &v1.Route{
+			Action: &v1.Route_RouteAction{
+				RouteAction: &v1.RouteAction{
+					Destination: &v1.RouteAction_Single{
+						Single: &v1.Destination{
+							DestinationType: &v1.Destination_Upstream{
+								Upstream: &core.ResourceRef{
+									Name:      us.Metadata.Name,
+									Namespace: us.Metadata.Namespace},
+							},
+						},
+					},
+				},
+			},
+		}
+		p := grpcjson.NewPlugin()
+		p.Init(initParams)
+		err := p.ProcessUpstream(plugins.Params{}, us, &envoy_config_cluster_v3.Cluster{})
+		Expect(err).NotTo(HaveOccurred())
+		vhost := &v1.VirtualHost{Routes: []*v1.Route{route}}
+		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{vhost}}
+		f, err := p.HttpFilters(plugins.Params{}, hl)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(f)).To(Equal(0))
+	})
+	It("Doesn't create empty filters on listeners when gRPC upstreams are configured but not referenced by routes on that listener", func() {
+		us := &v1.Upstream{
+			Metadata: &core.Metadata{
+				Name:      "testUs",
+				Namespace: "gloo-system",
+			},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{
+					ServiceSpec: &options.ServiceSpec{
+						PluginType: &options.ServiceSpec_GrpcJsonTranscoder{
+							GrpcJsonTranscoder: glooGrpcJsonConf,
+						},
+					},
+				},
+			},
+		}
+
+		p := grpcjson.NewPlugin()
+		p.Init(initParams)
+		err := p.ProcessUpstream(plugins.Params{}, us, &envoy_config_cluster_v3.Cluster{})
+		Expect(err).NotTo(HaveOccurred())
+		hl := &v1.HttpListener{VirtualHosts: []*v1.VirtualHost{}}
+		f, err := p.HttpFilters(plugins.Params{}, hl)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(f)).To(Equal(0))
+	})
 	Context("proto descriptor configmap", func() {
 		var (
 			snap           *gloosnapshot.ApiSnapshot

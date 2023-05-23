@@ -39,6 +39,9 @@ settings:
   # If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes.
   # If true, Gloo will keep serving the routes from the last applied valid configuration.
   disableProxyGarbageCollection: false
+  # Envoy default max program size is 100 which is too often not enough for users. We will set all users to base value of 1024
+  # This can be overriden if users wish to be more stringent
+  regexMaxProgramSize: 1024
 gloo:
   deployment:
     image:

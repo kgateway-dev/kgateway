@@ -13,10 +13,6 @@ import (
 
 	errors "github.com/rotisserie/eris"
 
-	"github.com/solo-io/gloo/test/testutils"
-
-	"github.com/solo-io/gloo/test/kube2e"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -77,7 +73,6 @@ var _ = Describe("AWS Lambda", func() {
 			WhatToRun: services.What{
 				DisableFds: false,
 			},
-			KubeClient: kube2e.MustKubeClient(),
 		}
 	})
 
@@ -527,12 +522,6 @@ var _ = Describe("AWS Lambda", func() {
 
 	}
 
-	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.Kubernetes("Uses a Kubernetes client"),
-		)
-	})
-
 	AfterEach(func() {
 		envoyInstance.Clean()
 		cancel()
@@ -763,7 +752,6 @@ var _ = Describe("AWS Lambda", func() {
 				WhatToRun: services.What{
 					DisableGateway: justGloo,
 				},
-				KubeClient: kube2e.MustKubeClient(),
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						AwsOptions: &gloov1.GlooOptions_AWSOptions{

@@ -144,6 +144,11 @@ spec:
 {{- toYaml .Values.settings.rateLimit | nindent 4 }}
 {{- end }}
 
+{{- if .Values.settings.ratelimitServer }}
+  ratelimitServer:
+{{- toYaml .Values.settings.ratelimitServer | nindent 4 }}
+{{- end }}
+
 {{/* extauth have specified yaml in Enterprise (as opposed to generic yaml insertion for third party configs here) */}}
 {{- if .Values.global.extauthCustomYaml }}
 {{- if .Values.global.extensions }}
@@ -180,4 +185,3 @@ spec:
 {{- $kubeResourceOverride = .Values.settings.kubeResourceOverride  -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $kubeResourceOverride "settings.settingsSpec") -}}
-

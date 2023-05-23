@@ -3,7 +3,6 @@ package debug
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -136,7 +135,7 @@ func DumpYaml(fileToWrite, namespace string, kubeCli install.KubeCli) error {
 		_, err := fmt.Fprint(os.Stdout, allOutput)
 		return err
 	} else {
-		return ioutil.WriteFile(fileToWrite, []byte(allOutput), filePermissions)
+		return os.WriteFile(fileToWrite, []byte(allOutput), filePermissions)
 	}
 }
 

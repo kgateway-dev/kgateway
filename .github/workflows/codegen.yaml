@@ -1,40 +1,12 @@
-name: CI
+name: Codegen
 on: pull_request
 jobs:
   codegen:
     name: codegen check
     runs-on: ubuntu-22.04
     steps:
-      - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-      - name: Free disk space
-        run: |
-          echo "Before clearing disk space:"
-          df -h
-
-          # https://github.com/actions/virtual-environments/issues/709
-          sudo apt-get clean
-
-          # Clean up pre-installed tools
-          # https://github.com/actions/virtual-environments/issues/1918
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-          echo "After clearing disk space:"
-          df -h
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version-file: go.mod
-        id: go
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
       - name: Install Protoc
         uses: arduino/setup-protoc@master
         with:
@@ -43,3 +15,8 @@ jobs:
       - name: Generate Code
         run: |
           ./ci/check-generated-code.sh
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35
+      - name: Check for DO_NOT_SUBMIT
+        run: ./ci/do-not-submit.sh ${{ steps.changed-files.outputs.all_modified_files }}

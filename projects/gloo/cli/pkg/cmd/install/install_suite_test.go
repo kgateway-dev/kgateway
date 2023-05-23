@@ -2,7 +2,6 @@ package install_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -80,14 +79,14 @@ settings:
 
 	// Check all gloo crds are included in GlooCrdNames
 	crdDir := filepath.Join(RootDir, "/install/helm/gloo/crds")
-	files, err := ioutil.ReadDir(crdDir)
+	files, err := os.ReadDir(crdDir)
 	Expect(err).NotTo(HaveOccurred())
 	var crdNames []string
 	for _, f3 := range files {
 		ext := filepath.Ext(f3.Name())
 		// check file has manifest extension
 		if !f3.IsDir() && (strings.EqualFold(ext, ".yaml") || strings.EqualFold(ext, ".yml") || strings.EqualFold(ext, ".json")) {
-			manifest, err := ioutil.ReadFile(crdDir + "/" + f3.Name())
+			manifest, err := os.ReadFile(crdDir + "/" + f3.Name())
 			Expect(err).NotTo(HaveOccurred())
 			jsn, err := yaml.YAMLToJSON(manifest)
 			Expect(err).NotTo(HaveOccurred())

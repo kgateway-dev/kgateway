@@ -1,9 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'master'
-  pull_request:
+on: pull_request
 
 env:
   VERSION: '1.0.0-ci'
@@ -59,18 +55,26 @@ jobs:
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
-    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-22.04
+    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     strategy:
       fail-fast: false
       matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade', 'istio']
-        kube-version: [{ node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' }]
+        # upgrade tests are run on LTS but not on main branch, for main they are run nightly
+        # this is the github action version of ternary op
+        kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade']
+        kube-version: [ { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' } ]
+        merge-to-main:
+          - ${{ github.event.pull_request.base.ref == 'main' }}
+        exclude:
+          - merge-to-main: true
+            kube-e2e-test-type: upgrade
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/regression-tests
+    - uses: ./.github/workflows/composite-actions/regression-tests
 
   notify_slack:
+    name: Notify slack
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'pull_request' && failure() }}
     needs: [ regression_tests ]
