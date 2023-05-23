@@ -1196,8 +1196,8 @@ github.com/solo-io/protoc-gen-openapi v0.1.0 h1:XBx0yAdjxoWxGQ+CiGcb29r+KAgyIkhd
 github.com/solo-io/protoc-gen-openapi v0.1.0/go.mod h1:6d6gsEx74pW3UCA3G0al0GdMlYzGe/iCy2mPgGG9wI8=
 github.com/solo-io/skv2 v0.30.0 h1:SZmtwEMm/uur3I/1uOcl8pC8zqar+e4lr6pIPocpjFo=
 github.com/solo-io/skv2 v0.30.0/go.mod h1:2+ySJOxcW5gn8XlJ96eihI9s7WKHVY+stxhRqS07TH0=
-github.com/solo-io/solo-apis v0.0.0-20230519194307-4ee657c36dec h1:iVb4Q1bxWWTTfjr/XL+YJBXwuR8WnvJTYSpGoh/GNx4=
-github.com/solo-io/solo-apis v0.0.0-20230519194307-4ee657c36dec/go.mod h1:w1SGxxj3BOQnlE9Bk45626cOgMuFWAXsDxQcQq4D9w4=
+github.com/solo-io/solo-apis v0.0.0-20230523154020-b4a5935e162f h1:sIbZMiMwcGNobiJ2+VdnjvTGmcfQg5lurMDov8yx4CE=
+github.com/solo-io/solo-apis v0.0.0-20230523154020-b4a5935e162f/go.mod h1:w1SGxxj3BOQnlE9Bk45626cOgMuFWAXsDxQcQq4D9w4=
 github.com/solo-io/solo-kit v0.32.0 h1:UeGgLQLZqEN5mNGi1zcK7qXX7GmqgCiifrAh5PKRPPs=
 github.com/solo-io/solo-kit v0.32.0/go.mod h1:b2N00xEJ9pTPZTgt7JXBDqqAISzMs1DZFQLnw4LyhlU=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
