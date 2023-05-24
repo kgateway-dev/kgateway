@@ -210,7 +210,7 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
    ```
 
 6. Deploy the NGINX server. 
-   ```shell
+   ```yaml
    kubectl apply -f- <<EOF
    apiVersion: v1
    kind: Service
