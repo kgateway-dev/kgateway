@@ -17,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/test/kube2e"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -60,11 +59,8 @@ var _ = BeforeSuite(func() {
 		installGloo()
 	}
 
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-
-	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
-	Expect(err).NotTo(HaveOccurred())
+	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
+	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 
