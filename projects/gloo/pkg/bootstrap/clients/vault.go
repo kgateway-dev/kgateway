@@ -7,6 +7,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 
+	"github.com/avast/retry-go"
 	"github.com/hashicorp/vault/api"
 	_ "github.com/hashicorp/vault/api/auth/aws"
 	awsauth "github.com/hashicorp/vault/api/auth/aws"
@@ -28,13 +29,44 @@ type vaultSecretClientSettings struct {
 // The DefaultPathPrefix may be overridden to allow for non-standard vault mount paths
 const DefaultPathPrefix = "secret"
 
+type VaultClientInitFunc func() (*api.Client, error)
+
+var (
+	ErrNilVaultClient = errors.New("vault API client failed to initialize")
+)
+
 // NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
-func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
+func NewVaultSecretClientFactoryWithRetry(clientInit VaultClientInitFunc, pathPrefix, rootKey string) factory.ResourceClientFactory {
+	client, err := clientInit()
+
+	// If we fail to initialize the client, use a retrybackoff asynchronously.
+	// In this way, we return the client factory, and we can check the nilness of
+	// factory.Vault in order to implement retry on the ResourceClient creation
+	if err != nil || client == nil {
+		go retry.Do(func() error {
+			client, err = clientInit()
+			if err != nil {
+				return err
+			}
+			if client == nil {
+				return ErrNilVaultClient
+			}
+			return nil
+		})
+	}
 	return &factory.VaultSecretClientFactory{
 		Vault:      client,
 		RootKey:    rootKey,
 		PathPrefix: pathPrefix,
 	}
+}
+
+// NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
+func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
+	return NewVaultSecretClientFactoryWithRetry(
+		func() (*api.Client, error) { return client, nil },
+		pathPrefix,
+		rootKey)
 }
 
 func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Client, error) {

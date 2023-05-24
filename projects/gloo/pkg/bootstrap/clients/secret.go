@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/avast/retry-go"
 	"github.com/hashicorp/go-multierror"
 	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
@@ -24,16 +25,29 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// SecretFactoryForSettings creates a resource client factory for provided config.
+// SecretSourceAPIVaultClientInitIndex is a dedicated index for use of the SecretSource API
+const SecretSourceAPIVaultClientInitIndex = -1
+
+type SecretFactoryParams struct {
+	Settings           *v1.Settings
+	SharedCache        memory.InMemoryResourceCache
+	Cfg                **rest.Config
+	Clientset          *kubernetes.Interface
+	KubeCoreCache      *cache.KubeCoreCache
+	VaultClientInitMap map[int]VaultClientInitFunc // map client init funcs to their index in the sources slice
+	PluralName         string
+}
+
+// SecretFactoryForSettingsWithRetry creates a resource client factory for provided config.
 // Implemented as secrets.MultiResourceClient iff secretOptions API is configured.
-func SecretFactoryForSettings(ctx context.Context,
-	settings *v1.Settings,
-	sharedCache memory.InMemoryResourceCache,
-	cfg **rest.Config,
-	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache,
-	vaultClient *vaultapi.Client,
-	pluralName string) (factory.ResourceClientFactory, error) {
+func SecretFactoryForSettingsWithRetry(ctx context.Context, params SecretFactoryParams) (factory.ResourceClientFactory, error) {
+	settings := params.Settings
+	sharedCache := params.SharedCache
+	cfg := params.Cfg
+	clientset := params.Clientset
+	kubeCoreCache := params.KubeCoreCache
+	pluralName := params.PluralName
+	vaultClientInitMap := params.VaultClientInitMap
 
 	if settings.GetSecretSource() == nil && settings.GetSecretOptions() == nil {
 		if sharedCache == nil {
@@ -46,16 +60,27 @@ func SecretFactoryForSettings(ctx context.Context,
 
 	// Use secretOptions API if it is defined
 	if secretOpts := settings.GetSecretOptions(); secretOpts != nil {
-		return NewMultiSecretResourceClientFactory(secretOpts.GetSources(),
-			sharedCache,
-			cfg,
-			clientset,
-			kubeCoreCache,
-			vaultClient)
+		return NewMultiSecretResourceClientFactory(MultiSecretFactoryParams{
+			SecretSources:      secretOpts.GetSources(),
+			SharedCache:        sharedCache,
+			Cfg:                cfg,
+			Clientset:          clientset,
+			KubeCoreCache:      kubeCoreCache,
+			VaultClientInitMap: vaultClientInitMap,
+		})
 	}
 
 	// Fallback on secretSource API if secretOptions not defined
 	if deprecatedApiSource := settings.GetSecretSource(); deprecatedApiSource != nil {
+		vaultClientFunc, ok := params.VaultClientInitMap[SecretSourceAPIVaultClientInitIndex]
+		if !ok {
+			return nil, errors.New("could not locate Vault client init func for SecretSource API")
+		}
+		vaultClient, err := vaultClientFunc()
+		if err != nil {
+			err = errors.Wrap(ErrNilVaultClient, err.Error())
+			return nil, err
+		}
 		return NewSecretResourceClientFactory(ctx,
 			settings,
 			sharedCache,
@@ -67,6 +92,35 @@ func SecretFactoryForSettings(ctx context.Context,
 	}
 
 	return nil, errors.Errorf("invalid config source type")
+}
+
+// Deprecated: use SecretFactoryForSettingsWithRetry
+func SecretFactoryForSettings(ctx context.Context,
+	settings *v1.Settings,
+	sharedCache memory.InMemoryResourceCache,
+	cfg **rest.Config,
+	clientset *kubernetes.Interface,
+	kubeCoreCache *cache.KubeCoreCache,
+	vaultClient *vaultapi.Client,
+	pluralName string) (factory.ResourceClientFactory, error) {
+
+	// the only code calling this should predate the secretOptions API
+	// so we can put the client init wrapper in the -1 key which is reserved for
+	// the secretSource API
+	m := map[int]VaultClientInitFunc{
+		-1: func() (*vaultapi.Client, error) {
+			return vaultClient, nil
+		},
+	}
+	return SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
+		Settings:           settings,
+		SharedCache:        sharedCache,
+		Cfg:                cfg,
+		Clientset:          clientset,
+		KubeCoreCache:      kubeCoreCache,
+		VaultClientInitMap: m,
+		PluralName:         pluralName,
+	})
 }
 
 func NewSecretResourceClientFactory(ctx context.Context,
@@ -106,12 +160,12 @@ func NewSecretResourceClientFactory(ctx context.Context,
 }
 
 type MultiSecretResourceClientFactory struct {
-	secretSources []*v1.Settings_SecretOptions_Source
-	sharedCache   memory.InMemoryResourceCache
-	cfg           **rest.Config
-	clientset     *kubernetes.Interface
-	kubeCoreCache *cache.KubeCoreCache
-	vaultClient   *vaultapi.Client
+	secretSources      []*v1.Settings_SecretOptions_Source
+	sharedCache        memory.InMemoryResourceCache
+	cfg                **rest.Config
+	clientset          *kubernetes.Interface
+	kubeCoreCache      *cache.KubeCoreCache
+	vaultClientInitMap map[int]VaultClientInitFunc
 
 	refreshRate     *durationpb.Duration
 	watchNamespaces []string
@@ -127,32 +181,35 @@ var (
 	ErrEmptySourceSlice = errors.New("empty slice of secret sources")
 )
 
+type MultiSecretFactoryParams struct {
+	SecretSources      []*v1.Settings_SecretOptions_Source
+	SharedCache        memory.InMemoryResourceCache
+	Cfg                **rest.Config
+	Clientset          *kubernetes.Interface
+	KubeCoreCache      *cache.KubeCoreCache
+	VaultClientInitMap map[int]VaultClientInitFunc
+}
+
 // NewMultiSecretResourceClientFactory returns a resource client factory for a client
 // supporting multiple sources
-func NewMultiSecretResourceClientFactory(secretSources []*v1.Settings_SecretOptions_Source,
-	sharedCache memory.InMemoryResourceCache,
-	cfg **rest.Config,
-	clientset *kubernetes.Interface,
-	kubeCoreCache *cache.KubeCoreCache,
-	vaultClient *vaultapi.Client) (*MultiSecretResourceClientFactory, error) {
+func NewMultiSecretResourceClientFactory(params MultiSecretFactoryParams) (factory.ResourceClientFactory, error) {
 
 	// Guard against nil source slice
-	if secretSources == nil {
+	if params.SecretSources == nil {
 		return nil, ErrNilSourceSlice
 	}
 
 	return &MultiSecretResourceClientFactory{
-		secretSources: secretSources,
-		sharedCache:   sharedCache,
-		cfg:           cfg,
-		clientset:     clientset,
-		kubeCoreCache: kubeCoreCache,
-		vaultClient:   vaultClient,
+		secretSources:      params.SecretSources,
+		sharedCache:        params.SharedCache,
+		cfg:                params.Cfg,
+		clientset:          params.Clientset,
+		kubeCoreCache:      params.KubeCoreCache,
+		vaultClientInitMap: params.VaultClientInitMap,
 	}, nil
 }
 
 type asyncClientInitParams struct {
-	ctx             context.Context
 	multiClient     *MultiSecretResourceClient
 	f               factory.ResourceClientFactory
 	onInitialized   func(*MultiSecretResourceClient, clients.ResourceClient)
@@ -161,8 +218,13 @@ type asyncClientInitParams struct {
 	doneChan        chan struct{}
 }
 
-var initClientAsync = func(params *asyncClientInitParams) {
-	c, err := params.f.NewResourceClient(params.ctx, params.newClientParams)
+var initClientAsync = func(ctx context.Context, params *asyncClientInitParams) {
+	var c clients.ResourceClient
+	var err error
+	retry.Do(func() error {
+		c, err = params.f.NewResourceClient(ctx, params.newClientParams)
+		return err
+	})
 	if err != nil {
 		params.errChan <- errors.Wrapf(err, "failed to initialize secret resource client from factory of type %T", params.f)
 		return
@@ -187,9 +249,14 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 	loggedErrChan := make(chan error)
 	go func() {
 		logger := contextutils.LoggerFrom(ctx)
-		for errToLog := range errChan {
-			logger.Error(errToLog)
-			loggedErrChan <- errToLog
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case errToLog := <-errChan:
+				logger.Error(errToLog)
+				loggedErrChan <- errToLog
+			}
 		}
 	}()
 
@@ -208,10 +275,9 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 		}
 	}
 
-	for _, v := range m.secretSources {
+	for i, v := range m.secretSources {
 		initParams := &asyncClientInitParams{
 			newClientParams: params,
-			ctx:             ctx,
 			multiClient:     multiClient,
 			errChan:         errChan,
 			doneChan:        doneChan,
@@ -251,12 +317,17 @@ func (m *MultiSecretResourceClientFactory) NewResourceClient(ctx context.Context
 				if pathPrefix == "" {
 					pathPrefix = DefaultPathPrefix
 				}
-				initParams.f = NewVaultSecretClientFactory(m.vaultClient, pathPrefix, rootKey)
+				f, ok := m.vaultClientInitMap[i]
+				if !ok {
+					return nil, errors.Errorf("unable to find vault client init for vault source at location %d", i)
+				}
+				// Use a Factory which will attermpt to retry client connection
+				initParams.f = NewVaultSecretClientFactoryWithRetry(f, pathPrefix, rootKey)
 				initParams.onInitialized = clientCallback(multiClient, &multiClient.hasVault)
 			}
 		}
 
-		go initClientAsync(initParams)
+		go initClientAsync(ctx, initParams)
 	}
 
 	// We wait for at least one client to be initialized, then return our multiClient.
