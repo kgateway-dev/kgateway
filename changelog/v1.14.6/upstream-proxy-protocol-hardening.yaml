@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/4760
+    resolvesIssue: false
+    description: >-
+      Fixes an issue when setting proxyprotocol on an upstream that was also static.
