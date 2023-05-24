@@ -91,24 +91,24 @@ docker rm -f $CID
 	}, nil
 }
 
-func (ef *ConsulFactory) Clean() error {
-	if ef == nil {
+func (cf *ConsulFactory) Clean() error {
+	if cf == nil {
 		return nil
 	}
-	if ef.tmpdir != "" {
-		_ = os.RemoveAll(ef.tmpdir)
+	if cf.tmpdir != "" {
+		_ = os.RemoveAll(cf.tmpdir)
 
 	}
 	return nil
 }
 
-func (ef *ConsulFactory) MustConsulInstance() *ConsulInstance {
-	instance, err := ef.NewConsulInstance()
+func (cf *ConsulFactory) MustConsulInstance() *ConsulInstance {
+	instance, err := cf.NewConsulInstance()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return instance
 }
 
-func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
+func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 	// try to grab one form docker...
 	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
@@ -121,13 +121,13 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
+	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
 		"-node", "consul-dev")
-	cmd.Dir = ef.tmpdir
+	cmd.Dir = cf.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 	return &ConsulInstance{
-		consulPath:         ef.consulPath,
+		consulPath:         cf.consulPath,
 		tmpdir:             tmpdir,
 		cfgDir:             cfgDir,
 		cmd:                cmd,

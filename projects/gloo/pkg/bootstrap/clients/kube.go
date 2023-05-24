@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
@@ -23,6 +24,9 @@ func initializeForKube(ctx context.Context,
 		c, err := kubeutils.GetConfig("", "")
 		if err != nil {
 			return err
+		}
+		if cfg == nil {
+			return errors.New("cfg must not be nil")
 		}
 		*cfg = c
 	}
