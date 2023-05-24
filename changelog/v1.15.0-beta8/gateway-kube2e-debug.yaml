@@ -1,7 +1,7 @@
 changelog:
   - type: NON_USER_FACING
     description: >-
-      Increase wait time between changing AcceptAll setting, to reduce chance of flakes
+      Reduce flakes in gateway Kube2e test suite.
     issueLink: https://github.com/solo-io/solo-projects/issues/4913
     resolvesIssue: false
   - type: NON_USER_FACING
