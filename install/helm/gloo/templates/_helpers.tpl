@@ -186,3 +186,15 @@ Returns the unique Gateway namespaces as defined by the helm values.
 {{- $proxyNamespaces = $proxyNamespaces | uniq -}}
 {{ toJson $proxyNamespaces }}
 {{- end -}}
+
+
+{{- define "gloo.webhookvalidation.operationsForResource" -}}
+{{- $noDefaultDelete := list "gateways" -}}
+{{- $resource := first . -}}
+{{- $skip := or (index . 1) list -}}
+{{- $operations := list "CREATE" "UPDATE" -}}
+{{- if not (or (has $resource $noDefaultDelete) (has $resource $skip) (has "*" $skip)) -}}
+  {{- $operations = append $operations "DELETE" -}}
+{{- end -}}
+{{ toJson  $operations -}}
+{{- end -}}
