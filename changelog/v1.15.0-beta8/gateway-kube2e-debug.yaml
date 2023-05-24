@@ -4,3 +4,9 @@ changelog:
       Increase wait time between changing AcceptAll setting, to reduce chance of flakes
     issueLink: https://github.com/solo-io/solo-projects/issues/4913
     resolvesIssue: false
+  - type: NON_USER_FACING
+    description: >-
+      Ensure unique resources across tests, to ensure that Snapshot updates hash to different values,
+      and therefore Gloo re-syncs
+    issueLink: https://github.com/solo-io/gloo/issues/7795
+    resolvesIssue: false
