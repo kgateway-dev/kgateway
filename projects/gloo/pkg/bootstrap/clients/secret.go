@@ -226,9 +226,10 @@ type asyncClientInitParams struct {
 var initClientAsync = func(ctx context.Context, params *asyncClientInitParams) {
 	var c clients.ResourceClient
 	var err error
-	retry.Do(func() error {
-		c, err = params.f.NewResourceClient(ctx, params.newClientParams)
-		return err
+	err = retry.Do(func() error {
+		var tryErr error
+		c, tryErr = params.f.NewResourceClient(ctx, params.newClientParams)
+		return tryErr
 	})
 	if err != nil {
 		params.errChan <- errors.Wrapf(err, "failed to initialize secret resource client from factory of type %T", params.f)

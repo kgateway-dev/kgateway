@@ -10,7 +10,7 @@ import (
 var _ = Describe("secrets", func() {
 	Context("multi client factory", func() {
 		It("returns an error when a nil source map is provided", func() {
-			_, err := NewMultiSecretResourceClientFactory(nil, nil, nil, nil, nil, nil)
+			_, err := NewMultiSecretResourceClientFactory(MultiSecretFactoryParams{})
 			Expect(err).To(MatchError(ErrNilSourceSlice))
 		})
 	})
