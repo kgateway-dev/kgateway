@@ -53,6 +53,9 @@ func SecretFactoryForSettingsWithRetry(ctx context.Context, params SecretFactory
 	kubeCoreCache := params.KubeCoreCache
 	pluralName := params.PluralName
 	vaultClientInitMap := params.VaultClientInitMap
+	if vaultClientInitMap == nil {
+		vaultClientInitMap = map[int]VaultClientInitFunc{}
+	}
 
 	if settings.GetSecretSource() == nil && settings.GetSecretOptions() == nil {
 		if sharedCache == nil {
@@ -77,14 +80,14 @@ func SecretFactoryForSettingsWithRetry(ctx context.Context, params SecretFactory
 
 	// Fallback on secretSource API if secretOptions not defined
 	if deprecatedApiSource := settings.GetSecretSource(); deprecatedApiSource != nil {
-		vaultClientFunc, ok := params.VaultClientInitMap[SecretSourceAPIVaultClientInitIndex]
-		if !ok {
-			return nil, errors.New("could not locate Vault client init func for SecretSource API")
-		}
-		vaultClient, err := vaultClientFunc()
-		if err != nil {
-			err = errors.Wrap(ErrNilVaultClient, err.Error())
-			return nil, err
+		var vaultClient *vaultapi.Client
+		var err error
+		if vaultClientFunc, ok := params.VaultClientInitMap[SecretSourceAPIVaultClientInitIndex]; ok {
+			vaultClient, err = vaultClientFunc()
+			if err != nil {
+				err = errors.Wrap(ErrNilVaultClient, err.Error())
+				return nil, err
+			}
 		}
 		return NewSecretResourceClientFactory(ctx,
 			settings,
@@ -109,13 +112,16 @@ func SecretFactoryForSettings(ctx context.Context,
 	vaultClient *vaultapi.Client,
 	pluralName string) (factory.ResourceClientFactory, error) {
 
+	// initialize empty map to avoid nil map access if we don't have a vault client
+	m := map[int]VaultClientInitFunc{}
+
 	// the only code calling this should predate the secretOptions API
 	// so we can put the client init wrapper in the -1 key which is reserved for
 	// the secretSource API
-	m := map[int]VaultClientInitFunc{
-		-1: func() (*vaultapi.Client, error) {
-			return vaultClient, nil
-		},
+	if vaultClient != nil {
+		m = map[int]VaultClientInitFunc{
+			-1: noopClientInitFunc(vaultClient),
+		}
 	}
 	return SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
 		Settings:           settings,
@@ -155,7 +161,7 @@ func NewSecretResourceClientFactory(ctx context.Context,
 		if pathPrefix == "" {
 			pathPrefix = DefaultPathPrefix
 		}
-		return NewVaultSecretClientFactory(vaultClient, pathPrefix, rootKey), nil
+		return NewVaultSecretClientFactoryWithRetry(noopClientInitFunc(vaultClient), pathPrefix, rootKey), nil
 	case *v1.Settings_DirectorySecretSource:
 		return &factory.FileResourceClientFactory{
 			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), pluralName),

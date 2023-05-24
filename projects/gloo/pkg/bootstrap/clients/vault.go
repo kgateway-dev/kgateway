@@ -31,6 +31,12 @@ const DefaultPathPrefix = "secret"
 
 type VaultClientInitFunc func() (*api.Client, error)
 
+func noopClientInitFunc(c *api.Client) VaultClientInitFunc {
+	return func() (*api.Client, error) {
+		return c, nil
+	}
+}
+
 var (
 	ErrNilVaultClient = errors.New("vault API client failed to initialize")
 )
@@ -40,8 +46,6 @@ func NewVaultSecretClientFactoryWithRetry(clientInit VaultClientInitFunc, pathPr
 	client, err := clientInit()
 
 	// If we fail to initialize the client, use a retrybackoff asynchronously.
-	// In this way, we return the client factory, and we can check the nilness of
-	// factory.Vault in order to implement retry on the ResourceClient creation
 	if err != nil || client == nil {
 		go retry.Do(func() error {
 			client, err = clientInit()
@@ -61,10 +65,10 @@ func NewVaultSecretClientFactoryWithRetry(clientInit VaultClientInitFunc, pathPr
 	}
 }
 
-// NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
+// Deprecated: use NewVaultSecretClientFactoryWithRetry
 func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
 	return NewVaultSecretClientFactoryWithRetry(
-		func() (*api.Client, error) { return client, nil },
+		noopClientInitFunc(client),
 		pathPrefix,
 		rootKey)
 }

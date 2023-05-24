@@ -72,16 +72,17 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	secretFactory, err := bootstrap.SecretFactoryForSettings(
+	secretFactory, err := bootstrap.SecretFactoryForSettingsWithRetry(
 		ctx,
-		settings,
-		inMemoryCache,
-		&cfg,
-		&clientset,
-		&kubeCoreCache,
-		nil, // ingress client does not support vault config
-		gloov1.SecretCrd.Plural,
-	)
+		bootstrap.SecretFactoryParams{
+			Settings:           settings,
+			SharedCache:        inMemoryCache,
+			Cfg:                &cfg,
+			Clientset:          &clientset,
+			KubeCoreCache:      &kubeCoreCache,
+			VaultClientInitMap: nil,
+			PluralName:         gloov1.SecretCrd.Plural,
+		})
 	if err != nil {
 		return err
 	}
