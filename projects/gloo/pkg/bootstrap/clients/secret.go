@@ -452,21 +452,68 @@ func (m *MultiSecretResourceClient) List(namespace string, opts clients.ListOpts
 	return list, nil
 }
 
+type resourceListAggregator map[int]resources.ResourceList
+
+func (r *resourceListAggregator) aggregate() resources.ResourceList {
+	m := *r
+	rl := make(resources.ResourceList, 0, len(m))
+	for _, v := range m {
+		rl = append(rl, v...)
+	}
+	return rl
+}
+
+func (r *resourceListAggregator) set(k int, v resources.ResourceList) {
+	m := *r
+	m[k] = v
+}
+
+func newResourceListAggregator(mc *MultiSecretResourceClient, namespace string, opts clients.WatchOpts) (*resourceListAggregator, error) {
+	r := &resourceListAggregator{}
+	listOpts := clients.ListOpts{
+		Ctx:                opts.Ctx,
+		Cluster:            opts.Cluster,
+		Selector:           opts.Selector,
+		ExpressionSelector: opts.ExpressionSelector,
+	}
+	for i := range mc.clientList {
+		l, err := mc.clientList[i].List(namespace, listOpts)
+		if err != nil {
+			return nil, err
+		}
+		r.set(i, l)
+	}
+	return r, nil
+}
+
 func (m *MultiSecretResourceClient) Watch(namespace string, opts clients.WatchOpts) (<-chan resources.ResourceList, <-chan error, error) {
 	listChan := make(chan resources.ResourceList)
 	errChan := make(chan error)
+
+	// create a new aggregator so we can keep the last known state of individual clients.
+	// this allows us to send a single ResourceList to the api snapshot emitter, which
+	// expects values received on the returned channel to be atomically complete
+	resourceListPerClient, err := newResourceListAggregator(m, namespace, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	for i := range m.clientList {
+		idx := i
 		clientListChan, clientErrChan, err := m.clientList[i].Watch(namespace, opts)
 		if err != nil {
 			return nil, nil, err
 		}
+		// set a goroutine for each client to call its Watch, then aggregate and send
+		// on each receive.
 		go func() {
 			for {
 				select {
 				case <-opts.Ctx.Done():
 					return
 				case clientList := <-clientListChan:
-					listChan <- clientList
+					resourceListPerClient.set(idx, clientList)
+					listChan <- resourceListPerClient.aggregate()
 				case clientErr := <-clientErrChan:
 					errChan <- clientErr
 				}
