@@ -174,7 +174,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if out.GetTransportSocket() != nil {
 		// we may have to operate on a different pointer so lets store this for now
 		topTS := out.GetTransportSocket()
-		shouldMutate := false
+		shouldMutate := topTS.GetName() == wellknown.TransportSocketTls
 		// we have a transport socket and its not tls which was the former intention here
 		// given this we attempt to parse and mutate
 		if out.GetTransportSocket().GetName() == upstream_proxy_protocol.UpstreamProxySocketName {
