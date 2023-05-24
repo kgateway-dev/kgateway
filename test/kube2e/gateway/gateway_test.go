@@ -2172,8 +2172,8 @@ spec:
 					// For each test, uniquely identify the resources using a suffix that is unique per test
 					// We quickly apply and delete the same values, so we want to ensure a new snapshot (according to Gloo) is created
 					uniqueSuffix += 1
-					validVsName = fmt.Sprintf("i-am-valid-%d-%s", uniqueSuffix, parallel.GetParallelProcessCount())
-					invalidVsName = fmt.Sprintf("i-am-invalid-%d-%s", uniqueSuffix, parallel.GetParallelProcessCount())
+					validVsName = fmt.Sprintf("i-am-valid-%d-%d", uniqueSuffix, parallel.GetParallelProcessCount())
+					invalidVsName = fmt.Sprintf("i-am-invalid-%d-%d", uniqueSuffix, parallel.GetParallelProcessCount())
 
 					validVs := helpers.NewVirtualServiceBuilder().
 						WithName(validVsName).
