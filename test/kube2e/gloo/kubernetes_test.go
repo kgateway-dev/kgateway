@@ -138,7 +138,7 @@ var _ = Describe("Kubernetes Plugin", func() {
 				LabelSelector: labels.SelectorFromSet(baseLabels).String(),
 			})
 			g.Expect(err).NotTo(HaveOccurred())
-			g.Expect(pods).To(HaveLen(2), "We only expect 2 pods with these labels")
+			g.Expect(pods.Items).To(HaveLen(2), "We only expect 2 pods with these labels")
 			for _, pod := range pods.Items {
 				g.Expect(pod.Status.Phase).To(Equal(kubev1.PodRunning), "pod should be running")
 			}
