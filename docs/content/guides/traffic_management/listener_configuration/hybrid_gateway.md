@@ -150,7 +150,7 @@ This is expected since the IP of our client is not `1.2.3.4`.
 
 ## Pass TLS traffic through for deprecated cipher suites {#tls-passthrough}
 
-By default, Gloo Edge supports cipher suites that are available in Envoy. If you have an upstream service that can accept only cipher suites that are deprecated or not available in Envoy, you can configure Gloo Edge to pass TLS traffic through to your upstream directly. Because TLS traffic is not terminated at the gateway, the upstream service must be capable of terminating and unencrypting the incoming TLS connection.
+By default, Gloo Edge only supports cipher suites that are available in Envoy, which uses [BoringSSL](https://github.com/google/boringssl) for TLS. If you provide services to clients that do not yet have support for the ciphers that are supported by BoringSSL, you can configure Gloo Edge to pass TLS traffic through to your upstream directly. Because TLS traffic is not terminated at the gateway, the upstream service must be capable of terminating and unencrypting the incoming TLS connection.
 
 In this guide, you deploy a sample NGINX server and configure the server for HTTPS traffic. You use the server to try out the TLS passthrough feature for deprecated cipher suites.
 
