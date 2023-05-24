@@ -249,11 +249,14 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 		}
 
 		// This should never happen unless the listener type is unknown or not fully supported
-		if filterChainTranslator != nil && routeConfigurationTranslator != nil {
+		if filterChainTranslator != nil {
 			filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
+		}
+		if routeConfigurationTranslator != nil {
 			routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
-		} else {
-			contextutils.LoggerFrom(ctx).DPanicf("listener (%v) had a matched listener with an unknown type (%T) ", listener.GetName(), matchedListener.GetListenerType())
+		}
+		if routeConfigurationTranslator == nil && filterChainTranslator == nil {
+			contextutils.LoggerFrom(ctx).Warnf("listener (%v) had a matched listener with an unknown type (%T) ", listener.GetName(), matchedListener.GetListenerType())
 		}
 
 	}
