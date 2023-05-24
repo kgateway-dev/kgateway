@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/onsi/gomega/types"
 
 	ratelimit2 "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
@@ -2149,7 +2151,7 @@ spec:
 			var uniqueSuffix int
 
 			BeforeAll(func() {
-				uniqueSuffix = 1
+				uniqueSuffix = 0
 				kube2e.UpdateAlwaysAcceptSetting(ctx, true, testHelper.InstallNamespace)
 			})
 
@@ -2167,12 +2169,11 @@ spec:
 				)
 
 				BeforeEach(func() {
-					// For each test, uniquely identify the resources
-					// We quickly apply and delete the same values, so we want to ensure a new snapshot (according to Gloo)
-					// is created
+					// For each test, uniquely identify the resources using a suffix that is unique per test
+					// We quickly apply and delete the same values, so we want to ensure a new snapshot (according to Gloo) is created
 					uniqueSuffix += 1
-					validVsName = fmt.Sprintf("i-am-valid-%d", uniqueSuffix)
-					invalidVsName = fmt.Sprintf("i-am-invalid-%d", uniqueSuffix)
+					validVsName = fmt.Sprintf("i-am-valid-%d-%s", uniqueSuffix, parallel.GetParallelProcessCount())
+					invalidVsName = fmt.Sprintf("i-am-invalid-%d-%s", uniqueSuffix, parallel.GetParallelProcessCount())
 
 					validVs := helpers.NewVirtualServiceBuilder().
 						WithName(validVsName).
