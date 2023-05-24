@@ -51,6 +51,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"google.golang.org/grpc"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -439,9 +440,9 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		// As a result, we need to construct a client to communicate with that vault instance
 		vaultSecretSource := settings.GetVaultSecretSource()
 
-		vaultClient, err := bootstrap.VaultClientForSettings(vaultSecretSource)
+		vaultClient, err := bootstrap_clients.VaultClientForSettings(vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
-		secretFactory = bootstrap.NewVaultSecretClientFactory(vaultClient, vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
+		secretFactory = bootstrap_clients.NewVaultSecretClientFactory(vaultClient, vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
 	}
 
 	return bootstrap.Opts{
