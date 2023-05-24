@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
+
 	"github.com/onsi/gomega/types"
 
 	ratelimit2 "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
@@ -2146,7 +2148,10 @@ spec:
 		Context("AlwaysAccept", Ordered, func() {
 			// We want to test behaviors when Gloo allows invalid resouces to be persisted
 
+			var uniqueSuffix int
+
 			BeforeAll(func() {
+				uniqueSuffix = 0
 				kube2e.UpdateAlwaysAcceptSetting(ctx, true, testHelper.InstallNamespace)
 			})
 
@@ -2160,11 +2165,16 @@ spec:
 			Context("with a mix of valid and invalid virtual services", func() {
 
 				var (
-					validVsName   = "i-am-valid"
-					invalidVsName = "i-am-invalid"
+					validVsName, invalidVsName string
 				)
 
 				BeforeEach(func() {
+					// For each test, uniquely identify the resources using a suffix that is unique per test
+					// We quickly apply and delete the same values, so we want to ensure a new snapshot (according to Gloo) is created
+					uniqueSuffix += 1
+					validVsName = fmt.Sprintf("i-am-valid-%d-%d", uniqueSuffix, parallel.GetParallelProcessCount())
+					invalidVsName = fmt.Sprintf("i-am-invalid-%d-%d", uniqueSuffix, parallel.GetParallelProcessCount())
+
 					validVs := helpers.NewVirtualServiceBuilder().
 						WithName(validVsName).
 						WithNamespace(testHelper.InstallNamespace).
@@ -2194,7 +2204,9 @@ spec:
 				JustBeforeEach(func() {
 					// ensure that we have successfully gotten into an invalid state
 					helpers.EventuallyResourceRejected(func() (resources.InputResource, error) {
-						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{
+							Ctx: ctx,
+						})
 					})
 				})
 
