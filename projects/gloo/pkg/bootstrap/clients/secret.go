@@ -25,6 +25,11 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	_ clients.ResourceClient        = new(MultiSecretResourceClient)
+	_ factory.ResourceClientFactory = new(MultiSecretResourceClientFactory)
+)
+
 // SecretSourceAPIVaultClientInitIndex is a dedicated index for use of the SecretSource API
 const SecretSourceAPIVaultClientInitIndex = -1
 
