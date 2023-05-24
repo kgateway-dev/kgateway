@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
 	"github.com/solo-io/gloo/test/testutils"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,7 +87,7 @@ func installGloo() {
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
-	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace, zapcore.InfoLevel)
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
 func uninstallGloo() {

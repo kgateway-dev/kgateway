@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap/zapcore"
-
 	"github.com/solo-io/gloo/test/services"
 
 	"github.com/avast/retry-go"
@@ -85,7 +83,7 @@ func installGloo() {
 	Expect(err).NotTo(HaveOccurred())
 
 	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
-	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace, zapcore.InfoLevel)
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
 func uninstallGloo() {
