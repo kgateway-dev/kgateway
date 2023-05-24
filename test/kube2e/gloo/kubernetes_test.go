@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -129,6 +131,19 @@ var _ = Describe("Kubernetes Plugin", func() {
 			}},
 		}, metav1.UpdateOptions{})
 		Expect(err).NotTo(HaveOccurred())
+
+		// Wait for created pods to be running
+		Eventually(func(g Gomega) {
+			pods, err := kubeClient.CoreV1().Pods(svcNamespace).List(ctx, metav1.ListOptions{
+				LabelSelector: labels.SelectorFromSet(baseLabels).String(),
+			})
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(pods).To(HaveLen(2), "We only expect 2 pods with these labels")
+			for _, pod := range pods.Items {
+				g.Expect(pod.Status.Phase).To(Equal(kubev1.PodRunning), "pod should be running")
+			}
+		}, 60*time.Second, 1*time.Second).ShouldNot(HaveOccurred())
+
 	})
 
 	AfterEach(func() {
