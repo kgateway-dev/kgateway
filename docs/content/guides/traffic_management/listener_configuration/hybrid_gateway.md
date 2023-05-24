@@ -270,7 +270,7 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
    kubectl get upstream default-my-nginx-443 -n gloo-system 
    ```
 
-8. Create a gateway resource and specify the deprecated cipher suites for which you want to pass TLS traffic through to your upstream in the `passthroughCipherSuites` field of your `tcpGateway`. 
+8. Create a gateway resource and specify the deprecated cipher suites for which you want to pass TLS traffic through to your upstream in the `passthroughCipherSuites` field of your `tcpGateway`. You can optionally log the ciphers that were sent by the clients by adding the `spec.options.accessLoggingService` section to your gateway configuration as shown in the following example. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -513,7 +513,7 @@ This guide assumes that you want to use hybrid gateway delegatin to configure TL
    EOF
    ```
 
-3. Create a gateway resource. In the `hybridGateway` section, add a `delegatedTcpGateways` section and make sure that the protocol is set to `tcp` and the TLS mode to `passthrough`. 
+3. Create a gateway resource. In the `hybridGateway` section, add a `delegatedTcpGateways` section and make sure that the protocol is set to `tcp` and the TLS mode to `passthrough`. You can optionally log the ciphers that were sent by the clients by adding the `spec.options.accessLoggingService` section to your gateway configuration as shown in the following example. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
