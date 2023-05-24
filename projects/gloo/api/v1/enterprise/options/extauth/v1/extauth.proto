@@ -657,14 +657,14 @@ message OidcAuthorizationCode {
     EndSessionProperties end_session_properties = 19;
 
     // Map of metadata key to claim. Ie:
-    // metadata_keys_to_claim:
+    // dynamic_metadata_from_claims:
     //   issuer: iss
     //   email: email
-    // When specified, the matching claims from the access token will be emitted as dynamic metadata.
-    // Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`.
-    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
-    // claim values can be a bool, string, or list.
-    map<string, string> metadata_keys_to_claim = 20;
+    // When specified, the matching claims from the ID token will be emitted as dynamic metadata.
+    // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+    // and the structure of the claim value will be preserved in the metadata struct.
+    map<string, string> dynamic_metadata_from_claims = 20;
 }
 
 message PlainOAuth2 {
@@ -842,15 +842,15 @@ message AccessTokenValidation {
     }
 
     // Map of metadata key to claim. Ie:
-    // metadata_keys_to_claim:
+    // dynamic_metadata_from_claims:
     //   issuer: iss
     //   email: email
     // When specified, the matching claims from the access token will be emitted as dynamic metadata.
-    // Note that metadata keys must be unique, and the claim names must match the regular expression for DNS labels `[a-zA-Z\-_]`.
-    // Works when the access token is a JWT or when the access token is opaque.
-    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`).
-    // claim values can be a bool, string, or list.
-    map<string, string> metadata_keys_to_claim = 7;
+    // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+    // Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint.
+    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+    // and the structure of the claim value will be preserved in the metadata struct.
+    map<string, string> dynamic_metadata_from_claims = 7;
 
     message ScopeList {
       repeated string scope = 1;

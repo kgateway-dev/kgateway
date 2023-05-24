@@ -269,6 +269,10 @@ spec:
                           properties:
                             cacheTimeout:
                               type: string
+                            dynamicMetadataFromClaims:
+                              additionalProperties:
+                                type: string
+                              type: object
                             introspection:
                               properties:
                                 clientId:
@@ -303,10 +307,6 @@ spec:
                                     url:
                                       type: string
                                   type: object
-                              type: object
-                            metadataKeysToClaim:
-                              additionalProperties:
-                                type: string
                               type: object
                             requiredScopes:
                               properties:
@@ -499,6 +499,10 @@ spec:
                               type: object
                             discoveryPollInterval:
                               type: string
+                            dynamicMetadataFromClaims:
+                              additionalProperties:
+                                type: string
+                              type: object
                             endSessionProperties:
                               properties:
                                 methodType:
@@ -531,10 +535,6 @@ spec:
                               type: object
                             logoutPath:
                               type: string
-                            metadataKeysToClaim:
-                              additionalProperties:
-                                type: string
-                              type: object
                             parseCallbackPathAsRegex:
                               type: boolean
                             scopes:
