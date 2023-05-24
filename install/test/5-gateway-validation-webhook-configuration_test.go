@@ -32,8 +32,7 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
 			timeoutSeconds := 5
 
-			// This type of test can be a bit spooky because we're expecting 2 auto-generated structures
-			// we never see to match. So we'll count the "DELETES" as a sanity check.
+			// Count the "DELETES" as a sanity check.
 			expectedDeletes := 5 - expectedRemoved
 			expectedChart := generateExpectedChart(timeoutSeconds, resources, expectedDeletes)
 

@@ -21,15 +21,4 @@ var _ = Describe("StringUtils", func() {
 		Entry("Not Found", []string{"one", "two", "three"}, "four", []string{"one", "two", "three"}),
 	)
 
-	DescribeTable("DeleteAtIndex", func(array []string, value int, expected []string) {
-		Expect(DeleteAtIndex(array, value)).To(Equal(expected))
-	},
-		Entry("index negative", []string{"one", "two", "three"}, -1, []string{"one", "two", "three"}),
-		Entry("index 0", []string{"one", "two", "three"}, 0, []string{"two", "three"}),
-		Entry("index 1", []string{"one", "two", "three"}, 1, []string{"one", "three"}),
-		Entry("index 2", []string{"one", "two", "three"}, 2, []string{"one", "two"}),
-		Entry("index too large", []string{"one", "two", "three"}, 3, []string{"one", "two", "three"}),
-		Entry("empty array", []string{}, 3, []string{}),
-	)
-
 })
