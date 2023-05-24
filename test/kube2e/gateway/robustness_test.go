@@ -235,9 +235,13 @@ var _ = Describe("Robustness tests", func() {
 			By("force proxy into warning state")
 			forceProxyIntoWarningState(appVs)
 
-			By("force an update of the service endpoints")
-			initialEndpointIPs := endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
+			var initialEndpointIPs []string
+			Eventually(func() []string {
+				initialEndpointIPs = endpointIPsForKubeService(resourceClientset.KubeClients(), appService)
+				return initialEndpointIPs
+			}, 20*time.Second, 1*time.Second).Should(Not(HaveLen(0)))
 
+			By("force an update of the service endpoints")
 			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 0)
 			scaleDeploymentTo(resourceClientset.KubeClients(), appDeployment, 1)
 
