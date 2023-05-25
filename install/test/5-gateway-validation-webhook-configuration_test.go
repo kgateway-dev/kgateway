@@ -1,9 +1,7 @@
 package test
 
 import (
-	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -30,15 +28,12 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 		}
 
 		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
-			timeoutSeconds := 5
-
 			// Count the "DELETES" as a sanity check.
 			expectedDeletes := 5 - expectedRemoved
-			expectedChart := generateExpectedChart(timeoutSeconds, resources, expectedDeletes)
+			expectedChart := generateExpectedChart(resources, expectedDeletes)
 
 			prepareMakefile(namespace, helmValues{
 				valuesArgs: []string{
-					fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds),
 					`gateway.validation.webhook.skipDeleteValidationResources={` + strings.Join(resources, ",") + `}`,
 				},
 			})
@@ -59,7 +54,7 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 	runTests(allTests)
 })
 
-func generateExpectedChart(timeoutSeconds int, skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
+func generateExpectedChart(skipDeletes []string, expectedDeletes int) *unstructured.Unstructured {
 	rules := generateRules(skipDeletes)
 
 	// indent "rules"
@@ -95,7 +90,6 @@ webhooks:
     ` + rules + `
   sideEffects: None
   matchPolicy: Exact
-  timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
   admissionReviewVersions:
     - v1beta1
   failurePolicy: Ignore
