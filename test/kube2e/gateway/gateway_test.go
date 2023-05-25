@@ -1863,7 +1863,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	})
 
-	Context("Validation Configuration", func() {
+	Context("Validation Configuration", Ordered, func() {
 		// These tests explicitly test the behavior of Gloo Edge when our Validation API is modified
 		// Ideally all tests run with the most restrictive validation settings, so we try to isolate these tests
 		// Also, adjusting the validation configuration takes time to propagate (server restart), so we write tests
@@ -1885,50 +1885,50 @@ var _ = Describe("Kube2e: gateway", func() {
 			err = install.KubectlDelete([]byte(yaml))
 		}
 
-		When("allowWarnings=false", Ordered, func() {
+		verifyGlooValidationWorks := func() {
+			// Validation of Gloo resources requires that a Proxy resource exist
+			// Therefore, before the tests start, we must attempt updates that should be rejected
+			// They will only be rejected once a Proxy exists in the ApiSnapshot
 
-			verifyValidationWorks := func() {
-				// Validation of Gloo resources requires that a Proxy resource exist
-				// Therefore, before the tests start, we must attempt updates that should be rejected
-				// They will only be rejected once a Proxy exists in the ApiSnapshot
-
-				placeholderUs := &gloov1.Upstream{
-					Metadata: &core.Metadata{
-						Name:      "",
-						Namespace: testHelper.InstallNamespace,
+			placeholderUs := &gloov1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      "",
+					Namespace: testHelper.InstallNamespace,
+				},
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &static.UpstreamSpec{
+						Hosts: []*static.Host{{
+							Addr: "~",
+						}},
 					},
-					UpstreamType: &gloov1.Upstream_Static{
-						Static: &static.UpstreamSpec{
-							Hosts: []*static.Host{{
-								Addr: "~",
-							}},
-						},
-					},
-				}
-				attempt := 0
-				Eventually(func(g Gomega) bool {
-					placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
-
-					_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
-					if err != nil {
-						serr := err.Error()
-						g.Expect(serr).Should(ContainSubstring("admission webhook"))
-						g.Expect(serr).Should(ContainSubstring("port cannot be empty for host"))
-						// We have successfully rejected an invalid upstream
-						// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
-						return true
-					}
-
-					err = resourceClientset.UpstreamClient().Delete(
-						placeholderUs.GetMetadata().GetNamespace(),
-						placeholderUs.GetMetadata().GetName(),
-						clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-					g.Expect(err).NotTo(HaveOccurred())
-
-					attempt += 1
-					return false
-				}, time.Second*15, time.Second*1).Should(BeTrue())
+				},
 			}
+			attempt := 0
+			Eventually(func(g Gomega) bool {
+				placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
+
+				_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
+				if err != nil {
+					serr := err.Error()
+					g.Expect(serr).Should(ContainSubstring("admission webhook"))
+					g.Expect(serr).Should(ContainSubstring("port cannot be empty for host"))
+					// We have successfully rejected an invalid upstream
+					// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
+					return true
+				}
+
+				err = resourceClientset.UpstreamClient().Delete(
+					placeholderUs.GetMetadata().GetNamespace(),
+					placeholderUs.GetMetadata().GetName(),
+					clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+				g.Expect(err).NotTo(HaveOccurred())
+
+				attempt += 1
+				return false
+			}, time.Second*15, time.Second*1).Should(BeTrue())
+		}
+
+		When("allowWarnings=false", Ordered, func() {
 
 			BeforeAll(func() {
 				// Set the validation settings to be as strict as possible so that we can trigger
@@ -1937,7 +1937,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: false}
 				}, testHelper.InstallNamespace)
 
-				verifyValidationWorks()
+				verifyGlooValidationWorks()
 			})
 
 			AfterAll(func() {
@@ -2060,6 +2060,8 @@ spec:
 			})
 
 			It("Rejects invalid Gloo resources", func() {
+				verifyGlooValidationWorks()
+
 				// specifically avoiding using a DescribeTable here in order to avoid reinstalling
 				// for every test case
 				type testCase struct {
