@@ -314,26 +314,28 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("native ssl", func() {
 
+			var secretName = "secret-native-ssl"
+
 			BeforeEach(func() {
 				// get the certificate so it is generated in the background
 				go helpers.Certificate()
 
-				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret("secret", testHelper.InstallNamespace), metav1.CreateOptions{})
+				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret(secretName, testHelper.InstallNamespace), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Modify the VirtualService to include the necessary SslConfig
 				testRunnerVs.SslConfig = &ssl.SslConfig{
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
-							Name:      createdSecret.ObjectMeta.Name,
-							Namespace: createdSecret.ObjectMeta.Namespace,
+							Name:      createdSecret.GetName(),
+							Namespace: createdSecret.GetNamespace(),
 						},
 					},
 				}
 			})
 
 			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, "secret", metav1.DeleteOptions{})
+				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -1124,7 +1126,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		// Update the Gloo Discovery WatchLabels setting to the specified value
 		setWatchLabels := func(watchLabels map[string]string) {
 			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetDiscovery()).NotTo(BeNil())
 				settings.GetDiscovery().UdsOptions = &gloov1.Settings_DiscoveryOptions_UdsOptions{
 					WatchLabels: watchLabels,
 				}
@@ -1333,11 +1334,13 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		})
 
-		Context("routing (tcp/tls", func() {
+		Context("routing (tcp/tls)", func() {
+
+			var secretName = "secret-routing-tls"
 
 			BeforeEach(func() {
 				// Create secret to use for ssl routing
-				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret("secret", testHelper.InstallNamespace), metav1.CreateOptions{})
+				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret(secretName, testHelper.InstallNamespace), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				tcpGateway := defaults.DefaultTcpGateway(testHelper.InstallNamespace)
@@ -1369,7 +1372,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, "secret", metav1.DeleteOptions{})
+				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
