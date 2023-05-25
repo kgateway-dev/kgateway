@@ -6,9 +6,11 @@ import (
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -18,6 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -137,6 +140,146 @@ var _ = Describe("Bootstrap Clients", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(artifact.GetMetadata().Name).To(Equal("cfg"))
 				Expect(artifact.Data["test"]).To(Equal("data"))
+			})
+		})
+	})
+
+	Context("Secret Client", func() {
+		var (
+			vaultInstance *services.VaultInstance
+
+			kubeSecretName string
+
+			testNamespace string
+
+			cfg           *rest.Config
+			kubeClient    kubernetes.Interface
+			kubeCoreCache corecache.KubeCoreCache
+
+			vaultClientInitMap map[int]clients.VaultClientInitFunc
+
+			secretClient v1.SecretClient
+			settings     *v1.Settings
+		)
+		BeforeEach(func() {
+			var err error
+			testNamespace = helpers.RandString(8)
+			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: testNamespace,
+				},
+			}, metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			kubeCoreCache, err = corecache.NewKubeCoreCacheWithOptions(ctx, kubeClient, time.Hour, []string{testNamespace})
+			Expect(err).NotTo(HaveOccurred())
+
+			kubeSecretName = "kubeSecret"
+
+			_, err = kubeClient.CoreV1().Secrets(testNamespace).Create(ctx,
+				&kubev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      kubeSecretName,
+						Namespace: testNamespace,
+					},
+				},
+				metav1.CreateOptions{})
+
+			settings = &v1.Settings{
+				SecretOptions: &v1.Settings_SecretOptions{
+					Sources: []*v1.Settings_SecretOptions_Source{
+						{
+							Source: &v1.Settings_SecretOptions_Source_Kubernetes{},
+						},
+					},
+				},
+				WatchNamespaces: []string{testNamespace},
+			}
+
+		})
+
+		JustBeforeEach(func() {
+			factory, err := clients.SecretFactoryForSettings(ctx,
+				clients.SecretFactoryParams{
+					Settings:           settings,
+					SharedCache:        nil,
+					Cfg:                &cfg,
+					Clientset:          &kubeClient,
+					KubeCoreCache:      &kubeCoreCache,
+					VaultClientInitMap: vaultClientInitMap,
+					PluralName:         "secrets",
+				})
+			Expect(err).NotTo(HaveOccurred())
+			secretClient, err = v1.NewSecretClient(ctx, factory)
+			Expect(err).NotTo(HaveOccurred())
+
+		})
+
+		When("using a single kubernetes secret source", func() {
+			It("lists secrets", func() {
+				l, err := secretClient.List(testNamespace, skclients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(l).NotTo(BeNil())
+				kubeSecret, err := l.Find(testNamespace, kubeSecretName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(kubeSecret).NotTo(BeNil())
+			})
+		})
+
+		When("using a kubernetes+vault secret source", func() {
+			var (
+				vaultSecretName string
+				secretForVault  *v1.Secret
+			)
+
+			BeforeEach(func() {
+				vaultInstance = vaultFactory.MustVaultInstance()
+				vaultInstance.Run(ctx)
+
+				vaultSecretName = "vaultSecret"
+				secretForVault = &v1.Secret{
+					Kind: &v1.Secret_Tls{},
+					Metadata: &core.Metadata{
+						Name:      vaultSecretName,
+						Namespace: testNamespace,
+					},
+				}
+
+				vaultInstance.WriteSecret(secretForVault)
+
+				vaultSettings := &v1.Settings_VaultSecrets{
+					Address: vaultInstance.Address(),
+					AuthMethod: &v1.Settings_VaultSecrets_AccessToken{
+						AccessToken: vaultInstance.Token(),
+					},
+				}
+
+				sources := settings.GetSecretOptions().GetSources()
+				sources = append(sources, &v1.Settings_SecretOptions_Source{
+					Source: &v1.Settings_SecretOptions_Source_Vault{
+						Vault: vaultSettings,
+					},
+				})
+
+				vaultClientInitMap = map[int]clients.VaultClientInitFunc{
+					1: func() *vaultapi.Client {
+						c, err := clients.VaultClientForSettings(vaultSettings)
+						Expect(err).NotTo(HaveOccurred())
+						return c
+					},
+				}
+			})
+			It("lists secrets", func() {
+				l, err := secretClient.List(testNamespace, skclients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				Expect(l).NotTo(BeNil())
+
+				kubeSecret, err := l.Find(testNamespace, kubeSecretName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(kubeSecret).NotTo(BeNil())
+
+				vaultSecret, err := l.Find(testNamespace, vaultSecretName)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(vaultSecret).NotTo(BeNil())
 			})
 		})
 	})
