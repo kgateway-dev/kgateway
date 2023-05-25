@@ -5,7 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/test/testutils"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
@@ -25,44 +24,36 @@ var _ = Describe("consul", func() {
 	)
 
 	BeforeEach(func() {
-
-		if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
-			Skip("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
-			return
-		}
+		// Requires Consul instance. The ConsulFactory will first attempt to
+		// use a consul binary on the test executor's $PATH, then will fallback
+		// to running a consul docker image and copying the binary from that.
+		testutils.ValidateRequirementsAndNotifyGinkgo(testutils.Consul())
 
 		ctx, cancel = context.WithCancel(context.Background())
 
-		consulInstance = consulFactory.MustConsulInstance()
+		consulInstance = consulFactory.MustConsulInstanceWithClient()
 		err := consulInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		cancel()
+		cancel() // this will clean up the consulInstance
 	})
 
 	Context("artifacts as consul key value", func() {
 
 		var (
-			ctx            context.Context
-			cancel         func()
 			artifactClient v1.ArtifactClient
 		)
 
 		BeforeEach(func() {
-			ctx, cancel = context.WithCancel(context.Background())
-
 			value, err := protoutils.MarshalYAML(&v1.Artifact{
 				Data:     map[string]string{"hi": "bye"},
 				Metadata: &core.Metadata{Name: "name", Namespace: "namespace"},
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			_, err = client.KV().Put(&api.KVPair{
-				Key:   "gloo/gloo.solo.io/v1/Artifact/namespace/name",
-				Value: value,
-			}, nil)
+			err = consulInstance.Put("gloo/gloo.solo.io/v1/Artifact/namespace/name", value)
 			Expect(err).NotTo(HaveOccurred())
 
 			settings := &v1.Settings{
@@ -79,7 +70,7 @@ var _ = Describe("consul", func() {
 				nil,
 				nil,
 				nil,
-				client,
+				consulInstance.Client(),
 				"artifacts")
 			Expect(err).NotTo(HaveOccurred())
 			artifactClient, err = v1.NewArtifactClient(ctx, factory)
