@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloostringutils "github.com/solo-io/gloo/pkg/utils/stringutils"
 	"github.com/solo-io/go-utils/stringutils"
