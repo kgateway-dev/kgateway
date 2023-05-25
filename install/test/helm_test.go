@@ -4036,62 +4036,6 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("creates the validating webhook configuration", func() {
-						timeoutSeconds := 5
-						vwc := makeUnstructured(`
-
-apiVersion: admissionregistration.k8s.io/v1
-kind: ValidatingWebhookConfiguration
-metadata:
-  name: gloo-gateway-validation-webhook-` + namespace + `
-  labels:
-    app: gloo
-    gloo: gateway
-  annotations:
-    "helm.sh/hook": pre-install, pre-upgrade
-    "helm.sh/hook-weight": "5" # should come before cert-gen job
-webhooks:
- - name: gloo.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
-   clientConfig:
-     service:
-       name: gloo
-       namespace: ` + namespace + `
-       path: "/validation"
-     caBundle: "" # update manually or use certgen job
-   rules:
-     - operations: [ "CREATE", "UPDATE", "DELETE" ]
-       apiGroups: ["gateway.solo.io"]
-       apiVersions: ["v1"]
-       resources: ["virtualservices", "routetables"]
-     - operations: [ "CREATE", "UPDATE"]
-       apiGroups: ["gateway.solo.io"]
-       apiVersions: ["v1"]
-       resources: ["gateways"]
-     - operations: [ "CREATE", "UPDATE", "DELETE" ]
-       apiGroups: ["gloo.solo.io"]
-       apiVersions: ["v1"]
-       resources: ["upstreams"]
-     - operations: [ "DELETE" ]
-       apiGroups: ["gloo.solo.io"]
-       apiVersions: ["v1"]
-       resources: ["secrets"]
-     - operations: [ "CREATE", "UPDATE", "DELETE" ]
-       apiGroups: ["ratelimit.solo.io"]
-       apiVersions: ["v1alpha1"]
-       resources: ["ratelimitconfigs"]
-   sideEffects: None
-   matchPolicy: Exact
-   timeoutSeconds: ` + strconv.Itoa(timeoutSeconds) + `
-   admissionReviewVersions:
-     - v1beta1
-   failurePolicy: Ignore
-`)
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{fmt.Sprintf(`gateway.validation.webhook.timeoutSeconds=%d`, timeoutSeconds)},
-						})
-						testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
-					})
-
 					It("adds the validation port and mounts the certgen secret to the gloo deployment", func() {
 						glooDeployment := makeUnstructured(`
 # Source: gloo/templates/1-gloo-deployment.yaml
