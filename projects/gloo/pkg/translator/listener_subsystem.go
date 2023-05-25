@@ -179,10 +179,6 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 			filterChainTranslator        FilterChainTranslator
 		)
 		matcher := matchedListener.GetMatcher()
-		if matcher == nil {
-			contextutils.LoggerFrom(ctx).Debugf("listener (%v) had a matched listener with a nil matcher", listener.GetName())
-			continue
-		}
 
 		switch listenerType := matchedListener.GetListenerType().(type) {
 		case *v1.MatchedListener_HttpListener:
