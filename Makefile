@@ -253,6 +253,10 @@ run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only r
 run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
 run-tests: test
 
+.PHONY: run-nightly-tests
+run-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
+run-tests: test
+
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
 run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
