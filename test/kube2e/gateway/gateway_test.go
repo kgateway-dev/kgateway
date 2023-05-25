@@ -278,6 +278,17 @@ var _ = Describe("Kube2e: gateway", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 
+				// No-op patch on a resource to ensure translation re-sync's
+				err = helpers.PatchResource(
+					ctx,
+					testRunnerVs.GetMetadata().Ref(),
+					func(resource resources.Resource) resources.Resource {
+						resource.GetMetadata().GetAnnotations()["gloo-edge-test"] = "update"
+						return resource
+					},
+					resourceClientset.VirtualServiceClient().BaseClient())
+				Expect(err).NotTo(HaveOccurred())
+
 				// Assert that the generated Proxy matches the format we are testing (compressed or not)
 				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 					proxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{
