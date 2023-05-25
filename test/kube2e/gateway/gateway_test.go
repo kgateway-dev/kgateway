@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
+
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/onsi/gomega/types"
@@ -246,37 +248,69 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	Context("tests with virtual service", func() {
 
-		DescribeTable("can route to upstream", func(compressedProxy bool) {
-			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
-				settings.GetGateway().CompressedProxySpec = compressedProxy
-			}, testHelper.InstallNamespace)
+		Context("CompressedProxySpec", Ordered, func() {
 
-			// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
-			err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
-				Ctx:            ctx,
-				IgnoreNotExist: true,
+			AfterAll(func() {
+				// Reset the CompressedProxySpec to False
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+					settings.GetGateway().CompressedProxySpec = false
+				}, testHelper.InstallNamespace)
+
+				// We delete the existing Proxy so that a new one can be auto-generated without compression
+				err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
+					Ctx:            ctx,
+					IgnoreNotExist: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
 			})
-			Expect(err).NotTo(HaveOccurred())
 
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/",
-				Method:            "GET",
-				Host:              helper.TestrunnerName,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			DescribeTable("can route to upstream", func(compressedProxy bool) {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
+					settings.GetGateway().CompressedProxySpec = compressedProxy
+				}, testHelper.InstallNamespace)
 
-			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
-				settings.GetGateway().CompressedProxySpec = false
-			}, testHelper.InstallNamespace)
-		},
-			Entry("can route to upstreams", false),
-			Entry("can route to upstreams with compressed proxy", true))
+				// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
+				err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
+					Ctx:            ctx,
+					IgnoreNotExist: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Assert that the generated Proxy matches the format we are testing (compressed or not)
+				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					proxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: ctx,
+					})
+					if compressedProxy {
+						if proxy.GetMetadata().GetAnnotations()[compress.CompressedKey] != compress.CompressedValue {
+							return nil, eris.New("Proxy should be compressed, but it does not contained compressed annotation")
+						}
+					} else {
+						if proxy.GetMetadata().GetAnnotations()[compress.CompressedKey] != "" {
+							return nil, eris.New("Proxy should not be compressed, but it does contain compressed annotation")
+						}
+					}
+					return proxy, err
+				})
+
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              helper.TestrunnerName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+					Verbose:           true,
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			},
+				EntryDescription("can route to upstreams, compressedProxySpec = %v"),
+				Entry(nil, false),
+				Entry(nil, true))
+		})
 
 		Context("native ssl", func() {
 
