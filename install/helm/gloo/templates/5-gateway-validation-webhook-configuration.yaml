@@ -24,25 +24,32 @@ webhooks:
       path: "/validation"
     caBundle: "" # update manually or use certgen job or cert-manager's ca-injector
   rules:
-  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+  - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "virtualservices" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
-    resources: ["virtualservices", "routetables"]
-  - operations: [ "CREATE", "UPDATE"]
+    resources: ["virtualservices"]
+  - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "routetables" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["routetables"]
+  - operations: [ "CREATE", "UPDATE" ]
 {{/* gateway deletions are not supported at the moment. Since we have no longer use resource flags to support 
 specific resources, we will manage the resources that the webhook receives via the helm configurations*/}}
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["gateways"]
-  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+  - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "upstreams" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["upstreams"]{{/* TODO(https://github.com/solo-io/gloo/issues/2797): Extend to all gloo resources */}}
+{{/* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
+{{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
   - operations: [ "DELETE" ]
     apiGroups: ["gloo.solo.io"]
     apiVersions: ["v1"]
     resources: ["secrets"]
-  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+{{- end }}
+  - operations: {{ include "gloo.webhookvalidation.operationsForResource" (list "ratelimitconfigs" .Values.gateway.validation.webhook.skipDeleteValidationResources) }}
     apiGroups: ["ratelimit.solo.io"]
     apiVersions: ["v1alpha1"]
     resources: ["ratelimitconfigs"]
