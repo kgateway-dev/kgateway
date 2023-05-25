@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"sync"
 
-	"github.com/avast/retry-go"
 	vaultapi "github.com/hashicorp/vault/api"
 	errors "github.com/rotisserie/eris"
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
@@ -131,7 +131,7 @@ func NewSecretResourceClientFactory(ctx context.Context,
 }
 
 type MultiSecretResourceClientFactory struct {
-	secretSources      []*v1.Settings_SecretOptions_Source
+	secretSources      sources
 	sharedCache        memory.InMemoryResourceCache
 	cfg                **rest.Config
 	clientset          *kubernetes.Interface
@@ -152,8 +152,68 @@ var (
 	ErrEmptySourceSlice = errors.New("empty slice of secret sources")
 )
 
+type sources []*v1.Settings_SecretOptions_Source
+
+// Len is the number of elements in the collection.
+func (s sources) Len() int {
+	return len(s)
+}
+
+// Less reports whether the element with index i
+// must sort before the element with index j.
+//
+// If both Less(i, j) and Less(j, i) are false,
+// then the elements at index i and j are considered equal.
+// Sort may place equal elements in any order in the final result,
+// while Stable preserves the original input order of equal elements.
+//
+// Less must describe a transitive ordering:
+//   - if both Less(i, j) and Less(j, k) are true, then Less(i, k) must be true as well.
+//   - if both Less(i, j) and Less(j, k) are false, then Less(i, k) must be false as well.
+//
+// Note that floating-point comparison (the < operator on float32 or float64 values)
+// is not a transitive ordering when not-a-number (NaN) values are involved.
+// See Float64Slice.Less for a correct implementation for floating-point values.
+func (s sources) Less(i int, j int) bool {
+	// kube > directory > vault
+	switch iConc := s[i].GetSource().(type) {
+	case *v1.Settings_SecretOptions_Source_Kubernetes:
+		// always put kube first. we should never have 2 kube sources defined, but
+		// if we do they are pulling from the same source so their order shouldn't matter
+		return true
+	case *v1.Settings_SecretOptions_Source_Directory:
+		switch jConc := s[j].GetSource().(type) {
+		case *v1.Settings_SecretOptions_Source_Kubernetes:
+			return false
+		case *v1.Settings_SecretOptions_Source_Vault:
+			return true
+		case *v1.Settings_SecretOptions_Source_Directory:
+			return iConc.Directory.GetDirectory() < jConc.Directory.GetDirectory()
+		}
+	case *v1.Settings_SecretOptions_Source_Vault:
+		switch jConc := s[j].GetSource().(type) {
+		case *v1.Settings_SecretOptions_Source_Vault:
+			return iConc.Vault.String() < jConc.Vault.String()
+		default:
+			return false
+		}
+	}
+	return i < j
+}
+
+// Swap swaps the elements with indexes i and j.
+func (s sources) Swap(i int, j int) {
+	tmp := s[i]
+	s[i] = s[j]
+	s[j] = tmp
+}
+
+func (s *sources) sort() {
+	sort.Stable(s)
+}
+
 type MultiSecretFactoryParams struct {
-	SecretSources      []*v1.Settings_SecretOptions_Source
+	SecretSources      sources
 	SharedCache        memory.InMemoryResourceCache
 	Cfg                **rest.Config
 	Clientset          *kubernetes.Interface
@@ -169,7 +229,7 @@ func NewMultiSecretResourceClientFactory(params MultiSecretFactoryParams) (facto
 	if params.SecretSources == nil {
 		return nil, ErrNilSourceSlice
 	}
-
+	sort.Stable(params.SecretSources)
 	return &MultiSecretResourceClientFactory{
 		secretSources:      params.SecretSources,
 		sharedCache:        params.SharedCache,
@@ -178,43 +238,6 @@ func NewMultiSecretResourceClientFactory(params MultiSecretFactoryParams) (facto
 		kubeCoreCache:      params.KubeCoreCache,
 		vaultClientInitMap: params.VaultClientInitMap,
 	}, nil
-}
-
-type asyncClientInitParams struct {
-	multiClient     *MultiSecretResourceClient
-	rcFactoryFunc   func() (factory.ResourceClientFactory, error)
-	onInitialized   func(*MultiSecretResourceClient, clients.ResourceClient)
-	newClientParams factory.NewResourceClientParams
-	errChan         chan error
-	doneChan        chan struct{}
-}
-
-var initClientAsync = func(ctx context.Context, params *asyncClientInitParams) {
-	var c clients.ResourceClient
-	var err error
-
-	// run the func that produces our factory, including necessary setup for then
-	// factory, in a way that allows us to catch factory creation errors.
-	// it is possible that this should be in the retry?
-	rcFactory, err := params.rcFactoryFunc()
-	if err != nil {
-		params.errChan <- err
-		return
-	}
-
-	err = retry.Do(func() error {
-		var tryErr error
-		c, tryErr = rcFactory.NewResourceClient(ctx, params.newClientParams)
-		return tryErr
-	})
-	if err != nil {
-		params.errChan <- errors.Wrapf(err, "failed to initialize secret resource client from factory of type %T", rcFactory)
-		return
-	}
-
-	params.onInitialized(params.multiClient, c)
-
-	params.doneChan <- struct{}{}
 }
 
 // NewResourceClient implements ResourceClientFactory by creating a new client with each sub-client initialized
@@ -297,8 +320,13 @@ type (
 // Direct access to clientList is deliberately omitted to prevent changing clients
 // with an open Watch leading to inconsistent and undefined behavior
 type MultiSecretResourceClient struct {
-	*sync.RWMutex                          // because we are initializing clients asynchronously in parallel
-	clientList    []clients.ResourceClient // do not use clients.ResourceClients here as that is not for this purpose
+	// guard against concurrent map access
+	*sync.RWMutex
+
+	// do not use clients.ResourceClients here as that is not for this purpose.
+	// clientList is guaranteed to be stable sorted due to sorting the sources at
+	// factory construction time
+	clientList    []clients.ResourceClient
 	hasKubernetes bool
 	hasDirectory  bool
 	hasVault      bool
@@ -354,6 +382,8 @@ func (m *MultiSecretResourceClient) Register() error {
 
 func (m *MultiSecretResourceClient) List(namespace string, opts clients.ListOpts) (resources.ResourceList, error) {
 	list := resources.ResourceList{}
+	m.Lock()
+	defer m.Unlock()
 	for i := range m.clientList {
 		clientList, err := m.clientList[i].List(namespace, opts)
 		if err != nil {
