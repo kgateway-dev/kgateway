@@ -21,12 +21,12 @@ func initializeForKube(ctx context.Context,
 	nsToWatch []string,
 ) error {
 	if cfg == nil {
+		return errors.New("cfg must not be nil")
+	}
+	if *cfg == nil {
 		c, err := kubeutils.GetConfig("", "")
 		if err != nil {
 			return err
-		}
-		if cfg == nil {
-			return errors.New("cfg must not be nil")
 		}
 		*cfg = c
 	}
