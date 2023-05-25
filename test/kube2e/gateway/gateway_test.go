@@ -253,7 +253,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			AfterAll(func() {
 				// Reset the CompressedProxySpec to False
 				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-					Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
 					settings.GetGateway().CompressedProxySpec = false
 				}, testHelper.InstallNamespace)
 
@@ -267,7 +266,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			DescribeTable("can route to upstream", func(compressedProxy bool) {
 				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-					Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
 					settings.GetGateway().CompressedProxySpec = compressedProxy
 				}, testHelper.InstallNamespace)
 
