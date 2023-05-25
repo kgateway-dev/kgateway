@@ -283,7 +283,9 @@ var _ = Describe("Kube2e: gateway", func() {
 					ctx,
 					testRunnerVs.GetMetadata().Ref(),
 					func(resource resources.Resource) resources.Resource {
-						resource.GetMetadata().GetLabels()["gloo-edge-test"] = "update"
+						resource.GetMetadata().Annotations = map[string]string{
+							"gloo-edge-test": "value",
+						}
 						return resource
 					},
 					resourceClientset.VirtualServiceClient().BaseClient())
