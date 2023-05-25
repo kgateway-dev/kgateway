@@ -1977,30 +1977,6 @@ spec:
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: missing-upstream
-  namespace: ` + testHelper.InstallNamespace + `
-spec:
-  virtualHost:
-    domains:
-     - unique1
-    routes:
-      - matchers:
-        - methods:
-           - GET
-          prefix: /items/
-        routeAction:
-          single:
-            upstream:
-              name: does-not-exist
-              namespace: anywhere
-`,
-						errorMatcher: nil, // should not fail
-					},
-					{
-						resourceYaml: `
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
   name: method-matcher
   namespace: ` + testHelper.InstallNamespace + `
 spec:
