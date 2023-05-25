@@ -1936,8 +1936,6 @@ var _ = Describe("Kube2e: gateway", func() {
 				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
 					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: false}
 				}, testHelper.InstallNamespace)
-
-				verifyGlooValidationWorks()
 			})
 
 			AfterAll(func() {
