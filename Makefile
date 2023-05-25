@@ -254,8 +254,8 @@ run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
 run-tests: test
 
 .PHONY: run-nightly-tests
-run-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
-run-tests: test
+run-nightly-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
+run-nightly-tests: test
 
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
