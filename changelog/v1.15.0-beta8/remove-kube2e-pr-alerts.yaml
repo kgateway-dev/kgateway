@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Remove individual alerts on failred regression tests
+    issueLink: https://github.com/solo-io/solo-projects/issues/4964
+    resolvesIssue: false
