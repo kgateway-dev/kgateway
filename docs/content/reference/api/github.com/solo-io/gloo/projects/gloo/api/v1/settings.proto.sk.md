@@ -154,7 +154,7 @@ Represents global settings for all the Gloo components.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | Required. List of configured secret sources. These clients will be initialized in parallel in an indeterminate order. |
+| `sources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | Required. List of configured secret sources. These clients will be sorted and initialized in a stable order kubernetes > directory > vault. |
 
 
 

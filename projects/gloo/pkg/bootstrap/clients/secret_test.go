@@ -129,29 +129,6 @@ var _ = Describe("secrets", func() {
 					Expect(err).To(HaveOccurred())
 				})
 			})
-			When("there are multiple failing clients", func() {
-				BeforeEach(func() {
-					Expect(settings).NotTo(BeNil())
-					secretOpts := settings.GetSecretOptions()
-					secretOpts.Sources = []*v1.Settings_SecretOptions_Source{getOptionsKubeSource(), getOptionsKubeSource()}
-					settings.SecretOptions = secretOpts
-				})
-				It("returns multierror", func() {
-					f, err := SecretFactoryForSettings(ctx, SecretFactoryParams{
-						Settings:   settings,
-						PluralName: v1.SecretCrd.Plural,
-					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(f).To(BeAssignableToTypeOf(&MultiSecretResourceClientFactory{}))
-
-					_, err = f.NewResourceClient(ctx, factory.NewResourceClientParams{
-						ResourceType: &v1.Secret{},
-						Token:        "",
-					})
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring("2 errors occurred"))
-				})
-			})
 		})
 		It("returns a multi client factory", func() {
 			var f factory.ResourceClientFactory

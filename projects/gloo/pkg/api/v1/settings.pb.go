@@ -1189,8 +1189,8 @@ type Settings_SecretOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Required. List of configured secret sources. These clients will be initialized
-	// in parallel in an indeterminate order.
+	// Required. List of configured secret sources. These clients will be sorted and
+	// initialized in a stable order kubernetes > directory > vault.
 	Sources []*Settings_SecretOptions_Source `protobuf:"bytes,1,rep,name=sources,proto3" json:"sources,omitempty"`
 }
 
