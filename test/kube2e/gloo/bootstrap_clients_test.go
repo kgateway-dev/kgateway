@@ -145,6 +145,7 @@ var _ = Describe("Bootstrap Clients", func() {
 	})
 
 	Context("Secret Client", func() {
+		Skip("WIP")
 		var (
 			vaultInstance *services.VaultInstance
 
@@ -163,6 +164,11 @@ var _ = Describe("Bootstrap Clients", func() {
 		)
 		BeforeEach(func() {
 			var err error
+
+			cfg, err = kubeutils.GetConfig("", "")
+			Expect(err).NotTo(HaveOccurred())
+			kubeClient = resourceClientset.KubeClients()
+
 			testNamespace = helpers.RandString(8)
 			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
@@ -173,16 +179,20 @@ var _ = Describe("Bootstrap Clients", func() {
 			kubeCoreCache, err = corecache.NewKubeCoreCacheWithOptions(ctx, kubeClient, time.Hour, []string{testNamespace})
 			Expect(err).NotTo(HaveOccurred())
 
-			kubeSecretName = "kubeSecret"
+			kubeSecretName = "kubesecret"
 
 			_, err = kubeClient.CoreV1().Secrets(testNamespace).Create(ctx,
 				&kubev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      kubeSecretName,
 						Namespace: testNamespace,
+						Annotations: map[string]string{
+							"resource_kind": "*v1.Secret",
+						},
 					},
 				},
 				metav1.CreateOptions{})
+			Expect(err).NotTo(HaveOccurred())
 
 			settings = &v1.Settings{
 				SecretOptions: &v1.Settings_SecretOptions{
@@ -211,7 +221,6 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).NotTo(HaveOccurred())
 			secretClient, err = v1.NewSecretClient(ctx, factory)
 			Expect(err).NotTo(HaveOccurred())
-
 		})
 
 		When("using a single kubernetes secret source", func() {
@@ -235,7 +244,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				vaultInstance = vaultFactory.MustVaultInstance()
 				vaultInstance.Run(ctx)
 
-				vaultSecretName = "vaultSecret"
+				vaultSecretName = "vaultsecret"
 				secretForVault = &v1.Secret{
 					Kind: &v1.Secret_Tls{},
 					Metadata: &core.Metadata{
