@@ -7,7 +7,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 
-	"github.com/avast/retry-go"
 	"github.com/hashicorp/vault/api"
 	_ "github.com/hashicorp/vault/api/auth/aws"
 	awsauth "github.com/hashicorp/vault/api/auth/aws"
@@ -29,11 +28,11 @@ type vaultSecretClientSettings struct {
 // The DefaultPathPrefix may be overridden to allow for non-standard vault mount paths
 const DefaultPathPrefix = "secret"
 
-type VaultClientInitFunc func() (*api.Client, error)
+type VaultClientInitFunc func() *api.Client
 
-func noopClientInitFunc(c *api.Client) VaultClientInitFunc {
-	return func() (*api.Client, error) {
-		return c, nil
+func NoopVaultClientInitFunc(c *api.Client) VaultClientInitFunc {
+	return func() *api.Client {
+		return c
 	}
 }
 
@@ -42,35 +41,12 @@ var (
 )
 
 // NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
-func NewVaultSecretClientFactoryWithRetry(clientInit VaultClientInitFunc, pathPrefix, rootKey string) factory.ResourceClientFactory {
-	client, err := clientInit()
-
-	// If we fail to initialize the client, use a retrybackoff asynchronously.
-	if err != nil || client == nil {
-		go retry.Do(func() error {
-			client, err = clientInit()
-			if err != nil {
-				return err
-			}
-			if client == nil {
-				return ErrNilVaultClient
-			}
-			return nil
-		})
-	}
+func NewVaultSecretClientFactory(clientInit VaultClientInitFunc, pathPrefix, rootKey string) factory.ResourceClientFactory {
 	return &factory.VaultSecretClientFactory{
-		Vault:      client,
+		Vault:      clientInit(),
 		RootKey:    rootKey,
 		PathPrefix: pathPrefix,
 	}
-}
-
-// Deprecated: use NewVaultSecretClientFactoryWithRetry
-func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
-	return NewVaultSecretClientFactoryWithRetry(
-		noopClientInitFunc(client),
-		pathPrefix,
-		rootKey)
 }
 
 func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Client, error) {

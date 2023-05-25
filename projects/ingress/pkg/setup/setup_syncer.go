@@ -72,7 +72,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	secretFactory, err := bootstrap.SecretFactoryForSettingsWithRetry(
+	secretFactory, err := bootstrap.SecretFactoryForSettings(
 		ctx,
 		bootstrap.SecretFactoryParams{
 			Settings:           settings,

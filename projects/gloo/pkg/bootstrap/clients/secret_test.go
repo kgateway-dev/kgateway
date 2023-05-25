@@ -56,7 +56,7 @@ var _ = Describe("secrets", func() {
 		})
 		It("does not return a multi client factory", func() {
 			var f factory.ResourceClientFactory
-			f, err = SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
+			f, err = SecretFactoryForSettings(ctx, SecretFactoryParams{
 				Settings: settings,
 			})
 			Expect(f).NotTo(BeAssignableToTypeOf(&MultiSecretResourceClientFactory{}))
@@ -92,26 +92,19 @@ var _ = Describe("secrets", func() {
 					secretOpts.Sources = append(secretOpts.Sources, getOptionsKubeSource())
 					settings.SecretOptions = secretOpts
 				})
-				It("uses the successful client", func() {
-					f, err := SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
+				It("returns an error", func() {
+					f, err := SecretFactoryForSettings(ctx, SecretFactoryParams{
 						Settings:   settings,
 						PluralName: v1.SecretCrd.Plural,
 					})
 					Expect(err).NotTo(HaveOccurred())
 					Expect(f).To(BeAssignableToTypeOf(&MultiSecretResourceClientFactory{}))
 
-					c, err := f.NewResourceClient(ctx, factory.NewResourceClientParams{
+					_, err = f.NewResourceClient(ctx, factory.NewResourceClientParams{
 						ResourceType: &v1.Secret{},
 						Token:        "",
 					})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(c).To(BeAssignableToTypeOf(&MultiSecretResourceClient{}))
-
-					cMulti := c.(*MultiSecretResourceClient)
-					Expect(cMulti.NumClients()).To(Equal(1))
-					Expect(cMulti.HasDirectory()).To(BeTrue())
-					Expect(cMulti.HasKubernetes()).To(BeFalse())
-					Expect(cMulti.HasVault()).To(BeFalse())
+					Expect(err).To(HaveOccurred())
 				})
 			})
 			When("there is only the failing client", func() {
@@ -122,7 +115,7 @@ var _ = Describe("secrets", func() {
 					settings.SecretOptions = secretOpts
 				})
 				It("returns error", func() {
-					f, err := SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
+					f, err := SecretFactoryForSettings(ctx, SecretFactoryParams{
 						Settings:   settings,
 						PluralName: v1.SecretCrd.Plural,
 					})
@@ -144,7 +137,7 @@ var _ = Describe("secrets", func() {
 					settings.SecretOptions = secretOpts
 				})
 				It("returns multierror", func() {
-					f, err := SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
+					f, err := SecretFactoryForSettings(ctx, SecretFactoryParams{
 						Settings:   settings,
 						PluralName: v1.SecretCrd.Plural,
 					})
@@ -162,7 +155,7 @@ var _ = Describe("secrets", func() {
 		})
 		It("returns a multi client factory", func() {
 			var f factory.ResourceClientFactory
-			f, err = SecretFactoryForSettingsWithRetry(ctx, SecretFactoryParams{
+			f, err = SecretFactoryForSettings(ctx, SecretFactoryParams{
 				Settings: settings,
 			})
 			Expect(f).To(BeAssignableToTypeOf(&MultiSecretResourceClientFactory{}))

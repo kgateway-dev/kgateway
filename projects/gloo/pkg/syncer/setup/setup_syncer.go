@@ -339,7 +339,13 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 
 	getVaultInit := func(vaultSettings *v1.Settings_VaultSecrets) bootstrap_clients.VaultClientInitFunc {
-		return func() (*vaultapi.Client, error) { return bootstrap_clients.VaultClientForSettings(vaultSettings) }
+		return func() *vaultapi.Client {
+			c, err := bootstrap_clients.VaultClientForSettings(vaultSettings)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Error(err)
+			}
+			return c
+		}
 	}
 	vaultInitMap := make(map[int]bootstrap_clients.VaultClientInitFunc)
 	vaultSettings := settings.GetVaultSecretSource()
@@ -1054,7 +1060,7 @@ func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.O
 		}
 	}
 
-	secretFactory, err := bootstrap_clients.SecretFactoryForSettingsWithRetry(ctx,
+	secretFactory, err := bootstrap_clients.SecretFactoryForSettings(ctx,
 		bootstrap_clients.SecretFactoryParams{
 			Settings:           params.settings,
 			SharedCache:        params.memCache,
