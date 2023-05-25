@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/nightly-tests
 
   regression_tests_14:
