@@ -1877,12 +1877,13 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		expectResourceAccepted := func(yaml string) {
-			_, err := install.KubectlApplyOut([]byte(yaml))
-
+			err := install.KubectlApply([]byte(yaml))
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
 			// To ensure that we do not leave artifacts between tests
 			// we clean up the resource after it is accepted
 			err = install.KubectlDelete([]byte(yaml))
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 		}
 
 		verifyGlooValidationWorks := func() {
@@ -2060,6 +2061,20 @@ spec:
 				for _, tc := range testCases {
 					expectResourceRejected(tc.resourceYaml, tc.errorMatcher)
 				}
+			})
+
+		})
+
+		When("allowWarnings=true", Ordered, func() {
+
+			BeforeAll(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+			})
+
+			AfterAll(func() {
+				// Our tests default to using allowWarnings=true, so we just need to ensure we leave it that way
 			})
 
 			It("Accepts valid Gateway resources", func() {
