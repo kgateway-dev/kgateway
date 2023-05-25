@@ -11,7 +11,7 @@ runs:
     if: ${{ failure() }}
     shell: bash
     run: mkdir -p _output/nightly-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-            "name":"nightly"}' > _output/nightly/test-out.json
+            "name":"nightly"}' > _output/nightly-artifacts/test-out.json
   - uses: actions/upload-artifact@v3
     if: ${{ failure() }}
     with:
