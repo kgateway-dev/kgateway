@@ -13,12 +13,12 @@ Kubernetes may be relied on for scheduling, persistence or security. These tests
 1. Execute requests against the Envoy proxy and confirm the expected response. This validates that the Gloo resources have been picked up by the controllers, were been translated correctly into Envoy configuration, the configuration was sent to the Envoy proxy, and the proxy behaves appropriately.
 
 ## CI
-These tests are run by a [GitHub action](https://github.com/solo-io/gloo/blob/master/.github/workflows/regression-tests.yaml) as part of our CI pipeline.
+These tests are run by a [GitHub action](https://github.com/solo-io/gloo/blob/main/.github/workflows/regression-tests.yaml) as part of our CI pipeline.
 
 If a test fails, you can retry it from a [browser window](https://docs.github.com/en/actions/managing-workflow-runs/re-running-workflows-and-jobs#reviewing-previous-workflow-runs). If you do this, please make sure to comment on the Pull Request with a link to the failed logs for debugging purposes.
 
 ## Nightly runs
-Tests are also run on a schedule via another [GitHub action](https://github.com/solo-io/gloo/blob/master/.github/workflows/nightly-tests.yaml). The nightly tests use the latest release - specified with the RELEASED_VERSION environment variable. 
+Tests are also run on a schedule via another [GitHub action](https://github.com/solo-io/gloo/blob/main/.github/workflows/nightly-tests.yaml). The nightly tests use the latest release - specified with the RELEASED_VERSION environment variable. 
 ### Extra considerations for running from released builds
 The `GetTestHelper` util method handles installing gloo from either a local or released build. When testing released builds, tests that interact directly with the helm chart need to download the chart using the version stored in `testHelper.GetChartVersion()`
 
@@ -33,7 +33,7 @@ For these tests to run, we require the following conditions:
   - kind cluster set up and loaded with the images to be installed by the helm chart
 
 #### Use the CI Install Script
-[ci/kind/setup-kind.sh](`https://github.com/solo-io/gloo/blob/master/ci/kind/setup-kind.sh`) gets run in CI to setup the test environment for the above requirements.
+[ci/kind/setup-kind.sh](`https://github.com/solo-io/gloo/blob/main/ci/kind/setup-kind.sh`) gets run in CI to setup the test environment for the above requirements.
 It accepts a number of environment variables, to control the creation of a kind cluster and deployment of Gloo resources to that kind cluster.
 
 | Name                 | Default  | Description                                                                                                         |
@@ -71,7 +71,7 @@ To run the regression tests, your kubeconfig file must point to a running Kubern
 
 Use the same command that CI relies on:
 ```bash
-KUBE2E_TESTS=<test-to-run> make run-ci-regression-tests
+KUBE2E_TESTS=<test-to-run> make run-kube-e2e-tests
 ```
 
 #### Test Environment Variables

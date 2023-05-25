@@ -55,7 +55,7 @@ This tutorial uses files stored on the [Gloo Edge GitHub repository](https://git
 In order to install Gloo Edge using Docker-Compose, let's clone the repository:
 
 ```
-git clone --branch master https://github.com/solo-io/gloo
+git clone --branch main https://github.com/solo-io/gloo
 cd gloo/install/docker-compose-file
 ```
 

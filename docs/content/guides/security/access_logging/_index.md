@@ -349,7 +349,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy-access-logger
 {"level":"info","ts":"2020-03-18T20:18:12.400Z","logger":"access_log","caller":"runner/run.go:48","msg":"received http request","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > ","protocol_version":"HTTP11","request_path":"/","request_method":"GET","response_status":"value:403 "}
 ```
 
-The code for this server implementation is available [here](https://github.com/solo-io/gloo/tree/master/projects/accesslogger). 
+The code for this server implementation is available [here](https://github.com/solo-io/gloo/tree/main/projects/accesslogger). 
 
 ### Building a custom service
 

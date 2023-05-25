@@ -55,27 +55,6 @@ jobs:
     name: Publish Gloo APIs
     runs-on: ubuntu-22.04
     steps:
-      - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-      - name: Free disk space
-        run: |
-          echo "Before clearing disk space:"
-          df -h
-
-          # https://github.com/actions/virtual-environments/issues/709
-          sudo apt-get clean
-
-          # Clean up pre-installed tools
-          # https://github.com/actions/virtual-environments/issues/1918
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-          echo "After clearing disk space:"
-          df -h
       - name: Install SSH Deploy key
         uses: webfactory/ssh-agent@v0.4.1
         with:
@@ -86,11 +65,9 @@ jobs:
           repository: solo-io/gloo
           path: gloo
           ref: ${{ env.SOURCE_COMMIT }}
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: ./gloo/.github/workflows/composite-actions/prep-go-runner
         with:
-          go-version-file: gloo/go.mod
-        id: go
+          working-directory: gloo
       - name: Install Protoc
         uses: arduino/setup-protoc@master
         with:

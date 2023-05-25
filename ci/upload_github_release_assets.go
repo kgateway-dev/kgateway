@@ -100,7 +100,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:       "homebrew-tap", // assumes this repo is forked from PRRepoOwner
 			PRRepoOwner:    repoOwner,      // Make PR to this repo
 			PRRepoName:     "homebrew-tap",
-			PRBranch:       "master",
+			PRBranch:       "main",
 			PRDescription:  "",
 			PRCommitName:   "Solo-io Bot",
 			PRCommitEmail:  "bot@solo.io",
@@ -116,7 +116,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:        "fish-food",
 			PRRepoOwner:     "fishworks",
 			PRRepoName:      "fish-food",
-			PRBranch:        "master",
+			PRBranch:        "main",
 			PRDescription:   "",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",
@@ -133,7 +133,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:        "homebrew-core",
 			PRRepoOwner:     "homebrew",
 			PRRepoName:      "homebrew-core",
-			PRBranch:        "master",
+			PRBranch:        "main",
 			PRDescription:   "Created by Solo-io Bot",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",

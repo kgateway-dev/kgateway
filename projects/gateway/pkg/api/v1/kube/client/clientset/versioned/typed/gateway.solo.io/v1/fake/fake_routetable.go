@@ -117,7 +117,7 @@ func (c *FakeRouteTables) UpdateStatus(ctx context.Context, routeTable *gateways
 // Delete takes name of the routeTable and deletes it. Returns an error if one occurs.
 func (c *FakeRouteTables) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(routetablesResource, c.ns, name), &gatewaysoloiov1.RouteTable{})
+		Invokes(testing.NewDeleteActionWithOptions(routetablesResource, c.ns, name, opts), &gatewaysoloiov1.RouteTable{})
 
 	return err
 }

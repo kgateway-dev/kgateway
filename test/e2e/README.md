@@ -28,7 +28,7 @@ For these tests to run, we require that our gateway-proxy component be previousl
 
 If you have not made local changes to the component, you can rely on a previously published image and no setup is required.
 
-However, if you have made changes to the component, refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
+However, if you have made changes to the component, refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/main/projects/envoyinit) for build instructions.
 
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
@@ -67,7 +67,7 @@ When Ginkgo encounters a [test failure](https://onsi.github.io/ginkgo/#mental-mo
 
 To avoid this clean up, run the test(s) with `WAIT_ON_FAIL=1`. When the test fails, it will halt execution, allowing you to inspect the state of the Envoy instance.
 
-Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/master/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
+Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/main/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
 
 #### Use INVALID_TEST_REQS
 Certain test require environmental conditions to be true for them to succeed. For example, certain tests will only run on a Linux machine.
@@ -91,7 +91,7 @@ sudo ./echoapp2 --port 80 &
 
 ### Notes on AWS Lambda Tests (`test/e2e/aws_test.go`)
 
-In addition to the configuration steps provided above, you will need to do the following to run the [AWS Lambda Tests](https://github.com/solo-io/gloo/blob/master/test/e2e/aws_test.go) locally:
+In addition to the configuration steps provided above, you will need to do the following to run the [AWS Lambda Tests](https://github.com/solo-io/gloo/blob/main/test/e2e/aws_test.go) locally:
   1. Obtain an AWS IAM User account that is part of the Solo.io organization
   2. Create an AWS access key
        - Sign into the AWS console with the account created during step 1

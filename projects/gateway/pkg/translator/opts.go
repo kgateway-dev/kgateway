@@ -13,6 +13,7 @@ type Opts struct {
 	WatchNamespaces                []string
 	Gateways                       factory.ResourceClientFactory
 	MatchableHttpGateways          factory.ResourceClientFactory
+	MatchableTcpGateways           factory.ResourceClientFactory
 	VirtualServices                factory.ResourceClientFactory
 	RouteTables                    factory.ResourceClientFactory
 	Proxies                        factory.ResourceClientFactory

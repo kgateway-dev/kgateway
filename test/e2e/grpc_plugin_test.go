@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
+
+	"github.com/solo-io/gloo/test/e2e"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -97,7 +100,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 				return "", err
 			}
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			return string(body), err
 		}
 	}
@@ -131,7 +134,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 				return "", err
 			}
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			return string(body), err
 		}
 
@@ -143,7 +146,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
 		Metadata: &core.Metadata{
-			Name:      "default",
+			Name:      e2e.DefaultVirtualServiceName,
 			Namespace: writeNamespace,
 		},
 		VirtualHost: &gatewayv1.VirtualHost{
@@ -183,7 +186,7 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 func populateDeprecatedApi(res resources.Resource) resources.Resource {
 	tu := res.(*gloov1.Upstream)
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	bytes, err := os.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 	singleEncoded := []byte(base64.StdEncoding.EncodeToString(bytes))
 	grpcServices := []*grpc.ServiceSpec_GrpcService{

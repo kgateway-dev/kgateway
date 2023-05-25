@@ -15,14 +15,10 @@ The JWT feature was introduced with **Gloo Edge Enterprise**, release 0.13.16. I
   - [Virtual Service](#virtual-service-nested-claims)
 - [Matching against non-string JWT claim values](#matching-against-non-string-jwt-claims)
   - [Matching boolean values](#matching-boolean-values)
-    - [Sample JWT](#sample-jwt-boolean)
-    - [Virtual Service](#virtual-service-boolean)
   - [Matching list values](#matching-list-values)
-    - [Sample JWT](#sample-jwt-list)
-    - [Virtual Service](#virtual-service-list)
 
 ## Setup
-Before you begin, set up basic JWT authorization and configure a Virtual Service to verify JWTs by following the steps in JWT and Access Control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
+Before you begin, set up basic JWT authorization and configure a Virtual Service to verify JWTs by following the steps in [JWT and Access Control]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/" %}}).
 
 ## Matching against nested JWT claims
 
@@ -111,7 +107,7 @@ in the `matcher` field of the [`jwtPrincipal`]({{% versioned_link_path fromRoot=
 
 ### Matching boolean values
 
-#### Sample JWT (boolean)
+**Sample JWT (boolean)**
 
 Consider an example JWT with the following claims:
 ```json
@@ -123,7 +119,7 @@ Consider an example JWT with the following claims:
 }
 ```
 
-#### Virtual Service (boolean)
+**Virtual Service (boolean)**
 
 To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `email_verified`
 claim set to `true`, configure the Virtual Service with the following RBAC policy: 
@@ -181,7 +177,7 @@ spec:
 
 ### Matching list values
 
-#### Sample JWT (list)
+**Sample JWT (list)**
 
 Consider an example JWT with the following claims:
 ```json
@@ -198,7 +194,7 @@ Consider an example JWT with the following claims:
 }
 ```
 
-#### Virtual Service (list)
+**Virtual Service (list)**
 
 To ensure that GET requests to the `/api/pets` endpoint are permitted only to users that have a JWT with the `roles`
 claim that contains `super_user` within its list, configure the Virtual Service with the following RBAC policy:

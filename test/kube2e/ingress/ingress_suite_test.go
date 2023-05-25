@@ -3,7 +3,6 @@ package ingress_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -54,7 +53,7 @@ var _ = BeforeSuite(func() {
 })
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+	values, err := os.CreateTemp("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	// disabling panic threshold

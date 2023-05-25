@@ -22,6 +22,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
      validationServerGrpcMaxSizeBytes: 104857600
  gloo:
+   regexMaxProgramSize: 1024
    enableRestEds: false
    xdsBindAddr: "127.0.0.1:9999"
    restXdsBindAddr: "127.0.0.1:9998"

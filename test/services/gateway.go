@@ -51,6 +51,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"google.golang.org/grpc"
 
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -71,6 +72,7 @@ import (
 type TestClients struct {
 	GatewayClient        gatewayv1.GatewayClient
 	HttpGatewayClient    gatewayv1.MatchableHttpGatewayClient
+	TcpGatewayClient     gatewayv1.MatchableTcpGatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -115,6 +117,11 @@ func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.A
 			return writeErr
 		}
 	}
+	for _, tgw := range snapshot.TcpGateways {
+		if _, writeErr := c.TcpGatewayClient.Write(tgw, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
 	for _, gw := range snapshot.Gateways {
 		if _, writeErr := c.GatewayClient.Write(gw, writeOptions); writeErr != nil {
 			return writeErr
@@ -148,6 +155,12 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 	for _, hgw := range snapshot.HttpGateways {
 		hgwNamespace, hgwName := hgw.GetMetadata().Ref().Strings()
 		if deleteErr := c.HttpGatewayClient.Delete(hgwNamespace, hgwName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, tgw := range snapshot.TcpGateways {
+		tgwNamespace, tgwName := tgw.GetMetadata().Ref().Strings()
+		if deleteErr := c.TcpGatewayClient.Delete(tgwNamespace, tgwName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
@@ -258,6 +271,8 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 	Expect(err).NotTo(HaveOccurred())
 	httpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, bootstrapOpts.MatchableHttpGateways)
 	Expect(err).NotTo(HaveOccurred())
+	tcpGatewayClient, err := gatewayv1.NewMatchableTcpGatewayClient(ctx, bootstrapOpts.MatchableTcpGateways)
+	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, bootstrapOpts.VirtualServices)
 	Expect(err).NotTo(HaveOccurred())
 	upstreamClient, err := gloov1.NewUpstreamClient(ctx, bootstrapOpts.Upstreams)
@@ -272,6 +287,7 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 	return TestClients{
 		GatewayClient:        gatewayClient,
 		HttpGatewayClient:    httpGatewayClient,
+		TcpGatewayClient:     tcpGatewayClient,
 		VirtualServiceClient: virtualServiceClient,
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,
@@ -424,9 +440,9 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		// As a result, we need to construct a client to communicate with that vault instance
 		vaultSecretSource := settings.GetVaultSecretSource()
 
-		vaultClient, err := bootstrap.VaultClientForSettings(vaultSecretSource)
+		vaultClient, err := bootstrap_clients.VaultClientForSettings(vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
-		secretFactory = bootstrap.NewVaultSecretClientFactory(vaultClient, vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
+		secretFactory = bootstrap_clients.NewVaultSecretClientFactory(vaultClient, vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
 	}
 
 	return bootstrap.Opts{
@@ -443,6 +459,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		GraphQLApis:             f,
 		Gateways:                f,
 		MatchableHttpGateways:   f,
+		MatchableTcpGateways:    f,
 		VirtualServices:         f,
 		RouteTables:             f,
 		RouteOptions:            f,

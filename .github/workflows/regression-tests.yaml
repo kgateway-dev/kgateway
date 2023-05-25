@@ -1,9 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'master'
-  pull_request:
+on: pull_request
 
 env:
   VERSION: '1.0.0-ci'
@@ -59,38 +55,20 @@ jobs:
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
-    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-22.04
+    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     strategy:
       fail-fast: false
       matrix:
-        kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade', 'istio']
-        kube-version: [{ node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' }]
+        # upgrade tests are run on LTS but not on main branch, for main they are run nightly
+        # this is the github action version of ternary op
+        kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade']
+        kube-version: [ { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' } ]
+        merge-to-main:
+          - ${{ github.event.pull_request.base.ref == 'main' }}
+        exclude:
+          - merge-to-main: true
+            kube-e2e-test-type: upgrade
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/regression-tests
-
-  notify_slack:
-    runs-on: ubuntu-22.04
-    if: ${{ github.event_name == 'pull_request' && failure() }}
-    needs: [ regression_tests ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: go.mod
-      - uses: actions/download-artifact@v3
-      - name: Set pull_request_url
-        run: echo "pull_request_url=$(cat ${{ github.event_path }} | jq --raw-output .pull_request._links.html.href)" >> $GITHUB_ENV
-      - name: Set direct_message_id
-        run: echo "direct_message_id=$(cat ./.github/workflows/notify-on-regression-failure-list.json | jq -r '."${{ github.actor }}"')" >> $GITHUB_ENV
-      - name: send slack message
-        env:
-          PARENT_JOB_URL: ${{ env.pull_request_url }}       # parent job hyperlink
-          PREAMBLE: "Your recent Gloo PR regression tests"  # text to hyperlink at start of slack message
-          SLACK_CHANNEL: ${{ env.direct_message_id }}       # DM to the user who ran CI
-          SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
-        run: |
-          test_results="$(cat */test-out.json | jq -c --slurp .)"
-          echo $test_results
-          go run .github/workflows/helpers/notify-from-json.go $test_results
+    - uses: ./.github/workflows/composite-actions/regression-tests

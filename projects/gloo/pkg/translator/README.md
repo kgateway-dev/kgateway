@@ -17,7 +17,7 @@ It is a generated file, constructed from a [template](https://github.com/solo-io
 
 ### Proxy
 
-The [Proxy](https://github.com/solo-io/gloo/blob/bc380b36d42fdad7c83ab8dc4f055258b326aeac/projects/gloo/api/v1/proxy.proto#L42) is a container for the entire set of configuration that will to be applied to one or more [Envoy Proxy instances](https://github.com/solo-io/gloo/tree/master/projects/envoyinit).
+The [Proxy](https://github.com/solo-io/gloo/blob/bc380b36d42fdad7c83ab8dc4f055258b326aeac/projects/gloo/api/v1/proxy.proto#L42) is a container for the entire set of configuration that will to be applied to one or more [Envoy Proxy instances](https://github.com/solo-io/gloo/tree/main/projects/envoyinit).
 
 ## Cluster Subsystem Translation
 

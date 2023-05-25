@@ -8,7 +8,7 @@ Create a secret with the given name
 
 ### Synopsis
 
-Create a secret with the given name. The format of the secret data is: `{"tls" : { "ca.crt": [root ca], "tls.crt": [cert chain], "tls.key": [private key]}}`. 
+Create a secret with the given name. The format of the secret data is: `{"tls" : { "ca.crt": [root ca], "tls.crt": [cert chain], "tls.key": [private key], "tls.ocsp-staple": [ocsp staple]}}`. 
 
 ```
 glooctl create secret tls [flags]
@@ -19,6 +19,7 @@ glooctl create secret tls [flags]
 ```
       --certchain string    filename of certchain for secret
   -h, --help                help for tls
+      --ocspstaple string   filename of ocspstaple for secret
       --privatekey string   filename of privatekey for secret
       --rootca string       filename of rootca for secret
 ```

@@ -1,0 +1,76 @@
+name: Gloo Regression Tests
+description: configuration to enable make targets
+  
+runs:
+  using: "composite"
+  steps:
+  - name: Cancel Previous Actions
+    uses: styfle/cancel-workflow-action@0.11.0
+    with:
+      access_token: ${{ github.token }}
+  - name: Free disk space
+    shell: bash
+    run: |
+      echo "Before clearing disk space:"
+      df -h
+
+      # https://github.com/actions/virtual-environments/issues/709
+      sudo apt-get clean
+
+      # Clean up pre-installed tools
+      # https://github.com/actions/virtual-environments/issues/1918
+      sudo rm -rf /usr/share/dotnet
+      sudo rm -rf /opt/ghc
+      sudo rm -rf /usr/local/share/boost
+      sudo rm -rf $AGENT_TOOLSDIRECTORY
+
+      echo "After clearing disk space:"
+      df -h
+  - name: Set up Go
+    uses: actions/setup-go@v4
+    with:
+      go-version-file: go.mod
+    id: go
+  - name: Install kind
+    uses: helm/kind-action@v1.5.0
+    with:
+      install_only: true
+      version: ${{ matrix.kube-version.kind }}
+  - uses: azure/setup-kubectl@v3
+    id: kubectl
+    with:
+      version: ${{ matrix.kube-version.kubectl }}
+  - uses: azure/setup-helm@v3
+    with:
+      version: ${{ matrix.kube-version.helm }}
+  - name: Setup test env
+    shell: bash
+    env:
+      KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+      CLUSTER_NAME: 'kind'
+      CLUSTER_NODE_VERSION: ${{ matrix.kube-version.node }}
+    run: ./ci/kind/setup-kind.sh
+  - name: Testing - kube e2e regression tests
+    env:
+      KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
+    shell: bash
+    run: make install-test-tools run-kube-e2e-tests
+  - uses: testspace-com/setup-testspace@v1
+    with:
+      domain: solo-io.testspace.com
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  - name: Push result to Testspace server
+    shell: bash
+    run: testspace push --verbose "**/junit.xml"
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  - name: save results
+    if: ${{ failure() }}
+    shell: bash
+    run: mkdir -p _output/kube2e-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
+            "name":"${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}"}' > _output/kube2e-artifacts/test-out.json
+  - uses: actions/upload-artifact@v3
+    if: ${{ failure() }}
+    with:
+      name: ${{matrix.kube-e2e-test-type}}@k8s${{matrix.kube-version.kubectl}}-kube-dump
+      path: "_output/kube2e-artifacts"
+      if-no-files-found: warn

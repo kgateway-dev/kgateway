@@ -69,7 +69,7 @@ func (c *matchableHttpGateways) Get(ctx context.Context, name string, options me
 	result = &v1.MatchableHttpGateway{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
 		Do(ctx).
@@ -86,7 +86,7 @@ func (c *matchableHttpGateways) List(ctx context.Context, opts metav1.ListOption
 	result = &v1.MatchableHttpGatewayList{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Do(ctx).
@@ -103,7 +103,7 @@ func (c *matchableHttpGateways) Watch(ctx context.Context, opts metav1.ListOptio
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Watch(ctx)
@@ -114,7 +114,7 @@ func (c *matchableHttpGateways) Create(ctx context.Context, matchableHttpGateway
 	result = &v1.MatchableHttpGateway{}
 	err = c.client.Post().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(matchableHttpGateway).
 		Do(ctx).
@@ -127,7 +127,7 @@ func (c *matchableHttpGateways) Update(ctx context.Context, matchableHttpGateway
 	result = &v1.MatchableHttpGateway{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		Name(matchableHttpGateway.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(matchableHttpGateway).
@@ -142,7 +142,7 @@ func (c *matchableHttpGateways) UpdateStatus(ctx context.Context, matchableHttpG
 	result = &v1.MatchableHttpGateway{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		Name(matchableHttpGateway.Name).
 		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -156,7 +156,7 @@ func (c *matchableHttpGateways) UpdateStatus(ctx context.Context, matchableHttpG
 func (c *matchableHttpGateways) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		Name(name).
 		Body(&opts).
 		Do(ctx).
@@ -171,7 +171,7 @@ func (c *matchableHttpGateways) DeleteCollection(ctx context.Context, opts metav
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(&opts).
@@ -184,7 +184,7 @@ func (c *matchableHttpGateways) Patch(ctx context.Context, name string, pt types
 	result = &v1.MatchableHttpGateway{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
-		Resource("matchablehttpgateways").
+		Resource("httpgateways").
 		Name(name).
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
