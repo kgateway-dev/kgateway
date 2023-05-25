@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gloostringutils "github.com/solo-io/gloo/pkg/utils/stringutils"
 	"github.com/solo-io/go-utils/stringutils"
@@ -28,7 +29,6 @@ var _ = Describe("WebhookValidationConfiguration helm test", func() {
 			testManifest = tm
 		}
 
-		//
 		DescribeTable("Can remove DELETEs from webhook rules", func(resources []string, expectedRemoved int) {
 			timeoutSeconds := 5
 
