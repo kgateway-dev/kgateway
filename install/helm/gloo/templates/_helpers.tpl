@@ -186,3 +186,21 @@ Returns the unique Gateway namespaces as defined by the helm values.
 {{- $proxyNamespaces = $proxyNamespaces | uniq -}}
 {{ toJson $proxyNamespaces }}
 {{- end -}}
+
+
+{{/* 
+Generated the "operations" array for a resource for the ValidatingWebhookConfiguration
+Arguments are a resource name, and a list of resources for which to skip webhook validation for DELETEs
+This list is expected to come from `gateway.validation.webhook.skipDeleteValidationResources`
+If the resource is in the list, or the list contains "*", it will generate ["Create", "Update"]
+Otherwise it will generate ["Create", "Update", "Delete"]
+*/}}
+{{- define "gloo.webhookvalidation.operationsForResource" -}}
+{{- $resource := first . -}}
+{{- $skip := or (index . 1) list -}}
+{{- $operations := list "CREATE" "UPDATE" -}}
+{{- if not (or (has $resource $skip) (has "*" $skip)) -}}
+  {{- $operations = append $operations "DELETE" -}}
+{{- end -}}
+{{ toJson  $operations -}}
+{{- end -}}

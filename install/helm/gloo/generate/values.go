@@ -345,10 +345,11 @@ type GatewayValidation struct {
 }
 
 type Webhook struct {
-	Enabled          *bool             `json:"enabled,omitempty" desc:"enable validation webhook (default true)"`
-	DisableHelmHook  *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
-	TimeoutSeconds   *int              `json:"timeoutSeconds,omitempty" desc:"the timeout for the webhook, defaults to 10"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
+	Enabled                       *bool             `json:"enabled,omitempty" desc:"enable validation webhook (default true)"`
+	DisableHelmHook               *bool             `json:"disableHelmHook,omitempty" desc:"do not create the webhook as helm hook (default false)"`
+	TimeoutSeconds                *int              `json:"timeoutSeconds,omitempty" desc:"the timeout for the webhook, defaults to 10"`
+	ExtraAnnotations              map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the webhook"`
+	SkipDeleteValidationResources []string          `json:"skipDeleteValidationResources,omitempty" desc:"resource types in this list will not use webhook valdaition for DELETEs. Use '*' to skip validation for all resources. Valid values are 'virtualservices', 'routetables','upstreams', 'secrets', 'ratelimitconfigs', and '*'. Invalid values will be accepted but will not be used."`
 	*KubeResourceOverride
 }
 
