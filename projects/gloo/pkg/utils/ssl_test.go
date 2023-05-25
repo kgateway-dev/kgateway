@@ -279,6 +279,44 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.AllowRenegotiation).To(BeTrue())
 		})
 
+		Context("ocsp", func() {
+			Context("staple policy", func() {
+				It("should default to LENIENT_STAPLING for ocsp staple policy", func() {
+					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.OcspStaplePolicy).To(Equal(envoyauth.DownstreamTlsContext_LENIENT_STAPLING))
+				})
+
+				It("should default to LENIENT_STAPLING if staple policy does not exist", func() {
+					downstreamCfg.OcspStaplePolicy = ssl.SslConfig_OcspStaplePolicy(ssl.SslConfig_OcspStaplePolicy_value["INVALID"])
+					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.OcspStaplePolicy).To(Equal(envoyauth.DownstreamTlsContext_LENIENT_STAPLING))
+				})
+
+				DescribeTable("set ocsp staple policy when provided", func(policy ssl.SslConfig_OcspStaplePolicy, expected envoyauth.DownstreamTlsContext_OcspStaplePolicy) {
+					downstreamCfg.OcspStaplePolicy = policy
+					cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg.OcspStaplePolicy).To(Equal(expected))
+				},
+					Entry("MUST_STAPLE", ssl.SslConfig_MUST_STAPLE, envoyauth.DownstreamTlsContext_MUST_STAPLE),
+					Entry("LENIENT_STAPLING", ssl.SslConfig_LENIENT_STAPLING, envoyauth.DownstreamTlsContext_LENIENT_STAPLING),
+					Entry("STRICT_STAPLING", ssl.SslConfig_STRICT_STAPLING, envoyauth.DownstreamTlsContext_STRICT_STAPLING),
+				)
+			})
+
+			// Not testing that the staple is set, as it is a generated `der` file from an OCSP server, which should be tested in an E2E test.
+			Context("staple response", func() {
+				It("should not set ocsp staple if none is provided", func() {
+					cfg, err := configTranslator.ResolveCommonSslConfig(downstreamCfg, secrets, true)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(len(cfg.TlsCertificates)).To(Equal(1))
+					Expect(cfg.TlsCertificates[0].OcspStaple).To(BeNil())
+				})
+			})
+		})
+
 		Context("san", func() {
 			It("should error with san and not rootca", func() {
 				tlsSecret.RootCa = ""

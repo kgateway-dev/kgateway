@@ -8,11 +8,11 @@ body:
       label: Version
       description: Which version of the Gloo Edge docs does this affect?
       options:
-        - master
-        - 1.13.x (latest)
+        - main
+        - 1.14.x (latest)
+        - 1.13.x 
         - 1.12.x
         - 1.11.x
-        - 1.10.x
     validations:
       required: true
   - type: textarea

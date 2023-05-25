@@ -3,7 +3,6 @@ package knative_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -85,7 +84,7 @@ var _ = AfterSuite(func() {
 })
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+	values, err := os.CreateTemp("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	// disabling panic threshold
@@ -104,7 +103,7 @@ gatewayProxies:
 }
 
 func deployKnativeTestService(filePath string) {
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filePath)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	// The webhook may take a bit of time to initially be responsive
@@ -115,7 +114,7 @@ func deployKnativeTestService(filePath string) {
 }
 
 func deleteKnativeTestService(filePath string) error {
-	b, err := ioutil.ReadFile(filePath)
+	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}

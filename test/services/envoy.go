@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -72,7 +71,7 @@ type fileBootstrapBuilder struct {
 }
 
 func (fbb *fileBootstrapBuilder) Build(ei *EnvoyInstance) string {
-	templateBytes, err := ioutil.ReadFile(fbb.file)
+	templateBytes, err := os.ReadFile(fbb.file)
 	if err != nil {
 		panic(err)
 	}
@@ -252,7 +251,7 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 		}, nil
 	case "linux":
 		// try to grab one form docker...
-		tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "envoy")
+		tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "envoy")
 		if err != nil {
 			return nil, err
 		}
@@ -274,7 +273,7 @@ docker rm $CID
     `, envoyImageTag, envoyImageTag)
 		scriptfile := filepath.Join(tmpdir, "getenvoy.sh")
 
-		ioutil.WriteFile(scriptfile, []byte(bash), 0755)
+		os.WriteFile(scriptfile, []byte(bash), 0755)
 
 		cmd := exec.Command("bash", scriptfile)
 		cmd.Dir = tmpdir

@@ -3,7 +3,6 @@ package upgrade_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -334,7 +333,7 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 }
 
 func getHelmUpgradeValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+	values, err := os.CreateTemp("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	_, err = values.Write([]byte(`

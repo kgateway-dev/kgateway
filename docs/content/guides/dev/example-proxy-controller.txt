@@ -35,7 +35,7 @@ name of our managed `Proxy` custom resource (`my-cool-proxy`), and configure it 
 Tested with Gloo Edge v1.6.0-beta16 and Gloo Edge Enterprise v1.6.0-beta10.
 {{% /notice %}}
 
-You can view the complete code written in this section [here](https://github.com/solo-io/gloo/tree/master/example/proxycontroller).
+You can view the complete code written in this section [here](https://github.com/solo-io/gloo/tree/main/example/proxycontroller).
 
 If you'd prefer, you can skip to [running the example](#run) and tinker with that as desired rather than follow along below.
 
@@ -95,7 +95,7 @@ replace (
 ```
 {{% /expand %}}
 
-The basis of this `go.mod` file is from the [`Gloo Edge go.mod file`](https://github.com/solo-io/gloo/blob/master/go.mod)
+The basis of this `go.mod` file is from the [`Gloo Edge go.mod file`](https://github.com/solo-io/gloo/blob/main/go.mod)
 
 
 
@@ -587,8 +587,8 @@ func must(err error) {
 
 ### Run
 
-While it's possible to package [this application in a Docker container](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/Dockerfile)
-and [deploy it as a pod](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/install/proxycontroller.yaml)
+While it's possible to package [this application in a Docker container](https://github.com/solo-io/gloo/tree/main/example/proxycontroller/Dockerfile)
+and [deploy it as a pod](https://github.com/solo-io/gloo/tree/main/example/proxycontroller/install/proxycontroller.yaml)
 inside of Kubernetes, let's just try running it locally. [Make sure you have Gloo Edge installed]({{% versioned_link_path fromRoot="/installation" %}})
 in your cluster so that Discovery will create some Upstreams for us.
 
@@ -599,7 +599,7 @@ in your cluster so that Discovery will create some Upstreams for us.
 go run example/proxycontroller/proxycontroller.go
 {{< /tab >}}
 {{< tab name="run in k8s" codelang="bash">}}
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/proxycontroller/install/proxycontroller.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/main/example/proxycontroller/install/proxycontroller.yaml
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -881,7 +881,7 @@ CRD, `my-cool-proxy`. Let's do it!
 If you'd prefer, you can deploy the `my-cool-proxy` envoy configmap, service, and deployment in one step:
 
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/proxycontroller/install/my-cool-proxy.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/main/example/proxycontroller/install/my-cool-proxy.yaml
 ```
 and then skip to [testing the proxy](#testing-the-proxy).
 

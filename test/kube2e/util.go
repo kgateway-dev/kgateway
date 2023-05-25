@@ -2,7 +2,6 @@ package kube2e
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -149,7 +148,7 @@ func UpdateSettingsWithPropagationDelay(updateSettings func(settings *v1.Setting
 }
 
 func ToFile(content string) string {
-	f, err := ioutil.TempFile("", "")
+	f, err := os.CreateTemp("", "")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	n, err := f.WriteString(content)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())

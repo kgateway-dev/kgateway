@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+
 	gloo_matchers "github.com/solo-io/solo-kit/test/matchers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -541,6 +543,30 @@ var _ = Describe("Http Translator", func() {
 
 			It("should error when a virtual service has invalid regex", func() {
 				snap.VirtualServices[0].VirtualHost.Routes[0].Matchers[0] = &matchers.Matcher{PathSpecifier: &matchers.Matcher_Regex{Regex: "["}}
+				params := NewTranslatorParams(ctx, snap, reports)
+
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+				Expect(reports.Validate()).To(HaveOccurred())
+
+				errs := reports.ValidateStrict()
+				Expect(errs).To(HaveOccurred())
+				Expect(errs.Error()).To(ContainSubstring("missing closing ]: `[`"))
+			})
+			It("should error when a virtual service has invalid regex in host rewrite options", func() {
+				hostRegexRewriteOption := &gloov1.RouteOptions{HostRewriteType: &gloov1.RouteOptions_HostRewritePathRegex{HostRewritePathRegex: &v3.RegexMatchAndSubstitute{Pattern: &v3.RegexMatcher{Regex: "["}}}}
+				snap.VirtualServices[0].VirtualHost.Routes[0].Options = hostRegexRewriteOption
+				params := NewTranslatorParams(ctx, snap, reports)
+
+				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+				Expect(reports.Validate()).To(HaveOccurred())
+
+				errs := reports.ValidateStrict()
+				Expect(errs).To(HaveOccurred())
+				Expect(errs.Error()).To(ContainSubstring("missing closing ]: `[`"))
+			})
+			It("should error when a virtual service has invalid regex in regexRewrite options", func() {
+				regexRewriteOption := &gloov1.RouteOptions{RegexRewrite: &v3.RegexMatchAndSubstitute{Pattern: &v3.RegexMatcher{Regex: "["}}}
+				snap.VirtualServices[0].VirtualHost.Routes[0].Options = regexRewriteOption
 				params := NewTranslatorParams(ctx, snap, reports)
 
 				_ = translator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])

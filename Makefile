@@ -93,15 +93,15 @@ else
   endif
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.4-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.6-patch1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
-# Returns the name of the default branch in the remote `origin` repository, e.g. `master`
+# Returns the name of the default branch in the remote `origin` repository, e.g. `main`
 DEFAULT_BRANCH_NAME := $(shell git remote show origin | sed -n '/HEAD branch/s/.*: //p')
 
 # Print the branches that contain the current commit and keep only the one that
-# EXACTLY matches the name of the default branch (avoid matching e.g. `master-2`).
+# EXACTLY matches the name of the default branch (avoid matching e.g. `main-2`).
 # If we get back a result, it mean we are on the default branch.
 EMPTY_IF_NOT_DEFAULT := $(shell git branch --contains $(CHECKED_OUT_SHA) | grep -ow $(DEFAULT_BRANCH_NAME))
 
@@ -224,7 +224,7 @@ check-spelling:
 
 GINKGO_VERSION ?= $(shell echo $(shell go list -m github.com/onsi/ginkgo/v2) | cut -d' ' -f2)
 GINKGO_ENV ?= GOLANG_PROTOBUF_REGISTRATION_CONFLICT=ignore ACK_GINKGO_RC=true ACK_GINKGO_DEPRECATIONS=$(GINKGO_VERSION)
-GINKGO_FLAGS ?= -tags=purego -compilers=4 --trace -progress -race --fail-fast -fail-on-pending --randomize-all
+GINKGO_FLAGS ?= -tags=purego --trace -progress -race --fail-fast -fail-on-pending --randomize-all --compilers=4
 GINKGO_REPORT_FLAGS ?= --json-report=test-report.json --junit-report=junit.xml -output-dir=$(OUTPUT_DIR)
 GINKGO_COVERAGE_FLAGS ?= --cover --covermode=count --coverprofile=coverage.cov
 TEST_PKG ?= ./... # Default to run all tests
@@ -238,7 +238,7 @@ install-test-tools: check-go-version
 	go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 .PHONY: test
-test: install-test-tools ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
+test: ## Run all tests, or only run the test package at {TEST_PKG} if it is specified
 	$(GINKGO_ENV) $(DEPSGOBIN)/ginkgo -ldflags=$(LDFLAGS) \
 	$(GINKGO_FLAGS) $(GINKGO_REPORT_FLAGS) $(GINKGO_USER_FLAGS) \
 	$(TEST_PKG)
@@ -250,16 +250,22 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
+run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
 run-tests: test
 
 .PHONY: run-e2e-tests
-run-e2e-tests: TEST_PKG = ./test/e2e/ ./test/consulvaulte2e ## Run all E2E tests
+run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
+run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
 run-e2e-tests: test
 
-.PHONY: run-ci-regression-tests
-run-ci-regression-tests: install-test-tools ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
-run-ci-regression-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS)
-run-ci-regression-tests: test
+.PHONY: run-hashicorp-e2e-tests
+run-hashicorp-e2e-tests: TEST_PKG = ./test/consulvaulte2e/
+run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
+run-hashicorp-e2e-tests: test
+
+.PHONY: run-kube-e2e-tests
+run-kube-e2e-tests: TEST_PKG = ./test/kube2e/$(KUBE2E_TESTS) ## Run the Kubernetes E2E Tests in the {KUBE2E_TESTS} package
+run-kube-e2e-tests: test
 
 #----------------------------------------------------------------------------------
 # Clean
@@ -296,7 +302,7 @@ clean-solo-kit-gen:
 
 .PHONY: clean-cli-docs
 clean-cli-docs:
-	rm docs/content/reference/cli/glooctl*
+	rm docs/content/reference/cli/glooctl* || true # ignore error if file doesn't exist
 
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
@@ -306,31 +312,50 @@ clean-cli-docs:
 generate-all: generated-code
 
 .PHONY: generated-code
-generated-code: check-go-version clean-vendor-any clean-solo-kit-gen clean-cli-docs ## Execute Gloo Edge codegen
-generated-code: $(OUTPUT_DIR)/.generated-code
+generated-code: check-go-version clean-solo-kit-gen ## Run all codegen and formatting as required by CI
+generated-code: go-generate-all generate-cli-docs getter-check mod-tidy
 generated-code: verify-enterprise-protos generate-helm-files update-licenses
 generated-code: fmt
 
-# Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
-# Glooctl enterprise docs are pushed from the private repo.
-# TODO(EItanya): make mockgen work for gloo
-$(OUTPUT_DIR)/.generated-code:
+.PHONY: go-generate-all
+go-generate-all: clean-vendor-any ## Run all go generate directives in the repo, including codegen for protos, mockgen, and more
 	GO111MODULE=on go generate ./...
+
+.PHONY: go-generate-apis
+go-generate-apis: clean-vendor-any ## Runs the generate directive in generate.go, which executes codegen for protos
+	GO111MODULE=on go generate generate.go
+
+.PHONY: go-generate-mocks
+go-generate-mocks: clean-vendor-any ## Runs all generate directives for mockgen in the repo
+	GO111MODULE=on go generate -run="mockgen" ./...
+
+.PHONY: generate-cli-docs
+generate-cli-docs: clean-cli-docs ## Generates documentation for glooctl
 	GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+
+.PHONY: getter-check
+getter-check:
 	$(DEPSGOBIN)/gettercheck -ignoretests -ignoregenerated -write ./...
+
+.PHONY: mod-tidy
+mod-tidy:
 	go mod tidy
-	touch $@
 
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
 	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go $(STDERR_SILENCE_REDIRECT)
-	
+
 # makes sure you are running codegen with the correct Go version
 .PHONY: check-go-version
 check-go-version:
 	./ci/check-go-version.sh
 
+.PHONY: generated-code-apis
+generated-code-apis: clean-solo-kit-gen go-generate-apis fmt ## Executes the targets necessary to generate formatted code from all protos
+
+.PHONY: generated-code-cleanup
+generated-code-cleanup: getter-check mod-tidy update-licenses fmt ## Executes the targets necessary to cleanup and format code
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -620,7 +645,7 @@ ifeq ($(RELEASE), "false")
 endif
 
 .PHONY: generate-helm-files
-generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
@@ -790,8 +815,15 @@ kind-build-and-load-%: %-docker kind-load-% ; ## Use to build specified image an
 
 # Update the docker image used by a deployment
 # This works for most of our deployments because the deployment name and container name both match
+# NOTE TO DEVS:
+#	I explored using a special format of the wildcard to pass deployment:image,
+# 	but ran into some challenges with that pattern, while calling this target from another one.
+#	It could be a cool extension to support, but didn't feel pressing so I stopped
 kind-set-image-%:
+	kubectl rollout pause deployment $* -n $(INSTALL_NAMESPACE) || true
 	kubectl set image deployment/$* $*=$(IMAGE_REGISTRY)/$*:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment $* -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment $* -n $(INSTALL_NAMESPACE)
 
 # Reload an image in KinD
 # This is useful to developers when changing a single component
@@ -804,7 +836,11 @@ kind-reload-%: kind-build-and-load-% kind-set-image-% ; ## Use to build specifie
 # This is an alias to remedy the fact that the deployment is called gateway-proxy
 # but our make targets refer to gloo-envoy-wrapper
 kind-reload-gloo-envoy-wrapper: kind-build-and-load-gloo-envoy-wrapper
+kind-reload-gloo-envoy-wrapper:
+	kubectl rollout pause deployment gateway-proxy -n $(INSTALL_NAMESPACE) || true
 	kubectl set image deployment/gateway-proxy gateway-proxy=$(IMAGE_REGISTRY)/gloo-envoy-wrapper:$(VERSION) -n $(INSTALL_NAMESPACE)
+	kubectl patch deployment gateway-proxy -n $(INSTALL_NAMESPACE) -p '{"spec": {"template":{"metadata":{"annotations":{"gloo-kind-last-update":"$(shell date)"}}}} }'
+	kubectl rollout resume deployment gateway-proxy -n $(INSTALL_NAMESPACE)
 
 .PHONY: kind-build-and-load ## Use to build all images and load them into kind
 kind-build-and-load: kind-build-and-load-gloo
@@ -852,7 +888,7 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 # The minimum version to scan with trivy
-MIN_SCANNED_VERSION ?= v1.10.0
+MIN_SCANNED_VERSION ?= v1.11.0
 
 .PHONY: run-security-scans
 run-security-scan:

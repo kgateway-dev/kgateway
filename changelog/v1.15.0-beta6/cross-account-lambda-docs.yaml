@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add user guide for cross-account lambda support
+    issueLink: https://github.com/solo-io/gloo/issues/7965
+  - type: FIX
+    description: fixes flake in generated_kube_types_test.go
+    issueLink: https://github.com/solo-io/gloo/issues/8099
+    resolvesIssue: false

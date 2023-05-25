@@ -31,6 +31,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&GatewayList{},
 		&MatchableHttpGateway{},
 		&MatchableHttpGatewayList{},
+		&MatchableTcpGateway{},
+		&MatchableTcpGatewayList{},
 		&RouteOption{},
 		&RouteOptionList{},
 		&RouteTable{},

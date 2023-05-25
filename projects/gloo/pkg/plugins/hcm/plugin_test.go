@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"time"
@@ -372,7 +372,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(BeNil())
 			defer expectedFieldsJsonFile.Close()
 
-			expectedFieldsJsonByteValue, err := ioutil.ReadAll(expectedFieldsJsonFile)
+			expectedFieldsJsonByteValue, err := io.ReadAll(expectedFieldsJsonFile)
 			Expect(err).To(BeNil())
 
 			var expectedFields []string

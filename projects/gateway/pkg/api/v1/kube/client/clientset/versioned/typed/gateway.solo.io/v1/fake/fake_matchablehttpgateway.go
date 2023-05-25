@@ -36,7 +36,7 @@ type FakeMatchableHttpGateways struct {
 	ns   string
 }
 
-var matchablehttpgatewaysResource = schema.GroupVersionResource{Group: "gateway.solo.io", Version: "v1", Resource: "matchablehttpgateways"}
+var matchablehttpgatewaysResource = schema.GroupVersionResource{Group: "gateway.solo.io", Version: "v1", Resource: "httpgateways"}
 
 var matchablehttpgatewaysKind = schema.GroupVersionKind{Group: "gateway.solo.io", Version: "v1", Kind: "MatchableHttpGateway"}
 
@@ -117,7 +117,7 @@ func (c *FakeMatchableHttpGateways) UpdateStatus(ctx context.Context, matchableH
 // Delete takes name of the matchableHttpGateway and deletes it. Returns an error if one occurs.
 func (c *FakeMatchableHttpGateways) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(matchablehttpgatewaysResource, c.ns, name), &gatewaysoloiov1.MatchableHttpGateway{})
+		Invokes(testing.NewDeleteActionWithOptions(matchablehttpgatewaysResource, c.ns, name, opts), &gatewaysoloiov1.MatchableHttpGateway{})
 
 	return err
 }

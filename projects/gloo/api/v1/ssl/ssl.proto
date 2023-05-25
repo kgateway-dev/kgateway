@@ -49,6 +49,24 @@ message SslConfig {
     // transport socket negotiations. If this expires before the transport reports connection
     // establishment, the connection is summarily closed.
     google.protobuf.Duration transport_socket_connect_timeout = 10;
+
+    enum OcspStaplePolicy {
+        // OCSP responses are optional. If none is provided, or the provided response is expired, the associated certificate will be used without the OCSP response.
+        LENIENT_STAPLING = 0;
+        // OCSP responses are optional. If none is provided, the associated certificate will be used without the OCSP response.
+        // If a response is present, but expired, the certificate will not be used for connections.
+        // If no suitable certificate is found, the connection is rejected.
+        STRICT_STAPLING = 1;
+        // OCSP responses are required. If no `ocsp_staple` is set on a certificate, configuration will fail.
+        // If a response is expired, the associated certificate will not be used.
+        // If no suitable certificate is found, the connection is rejected.
+        MUST_STAPLE = 2;
+    }
+
+    // The OCSP staple policy to use for this listener.
+    // Defaults to `LENIENT_STAPLING`.
+    // https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/tls/v3/tls.proto#enum-extensions-transport-sockets-tls-v3-downstreamtlscontext-ocspstaplepolicy
+    OcspStaplePolicy ocsp_staple_policy = 11;
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
@@ -57,6 +75,9 @@ message SSLFiles {
     string tls_key = 2;
     // for client cert validation. optional
     string root_ca = 3;
+    // stapled ocsp response. optional
+    // should be der-encoded
+    string ocsp_staple = 4;
 }
 
 // SslConfig contains the options necessary to configure an upstream to use TLS origination

@@ -500,6 +500,8 @@ spec:
                                           type: string
                                         sslFiles:
                                           properties:
+                                            ocspStaple:
+                                              type: string
                                             rootCa:
                                               type: string
                                             tlsCert:
@@ -763,6 +765,8 @@ spec:
                     type: string
                   sslFiles:
                     properties:
+                      ocspStaple:
+                        type: string
                       rootCa:
                         type: string
                       tlsCert:
@@ -1302,6 +1306,9 @@ spec:
               protocolSelection:
                 type: string
                 x-kubernetes-int-or-string: true
+              proxyProtocolVersion:
+                nullable: true
+                type: string
               respectDnsTtl:
                 nullable: true
                 type: boolean
@@ -1363,6 +1370,8 @@ spec:
                     type: string
                   sslFiles:
                     properties:
+                      ocspStaple:
+                        type: string
                       rootCa:
                         type: string
                       tlsCert:
@@ -1565,6 +1574,7 @@ spec:
                         type: object
                     type: object
                   useTls:
+                    nullable: true
                     type: boolean
                 type: object
               useHttp2:

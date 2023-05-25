@@ -2,18 +2,18 @@ name: Docs
 
 env:
     SLACK_DEBUG_TESTING: false      # when set to "true", send notifications to #slack-integration-testing.  Otherwise, post to #edge-team-bots
-    MIN_SCANNED_VERSION: 'v1.10.0'  # ⚠️ you should also change trivy-analysis-scheduled.yaml ⚠️
+    MIN_SCANNED_VERSION: 'v1.11.0'  # ⚠️ you should also change trivy-analysis-scheduled.yaml ⚠️
 on:
   push:
     branches:
-    - 'master'
+    - 'main'
+    - 'v1.14.x'
     - 'v1.13.x'
     - 'v1.12.x'
     - 'v1.11.x'
-    - 'v1.10.x'
   pull_request:
     branches:
-    - 'master'
+    - 'main'
   workflow_run:
     workflows: ["security-scan-scheduled"]
     types:
@@ -69,38 +69,15 @@ jobs:
     if: needs.prepare_env.outputs.should-build-docs == 'true'
     runs-on: ubuntu-22.04
     steps:
-    - name: Free disk space
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      run: |
-        echo "Before clearing disk space:"
-        df -h
-
-        # https://github.com/actions/virtual-environments/issues/709
-        sudo apt-get clean
-
-        # Clean up pre-installed tools
-        # https://github.com/actions/virtual-environments/issues/1918
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf /usr/local/share/boost
-        sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-        echo "After clearing disk space:"
-        df -h
     - name: Check out code into the Go module directory
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: actions/checkout@v3
       with:
-        ref: master
-    - name: Override master checkout if deploying PR test
+        ref: main
+    - name: Override main checkout if deploying PR test
       if: ${{ github.event_name == 'pull_request' }}
       uses: actions/checkout@v3
-    - name: Set up Go
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
-      uses: actions/setup-go@v4
-      with:
-        go-version-file: go.mod
-      id: go
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
     - name: Setup Hugo
       if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: peaceiris/actions-hugo@v2
@@ -118,11 +95,11 @@ jobs:
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        USE_PR_SHA_AS_MASTER: ${{ github.event_name == 'pull_request' }}
+        USE_PR_SHA_AS_MAIN: ${{ github.event_name == 'pull_request' }}
         PULL_REQUEST_SHA: ${{ github.event.pull_request.head.sha }}
     - name: Deploy to Firebase (live docs)
       # Do not publish docs if this workflow was triggered by a pull request
-      # Only deploy if this was triggered by a push to master, or a successful trivy workflow_run
+      # Only deploy if this was triggered by a push to main, or a successful trivy workflow_run
       if: ${{ github.event_name != 'pull_request' }}
       uses: FirebaseExtended/action-hosting-deploy@main
       with:
@@ -132,7 +109,7 @@ jobs:
         channelId: live
         entryPoint: ./docs/ci
     - name: Deploy to Firebase (preview)
-      # Generate live preview of docs for PRs to master
+      # Generate live preview of docs for PRs to main
       if: ${{ github.event_name == 'pull_request' && !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       uses: FirebaseExtended/action-hosting-deploy@main
       with:
@@ -146,5 +123,5 @@ jobs:
       run : |
         curl -X POST\
              -H 'Content-type: application/json'\
-             --data '{"text":"Gloo Edge has <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|failed a docs build> on `master` branch"}'\
+             --data '{"text":"Gloo Edge has <https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}|failed a docs build> on `main` branch"}'\
              ${{ env.SLACK_DEBUG_TESTING == true && secrets.SLACK_INTEGRATION_TESTING_WEBHOOK || secrets.EDGE_TEAM_BOTS_WEBHOOK }}
