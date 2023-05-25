@@ -1946,6 +1946,8 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			It("Rejects invalid Gateway resources", func() {
+				verifyGlooValidationWorks()
+
 				// specifically avoiding using a DescribeTable here in order to avoid reinstalling
 				// for every test case
 				type testCase struct {
