@@ -31,7 +31,7 @@ var _ = Describe("consul", func() {
 
 		ctx, cancel = context.WithCancel(context.Background())
 
-		consulInstance = consulFactory.MustConsulInstanceWithClient()
+		consulInstance = consulFactory.MustConsulInstance()
 		err := consulInstance.Run(ctx)
 		Expect(err).NotTo(HaveOccurred())
 	})

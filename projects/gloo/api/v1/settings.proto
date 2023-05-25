@@ -71,8 +71,8 @@ message Settings {
             };
         }
 
-        // Required. List of configured secret sources. These clients will be initialized
-        // in parallel in an indeterminate order.
+        // Required. List of configured secret sources. These clients will be sorted and
+        // initialized in a stable order kubernetes > directory > vault.
         repeated Source sources = 1;
     }
 
