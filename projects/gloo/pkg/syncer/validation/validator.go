@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"fmt"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -37,6 +38,10 @@ func (v *validator) Validate(ctx context.Context, snapshot *gloosnapshot.ApiSnap
 	reports := reporter.ResourceReports{}
 	for _, ex := range v.extensions {
 		intermediateReports := make(reporter.ResourceReports)
+		fmt.Println("RATE LIMIT CONFIGS BEFORE VALIDATION")
+		for _, rlc := range snapshot.Ratelimitconfigs {
+			fmt.Printf("rlc: %+v\n", *rlc)
+		}
 		ex.Sync(ctx, snapshot, v.settings, v.snapshotSetter, intermediateReports)
 		reports.Merge(intermediateReports)
 	}
