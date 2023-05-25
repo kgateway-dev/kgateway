@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -103,10 +102,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 	logger := contextutils.LoggerFrom(ctx)
 	reports := make(reporter.ResourceReports)
 	var multiErr *multierror.Error
-	fmt.Println("RATE LIMIT CONFIGS BEFORE GATEWAY TRANSLATION")
-	for _, rlc := range snap.Ratelimitconfigs {
-		fmt.Printf("rlcbgwt: %+v\n", *rlc)
-	}
+
 	// If gateway controller is enabled, run the gateway translation to generate proxies.
 	// Use the ProxyClient interface to persist them either to an in-memory store or etcd as configured at startup.
 	if s.gatewaySyncer != nil {
@@ -115,27 +111,17 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 			multiErr = multierror.Append(multiErr, eris.Wrapf(err, "translating proxies"))
 		}
 	}
-	fmt.Println("RATE LIMIT CONFIGS BEFORE SYNCING ENVOY")
-	for _, rlc := range snap.Ratelimitconfigs {
-		fmt.Printf("rlcbse: %+v\n", *rlc)
-	}
+
 	// Execute the EnvoySyncer
 	// This will update the xDS SnapshotCache for each entry that corresponds to a Proxy in the API Snapshot
 	s.syncEnvoy(ctx, snap, reports)
-	fmt.Println("RATE LIMIT CONFIGS BEFORE SYNCING EXTENSIONS")
-	for _, rlc := range snap.Ratelimitconfigs {
-		fmt.Printf("rlcbsx: %+v\n", *rlc)
-	}
+
 	// Execute the SyncerExtensions
 	// Each of these are responsible for updating a single entry in the SnapshotCache
 	for _, syncerExtension := range s.syncerExtensions {
 		intermediateReports := make(reporter.ResourceReports)
 		syncerExtension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
 		reports.Merge(intermediateReports)
-	}
-	fmt.Println("RATE LIMIT CONFIGS AFTER SYNCING EXTENSIONS")
-	for _, rlc := range snap.Ratelimitconfigs {
-		fmt.Printf("rlcasx: %+v\n", *rlc)
 	}
 	// Update resource status metrics
 	for resource, report := range reports {

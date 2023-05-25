@@ -3,6 +3,7 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -243,7 +244,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		// allow writes if storage is already broken
 		return nil, nil
 	}
-
+	fmt.Println("RATE LIMIT CONFIGS ON SNAPSHOT CLONE")
+	for _, rlc := range snapshotClone.Ratelimitconfigs {
+		fmt.Printf("rlcosc: %+v\n", *rlc)
+	}
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
@@ -262,8 +266,17 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	)
 	gatewaysByProxy := utils.GatewaysByProxyName(snapshotClone.Gateways)
 	// translate all the proxies
+	fmt.Println("START LOOP")
 	for proxyName, gatewayList := range gatewaysByProxy {
+		fmt.Println("RATE LIMIT CONFIGS BEFORE VALIDATOR TRANSLATION")
+		for _, rlc := range snapshotClone.Ratelimitconfigs {
+			fmt.Printf("rlcbvt: %+v\n", *rlc)
+		}
 		proxy, reports := v.translator.Translate(ctx, proxyName, snapshotClone, gatewayList)
+		fmt.Println("RATE LIMIT CONFIGS AFTER VALIDATOR TRANSLATION")
+		for _, rlc := range snapshotClone.Ratelimitconfigs {
+			fmt.Printf("rlcavt: %+v\n", *rlc)
+		}
 		validate := reports.ValidateStrict
 		if v.allowWarnings {
 			validate = reports.Validate
@@ -280,6 +293,10 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		proxies = append(proxies, proxy)
 		// validate the proxy with gloo this occurs in projects/gloo/pkg/validation/gloo_validator.go
+		fmt.Println("RATE LIMIT CONFIGS BEFORE GLOO VALIDATION")
+		for _, rlc := range snapshotClone.Ratelimitconfigs {
+			fmt.Printf("rlcbgv: %+v\n", *rlc)
+		}
 		glooReports, err := v.glooValidator(ctx, proxy, opts.Resource, opts.Delete)
 		if err != nil {
 			err = errors.Wrapf(err, failedGlooValidation)
@@ -314,7 +331,11 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 			continue
 		}
 	}
-
+	fmt.Println("END LOOP")
+	fmt.Println("RATE LIMIT CONFIGS BEFORE EXTENSION VALIDATION")
+	for _, rlc := range snapshotClone.Ratelimitconfigs {
+		fmt.Printf("rlcbxv: %+v\n", *rlc)
+	}
 	extensionReports := v.extensionValidator.Validate(ctx, snapshotClone)
 	if len(extensionReports) > 0 {
 		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
