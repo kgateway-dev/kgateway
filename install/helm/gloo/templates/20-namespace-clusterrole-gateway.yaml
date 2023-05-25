@@ -4,13 +4,13 @@
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-        app: gloo
-        gloo: rbac
+  name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups:
   - ""
@@ -53,13 +53,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-      app: gloo
-      gloo: rbac
+  name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups:
   - gloo.solo.io
@@ -77,13 +77,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-reader{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-      app: gloo
-      gloo: rbac
+  name: gloo-resource-reader{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups:
   - gloo.solo.io
@@ -131,13 +131,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: settings-user{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-      app: gloo
-      gloo: rbac
+  name: settings-user{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups:
   - gloo.solo.io
@@ -151,13 +151,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-      app: gloo
-      gloo: rbac
+  name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups:
   - gloo.solo.io
@@ -175,13 +175,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-      app: gloo
-      gloo: rbac
+  name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
+  {{- if .Values.global.glooRbac.namespaced }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups:
   - gateway.solo.io
