@@ -7,35 +7,35 @@ description: Steps for upgrading Gloo Edge components
 Upgrade your Gloo Edge Enterprise or Gloo Edge Open Source installations, such as from one minor version to the latest version.
 
 {{% notice warning %}}
-The basic Gloo Edge upgrade process is not suitable in environments where downtime is unacceptable. You might need to take additional steps to account for other factors such as Gloo Edge version changes, probe configurations, and external infrastructure like the load balancer that Gloo Edge uses. This guide is targeted toward users who are upgrading Gloo Edge while experimenting in development or staging environments.
+Use this guide to upgrade Gloo Edge development or staging environments only. The basic upgrade process is not suitable for environments in which downtime is unacceptable. Additionally, you might need to take steps to account for other factors such as Gloo Edge version changes, probe configurations, and external infrastructure like the load balancer that Gloo Edge uses. For more information, see the [Canary Upgrade]({{% versioned_link_path fromRoot="/operations/upgrading/canary/" %}}) guide.
 {{% /notice %}}
 
-The general upgrade process involves preparing to upgrade and then upgrading two main components, the `glooctl` CLI and the `gloo` components that are deployed in your cluster.
+## Step 1: Update your current version to the latest patch
 
-1.  [Prepare to upgrade](#step-1-prepare-to-upgrade).
-    1.  Review the version changelogs.
-    2.  **Enterprise-only**: Understand the open source dependencies.
-    3.  Consider settings to avoid downtime.
-2.  Upgrade [`glooctl`](#step-2-upgrade-glooctl).
-3.  Apply any [minor version-specific changes](#step-3-apply-minor-version-specific-changes), like adding and removing CRDs.
-4.  Upgrade the [Gloo Edge server components](#step-4-upgrade-gloo-edge) via Helm.
+Before you upgrade your minor version, first upgrade your current version to the latest patch. For example, if you currently run Gloo Edge Enterprise version `1.14.1`, first upgrade your installation to version `{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}` _before_ following this guide to upgrade to `{{< readfile file="static/content/version_gee_n+1.md" markdown="true">}}`.
 
-## Step 1: Prepare to upgrade
+## Step : Prepare to upgrade
 
 Prepare to upgrade by reviewing information about the version, dependencies, and deployment environment.
 
 ### Familiarize yourself with information about the version that you want to upgrade to.
 
+
+Underlying platform versions like Kubernetes also might need to be checked for compatibility.
+
 1. Make sure you understand the [Changelog entry types]({{% versioned_link_path fromRoot="/reference/changelog/changelog_types/" %}}). 
 2. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source. For more information, see the following enterprise-only section on understanding the open source dependencies.
    * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}})
+
+link to changelog comparison tool
+
 3. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version 1.13 from 1.11 or older, you must upgrade incrementally. For example, you must first upgrade from 1.11 to 1.12, and then upgrade from 1.12 to 1.13.
 4. Review the version-specific upgrade docs.
-   * [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
-   * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
-   * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
-   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
+
+important changes in new release
+version-specific upgrade steps that help you work around breaking changes
+
 5. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Enterprise-only: Understand the open source dependencies.
@@ -137,11 +137,35 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 
 ## Step 3: Apply minor version-specific changes
 
-Each minor version might add custom resource definitions (CRDs) that Helm upgrades cannot handle seamlessly. Review the minor version-specific upgrading docs, which might include steps for installing new CRDs and removing outdated CRDs.
-* [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
-* [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
-* [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
-* [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
+Each minor version might add custom resource definitions (CRDs) that Helm upgrades cannot handle seamlessly.
+
+1. Apply the new and updated CRDs. Replace the version with the specific patch version that you are upgrading to, such as `1.14.0` in the following examples.
+
+   {{< tabs >}}
+   {{% tab name="Gloo Edge" %}}
+   ```sh
+   helm repo update
+   helm pull gloo/gloo --version 1.14.0 --untar
+   kubectl apply -f gloo/crds
+   ```
+   {{% /tab %}}
+   {{% tab name="Gloo Edge Enterprise" %}}
+   ```sh
+   helm repo update
+   helm pull glooe/gloo-ee --version 1.14.0 --untar
+   kubectl apply -f gloo-ee/charts/gloo/crds
+   # If Gloo Federation is enabled
+   kubectl apply -f gloo-ee/charts/gloo-fed/crds
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+
+2. Verify that the deployed CRDs use the same version as your current Gloo Edge installation.
+   ```
+   glooctl check-crds
+   ```
+
+3. Enable any [new features](#features) that you want to use.
 
 ## Step 4: Upgrade Gloo Edge
 
