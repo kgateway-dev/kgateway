@@ -250,10 +250,19 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
-run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
+run-tests: GINKGO_FLAGS += --label-filter="!end-to-end"
 run-tests: test
 
-.PHONY: run-nightly-tests
+.PHONY: run-nightly-tests-pkg-labels
+run-nightly-tests: TEST_PKG = ./projects/gloo/pkg/syncer/perf_test
+run-nightly-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
+run-nightly-tests: test
+
+.PHONY: run-nightly-tests-pkg
+run-nightly-tests: TEST_PKG = ./projects/gloo/pkg/syncer/perf_test
+run-nightly-tests: test
+
+.PHONY: run-nightly-tests-labels
 run-nightly-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
 run-nightly-tests: test
 
