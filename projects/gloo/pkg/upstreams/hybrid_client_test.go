@@ -127,7 +127,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		// unbuffered channel. If messages are sent on that channel before this call,
 		// they will not cause a failure here. Consider using a buffered channel and/or
 		// explicitly setting duration (default 100ms) and interval (default 10ms)
-		Consistently(errChan).Should(Not(Receive()))
+		Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).Should(Not(Receive()))
 
 		cancel()
 		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
@@ -189,7 +189,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			// unbuffered channel. If messages are sent on that channel before this call,
 			// they will not cause a failure here. Consider using a buffered channel and/or
 			// explicitly setting duration (default 100ms) and interval (default 10ms)
-			Consistently(errChan).Should(Not(Receive()))
+			Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).Should(Not(Receive()))
 
 			cancel()
 			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())

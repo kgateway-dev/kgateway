@@ -202,7 +202,7 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(errChan).ShouldNot(Receive())
+				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
@@ -269,7 +269,7 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(errChan).ShouldNot(Receive())
+				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
@@ -314,13 +314,13 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(upstreamChan).ShouldNot(Receive())
+				Eventually(upstreamChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
 
 				// WARNING: the following Consistently exposes a brief 100ms window into an
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(errChan).ShouldNot(Receive())
+				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()

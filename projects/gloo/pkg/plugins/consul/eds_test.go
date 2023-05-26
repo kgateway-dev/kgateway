@@ -315,8 +315,8 @@ var _ = Describe("Consul EDS", func() {
 					serviceMetaProducer <- consulServiceSnapshot // removed svc1 and added svc2; this means we will close watch on svc1 and open a new one on svc2
 
 					// Provide time to let the snapshot be processed
-					Consistently(endpointsChan).ShouldNot(BeClosed())
-					Consistently(errorChan).ShouldNot(BeClosed())
+					Eventually(endpointsChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(BeClosed())
+					Eventually(errorChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(BeClosed())
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
