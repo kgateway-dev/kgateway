@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	soloHelm "github.com/solo-io/go-utils/helm"
 	"github.com/solo-io/go-utils/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"helm.sh/helm/v3/pkg/action"
@@ -196,6 +197,22 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 
 	err = testManifestFile.Close()
 	Expect(err).NotTo(HaveOccurred(), "Should be able to close the manifest file")
+
+	// check the manifest for lines that are not correctly parsed
+	manifestData, err := os.ReadFile(testManifestFile.Name())
+	Expect(err).ToNot(HaveOccurred())
+	windowsFound := soloHelm.FindHelmChartWhiteSpaces(string(manifestData), soloHelm.HelmDetectOptions{})
+	if len(windowsFound) > 0 {
+		for _, window := range windowsFound {
+			for _, line := range window {
+				fmt.Println(line)
+			}
+			fmt.Println("----------------------------------------")
+			fmt.Println("----------------------------------------")
+			fmt.Println("----------------------------------------")
+		}
+	}
+	Expect(windowsFound).To(BeEmpty(), "Windows line endings found in the manifest file")
 
 	return NewTestManifest(testManifestFile.Name()), nil
 }
