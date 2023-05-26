@@ -16,7 +16,10 @@ Upgrade your current version to the latest patch, upgrade any dependencies to th
 
 ### Upgrade current version
 
-1. Before you upgrade your minor version, first upgrade your current version to the latest patch. For example, if you currently run Gloo Edge Enterprise version `1.14.1`, first upgrade your installation to version `{{< readfile file="static/content/version_gee_n-1.md" markdown="true">}}`. This ensures that your current environment is up-to-date with any bug fixes or security patches before you begin the minor version upgrade process.
+1. Before you upgrade your minor version, first upgrade your current version to the latest patch. For example, if you currently run Gloo Edge Enterprise version `{{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}}`, first upgrade your installation to version `{{< readfile file="static/content/version_gee_n-1.md" markdown="true">}}`. This ensures that your current environment is up-to-date with any bug fixes or security patches before you begin the minor version upgrade process.
+   1. Find the latest patch of your minor version by checking the [Open Source changelog]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}}) or [Enterprise changelog]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}).
+   2. Go to the documentation set for your current minor version. For example, if you currently run Gloo Edge Enterprise version `{{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}}`, use the drop-down menu in the header of this page to select **v{{< readfile file="static/content/version_geoss_n-1_minor.md" markdown="true">}}.x**.
+   3. Follow the upgrade guide, using the latest patch for your minor version.
 2. If you plan to upgrade to a version that is more than one minor version greater than your current version, such as to version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} from 1.13 or older, you must upgrade incrementally. For example, you must first upgrade from 1.13 to 1.14, and then follow this guide to upgrade from 1.14 to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
 
 ### Upgrade dependencies
@@ -173,19 +176,19 @@ New CRDs are automatically applied to your cluster when performing a `helm insta
 {{% /notice %}}
 
 1. **CRDs**: Check the [CRD changes](#crd) to see which CRDs are new, deprecated, or removed in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. <!--If applicable, add a first step to remove any CRDs that are removed in the upgrade version-->
-   1. Apply the new and updated CRDs. Replace the version with the specific patch version that you are upgrading to, such as `1.15.0` in the following examples.
+   1. Apply the new and updated CRDs.
       {{< tabs >}}
       {{% tab name="Open Source" %}}
       ```sh
       helm repo update
-      helm pull gloo/gloo --version 1.15.0 --untar
+      helm pull gloo/gloo --version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} --untar
       kubectl apply -f gloo/crds
       ```
       {{% /tab %}}
       {{% tab name="Enterprise" %}}
       ```sh
       helm repo update
-      helm pull glooe/gloo-ee --version 1.15.0 --untar
+      helm pull glooe/gloo-ee --version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}} --untar
       kubectl apply -f gloo-ee/charts/gloo/crds
       # If Gloo Federation is enabled
       kubectl apply -f gloo-ee/charts/gloo-fed/crds
