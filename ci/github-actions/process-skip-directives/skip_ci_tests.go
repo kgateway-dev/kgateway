@@ -1,12 +1,5 @@
 package process_skip_directives
 
-import (
-	"fmt"
-	"log"
-	"os/exec"
-	"strconv"
-)
-
 const (
 	// skipCIFile is the name of the artifact that will be published if tests should be skipped
 	skipCIFile = "skip-ci.txt"
@@ -26,36 +19,5 @@ const (
 //
 // This file can then be pulled down by jobs in the same workflow
 func ProcessChangelogDirectives() {
-	fmt.Print("RUNNING PROCESS CHANGELOG DIRECTIVES")
-
-	cmd := exec.Command("git", "diff origin/main HEAD --name-only | grep \"changelog/`\"")
-	bytes, err := cmd.Output()
-	if err != nil {
-		switch err.(type) {
-		case *exec.ExitError:
-			// this is just an exit code error, no worries
-			// do nothing
-
-		default: // Actual error
-			log.Fatalf("Error while trying to identify number of changelog files: %v", err)
-		}
-	}
-
-	output := string(bytes)
-	log.Printf(output)
-	numberOfChangelogFiles, err := strconv.Atoi(output)
-	if err != nil {
-		log.Printf("Error while converting string to int: %s", err.Error())
-	}
-
-	if numberOfChangelogFiles == 0 {
-		log.Printf("No changelog files found")
-		return
-	}
-
-	if numberOfChangelogFiles > 1 {
-		log.Printf("More than 1 changelog files found: %d", numberOfChangelogFiles)
-	}
-
-	log.Print("1 changelog file found")
+	// TODO - Migrate bash script to go code
 }

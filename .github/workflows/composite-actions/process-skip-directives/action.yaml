@@ -1,16 +1,19 @@
 name: Process Skip CI Directives
 
-description: Emit a SkipCI artifact, named skip-ci.txt
+description: Determine which jobs should be skipped in CI
+
+outputs:
+  skip-kube-tests:
+    description: "Whether or not to skip the kube2e tests"
+    value: ${{ steps.process-skip-directives.outputs.skip-kube-tests }}
+  skip-docs-build:
+    description: "Whether or not to build our docs"
+    value: ${{ steps.process-skip-directives.outputs.skip-docs-build }}
 
 runs:
   using: "composite"
   steps:
-  - name: Process Skip Directives
-    run: |
-      go run ./ci/github-actions process-skip-directives
-  - name: Upload Result Artifact
-    uses: actions/upload-artifact@v2
-    with:
-      name: skip-ci-${{ github.sha }}
-      path: skip-ci.txt
-      retention-days: 1
+  - id: process-skip-directives
+    name: Process Skip Directives
+    shell: bash
+    run: ./ci/github-actions/process-skip-directives/script.sh

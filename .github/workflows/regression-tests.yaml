@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
-      should-pass-regression-tests: ${{ steps.regression-tests.outputs.pass_value }}
+      should-auto-succeed-regression-tests: ${{ steps.regression-tests.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.11.0
@@ -21,36 +21,33 @@ jobs:
       name: Process draft Pull Requests
       if: ${{ github.event.pull_request.draft }}
       run: echo "value=true" >> $GITHUB_OUTPUT
-    - id: signal-ci-comment
-      name: Process comments on Pull Request to signal CI
-      if:  ${{ github.event.issue.pull_request }}
-      run: echo "value=${{ contains(github.event.comment.body, '/sig-ci') }}" >> $GITHUB_OUTPUT
-    - id: skip-ci-comment
-      name: Process comments on Pull Request to skip CI
-      if: ${{ github.event.issue.pull_request }}
-      run: echo "value=${{ contains(github.event.comment.body, '/skip-ci') }}" >> $GITHUB_OUTPUT
+    - id: checkout-code
+      uses: actions/checkout@v3
+      with:
+        # We require gathering the branch and tag history since we compare
+        fetch-depth: 0
+    - uses: ./.github/workflows/composite-actions/prep-go-runner
+    - id: process-skip-directives
+      uses: ./.github/workflows/composite-actions/process-skip-directives
     - id: regression-tests
-      name: Determine how to run regression tests
+      name: Determine Test Run Strategy
       run: |
         should_run=true
+        should_auto_succeed=false
 
         is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
         if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
           should_run=false
         fi
 
-        pr_comment_signal=${{ steps.signal-ci-comment.outputs.value }}
-        if [[ ! -z $pr_comment_signal && $pr_comment_signal = true ]] ; then
-          should_run=true
+        skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
+        if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
+          should_auto_succeed=true
         fi
 
-        pr_comment_skip=${{ steps.skip-ci-comment.outputs.value }}
-        if [[ ! -z $pr_comment_skip && $pr_comment_skip = true ]] ; then
-          should_run=false
-        fi
-
-        echo "Should run regression tests? $should_run"
+        echo "Run strategy: Should run? $should_run. Should auto-succeed? $should_auto_succeed"
         echo "run_value=$should_run" >> $GITHUB_OUTPUT
+        echo "auto_succeed=$should_auto_succeed" >> $GITHUB_OUTPUT
 
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
@@ -71,4 +68,7 @@ jobs:
             kube-e2e-test-type: upgrade
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/workflows/composite-actions/regression-tests
+    - id: run-tests
+      uses: ./.github/workflows/composite-actions/regression-tests
+      with:
+        auto-succeed: needs.prepare_env.outputs.should-auto-succeed-regression-tests

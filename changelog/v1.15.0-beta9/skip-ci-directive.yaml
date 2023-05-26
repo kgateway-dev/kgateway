@@ -1,4 +1,7 @@
 changelog:
   - type: NON_USER_FACING
     description: >- 
-      Work in progress
+      Demonstrate how to skip CI under certain conditions.
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
