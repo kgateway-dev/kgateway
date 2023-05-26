@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4909
+    resolvesIssue: false
+    description: |
+      simplify make targets in aid of an upcoming GitHub release action/cloudbuild deprecation
