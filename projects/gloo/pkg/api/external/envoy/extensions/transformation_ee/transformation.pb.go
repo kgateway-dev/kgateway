@@ -7,15 +7,14 @@
 package transformation_ee
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	route "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (
