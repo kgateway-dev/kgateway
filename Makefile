@@ -582,12 +582,14 @@ package-chart: generate-helm-files
 ifneq (,$(TEST_ASSET_ID))
 PUBLISH_CONTEXT := PULL_REQUEST
 VERSION := $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 
 # TODO: delete this logic block when we have a github actions-managed release
 ifneq (,$(TAGGED_VERSION))
 PUBLISH_CONTEXT := RELEASE
 VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 
 # Possible Values: NONE, RELEASE, PULL_REQUEST
