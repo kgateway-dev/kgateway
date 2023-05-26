@@ -41,7 +41,9 @@ func ProcessChangelogDirectives() {
 		}
 	}
 
-	numberOfChangelogFiles, err := strconv.Atoi(string(bytes))
+	output := string(bytes)
+	log.Printf(output)
+	numberOfChangelogFiles, err := strconv.Atoi(output)
 	if err != nil {
 		log.Printf("Error while converting string to int: %s", err.Error())
 	}
