@@ -158,6 +158,10 @@ spec:
 {{- end }}
 {{- end }}
 {{- end -}}
+{{- if .Values.global.extensions.namedExtauth }}
+  namedExtauth:
+{{- toYaml .Values.global.extensions.namedExtauth | nindent 4 }}
+{{- end }}
 
 {{- if .Values.global.extraSpecs }}
 {{- include "gloo.extraSpecs"  . }}

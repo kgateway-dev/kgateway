@@ -1,0 +1,9 @@
+changelog:
+  - type: HELM
+    issueLink: TBA
+    resolvesIssue: true
+    description: >-
+      In previous versions of Gloo, it was possible to enable custom authentication (in Enterprise) through 
+      Helm values - even though this was undocumented.
+      For backwards compatibility, this is re-added.
+      
