@@ -4,7 +4,7 @@ on: pull_request
 
 jobs:
   validate_skip_directives:
-    name: codegen check
+    name: Process Skip Directives
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
