@@ -27,6 +27,7 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+. "github.com/solo-io/gloo/test/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"

@@ -26,6 +26,7 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+. "github.com/solo-io/gloo/test/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"

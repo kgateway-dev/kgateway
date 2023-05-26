@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+. "github.com/solo-io/gloo/test/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	discmocks "github.com/solo-io/gloo/projects/gloo/pkg/discovery/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
