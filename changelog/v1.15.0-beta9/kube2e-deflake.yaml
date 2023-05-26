@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Ensure the Gloo Kube2e tests wait for Pods to be running before proceeding
+    issueLink: https://github.com/solo-io/solo-projects/issues/4913
+    resolvesIssue: false
