@@ -578,6 +578,18 @@ package-chart: generate-helm-files
 #	- Development Build (a one-off build for unreleased code)
 #	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
 #----------------------------------------------------------------------------------
+# TODO: delete this logic block when we have a github actions-managed release
+ifneq (,$(TEST_ASSET_ID))
+PUBLISH_CONTEXT := PULL_REQUEST
+VERSION := $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
+endif
+
+# TODO: delete this logic block when we have a github actions-managed release
+ifneq (,$(TAGGED_VERSION))
+PUBLISH_CONTEXT := RELEASE
+VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+endif
+
 # Possible Values: NONE, RELEASE, PULL_REQUEST
 PUBLISH_CONTEXT       ?= NONE                   # controller variable for the "Publish Artifacts" section.  Defines which targets exist.
 VERSION               ?=                        # a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
@@ -592,9 +604,6 @@ QUAY_EXPIRATION_LABEL :=                        # modifier to docker builds whic
 
 # don't define Publish Artifacts Targets if we don't have a release context
 ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
-
-# TODO: for temporary PR, find a way to set VERSION, PR_NUMBER, and PUBLISH_CONTEXT
-VERSION := $(shell GO111MODULE=on go run hack/compute_version/main.go)
 
 GO111MODULE=on go run hack/compute_version/main.go
 
