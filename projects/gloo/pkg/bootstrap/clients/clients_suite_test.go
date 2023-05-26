@@ -3,7 +3,6 @@ package clients_test
 import (
 	"testing"
 
-	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/gloo/test/services"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -18,14 +17,11 @@ func TestBootstrapClients(t *testing.T) {
 var (
 	consulFactory  *services.ConsulFactory
 	consulInstance *services.ConsulInstance
-	client         *api.Client
 )
 
 var _ = BeforeSuite(func() {
 	var err error
 	consulFactory, err = services.NewConsulFactory()
-	Expect(err).NotTo(HaveOccurred())
-	client, err = api.NewClient(api.DefaultConfig())
 	Expect(err).NotTo(HaveOccurred())
 
 })
