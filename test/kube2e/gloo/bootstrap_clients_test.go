@@ -145,7 +145,6 @@ var _ = Describe("Bootstrap Clients", func() {
 	})
 
 	Context("Secret Client", func() {
-		Skip("WIP")
 		var (
 			vaultInstance *services.VaultInstance
 
@@ -163,6 +162,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			settings     *v1.Settings
 		)
 		BeforeEach(func() {
+			Skip("WIP")
 			var err error
 
 			cfg, err = kubeutils.GetConfig("", "")

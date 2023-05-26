@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -342,6 +343,11 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return func() *vaultapi.Client {
 			c, err := bootstrap_clients.VaultClientForSettings(vaultSettings)
 			if err != nil {
+				// We log this error here, but we do not have a feasible way to raise
+				// it when this function is called in NewVaultSecretClientFactory.
+				// The error is handled after we create the factory in getFactoryForSource
+				// for the multi client, and NewSecretResourceClientFactory for the
+				// traditional single client.
 				contextutils.LoggerFrom(ctx).Error(err)
 			}
 			return c
@@ -353,14 +359,20 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		vaultInitMap[bootstrap_clients.SecretSourceAPIVaultClientInitIndex] = getVaultInit(vaultSettings)
 	}
 	if secretSources := settings.GetSecretOptions().GetSources(); secretSources != nil {
-		for i := range secretSources {
+		sourceList := bootstrap_clients.SourceList(secretSources)
+		sort.Stable(sourceList)
+		for i := range sourceList {
 			switch src := secretSources[i].GetSource().(type) {
 			case *v1.Settings_SecretOptions_Source_Vault:
 				vaultInitMap[i] = getVaultInit(src.Vault)
 			default:
+				// We are not concerned with source types that are not Vault since
+				// we are only getting the indices of Vault sources to accurately
+				// map the vault source to its API client setup func
 				continue
 			}
 		}
+		settings.SecretOptions.Sources = sourceList
 	}
 
 	var clientset kubernetes.Interface

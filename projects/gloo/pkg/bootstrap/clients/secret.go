@@ -97,7 +97,13 @@ func NewSecretResourceClientFactory(ctx context.Context, params SecretFactoryPar
 			pathPrefix = DefaultPathPrefix
 		}
 		vaultClientFunc := params.VaultClientInitMap[SecretSourceAPIVaultClientInitIndex]
-		return NewVaultSecretClientFactory(vaultClientFunc, pathPrefix, rootKey), nil
+		// We do not error upon creating a vault ResourceClientFactory, but we can
+		// check for a nil API client here before returning it and error appropriately.
+		f := NewVaultSecretClientFactory(vaultClientFunc, pathPrefix, rootKey)
+		if vaultClientFactory, ok := f.(*factory.VaultSecretClientFactory); ok && vaultClientFactory.Vault == nil {
+			return nil, errors.New("resource client creation failed due to nil vault API client")
+		}
+		return f, nil
 	case *v1.Settings_DirectorySecretSource:
 		return &factory.FileResourceClientFactory{
 			RootDir: filepath.Join(source.DirectorySecretSource.GetDirectory(), params.PluralName),
@@ -107,7 +113,7 @@ func NewSecretResourceClientFactory(ctx context.Context, params SecretFactoryPar
 }
 
 type MultiSecretResourceClientFactory struct {
-	secretSources      sources
+	secretSources      SourceList
 	sharedCache        memory.InMemoryResourceCache
 	cfg                **rest.Config
 	clientset          *kubernetes.Interface
@@ -128,13 +134,13 @@ var (
 	ErrEmptySourceSlice = errors.New("empty slice of secret sources")
 )
 
-type sources []*v1.Settings_SecretOptions_Source
+type SourceList []*v1.Settings_SecretOptions_Source
 
-func (s sources) Len() int {
+func (s SourceList) Len() int {
 	return len(s)
 }
 
-func (s sources) Less(i int, j int) bool {
+func (s SourceList) Less(i int, j int) bool {
 	// kube > directory > vault
 	switch iConc := s[i].GetSource().(type) {
 	case *v1.Settings_SecretOptions_Source_Kubernetes:
@@ -161,19 +167,19 @@ func (s sources) Less(i int, j int) bool {
 	return i < j
 }
 
-func (s sources) Swap(i int, j int) {
+func (s SourceList) Swap(i int, j int) {
 	tmp := s[i]
 	s[i] = s[j]
 	s[j] = tmp
 }
 
-func (s sources) sort() sources {
+func (s SourceList) sort() SourceList {
 	sort.Stable(s)
 	return s
 }
 
 type MultiSecretFactoryParams struct {
-	SecretSources      sources
+	SecretSources      SourceList
 	SharedCache        memory.InMemoryResourceCache
 	Cfg                **rest.Config
 	Clientset          *kubernetes.Interface
@@ -189,7 +195,7 @@ func NewMultiSecretResourceClientFactory(params MultiSecretFactoryParams) (facto
 		return nil, ErrNilSourceSlice
 	}
 	return &MultiSecretResourceClientFactory{
-		secretSources:      params.SecretSources.sort(),
+		secretSources:      params.SecretSources, // the source list is sorted in Setup before being passed in here
 		sharedCache:        params.SharedCache,
 		cfg:                params.Cfg,
 		clientset:          params.Clientset,
@@ -234,8 +240,14 @@ func (m *MultiSecretResourceClientFactory) getFactoryForSource(ctx context.Conte
 			if pathPrefix == "" {
 				pathPrefix = DefaultPathPrefix
 			}
-			// Use a Factory which will attempt to retry client connection
-			return NewVaultSecretClientFactory(vaultInitFunc, pathPrefix, rootKey), nil
+			// We do not error upon creating a ResourceClientFactory, but we can
+			// check for a nil API client when attempting to use the factory to
+			// create a ResourceClient and error here.
+			f := NewVaultSecretClientFactory(vaultInitFunc, pathPrefix, rootKey)
+			if vaultClientFactory, ok := f.(*factory.VaultSecretClientFactory); ok && vaultClientFactory.Vault == nil {
+				return nil, errors.New("resource client creation failed due to nil vault API client")
+			}
+			return f, nil
 		}
 	}
 	return nil, errors.Errorf("invalid config source type in secretSource")
@@ -285,8 +297,8 @@ type MultiSecretResourceClient struct {
 	*sync.RWMutex
 
 	// do not use clients.ResourceClients here as that is not for this purpose.
-	// clientList is guaranteed to be stable sorted due to sorting the sources at
-	// factory construction time
+	// clientList is guaranteed to be stable sorted due to sorting the sources
+	// in the Setup function
 	clientList []clients.ResourceClient
 }
 
