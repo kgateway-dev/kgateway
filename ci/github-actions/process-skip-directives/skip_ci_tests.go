@@ -31,7 +31,14 @@ func ProcessChangelogDirectives() {
 	cmd := exec.Command("git", "diff origin/main HEAD --name-only | grep `changelog/` | wc -l")
 	bytes, err := cmd.Output()
 	if err != nil {
-		log.Fatalf("Error while trying to identify number of changelog files: %s", err.Error())
+		switch err.(type) {
+		case *exec.ExitError:
+			// this is just an exit code error, no worries
+			// do nothing
+
+		default: // Actual error
+			log.Fatalf("Error while trying to identify number of changelog files: %v", err)
+		}
 	}
 
 	numberOfChangelogFiles, err := strconv.Atoi(string(bytes))
