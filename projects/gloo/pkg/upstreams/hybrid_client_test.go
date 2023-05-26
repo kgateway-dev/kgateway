@@ -15,6 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -127,11 +128,11 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		// unbuffered channel. If messages are sent on that channel before this call,
 		// they will not cause a failure here. Consider using a buffered channel and/or
 		// explicitly setting duration (default 100ms) and interval (default 10ms)
-		Consistently(errChan).Should(Not(Receive()))
+		Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 		cancel()
-		Eventually(usChan).Should(BeClosed())
-		Eventually(errChan).Should(BeClosed())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+		Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 	})
 
 	It("successfully sends even if polled sporadically", func() {
@@ -141,7 +142,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the initial list
-		Eventually(usChan).Should(Receive())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 
 		writeResources()
 		// give it time to propagate to watch goroutine <-collectUpstreamsChan
@@ -189,11 +190,11 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			// unbuffered channel. If messages are sent on that channel before this call,
 			// they will not cause a failure here. Consider using a buffered channel and/or
 			// explicitly setting duration (default 100ms) and interval (default 10ms)
-			Consistently(errChan).Should(Not(Receive()))
+			Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 			cancel()
-			Eventually(usChan).Should(BeClosed())
-			Eventually(errChan).Should(BeClosed())
+			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+			Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 		})
 	})
 
