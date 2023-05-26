@@ -123,6 +123,10 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				return nil, eris.Errorf("timed out waiting for next upstream list")
 			}
 		}, "3s").Should(HaveLen(4))
+		// WARNING: the following Consistently exposes a brief 100ms window into an
+		// unbuffered channel. If messages are sent on that channel before this call,
+		// they will not cause a failure here. Consider using a buffered channel and/or
+		// explicitly setting duration (default 100ms) and interval (default 10ms)
 		Consistently(errChan).Should(Not(Receive()))
 
 		cancel()
@@ -181,6 +185,10 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				}
 			}, "3s").Should(HaveLen(4))
 
+			// WARNING: the following Consistently exposes a brief 100ms window into an
+			// unbuffered channel. If messages are sent on that channel before this call,
+			// they will not cause a failure here. Consider using a buffered channel and/or
+			// explicitly setting duration (default 100ms) and interval (default 10ms)
 			Consistently(errChan).Should(Not(Receive()))
 
 			cancel()
