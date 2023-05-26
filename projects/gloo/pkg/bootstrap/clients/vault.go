@@ -28,10 +28,22 @@ type vaultSecretClientSettings struct {
 // The DefaultPathPrefix may be overridden to allow for non-standard vault mount paths
 const DefaultPathPrefix = "secret"
 
+type VaultClientInitFunc func() *api.Client
+
+func NoopVaultClientInitFunc(c *api.Client) VaultClientInitFunc {
+	return func() *api.Client {
+		return c
+	}
+}
+
+var (
+	ErrNilVaultClient = errors.New("vault API client failed to initialize")
+)
+
 // NewVaultSecretClientFactory consumes a vault client along with a set of basic configurations for retrieving info with the client
-func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
+func NewVaultSecretClientFactory(clientInit VaultClientInitFunc, pathPrefix, rootKey string) factory.ResourceClientFactory {
 	return &factory.VaultSecretClientFactory{
-		Vault:      client,
+		Vault:      clientInit(),
 		RootKey:    rootKey,
 		PathPrefix: pathPrefix,
 	}
