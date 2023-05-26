@@ -372,7 +372,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 				continue
 			}
 		}
-		settings.SecretOptions.Sources = sourceList
+		settings.GetSecretOptions().Sources = sourceList
 	}
 
 	var clientset kubernetes.Interface
