@@ -21,10 +21,10 @@ Upgrade your current version to the latest patch, upgrade any dependencies to th
 
 ### Upgrade dependencies
 
-Check that your underlying infrastructure platform, such as Kubernetes, and other dependencies run a supported version for the Gloo Edge minor version that you want to upgrade to, such as `{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}`.
-1. Review the [supported versions]({{% versioned_link_path fromRoot="/reference/support/#supported-versions" %}}).
-2. Compare the supported version against the version of Kubernetes that you run in your clusters.
-3. If necessary, upgrade Kubernetes. Consult your cluster infrastructure provider.
+Check that your underlying infrastructure platform, such as Kubernetes, and other dependencies run a version that is supported for `{{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}`.
+1. Review the [supported versions]({{% versioned_link_path fromRoot="/reference/support/#supported-versions" %}}) for dependencies such as Kubernetes, Helm, and more.
+2. Compare the supported versions against the versions you currently use.
+3. If necessary, upgrade your dependencies, such as consulting your cluster infrastructure provider to upgrade the version of Kubernetes that your cluster runs.
 
 ### Consider settings to avoid downtime
 
@@ -39,10 +39,10 @@ Try a [Canary upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/c
 
 ## Step 2: Review version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} changes
 
-Prepare to upgrade by reviewing information about the upgrade version.
+Prepare to upgrade by reviewing information about the version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
 
 1. Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source.{{% notice tip %}}You can use the changelogs' built-in [comparison tool](https://docs.solo.io/gloo-edge/latest/reference/changelog/open_source/#compareversions) to compare between your current version and the version that you want to upgrade to.{{% /notice %}}
-   * [Open source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
+   * [Open Source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}})
    * [Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}): Keep in mind that Gloo Edge Enterprise pulls in Gloo Edge Open Source as a dependency. Although the major and minor version numbers are the same for open source and enterprise, their patch versions often differ. For example, open source might use version `x.y.a` but enterprise uses version `x.y.b`. If you are unfamiliar with these versioning concepts, see [Semantic versioning](https://semver.org/). Because of the differing patch versions, you might notice different output when checking your version with `glooctl version`. For example, your API server might run Gloo Edge Enterprise version {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}, which pulls in Gloo Edge Open Source version {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} as a dependency.
      ```bash
      ~ > glooctl version
@@ -55,8 +55,6 @@ Prepare to upgrade by reviewing information about the upgrade version.
 3. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path.
 
 ### Feature changes {#features}
-
-Review the following highlights of features changes in Gloo Edge version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
 
 **New or improved features**:
 
@@ -79,10 +77,6 @@ Review the following highlights of features changes in Gloo Edge version {{< rea
 
 
 ### CRD changes {#crd}
-
-{{% notice warning %}}
-New CRDs are automatically applied to your cluster when performing a `helm install` operation. However, they are not applied when performing an `helm upgrade` operation. This is a [deliberate design choice](https://helm.sh/docs/topics/charts/#limitations-on-crds) on the part of the Helm maintainers, given the risk associated with changing CRDs. Given this limitation, you must apply new CRDs to the cluster before upgrading.
-{{% /notice %}}
 
 **New and updated CRDs**:
 
@@ -174,17 +168,21 @@ You can use the `glooctl upgrade` command to download the latest binary. For mor
 
 Each minor version might add custom resource definitions (CRDs) or otherwise have changes that Helm upgrades cannot handle seamlessly.
 
+{{% notice warning %}}
+New CRDs are automatically applied to your cluster when performing a `helm install` operation. However, they are not applied when performing an `helm upgrade` operation. This is a [deliberate design choice](https://helm.sh/docs/topics/charts/#limitations-on-crds) on the part of the Helm maintainers, given the risk associated with changing CRDs. Given this limitation, you must apply new CRDs to the cluster before upgrading.
+{{% /notice %}}
+
 1. **CRDs**: Check the [CRD changes](#crd) to see which CRDs are new, deprecated, or removed in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. <!--If applicable, add a first step to remove any CRDs that are removed in the upgrade version-->
    1. Apply the new and updated CRDs. Replace the version with the specific patch version that you are upgrading to, such as `1.15.0` in the following examples.
       {{< tabs >}}
-      {{% tab name="Gloo Edge" %}}
+      {{% tab name="Open Source" %}}
       ```sh
       helm repo update
       helm pull gloo/gloo --version 1.15.0 --untar
       kubectl apply -f gloo/crds
       ```
       {{% /tab %}}
-      {{% tab name="Gloo Edge Enterprise" %}}
+      {{% tab name="Enterprise" %}}
       ```sh
       helm repo update
       helm pull glooe/gloo-ee --version 1.15.0 --untar
@@ -194,7 +192,7 @@ Each minor version might add custom resource definitions (CRDs) or otherwise hav
       ```
       {{% /tab %}}
       {{< /tabs >}}
-   2. Verify that the deployed CRDs use the same version as your current Gloo Edge installation.<!--??? this doesnt seem correct, shouldnt they run the upgrade version?-->
+   2. Verify that the deployed CRDs use the same version as your current Gloo Edge installation.
       ```
       glooctl check-crds
       ```
@@ -203,16 +201,20 @@ Each minor version might add custom resource definitions (CRDs) or otherwise hav
 
 3. **Helm changes**: Check the [Helm changes](#features) to see whether there are new, deprecated, or removed Helm settings before you upgrade to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
    1. Get the Helm values file for your current installation.
-      * Open source:
-        ```sh
-        helm get values -n gloo-system gloo gloo/gloo > values.yaml
-        open values.yaml
-        ```
-      * Enterprise:
-        ```sh
-        helm get values -n gloo-system gloo glooe/gloo-ee > values.yaml
-        open values.yaml
-        ```
+      {{< tabs >}}
+      {{% tab name="Open Source" %}}
+      ```sh
+      helm get values -n gloo-system gloo gloo/gloo > values.yaml
+      open values.yaml
+      ```
+      {{% /tab %}}
+      {{% tab name="Enterprise" %}}
+      ```sh
+      helm get values -n gloo-system gloo glooe/gloo-ee > values.yaml
+      open values.yaml
+      ```
+      {{% /tab %}}
+      {{< /tabs >}}
    2. Edit the Helm values file or prepare the `--set` flags to make any changes that you want. If you do not want to use certain settings, comment them out.
 
 ## Step 4: Upgrade Gloo Edge
@@ -236,41 +238,47 @@ you can delete the job, which already completed, and re-apply the upgrade.
 The following steps assume that you already installed Gloo Edge as a Helm release in the `gloo-system` namespace, and have set the Kubernetes context to the cluster.
 
 1. Upgrade the Helm release. Include your installation values in a Helm values file (such as `-f values.yaml`) or in `--set` flags.
-   * **Gloo Edge Open Source example:**
-     ```shell script
-     helm repo update
-     helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
-     ```
+   {{< tabs >}}
+   {{% tab name="Open Source" %}}
+   ```shell script
+   helm repo update
+   helm upgrade -n gloo-system gloo gloo/gloo --version=v{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} \
+   -f values.yaml
+   ```
 
-     Example output:
-     ```
-     Release "gloo" has been upgraded. Happy Helming!
-     NAME: gloo
-     LAST DEPLOYED: Thu Dec 12 12:22:16 2019
-     NAMESPACE: gloo-system
-     STATUS: deployed
-     REVISION: 2
-     TEST SUITE: None
-     ```
-   * **Gloo Edge Enterprise example:** Note that you must set your license key by using the `--set license_key=$license` flag or including the `license_key: $LICENSE-KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
-     ```shell script
-     helm repo update
-     helm upgrade -n gloo-system gloo glooe/gloo-ee \
-     --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}} \
-     -f values.yaml \
-     --set license_key=$license
-     ```
+   Example output:
+   ```
+   Release "gloo" has been upgraded. Happy Helming!
+   NAME: gloo
+   LAST DEPLOYED: Thu Dec 12 12:22:16 2019
+   NAMESPACE: gloo-system
+   STATUS: deployed
+   REVISION: 2
+   TEST SUITE: None
+   ```
+   {{% /tab %}}
+   {{% tab name="Enterprise" %}}
+   Note that you must set your license key by using the `--set license_key=$license` flag or including the `license_key: $LICENSE-KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+   ```shell script
+   helm repo update
+   helm upgrade -n gloo-system gloo glooe/gloo-ee \
+   --version=v{{< readfile file="static/content/version_gee_latest.md" markdown="true">}} \
+   -f values.yaml \
+   --set license_key=$license
+   ```
 
-     Example output:
-     ```
-     Release "glooe" has been upgraded. Happy Helming!
-     NAME: glooe
-     LAST DEPLOYED: Thu Dec 12 12:22:16 2019
-     NAMESPACE: gloo-system
-     STATUS: deployed
-     REVISION: 2
-     TEST SUITE: None
-     ```
+   Example output:
+   ```
+   Release "glooe" has been upgraded. Happy Helming!
+   NAME: glooe
+   LAST DEPLOYED: Thu Dec 12 12:22:16 2019
+   NAMESPACE: gloo-system
+   STATUS: deployed
+   REVISION: 2
+   TEST SUITE: None
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
 
 2. Verify that Gloo Edge runs the upgraded version.
    ```shell script
