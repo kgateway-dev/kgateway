@@ -202,7 +202,7 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	manifestData, err := os.ReadFile(testManifestFile.Name())
 	Expect(err).ToNot(HaveOccurred())
 	windowsFound := soloHelm.FindHelmChartWhiteSpaces(string(manifestData), soloHelm.HelmDetectOptions{})
-	Expect(windowsFound).To(BeEmpty(), "Windows line endings found in the manifest file")
+	Expect(windowsFound).To(BeEmpty(), "Helm chart has parsing, white spacing, or formatting issues present")
 
 	return NewTestManifest(testManifestFile.Name()), nil
 }
