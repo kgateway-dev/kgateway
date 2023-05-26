@@ -28,7 +28,7 @@ const (
 func ProcessChangelogDirectives() {
 	fmt.Print("RUNNING PROCESS CHANGELOG DIRECTIVES")
 
-	cmd := exec.Command("git", "diff origin/main HEAD --name-only | grep `changelog/` | wc -l")
+	cmd := exec.Command("git", "diff origin/main HEAD --name-only | grep \"changelog/`\"")
 	bytes, err := cmd.Output()
 	if err != nil {
 		switch err.(type) {
