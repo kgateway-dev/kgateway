@@ -1,17 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'master'
-  pull_request:
-
-env:
-  VERSION: '1.0.0-ci'
-  HELM_VERSION: 'v3.6.0'
-  KUBECTL_VERSION: 'v1.22.4'
-  CLUSTER_NODE_VERSION: 'v1.22.4@sha256:ca3587e6e545a96c07bf82e2c46503d9ef86fc704f44c17577fca7bcabf5f978'
-  GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
+on: pull_request
 jobs:
   prepare_env:
     name: Prepare Environment
