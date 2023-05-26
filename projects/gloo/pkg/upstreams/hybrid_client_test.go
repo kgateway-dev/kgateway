@@ -12,10 +12,10 @@ import (
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-. "github.com/solo-io/gloo/test/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -128,7 +128,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		// unbuffered channel. If messages are sent on that channel before this call,
 		// they will not cause a failure here. Consider using a buffered channel and/or
 		// explicitly setting duration (default 100ms) and interval (default 10ms)
-		Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
+		Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 		cancel()
 		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
@@ -190,7 +190,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			// unbuffered channel. If messages are sent on that channel before this call,
 			// they will not cause a failure here. Consider using a buffered channel and/or
 			// explicitly setting duration (default 100ms) and interval (default 10ms)
-			Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
+			Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 			cancel()
 			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())

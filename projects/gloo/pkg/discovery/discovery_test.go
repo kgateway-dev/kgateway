@@ -9,9 +9,9 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-. "github.com/solo-io/gloo/test/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	discmocks "github.com/solo-io/gloo/projects/gloo/pkg/discovery/mocks"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -133,6 +133,6 @@ var _ = Describe("Discovery", func() {
 		}
 
 		// expect 1 blue always
-		Eventually(listEps, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(ContainElement("endpoint-blue-1"))
+		Consistently(listEps, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(ContainElement("endpoint-blue-1"))
 	})
 })
