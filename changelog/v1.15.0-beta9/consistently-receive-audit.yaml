@@ -1,0 +1,11 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Audit use of gomega.Consistently with channel receives. This is because the
+    default duration and interval are 100ms and 10ms respectively, which are
+    very short considering we're using unbuffered channels. The consequence of
+    this could be developers trusting that behavior is safe because the test did
+    not fail when in actuality, an error could have come in before the Consistently
+    call and was missed due to the unbuffered channel, or the error happened after
+    the default 100ms duration. The goal is to encourage developers to consider
+    and use explicit durations and intervals in Consistently calls.

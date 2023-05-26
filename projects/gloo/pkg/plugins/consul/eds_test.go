@@ -644,7 +644,8 @@ var _ = Describe("Consul EDS", func() {
 				for {
 					select {
 					case err := <-errorChan:
-						Expect(err).ShouldNot(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred())
+						Fail("err chan closed prematurely")
 					case <-errRoutineCtx.Done():
 						return nil
 					}
