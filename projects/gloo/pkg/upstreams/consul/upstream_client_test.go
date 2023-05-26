@@ -13,6 +13,7 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/gloo/test/gomega"
 
 	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -202,12 +203,12 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(errChan).ShouldNot(Receive())
+				Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan).Should(BeClosed())
-				Eventually(errChan).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 
@@ -269,12 +270,12 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(errChan).ShouldNot(Receive())
+				Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan).Should(BeClosed())
-				Eventually(errChan).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 
@@ -314,18 +315,18 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(upstreamChan).ShouldNot(Receive())
+				Consistently(upstreamChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// WARNING: the following Consistently exposes a brief 100ms window into an
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Consistently(errChan).ShouldNot(Receive())
+				Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan).Should(BeClosed())
-				Eventually(errChan).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 	})
