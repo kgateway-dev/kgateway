@@ -254,17 +254,17 @@ run-tests: GINKGO_FLAGS += --label-filter="!end-to-end"
 run-tests: test
 
 .PHONY: run-nightly-tests-pkg-labels
-run-nightly-tests-pkg-labels: TEST_PKG = ./projects/gloo/pkg/syncer/perf_test
-run-nightly-tests-pkg-labels: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
-run-nightly-tests-pkg-labels: test
+run-nightly-tests: TEST_PKG = ./projects/gloo/pkg/syncer/perf_test
+run-nightly-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
+run-nightly-tests: test
 
 .PHONY: run-nightly-tests-pkg
-run-nightly-tests-pkg: TEST_PKG = ./projects/gloo/pkg/syncer/perf_test
-run-nightly-tests-pkg: test
+run-nightly-tests: TEST_PKG = ./projects/gloo/pkg/syncer/perf_test
+run-nightly-tests: test
 
 .PHONY: run-nightly-tests-labels
-run-nightly-tests-labels: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
-run-nightly-tests-labels: test
+run-nightly-tests: GINKGO_FLAGS += --label-filter="nightly" ## Run only tests with the Nightly label
+run-nightly-tests: test
 
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
