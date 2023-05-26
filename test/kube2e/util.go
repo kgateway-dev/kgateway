@@ -290,6 +290,8 @@ func ToFile(content string) string {
 
 // PatchResource mutates an existing resource, retrying if a resourceVersionError is encountered
 // Deprecated: Prefer the helpers.PatchResource, which is not a Kubernetes specific package
+// The preferred version of this function is now in the helpers package, and we are leaving this around
+// for compatibility with solo-projects.
 func PatchResource(ctx context.Context, resourceRef *core.ResourceRef, mutator func(resource resources.Resource), client clients.ResourceClient) error {
 	return helpers.PatchResourceWithOffset(1, ctx, resourceRef, mutator, client)
 }

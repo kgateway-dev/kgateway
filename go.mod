@@ -87,6 +87,8 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
+require golang.org/x/exp v0.0.0-20220921164117-439092de6870
+
 require (
 	cloud.google.com/go v0.98.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect

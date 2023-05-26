@@ -1,0 +1,19 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8282
+    resolvesIssue: false
+    description: >-
+     Allow resource types listed in the gateway.validation.webhook.skipDeleteValidationResources array to be deleted without validation.
+     Use "*" to skip validation for all resource types.
+  - type: NON_USER_FACING
+    description: >
+      Improve internal documentation around the Helm. These were discovered during onboarding
+      and will hopefully make it easier for new developers to contribute to the project.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7063
+    resolvesIssue: false
+    description: Ensure that Helm unit tests can be run locally.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7517
+    resolvesIssue: false
+    description: Ensure that Upgrade tests successfully complete in CI.
