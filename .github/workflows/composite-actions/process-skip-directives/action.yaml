@@ -1,0 +1,16 @@
+name: Process Skip CI Directives
+
+description: Emit a SkipCI artifact, named skip-ci.txt
+
+runs:
+  using: "composite"
+  steps:
+  - name: Process Skip Directives
+    shell: bash
+    run: go ./ci/github-actions/ process-skip-directives
+  - name: Upload Result Artifact
+    uses: actions/upload-artifact@v2
+    with:
+      name: skip-ci-${{ github.sha }}
+      path: skip-ci.txt
+      retention-days: 1

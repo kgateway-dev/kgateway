@@ -1,6 +1,15 @@
 name: Codegen
+
 on: pull_request
+
 jobs:
+  validate_skip_directives:
+    name: codegen check
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./.github/workflows/composite-actions/process-skip-directives
   codegen:
     name: codegen check
     runs-on: ubuntu-22.04
