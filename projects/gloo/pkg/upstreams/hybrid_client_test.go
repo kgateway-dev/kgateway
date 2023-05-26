@@ -127,11 +127,11 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		// unbuffered channel. If messages are sent on that channel before this call,
 		// they will not cause a failure here. Consider using a buffered channel and/or
 		// explicitly setting duration (default 100ms) and interval (default 10ms)
-		Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).Should(Not(Receive()))
+		Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 		cancel()
-		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-		Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+		Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 	})
 
 	It("successfully sends even if polled sporadically", func() {
@@ -141,7 +141,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the initial list
-		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 
 		writeResources()
 		// give it time to propagate to watch goroutine <-collectUpstreamsChan
@@ -189,11 +189,11 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			// unbuffered channel. If messages are sent on that channel before this call,
 			// they will not cause a failure here. Consider using a buffered channel and/or
 			// explicitly setting duration (default 100ms) and interval (default 10ms)
-			Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).Should(Not(Receive()))
+			Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 			cancel()
-			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-			Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+			Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 		})
 	})
 

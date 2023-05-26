@@ -246,8 +246,8 @@ var _ = Describe("Tracing config loading", func() {
 
 			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
-				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeEmpty())
-				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
+				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
+				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 
@@ -287,8 +287,8 @@ var _ = Describe("Tracing config loading", func() {
 
 			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
-				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeEmpty())
-				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
+				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
+				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 
@@ -317,8 +317,8 @@ var _ = Describe("Tracing config loading", func() {
 
 			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
-				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeEmpty())
-				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Not(Receive()))
+				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
+				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Not(Receive()))
 			}, time.Second*5, time.Millisecond*250).Should(Succeed(), "zipkin server should not receive trace request")
 		})
 
@@ -360,8 +360,8 @@ var _ = Describe("Tracing config loading", func() {
 
 			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
-				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeEmpty())
-				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
+				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
+				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 			}, time.Second*10, time.Second).Should(Succeed(), "tracing server should receive trace request")
 		})
 
@@ -403,8 +403,8 @@ var _ = Describe("Tracing config loading", func() {
 
 			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
 			Eventually(func(g Gomega) {
-				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeEmpty())
-				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
+				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
+				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 			}, time.Second*10, time.Second).Should(Succeed(), "zipkin server should receive trace request")
 		})
 

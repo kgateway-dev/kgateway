@@ -202,12 +202,12 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
+				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 
@@ -269,12 +269,12 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
+				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 
@@ -314,18 +314,18 @@ var _ = Describe("ClientWrapper", func() {
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Eventually(upstreamChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
+				Eventually(upstreamChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// WARNING: the following Consistently exposes a brief 100ms window into an
 				// unbuffered channel. If messages are sent on that channel before this call,
 				// they will not cause a failure here. Consider using a buffered channel and/or
 				// explicitly setting duration (default 100ms) and interval (default 10ms)
-				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(Receive())
+				Eventually(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 	})

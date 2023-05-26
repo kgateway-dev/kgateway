@@ -132,6 +132,6 @@ var _ = Describe("Discovery", func() {
 		}
 
 		// expect 1 blue always
-		Eventually(listEps, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).Should(ContainElement("endpoint-blue-1"))
+		Eventually(listEps, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(ContainElement("endpoint-blue-1"))
 	})
 })

@@ -235,8 +235,8 @@ var _ = Describe("Consul EDS", func() {
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
-					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 				})
 			})
 
@@ -315,13 +315,13 @@ var _ = Describe("Consul EDS", func() {
 					serviceMetaProducer <- consulServiceSnapshot // removed svc1 and added svc2; this means we will close watch on svc1 and open a new one on svc2
 
 					// Provide time to let the snapshot be processed
-					Eventually(endpointsChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(BeClosed())
-					Eventually(errorChan, DefaultConsistentlyDuration, DefaultConsistentlyPollInterval).ShouldNot(BeClosed())
+					Eventually(endpointsChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(BeClosed())
+					Eventually(errorChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(BeClosed())
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
-					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 				})
 
 			})
@@ -405,8 +405,8 @@ var _ = Describe("Consul EDS", func() {
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-				Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 
@@ -658,24 +658,24 @@ var _ = Describe("Consul EDS", func() {
 			for _, v := range expectedEndpointsFirstAttempt {
 				asProtos = append(asProtos, v)
 			}
-			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
 			_ = eg.Wait()
 
 			errorProducer <- eris.New("fail")
-			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
+			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 
 			// Simulate an update to the services
 			// We use the same metadata snapshot because what changed is the service spec
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
 
 			// Cancel and verify that all the channels have been closed
 			cancel()
-			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
-			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 		})
 
 	})
