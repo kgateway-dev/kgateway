@@ -176,7 +176,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		topTS := out.GetTransportSocket()
 		shouldMutate := topTS.GetName() == wellknown.TransportSocketTls
 		// we have a transport socket and its not tls which was the former intention here
-		// given this we attempt to parse and mutate
+		// given this we attempt to parse if we have a wrapped proxy protocol ts.
+		// We need this so that we can mutate the snis in any nested or non-nested
+		// tls transport sockets.
 		if out.GetTransportSocket().GetName() == upstream_proxy_protocol.UpstreamProxySocketName {
 			// strip it we will reset it
 			tcMsg, err := utils.AnyToMessage(out.GetTransportSocket().GetTypedConfig())
