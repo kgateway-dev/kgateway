@@ -43,11 +43,11 @@ func ProcessChangelogDirectives() {
 
 	numberOfChangelogFiles, err := strconv.Atoi(string(bytes))
 	if err != nil {
-		log.Fatalf("Error while converting string to int: %s", err.Error())
+		log.Printf("Error while converting string to int: %s", err.Error())
 	}
 
 	if numberOfChangelogFiles == 0 {
-		log.Print("No changelog files found")
+		log.Printf("No changelog files found")
 		return
 	}
 
@@ -55,5 +55,5 @@ func ProcessChangelogDirectives() {
 		log.Printf("More than 1 changelog files found: %d", numberOfChangelogFiles)
 	}
 
-	log.Print("2 changelog file found")
+	log.Print("1 changelog file found")
 }
