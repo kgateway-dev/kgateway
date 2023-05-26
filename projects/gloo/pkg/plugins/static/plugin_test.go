@@ -336,7 +336,6 @@ var _ = Describe("Plugin", func() {
 			}
 			err := p.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			// Expect(out.TransportSocketMatches[0].Match).To(BeEquivalentTo(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[TransportSocketMatchKey]))
 			Expect(out.TransportSocketMatches[0].TransportSocket.Name).To(Equal(upstream_proxy_protocol.UpstreamProxySocketName))
 
 			pMsg := utils.MustAnyToMessage(out.TransportSocketMatches[0].GetTransportSocket().GetTypedConfig()).(*proxyproto.ProxyProtocolUpstreamTransport)
