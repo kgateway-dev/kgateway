@@ -73,14 +73,17 @@ func SecretFactoryForSettings(ctx context.Context,
 	kubeCoreCache *cache.KubeCoreCache,
 	vaultClient *vaultapi.Client,
 	pluralName string) (factory.ResourceClientFactory, error) {
+	clientInitMap := map[int]clients.VaultClientInitFunc{clients.SecretSourceAPIVaultClientInitIndex: clients.NoopVaultClientInitFunc(vaultClient)}
 	return clients.SecretFactoryForSettings(ctx,
-		settings,
-		sharedCache,
-		cfg,
-		clientset,
-		kubeCoreCache,
-		vaultClient,
-		pluralName,
+		clients.SecretFactoryParams{
+			Settings:           settings,
+			SharedCache:        sharedCache,
+			Cfg:                cfg,
+			Clientset:          clientset,
+			KubeCoreCache:      kubeCoreCache,
+			VaultClientInitMap: clientInitMap,
+			PluralName:         pluralName,
+		},
 	)
 }
 
