@@ -28,90 +28,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/workflows/composite-actions/regression-tests
-  nightly_tests_latest_dev_pkg_labels:
-    name: latest nightly tests - pkg + labels
+  nightly_tests_latest_dev:
+    name: latest nightly tests
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - name: Testing - nightly tests pkg + labels
-        shell: bash
-        run: make install-test-tools run-nightly-tests-pkg-labels
-      - name: save results
-        if: ${{ failure() }}
-        shell: bash
-        run: mkdir -p _output/nightly-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-          "name":"nightly-pkg-labels"}' > _output/nightly-artifacts/test-out.json
-      - uses: actions/upload-artifact@v3
-        if: ${{ failure() }}
-        with:
-          name: nightly-dump
-          path: "_output/nightly-artifacts"
-          if-no-files-found: warn
-  nightly_tests_latest_dev_pkg:
-    name: latest nightly tests - pkg
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - name: Testing - nightly tests pkg
-        shell: bash
-        run: make install-test-tools run-nightly-tests-pkg
-      - name: save results
-        if: ${{ failure() }}
-        shell: bash
-        run: mkdir -p _output/nightly-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-          "name":"nightly-pkg"}' > _output/nightly-artifacts/test-out.json
-      - uses: actions/upload-artifact@v3
-        if: ${{ failure() }}
-        with:
-          name: nightly-dump
-          path: "_output/nightly-artifacts"
-          if-no-files-found: warn
-  nightly_tests_latest_dev_labels:
-    name: latest nightly tests - labels
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - name: Testing - nightly tests labels
-        shell: bash
-        run: make install-test-tools run-nightly-tests-labels
-      - name: save results
-        if: ${{ failure() }}
-        shell: bash
-        run: mkdir -p _output/nightly-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-          "name":"nightly-labels"}' > _output/nightly-artifacts/test-out.json
-      - uses: actions/upload-artifact@v3
-        if: ${{ failure() }}
-        with:
-          name: nightly-dump
-          path: "_output/nightly-artifacts"
-          if-no-files-found: warn
-  nightly_tests_latest_dev_all:
-    name: latest nightly tests - all
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - name: Testing - nightly tests all
-        shell: bash
-        run: make install-test-tools run-tests
-      - name: save results
-        if: ${{ failure() }}
-        shell: bash
-        run: mkdir -p _output/nightly-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
-          "name":"nightly-all"}' > _output/nightly-artifacts/test-out.json
-      - uses: actions/upload-artifact@v3
-        if: ${{ failure() }}
-        with:
-          name: nightly-dump
-          path: "_output/nightly-artifacts"
-          if-no-files-found: warn
+      - uses: ./.github/workflows/composite-actions/nightly-tests
 
   regression_tests_14:
     name: v1.14.x regression tests
@@ -148,7 +72,7 @@ jobs:
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_dev, nightly_tests_latest_dev_all, nightly_tests_latest_dev_pkg, nightly_tests_latest_dev_labels, nightly_tests_latest_dev_pkg_labels, regression_tests_14, regression_tests_13 ]
+    needs: [ regression_tests_latest_dev, nightly_tests_latest_dev, regression_tests_14, regression_tests_13 ]
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
