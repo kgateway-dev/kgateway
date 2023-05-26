@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	soloHelm "github.com/solo-io/go-utils/helm"
+	soloHelm "github.com/solo-io/go-utils/helmutils"
 	"github.com/solo-io/go-utils/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"helm.sh/helm/v3/pkg/action"
