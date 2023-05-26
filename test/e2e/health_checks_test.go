@@ -187,7 +187,7 @@ var _ = Describe("Health Checks", func() {
 				testRequest := basicReq([]byte(`"foo"`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-				Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 					"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 				}))))
 			})
@@ -215,7 +215,7 @@ var _ = Describe("Health Checks", func() {
 
 			Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-			Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 			}))))
 		})

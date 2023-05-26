@@ -235,8 +235,8 @@ var _ = Describe("Consul EDS", func() {
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
-					Eventually(endpointsChan).Should(BeClosed())
-					Eventually(errorChan).Should(BeClosed())
+					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 				})
 			})
 
@@ -320,8 +320,8 @@ var _ = Describe("Consul EDS", func() {
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
-					Eventually(endpointsChan).Should(BeClosed())
-					Eventually(errorChan).Should(BeClosed())
+					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 				})
 
 			})
@@ -405,8 +405,8 @@ var _ = Describe("Consul EDS", func() {
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(endpointsChan).Should(BeClosed())
-				Eventually(errorChan).Should(BeClosed())
+				Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 			})
 		})
 
@@ -658,24 +658,24 @@ var _ = Describe("Consul EDS", func() {
 			for _, v := range expectedEndpointsFirstAttempt {
 				asProtos = append(asProtos, v)
 			}
-			Eventually(endpointsChan).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
 			_ = eg.Wait()
 
 			errorProducer <- eris.New("fail")
-			Eventually(errorChan).Should(Receive())
+			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
 
 			// Simulate an update to the services
 			// We use the same metadata snapshot because what changed is the service spec
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
 
 			// Cancel and verify that all the channels have been closed
 			cancel()
-			Eventually(endpointsChan).Should(BeClosed())
-			Eventually(errorChan).Should(BeClosed())
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 		})
 
 	})

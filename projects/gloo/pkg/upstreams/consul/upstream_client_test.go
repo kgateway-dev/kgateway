@@ -206,8 +206,8 @@ var _ = Describe("ClientWrapper", func() {
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan).Should(BeClosed())
-				Eventually(errChan).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 			})
 		})
 
@@ -273,8 +273,8 @@ var _ = Describe("ClientWrapper", func() {
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan).Should(BeClosed())
-				Eventually(errChan).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 			})
 		})
 
@@ -324,8 +324,8 @@ var _ = Describe("ClientWrapper", func() {
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(upstreamChan).Should(BeClosed())
-				Eventually(errChan).Should(BeClosed())
+				Eventually(upstreamChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+				Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 			})
 		})
 	})

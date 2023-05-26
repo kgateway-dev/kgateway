@@ -130,8 +130,8 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		Consistently(errChan).Should(Not(Receive()))
 
 		cancel()
-		Eventually(usChan).Should(BeClosed())
-		Eventually(errChan).Should(BeClosed())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+		Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 	})
 
 	It("successfully sends even if polled sporadically", func() {
@@ -141,7 +141,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the initial list
-		Eventually(usChan).Should(Receive())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(Receive())
 
 		writeResources()
 		// give it time to propagate to watch goroutine <-collectUpstreamsChan
@@ -192,8 +192,8 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			Consistently(errChan).Should(Not(Receive()))
 
 			cancel()
-			Eventually(usChan).Should(BeClosed())
-			Eventually(errChan).Should(BeClosed())
+			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
+			Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollInterval).Should(BeClosed())
 		})
 	})
 
