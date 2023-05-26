@@ -355,7 +355,7 @@ var _ = Describe("Consul EDS", func() {
 					fmt.Fprint(GinkgoWriter, "Updated resolve called.")
 				}).Return(updatedIps, nil).AnyTimes()
 
-				duration := &durationpb.Duration{Seconds: 0, Nanos: 100000}
+				duration := durationpb.New(time.Microsecond * 100) // 100,000 ns or 0.1 ms
 				eds := NewPlugin(consulWatcherMock, mockDnsResolver, duration)
 
 				endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
@@ -401,7 +401,7 @@ var _ = Describe("Consul EDS", func() {
 				}
 
 				// ensure we don't receive anything else on channel even though we receive more DNS queries
-				Consistently(endpointsChan, pollingInterval, totalInterval).ShouldNot(Receive())
+				Consistently(endpointsChan, totalInterval, pollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
@@ -643,8 +643,9 @@ var _ = Describe("Consul EDS", func() {
 				defer GinkgoRecover()
 				for {
 					select {
-					default:
-						Consistently(errorChan).ShouldNot(Receive())
+					case err := <-errorChan:
+						Expect(err).NotTo(HaveOccurred())
+						Fail("err chan closed prematurely")
 					case <-errRoutineCtx.Done():
 						return nil
 					}
