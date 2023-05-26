@@ -442,7 +442,7 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 
 		vaultClient, err := bootstrap_clients.VaultClientForSettings(vaultSecretSource)
 		Expect(err).NotTo(HaveOccurred())
-		secretFactory = bootstrap_clients.NewVaultSecretClientFactory(vaultClient, vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
+		secretFactory = bootstrap_clients.NewVaultSecretClientFactory(bootstrap_clients.NoopVaultClientInitFunc(vaultClient), vaultSecretSource.GetPathPrefix(), vaultSecretSource.GetRootKey())
 	}
 
 	return bootstrap.Opts{
