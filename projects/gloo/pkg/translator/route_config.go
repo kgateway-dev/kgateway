@@ -85,7 +85,10 @@ type httpRouteConfigurationTranslator struct {
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
-
+	fmt.Println("CALLING ComputeRouteConfiguration")
+	for _, rlc := range params.Snapshot.Ratelimitconfigs {
+		fmt.Printf("rlccrc: %+v\n", *rlc)
+	}
 	return []*envoy_config_route_v3.RouteConfiguration{{
 		Name:                           h.routeConfigName,
 		VirtualHosts:                   h.computeVirtualHosts(params),
@@ -96,7 +99,10 @@ func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plug
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(params plugins.Params) []*envoy_config_route_v3.VirtualHost {
 	virtualHosts := h.listener.GetVirtualHosts()
 	ValidateVirtualHostDomains(virtualHosts, h.report)
-
+	fmt.Println("CALLING ComputeVirtualHosts")
+	for _, rlc := range params.Snapshot.Ratelimitconfigs {
+		fmt.Printf("rlccvhs: %+v\n", *rlc)
+	}
 	var envoyVirtualHosts []*envoy_config_route_v3.VirtualHost
 	for i, virtualHost := range virtualHosts {
 		vhostParams := plugins.VirtualHostParams{
@@ -116,7 +122,10 @@ func (h *httpRouteConfigurationTranslator) computeVirtualHost(
 	virtualHost *v1.VirtualHost,
 	vhostReport *validationapi.VirtualHostReport,
 ) *envoy_config_route_v3.VirtualHost {
-
+	fmt.Println("CALLING ComputeVirtualHost")
+	for _, rlc := range params.Snapshot.Ratelimitconfigs {
+		fmt.Printf("rlccvh: %+v\n", *rlc)
+	}
 	sanitizedName := utils.SanitizeForEnvoy(params.Ctx, virtualHost.GetName(), "virtual host")
 	if sanitizedName != virtualHost.GetName() {
 		virtualHost = virtualHost.Clone().(*v1.VirtualHost)
