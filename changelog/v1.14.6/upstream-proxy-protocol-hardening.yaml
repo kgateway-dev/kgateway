@@ -4,3 +4,8 @@ changelog:
     resolvesIssue: false
     description: >-
       Fixes an issue when setting proxyprotocol on an upstream that was also static.
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/4982
+    resolvesIssue: false
+    description: >-
+      Fixes overlapping sni when using the new matcher framework for filters
