@@ -10,7 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/solo-io/gloo/test/gomega"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -18,9 +17,7 @@ import (
 var T *testing.T
 
 func TestClients(t *testing.T) {
-	SetAsyncAssertionDefaults(AsyncAssertionDefaults{})
 	RegisterFailHandler(Fail)
-
 	T = t
 	RunSpecs(t, "Hybrid Upstreams Client Suite")
 }

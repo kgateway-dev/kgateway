@@ -24,7 +24,6 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/go-utils/testutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"helm.sh/helm/v3/pkg/action"
@@ -50,9 +49,7 @@ var (
 )
 
 func TestHelm(t *testing.T) {
-	SetAsyncAssertionDefaults(AsyncAssertionDefaults{})
 	RegisterFailHandler(Fail)
-
 	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Helm Suite")
 }
