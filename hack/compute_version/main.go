@@ -11,5 +11,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Print(version)
+	fmt.Print(version) // use stdout to communicate with the calling github action
 }

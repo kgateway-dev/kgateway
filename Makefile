@@ -593,10 +593,10 @@ LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 
 # Possible Values: NONE, RELEASE, PULL_REQUEST
-PUBLISH_CONTEXT       ?= NONE                   # controller variable for the "Publish Artifacts" section.  Defines which targets exist.
-VERSION               ?=                        # a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
-HELM_BUCKET           := gs://solo-public-helm	# specify which bucket to upload helm chart to
-QUAY_EXPIRATION_LABEL :=                        # modifier to docker builds which can auto-delete docker images after a set time
+PUBLISH_CONTEXT       ?= NONE                            # controller variable for the "Publish Artifacts" section.  Defines which targets exist.
+VERSION               ?= 1.0.1-dev                       # a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
+HELM_BUCKET           ?= gs://solo-public-tagged-helm	 # specify which bucket to upload helm chart to
+QUAY_EXPIRATION_LABEL ?= --label "quay.expires-after=3w" # modifier to docker builds which can auto-delete docker images after a set time
 
 # define empty publish targets so calls won't fail
 .PHONY: publish-docker-retag
@@ -607,15 +607,8 @@ QUAY_EXPIRATION_LABEL :=                        # modifier to docker builds whic
 # don't define Publish Artifacts Targets if we don't have a release context
 ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
 
-GO111MODULE=on go run hack/compute_version/main.go
-
-ifeq (PULL_REQUEST, $(PUBLISH_CONTEXT)) # PULL_REQUEST contexts have different configs for publishing
-QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
-HELM_BUCKET := gs://solo-public-tagged-helm
-endif # PULL_REQUEST modifiers
-
-
 ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
+HELM_BUCKET           := gs://solo-public-helm
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and push them to a secondary repository, defined at IMAGE_REGISTRY
 publish-docker-retag: docker-retag docker-push
