@@ -362,7 +362,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		sourceList := bootstrap_clients.SourceList(secretSources)
 		sort.Stable(sourceList)
 		for i := range sourceList {
-			switch src := secretSources[i].GetSource().(type) {
+			switch src := sourceList[i].GetSource().(type) {
 			case *v1.Settings_SecretOptions_Source_Vault:
 				vaultInitMap[i] = getVaultInit(src.Vault)
 			default:
