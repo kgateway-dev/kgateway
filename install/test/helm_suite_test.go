@@ -202,16 +202,6 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	manifestData, err := os.ReadFile(testManifestFile.Name())
 	Expect(err).ToNot(HaveOccurred())
 	windowsFound := soloHelm.FindHelmChartWhiteSpaces(string(manifestData), soloHelm.HelmDetectOptions{})
-	if len(windowsFound) > 0 {
-		for _, window := range windowsFound {
-			for _, line := range window {
-				fmt.Println(line)
-			}
-			fmt.Println("----------------------------------------")
-			fmt.Println("----------------------------------------")
-			fmt.Println("----------------------------------------")
-		}
-	}
 	Expect(windowsFound).To(BeEmpty(), "Windows line endings found in the manifest file")
 
 	return NewTestManifest(testManifestFile.Name()), nil
