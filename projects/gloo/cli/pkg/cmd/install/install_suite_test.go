@@ -16,13 +16,16 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	. "github.com/solo-io/gloo/test/gomega"
 	gotestutils "github.com/solo-io/go-utils/testutils"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/yaml"
 )
 
 func TestInstall(t *testing.T) {
+	SetAsyncAssertionDefaults(AsyncAssertionDefaults{})
 	RegisterFailHandler(Fail)
+
 	gotestutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Install Suite")
 }
