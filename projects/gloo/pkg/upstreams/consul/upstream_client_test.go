@@ -198,6 +198,10 @@ var _ = Describe("ClientWrapper", func() {
 					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}, nil)[0],
 				)))
 
+				// WARNING: the following Consistently exposes a brief 100ms window into an
+				// unbuffered channel. If messages are sent on that channel before this call,
+				// they will not cause a failure here. Consider using a buffered channel and/or
+				// explicitly setting duration (default 100ms) and interval (default 10ms)
 				Consistently(errChan).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
@@ -261,6 +265,10 @@ var _ = Describe("ClientWrapper", func() {
 					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}, nil)[0],
 				)))
 
+				// WARNING: the following Consistently exposes a brief 100ms window into an
+				// unbuffered channel. If messages are sent on that channel before this call,
+				// they will not cause a failure here. Consider using a buffered channel and/or
+				// explicitly setting duration (default 100ms) and interval (default 10ms)
 				Consistently(errChan).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
@@ -302,8 +310,16 @@ var _ = Describe("ClientWrapper", func() {
 				Expect(upstreamChan).Should(Receive(ConsistOf(CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}, nil)[0])))
 
 				// We don't get any further messages
+				// WARNING: the following Consistently exposes a brief 100ms window into an
+				// unbuffered channel. If messages are sent on that channel before this call,
+				// they will not cause a failure here. Consider using a buffered channel and/or
+				// explicitly setting duration (default 100ms) and interval (default 10ms)
 				Consistently(upstreamChan).ShouldNot(Receive())
 
+				// WARNING: the following Consistently exposes a brief 100ms window into an
+				// unbuffered channel. If messages are sent on that channel before this call,
+				// they will not cause a failure here. Consider using a buffered channel and/or
+				// explicitly setting duration (default 100ms) and interval (default 10ms)
 				Consistently(errChan).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
