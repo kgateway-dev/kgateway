@@ -248,6 +248,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 	for _, rlc := range snapshotClone.Ratelimitconfigs {
 		fmt.Printf("rlcosc: %+v\n", *rlc)
 	}
+	fmt.Println("OPTS RESOURCE")
+	fmt.Printf("rlcoscR: %+v\n", opts.Resource)
 	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
