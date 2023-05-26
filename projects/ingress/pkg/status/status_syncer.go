@@ -5,6 +5,8 @@ import (
 	"net"
 	"sort"
 
+	networkv1 "k8s.io/api/networking/v1"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
@@ -76,7 +78,7 @@ func (s *statusSyncer) Sync(ctx context.Context, snap *v1.StatusSnapshot) error 
 	return nil
 }
 
-func getLbStatus(services v1.KubeServiceList) ([]kubev1.LoadBalancerIngress, error) {
+func getLbStatus(services v1.KubeServiceList) ([]networkv1.IngressLoadBalancerIngress, error) {
 	switch len(services) {
 	case 0:
 		return nil, nil
@@ -127,13 +129,13 @@ func serviceAddrs(svc *kubev1.Service, kubeSvcRef *core.ResourceRef) ([]string, 
 	return addrs, nil
 }
 
-func ingressStatusFromAddrs(addrs []string) []kubev1.LoadBalancerIngress {
-	var lbi []kubev1.LoadBalancerIngress
+func ingressStatusFromAddrs(addrs []string) []networkv1.IngressLoadBalancerIngress {
+	var lbi []networkv1.IngressLoadBalancerIngress
 	for _, ep := range addrs {
 		if net.ParseIP(ep) == nil {
-			lbi = append(lbi, kubev1.LoadBalancerIngress{Hostname: ep})
+			lbi = append(lbi, networkv1.IngressLoadBalancerIngress{Hostname: ep})
 		} else {
-			lbi = append(lbi, kubev1.LoadBalancerIngress{IP: ep})
+			lbi = append(lbi, networkv1.IngressLoadBalancerIngress{IP: ep})
 		}
 	}
 
