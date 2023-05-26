@@ -50,7 +50,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/shirou/gopsutil/v3 v3.23.4
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.3-0.20230526154353-2ee31771948a
+	github.com/solo-io/go-utils v0.24.3
 	github.com/solo-io/k8s-utils v0.4.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0

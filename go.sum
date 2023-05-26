@@ -1188,6 +1188,8 @@ github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
 github.com/solo-io/go-utils v0.24.3-0.20230526154353-2ee31771948a h1:qk8hUp9ZT4cl4ahpUs5auTR1dI++wklPffsIEpGfGRY=
 github.com/solo-io/go-utils v0.24.3-0.20230526154353-2ee31771948a/go.mod h1:2ds5++iv1FGox0/aWz/DAiRYTIb6r4yiM+VSF7sAyL4=
+github.com/solo-io/go-utils v0.24.3 h1:Thf0NPda2QDcJoqeB/BfP6MRei0d+5yC0HuycR0IWC4=
+github.com/solo-io/go-utils v0.24.3/go.mod h1:2ds5++iv1FGox0/aWz/DAiRYTIb6r4yiM+VSF7sAyL4=
 github.com/solo-io/k8s-utils v0.4.0 h1:V6tNm4lvFJnwGP54Uq9Y+RFNLi+cfmaD1Ic7qmMYdy4=
 github.com/solo-io/k8s-utils v0.4.0/go.mod h1:3WqFrZl+xGuzxXGcyaEiBiAXiBB8ab8FJ48CoikzBFo=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=
