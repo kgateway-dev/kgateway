@@ -39,7 +39,7 @@ jobs:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
     runs-on: ubuntu-22.04
-    if: !github.event.pull_request.draft
+    if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
