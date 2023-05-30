@@ -25,8 +25,6 @@ var _ = Describe("Example E2E Test For Developers", Label(), func() {
 	)
 
 	BeforeEach(func() {
-		Skip("this test is intended as a template for developers and does not need to be run in CI")
-
 		// For an individual test, we can define the environmental requirements necessary for it to succeed.
 		// Ideally our tests are environment agnostic. However, if there are certain conditions that must
 		// be met, you can define those here. By explicitly defining these requirements, we can error loudly
