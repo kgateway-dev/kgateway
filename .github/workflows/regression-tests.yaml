@@ -69,8 +69,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - id: run-tests
-      uses: ./.github/workflows/composite-actions/regression-tests
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'false'
-    - id: no-op-tests
-      uses: ./.github/workflows/composite-actions/prep-go-runner
+      uses: ./.github/workflows/composite-actions/regression-tests
+    - id: auto-succeed-tests
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
+      run: |
+        echo "Regression tests auto-succeeded"

@@ -2,15 +2,6 @@ name: Gloo Regression Tests
 
 description: Tests which run Gloo Edge in a Kubernetes cluster
 
-inputs:
-  # Regression tests are configured in our branch protection rules, which means that we must receive
-  # a successful event for a GitHub Pull Request to be eligible to merge.
-  # There are situations where we don't want to run these tests, so we enable that via this flag
-  auto-succeed:
-    description: 'Whether to auto-succeed the tests'
-    required: false
-    default: 'false'
-
 runs:
   using: "composite"
   steps:
