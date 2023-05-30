@@ -18,12 +18,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-  - id: checkout-code
-    uses: actions/checkout@v3
-    with:
-      # We require gathering the branch and tag history since we rely on a `git diff`
-      # which compares the state of two branches
-      fetch-depth: 0
   - id: process-skip-directives
     name: Process Skip Directives
     shell: bash

@@ -17,6 +17,12 @@ jobs:
       uses: styfle/cancel-workflow-action@0.11.0
       with:
         access_token: ${{ github.token }}
+    - id: checkout-code
+      uses: actions/checkout@v3
+      with:
+        # We require gathering the branch and tag history since we rely on a `git diff`
+        # which compares the state of two branches
+        fetch-depth: 0
     - id: process-skip-directives
       uses: ./.github/workflows/composite-actions/process-skip-directives
       with:
