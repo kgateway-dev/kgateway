@@ -84,7 +84,7 @@ var _ = Describe("Happy path", func() {
 			Describe("kubernetes happy path", func() {
 
 				var (
-					namespace      string
+					testNamespace  string
 					writeNamespace string
 					cfg            *rest.Config
 					kubeClient     kubernetes.Interface
@@ -92,7 +92,7 @@ var _ = Describe("Happy path", func() {
 				)
 
 				BeforeEach(func() {
-					namespace = ""
+					testNamespace = ""
 					writeNamespace = ""
 					var err error
 					svc = nil
@@ -103,27 +103,27 @@ var _ = Describe("Happy path", func() {
 				})
 
 				AfterEach(func() {
-					if namespace != "" {
-						err := kubeClient.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+					if testNamespace != "" {
+						err := kubeClient.CoreV1().Namespaces().Delete(ctx, testNamespace, metav1.DeleteOptions{})
 						Expect(err).NotTo(HaveOccurred())
 					}
 				})
 
 				prepNamespace := func() {
-					if namespace == "" {
-						namespace = "gloo-e2e-" + helpers.RandString(8)
+					if testNamespace == "" {
+						testNamespace = "gloo-e2e-" + helpers.RandString(8)
 					}
 
 					_, err := kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 						ObjectMeta: metav1.ObjectMeta{
-							Name: namespace,
+							Name: testNamespace,
 						},
 					}, metav1.CreateOptions{})
 					Expect(err).NotTo(HaveOccurred())
 
-					svc, err = kubeClient.CoreV1().Services(namespace).Create(ctx, &kubev1.Service{
+					svc, err = kubeClient.CoreV1().Services(testNamespace).Create(ctx, &kubev1.Service{
 						ObjectMeta: metav1.ObjectMeta{
-							Namespace: namespace,
+							Namespace: testNamespace,
 							Name:      "headlessservice",
 						},
 						Spec: kubev1.ServiceSpec{
@@ -137,9 +137,9 @@ var _ = Describe("Happy path", func() {
 					}, metav1.CreateOptions{})
 					Expect(err).NotTo(HaveOccurred())
 
-					_, err = kubeClient.CoreV1().Endpoints(namespace).Create(ctx, &kubev1.Endpoints{
+					_, err = kubeClient.CoreV1().Endpoints(testNamespace).Create(ctx, &kubev1.Endpoints{
 						ObjectMeta: metav1.ObjectMeta{
-							Namespace: namespace,
+							Namespace: testNamespace,
 							Name:      svc.Name,
 						},
 						Subsets: []kubev1.EndpointSubset{{
@@ -172,10 +172,10 @@ var _ = Describe("Happy path", func() {
 
 					BeforeEach(func() {
 						prepNamespace()
-						writeNamespace = namespace
+						writeNamespace = testNamespace
 						ro := &services.RunOptions{
 							NsToWrite: writeNamespace,
-							NsToWatch: []string{namespace},
+							NsToWatch: []string{testNamespace},
 							WhatToRun: services.What{
 								DisableGateway: true,
 							},
@@ -188,7 +188,7 @@ var _ = Describe("Happy path", func() {
 						}
 
 						testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-						role := namespace + "~" + gatewaydefaults.GatewayProxyName
+						role := testNamespace + "~" + gatewaydefaults.GatewayProxyName
 						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 						Expect(err).NotTo(HaveOccurred())
 
@@ -202,7 +202,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -217,11 +217,11 @@ var _ = Describe("Happy path", func() {
 						svc.Annotations = map[string]string{
 							"gloo.solo.io/upstream_config": "{\"initial_stream_window_size\": 2048}",
 						}
-						svc, err = kubeClient.CoreV1().Services(namespace).Update(ctx, svc, metav1.UpdateOptions{})
+						svc, err = kubeClient.CoreV1().Services(testNamespace).Update(ctx, svc, metav1.UpdateOptions{})
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -235,7 +235,7 @@ var _ = Describe("Happy path", func() {
 					It("correctly routes requests to a service destination", func() {
 						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
 						svcPort := svc.Spec.Ports[0].Port
-						proxy := getTrivialProxyForService(namespace, envoyPort, svcRef, uint32(svcPort))
+						proxy := getTrivialProxyForService(testNamespace, envoyPort, svcRef, uint32(svcPort))
 
 						_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 						Expect(err).NotTo(HaveOccurred())
@@ -246,10 +246,10 @@ var _ = Describe("Happy path", func() {
 
 				Context("all namespaces", func() {
 					BeforeEach(func() {
-						namespace = "gloo-e2e-" + helpers.RandString(8)
+						testNamespace = "gloo-e2e-" + helpers.RandString(8)
 						prepNamespace()
 
-						writeNamespace = namespace
+						writeNamespace = testNamespace
 						ro := &services.RunOptions{
 							NsToWrite: writeNamespace,
 							NsToWatch: []string{},
@@ -265,7 +265,7 @@ var _ = Describe("Happy path", func() {
 						}
 
 						testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-						role := namespace + "~" + gatewaydefaults.GatewayProxyName
+						role := testNamespace + "~" + gatewaydefaults.GatewayProxyName
 						err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 						Expect(err).NotTo(HaveOccurred())
 
@@ -280,7 +280,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(namespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
