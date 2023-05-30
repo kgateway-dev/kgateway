@@ -2,14 +2,15 @@
 
 ################################################################
 # This script checks to see if a changelog file has been added
-# with the "skipCI" field set to true.
+# with any "skipCI-*" fields set to true.
 #
-# It will set the SKIP_CI_TESTS env variable to true which can be
-# used across steps in the same job
+# This script supports the following fields:
+#   skipCI-kube-tests
+#   skipCI-docs-build
 #
-# It will  write a file called skip-ci.txt with contents of
-# either SKIP_CI_TESTS=true or SKIP_CI_TESTS=false - which can be used
-# across different jobs in the same workflow
+# For each field that we support, the script will output the value
+# into the $GITHUB_OUTPUT variable, which then can be consumed
+# by other steps in our CI pipeline
 ################################################################
 
 set -ex
