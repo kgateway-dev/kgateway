@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
+
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/onsi/gomega/types"
@@ -246,60 +248,107 @@ var _ = Describe("Kube2e: gateway", func() {
 
 	Context("tests with virtual service", func() {
 
-		DescribeTable("can route to upstream", func(compressedProxy bool) {
-			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
-				settings.GetGateway().CompressedProxySpec = compressedProxy
-			}, testHelper.InstallNamespace)
+		Context("CompressedProxySpec", Ordered, func() {
 
-			// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
-			err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
-				Ctx:            ctx,
-				IgnoreNotExist: true,
+			AfterAll(func() {
+				// Reset the CompressedProxySpec to False
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGloo().DisableProxyGarbageCollection = &wrappers.BoolValue{Value: false}
+					settings.GetGateway().CompressedProxySpec = false
+				}, testHelper.InstallNamespace)
+
+				// We delete the existing Proxy so that a new one can be auto-generated without compression
+				err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
+					Ctx:            ctx,
+					IgnoreNotExist: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
 			})
-			Expect(err).NotTo(HaveOccurred())
 
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/",
-				Method:            "GET",
-				Host:              helper.TestrunnerName,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
-				WithoutStats:      true,
-			}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			DescribeTable("can route to upstream", func(compressedProxy bool) {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGloo().DisableProxyGarbageCollection = &wrappers.BoolValue{Value: false}
+					settings.GetGateway().CompressedProxySpec = compressedProxy
+				}, testHelper.InstallNamespace)
 
-			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetGateway().GetCompressedProxySpec()).NotTo(BeNil())
-				settings.GetGateway().CompressedProxySpec = false
-			}, testHelper.InstallNamespace)
-		},
-			Entry("can route to upstreams", false),
-			Entry("can route to upstreams with compressed proxy", true))
+				// We delete the existing Proxy so that a new one can be auto-generated according to the `compressedSpec` definition
+				err := resourceClientset.ProxyClient().Delete(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.DeleteOpts{
+					Ctx:            ctx,
+					IgnoreNotExist: true,
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				// No-op patch on a resource to ensure translation re-sync's
+				err = helpers.PatchResource(
+					ctx,
+					testRunnerVs.GetMetadata().Ref(),
+					func(resource resources.Resource) resources.Resource {
+						resource.GetMetadata().Annotations = map[string]string{
+							"gloo-edge-test": "value",
+						}
+						return resource
+					},
+					resourceClientset.VirtualServiceClient().BaseClient())
+				Expect(err).NotTo(HaveOccurred())
+
+				// Assert that the generated Proxy matches the format we are testing (compressed or not)
+				helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+					proxy, err := resourceClientset.ProxyClient().Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{
+						Ctx: ctx,
+					})
+					if compressedProxy {
+						if proxy.GetMetadata().GetAnnotations()[compress.CompressedKey] != compress.CompressedValue {
+							return nil, eris.New("Proxy should be compressed, but it does not contained compressed annotation")
+						}
+					} else {
+						if proxy.GetMetadata().GetAnnotations()[compress.CompressedKey] != "" {
+							return nil, eris.New("Proxy should not be compressed, but it does contain compressed annotation")
+						}
+					}
+					return proxy, err
+				})
+
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              helper.TestrunnerName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+					WithoutStats:      true,
+					Verbose:           true,
+				}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, 60*time.Second, 1*time.Second)
+			},
+				EntryDescription("can route to upstreams, compressedProxySpec = %v"),
+				Entry(nil, false),
+				Entry(nil, true))
+		})
 
 		Context("native ssl", func() {
+
+			var secretName = "secret-native-ssl"
 
 			BeforeEach(func() {
 				// get the certificate so it is generated in the background
 				go helpers.Certificate()
 
-				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret("secret", testHelper.InstallNamespace), metav1.CreateOptions{})
+				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret(secretName, testHelper.InstallNamespace), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// Modify the VirtualService to include the necessary SslConfig
 				testRunnerVs.SslConfig = &ssl.SslConfig{
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
-							Name:      createdSecret.ObjectMeta.Name,
-							Namespace: createdSecret.ObjectMeta.Namespace,
+							Name:      createdSecret.GetName(),
+							Namespace: createdSecret.GetNamespace(),
 						},
 					},
 				}
 			})
 
 			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, "secret", metav1.DeleteOptions{})
+				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -1090,7 +1139,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		// Update the Gloo Discovery WatchLabels setting to the specified value
 		setWatchLabels := func(watchLabels map[string]string) {
 			kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-				Expect(settings.GetDiscovery()).NotTo(BeNil())
 				settings.GetDiscovery().UdsOptions = &gloov1.Settings_DiscoveryOptions_UdsOptions{
 					WatchLabels: watchLabels,
 				}
@@ -1299,11 +1347,13 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		})
 
-		Context("routing (tcp/tls", func() {
+		Context("routing (tcp/tls)", func() {
+
+			var secretName = "secret-routing-tls"
 
 			BeforeEach(func() {
 				// Create secret to use for ssl routing
-				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret("secret", testHelper.InstallNamespace), metav1.CreateOptions{})
+				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret(secretName, testHelper.InstallNamespace), metav1.CreateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 
 				tcpGateway := defaults.DefaultTcpGateway(testHelper.InstallNamespace)
@@ -1335,7 +1385,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, "secret", metav1.DeleteOptions{})
+				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -1835,44 +1885,95 @@ var _ = Describe("Kube2e: gateway", func() {
 		// Also, adjusting the validation configuration takes time to propagate (server restart), so we write tests
 		// in order, which allows us to use BeforeAll instead of BeforeEach (https://onsi.github.io/ginkgo/#setup-in-ordered-containers-beforeall-and-afterall)
 
-		Context("Rejects invalid resources", func() {
+		expectResourceRejected := func(yaml string, errorMatcher types.GomegaMatcher) {
+			out, err := install.KubectlApplyOut([]byte(yaml))
 
-			// specifically avoiding using a DescribeTable here in order to avoid reinstalling
-			// for every test case
-			type testCase struct {
-				resourceYaml string
-				errorMatcher types.GomegaMatcher
+			ExpectWithOffset(1, string(out)).To(errorMatcher)
+			ExpectWithOffset(1, err).To(HaveOccurred())
+		}
+
+		expectResourceAccepted := func(yaml string) {
+			err := install.KubectlApply([]byte(yaml))
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+			// To ensure that we do not leave artifacts between tests
+			// we clean up the resource after it is accepted
+			err = install.KubectlDelete([]byte(yaml))
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
+		}
+
+		verifyGlooValidationWorks := func() {
+			// Validation of Gloo resources requires that a Proxy resource exist
+			// Therefore, before the tests start, we must attempt updates that should be rejected
+			// They will only be rejected once a Proxy exists in the ApiSnapshot
+
+			placeholderUs := &gloov1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      "",
+					Namespace: testHelper.InstallNamespace,
+				},
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &static.UpstreamSpec{
+						Hosts: []*static.Host{{
+							Addr: "~",
+						}},
+					},
+				},
 			}
+			attempt := 0
+			Eventually(func(g Gomega) bool {
+				placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
 
-			testValidation := func(yaml string, errorMatcher types.GomegaMatcher) {
-				out, err := install.KubectlApplyOut([]byte(yaml))
-
-				testValidationDidError := func() {
-					ExpectWithOffset(1, string(out)).To(errorMatcher)
-					ExpectWithOffset(1, err).To(HaveOccurred())
+				_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
+				if err != nil {
+					serr := err.Error()
+					g.Expect(serr).Should(ContainSubstring("admission webhook"))
+					g.Expect(serr).Should(ContainSubstring("port cannot be empty for host"))
+					// We have successfully rejected an invalid upstream
+					// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
+					return true
 				}
 
-				testValidationDidSucceed := func() {
-					ExpectWithOffset(1, err).NotTo(HaveOccurred())
-					// To ensure that we do not leave artifacts between tests
-					// we cleanup the resource after it is accepted
-					err = install.KubectlDelete([]byte(yaml))
-					ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				err = resourceClientset.UpstreamClient().Delete(
+					placeholderUs.GetMetadata().GetNamespace(),
+					placeholderUs.GetMetadata().GetName(),
+					clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
+				g.Expect(err).NotTo(HaveOccurred())
+
+				attempt += 1
+				return false
+			}, time.Second*15, time.Second*1).Should(BeTrue())
+		}
+
+		When("allowWarnings=false", Ordered, func() {
+
+			BeforeAll(func() {
+				// Set the validation settings to be as strict as possible so that we can trigger
+				// rejections by just producing a warning on the resource
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: false}
+				}, testHelper.InstallNamespace)
+			})
+
+			AfterAll(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+			})
+
+			It("Rejects invalid Gateway resources", func() {
+				verifyGlooValidationWorks()
+
+				// specifically avoiding using a DescribeTable here in order to avoid reinstalling
+				// for every test case
+				type testCase struct {
+					resourceYaml string
+					errorMatcher types.GomegaMatcher
 				}
 
-				if errorMatcher == nil {
-					testValidationDidSucceed()
-				} else {
-					testValidationDidError()
-				}
-			}
-
-			Context("Gateway resources", func() {
-
-				It("responds to API request appropriately", func() {
-					testCases := []testCase{
-						{
-							resourceYaml: `
+				testCases := []testCase{
+					{
+						resourceYaml: `
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -1881,17 +1982,129 @@ metadata:
 spec:
   virtualHoost: {}
 `,
-							// This is handled by validation schemas now
-							// We support matching on number of options, in order to support our nightly tests,
-							// which are run using our earliest and latest supported versions of Kubernetes
-							errorMatcher: Or(
-								// This is the error returned when running Kubernetes <1.25
-								ContainSubstring(`ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`),
-								// This is the error returned when running Kubernetes >= 1.25
-								ContainSubstring(`Error from server (BadRequest): error when creating "STDIN": VirtualService in version "v1" cannot be handled as a VirtualService: strict decoding error: unknown field "spec.virtualHoost"`)),
-						},
-						{
-							resourceYaml: `
+						// This is handled by validation schemas now
+						// We support matching on number of options, in order to support our nightly tests,
+						// which are run using our earliest and latest supported versions of Kubernetes
+						errorMatcher: Or(
+							// This is the error returned when running Kubernetes <1.25
+							ContainSubstring(`ValidationError(VirtualService.spec): unknown field "virtualHoost" in io.solo.gateway.v1.VirtualService.spec`),
+							// This is the error returned when running Kubernetes >= 1.25
+							ContainSubstring(`Error from server (BadRequest): error when creating "STDIN": VirtualService in version "v1" cannot be handled as a VirtualService: strict decoding error: unknown field "spec.virtualHoost"`)),
+					},
+					{
+						resourceYaml: `
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: method-matcher
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  virtualHost:
+    domains:
+     - unique2
+    routes:
+      - matchers:
+        - exact: /delegated-nonprefix  # not allowed
+        delegateAction:
+          name: does-not-exist # also not allowed, but caught later
+          namespace: anywhere
+`,
+						errorMatcher: ContainSubstring(gwtranslator.MissingPrefixErr.Error()),
+					},
+					{
+						resourceYaml: `
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-without-type
+  namespace: ` + testHelper.InstallNamespace + `
+spec:
+  bindAddress: '::'
+`,
+						errorMatcher: ContainSubstring(gwtranslator.MissingGatewayTypeErr.Error()),
+					},
+					{
+						resourceYaml: `
+apiVersion: ratelimit.solo.io/v1alpha1
+kind: RateLimitConfig
+metadata:
+  name: rlc
+  namespace: gloo-system
+spec:
+  raw:
+    descriptors:
+      - key: foo
+        value: foo
+        rateLimit:
+          requestsPerUnit: 1
+          unit: MINUTE
+    rateLimits:
+      - actions:
+        - genericKey:
+            descriptorValue: bar
+`,
+						errorMatcher: ContainSubstring("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only"),
+					},
+				}
+
+				for _, tc := range testCases {
+					expectResourceRejected(tc.resourceYaml, tc.errorMatcher)
+				}
+			})
+
+			It("Rejects invalid Gloo resources", func() {
+				verifyGlooValidationWorks()
+
+				// specifically avoiding using a DescribeTable here in order to avoid reinstalling
+				// for every test case
+				type testCase struct {
+					resourceYaml string
+					errorMatcher types.GomegaMatcher
+				}
+
+				testCases := []testCase{{
+					resourceYaml: `
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: invalid-upstream
+  namespace: gloo-system
+spec:
+  static:
+    hosts:
+      - addr: ~
+`,
+					errorMatcher: ContainSubstring("addr cannot be empty for host\n"),
+				}}
+				for _, tc := range testCases {
+					expectResourceRejected(tc.resourceYaml, tc.errorMatcher)
+				}
+			})
+
+		})
+
+		When("allowWarnings=true", Ordered, func() {
+
+			BeforeAll(func() {
+				kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
+					settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
+				}, testHelper.InstallNamespace)
+			})
+
+			AfterAll(func() {
+				// Our tests default to using allowWarnings=true, so we just need to ensure we leave it that way
+			})
+
+			It("Accepts valid Gateway resources", func() {
+				// specifically avoiding using a DescribeTable here in order to avoid reinstalling
+				// for every test case
+				type testCase struct {
+					resourceYaml string
+				}
+
+				testCases := []testCase{
+					{
+						resourceYaml: `
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -1912,157 +2125,14 @@ spec:
               name: does-not-exist
               namespace: anywhere
 `,
-							errorMatcher: nil, // should not fail
-						},
-						{
-							resourceYaml: `
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: method-matcher
-  namespace: ` + testHelper.InstallNamespace + `
-spec:
-  virtualHost:
-    domains:
-     - unique2
-    routes:
-      - matchers:
-        - exact: /delegated-nonprefix  # not allowed
-        delegateAction:
-          name: does-not-exist # also not allowed, but caught later
-          namespace: anywhere
-`,
-							errorMatcher: ContainSubstring(gwtranslator.MissingPrefixErr.Error()),
-						},
-						{
-							resourceYaml: `
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-without-type
-  namespace: ` + testHelper.InstallNamespace + `
-spec:
-  bindAddress: '::'
-`,
-							errorMatcher: ContainSubstring(gwtranslator.MissingGatewayTypeErr.Error()),
-						},
-						{
-							resourceYaml: `
-apiVersion: ratelimit.solo.io/v1alpha1
-kind: RateLimitConfig
-metadata:
-  name: rlc
-  namespace: gloo-system
-spec:
-  raw:
-    descriptors:
-      - key: foo
-        value: foo
-        rateLimit:
-          requestsPerUnit: 1
-          unit: MINUTE
-    rateLimits:
-      - actions:
-        - genericKey:
-            descriptorValue: bar
-`,
-							errorMatcher: ContainSubstring("The Gloo Advanced Rate limit API feature 'RateLimitConfig' is enterprise-only"),
-						},
-					}
-
-					for _, tc := range testCases {
-						testValidation(tc.resourceYaml, tc.errorMatcher)
-					}
-				})
-
-			})
-
-			Context("Gloo resources", Ordered, func() {
-
-				verifyValidationWorks := func() {
-					// Validation of Gloo resources requires that a Proxy resource exist
-					// Therefore, before the tests start, we must attempt updates that should be rejected
-					// They will only be rejected once a Proxy exists in the ApiSnapshot
-
-					placeholderUs := &gloov1.Upstream{
-						Metadata: &core.Metadata{
-							Name:      "",
-							Namespace: testHelper.InstallNamespace,
-						},
-						UpstreamType: &gloov1.Upstream_Static{
-							Static: &static.UpstreamSpec{
-								Hosts: []*static.Host{{
-									Addr: "~",
-								}},
-							},
-						},
-					}
-					attempt := 0
-					Eventually(func(g Gomega) bool {
-						placeholderUs.Metadata.Name = fmt.Sprintf("invalid-placeholder-us-%d", attempt)
-
-						_, err := resourceClientset.UpstreamClient().Write(placeholderUs, clients.WriteOpts{Ctx: ctx})
-						if err != nil {
-							serr := err.Error()
-							g.Expect(serr).Should(ContainSubstring("admission webhook"))
-							g.Expect(serr).Should(ContainSubstring("port cannot be empty for host"))
-							// We have successfully rejected an invalid upstream
-							// This means that the webhook is fully warmed, and contains a Snapshot with a Proxy
-							return true
-						}
-
-						err = resourceClientset.UpstreamClient().Delete(
-							placeholderUs.GetMetadata().GetNamespace(),
-							placeholderUs.GetMetadata().GetName(),
-							clients.DeleteOpts{Ctx: ctx, IgnoreNotExist: true})
-						g.Expect(err).NotTo(HaveOccurred())
-
-						attempt += 1
-						return false
-					}, time.Second*15, time.Second*1).Should(BeTrue())
+					},
 				}
 
-				BeforeAll(func() {
-					// Set the validation settings to be as strict as possible so that we can trigger
-					// rejections by just producing a warning on the resource
-					kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-						Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
-						settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: false}
-					}, testHelper.InstallNamespace)
-				})
-
-				AfterAll(func() {
-					kube2e.UpdateSettings(ctx, func(settings *gloov1.Settings) {
-						Expect(settings.GetGateway().GetValidation()).NotTo(BeNil())
-						settings.GetGateway().GetValidation().AllowWarnings = &wrappers.BoolValue{Value: true}
-					}, testHelper.InstallNamespace)
-				})
-
-				JustBeforeEach(func() {
-					verifyValidationWorks()
-				})
-
-				It("responds to API request appropriately", func() {
-					testCases := []testCase{{
-						resourceYaml: `
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  name: invalid-upstream
-  namespace: gloo-system
-spec:
-  static:
-    hosts:
-      - addr: ~
-`,
-						errorMatcher: ContainSubstring("addr cannot be empty for host\n"),
-					}}
-					for _, tc := range testCases {
-						testValidation(tc.resourceYaml, tc.errorMatcher)
-					}
-				})
-
+				for _, tc := range testCases {
+					expectResourceAccepted(tc.resourceYaml)
+				}
 			})
+
 		})
 
 		Context("DisableTransformationValidation", func() {
@@ -2145,7 +2215,7 @@ spec:
 
 		})
 
-		Context("AlwaysAccept", Ordered, func() {
+		When("alwaysAccept=true", Ordered, func() {
 			// We want to test behaviors when Gloo allows invalid resouces to be persisted
 
 			var uniqueSuffix int

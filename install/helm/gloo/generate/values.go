@@ -481,7 +481,7 @@ type GatewayProxyDeployment struct {
 }
 
 type HorizontalPodAutoscaler struct {
-	ApiVersion                     *string                  `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2."`
+	ApiVersion                     *string                  `json:"apiVersion,omitempty" desc:"accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2. Note: autoscaling/v2beta2 is deprecated as of Kubernetes 1.26."`
 	MinReplicas                    *int32                   `json:"minReplicas,omitempty" desc:"minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down."`
 	MaxReplicas                    *int32                   `json:"maxReplicas,omitempty" desc:"maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas."`
 	TargetCPUUtilizationPercentage *int32                   `json:"targetCPUUtilizationPercentage,omitempty" desc:"target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1"`

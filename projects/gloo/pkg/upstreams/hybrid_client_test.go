@@ -15,6 +15,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
@@ -123,11 +124,15 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				return nil, eris.Errorf("timed out waiting for next upstream list")
 			}
 		}, "3s").Should(HaveLen(4))
-		Consistently(errChan).Should(Not(Receive()))
+		// WARNING: the following Consistently exposes a brief 100ms window into an
+		// unbuffered channel. If messages are sent on that channel before this call,
+		// they will not cause a failure here. Consider using a buffered channel and/or
+		// explicitly setting duration (default 100ms) and interval (default 10ms)
+		Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 		cancel()
-		Eventually(usChan).Should(BeClosed())
-		Eventually(errChan).Should(BeClosed())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+		Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 	})
 
 	It("successfully sends even if polled sporadically", func() {
@@ -137,7 +142,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// get the initial list
-		Eventually(usChan).Should(Receive())
+		Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 
 		writeResources()
 		// give it time to propagate to watch goroutine <-collectUpstreamsChan
@@ -181,11 +186,15 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				}
 			}, "3s").Should(HaveLen(4))
 
-			Consistently(errChan).Should(Not(Receive()))
+			// WARNING: the following Consistently exposes a brief 100ms window into an
+			// unbuffered channel. If messages are sent on that channel before this call,
+			// they will not cause a failure here. Consider using a buffered channel and/or
+			// explicitly setting duration (default 100ms) and interval (default 10ms)
+			Consistently(errChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).Should(Not(Receive()))
 
 			cancel()
-			Eventually(usChan).Should(BeClosed())
-			Eventually(errChan).Should(BeClosed())
+			Eventually(usChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+			Eventually(errChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 		})
 	})
 

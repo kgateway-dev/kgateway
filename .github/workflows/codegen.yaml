@@ -8,7 +8,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/composite-actions/prep-go-runner
       - name: Install Protoc
-        uses: arduino/setup-protoc@master
+        uses: arduino/setup-protoc@v1
         with:
           version: '3.6.1'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
