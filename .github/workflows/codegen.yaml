@@ -9,6 +9,9 @@ jobs:
       - uses: ./.github/workflows/composite-actions/prep-go-runner
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
+        with:
+          version: '3.6.1'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate Code
         run: |
           ./ci/check-generated-code.sh
