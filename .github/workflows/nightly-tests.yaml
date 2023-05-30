@@ -28,6 +28,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/workflows/composite-actions/regression-tests
+
   performance_tests_latest_main:
     name: latest performance tests
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
