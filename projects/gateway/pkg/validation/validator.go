@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -535,6 +536,13 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	}
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 
+	// `RateLimitConfig` has a spec field we need to unmarshall into unlike our other CRs
+	// We cannot unmarshall `RateLimitConfig`s spec directly into the struct since
+	if resourceCrd.TypeMeta.Kind == "RateLimitConfig" {
+		if err := resource.(*v1alpha1.RateLimitConfig).UnmarshalSpec(*resourceCrd.Spec); err != nil {
+			return errors.Wrapf(err, "parsing ratelimitconfig from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
+		}
+	}
 	if resourceCrd.Spec != nil {
 		if err := skProtoUtils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
 			return errors.Wrapf(err, "parsing resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)

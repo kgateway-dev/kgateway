@@ -5,17 +5,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	validation2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -396,6 +398,28 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			Expect(review.Response.Allowed).To(BeTrue())
 			Expect(review.Response.Result).To(BeNil())
 		})
+	})
+
+	It("Parses RateLimitConfigs", func() {
+		content, err := os.ReadFile("testdata/ratelimitconfig.json")
+		Expect(err).ToNot(HaveOccurred())
+		url, err := url.Parse("somePlaceholderUrl")
+		Expect(err).ToNot(HaveOccurred())
+
+		req := http.Request{
+			URL:    url,
+			Header: map[string][]string{},
+			Body:   io.NopCloser(bytes.NewBuffer(content)),
+		}
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		wh.ServeHTTP(w, &req)
+		data, err := io.ReadAll(w.Result().Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(data).To(Equal([]uint8(`{"response":{"uid":"f259ee76-44d8-46d7-9243-a06254412462","allowed":true}}`)))
+
+		err = w.Result().Body.Close()
+		Expect(err).ToNot(HaveOccurred())
 	})
 })
 
