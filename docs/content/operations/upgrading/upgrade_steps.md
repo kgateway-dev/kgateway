@@ -21,8 +21,7 @@ Follow the steps in [Update glooctl CLI version]({{% versioned_link_path fromRoo
 
 ## Step 3: Apply minor version-specific changes {#crds}
 
-CHANGE
-Each minor version might add custom resource definitions (CRDs) or otherwise have changes that Helm upgrades cannot handle seamlessly.
+Each minor version might add custom resource definitions (CRDs) or otherwise have changes that Helm upgrades cannot handle seamlessly. For these changes, you must make any necessary adjustments before you upgrade.
 
 1. Update the Gloo Edge Helm repositories.
    ```sh
@@ -31,7 +30,7 @@ Each minor version might add custom resource definitions (CRDs) or otherwise hav
 
 2. Set the version to upgrade Gloo Edge to in an environment variable, such as the latest patch version for open source (`{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`) or enterprise (`{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}`).
    ```sh
-   export TARGET_VERSION=<version>
+   export NEW_VERSION=<version>
    ```
 
 3. Check the [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) to see which CRDs are new, deprecated, or removed in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
@@ -40,13 +39,13 @@ Each minor version might add custom resource definitions (CRDs) or otherwise hav
       {{< tabs >}}
 {{% tab name="Open Source" %}}
 ```sh
-helm pull gloo/gloo --version $TARGET_VERSION --untar
+helm pull gloo/gloo --version $NEW_VERSION --untar
 kubectl apply -f gloo/crds
 ```
 {{% /tab %}}
 {{% tab name="Enterprise" %}}
 ```sh
-helm pull glooe/gloo-ee --version $TARGET_VERSION --untar
+helm pull glooe/gloo-ee --version $NEW_VERSION --untar
 kubectl apply -f gloo-ee/charts/gloo/crds
 # If Gloo Federation is enabled
 kubectl apply -f gloo-ee/charts/gloo-fed/crds
@@ -80,8 +79,7 @@ open values.yaml
 
 ## Step 4: Upgrade Gloo Edge {#upgrade}
 
-CHANGE
-The following example upgrade process assumes that Gloo Edge is installed with Helm in the `gloo-system` namespace of a Kubernetes cluster that uses the Kubernetes load balancer, and that the Kubernetes context is set to the cluster.
+Upgrade your Gloo Edge installation. The following example upgrade commands assume that Gloo Edge is installed with Helm, the Helm release exists in the `gloo-system` namespace of a Kubernetes cluster that uses the Kubernetes load balancer, and that the Kubernetes context is set to the cluster.
 
 1. Upgrade the Helm release. Include your installation values in a Helm values file (such as `-f values.yaml`) or in `--set` flags.
    {{< tabs >}}
@@ -89,7 +87,7 @@ The following example upgrade process assumes that Gloo Edge is installed with H
    ```shell script
    helm upgrade -n gloo-system gloo gloo/gloo \
    -f values.yaml \
-   --version=$TARGET_VERSION
+   --version=$NEW_VERSION
    ```
    {{% /tab %}}
    {{% tab name="Enterprise" %}}
@@ -97,7 +95,7 @@ The following example upgrade process assumes that Gloo Edge is installed with H
    ```shell script
    helm upgrade -n gloo-system gloo glooe/gloo-ee \
    -f values.yaml \
-   --version=$TARGET_VERSION \
+   --version=$NEW_VERSION \
    --set license_key=$LICENSE_KEY
    ```
    {{% /tab %}}
@@ -135,4 +133,4 @@ The following example upgrade process assumes that Gloo Edge is installed with H
    No problems detected.
    ```
 
-5. Now that your upgrade is complete, you can enable any other [new features]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) that you want to use.
+5. Now that your upgrade is complete, you can enable any other [new features]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} that you want to use.

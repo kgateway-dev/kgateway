@@ -11,7 +11,7 @@ Before you upgrade Gloo Edge, complete the following preparatory steps:
 
 ## Prepare your environment {#prepare}
 
-Before you upgrade Gloo Edge, review the following preparatory steps that might be required for your environment.
+Review the following preparatory steps that might be required for your environment.
 
 ### Upgrade your current minor version to latest patch
 
@@ -119,26 +119,20 @@ The basic `helm upgrade` process is not suitable for environments in which downt
 
 Additionally, you might need to take steps to account for other factors such as Gloo Edge version changes, probe configurations, and external infrastructure like the load balancer that Gloo Edge uses. Consider setting up [liveness probes and healthchecks](#downtime) in your environment.
 
-### What happens to my upstreams, virtual services, settings, and other Gloo Edge CRs during an upgrade?
+### What happens to my Gloo Edge CRs during an upgrade? How do I handle breaking changes?
 
-A normal upgrade of Gloo Edge across minor versions should not cause any disruption to existing Gloo Edge state. In the case of a breaking change, we will communicate through the changelog or other channels if some other adjustment must be made to perform the upgrade. As of open-source Gloo Edge version 0.21.1, there is a command available in `glooctl` that can help mitigate some concern about Gloo Edge state: `glooctl debug yaml` can be used to dump the current Gloo Edge state to one large YAML manifest. While this command is not yet really suitable as a robust backup tool, it is a useful debug tool to have available.
+A typical upgrade of Gloo Edge across minor versions should not cause disruptions to the existing Gloo Edge state. In the case of a breaking change, Solo will communicate through the upgrade guides, changelogs, or other channels if you must make a specific adjustment to perform the upgrade. Note that you can always use the `glooctl debug yaml` command to download the current Gloo Edge state to one large YAML manifest.
 
-### How do I handle upgrading across a breaking change?
+### Is the upgrade procedure different if I am not a cluster administrator?
 
-See above; the short answer is that we will try to clearly communicate what, if anything, should be done to accommodate preserving Gloo Edge state during an upgrade.
-
-### Is the upgrade procedure any different if I am not an administrator of the cluster being installed to?
-
-If you are not an administrator of your cluster, you may have trouble creating both custom resource definitions and other cluster-scoped resources (like RBAC ClusterRoles/ClusterRoleBindings). If you run into trouble with this during an installation, you can disable the creation of these resources by overriding the values:
-
+If you are not an administrator of your cluster, you might be unable to create custom resource definitions (CRDs) and other cluster-scoped resources, such as cluster roles and cluster role bindings. If you encounter an error related to these resources, you can disable their creation by including the following setting in your Helm values:
 ```yaml
 global:
   glooRbac:
     create: false
 ```
 
-You may also try performing an installation of Gloo Edge that is scoped to a single namespace:
-
+Otherwise, you can try performing an installation of Gloo Edge that is scoped to a single namespace by including the following setting in your Helm values:
 ```yaml
 global:
   glooRbac:
@@ -147,9 +141,8 @@ global:
 
 ### Why do I get an error about re-creating CRDs when upgrading using `helm install` or `helm upgrade`?
 
-Using Helm 2 is not supported in Gloo Edge. Helm v2 does not manage CRDs well, so you may have to delete the CRDs and try again, or install using some other method.
+Helm v2 does not manage CRDs well, and is not supported in Gloo Edge. Upgrade to Helm v3, delete the CRDs, and try again.
 
+### Why do I get an error about a `gateway-certgen` job?
 
-{{% notice note %}}
 The upgrade creates a Kubernetes Job named `gateway-certgen` to generate a certificate for the validation webhook. The job contains the `ttlSecondsAfterFinished` value so that the cluster cleans up the job automatically, but because this setting is still in Alpha, your cluster might ignore this value. In this case, you might have an issue while upgrading in which the upgrade attempts to change the `gateway-certgen` job, but the change fails because the job is immutable. To fix this issue, you can delete the job, which already completed, and re-apply the upgrade.
-{{% /notice %}}
