@@ -1,15 +1,17 @@
 package gloo_test
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/solo-io/solo-kit/test/helpers"
-
+	"github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/k8s-utils/kubeutils"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -19,6 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/gloo/test/gomega"
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
@@ -81,7 +84,7 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).NotTo(HaveOccurred())
 			kubeClient = resourceClientset.KubeClients()
 
-			testNamespace = helpers.RandString(8)
+			testNamespace = skhelpers.RandString(8)
 			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
@@ -162,14 +165,13 @@ var _ = Describe("Bootstrap Clients", func() {
 			settings     *v1.Settings
 		)
 		BeforeEach(func() {
-			Skip("WIP")
 			var err error
 
 			cfg, err = kubeutils.GetConfig("", "")
 			Expect(err).NotTo(HaveOccurred())
 			kubeClient = resourceClientset.KubeClients()
 
-			testNamespace = helpers.RandString(8)
+			testNamespace = skhelpers.RandString(8)
 			_, err = kubeClient.CoreV1().Namespaces().Create(ctx, &kubev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
@@ -181,18 +183,29 @@ var _ = Describe("Bootstrap Clients", func() {
 
 			kubeSecretName = "kubesecret"
 
+			kubeSecret := helpers.GetKubeSecret(kubeSecretName, testNamespace)
 			_, err = kubeClient.CoreV1().Secrets(testNamespace).Create(ctx,
-				&kubev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      kubeSecretName,
-						Namespace: testNamespace,
-						Annotations: map[string]string{
-							"resource_kind": "*v1.Secret",
-						},
-					},
-				},
+				kubeSecret,
 				metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
+
+			kubeSecretMatcher := gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+				"ObjectMeta": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+					"Name":      Equal(kubeSecretName),
+					"Namespace": Equal(testNamespace),
+				}),
+			})
+			Eventually(func(g Gomega) error {
+				l, err := kubeClient.CoreV1().Secrets(testNamespace).List(ctx, metav1.ListOptions{})
+				if err != nil {
+					return err
+				}
+
+				g.Expect(l.Items).To(ContainElement(kubeSecretMatcher))
+
+				return nil
+
+			}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).ShouldNot(HaveOccurred())
 
 			settings = &v1.Settings{
 				SecretOptions: &v1.Settings_SecretOptions{
@@ -254,6 +267,14 @@ var _ = Describe("Bootstrap Clients", func() {
 				}
 
 				vaultInstance.WriteSecret(secretForVault)
+				Eventually(func(g Gomega) error {
+					s, err := vaultInstance.Exec("kv", "get", "-mount=secret", fmt.Sprintf("gloo/gloo.solo.io/v1/Secret/%s/%s", testNamespace, vaultSecretName))
+					if err != nil {
+						return err
+					}
+					g.Expect(s).NotTo(BeEmpty())
+					return nil
+				}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).ShouldNot(HaveOccurred())
 
 				vaultSettings := &v1.Settings_VaultSecrets{
 					Address: vaultInstance.Address(),
@@ -269,6 +290,8 @@ var _ = Describe("Bootstrap Clients", func() {
 					},
 				})
 
+				settings.GetSecretOptions().Sources = sources
+
 				vaultClientInitMap = map[int]clients.VaultClientInitFunc{
 					1: func() *vaultapi.Client {
 						c, err := clients.VaultClientForSettings(vaultSettings)
@@ -278,6 +301,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				}
 			})
 			It("lists secrets", func() {
+				Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&clients.MultiSecretResourceClient{}))
 				l, err := secretClient.List(testNamespace, skclients.ListOpts{})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(l).NotTo(BeNil())
@@ -288,7 +312,7 @@ var _ = Describe("Bootstrap Clients", func() {
 
 				vaultSecret, err := l.Find(testNamespace, vaultSecretName)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(vaultSecret).NotTo(BeNil())
+				Expect(vaultSecret).NotTo(BeNil(), fmt.Sprintf("%+v", l))
 			})
 		})
 	})
