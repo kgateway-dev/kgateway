@@ -824,6 +824,8 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
+	target.DisableClientSecret = m.GetDisableClientSecret()
+
 	return target
 }
 
@@ -890,6 +892,8 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.RevocationEndpoint = m.GetRevocationEndpoint()
 
+	target.DisableClientSecret = m.GetDisableClientSecret()
+
 	return target
 }
 
@@ -953,6 +957,8 @@ func (m *IntrospectionValidation) Clone() proto.Message {
 	}
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
+
+	target.DisableClientSecret = m.GetDisableClientSecret()
 
 	return target
 }
@@ -2607,6 +2613,8 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
 	}
 
+	target.DisableClientSecret = m.GetDisableClientSecret()
+
 	return target
 }
 
@@ -2743,6 +2751,8 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	} else {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
 	}
+
+	target.DisableClientSecret = m.GetDisableClientSecret()
 
 	return target
 }
@@ -3233,6 +3243,8 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation) Clon
 	target.ClientSecret = m.GetClientSecret()
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
+
+	target.DisableClientSecret = m.GetDisableClientSecret()
 
 	return target
 }

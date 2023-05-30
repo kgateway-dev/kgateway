@@ -280,6 +280,8 @@ spec:
                                     namespace:
                                       type: string
                                   type: object
+                                disableClientSecret:
+                                  type: boolean
                                 introspectionUrl:
                                   type: string
                                 userIdAttributeName:
@@ -337,6 +339,8 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            disableClientSecret:
+                              type: boolean
                             logoutPath:
                               type: string
                             revocationEndpoint:
@@ -456,6 +460,8 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            disableClientSecret:
+                              type: boolean
                             discoveryOverride:
                               properties:
                                 authEndpoint:

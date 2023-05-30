@@ -896,13 +896,14 @@ The Method used to make the request.
 "parseCallbackPathAsRegex": bool
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
+"disableClientSecret": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | your client id as registered with the issuer. |
-| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. This is required unless `disable_client_secret` is true. |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
 | `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
@@ -920,6 +921,7 @@ The Method used to make the request.
 | `parseCallbackPathAsRegex` | `bool` | If set, CallbackPath will be evaluated as a regular expression. |
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
+| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
 
 
 
@@ -943,13 +945,14 @@ The Method used to make the request.
 "authEndpoint": string
 "tokenEndpoint": string
 "revocationEndpoint": string
+"disableClientSecret": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | Your client ID as registered with the issuer. |
-| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. |
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. This is required unless `disable_client_secret` is set. |
 | `authEndpointQueryParams` | `map<string, string>` | Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. These parameters can be useful for flows such as [PKCE](https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
 | `appUrl` | `string` | Where to redirect after successful auth, if Gloo can't determine the original URL. Set this field to your publicly available app URL. |
 | `callbackPath` | `string` | A callback path relative to the app URL to be used for OAuth2 callbacks. Do not use this path in the application itself. |
@@ -961,6 +964,7 @@ The Method used to make the request.
 | `authEndpoint` | `string` | The URL of the provider authorization endpoint. |
 | `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
 | `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
+| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret. |
 
 
 
@@ -1058,6 +1062,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "clientId": string
 "clientSecretRef": .core.solo.io.ResourceRef
 "userIdAttributeName": string
+"disableClientSecret": bool
 
 ```
 
@@ -1067,6 +1072,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
+| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token validation without a client secret. |
 
 
 
@@ -1770,6 +1776,7 @@ Deprecated, prefer OAuth2Config
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "userSession": .enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig
+"disableClientSecret": bool
 
 ```
 
@@ -1795,6 +1802,7 @@ Deprecated, prefer OAuth2Config
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `userSession` | [.enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig](../extauth.proto.sk/#usersessionconfig) | Configuration related to the user session. |
+| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
 
 
 
@@ -1919,6 +1927,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "clientId": string
 "clientSecret": string
 "userIdAttributeName": string
+"disableClientSecret": bool
 
 ```
 
@@ -1928,6 +1937,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecret` | `string` | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
+| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token introspection with a client_id and without a client_secret. |
 
 
 
@@ -1969,6 +1979,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "tokenEndpoint": string
 "revocationEndpoint": string
 "userSession": .enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig
+"disableClientSecret": bool
 
 ```
 
@@ -1988,6 +1999,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `tokenEndpoint` | `string` | The URL of the provider token endpoint. |
 | `revocationEndpoint` | `string` | The URL of the provider token revocation endpoint. For more information, refer to https://www.rfc-editor.org/rfc/rfc7009. |
 | `userSession` | [.enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig](../extauth.proto.sk/#usersessionconfig) | Configuration related to the user session. |
+| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret. |
 
 
 

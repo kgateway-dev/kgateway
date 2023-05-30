@@ -554,7 +554,8 @@ message OidcAuthorizationCode {
     // your client id as registered with the issuer
     string client_id = 1;
 
-    // your client secret as registered with the issuer
+    // your client secret as registered with the issuer.
+    // This is required unless `disable_client_secret` is true
     core.solo.io.ResourceRef client_secret_ref = 2;
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
@@ -655,13 +656,19 @@ message OidcAuthorizationCode {
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
+
+    // If true, do not check for or use the client secret.
+    // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+    // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
+    bool disable_client_secret = 20;
 }
 
 message PlainOAuth2 {
     // Your client ID as registered with the issuer
     string client_id = 1;
 
-    // Your client secret as registered with the issuer
+    // Your client secret as registered with the issuer.
+    // This is required unless `disable_client_secret` is set.
     core.solo.io.ResourceRef client_secret_ref = 2;
 
     // Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
@@ -706,6 +713,10 @@ message PlainOAuth2 {
     // The URL of the provider token revocation endpoint.
     // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
     string revocation_endpoint = 13;
+    // If true, do not check for or use the client secret.
+    // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+    // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret.
+    bool disable_client_secret = 14;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -783,6 +794,11 @@ message IntrospectionValidation {
     // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
     // This field is optional and by default the server will not try to derive the user ID.
     string user_id_attribute_name = 4;
+
+    // If true, do not check for or use the client secret.
+    // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+    // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token validation without a client secret.
+    bool disable_client_secret = 5;
 }
 
 message AccessTokenValidation {
@@ -1398,6 +1414,11 @@ message ExtAuthConfig {
 
         // Configuration related to the user session.
         UserSessionConfig user_session = 20;
+
+        // If true, do not check for or use the client secret.
+        // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+        // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
+        bool disable_client_secret = 21;
     }
 
     message AccessTokenValidationConfig {
@@ -1476,6 +1497,11 @@ message ExtAuthConfig {
             // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
             // This field is optional and by default the server will not try to derive the user ID.
             string user_id_attribute_name = 4;
+
+            // If true, do not check for or use the client secret.
+            // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+            // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token introspection with a client_id and without a client_secret.
+            bool disable_client_secret = 5;
         }
 
         oneof validation_type {
@@ -1579,6 +1605,11 @@ message ExtAuthConfig {
 
         // Configuration related to the user session.
         UserSessionConfig user_session = 14;
+
+        // If true, do not check for or use the client secret.
+        // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+        // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret.
+        bool disable_client_secret = 15;
     }
 
     message OAuth2Config {

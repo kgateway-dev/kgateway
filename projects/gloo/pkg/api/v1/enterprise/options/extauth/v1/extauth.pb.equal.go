@@ -1388,6 +1388,10 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
+		return false
+	}
+
 	return true
 }
 
@@ -1494,6 +1498,10 @@ func (m *PlainOAuth2) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetRevocationEndpoint(), target.GetRevocationEndpoint()) != 0 {
+		return false
+	}
+
+	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
 		return false
 	}
 
@@ -1607,6 +1615,10 @@ func (m *IntrospectionValidation) Equal(that interface{}) bool {
 	}
 
 	if strings.Compare(m.GetUserIdAttributeName(), target.GetUserIdAttributeName()) != 0 {
+		return false
+	}
+
+	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
 		return false
 	}
 
@@ -4412,6 +4424,10 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	}
 
+	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
+		return false
+	}
+
 	return true
 }
 
@@ -4633,6 +4649,10 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetUserSession(), target.GetUserSession()) {
 			return false
 		}
+	}
+
+	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
+		return false
 	}
 
 	return true
@@ -5415,6 +5435,10 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation) Equa
 	}
 
 	if strings.Compare(m.GetUserIdAttributeName(), target.GetUserIdAttributeName()) != 0 {
+		return false
+	}
+
+	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
 		return false
 	}
 
