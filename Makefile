@@ -592,11 +592,14 @@ VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 
-# Possible Values: NONE, RELEASE, PULL_REQUEST
-PUBLISH_CONTEXT       ?= NONE                            # controller variable for the "Publish Artifacts" section.  Defines which targets exist.
-VERSION               ?= 1.0.1-dev                       # a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
-HELM_BUCKET           ?= gs://solo-public-tagged-helm	 # specify which bucket to upload helm chart to
-QUAY_EXPIRATION_LABEL ?= --label "quay.expires-after=3w" # modifier to docker builds which can auto-delete docker images after a set time
+# controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
+PUBLISH_CONTEXT ?= NONE
+# a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
+VERSION ?= 1.0.1-dev
+# specify which bucket to upload helm chart to
+HELM_BUCKET ?= gs://solo-public-tagged-helm
+# modifier to docker builds which can auto-delete docker images after a set time
+QUAY_EXPIRATION_LABEL ?= --label "quay.expires-after=3w"
 
 # define empty publish targets so calls won't fail
 .PHONY: publish-docker-retag
