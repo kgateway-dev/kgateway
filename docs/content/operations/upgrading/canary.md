@@ -1,20 +1,21 @@
 ---
-title: Canary Upgrade
+title: Canary upgrade
 weight: 30
-description: Upgrading Gloo Edge in a canary model
+description: Use a canary upgrade model to upgrade Gloo Edge, such as in production environments.
 ---
 
 You can upgrade your Gloo Edge deployments by following a canary model. In the canary model, you make two different `gloo` deployments in your data plane, one that runs your current version and one for the target version to upgrade to. Then, you check that the deployment at the target version handles traffic as you expect before upgrading to run the target version. This approach helps you reduce potential downtime for production upgrades.
 
+Periodically, we need to make changes to the Gloo Edge API that are non-backwards compatible. For these cases, 
+we'll provide guides so that customers can upgrade production environments while minimizing downtime and risk. 
+
 ## Before you begin
 
-1. Install Gloo Edge Open Source or Enterprise **version 1.9.0 or later**, or Federation **version 1.13.0 or later**.
-2. [Upgrade your installation]({{< versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" >}}) to the latest patch version for your current minor version. For example, you might upgrade your {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} installation to the latest {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} patch.
-3. If you have Gloo Edge Enterprise or Federation, set your license key as an environment variable. To request a license, [contact Sales](https://www.solo.io/company/contact/).
+1. If you have Gloo Edge Enterprise or Federation, set your license key as an environment variable. To request a license, [contact Sales](https://www.solo.io/company/contact/).
    ```
-   export GLOO_LICENSE=<license>
+   export LICENSE_KEY=<license>
    ```
-4. Set the target version that you want to upgrade to as an environment variable. To find available versions, check the [changelog]({{< versioned_link_path fromRoot="/reference/changelog/" >}}). The following commands include the latest versions for each of the following Gloo Edge installation options.
+2. Set the target version that you want to upgrade to as an environment variable. To find available versions, check the [changelog]({{< versioned_link_path fromRoot="/reference/changelog/" >}}). The following commands include the latest versions for each of the following Gloo Edge installation options.
    {{< tabs >}} 
 {{< tab name="Open Source" codelang="shell" >}}
 export TARGET_VERSION={{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
@@ -26,8 +27,7 @@ export TARGET_VERSION={{< readfile file="static/content/version_gee_latest.md" m
 export TARGET_VERSION={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
 {{< /tab >}} 
    {{< /tabs >}}
-5. [Upgrade your `glooctl` CLI]({{< versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/#step-2-upgrade-glooctl" >}}) to the version that you want to upgrade to.
-6. Check the [upgrade notice for the minor version]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs for the patch version]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) that you want to upgrade to. In particular, review the following changes:
+1. Check the [upgrade notice for the minor version]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs for the patch version]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) that you want to upgrade to. In particular, review the following changes:
    * **CRD changes**: Each patch version might add custom resource definitions (CRDs), update existing CRDs, or remove outdated CRDs. When you perform a canary upgrade, the existing Gloo Edge CRDs are not updated to the newer version automatically. You must manually apply the new CRDs first. The Gloo Edge CRDs are designed to be backward compatible, so the new CRDs should not impact the performance of your older installation. However, if after evaluating the newer installation you decide to continue to use the older installation, you can easily remove any added CRDs by referring to the upgrade notices for the CRD names and running `kubectl delete crd <CRD>`. Then, to re-apply older versions of CRDs, you can run `helm pull gloo/gloo --version <older_version> --untar` and `kubectl apply -f gloo/crds`.
    * **Breaking changes**: Occasionally, breaking changes are introduced between patch versions. For example, Gloo custom resources might get renamed or have conflicting fields. Modify your resources to use the new version that you upgrade to.
 
@@ -66,7 +66,7 @@ kubectl apply -f gloo-ee/charts/gloo/crds
 glooctl install gateway --version $TARGET_VERSION -n gloo-system-$TARGET_VERSION
 {{< /tab >}}
 {{< tab name="Enterprise" codelang="shell">}}
-glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TARGET_VERSION --license-key $GLOO_LICENSE
+glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TARGET_VERSION --license-key $LICENSE_KEY
 {{< /tab >}}
    {{< /tabs >}}
 4. Verify that your current and target versions of Gloo Edge are running.
@@ -102,7 +102,7 @@ In the canary upgrade model, you start with an older version of Gloo Edge Federa
    ```
 3. Install the target version of Gloo Edge Federation in the new namespace in your management cluster.
    ```
-   helm install -n gloo-system-$TARGET_VERSION gloo-fed gloo-fed/gloo-fed --create-namespace --set-string license_key=$GLOO_LICENSE --version $TARGET_VERSION
+   helm install -n gloo-system-$TARGET_VERSION gloo-fed gloo-fed/gloo-fed --create-namespace --set-string license_key=$LICENSE_KEY --version $TARGET_VERSION
    ```
 4. Verify that your current and target versions of Gloo Edge Federation are running. 
    ```shell
@@ -251,10 +251,10 @@ helm pull gloo-fed/gloo-fed --version $ROLLBACK_VERSION --untar
 glooctl install gateway --version $ROLLBACK_VERSION-n gloo-system-$ROLLBACK_VERSION
 {{< /tab >}}
 {{< tab name="Enterprise" codelang="shell">}}
-glooctl install gateway enterprise --version $ROLLBACK_VERSION -n gloo-system-$ROLLBACK_VERSION --license-key $GLOO_LICENSE
+glooctl install gateway enterprise --version $ROLLBACK_VERSION -n gloo-system-$ROLLBACK_VERSION --license-key $LICENSE_KEY
 {{< /tab >}}
 {{< tab name="Federation" codelang="shell">}}
-helm install -n gloo-system-$ROLLBACK_VERSION gloo-fed gloo-fed/gloo-fed --create-namespace --set-string license_key=$GLOO_LICENSE --version $ROLLBACK_VERSION
+helm install -n gloo-system-$ROLLBACK_VERSION gloo-fed gloo-fed/gloo-fed --create-namespace --set-string license_key=$LICENSE_KEY --version $ROLLBACK_VERSION
 {{< /tab >}} 
       {{< /tabs >}}
 1.  Revert any changes to custom resources that you previously modified during the upgrade to the newer target version. For differences between versions, check the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}).
