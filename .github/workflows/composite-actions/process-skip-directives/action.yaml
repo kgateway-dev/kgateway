@@ -21,4 +21,4 @@ runs:
   - id: process-skip-directives
     name: Process Skip Directives
     shell: bash
-    run: ./ci/github-actions/process-skip-directives/script.sh ${{ github.event.inputs.base-ref }}
+    run: ./ci/github-actions/process-skip-directives/script.sh ${{ inputs.base-ref }}
