@@ -10,8 +10,8 @@ jobs:
     name: Prepare Environment
     runs-on: ubuntu-22.04
     outputs:
-      should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
-      should-auto-succeed-regression-tests: ${{ steps.regression-tests.outputs.auto_succeed }}
+      should-run-regression-tests: ${{ steps.run-strategy.outputs.run_value }}
+      should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.11.0
@@ -29,7 +29,7 @@ jobs:
     - uses: ./.github/workflows/composite-actions/prep-go-runner
     - id: process-skip-directives
       uses: ./.github/workflows/composite-actions/process-skip-directives
-    - id: regression-tests
+    - id: run-strategy
       name: Determine Test Run Strategy
       run: |
         should_run=true
