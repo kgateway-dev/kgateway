@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	process_skip_directives "github.com/solo-io/gloo/ci/github-actions/process-skip-directives"
 	"os"
+
+	process_skip_directives "github.com/solo-io/gloo/ci/github-actions/process-skip-directives"
 )
 
 func main() {
