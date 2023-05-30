@@ -1,5 +1,6 @@
 name: Gloo Regression Tests
-description: Tests which run Gloo Edge, end to end in a Kubernetes cluster
+
+description: Tests which run Gloo Edge in a Kubernetes cluster
 
 inputs:
   # Regression tests are configured in our branch protection rules, which means that we must receive
@@ -12,7 +13,6 @@ inputs:
 
 runs:
   using: "composite"
-  if: ${{ inputs.auto-succeed }} != "true"
   steps:
   - name: Cancel Previous Actions
     uses: styfle/cancel-workflow-action@0.11.0
@@ -65,14 +65,6 @@ runs:
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
     shell: bash
     run: make install-test-tools run-kube-e2e-tests
-  - uses: testspace-com/setup-testspace@v1
-    with:
-      domain: solo-io.testspace.com
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-  - name: Push result to Testspace server
-    shell: bash
-    run: testspace push --verbose "**/junit.xml"
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   - name: save results
     if: ${{ failure() }}
     shell: bash
