@@ -5,3 +5,7 @@ changelog:
 
       skipCI-kube-tests:true
       skipCI-docs-build:true
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4917
+    resolvesIssue: false
+    description: Support optionally skipping CI jobs on a PR.
