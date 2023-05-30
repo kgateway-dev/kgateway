@@ -10,7 +10,6 @@ jobs:
     name: Prepare Environment
     runs-on: ubuntu-22.04
     outputs:
-      should-run-regression-tests: ${{ steps.run-strategy.outputs.run_value }}
       should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
@@ -32,7 +31,7 @@ jobs:
       run: |
         skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
         if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
-          echo "auto_succeed=$should_auto_succeed" >> $GITHUB_OUTPUT
+          echo "auto_succeed=true" >> $GITHUB_OUTPUT
         fi
 
   regression_tests:
