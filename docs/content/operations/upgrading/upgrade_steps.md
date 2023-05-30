@@ -17,7 +17,7 @@ Before you begin, follow the [Prepare to upgrade]({{% versioned_link_path fromRo
 
 ## Step 2: Upgrade glooctl {#glooctl}
 
-Follow the steps in [Update glooctl CLI version]({{% versioned_link_path fromRoot="/installation/preparation/#update-glooctl" %}}) to install or update `glooctl` to the version you want to upgrade to.
+Follow the steps in [Update glooctl CLI version]({{% versioned_link_path fromRoot="/installation/preparation/#update-glooctl" %}}) to update `glooctl` to the version you want to upgrade to.
 
 ## Step 3: Apply minor version-specific changes {#crds}
 
