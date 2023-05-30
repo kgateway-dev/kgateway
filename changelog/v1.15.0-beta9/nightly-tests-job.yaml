@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5003
+    resolvesIssue: true
+    description: >-
+      Add job to nightly-tests action which runs tests with the Nightly label.
