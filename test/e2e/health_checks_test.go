@@ -33,6 +33,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -187,7 +188,7 @@ var _ = Describe("Health Checks", func() {
 				testRequest := basicReq([]byte(`"foo"`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-				Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 					"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 				}))))
 			})
@@ -215,7 +216,7 @@ var _ = Describe("Health Checks", func() {
 
 			Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-			Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 			}))))
 		})

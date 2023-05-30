@@ -153,7 +153,15 @@ func getSecretClient(ctx context.Context) v1.SecretClient {
 	mc := memory.NewInMemoryResourceCache()
 	var kubeCoreCache corecache.KubeCoreCache
 	settings := &v1.Settings{}
-	secretFactory, err := bootstrap.SecretFactoryForSettings(ctx, settings, mc, &config, nil, &kubeCoreCache, nil, v1.SecretCrd.Plural)
+	secretFactory, err := bootstrap.SecretFactoryForSettings(ctx, bootstrap.SecretFactoryParams{
+		Settings:           settings,
+		SharedCache:        mc,
+		Cfg:                &config,
+		Clientset:          nil,
+		KubeCoreCache:      &kubeCoreCache,
+		VaultClientInitMap: nil,
+		PluralName:         v1.SecretCrd.Plural,
+	})
 	Expect(err).NotTo(HaveOccurred())
 	secretClient, err := v1.NewSecretClient(ctx, secretFactory)
 	Expect(err).NotTo(HaveOccurred())

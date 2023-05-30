@@ -14,7 +14,8 @@ const DefaultPathPrefix = clients.DefaultPathPrefix
 
 // Deprecated. Use bootstrap/clients
 func NewVaultSecretClientFactory(client *api.Client, pathPrefix, rootKey string) factory.ResourceClientFactory {
-	return clients.NewVaultSecretClientFactory(client, pathPrefix, rootKey)
+	f := func() *api.Client { return client }
+	return clients.NewVaultSecretClientFactory(f, pathPrefix, rootKey)
 }
 
 // Deprecated. Use bootstrap/clients
