@@ -11,5 +11,5 @@ import (
 
 func TestPerformance(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Envoy Translator Syncer Performance Suite", Label(labels.Nightly, labels.Performance))
+	RunSpecs(t, "Envoy Translator Syncer Performance Suite", Label(labels.Performance))
 }

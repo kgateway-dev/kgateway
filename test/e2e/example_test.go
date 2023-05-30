@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/ginkgo/labels"
-
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -17,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
-var _ = Describe("Example E2E Test For Developers", Label(labels.Nightly), func() {
+var _ = Describe("Example E2E Test For Developers", Label(), func() {
 
 	// The TestContext is a framework for writing e2e tests
 	// This test provides some basic use cases to demonstrate how to leverage the framework
@@ -27,6 +25,8 @@ var _ = Describe("Example E2E Test For Developers", Label(labels.Nightly), func(
 	)
 
 	BeforeEach(func() {
+		Skip("this test is intended as a template for developers and does not need to be run in CI")
+
 		// For an individual test, we can define the environmental requirements necessary for it to succeed.
 		// Ideally our tests are environment agnostic. However, if there are certain conditions that must
 		// be met, you can define those here. By explicitly defining these requirements, we can error loudly

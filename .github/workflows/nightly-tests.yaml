@@ -28,14 +28,14 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/workflows/composite-actions/regression-tests
-  nightly_tests_latest_main:
-    name: latest nightly tests
+  performance_tests_latest_main:
+    name: latest performance tests
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/nightly-tests
+      - uses: ./.github/workflows/composite-actions/performance-tests
 
   regression_tests_14:
     name: v1.14.x regression tests
@@ -72,7 +72,7 @@ jobs:
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_main, nightly_tests_latest_main, regression_tests_14, regression_tests_13 ]
+    needs: [ regression_tests_latest_main, performance_tests_latest_main, regression_tests_14, regression_tests_13 ]
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
