@@ -1,6 +1,7 @@
 name: Gloo Regression Tests
-description: configuration to enable make targets
-  
+
+description: Tests which run Gloo Edge in a Kubernetes cluster
+
 runs:
   using: "composite"
   steps:
@@ -55,14 +56,6 @@ runs:
       KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
     shell: bash
     run: make install-test-tools run-kube-e2e-tests
-  - uses: testspace-com/setup-testspace@v1
-    with:
-      domain: solo-io.testspace.com
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-  - name: Push result to Testspace server
-    shell: bash
-    run: testspace push --verbose "**/junit.xml"
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   - name: save results
     if: ${{ failure() }}
     shell: bash

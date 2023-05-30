@@ -1,0 +1,24 @@
+name: Process Skip CI Directives
+
+description: Determine which jobs should be skipped in CI
+
+inputs:
+  base-ref:
+    description: "The base github ref"
+    required: true
+
+outputs:
+  skip-kube-tests:
+    description: "Whether or not to skip the kube2e tests"
+    value: ${{ steps.process-skip-directives.outputs.skip-kube-tests }}
+  skip-docs-build:
+    description: "Whether or not to build our docs"
+    value: ${{ steps.process-skip-directives.outputs.skip-docs-build }}
+
+runs:
+  using: "composite"
+  steps:
+  - id: process-skip-directives
+    name: Process Skip Directives
+    shell: bash
+    run: ./ci/github-actions/process-skip-directives/script.sh ${{ inputs.base-ref }}

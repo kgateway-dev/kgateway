@@ -18,6 +18,12 @@
 **Keep PR Updated**: When applied, bulldozer will keep the PR up to date with the base branch, by merging any updates into it (Applied by default)
 
 **Work In Progress**: When applied, will prevent bulldozer from merging a PR, even if it has passed all checks
+### Special Directives to Skip CI
+**Skip Build-Bot**: Following the [special comment directives](https://github.com/solo-io/build-bot#issue-comment-directives), comment `skip-ci` on the PR.
+
+**Skip Docs Build**: Include `skipCI-docs-build:true` in the changelog entry of the PR.
+
+**Skip Kubernetes E2E Tests**: Include `skipCI-kube-tests:true` in the changelog entry of the PR.
 
 ### What if a test fails on a Pull Request?
 

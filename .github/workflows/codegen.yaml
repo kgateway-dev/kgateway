@@ -1,5 +1,7 @@
 name: Codegen
+
 on: pull_request
+
 jobs:
   codegen:
     name: codegen check
