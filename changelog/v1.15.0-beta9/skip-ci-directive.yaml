@@ -3,8 +3,8 @@ changelog:
     description: >- 
       Demonstrate how to skip CI under certain conditions.
 
-      skipCI-kube-tests:true
-      skipCI-docs-build:true
+      skipCI-kube-tests:false
+      skipCI-docs-build:false
   - type: NON_USER_FACING
     issueLink: https://github.com/solo-io/solo-projects/issues/4917
     resolvesIssue: false
