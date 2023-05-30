@@ -38,7 +38,7 @@ jobs:
       - id: process-skip-directives
         uses: ./.github/workflows/composite-actions/process-skip-directives
         with:
-          base-ref: $ {{ github.base_ref }}
+          base-ref: ${{ github.base_ref }}
       - id: build-strategy
         name: Determine Docs Build Strategy
         run: |
