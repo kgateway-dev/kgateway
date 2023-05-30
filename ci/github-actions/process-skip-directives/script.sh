@@ -21,7 +21,9 @@ shouldSkipKubeTests=false
 skipDocsBuildDirective="skipCI-docs-build:true"
 shouldSkipDocsBuild=false
 
-if [[ $(git diff origin/main HEAD --name-only | grep "changelog/" | wc -l) = "1" ]]; then
+githubBaseRef=$1
+
+if [[ $(git diff origin/$githubBaseRef HEAD --name-only | grep "changelog/" | wc -l) = "1" ]]; then
     echo "exactly one changelog added since main"
     changelogFileName=$(git diff origin/main HEAD --name-only | grep "changelog/")
     echo "changelog file name == $changelogFileName"

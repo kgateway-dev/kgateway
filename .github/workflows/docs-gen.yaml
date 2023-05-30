@@ -29,14 +29,10 @@ jobs:
         name: Process draft Pull Requests
         if: ${{ github.event.pull_request.draft }}
         run: echo "value=true" >> $GITHUB_OUTPUT
-      - id: checkout-code
-        uses: actions/checkout@v3
-        with:
-          # We require gathering the branch and tag history since we compare
-          fetch-depth: 0
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
       - id: process-skip-directives
         uses: ./.github/workflows/composite-actions/process-skip-directives
+        with:
+          base-ref: $ {{ github.base_ref }}
       - id: build-strategy
         name: Determine Docs Build Strategy
         run: |

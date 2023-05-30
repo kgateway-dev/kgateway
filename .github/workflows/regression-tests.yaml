@@ -17,43 +17,23 @@ jobs:
       uses: styfle/cancel-workflow-action@0.11.0
       with:
         access_token: ${{ github.token }}
-    - id: is-draft-pr
-      name: Process draft Pull Requests
-      if: ${{ github.event.pull_request.draft }}
-      run: echo "value=true" >> $GITHUB_OUTPUT
-    - id: checkout-code
-      uses: actions/checkout@v3
-      with:
-        # We require gathering the branch and tag history since we compare
-        fetch-depth: 0
-    - uses: ./.github/workflows/composite-actions/prep-go-runner
     - id: process-skip-directives
       uses: ./.github/workflows/composite-actions/process-skip-directives
+      with:
+        base-ref: $ {{ github.base_ref }}
     - id: run-strategy
       name: Determine Test Run Strategy
       run: |
-        should_run=true
-        should_auto_succeed=false
-
-        is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
-        if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
-          should_run=false
-        fi
-
         skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
         if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
-          should_auto_succeed=true
+          echo "auto_succeed=$should_auto_succeed" >> $GITHUB_OUTPUT
         fi
-
-        echo "Run strategy: Should run? $should_run. Should auto-succeed? $should_auto_succeed"
-        echo "run_value=$should_run" >> $GITHUB_OUTPUT
-        echo "auto_succeed=$should_auto_succeed" >> $GITHUB_OUTPUT
 
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
     runs-on: ubuntu-22.04
-    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
+    if: !github.event.pull_request.draft
     strategy:
       fail-fast: false
       matrix:
@@ -69,7 +49,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - id: run-tests
-      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'false'
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
       uses: ./.github/workflows/composite-actions/regression-tests
     - id: auto-succeed-tests
       if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'

@@ -2,6 +2,11 @@ name: Process Skip CI Directives
 
 description: Determine which jobs should be skipped in CI
 
+inputs:
+  base-ref:
+    description: "The base github ref"
+    required: true
+
 outputs:
   skip-kube-tests:
     description: "Whether or not to skip the kube2e tests"
@@ -13,7 +18,13 @@ outputs:
 runs:
   using: "composite"
   steps:
+  - id: checkout-code
+    uses: actions/checkout@v3
+    with:
+      # We require gathering the branch and tag history since we rely on a `git diff`
+      # which compares the state of two branches
+      fetch-depth: 0
   - id: process-skip-directives
     name: Process Skip Directives
     shell: bash
-    run: ./ci/github-actions/process-skip-directives/script.sh
+    run: ./ci/github-actions/process-skip-directives/script.sh ${{ github.event.inputs.base-ref }}
