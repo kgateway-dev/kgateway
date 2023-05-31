@@ -13,7 +13,7 @@ Before you upgrade Gloo Edge, complete the following preparatory steps:
 
 Review the following preparatory steps that might be required for your environment.
 
-### Upgrade your current minor version to latest patch
+### Upgrade your current minor version to the latest patch
 
 Before you upgrade your minor version, first upgrade your current version to the latest patch. For example, if you currently run Gloo Edge Enterprise version {{< readfile file="static/content/version_gee_n-1_oldpatch.md" markdown="true">}}, first upgrade your installation to version {{< readfile file="static/content/version_gee_n-1.md" markdown="true">}}. This ensures that your current environment is up-to-date with any bug fixes or security patches before you begin the minor version upgrade process.
 
@@ -60,7 +60,7 @@ You can use the changelogs' built-in [comparison tool]({{< versioned_link_path f
 {{% /notice %}}
 
 ### Feature changes {#features}
-
+Review the following summary of important new, deprecated, or removed features. For full details, see the [changelogs](#changelogs).
 **New or improved features**:
 
 
@@ -71,6 +71,8 @@ You can use the changelogs' built-in [comparison tool]({{< versioned_link_path f
 
 
 ### Helm changes {#helm}
+
+Review the following summary of important new, deprecated, or removed Helm fields. For full details, see the [changelogs](#changelogs).
 
 **New Helm fields**:
 
@@ -83,7 +85,9 @@ You can use the changelogs' built-in [comparison tool]({{< versioned_link_path f
 
 ### CRD changes {#crd}
 
-New CRDs are automatically applied to your cluster when performing a `helm install` operation, but are _not_ applied when performing an `helm upgrade` operation. This is a [deliberate design choice](https://helm.sh/docs/topics/charts/#limitations-on-crds) on the part of the Helm maintainers, given the risk associated with changing CRDs. Given this limitation, you must apply new CRDs to the cluster before upgrading.
+New CRDs are automatically applied to your cluster when performing a `helm install` operation, but are _not_ applied when performing an `helm upgrade` operation. This is a [deliberate design choice](https://helm.sh/docs/topics/charts/#limitations-on-crds) on the part of the Helm maintainers, given the risk associated with changing CRDs. Given this limitation, you must apply new CRDs to the cluster before upgrading. 
+
+Review the following summary of important new, deprecated, or removed CRD updates. For full details, see the [changelogs](#changelogs).
 
 **New and updated CRDs**:
 
@@ -98,6 +102,8 @@ New CRDs are automatically applied to your cluster when performing a `helm insta
 
 You must upgrade `glooctl` before you upgrade Gloo Edge. Because `glooctl` can create resources in your cluster, such as with `glooctl add route`, you might have errors in Gloo Edge if you create resources with an older version of `glooctl`.
 
+Review the following summary of important new, deprecated, or removed CLI options. For full details, see the [changelogs](#changelogs).
+
 **New CLI commands or options**:
 
 
@@ -111,7 +117,7 @@ Review the following frequently-asked questions about the upgrade process. If yo
 
 If downtime is not a concern for your use case, you can follow the [Quick upgrade guide]({{< versioned_link_path fromRoot="/operations/upgrading/upgrade_steps" >}}) to update your Gloo Edge installation.
 
-Note that for sandbox or exploratory environments, the easiest way to upgrade is to simply uninstall Gloo Edge by running `glooctl uninstall --all`, and re-installing Gloo Edge at the desired version by the following one of the [installation guides]({{< versioned_link_path fromRoot="/installation" >}}).
+Note that for sandbox or exploratory environments, the easiest way to upgrade is to uninstall Gloo Edge by running `glooctl uninstall --all`. Then, re-install Gloo Edge at the desired version by the following one of the [installation guides]({{< versioned_link_path fromRoot="/installation" >}}).
  
 ### How do I upgrade Gloo Edge in a production environment, where downtime is unacceptable?
 
