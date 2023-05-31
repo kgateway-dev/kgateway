@@ -1,0 +1,20 @@
+name: Performance Tests
+description: Runs tests with the performance label
+  
+runs:
+  using: "composite"
+  steps:
+  - name: Testing - performance tests
+    shell: bash
+    run: make install-test-tools run-performance-tests
+  - name: save results
+    if: ${{ failure() }}
+    shell: bash
+    run: mkdir -p _output/performance-artifacts && echo '{"url":"https://github.com/solo-io/gloo/actions/runs/${{github.run_id}}",
+            "name":"performance"}' > _output/performance-artifacts/test-out.json
+  - uses: actions/upload-artifact@v3
+    if: ${{ failure() }}
+    with:
+      name: performance-dump
+      path: "_output/performance-artifacts"
+      if-no-files-found: warn

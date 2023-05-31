@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8241
+    description: Change upgrade guide to be a more cohesive experience.
+    skipCI-kube-tests: true
