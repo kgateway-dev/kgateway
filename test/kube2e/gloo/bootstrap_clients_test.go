@@ -25,6 +25,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/gloo/test/gomega"
 
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
@@ -244,7 +245,6 @@ var _ = Describe("Bootstrap Clients", func() {
 				g.Expect(s).NotTo(BeEmpty())
 				return nil
 			}, "5s", "500ms").ShouldNot(HaveOccurred())
-
 		}
 
 		getSettingsWithDefaults := func(setts *v1.Settings) *v1.Settings {
@@ -361,6 +361,22 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		listSecret := func(g Gomega, secretName string) error {
+			l, err := secretClient.List(testNamespace, skclients.ListOpts{})
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(l).NotTo(BeNil())
+			kubeSecret, err := l.Find(testNamespace, secretName)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(kubeSecret).NotTo(BeNil())
+			return nil
+		}
+		listKubeSecret := func(g Gomega) error {
+			return listSecret(g, kubeSecretName)
+		}
+		listVaultSecret := func(g Gomega) error {
+			return listSecret(g, vaultSecretName)
+		}
+
 		When("using secretSource API", func() {
 			When("using a kubernetes secret source", func() {
 				BeforeEach(func() {
@@ -369,12 +385,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&kubesecret.ResourceClient{}))
-					l, err := secretClient.List(testNamespace, skclients.ListOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(l).NotTo(BeNil())
-					kubeSecret, err := l.Find(testNamespace, kubeSecretName)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(kubeSecret).NotTo(BeNil())
+					Eventually(listKubeSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 			When("using a vault secret source", func() {
@@ -384,12 +395,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
-					l, err := secretClient.List(testNamespace, skclients.ListOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(l).NotTo(BeNil())
-					vaultSecret, err := l.Find(testNamespace, vaultSecretName)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(vaultSecret).NotTo(BeNil())
+					Eventually(listVaultSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 
@@ -402,12 +408,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&kubesecret.ResourceClient{}))
-					l, err := secretClient.List(testNamespace, skclients.ListOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(l).NotTo(BeNil())
-					kubeSecret, err := l.Find(testNamespace, kubeSecretName)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(kubeSecret).NotTo(BeNil())
+					Eventually(listKubeSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 
@@ -418,13 +419,7 @@ var _ = Describe("Bootstrap Clients", func() {
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
-					l, err := secretClient.List(testNamespace, skclients.ListOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(l).NotTo(BeNil())
-
-					vaultSecret, err := l.Find(testNamespace, vaultSecretName)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(vaultSecret).NotTo(BeNil(), fmt.Sprintf("%+v", l))
+					Eventually(listVaultSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 			When("using a kubernetes+vault secret source", func() {
@@ -436,17 +431,8 @@ var _ = Describe("Bootstrap Clients", func() {
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&clients.MultiSecretResourceClient{}))
-					l, err := secretClient.List(testNamespace, skclients.ListOpts{})
-					Expect(err).NotTo(HaveOccurred())
-					Expect(l).NotTo(BeNil())
-
-					kubeSecret, err := l.Find(testNamespace, kubeSecretName)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(kubeSecret).NotTo(BeNil())
-
-					vaultSecret, err := l.Find(testNamespace, vaultSecretName)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(vaultSecret).NotTo(BeNil(), fmt.Sprintf("%+v", l))
+					Eventually(listKubeSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(listVaultSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 		})
