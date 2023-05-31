@@ -1,189 +1,230 @@
 ---
-title: Canary Upgrade
+title: Canary upgrade
 weight: 30
-description: Upgrading Gloo Edge in a canary model
+description: Use a canary upgrade model to upgrade Gloo Edge, such as in production environments.
 ---
 
-You can upgrade your Gloo Edge deployments by following a canary model. In the canary model, you make two different `gloo` deployments in your data plane, one that runs your current version and one for the target version to upgrade to. Then, you check that the deployment at the target version handles traffic as you expect before upgrading to run the target version. This approach helps you reduce potential downtime for production upgrades.
+Use a canary upgrade model to upgrade Gloo Edge, such as in production environments.
 
-## Before you begin
+In the canary model, you run two deployments of `gloo` in your cluster: the existing deployment that runs your current version, and a canary deployment that runs the version you want to upgrade to. After you create the canary deployment, you verify that it handles traffic as you expect before upgrading to the new version. This approach helps you reduce potential downtime for production upgrades.
 
-1. Install Gloo Edge Open Source or Enterprise **version 1.9.0 or later**, or Federation **version 1.13.0 or later**.
-2. [Upgrade your installation]({{< versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/" >}}) to the latest patch version for your current minor version. For example, you might upgrade your {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} installation to the latest {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}} patch.
-3. If you have Gloo Edge Enterprise or Federation, set your license key as an environment variable. To request a license, [contact Sales](https://www.solo.io/company/contact/).
-   ```
-   export GLOO_LICENSE=<license>
-   ```
-4. Set the target version that you want to upgrade to as an environment variable. To find available versions, check the [changelog]({{< versioned_link_path fromRoot="/reference/changelog/" >}}). The following commands include the latest versions for each of the following Gloo Edge installation options.
-   {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
-export TARGET_VERSION={{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}
-{{< /tab >}}
-{{< tab name="Enterprise" codelang="shell" >}}
-export TARGET_VERSION={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-{{< /tab >}} 
-{{< tab name="Federation" codelang="shell" >}}
-export TARGET_VERSION={{< readfile file="static/content/version_gee_latest.md" markdown="true">}}
-{{< /tab >}} 
-   {{< /tabs >}}
-5. [Upgrade your `glooctl` CLI]({{< versioned_link_path fromRoot="/operations/upgrading/upgrade_steps/#step-2-upgrade-glooctl" >}}) to the version that you want to upgrade to.
-6. Check the [upgrade notice for the minor version]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs for the patch version]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) that you want to upgrade to. In particular, review the following changes:
-   * **CRD changes**: Each patch version might add custom resource definitions (CRDs), update existing CRDs, or remove outdated CRDs. When you perform a canary upgrade, the existing Gloo Edge CRDs are not updated to the newer version automatically. You must manually apply the new CRDs first. The Gloo Edge CRDs are designed to be backward compatible, so the new CRDs should not impact the performance of your older installation. However, if after evaluating the newer installation you decide to continue to use the older installation, you can easily remove any added CRDs by referring to the upgrade notices for the CRD names and running `kubectl delete crd <CRD>`. Then, to re-apply older versions of CRDs, you can run `helm pull gloo/gloo --version <older_version> --untar` and `kubectl apply -f gloo/crds`.
-   * **Breaking changes**: Occasionally, breaking changes are introduced between patch versions. For example, Gloo custom resources might get renamed or have conflicting fields. Modify your resources to use the new version that you upgrade to.
+## Step 1: Prepare to upgrade {#prepare}
+
+Before you begin, follow the [Prepare to upgrade]({{% versioned_link_path fromRoot="/operations/upgrading/faq" %}}) guide to complete these preparatory steps:
+* Review important changes made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, including CRD, Helm, CLI, and feature changes.
+* Upgrade your current version to the latest patch.
+* Upgrade any dependencies to the required supported versions.
+* Consider other steps to prepare for upgrading.
+* Review frequently-asked questions about the upgrade process.
+
+## Step 2: Upgrade glooctl {#glooctl}
+
+Follow the steps in [Update glooctl CLI version]({{% versioned_link_path fromRoot="/installation/preparation/#update-glooctl" %}}) to update `glooctl` to the version you want to upgrade to.
+
+## Step 3: Upgrade Gloo Edge {#upgrade}
 
 Now you're ready to upgrade. The steps vary depending on your Gloo Edge installation.
 * [Open Source or Enterprise](#canary-upgrade)
 * [Federation](#canary-upgrade-fed)
-* [Roll back a canary upgrade](#rollback)
 
-## Upgrade Gloo Edge Open Source or Enterprise in a canary model {#canary-upgrade}
+### Upgrade Gloo Edge Open Source or Enterprise {#canary-upgrade}
 
-1. Update and pull the Gloo Edge Helm chart for the target version.
+1. Set the version to upgrade Gloo Edge to in an environment variable, such as the latest patch version for open source (`{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`) or enterprise (`{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}`).
+   ```sh
+   export CANARY_VERSION=<version>
+   ```
+
+2. Update and pull the Gloo Edge Helm chart for the canary version.
    {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
-helm repo add gloo https://storage.googleapis.com/solo-public-helm
-helm repo update
-helm pull gloo/gloo --version $TARGET_VERSION --untar
-{{< /tab >}}
-{{< tab name="Enterprise" codelang="shell">}}
-helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
-helm repo update
-helm pull glooe/gloo-ee --version $TARGET_VERSION --untar
-{{< /tab >}}
+   {{< tab name="Open Source" >}}
+   ```sh
+   helm repo add gloo https://storage.googleapis.com/solo-public-helm
+   helm repo update
+   helm pull gloo/gloo --version $CANARY_VERSION --untar
+   ```
+   {{< /tab >}}
+   {{< tab name="Enterprise">}}
+   ```sh
+   helm repo add glooe https://storage.googleapis.com/gloo-ee-helm
+   helm repo update
+   helm pull glooe/gloo-ee --version $CANARY_VERSION --untar
+   ```
+   {{< /tab >}}
    {{< /tabs >}}
-1. Apply the new Gloo CRDs from the target version Helm chart to your cluster.
+
+3. Apply the CRDs for the canary version to your cluster. The Gloo Edge CRDs are designed to be backward compatible, so the new CRDs should not impact the performance of your existing installation. For more information, see the list of [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) for {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
    {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
-kubectl apply -f gloo/crds
-{{< /tab >}}
-{{< tab name="Enterprise" codelang="shell">}}
-kubectl apply -f gloo-ee/charts/gloo/crds
-{{< /tab >}}
+   {{< tab name="Open Source" >}}
+   ```sh
+   kubectl apply -f gloo/crds
+   ```
+   {{< /tab >}}
+   {{< tab name="Enterprise">}}
+   ```sh
+   kubectl apply -f gloo-ee/charts/gloo/crds
+   ```
+   {{< /tab >}}
    {{< /tabs >}}
-3. Install the target version of Gloo Edge in the new namespace in your cluster.
+
+4. Install the canary version of Gloo Edge in your cluster in a new namespace, `gloo-system-$CANARY_VERSION`.
    {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
-glooctl install gateway --version $TARGET_VERSION -n gloo-system-$TARGET_VERSION
-{{< /tab >}}
-{{< tab name="Enterprise" codelang="shell">}}
-glooctl install gateway enterprise --version $TARGET_VERSION -n gloo-system-$TARGET_VERSION --license-key $GLOO_LICENSE
-{{< /tab >}}
+   {{< tab name="Open Source" >}}
+   ```sh
+   glooctl install gateway \
+     --create-namespace \
+     -n gloo-system-$CANARY_VERSION \
+     --version $CANARY_VERSION
+   ```
+   {{< /tab >}}
+   {{< tab name="Enterprise">}}
+   Note that you must set your license key by using the `--license-key $LICENSE_KEY` flag or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+   ```sh
+   glooctl install gateway enterprise \
+     --create-namespace \
+     -n gloo-system-$CANARY_VERSION \
+     --version $CANARY_VERSION \
+     --license-key $LICENSE_KEY
+   ```
+   {{< /tab >}}
    {{< /tabs >}}
-4. Verify that your current and target versions of Gloo Edge are running.
+
+5. Verify that your existing and canary versions of Gloo Edge are running.
    ```shell
    kubectl get all -n gloo-system
-   kubectl get all -n gloo-system-$TARGET_VERSION
+   kubectl get all -n gloo-system-$CANARY_VERSION
    ```
-5. Modify any custom resources for any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version.
-6. Test your routes and monitor the metrics of the newer version.
+
+6. Check the [Feature changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) to modify any custom resources for any changes or new capabilities in {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.<!--If applicable, add steps to walk users though updating crs for any breaking changes-->
+
+7. Test your routes and monitor the metrics of the canary version.
     ```shell
     glooctl check
     ```
-7. [Uninstall]({{< versioned_link_path fromRoot="/reference/cli/glooctl_uninstall/" >}}) the older version of Gloo Edge so that your cluster uses the newer version going forward.
+
+8. [Uninstall]({{< versioned_link_path fromRoot="/reference/cli/glooctl_uninstall/" >}}) the previous version of Gloo Edge so that your cluster uses the new version going forward.
    ```shell
-   gloooctl uninstall -n gloo-system
+   glooctl uninstall -n gloo-system
    ```
 
-## Upgrade Gloo Edge Federation in a canary model {#canary-upgrade-fed}
+### Upgrade Gloo Edge Federation {#canary-upgrade-fed}
 
-You can upgrade Gloo Edge Federation in a canary model in version 1.13 or later. In [Gloo Edge Federation]({{< versioned_link_path fromRoot="/guides/gloo_federation/" >}}), you have a management cluster that runs Gloo Edge Federation (and optionally, other Enterprise components). Then you register remote clusters with Gloo Edge Enterprise.
+In the canary upgrade model for Gloo Edge Federation, you start with an existing version of Gloo Edge Federation in your management cluster that manages one or more remote Gloo Edge instances. To test a new version, you install the canary version of Gloo Edge Federation in a new namespace on the management cluster. Then, you install one or more Gloo Edge instances that run the canary version in remote test clusters, register the test clusters, and check your setup. Finally, you deregister the remote test clusters from the previous version of Gloo Edge Federation, and uninstall the previous Gloo Edge Federation version from the management cluster.
 
-In the canary upgrade model, you start with an older version of Gloo Edge Federation in your management cluster that manages one or more remote Gloo Edge instances. To test a newer target version, you install the target version of Gloo Edge Federation in a new namespace on the management cluster. Then, you install one or more Gloo Edge instances at the target version in remote test clusters, register the new clusters, and check your setup. Finally, you deregister the remote clusters from the older version of Gloo Edge Federation and uninstall the older Gloo Edge Federation version from the management cluster.
+1. Set your Gloo Edge license key in an environment variable. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+   ```sh
+   export LICENSE_KEY=<version>
+   ```
+   
+2. Set the version to upgrade Gloo Edge to in an environment variable, such as the latest patch version (`{{< readfile file="static/content/version_gee_latest.md" markdown="true">}}`).
+   ```sh
+   export CANARY_VERSION=<version>
+   ```
 
-1. Update and pull the Gloo Fed Helm chart for the target version.
+3. Update and pull the Gloo Edge Federation Helm chart for the canary version.
    ```shell
    helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
    helm repo update
-   helm pull gloo-fed/gloo-fed --version $TARGET_VERSION --untar
+   helm pull gloo-fed/gloo-fed --version $CANARY_VERSION --untar
    ```
-2. Apply the new Gloo Fed CRDs from the target version Helm chart to your management cluster.
+
+4. Apply the CRDs for the canary version to your management cluster. The Gloo Edge CRDs are designed to be backward compatible, so the new CRDs should not impact the performance of your existing installation. However, if after evaluating the canary installation you decide to continue to use the existing installation, you can easily remove any added CRDs by referring to the listed changes to CRD names and running `kubectl delete crd <CRD>`. Then, to re-apply previous versions of CRDs, you can run `helm pull gloo/gloo --version <previous_version> --untar` and `kubectl apply -f gloo/crds`.
    ```
    kubectl apply -f gloo-fed/crds
    ```
-3. Install the target version of Gloo Edge Federation in the new namespace in your management cluster.
+
+5. Install the canary version of Gloo Edge Federation in a new namespace, `gloo-system-$CANARY_VERSION`, in your management cluster.
    ```
-   helm install -n gloo-system-$TARGET_VERSION gloo-fed gloo-fed/gloo-fed --create-namespace --set-string license_key=$GLOO_LICENSE --version $TARGET_VERSION
+   helm install gloo-fed gloo-fed/gloo-fed \
+     --create-namespace \
+     -n gloo-system-$CANARY_VERSION \
+     --version $CANARY_VERSION \
+     --set-string license_key=$LICENSE_KEY
    ```
-4. Verify that your current and target versions of Gloo Edge Federation are running. 
+
+6. Verify that your existing and canary versions of Gloo Edge Federation are running. 
    ```shell
-   kubectl get all -n gloo-system-$OLD_VERSION
-   kubectl get all -n gloo-system-$TARGET_VERSION
+   kubectl get all -n gloo-system
+   kubectl get all -n gloo-system-$CANARY_VERSION
    ```
-5. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on one of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the version of Gloo Edge Federation that you installed earlier.
-6. In your management cluster, [create or modify any federated custom resources]({{< versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" >}}) needed to test your target version of Gloo Federation/Edge. Because Gloo Edge Federation scans all federated resources on the management cluster, you might want to reuse the existing federated resources in the `gloo-system-$OLD_VERSION` namespace. Include any changes or new capabilities that you noticed in the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}) for the target version. 
 
-   {{% notice note %}}**Example**: The following configuration creates a federated virtual service with different features across versions 1.12 and 1.13.{{% /notice %}}
+7. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) on one of your remote clusters. Make sure that the version of Gloo Edge Enterprise matches the canary version of Gloo Edge Federation that you installed.
 
-   * Creates a shared `gloo-fed` namespace to show that both the old and new Gloo Edge Federation instances can watch for changes to a resource in the same namespace.
-   * Places the federated virtual service resource in both the `remote1` old version cluster (1.12) and the `remote2` new target version cluster (1.13).
+8. Check the [Feature changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) for any changes or new capabilities in {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. In your management cluster, [create or modify any federated custom resources]({{< versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" >}}) with these changes to test your canary version of Gloo Edge Federation. Because Gloo Edge Federation scans all federated resources on the management cluster, you might want to reuse the existing federated resources in the `gloo-system` namespace. <!--If applicable, add steps to walk users though updating crs for any breaking changes--> 
+   {{% expand "Expand for an example federated virtual service configuration" %}}
+   This example configuration creates a federated virtual service with different features across versions 1.12 and 1.13.<!--IF POSSIBLE UPDATE for something that is new in 1.15 instead-->
+   * Creates a shared `gloo-fed` namespace to show that both the existing and canary Gloo Edge Federation instances can watch for changes to a resource in the same namespace.
+   * Places the federated virtual service resource in both the `remote1` existing version cluster (1.12) and the `remote2` canary version cluster (1.13).
    * Configures settings such as `numRetries: 10` that are shared across versions.
    * Adds the `retryBackOff` that is available in version 1.13 but not in 1.12. As such, the 1.12 federated resource ignores this new configuration.
-   ```yaml
-   kubectl create ns gloo-fed
-   kubectl apply -f - <<EOF
-   apiVersion: fed.gateway.solo.io/v1
-   kind: FederatedVirtualService
-   metadata:
-     name: my-fed-vs
-     namespace: gloo-fed
-   spec:
-     placement:
-       clusters:
-         - remote1
-         - remote2
-       namespaces:
-         - gloo-system
-     template:
-       metadata:
-         name: my-vs
-       spec:
-         virtualHost:
-           domains:
-           - '*'
-           routes:
-           - matchers:
-             - prefix: /
-             routeAction:
-               single:
-                 upstream:
-                   name: default-petstore-8080
-                   namespace: gloo-system
-             options:
-               retries:
-                 retryOn: 'connect-failure'
-                 numRetries: 10
-                 perTryTimeout: '5s'
-                 retryBackOff:
-                   baseInterval: 1s
-                   maxInterval: 3s
-   EOF
-   ```
-7. Check that the updated, federated custom resources from the management cluster are propagated to the remote test cluster.
-   1. To find the clusters and names of the propagated resources, review the federated resource configuration. The following example is based off the federated virtual service that you created in the previous step. The `PLACED` state in the status section confirms that the resource is federated.
+
+     ```yaml
+     kubectl create ns gloo-fed
+     kubectl apply -f - <<EOF
+     apiVersion: fed.gateway.solo.io/v1
+     kind: FederatedVirtualService
+     metadata:
+       name: my-fed-vs
+       namespace: gloo-fed
+     spec:
+       placement:
+         clusters:
+           - remote1
+           - remote2
+         namespaces:
+           - gloo-system
+       template:
+         metadata:
+           name: my-vs
+         spec:
+           virtualHost:
+             domains:
+             - '*'
+             routes:
+             - matchers:
+               - prefix: /
+               routeAction:
+                 single:
+                   upstream:
+                     name: default-petstore-8080
+                     namespace: gloo-system
+               options:
+                 retries:
+                   retryOn: 'connect-failure'
+                   numRetries: 10
+                   perTryTimeout: '5s'
+                   retryBackOff:
+                     baseInterval: 1s
+                     maxInterval: 3s
+     EOF
+     ```
+   {{% /expand %}}
+
+9. Check that the updated, federated custom resources from the management cluster are propagated to the remote test cluster.
+   1. In the management cluster, verify that the federated resources are propagated to the remote clusters by reviewing the federated resource configuration. This example gets the configuration for the federated virtual service from the previous step.
       ```sh
       kubectl get federatedvirtualservice -n gloo-fed -o yaml
       ```
-      Example truncated output:
+      In this example output, the `PLACED` state in the status section confirms that the resource is federated:
       {{< highlight yaml "hl_lines=10 16" >}} 
 ...
 status:
   namespacedPlacementStatuses:
-    gloo-system-$TARGET_VERSION:
+    gloo-system-$CANARY_VERSION:
       clusters:
         remote2:
           namespaces:
             gloo-system:
               state: PLACED
-    gloo-system-$OLD_VERSION:
+    gloo-system:
       clusters:
         remote1:
           namespaces:
             gloo-system:
               state: PLACED
       {{< /highlight >}}
-   1. In the remote clusters, confirm that the federated resources are created. The following commands are based on the previous step's example.
-      * In the old version's remote cluster, verify that the resource is federated with only the old version's configuration. In the example, the old 1.12 version has an updated `numRetries: 10`, but no `retryBackOff` section, which is only available in version 1.13 or later.
-      {{< highlight yaml "hl_lines=5" >}}
+   1. In the remote clusters, confirm that the federated resources are created. The following commands are based on the previous step's example.<!--If step 8 was updated for 1.15, update this step as well for the 1.15 feature-->
+      * In the existing version's remote cluster, verify that the resource is federated with only the existing version's configuration. In the example, the existing 1.12 version has an updated `numRetries: 10`, but no `retryBackOff` section, which is available only in version 1.13 or later.
+        {{< highlight yaml "hl_lines=5" >}}
 kubectl get virtualservices -n gloo-system --context remote1 -o yaml
 ...
 options:
@@ -191,9 +232,9 @@ options:
     numRetries: 10
     perTryTimeout: 5s
     retryOn: connect-failure
-      {{< /highlight >}}
-      * In the target version's remote cluster, verify that the resource is federated with only the new version's configuration. In the example, the new 1.13 version has an updated `numRetries: 10`, as well as a `retryBackOff` section.
-      {{< highlight yaml "hl_lines=6 9-11" >}} 
+        {{< /highlight >}}
+      * In the canary version's remote cluster, verify that the resource is federated with only the canary version's configuration. In the example, the canary 1.13 version has an updated `numRetries: 10`, as well as a `retryBackOff` section.
+        {{< highlight yaml "hl_lines=6 9-11" >}} 
 kubectl get virtualservices -n gloo-system --context remote2 -o yaml
 ...
 options:
@@ -204,84 +245,127 @@ options:
     retryBackOff:
       baseInterval: 1s
       maxInterval: 3s
-      {{< /highlight >}}
-   3. Repeat the previous steps for each federated resource that you want to check.
-8. Test your routes and monitor the metrics of the target version in your remote test cluster.
+        {{< /highlight >}}
+   1. Repeat the previous steps for each federated resource that you want to check.
+
+1.  Test your routes and monitor the metrics of the canary version in your remote test cluster.
     ```shell
     glooctl check
     ```
-9. Shift traffic to the target version of Gloo Edge Federation by uninstalling the older version.
-   1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your other remote clusters that still use the old version of Gloo Edge Federation.
-   2. [Uninstall]({{< versioned_link_path fromRoot="/reference/cli/glooctl_uninstall/" >}}) the older version of Gloo Edge Federation so that your management cluster uses the newer version going forward.
-      ```shell
-      gloooctl uninstall -n gloo-system-$OLD_VERSION
-      ```
-   3. Optionally delete the old version namespace from each remote cluster. The deregister command does not clean up the namespace and custom resources in the old version.
-      ```shell
-      kubectl delete ns gloo-system-$OLD_VERSION
-      ```
+
+2.  Shift traffic to the canary version of Gloo Edge Federation by uninstalling the previous version.
+    1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your other remote clusters that still use the previous version of Gloo Edge Federation.
+    2. [Uninstall]({{< versioned_link_path fromRoot="/reference/cli/glooctl_uninstall/" >}}) the previous version of Gloo Edge Federation so that your management cluster uses only the new version.
+       ```shell
+       glooctl uninstall -n gloo-system
+       ```
+    3. Optionally delete the previous version namespace from each remote cluster. The deregister command does not clean up the namespace and custom resources in the previous version.
+       ```shell
+       kubectl delete ns gloo-system
+       ```
 
 ## Roll back a canary upgrade {#rollback}
 
-As you test your environment with the new version of Gloo Edge, you might need to roll back to the previous version. You can follow a canary model for the rollback.
+As you test your environment with the canary version of Gloo Edge, you might need to roll back to the previous version. You can follow a canary model for the rollback.
 
 1. Set the previous version that you want to roll back to as an environment variable.
    ```shell
    export ROLLBACK_VERSION=<version>
    ```
-2. If you already removed the previous version of Gloo from your cluster, re-install Gloo Edge.
-   1. Update and pull the Gloo Edge Helm chart for the target version. The Helm charts vary depending on the Gloo Edge installation option.
+2. If you already removed the previous version of Gloo Edge from your cluster, re-install Gloo Edge at the rollback version.
+   1. Update and pull the Gloo Edge Helm chart for the rollback version. The Helm charts vary depending on the Gloo Edge installation option.
       {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
+{{< tab name="Open Source" >}}
+```sh
 helm repo update
 helm pull gloo/gloo --version $ROLLBACK_VERSION --untar
+```
 {{< /tab >}}
-{{< tab name="Enterprise" codelang="shell">}}
+{{< tab name="Enterprise">}}
+```sh
 helm repo update
 helm pull glooe/gloo-ee --version $ROLLBACK_VERSION --untar
+```
 {{< /tab >}}
-{{< tab name="Federation" codelang="shell">}}
+{{< tab name="Federation">}}
+```sh
 helm repo update
 helm pull gloo-fed/gloo-fed --version $ROLLBACK_VERSION --untar
+```
 {{< /tab >}} 
       {{< /tabs >}}
-   2. Install the rollback version of Gloo Edge in the new namespace in your cluster.
-      {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
-glooctl install gateway --version $ROLLBACK_VERSION-n gloo-system-$ROLLBACK_VERSION
+   2. Install the rollback version of Gloo Edge in a new namespace in your cluster.
+      {{< tabs >}}
+{{< tab name="Open Source" >}}
+```sh
+glooctl install gateway \
+  --create-namespace \
+  -n gloo-system-$ROLLBACK_VERSION \
+  --version $ROLLBACK_VERSION
+```
 {{< /tab >}}
-{{< tab name="Enterprise" codelang="shell">}}
-glooctl install gateway enterprise --version $ROLLBACK_VERSION -n gloo-system-$ROLLBACK_VERSION --license-key $GLOO_LICENSE
+{{< tab name="Enterprise">}}
+```sh
+glooctl install gateway enterprise \
+  --create-namespace \
+  -n gloo-system-$ROLLBACK_VERSION \
+  --version $ROLLBACK_VERSION \
+  --license-key $LICENSE_KEY
+```
 {{< /tab >}}
-{{< tab name="Federation" codelang="shell">}}
-helm install -n gloo-system-$ROLLBACK_VERSION gloo-fed gloo-fed/gloo-fed --create-namespace --set-string license_key=$GLOO_LICENSE --version $ROLLBACK_VERSION
+{{< tab name="Federation">}}
+```sh
+helm install gloo-fed gloo-fed/gloo-fed \
+  --create-namespace \
+  -n gloo-system-$ROLLBACK_VERSION \
+  --version $ROLLBACK_VERSION \
+  --set-string license_key=$LICENSE_KEY
+```
 {{< /tab >}} 
       {{< /tabs >}}
-1.  Revert any changes to custom resources that you previously modified during the upgrade to the newer target version. For differences between versions, check the [upgrade notice]({{< versioned_link_path fromRoot="/operations/upgrading/" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}).
-2. **Gloo Edge Federation**: Shift traffic from the newer target version to the rollback version of Gloo Edge Federation.
-   1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your remote clusters that still use the newer target version of Gloo Edge Federation.
-   2. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) for the rollback version's Gloo Edge Federation on each remote cluster.
-   3. Optionally delete the newer target version namespace. The deregister command does not clean up the namespace and custom resources in the old version.
+
+1. Revert any changes to custom resources that you made during the upgrade. For differences between versions, check the [version change list]({{< versioned_link_path fromRoot="/operations/upgrading/faq/#review-changes" >}}) and the [changelogs]({{< versioned_link_path fromRoot="/reference/changelog/" >}}).
+
+2. **Gloo Edge Federation**: Shift traffic from the canary version to the rollback version of Gloo Edge Federation.
+   1. [Deregister]({{< versioned_link_path fromRoot="/reference/cli/glooctl_cluster_deregister/" >}}) your test remote clusters that use the canary version of Gloo Edge Federation.
+   2. [Install and register Gloo Edge Enterprise]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}) using the rollback version on each remote cluster.
+   3. Optionally delete the canary version namespace. The deregister command does not clean up the namespace and custom resources in the previous version.
       ```shell
-      kubectl delete ns gloo-system-$TARGET_VERSION
+      kubectl delete ns gloo-system-$CANARY_VERSION
       ```
-3. [Uninstall]({{< versioned_link_path fromRoot="/reference/cli/glooctl_uninstall/" >}}) the newer target version of Gloo Edge from your cluster.
+
+3. [Uninstall]({{< versioned_link_path fromRoot="/reference/cli/glooctl_uninstall/" >}}) the canary version of Gloo Edge from your cluster.
     ```shell
-    gloooctl uninstall -n gloo-system-$TARGET_VERSION
+    glooctl uninstall -n gloo-system-$CANARY_VERSION
     ```
-4.  Apply the Gloo CRDs from the rollback version Helm chart to your cluster. In Gloo Edge Federation, this cluster is the local management cluster.
+
+4. Remove any new CRDs that were added in the canary version that are not present in the rollback version.
+   1. Check the list of [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) in {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} for the names of any newly added CRDs.
+   2. Delete any added CRDs.
+      ```
+      kubectl delete crd <CRD>
+      ```
+
+5. Apply the Gloo CRDs from the rollback version Helm chart to your cluster. In Gloo Edge Federation, this cluster is the local management cluster.
    {{< tabs >}} 
-{{< tab name="Open Source" codelang="shell" >}}
-kubectl apply -f gloo/crds
-{{< /tab >}}
-{{< tab name="Enterprise" codelang="shell">}}
-kubectl apply -f gloo-ee/charts/gloo/crds
-{{< /tab >}}
-{{< tab name="Federation" codelang="shell">}}
-kubectl apply -f gloo-fed/crds
-{{< /tab >}} 
+   {{< tab name="Open Source" >}}
+   ```sh
+   kubectl apply -f gloo/crds
+   ```
+   {{< /tab >}}
+   {{< tab name="Enterprise">}}
+   ```sh
+   kubectl apply -f gloo-ee/charts/gloo/crds
+   ```
+   {{< /tab >}}
+   {{< tab name="Federation">}}
+   ```sh
+   kubectl apply -f gloo-fed/crds
+   ```
+   {{< /tab >}}
    {{< /tabs >}}
-7. Test your routes and monitor the metrics of the rollback version.
-    ```shell
-    glooctl check
-    ```
+
+6. Test your routes and monitor the metrics of the rollback version.
+   ```shell
+   glooctl check
+   ```
