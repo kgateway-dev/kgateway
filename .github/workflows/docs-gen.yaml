@@ -65,7 +65,13 @@ jobs:
           echo "build_value=$should_build" >> $GITHUB_ENV
           echo "pass_value=$should_pass" >> $GITHUB_ENV
       - id: version
-        run: echo "value=$(go run hack/compute_version/main.go)" >> $GITHUB_OUTPUT
+        shell: bash
+        run: |
+          version=$(git describe --tags --abbrev=0 | cut -c 2-)
+          if [[ ${{ github.event_name == 'pull_request' }} = true ]]; then
+            version=$(git describe --tags --abbrev=0 | cut -c 2-)-PR${{github.event.number}}
+          fi
+          echo "value=$version" >> $GITHUB_OUTPUT
   build:
     name: Generate versioned docs site
     needs: prepare_env

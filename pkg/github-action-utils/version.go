@@ -12,25 +12,6 @@ import (
 	"github.com/solo-io/go-utils/vfsutils"
 )
 
-// GetVersion computes an appropriate semver string based on the contents of
-// the ./changelog directory fount at repoRootPath
-func GetVersion(repoRootPath string, repo string, owner string) (string, error) {
-	ctx := context.Background()
-
-	// compute largest local changelog version
-	version, err := getLargestLocalChangelogVersion(ctx, repoRootPath, owner, repo, changelogutils.ChangelogDirectory)
-	if err != nil {
-		return "", err
-	}
-
-	PR_NUMBER := os.Getenv(PR_NUMBER)
-	if len(PR_NUMBER) == 0 { // implies we are computing a release's version
-		return version.String(), nil
-	} else { // implies we are computing a PR's version
-		return version.String() + "-pr" + PR_NUMBER, nil
-	}
-}
-
 // GetLatestEnterpriseVersion computes the latest Gloo Enterprise version.
 // It is intended to be used by the Makefile.docs, ostensibly as a variable for
 // filling out correctly-referenced enterprise docs

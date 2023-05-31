@@ -44,7 +44,6 @@ IMAGE_REGISTRY ?= quay.io/solo-io
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
-VERSION 	?= 1.0.1-dev    # a basic version that can be overidden
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.6-patch1
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
