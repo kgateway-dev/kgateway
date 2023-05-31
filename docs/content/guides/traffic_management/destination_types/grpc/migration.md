@@ -59,9 +59,9 @@ This migration guide assumes that you want to use Gloo Edge to automatically dis
 
 Migrate your upstreams to the new gRPC API. During the migration, your routes to the gRPC services continue to work. 
 
-1. Review the [upgrade notices for Gloo Edge 1.14]({{% versioned_link_path fromRoot="/operations/upgrading/v1.14/" %}}). 
+1. Review the [upgrade notices for Gloo Edge 1.14](https://docs.solo.io/gloo-edge/latest/operations/upgrading/v1.14/). 
 2. Prepare your Helm chart for the upgrade to 1.14. Make sure to enable the Gloo Edge function discovery (FDS) feature. For more information, see [Configuring the fdsMode Setting]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" %}}).
-3. [Upgrade your installation to 1.14]({{% versioned_link_path fromRoot="/operations/upgrading/v1.14/#upgrade" %}}). Make sure to apply any new CRDs. 
+3. [Upgrade your installation to 1.14](https://docs.solo.io/gloo-edge/latest/operations/upgrading/v1.14/#upgrading). Make sure to apply any new CRDs. 
 4. Delete the existing gRPC upstreams that were discovered by a previous version of Gloo Edge. 
    ```sh
    kubectl delete upstream <upstream_name> -n gloo-system
