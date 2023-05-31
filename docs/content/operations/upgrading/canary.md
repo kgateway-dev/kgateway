@@ -6,7 +6,7 @@ description: Use a canary upgrade model to upgrade Gloo Edge, such as in product
 
 Use a canary upgrade model to upgrade Gloo Edge, such as in production environments.
 
-In the canary model, you deploy two different version of `gloo` in your data plane: the existing deployment that runs your current version, and a canary deployment that runs the version you want to upgrade to. Then, you verify that the canary deployment handles traffic as you expect before upgrading to the new version. This approach helps you reduce potential downtime for production upgrades.
+In the canary model, you run two deployments of `gloo` in your cluster: the existing deployment that runs your current version, and a canary deployment that runs the version you want to upgrade to. After you create the canary deployment, you verify that it handles traffic as you expect before upgrading to the new version. This approach helps you reduce potential downtime for production upgrades.
 
 ## Step 1: Prepare to upgrade {#prepare}
 
@@ -52,7 +52,7 @@ Now you're ready to upgrade. The steps vary depending on your Gloo Edge installa
    {{< /tab >}}
    {{< /tabs >}}
 
-3. Apply the CRDs for the canary version to your cluster. The Gloo Edge CRDs are designed to be backward compatible, so the new CRDs should not impact the performance of your existing installation. However, if after evaluating the canary installation you decide to continue to use the existing installation, you can easily remove any added CRDs by referring to the listed changes to CRD names and running `kubectl delete crd <CRD>`. Then, to re-apply previous versions of CRDs, you can run `helm pull gloo/gloo --version <previous_version> --untar` and `kubectl apply -f gloo/crds`.
+3. Apply the CRDs for the canary version to your cluster. The Gloo Edge CRDs are designed to be backward compatible, so the new CRDs should not impact the performance of your existing installation. For more information, see the list of [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) for {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
    {{< tabs >}} 
    {{< tab name="Open Source" >}}
    ```sh
@@ -71,19 +71,19 @@ Now you're ready to upgrade. The steps vary depending on your Gloo Edge installa
    {{< tab name="Open Source" >}}
    ```sh
    glooctl install gateway \
-   --create-namespace \
-   -n gloo-system-$CANARY_VERSION \
-   --version $CANARY_VERSION
+     --create-namespace \
+     -n gloo-system-$CANARY_VERSION \
+     --version $CANARY_VERSION
    ```
    {{< /tab >}}
    {{< tab name="Enterprise">}}
-   Note that you must set your license key by using the `--license-key $LICENSE_KEY` flag, using the `--set-string license_key=$LICENSE_KEY` flag, or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+   Note that you must set your license key by using the `--license-key $LICENSE_KEY` flag or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
    ```sh
    glooctl install gateway enterprise \
-   --create-namespace \
-   -n gloo-system-$CANARY_VERSION \
-   --version $CANARY_VERSION \
-   --license-key $LICENSE_KEY
+     --create-namespace \
+     -n gloo-system-$CANARY_VERSION \
+     --version $CANARY_VERSION \
+     --license-key $LICENSE_KEY
    ```
    {{< /tab >}}
    {{< /tabs >}}
@@ -135,10 +135,10 @@ In the canary upgrade model for Gloo Edge Federation, you start with an existing
 5. Install the canary version of Gloo Edge Federation in a new namespace, `gloo-system-$CANARY_VERSION`, in your management cluster.
    ```
    helm install gloo-fed gloo-fed/gloo-fed \
-   --create-namespace \
-   -n gloo-system-$CANARY_VERSION \
-   --version $CANARY_VERSION \
-   --set-string license_key=$LICENSE_KEY
+     --create-namespace \
+     -n gloo-system-$CANARY_VERSION \
+     --version $CANARY_VERSION \
+     --set-string license_key=$LICENSE_KEY
    ```
 
 6. Verify that your existing and canary versions of Gloo Edge Federation are running. 
@@ -299,27 +299,27 @@ helm pull gloo-fed/gloo-fed --version $ROLLBACK_VERSION --untar
 {{< tab name="Open Source" >}}
 ```sh
 glooctl install gateway \
---create-namespace \
---version $ROLLBACK_VERSION \
--n gloo-system-$ROLLBACK_VERSION
+  --create-namespace \
+  -n gloo-system-$ROLLBACK_VERSION \
+  --version $ROLLBACK_VERSION
 ```
 {{< /tab >}}
 {{< tab name="Enterprise">}}
 ```sh
 glooctl install gateway enterprise \
---create-namespace \
---version $ROLLBACK_VERSION \
--n gloo-system-$ROLLBACK_VERSION \
---license-key $LICENSE_KEY
+  --create-namespace \
+  -n gloo-system-$ROLLBACK_VERSION \
+  --version $ROLLBACK_VERSION \
+  --license-key $LICENSE_KEY
 ```
 {{< /tab >}}
 {{< tab name="Federation">}}
 ```sh
 helm install gloo-fed gloo-fed/gloo-fed \
---create-namespace \
--n gloo-system-$ROLLBACK_VERSION \
---version $ROLLBACK_VERSION \
---set-string license_key=$LICENSE_KEY
+  --create-namespace \
+  -n gloo-system-$ROLLBACK_VERSION \
+  --version $ROLLBACK_VERSION \
+  --set-string license_key=$LICENSE_KEY
 ```
 {{< /tab >}} 
       {{< /tabs >}}
@@ -339,20 +339,33 @@ helm install gloo-fed gloo-fed/gloo-fed \
     glooctl uninstall -n gloo-system-$CANARY_VERSION
     ```
 
-4. Apply the Gloo CRDs from the rollback version Helm chart to your cluster. In Gloo Edge Federation, this cluster is the local management cluster.
+4. Remove any new CRDs that were added in the canary version that are not present in the rollback version.
+   1. Check the list of [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) in {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} for the names of any newly added CRDs.
+   2. Delete any added CRDs.
+      ```
+      kubectl delete crd <CRD>
+      ```
+
+5. Apply the Gloo CRDs from the rollback version Helm chart to your cluster. In Gloo Edge Federation, this cluster is the local management cluster.
    {{< tabs >}} 
-{{< tab name="Open Source" >}}
-kubectl apply -f gloo/crds
-{{< /tab >}}
-{{< tab name="Enterprise">}}
-kubectl apply -f gloo-ee/charts/gloo/crds
-{{< /tab >}}
-{{< tab name="Federation">}}
-kubectl apply -f gloo-fed/crds
-{{< /tab >}} 
+   {{< tab name="Open Source" >}}
+   ```sh
+   kubectl apply -f gloo/crds
+   ```
+   {{< /tab >}}
+   {{< tab name="Enterprise">}}
+   ```sh
+   kubectl apply -f gloo-ee/charts/gloo/crds
+   ```
+   {{< /tab >}}
+   {{< tab name="Federation">}}
+   ```sh
+   kubectl apply -f gloo-fed/crds
+   ```
+   {{< /tab >}}
    {{< /tabs >}}
 
-1. Test your routes and monitor the metrics of the rollback version.
+6. Test your routes and monitor the metrics of the rollback version.
    ```shell
    glooctl check
    ```

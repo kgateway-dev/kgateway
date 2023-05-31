@@ -86,17 +86,17 @@ Upgrade your Gloo Edge installation. The following example upgrade commands assu
    {{% tab name="Open Source" %}}
    ```shell script
    helm upgrade -n gloo-system gloo gloo/gloo \
-   -f values.yaml \
-   --version=$NEW_VERSION
+     -f values.yaml \
+     --version=$NEW_VERSION
    ```
    {{% /tab %}}
    {{% tab name="Enterprise" %}}
-   Note that you must set your license key by using the `--set license_key=$LICENSE_KEY` flag or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
+   Note that you must set your license key by using the `--set-string license_key=$LICENSE_KEY` flag or including the `license_key: $LICENSE_KEY` setting in your values file. If you do not have a license key, [request a Gloo Edge Enterprise trial](https://www.solo.io/gloo-trial).
    ```shell script
    helm upgrade -n gloo-system gloo glooe/gloo-ee \
-   -f values.yaml \
-   --version=$NEW_VERSION \
-   --set license_key=$LICENSE_KEY
+     -f values.yaml \
+     --version=$NEW_VERSION \
+     --set license_key=$LICENSE_KEY
    ```
    {{% /tab %}}
    {{< /tabs >}}
