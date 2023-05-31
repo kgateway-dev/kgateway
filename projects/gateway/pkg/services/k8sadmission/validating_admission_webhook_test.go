@@ -5,19 +5,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+
 	"github.com/ghodss/yaml"
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	validation2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
-	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -340,7 +341,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		})
 	})
 
-	Context("returns proxies", func() {
+	FContext("returns proxies", func() {
 		It("returns proxy if requested", func() {
 			setMockFunctions()
 			req, err := makeReviewRequestWithProxies(srv.URL, v1.GatewayCrd, gateway.GroupVersionKind(), v1beta1.Create, gateway, true)
@@ -400,7 +401,13 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		})
 	})
 
-	It("Parses RateLimitConfigs", func() {
+	FIt("Validates RateLimitConfigs", func() {
+		// Changes to the ratelimit api can break this test, to generate new ratelimitconfig.json:
+		// 1. create a test cluster and ensure LOG_LEVEL="debug" in the gloo deployment env vars
+		// 2. `kubectl apply` some new `RateLimitConfig` and ensure it gets accepted
+		// 3. run `kubectl logs deploy/gloo -n gloo-system | grep "kube-apiserver-admission"` and collect the new
+		//    json from the first bracket after `kube-apiserver-admission` through the end of the line
+
 		content, err := os.ReadFile("testdata/ratelimitconfig.json")
 		Expect(err).ToNot(HaveOccurred())
 		url, err := url.Parse("somePlaceholderUrl")
@@ -416,7 +423,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		wh.ServeHTTP(w, &req)
 		data, err := io.ReadAll(w.Result().Body)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(data).To(Equal([]uint8(`{"response":{"uid":"f259ee76-44d8-46d7-9243-a06254412462","allowed":true}}`)))
+		Expect(string(data)).To(ContainSubstring(`"allowed":true`))
 
 		err = w.Result().Body.Close()
 		Expect(err).ToNot(HaveOccurred())

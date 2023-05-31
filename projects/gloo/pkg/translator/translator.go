@@ -81,10 +81,6 @@ func (t *translatorInstance) Translate(
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
-	fmt.Println("CALLING Translate")
-	for _, rlc := range params.Snapshot.Ratelimitconfigs {
-		fmt.Printf("rlct: %+v\n", *rlc)
-	}
 	// re-initialize plugins on each loop, this is done for 2 reasons:
 	//  1. Each translation run relies on its own context. If a plugin spawns a go-routine
 	//		we need to be able to cancel that go-routine on the next translation
@@ -235,10 +231,6 @@ func (t *translatorInstance) translateListenerSubsystemComponents(params plugins
 
 		// 1. Compute RouteConfiguration
 		// This way we call ProcessVirtualHost / ProcessRoute first
-		fmt.Println("CALLING TranslateListenerSubsystemComponents")
-		for _, rlc := range params.Snapshot.Ratelimitconfigs {
-			fmt.Printf("rlctlsc: %+v\n", *rlc)
-		}
 		envoyRouteConfiguration := routeConfigurationTranslator.ComputeRouteConfiguration(params)
 
 		// 2. Compute Listener
