@@ -23,47 +23,56 @@ jobs:
     name: Prepare Environment
     runs-on: ubuntu-22.04
     outputs:
-      should-build-docs: ${{ env.build_value }}
-      should-pass-docs: ${{ env.pass_value }}
+      should-build-docs: ${{ steps.build-strategy.outputs.build_value }}
       version: ${{ steps.version.outputs.value }}}
     steps:
+      - id: is-community-pr
+        name: Detect Community PR
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
+        shell: bash
+        run: |
+          echo "Pull Request is from a fork. Setting is_community_pr to true"
+          echo "value=true" >> $GITHUB_OUTPUT
       - id: is-draft-pr
         name: Process draft Pull Requests
         if: ${{ github.event.pull_request.draft }}
-        run: echo "is_draft_pr=true" >> $GITHUB_ENV
-      - id: signal-docs-comment
-        name: Process comments on Pull Request to signal Docs
-        if: ${{ github.event.issue.pull_request }}
-        run: echo "signal_docs_comment=${{ contains(github.event.comment.body, '/sig-docs') }}" >> $GITHUB_ENV
-      - id: skip-docs-comment
-        name: Process comments on Pull Request to skip Docs
-        if: ${{ github.event.issue.pull_request }}
-        run: echo "skip_docs_comment=${{ contains(github.event.comment.body, '/skip-docs') }}" >> $GITHUB_ENV
-      - id: build-docs
-        name: Determine whether or not to build docs
+        run: echo "value=true" >> $GITHUB_OUTPUT
+      - id: checkout-code
+        uses: actions/checkout@v3
+        with:
+          # We require gathering the branch and tag history since we rely on a `git diff`
+          # which compares the state of two branches
+          fetch-depth: 0
+      - id: process-skip-directives
+        uses: ./.github/workflows/composite-actions/process-skip-directives
+        with:
+          # GitHub baseRef is only availabe on PR:
+          # https://docs.github.com/en/actions/learn-github-actions/contexts#github-context
+          # On other events (merge to LTS branches), this will be empty, ensuring that
+          # the process-skip-directives action returns 'false' for all values (ie run docs builds)
+          base-ref: ${{ github.base_ref }}
+      - id: build-strategy
+        name: Determine Docs Build Strategy
         run: |
           should_build=true
-          should_pass=false
-
-          is_draft_pr=${{ env.is_draft_pr }}
+          
+          is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
           if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
             should_build=false
           fi
 
-          pr_comment_signal=${{ env.signal_docs_comment }}
-          if [[ ! -z $pr_comment_signal && $pr_comment_signal = true ]] ; then
-            should_build=true
+          is_community_pr=${{ steps.is-community-pr.outputs.value }}
+          if [[ ! -z $is_community_pr && $is_community_pr = true ]] ; then
+            should_build=false
           fi
 
-          pr_comment_skip=${{ env.skip_docs_comment }}
-          if [[ ! -z $pr_comment_skip && $pr_comment_skip = true ]] ; then
-            should_pass=true
+          skip_docs_build=${{ steps.process-skip-directives.outputs.skip-docs-build }}
+          if [[ ! -z $skip_docs_build && $skip_docs_build = true ]] ; then
+            should_build=false
           fi
 
-          echo "Should build docs? $should_build"
-          echo "Should auto-pass docs? $should_pass"
-          echo "build_value=$should_build" >> $GITHUB_ENV
-          echo "pass_value=$should_pass" >> $GITHUB_ENV
+          echo "Build strategy: Should build? $should_build"
+          echo "build_value=$should_build" >> $GITHUB_OUTPUT
       - id: version
         shell: bash
         run: |
@@ -81,7 +90,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - name: Check out code into the Go module directory
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: actions/checkout@v3
       with:
         ref: main
@@ -90,19 +98,10 @@ jobs:
       uses: actions/checkout@v3
     - uses: ./.github/workflows/composite-actions/prep-go-runner
     - name: Setup Hugo
-      if: needs.prepare_env.outputs.should-pass-docs != 'true'
       uses: peaceiris/actions-hugo@v2
       with:
         hugo-version: '0.69.2'
-    - name: Detect Community PR
-      id: community-pr-check
-      if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != 'solo-io/gloo' }}
-      shell: bash
-      run: |
-        echo "Pull Request is from a fork. Setting is_community_pr to true"
-        echo "is_community_pr=true" >> $GITHUB_ENV
     - name: Generate versioned docs site
-      if: ${{ !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
       run: make -C docs build-site
       env:
         GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -121,7 +120,7 @@ jobs:
         entryPoint: ./docs/ci
     - name: Deploy to Firebase (preview)
       # Generate live preview of docs for PRs to main
-      if: ${{ github.event_name == 'pull_request' && !env.is_community_pr && needs.prepare_env.outputs.should-pass-docs != 'true' }}
+      if: ${{ github.event_name == 'pull_request' }}
       uses: FirebaseExtended/action-hosting-deploy@main
       with:
         repoToken: ${{ secrets.GITHUB_TOKEN }}
