@@ -81,6 +81,7 @@ func (t *translatorInstance) Translate(
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	defer span.End()
 	params.Ctx = contextutils.WithLogger(ctx, "translator")
+
 	// re-initialize plugins on each loop, this is done for 2 reasons:
 	//  1. Each translation run relies on its own context. If a plugin spawns a go-routine
 	//		we need to be able to cancel that go-routine on the next translation
