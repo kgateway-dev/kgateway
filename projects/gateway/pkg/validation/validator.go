@@ -243,8 +243,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		// allow writes if storage is already broken
 		return nil, nil
 	}
-	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 
+	// verify the mutation against a snapshot clone first, only apply the change to the actual snapshot if this passes
 	if opts.Delete {
 		if err := snapshotClone.RemoveFromResourceList(opts.Resource); err != nil {
 			return nil, err
@@ -314,8 +314,8 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 			continue
 		}
 	}
-	extensionReports := v.extensionValidator.Validate(ctx, snapshotClone)
 
+	extensionReports := v.extensionValidator.Validate(ctx, snapshotClone)
 	if len(extensionReports) > 0 {
 		if err = v.getErrorsFromResourceReports(extensionReports); err != nil {
 			err = errors.Wrapf(err, failedExtensionResourceReports)
