@@ -5,13 +5,13 @@ env:
 
 on:
   schedule:
-    - cron: "0 5 * * 1-5"   # weekdays @ 00:00 EST, run tests against latest dev
+    - cron: "0 5 * * 1-5"   # weekdays @ 00:00 EST, run tests against latest main
     - cron: "10 10 * * 1"   # monday   @ 05:10 EST, run expanded tests against v1.14.x
     - cron: "6 6 * * 1"     # monday   @ 01:06 EST, run expanded tests against v1.13.x
   workflow_dispatch:
 jobs:
-  regression_tests_latest_dev:
-    name: latest dev regression tests
+  regression_tests_latest_main:
+    name: latest main regression tests
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
     runs-on: ubuntu-22.04
     # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
@@ -28,6 +28,15 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/workflows/composite-actions/regression-tests
+
+  performance_tests_latest_main:
+    name: latest performance tests
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./.github/workflows/composite-actions/performance-tests
 
   regression_tests_14:
     name: v1.14.x regression tests
@@ -60,10 +69,11 @@ jobs:
       with:
         ref: v1.13.x
     - uses: ./.github/actions/regression-tests
+
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_dev, regression_tests_14, regression_tests_13 ]
+    needs: [ regression_tests_latest_main, performance_tests_latest_main, regression_tests_14, regression_tests_13 ]
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
@@ -79,7 +89,7 @@ jobs:
           elif [[ ${{github.event.schedule == '10 10 * * 1'}} = true ]]; then
               preamble="Gloo OSS weeklies (v1.14.x)"
           elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
-              preamble="Gloo OSS nightlies (dev)"
+              preamble="Gloo OSS nightlies (main)"
           fi
 
           echo "Setting PREAMBLE as $preamble"
