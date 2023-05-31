@@ -6,12 +6,17 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gatewayV1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+)
+
+const (
+	ns = "gloo-system"
 )
 
 var _ = Describe("Plugin", func() {
@@ -103,6 +108,103 @@ var _ = Describe("Plugin", func() {
 		err := p.ProcessVirtualHost(paramsWithSecret, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				HeaderManipulation: testHeaderManipWithSecrets,
+			},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.RequestHeadersToAdd).To(Equal(expectedHeadersWithSecrets.RequestHeadersToAdd))
+		Expect(out.RequestHeadersToRemove).To(Equal(expectedHeadersWithSecrets.RequestHeadersToRemove))
+		Expect(out.ResponseHeadersToAdd).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToAdd))
+		Expect(out.ResponseHeadersToRemove).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToRemove))
+	})
+
+	It("Handles :schema header", func() {
+		params := plugins.VirtualHostParams{
+			Params: plugins.Params{
+				Snapshot: &v1snap.ApiSnapshot{
+					Gateways: gatewayV1.GatewayList{
+						{
+							Metadata: &coreV1.Metadata{Namespace: ns, Name: "gw1"},
+							BindPort: 1111,
+							GatewayType: &gatewayV1.Gateway_HttpGateway{
+								HttpGateway: &gatewayV1.HttpGateway{},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		schemeHeader := headers.HeaderManipulation{
+			ResponseHeadersToAdd: []*headers.HeaderValueOption{
+				{
+					Header: &headers.HeaderValue{
+						Key:   ":scheme",
+						Value: "httpssl",
+					},
+					Append: &wrappers.BoolValue{Value: true},
+				},
+			},
+		}
+
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := p.ProcessVirtualHost(params, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				HeaderManipulation: &schemeHeader,
+			},
+		}, out)
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(Equal(InvalidSchemeError))
+		// Expect(out.RequestHeadersToAdd).To(Equal(expectedHeadersWithSecrets.RequestHeadersToAdd))
+		// Expect(out.RequestHeadersToRemove).To(Equal(expectedHeadersWithSecrets.RequestHeadersToRemove))
+		// Expect(out.ResponseHeadersToAdd).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToAdd))
+		// Expect(out.ResponseHeadersToRemove).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToRemove))
+	})
+
+	FDescribeTable("Invalid headers", func(key string, value string, expectedErr error) {
+		params := plugins.VirtualHostParams{}
+		schemeHeader := headers.HeaderManipulation{
+			ResponseHeadersToAdd: []*headers.HeaderValueOption{
+				{
+					Header: &headers.HeaderValue{
+						Key:   key,
+						Value: value,
+					},
+					Append: &wrappers.BoolValue{Value: true},
+				},
+			},
+		}
+
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := p.ProcessVirtualHost(params, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				HeaderManipulation: &schemeHeader,
+			},
+		}, out)
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(Equal(expectedErr))
+	},
+		Entry("invalid :scheme header value", ":scheme", "httpssl", InvalidSchemeError),
+		Entry("invalid use of pseudo-header", ":not-schema", "value", CantSetPseudoHeaderError),
+	)
+
+	It("Valid :scheme header", func() {
+		params := plugins.VirtualHostParams{}
+		schemeHeader := headers.HeaderManipulation{
+			ResponseHeadersToAdd: []*headers.HeaderValueOption{
+				{
+					Header: &headers.HeaderValue{
+						Key:   ":scheme",
+						Value: "http",
+					},
+					Append: &wrappers.BoolValue{Value: true},
+				},
+			},
+		}
+
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := p.ProcessVirtualHost(params, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				HeaderManipulation: &schemeHeader,
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())

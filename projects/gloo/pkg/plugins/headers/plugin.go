@@ -22,7 +22,9 @@ const (
 )
 
 var (
-	MissingHeaderValueError = errors.Errorf("header section of header value option cannot be nil")
+	MissingHeaderValueError  = errors.Errorf("header section of header value option cannot be nil")
+	InvalidSchemeError       = errors.Errorf("scheme must be http or https") // Todo, add invaild scheme value
+	CantSetPseudoHeaderError = errors.Errorf("Response header key must not start with ':', except for ':scheme'")
 )
 
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
@@ -150,13 +152,28 @@ func convertResponseHeaderValueOption(
 ) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	var out []*envoy_config_core_v3.HeaderValueOption
 	for _, h := range in {
-		if h.GetHeader() == nil {
+		header := h.GetHeader()
+		if header == nil {
 			return nil, MissingHeaderValueError
 		}
+
+		if header.GetKey() == ":scheme" {
+			// Todo - check for isSSL on gateway
+			if header.GetValue() != "http" && header.GetValue() != "https" {
+				return nil, InvalidSchemeError
+			}
+			// Somehow kick this out for the http_connection_manager to handles
+		}
+
+		var semicolon byte = ':'
+		if header.GetKey()[0] == semicolon {
+			return nil, CantSetPseudoHeaderError
+		}
+
 		out = append(out, &envoy_config_core_v3.HeaderValueOption{
 			Header: &envoy_config_core_v3.HeaderValue{
-				Key:   h.GetHeader().GetKey(),
-				Value: h.GetHeader().GetValue(),
+				Key:   header.GetKey(),
+				Value: header.GetValue(),
 			},
 			Append: h.GetAppend(),
 		})
