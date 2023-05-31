@@ -341,7 +341,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		})
 	})
 
-	FContext("returns proxies", func() {
+	Context("returns proxies", func() {
 		It("returns proxy if requested", func() {
 			setMockFunctions()
 			req, err := makeReviewRequestWithProxies(srv.URL, v1.GatewayCrd, gateway.GroupVersionKind(), v1beta1.Create, gateway, true)

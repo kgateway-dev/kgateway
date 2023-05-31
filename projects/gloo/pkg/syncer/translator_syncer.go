@@ -123,6 +123,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1snap.ApiSnapshot) e
 		syncerExtension.Sync(ctx, snap, s.settings, s.xdsCache, intermediateReports)
 		reports.Merge(intermediateReports)
 	}
+
 	// Update resource status metrics
 	for resource, report := range reports {
 		status := s.reporter.StatusFromReport(report, nil)
