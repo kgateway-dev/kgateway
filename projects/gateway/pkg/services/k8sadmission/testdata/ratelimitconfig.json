@@ -2,7 +2,6 @@
     "kind": "AdmissionReview",
     "apiVersion": "admission.k8s.io/v1beta1",
     "request": {
-        "uid": "f259ee76-44d8-46d7-9243-a06254412462",
         "kind": {
             "group": "ratelimit.solo.io",
             "version": "v1alpha1",
@@ -40,7 +39,6 @@
                 "annotations": {
                     "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"ratelimit.solo.io/v1alpha1\",\"kind\":\"RateLimitConfig\",\"metadata\":{\"annotations\":{},\"name\":\"global-limit\",\"namespace\":\"gloo-system\"},\"spec\":{\"raw\":{\"descriptors\":[{\"key\":\"generic_key\",\"rateLimit\":{\"requestsPerUnit\":450,\"unit\":\"MINUTE\"},\"value\":\"counter\"}],\"rateLimits\":[{\"actions\":[{\"genericKey\":{\"descriptorValue\":\"counter\"}}]}]}}}\n"
                 },
-                "creationTimestamp": "2023-05-26T18:35:26Z",
                 "generation": 1,
                 "managedFields": [
                     {
@@ -63,13 +61,11 @@
                             }
                         },
                         "manager": "kubectl-client-side-apply",
-                        "operation": "Update",
-                        "time": "2023-05-26T18:35:26Z"
+                        "operation": "Update"
                     }
                 ],
                 "name": "global-limit",
-                "namespace": "gloo-system",
-                "uid": "92c5c750-e68e-42ab-8741-f33e8d8eea85"
+                "namespace": "gloo-system"
             },
             "spec": {
                 "raw": {
