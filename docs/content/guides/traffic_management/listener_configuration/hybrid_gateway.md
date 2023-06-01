@@ -159,7 +159,7 @@ By default, Gloo Edge only supports cipher suites that are available in Envoy, w
 In this guide, you deploy a sample NGINX server and configure the server for HTTPS traffic. You use the server to try out the TLS passthrough feature for deprecated cipher suites.
 
 {{% notice tip %}}
-This guide assumes that you want to configure TLS passthrough in the gateway resource directly. If you have a hybrid gateway and you use the hybrid gateway delegation, follow the steps in [Pass TLS traffic through for depcrecated cipher suites with hybrid gateway delegation](#tls-passthrough-delegated). 
+This guide assumes that you want to configure TLS passthrough in the gateway resource directly. If you have a hybrid gateway and you use the hybrid gateway delegation feature, follow the steps in [Pass TLS traffic through for depcrecated cipher suites with hybrid gateway delegation](#tls-passthrough-delegated). 
 {{% /notice %}}
 
 1. Create a root certificate for the `example.com` domain. You use this certificate to sign the certificate for your NGINX service later. 
@@ -325,7 +325,7 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
    export GATEWAY_IP=$(kubectl get svc -n gloo-system gateway-proxy -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
    ```
 
-11. Send a request to the gateway. In your output, verify that you see the TLS handshake between the client and the gateway and that the cipher suite that you sent as part of the request is accepted. In addition, verify that you get back a 200 HTTP response code from the NGINX server and that you see the NGINX server certificate in your CLI output. 
+10. Send a request to the gateway. In your output, verify that you see the TLS handshake between the client and the gateway and that the cipher suite that you sent as part of the request is accepted. In addition, verify that you get back a 200 HTTP response code from the NGINX server and that you see the NGINX server certificate in your CLI output. 
     ```sh
     curl -vi --resolve nginx.example.com:443:${GATEWAY_IP} --cacert example_certs/nginx.example.com.crt --cipher "AES256-SHA256" "https://nginx.example.com:443"
     ```
@@ -370,7 +370,7 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
     HTTP/1.1 200 OK
     ```
 
-12. Send another request to the gateway. This time, you provide a cipher that is not listed in the deprecated cipher suites. Note that the TLS connection fails as no supported cipher can be found in the request. 
+11. Send another request to the gateway. This time, you provide a cipher that is not listed in the deprecated cipher suites. Note that the TLS connection fails as no supported cipher can be found in the request. 
     ```sh
     curl -vi --resolve nginx.example.com:443:${GATEWAY_IP} --cacert example_certs/nginx.example.com.crt --cipher "AES128" "https://nginx.example.com:443" 
     ```
