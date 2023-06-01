@@ -111,6 +111,36 @@ var _ = Describe("Plugin", func() {
 		Expect(out.ResponseHeadersToAdd).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToAdd))
 		Expect(out.ResponseHeadersToRemove).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToRemove))
 	})
+
+	DescribeTable("Invalid headers", func(key string, value string, expectedErr error) {
+		params := plugins.VirtualHostParams{}
+		schemeHeader := headers.HeaderManipulation{
+			ResponseHeadersToAdd: []*headers.HeaderValueOption{
+				{
+					Header: &headers.HeaderValue{
+						Key:   key,
+						Value: value,
+					},
+					Append: &wrappers.BoolValue{Value: true},
+				},
+			},
+		}
+
+		out := &envoy_config_route_v3.VirtualHost{}
+		err := p.ProcessVirtualHost(params, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				HeaderManipulation: &schemeHeader,
+			},
+		}, out)
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError(expectedErr))
+	},
+		Entry("Can't set pseudo-header", ":scheme", "value", CantSetPseudoHeaderError(":scheme")),
+		Entry("Can't set Host header (Host)", "Host", "value", CantSetHostHeaderError),
+		Entry("Can't set Host header (host)", "host", "value", CantSetHostHeaderError),
+		Entry("Can't set Host header (HOST)", "HOST", "value", CantSetHostHeaderError),
+		Entry("Can't set Host header (hOST)", "hOST", "value", CantSetHostHeaderError),
+	)
 })
 
 var testBrokenConfigNoRequestHeader = &headers.HeaderManipulation{
