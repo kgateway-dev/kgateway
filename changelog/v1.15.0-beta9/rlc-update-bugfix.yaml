@@ -2,3 +2,5 @@ changelog:
   - type: FIX
     description: Added customInputResource unmarshalling logic to ValidatingAdmissionWebhook for RateLimitConfigs
     issueLink: https://github.com/solo-io/gloo/issues/8042
+    resolvesIssue: false
+    
