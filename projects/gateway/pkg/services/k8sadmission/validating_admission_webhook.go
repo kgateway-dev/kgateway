@@ -467,6 +467,7 @@ func (wh *gatewayValidationWebhook) shouldValidateResource(ctx context.Context, 
 	if err := validation.UnmarshalResource(admissionRequest.Object.Raw, resource); err != nil {
 		return false, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
+	fmt.Printf("RESOURCE: %+v", resource)
 	if skipValidationCheck(resource.GetMetadata().GetAnnotations()) {
 		logger.Debugf("Skipping validation. Reason: detected skip validation annotation")
 		return false, nil

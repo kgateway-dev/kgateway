@@ -401,32 +401,35 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		})
 	})
 
-	It("Validates RateLimitConfigs", func() {
-		// Changes to the ratelimit api can break this test, to generate new ratelimitconfig.json:
-		// 1. create a test cluster and ensure LOG_LEVEL="debug" in the gloo deployment env vars
-		// 2. `kubectl apply` some new `RateLimitConfig` and ensure it gets accepted
-		// 3. run `kubectl logs deploy/gloo -n gloo-system | grep "kube-apiserver-admission"` and collect the new
-		//    json from the first bracket after `kube-apiserver-admission` through the end of the line
+	Context("custom input resource validation", func() {
 
-		content, err := os.ReadFile("testdata/ratelimitconfig.json")
-		Expect(err).ToNot(HaveOccurred())
-		url, err := url.Parse("somePlaceholderUrl")
-		Expect(err).ToNot(HaveOccurred())
+		FIt("Validates RateLimitConfigs", func() {
+			// Changes to the ratelimit api can break this test, to generate new ratelimitconfig.json:
+			// 1. create a test cluster and ensure LOG_LEVEL="debug" in the gloo deployment env vars
+			// 2. `kubectl apply` some new `RateLimitConfig` and ensure it gets accepted
+			// 3. run `kubectl logs deploy/gloo -n gloo-system | grep "kube-apiserver-admission"` and collect the new
+			//    json from the first bracket after `kube-apiserver-admission` through the end of the line
 
-		req := http.Request{
-			URL:    url,
-			Header: map[string][]string{},
-			Body:   io.NopCloser(bytes.NewBuffer(content)),
-		}
-		req.Header.Set("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		wh.ServeHTTP(w, &req)
-		data, err := io.ReadAll(w.Result().Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(string(data)).To(ContainSubstring(`"allowed":true`))
+			content, err := os.ReadFile("testdata/ratelimitconfig.json")
+			Expect(err).ToNot(HaveOccurred())
+			url, err := url.Parse("somePlaceholderUrl")
+			Expect(err).ToNot(HaveOccurred())
 
-		err = w.Result().Body.Close()
-		Expect(err).ToNot(HaveOccurred())
+			req := http.Request{
+				URL:    url,
+				Header: map[string][]string{},
+				Body:   io.NopCloser(bytes.NewBuffer(content)),
+			}
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			wh.ServeHTTP(w, &req)
+			data, err := io.ReadAll(w.Result().Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(data)).To(ContainSubstring(`"allowed":true`))
+
+			err = w.Result().Body.Close()
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })
 
