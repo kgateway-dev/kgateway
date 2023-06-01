@@ -195,11 +195,14 @@ func validateReleaseVersionOfCli() {
 
 // stolen from "github.com/solo-io/go-utils/versionutils", but changed the hardcoding of "TAGGED_VERSION" to "VERSION"
 func getReleaseVersionOrExitGracefully() *versionutils.Version {
-	tag, present := os.LookupEnv("VERSION")
-	if !present || tag == "" {
+	versionStr, present := os.LookupEnv("VERSION")
+	if !present || versionStr == "" {
 		fmt.Printf("VERSION not found in environment.\n")
 		os.Exit(1)
 	}
+
+	tag := "v" + versionStr
+
 	version, err := versionutils.ParseVersion(tag)
 	if err != nil {
 		fmt.Printf("VERSION %s is not a valid semver version.\n", tag)

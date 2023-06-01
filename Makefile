@@ -43,6 +43,9 @@ IMAGE_REGISTRY ?= quay.io/solo-io
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
+# a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
+VERSION ?= 1.0.1-dev
+
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.6-patch1
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
@@ -597,8 +600,6 @@ endif
 
 # controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
 PUBLISH_CONTEXT ?= NONE
-# a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
-VERSION ?= 1.0.1-dev
 # specify which bucket to upload helm chart to
 HELM_BUCKET ?= gs://solo-public-tagged-helm
 # modifier to docker builds which can auto-delete docker images after a set time
@@ -622,7 +623,7 @@ publish-docker-retag: docker-retag docker-push
 
 # publish glooctl
 publish-glooctl: build-cli
-	GO111MODULE=on go run ci/upload_github_release_assets.go true
+	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true
 endif # RELEASE exclusive make targets
 
 
