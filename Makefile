@@ -602,12 +602,12 @@ VERSION ?= 1.0.1-dev
 # specify which bucket to upload helm chart to
 HELM_BUCKET ?= gs://solo-public-tagged-helm
 # modifier to docker builds which can auto-delete docker images after a set time
-QUAY_EXPIRATION_LABEL ?= --label "quay.expires-after=3w"
+QUAY_EXPIRATION_LABEL ?= --label quay.expires-after=3w
 
 # define empty publish targets so calls won't fail
+.PHONY: publish-docker
 .PHONY: publish-docker-retag
 .PHONY: publish-glooctl
-.PHONY: publish-docker
 .PHONY: publish-helm-chart
 
 # don't define Publish Artifacts Targets if we don't have a release context
@@ -615,6 +615,7 @@ ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
 
 ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
 HELM_BUCKET           := gs://solo-public-helm
+QUAY_EXPIRATION_LABEL :=
 # Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
 # and push them to a secondary repository, defined at IMAGE_REGISTRY
 publish-docker-retag: docker-retag docker-push

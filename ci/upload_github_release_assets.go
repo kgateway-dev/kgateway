@@ -198,12 +198,12 @@ func getReleaseVersionOrExitGracefully() *versionutils.Version {
 	tag, present := os.LookupEnv("VERSION")
 	if !present || tag == "" {
 		fmt.Printf("VERSION not found in environment.\n")
-		os.Exit(0)
+		os.Exit(1)
 	}
 	version, err := versionutils.ParseVersion(tag)
 	if err != nil {
 		fmt.Printf("VERSION %s is not a valid semver version.\n", tag)
-		os.Exit(0)
+		os.Exit(1)
 	}
 	return version
 }
