@@ -24,8 +24,8 @@ const (
 )
 
 var (
-	MissingHeaderValueError = eris.Errorf("header section of header value option cannot be nil")
-	CantSetHostHeaderError  = eris.Errorf("cannot set Host header in response headers")
+	MissingHeaderValueError = eris.New("header section of header value option cannot be nil")
+	CantSetHostHeaderError  = eris.New("cannot set Host header in response headers")
 
 	CantSetPseudoHeaderError = func(header string) error {
 		return eris.Errorf(":-prefixed headers cannot be set: '%s'", header)
@@ -162,7 +162,7 @@ func convertResponseHeaderValueOption(
 			return nil, MissingHeaderValueError
 		}
 
-		if header.GetKey()[0] == byte(':') {
+		if strings.HasPrefix(header.GetKey(), ":") {
 			return nil, CantSetPseudoHeaderError(header.GetKey())
 		}
 
