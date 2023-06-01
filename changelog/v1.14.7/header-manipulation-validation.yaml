@@ -4,5 +4,5 @@ changelog:
   resolvesIssue: false
   description: >-
     Envoy rejects headerManipulation.responseHeadersToAdd headers where the key start with a ':' and Host headers.
-    We will now reject those headers in gloo validation instead of passing the invalid config to envoy.
+    We will now reject those headers in gloo validation instead of passing the invalid config to envoy. 
 
