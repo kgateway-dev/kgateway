@@ -318,7 +318,7 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
      - gateway-proxy
      useProxyProto: false
    EOF
-   ```
+   {{< /highlight >}}
 
 9. Get the IP address of the gateway.
    ```sh
