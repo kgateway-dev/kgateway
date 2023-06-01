@@ -250,17 +250,21 @@ test-with-coverage: test
 
 .PHONY: run-tests
 run-tests: GINKGO_FLAGS += -skip-package=e2e ## Run all non E2E tests, or only run the test package at {TEST_PKG} if it is specified
-run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !nightly"
+run-tests: GINKGO_FLAGS += --label-filter="!end-to-end && !performance"
 run-tests: test
+
+.PHONY: run-performance-tests
+run-performance-tests: GINKGO_FLAGS += --label-filter="performance" ## Run only tests with the Performance label
+run-performance-tests: test
 
 .PHONY: run-e2e-tests
 run-e2e-tests: TEST_PKG = ./test/e2e/ ## Run all in-memory E2E tests
-run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
+run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
 run-e2e-tests: test
 
 .PHONY: run-hashicorp-e2e-tests
 run-hashicorp-e2e-tests: TEST_PKG = ./test/consulvaulte2e/
-run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !nightly"
+run-hashicorp-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
 run-hashicorp-e2e-tests: test
 
 .PHONY: run-kube-e2e-tests
