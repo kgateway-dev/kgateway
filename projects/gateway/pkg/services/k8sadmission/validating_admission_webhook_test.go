@@ -403,7 +403,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	Context("custom input resource validation", func() {
 
-		FIt("Validates RateLimitConfigs", func() {
+		It("Validates RateLimitConfigs", func() {
 			// Changes to the ratelimit api can break this test, to generate new ratelimitconfig.json:
 			// 1. create a test cluster and ensure LOG_LEVEL="debug" in the gloo deployment env vars
 			// 2. `kubectl apply` some new `RateLimitConfig` and ensure it gets accepted
