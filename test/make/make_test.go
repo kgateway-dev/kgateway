@@ -7,6 +7,10 @@ import (
 // Environment Variables which control the value of makefile vars
 const (
 	PublishContext = "PUBLISH_CONTEXT"
+
+	// TODO: remove this once we are fully off of cloudbuild
+	TestAssetId   = "TEST_ASSET_ID"
+	TaggedVersion = "TAGGED_VERSION"
 )
 
 // Makefile vars
@@ -23,6 +27,8 @@ var _ = Describe("Make", func() {
 		It("Correctly sets variables when PUBLISH_CONTEXT is unset", func() {
 			ExpectMakeVarsWithEnvVars([]*EnvVar{
 				{PublishContext, ""},
+				{TestAssetId, ""},
+				{TaggedVersion, ""},
 			}, []*MakeVar{
 				{HelmBucket, "gs://solo-public-tagged-helm"},
 				{QuayExpirationLabel, "--label quay.expires-after=3w"},
@@ -32,6 +38,8 @@ var _ = Describe("Make", func() {
 		It("Correctly sets variables when PUBLISH_CONTEXT is RELEASE", func() {
 			ExpectMakeVarsWithEnvVars([]*EnvVar{
 				{PublishContext, "RELEASE"},
+				{TestAssetId, ""},
+				{TaggedVersion, ""},
 			}, []*MakeVar{
 				{HelmBucket, "gs://solo-public-helm"},
 				{QuayExpirationLabel, ""},
@@ -41,6 +49,8 @@ var _ = Describe("Make", func() {
 		It("Correctly sets variables when PUBLISH_CONTEXT is PULL_REQUEST", func() {
 			ExpectMakeVarsWithEnvVars([]*EnvVar{
 				{PublishContext, "PULL_REQUEST"},
+				{TestAssetId, ""},
+				{TaggedVersion, ""},
 			}, []*MakeVar{
 				{HelmBucket, "gs://solo-public-tagged-helm"},
 				{QuayExpirationLabel, "--label quay.expires-after=3w"},
