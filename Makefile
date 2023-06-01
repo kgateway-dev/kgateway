@@ -43,86 +43,11 @@ IMAGE_REGISTRY ?= quay.io/solo-io
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
+# a semver resembling 1.0.1-dev.  Most calling jobs customize this.  Ex:  v1.15.0-pr8278
+VERSION ?= 1.0.1-dev
+
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
-RELEASE := "false"
-
-# CREATE_ASSETS is used to protect certain make targets which publish assets and are used for releases
-CREATE_ASSETS := "true"
-
-# CREATE_TEST_ASSETS allows us to create assets on PRs that are unique
-# This flag will set the version to be PR-unique rather than commit-unique for charts and images
-CREATE_TEST_ASSETS := "false"
-ifneq ($(TEST_ASSET_ID),)
-	CREATE_TEST_ASSETS := "true"
-endif
-
-# ensure we have a valid version from a forked repo, so community users can submit PRs
-ORIGIN_URL ?= $(shell git remote get-url origin)
-UPSTREAM_ORIGIN_URL ?= git@github.com:solo-io/gloo.git
-UPSTREAM_ORIGIN_URL_HTTPS ?= https://www.github.com/solo-io/gloo.git
-UPSTREAM_ORIGIN_URL_SSH ?= ssh://git@github.com/solo-io/gloo
-ifeq ($(filter "$(ORIGIN_URL)", "$(UPSTREAM_ORIGIN_URL)" "$(UPSTREAM_ORIGIN_URL_HTTPS)" "$(UPSTREAM_ORIGIN_URL_SSH)"),)
-	VERSION ?= 0.0.1-fork
-	CREATE_TEST_ASSETS := "false"
-endif
-
-# If TAGGED_VERSION does not exist, this is not a release in CI
-ifeq ($(TAGGED_VERSION),)
-	# If we want to create test assets, set version to be PR-unique rather than commit-unique for charts and images
-	ifeq ($(CREATE_TEST_ASSETS), "true")
-	  VERSION ?= $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
-	else
-	  VERSION ?= $(shell git describe --tags --dirty | cut -c 2-)
-	endif
-else
-	RELEASE := "true"
-	VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-endif
-
-# only set CREATE_ASSETS to true if RELEASE is true or CREATE_TEST_ASSETS is true
-# workaround since makefile has no Logical OR for conditionals
-ifeq ($(CREATE_TEST_ASSETS), "true")
-  # set quay image expiration if creating test assets and we're pushing to Quay
-  ifeq ($(IMAGE_REGISTRY),"quay.io/solo-io")
-    QUAY_EXPIRATION_LABEL := --label "quay.expires-after=3w"
-  endif
-else
-  ifeq ($(RELEASE), "true")
-  else
-    CREATE_ASSETS := "false"
-  endif
-endif
-
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.25.6-patch1
-
-# The full SHA of the currently checked out commit
-CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
-# Returns the name of the default branch in the remote `origin` repository, e.g. `main`
-DEFAULT_BRANCH_NAME := $(shell git remote show origin | sed -n '/HEAD branch/s/.*: //p')
-
-# Print the branches that contain the current commit and keep only the one that
-# EXACTLY matches the name of the default branch (avoid matching e.g. `main-2`).
-# If we get back a result, it mean we are on the default branch.
-EMPTY_IF_NOT_DEFAULT := $(shell git branch --contains $(CHECKED_OUT_SHA) | grep -ow $(DEFAULT_BRANCH_NAME))
-
-ON_DEFAULT_BRANCH := false
-ifneq ($(EMPTY_IF_NOT_DEFAULT),)
-    ON_DEFAULT_BRANCH = true
-endif
-
-ASSETS_ONLY_RELEASE := true
-ifeq ($(ON_DEFAULT_BRANCH), true)
-    ASSETS_ONLY_RELEASE = false
-endif
-
-.PHONY: print-git-info
-print-git-info:
-	@echo CHECKED_OUT_SHA: $(CHECKED_OUT_SHA)
-	@echo DEFAULT_BRANCH_NAME: $(DEFAULT_BRANCH_NAME)
-	@echo EMPTY_IF_NOT_DEFAULT: $(EMPTY_IF_NOT_DEFAULT)
-	@echo ON_DEFAULT_BRANCH: $(ON_DEFAULT_BRANCH)
-	@echo ASSETS_ONLY_RELEASE: $(ASSETS_ONLY_RELEASE)
-
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -147,10 +72,6 @@ GOOS ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
 GOLANG_ALPINE_IMAGE_NAME = golang:$(shell go version | egrep -o '([0-9]+\.[0-9]+)')-alpine
-
-# Passed by cloudbuild
-GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
-BUILD_ID := $(BUILD_ID)
 
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
@@ -639,14 +560,6 @@ kubectl-docker: $(KUBECTL_OUTPUT_DIR)/Dockerfile.kubectl
 
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
-HELM_BUCKET := gs://solo-public-helm
-
-# If this is not a release commit, push up helm chart to solo-public-tagged-helm chart repo with
-# name gloo-{{VERSION}}-{{TEST_ASSET_ID}}
-# e.g. gloo-v1.7.0-4300
-ifeq ($(RELEASE), "false")
-	HELM_BUCKET := gs://solo-public-tagged-helm
-endif
 
 .PHONY: generate-helm-files
 generate-helm-files: $(OUTPUT_DIR)/.helm-prepared ## Generates required helm files
@@ -663,14 +576,62 @@ package-chart: generate-helm-files
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
 
-.PHONY: push-chart-to-registry
-push-chart-to-registry: generate-helm-files
-	helm package $(HELM_DIR)
-	helm push --registry-config $(DOCKER_CONFIG)/config.json gloo-$(VERSION).tgz oci://gcr.io/solo-public/gloo-helm
+#----------------------------------------------------------------------------------
+# Publish Artifacts
+#
+# We publish artifacts using our CI pipeline. This may happen during any of the following scenarios:
+# 	- Release
+#	- Development Build (a one-off build for unreleased code)
+#	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
+#----------------------------------------------------------------------------------
+# TODO: delete this logic block when we have a github actions-managed release
+ifneq (,$(TEST_ASSET_ID))
+PUBLISH_CONTEXT := PULL_REQUEST
+VERSION := $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+endif
 
-.PHONY: fetch-package-and-save-helm
-fetch-package-and-save-helm: generate-helm-files
-ifeq ($(CREATE_ASSETS), "true")
+# TODO: delete this logic block when we have a github actions-managed release
+ifneq (,$(TAGGED_VERSION))
+PUBLISH_CONTEXT := RELEASE
+VERSION := $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
+endif
+
+# controller variable for the "Publish Artifacts" section.  Defines which targets exist.  Possible Values: NONE, RELEASE, PULL_REQUEST
+PUBLISH_CONTEXT ?= NONE
+# specify which bucket to upload helm chart to
+HELM_BUCKET ?= gs://solo-public-tagged-helm
+# modifier to docker builds which can auto-delete docker images after a set time
+QUAY_EXPIRATION_LABEL ?= --label quay.expires-after=3w
+
+# define empty publish targets so calls won't fail
+.PHONY: publish-docker
+.PHONY: publish-docker-retag
+.PHONY: publish-glooctl
+.PHONY: publish-helm-chart
+
+# don't define Publish Artifacts Targets if we don't have a release context
+ifneq (,$(filter $(PUBLISH_CONTEXT),RELEASE PULL_REQUEST))
+
+ifeq (RELEASE, $(PUBLISH_CONTEXT))      # RELEASE contexts have additional make targets
+HELM_BUCKET           := gs://solo-public-helm
+QUAY_EXPIRATION_LABEL :=
+# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
+# and push them to a secondary repository, defined at IMAGE_REGISTRY
+publish-docker-retag: docker-retag docker-push
+
+# publish glooctl
+publish-glooctl: build-cli
+	VERSION=$(VERSION) GO111MODULE=on go run ci/upload_github_release_assets.go true
+endif # RELEASE exclusive make targets
+
+
+# Build and push docker images to the defined $(IMAGE_REGISTRY)
+publish-docker: docker docker-push
+
+# create a new helm chart and publish it to $(HELM_BUCKET)
+publish-helm-chart: generate-helm-files
 	@echo "Uploading helm chart to $(HELM_BUCKET) with name gloo-$(VERSION).tgz"
 	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
 					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
@@ -681,78 +642,7 @@ ifeq ($(CREATE_ASSETS), "true")
 		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
 		sleep 2; \
 	done
-endif
-
-.PHONY: render-manifests
-render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml
-
-INSTALL_NAMESPACE ?= gloo-system
-
-MANIFEST_OUTPUT = > /dev/null
-ifneq ($(BUILD_ID),)
-MANIFEST_OUTPUT =
-endif
-
-define HELM_VALUES
-namespace:
-  create: true
-endef
-
-# Export as a shell variable, make variables do not play well with multiple lines
-export HELM_VALUES
-$(OUTPUT_DIR)/release-manifest-values.yaml:
-	@echo "$$HELM_VALUES" > $@
-
-install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
-ifeq ($(RELEASE),"true")
-	$(OUTPUT_DIR)/glooctl-linux-$(GOARCH) install gateway -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
-		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-endif
-
-install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
-ifeq ($(RELEASE),"true")
-	$(OUTPUT_DIR)/glooctl-linux-$(GOARCH) install knative -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
-		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-endif
-
-install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-linux-$(GOARCH) $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
-ifeq ($(RELEASE),"true")
-	$(OUTPUT_DIR)/glooctl-linux-$(GOARCH) install ingress -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
-		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-endif
-
-#----------------------------------------------------------------------------------
-# Publish Artifacts
-#
-# We publish artifacts using our CI pipeline. This may happen during any of the following scenarios:
-# 	- Release
-#	- Development Build (a one-off build for unreleased code)
-#	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
-#----------------------------------------------------------------------------------
-
-$(OUTPUT_DIR)/gloo-enterprise-version:
-	GO111MODULE=on go run hack/find_latest_enterprise_version.go
-
-.PHONY: upload-github-release-assets
-upload-github-release-assets: print-git-info build-cli render-manifests
-	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
-
-# Intended only to be run by CI
-# Build and push docker images to the defined IMAGE_REGISTRY
-.PHONY: publish-docker
-ifeq ($(CREATE_ASSETS), "true")
-publish-docker: docker
-publish-docker: docker-push
-endif
-
-# Intended only to be run by CI
-# Re-tag docker images previously pushed to the ORIGINAL_IMAGE_REGISTRY,
-# and push them to a secondary repository, defined at IMAGE_REGISTRY
-.PHONY: publish-docker-retag
-ifeq ($(RELEASE), "true")
-publish-docker-retag: docker-retag
-publish-docker-retag: docker-push
-endif
+endif # Publish Artifact Targets
 
 #----------------------------------------------------------------------------------
 # Docker

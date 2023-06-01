@@ -1,28 +1,26 @@
-package main
+package github_action_utils
 
 import (
 	"context"
-	"log"
 	"math"
 	"os"
 
-	errors "github.com/rotisserie/eris"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/changelogutils"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/go-utils/vfsutils"
 )
 
-func main() {
+// GetLatestEnterpriseVersion computes the latest Gloo Enterprise version.
+// It is intended to be used by the Makefile.docs, ostensibly as a variable for
+// filling out correctly-referenced enterprise docs
+func GetLatestEnterpriseVersion(repoRootPath string, repo string, owner string) error {
 	ctx := context.Background()
-	repoRootPath := "."
-	owner := "solo-io"
-	repo := "gloo"
-	changelogDirPath := changelogutils.ChangelogDirectory
 
-	localVersion, err := getLargestLocalChangelogVersion(ctx, repoRootPath, owner, repo, changelogDirPath)
+	localVersion, err := getLargestLocalChangelogVersion(ctx, repoRootPath, owner, repo, changelogutils.ChangelogDirectory)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	// only version constraints we care about come from Gloo major/minor version
 	maxGlooEVersion := &versionutils.Version{
@@ -34,15 +32,17 @@ func main() {
 	os.Mkdir("./_output", 0755)
 	f, err := os.Create("./_output/gloo-enterprise-version")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer f.Close()
 	enterpriseVersion, err := version.GetLatestHelmChartVersionWithMaxVersion(version.EnterpriseHelmRepoIndex, version.GlooEE, true, maxGlooEVersion)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	f.WriteString(enterpriseVersion)
 	f.Sync()
+
+	return nil
 }
 
 func getLargestLocalChangelogVersion(ctx context.Context, repoRootPath, owner, repo, changelogDirPath string) (*versionutils.Version, error) {
