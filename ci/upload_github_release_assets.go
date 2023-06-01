@@ -20,7 +20,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	versionBeingReleased := versionutils.GetReleaseVersionOrExitGracefully()
+	versionBeingReleased := getReleaseVersionOrExitGracefully()
 	assetsOnly := false
 	if len(os.Args) > 1 {
 		var err error
@@ -170,7 +170,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 }
 
 func validateReleaseVersionOfCli() {
-	releaseVersion := versionutils.GetReleaseVersionOrExitGracefully().String()[1:]
+	releaseVersion := getReleaseVersionOrExitGracefully().String()[1:]
 	name := fmt.Sprintf("_output/glooctl-%s-amd64", runtime.GOOS)
 	cmd := exec.Command(name, "version")
 	bytes, err := cmd.Output()
@@ -191,4 +191,19 @@ func validateReleaseVersionOfCli() {
 	if !expectedVersion.Equal(foundVersion) {
 		log.Fatalf("Expected to release artifacts for version %s, glooctl binary reported version %s", expectedVersion, foundVersion)
 	}
+}
+
+// stolen from "github.com/solo-io/go-utils/versionutils", but changed the hardcoding of "TAGGED_VERSION" to "VERSION"
+func getReleaseVersionOrExitGracefully() *versionutils.Version {
+	tag, present := os.LookupEnv("VERSION")
+	if !present || tag == "" {
+		fmt.Printf("VERSION not found in environment.\n")
+		os.Exit(1)
+	}
+	version, err := versionutils.ParseVersion(tag)
+	if err != nil {
+		fmt.Printf("VERSION %s is not a valid semver version.\n", tag)
+		os.Exit(1)
+	}
+	return version
 }
