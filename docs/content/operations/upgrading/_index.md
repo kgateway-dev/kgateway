@@ -1,10 +1,9 @@
 ---
 title: Upgrading
 weight: 30
-description: Steps to upgrade Gloo Edge, FAQs, and notices
+description: Review version changes and upgrade your Gloo Edge installation.
 ---
 
-Periodically, we need to make changes to the Gloo Edge API that are non-backwards compatible. For these cases, 
-we'll provide guides so that customers can upgrade production environments while minimizing downtime and risk. 
+Upgrade your Gloo Edge installation, including `glooctl`, the Gloo Edge custom resource definitions (CRDs), and the Gloo Edge components in your cluster. Before you upgrade, be sure to follow the upgrade preparation guide to update your environment and review important changes made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
 
 {{% children description="true" %}}

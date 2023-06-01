@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Explicitly set duration/timeout and polling interval on async gomega assertions.
+    This is a rough first pass at greppable instances.
