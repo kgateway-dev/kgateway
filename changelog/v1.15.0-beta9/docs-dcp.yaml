@@ -1,3 +1,4 @@
 changelog:
   - type: NON_USER_FACING
     description: Adds docs for deprecated cipher suites. 
+    skipCI-kube-tests:true
