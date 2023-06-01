@@ -151,7 +151,7 @@ This is expected since the IP of our client is not `1.2.3.4`.
 ## Pass TLS traffic through for deprecated cipher suites {#tls-passthrough}
 
 {{% notice note %}}
-This feature requires a Gloo Edge Enterprise license. 
+This feature requires a Gloo Edge Enterprise license, and is available in version 1.14.3 or later. 
 {{% /notice %}}
 
 By default, Gloo Edge only supports cipher suites that are available in Envoy, which uses [BoringSSL](https://github.com/google/boringssl) for TLS. If you provide services to clients that do not yet have support for the ciphers that are supported by BoringSSL, you can configure Gloo Edge to pass TLS traffic through to your upstream directly. Because TLS traffic is not terminated at the gateway, the upstream service must be capable of terminating and unencrypting the incoming TLS connection.
@@ -395,10 +395,6 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
 
 ## Hybrid Gateway Delegation
 
-{{% notice note %}}
-This feature is available in Gloo Edge version 1.10.x and later.
-{{% /notice %}}
-
 With Hybrid Gateways, you can define multiple HTTP and TCP Gateways, each with distinct matching criteria, on a single Gateway CR.
 
 However, condensing all listener and routing configuration onto a single object can be cumbersome when dealing with a large number of matching and routing criteria.
@@ -474,7 +470,7 @@ Although we demonstrate gateway delegation using reference selection in this gui
 ### Pass TLS traffic through for deprecated ciphers suites with hybrid gateway delegation {#tls-passthrough-delegated}
 
 {{% notice note %}}
-This feature requires a Gloo Edge Enterprise license. 
+This feature requires a Gloo Edge Enterprise license, and is available in version 1.14.3 or later. 
 {{% /notice %}}
 
 By default, Gloo Edge supports cipher suites that are available in Envoy. If you have an upstream service that can accept only cipher suites that are deprecated or not available in Envoy, you can configure Gloo Edge to pass TLS traffic through to your upstream directly. Because TLS traffic is not terminated at the gateway, the upstream service must be capable of terminating and unencrypting the incoming TLS connection.
@@ -482,7 +478,7 @@ By default, Gloo Edge supports cipher suites that are available in Envoy. If you
 In this guide, you deploy a sample NGINX server and configure the server for HTTPS traffic. You use the server to try out the TLS passthrough feature for deprecated cipher suites.
 
 {{% notice tip %}}
-This guide assumes that you want to use hybrid gateway delegatin to configure TLS passthrough for your upstream. If you want to put this configuration in your gateway directly, follow the steps in [Pass TLS traffic through for depcrecated cipher suites](#tls-passthrough). 
+This guide assumes that you want to use hybrid gateway delegation to configure TLS passthrough for your upstream. If you want to put this configuration in your gateway directly, follow the steps in [Pass TLS traffic through for depcrecated cipher suites](#tls-passthrough). 
 {{% /notice %}}
 
 1. Follow steps 1-7 in [Pass TLS traffic through for deprecated cipher suites](#tls-passthrough) to deploy the NGINX server and set it up for HTTPS traffic. 
