@@ -1,14 +1,16 @@
 package headers
 
 import (
+	"strings"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 var (
@@ -22,7 +24,12 @@ const (
 )
 
 var (
-	MissingHeaderValueError = errors.Errorf("header section of header value option cannot be nil")
+	MissingHeaderValueError = eris.New("header section of header value option cannot be nil")
+	CantSetHostHeaderError  = eris.New("cannot set Host header in response headers")
+
+	CantSetPseudoHeaderError = func(header string) error {
+		return eris.Errorf(":-prefixed headers cannot be set: '%s'", header)
+	}
 )
 
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
@@ -150,13 +157,23 @@ func convertResponseHeaderValueOption(
 ) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	var out []*envoy_config_core_v3.HeaderValueOption
 	for _, h := range in {
-		if h.GetHeader() == nil {
+		header := h.GetHeader()
+		if header == nil {
 			return nil, MissingHeaderValueError
 		}
+
+		if strings.HasPrefix(header.GetKey(), ":") {
+			return nil, CantSetPseudoHeaderError(header.GetKey())
+		}
+
+		if strings.EqualFold(header.GetKey(), "Host") {
+			return nil, CantSetHostHeaderError
+		}
+
 		out = append(out, &envoy_config_core_v3.HeaderValueOption{
 			Header: &envoy_config_core_v3.HeaderValue{
-				Key:   h.GetHeader().GetKey(),
-				Value: h.GetHeader().GetValue(),
+				Key:   header.GetKey(),
+				Value: header.GetValue(),
 			},
 			Append: h.GetAppend(),
 		})
