@@ -1,14 +1,16 @@
 package headers
 
 import (
+	"strings"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 var (
@@ -22,9 +24,12 @@ const (
 )
 
 var (
-	MissingHeaderValueError  = errors.Errorf("header section of header value option cannot be nil")
-	InvalidSchemeError       = errors.Errorf("scheme must be http or https") // Todo, add invaild scheme value
-	CantSetPseudoHeaderError = errors.Errorf("Response header key must not start with ':', except for ':scheme'")
+	MissingHeaderValueError = eris.Errorf("header section of header value option cannot be nil")
+	CantSetHostHeaderError  = eris.Errorf("cannot set Host header in response headers")
+
+	CantSetPseudoHeaderError = func(header string) error {
+		return eris.Errorf(":-prefixed headers cannot be set: %s", header)
+	}
 )
 
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
@@ -157,17 +162,12 @@ func convertResponseHeaderValueOption(
 			return nil, MissingHeaderValueError
 		}
 
-		if header.GetKey() == ":scheme" {
-			// Todo - check for isSSL on gateway
-			if header.GetValue() != "http" && header.GetValue() != "https" {
-				return nil, InvalidSchemeError
-			}
-			// Somehow kick this out for the http_connection_manager to handles
+		if header.GetKey()[0] == byte(':') {
+			return nil, CantSetPseudoHeaderError(header.GetKey())
 		}
 
-		var semicolon byte = ':'
-		if header.GetKey()[0] == semicolon {
-			return nil, CantSetPseudoHeaderError
+		if strings.EqualFold(header.GetKey(), "Host") {
+			return nil, CantSetHostHeaderError
 		}
 
 		out = append(out, &envoy_config_core_v3.HeaderValueOption{
