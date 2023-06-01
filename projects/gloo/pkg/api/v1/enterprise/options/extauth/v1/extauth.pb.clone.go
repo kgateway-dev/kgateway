@@ -958,8 +958,6 @@ func (m *IntrospectionValidation) Clone() proto.Message {
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
 
-	target.DisableClientSecret = m.GetDisableClientSecret()
-
 	return target
 }
 
@@ -3243,8 +3241,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation) Clon
 	target.ClientSecret = m.GetClientSecret()
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
-
-	target.DisableClientSecret = m.GetDisableClientSecret()
 
 	return target
 }

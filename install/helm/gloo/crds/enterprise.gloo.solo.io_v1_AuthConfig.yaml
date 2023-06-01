@@ -280,8 +280,6 @@ spec:
                                     namespace:
                                       type: string
                                   type: object
-                                disableClientSecret:
-                                  type: boolean
                                 introspectionUrl:
                                   type: string
                                 userIdAttributeName:

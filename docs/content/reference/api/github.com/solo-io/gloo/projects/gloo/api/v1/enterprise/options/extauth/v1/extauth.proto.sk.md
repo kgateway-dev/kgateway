@@ -1062,7 +1062,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 "clientId": string
 "clientSecretRef": .core.solo.io.ResourceRef
 "userIdAttributeName": string
-"disableClientSecret": bool
 
 ```
 
@@ -1072,7 +1071,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
-| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token validation without a client secret. |
 
 
 
@@ -1927,7 +1925,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 "clientId": string
 "clientSecret": string
 "userIdAttributeName": string
-"disableClientSecret": bool
 
 ```
 
@@ -1937,7 +1934,6 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecret` | `string` | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
-| `disableClientSecret` | `bool` | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token introspection with a client_id and without a client_secret. |
 
 
 

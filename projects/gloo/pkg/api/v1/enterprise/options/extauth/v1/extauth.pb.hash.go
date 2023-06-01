@@ -1784,11 +1784,6 @@ func (m *IntrospectionValidation) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetDisableClientSecret())
-	if err != nil {
-		return 0, err
-	}
-
 	return hasher.Sum64(), nil
 }
 
@@ -6001,11 +5996,6 @@ func (m *ExtAuthConfig_AccessTokenValidationConfig_IntrospectionValidation) Hash
 	}
 
 	if _, err = hasher.Write([]byte(m.GetUserIdAttributeName())); err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetDisableClientSecret())
-	if err != nil {
 		return 0, err
 	}
 

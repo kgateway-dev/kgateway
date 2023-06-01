@@ -795,10 +795,6 @@ message IntrospectionValidation {
     // This field is optional and by default the server will not try to derive the user ID.
     string user_id_attribute_name = 4;
 
-    // If true, do not check for or use the client secret.
-    // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
-    // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token validation without a client secret.
-    bool disable_client_secret = 5;
 }
 
 message AccessTokenValidation {
@@ -1498,10 +1494,6 @@ message ExtAuthConfig {
             // This field is optional and by default the server will not try to derive the user ID.
             string user_id_attribute_name = 4;
 
-            // If true, do not check for or use the client secret.
-            // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
-            // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring token introspection with a client_id and without a client_secret.
-            bool disable_client_secret = 5;
         }
 
         oneof validation_type {
