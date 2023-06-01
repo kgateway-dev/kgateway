@@ -28,7 +28,7 @@ var (
 	CantSetHostHeaderError  = eris.Errorf("cannot set Host header in response headers")
 
 	CantSetPseudoHeaderError = func(header string) error {
-		return eris.Errorf(":-prefixed headers cannot be set: %s", header)
+		return eris.Errorf(":-prefixed headers cannot be set: '%s'", header)
 	}
 )
 
