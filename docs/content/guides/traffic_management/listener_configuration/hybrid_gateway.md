@@ -275,7 +275,7 @@ This guide assumes that you want to configure TLS passthrough in the gateway res
    ```
 
 8. Create a gateway resource and specify the deprecated cipher suites for which you want to pass TLS traffic through to your upstream in the `passthroughCipherSuites` field of your `tcpGateway`. You can optionally log the ciphers that were sent by the clients by adding the `spec.options.accessLoggingService` section to your gateway configuration as shown in the following example. 
-   ```yaml
+   {{< highlight yaml "hl_lines=12-16 31-35" >}}
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: Gateway
