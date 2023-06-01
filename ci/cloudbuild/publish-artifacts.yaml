@@ -69,10 +69,8 @@ steps:
   id: 'release-chart'
   dir: *dir
   args:
-  - 'fetch-package-and-save-helm'
-  - 'render-manifests'
-  - 'upload-github-release-assets'
-  - 'push-chart-to-registry'
+  - 'publish-helm-chart'
+  - 'publish-glooctl'
   env:
   - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
   - 'GCLOUD_PROJECT_ID=$PROJECT_ID'

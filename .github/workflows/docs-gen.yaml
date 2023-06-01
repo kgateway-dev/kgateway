@@ -24,6 +24,7 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       should-build-docs: ${{ steps.build-strategy.outputs.build_value }}
+      version: ${{ steps.version.outputs.value }}}
     steps:
       - id: is-community-pr
         name: Detect Community PR
@@ -72,10 +73,20 @@ jobs:
 
           echo "Build strategy: Should build? $should_build"
           echo "build_value=$should_build" >> $GITHUB_OUTPUT
+      - id: version
+        shell: bash
+        run: |
+          version=$(git describe --tags --abbrev=0 | cut -c 2-)
+          if [[ ${{ github.event_name == 'pull_request' }} = true ]]; then
+            version=$(git describe --tags --abbrev=0 | cut -c 2-)-PR${{github.event.number}}
+          fi
+          echo "value=$version" >> $GITHUB_OUTPUT
   build:
     name: Generate versioned docs site
     needs: prepare_env
     if: needs.prepare_env.outputs.should-build-docs == 'true'
+    env:
+      VERSION: ${{ needs.prepare_env.outputs.version }}
     runs-on: ubuntu-22.04
     steps:
     - name: Check out code into the Go module directory
