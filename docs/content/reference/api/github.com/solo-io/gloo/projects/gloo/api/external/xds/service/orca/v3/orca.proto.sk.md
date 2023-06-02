@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/xds/service/orca/v3/orca.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/xds/service/orca/v3/orca.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/xds/service/orca/v3/orca.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/xds/service/orca/v3/orca.proto)
 
 
 

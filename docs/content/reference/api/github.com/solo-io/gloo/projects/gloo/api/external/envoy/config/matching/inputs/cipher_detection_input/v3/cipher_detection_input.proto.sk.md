@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/matching/inputs/cipher_detection_input/v3/cipher_detection_input.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/config/matching/inputs/cipher_detection_input/v3/cipher_detection_input.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/matching/inputs/cipher_detection_input/v3/cipher_detection_input.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/config/matching/inputs/cipher_detection_input/v3/cipher_detection_input.proto)
 
 
 

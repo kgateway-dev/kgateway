@@ -47,7 +47,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/grpc/validation/gloo_validation.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/grpc/validation/gloo_validation.proto)
 
 
 
