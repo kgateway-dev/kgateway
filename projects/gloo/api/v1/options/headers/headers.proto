@@ -20,7 +20,7 @@ message HeaderManipulation {
     // Specifies a list of HTTP headers that should be added to each request
     // handled by this route or virtual host. For more information, including
     // details on header value syntax, see the
-    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .
+    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html#) .
     repeated .solo.io.envoy.api.v2.core.HeaderValueOption request_headers_to_add = 1;
 
 
@@ -32,7 +32,7 @@ message HeaderManipulation {
     // Specifies a list of HTTP headers that should be added to each response
     // handled by this route or host. For more information, including
     // details on header value syntax, see the
-    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .
+    // [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html# .
     repeated HeaderValueOption response_headers_to_add = 3;
 
     // Specifies a list of HTTP headers that should be removed from each response
