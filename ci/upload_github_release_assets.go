@@ -61,18 +61,6 @@ func main() {
 			ParentPath: buildDir,
 			UploadSHA:  true,
 		},
-		{
-			Name:       "gloo-gateway.yaml",
-			ParentPath: "install",
-		},
-		{
-			Name:       "gloo-ingress.yaml",
-			ParentPath: "install",
-		},
-		{
-			Name:       "gloo-knative.yaml",
-			ParentPath: "install",
-		},
 	}
 
 	spec := githubutils.UploadReleaseAssetSpec{
