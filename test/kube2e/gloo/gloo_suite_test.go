@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/services"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 
 	"github.com/avast/retry-go"
@@ -41,6 +42,8 @@ var (
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	vaultFactory *services.VaultFactory
 )
 
 var _ = BeforeSuite(func() {
@@ -62,6 +65,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
+
+	vaultFactory, err = services.NewVaultFactory()
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

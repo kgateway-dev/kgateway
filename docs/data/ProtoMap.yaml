@@ -800,6 +800,9 @@ apis:
   gloo.solo.io.MatchedListenerReport:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#MatchedListenerReport
     package: gloo.solo.io
+  gloo.solo.io.MatchedTcpListener:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MatchedTcpListener
+    package: gloo.solo.io
   gloo.solo.io.Matcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Matcher
     package: gloo.solo.io
