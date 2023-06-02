@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Backport weekly doc fixes from 1.15.x.
