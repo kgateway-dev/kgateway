@@ -12,7 +12,7 @@ You can build and deploy Gloo Edge Open Source from the source code.
    ```sh
    cd ${GOPATH}/src/github.com/solo-io/gloo
    ```
-3. Continue with this guide to learn how you can build Gloo Edge from the top-level [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile).
+3. Continue with this guide to learn how you can build Gloo Edge from the top-level [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile).
 
 ## Set up build dependencies and code generation {#setup}
 

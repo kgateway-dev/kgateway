@@ -234,7 +234,7 @@ func NewPlugin() *plugin {
 
 ```
 
-So far, our plugin is just a plain go struct with no features. In order to provide service discovery for Gloo Edge, our plugin needs to implement two interfaces: the [`plugins.UpstreamPlugin`](https://github.com/solo-io/gloo/blob/master//projects/gloo/pkg/plugins/plugin_interface.go#L43) and [`discovery.DiscoveryPlugin`](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/discovery/discovery.go#L21) interfaces.
+So far, our plugin is just a plain go struct with no features. In order to provide service discovery for Gloo Edge, our plugin needs to implement two interfaces: the [`plugins.UpstreamPlugin`](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/plugins/plugin_interface.go#L43) and [`discovery.DiscoveryPlugin`](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/discovery/discovery.go#L21) interfaces.
 
 Let's add the functions necessary to implement these interfaces:
 
@@ -763,7 +763,7 @@ Our `WatchEndpoints` is now finished, along with our plugin!
 We are not finished, however. The task remains to wire our plugin 
 into the Gloo Edge core, then rebuild Gloo Edge and deploy to Kubernetes!
 
-All Gloo Edge plugins are registered inside of a `registry` subpackage within the `plugins` directory. See [the registry.go file on GitHub here](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/registry/registry.go).
+All Gloo Edge plugins are registered inside of a `registry` subpackage within the `plugins` directory. See [the registry.go file on GitHub here](https://github.com/solo-io/gloo/blob/main/projects/gloo/pkg/plugins/registry/registry.go).
 
 We need to add our plugin (and its import) to `registry.go`:
 
