@@ -23,7 +23,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto](https://github.com/solo-io/gloo/blob/main/projects/gateway/api/v1/virtual_service.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto](https://github.com/solo-io/gloo/blob/master/projects/gateway/api/v1/virtual_service.proto)
 
 
 

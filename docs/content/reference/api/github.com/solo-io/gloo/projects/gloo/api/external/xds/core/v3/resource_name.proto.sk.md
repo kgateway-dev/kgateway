@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/resource_name.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/xds/core/v3/resource_name.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/xds/core/v3/resource_name.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/xds/core/v3/resource_name.proto)
 
 
 

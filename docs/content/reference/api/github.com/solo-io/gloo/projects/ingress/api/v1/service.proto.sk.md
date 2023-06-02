@@ -16,7 +16,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/ingress/api/v1/service.proto](https://github.com/solo-io/gloo/blob/main/projects/ingress/api/v1/service.proto)
+##### Source File: [github.com/solo-io/gloo/projects/ingress/api/v1/service.proto](https://github.com/solo-io/gloo/blob/master/projects/ingress/api/v1/service.proto)
 
 
 

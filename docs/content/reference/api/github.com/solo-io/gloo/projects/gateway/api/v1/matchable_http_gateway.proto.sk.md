@@ -17,7 +17,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto](https://github.com/solo-io/gloo/blob/main/projects/gateway/api/v1/matchable_http_gateway.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gateway/api/v1/matchable_http_gateway.proto](https://github.com/solo-io/gloo/blob/master/projects/gateway/api/v1/matchable_http_gateway.proto)
 
 
 

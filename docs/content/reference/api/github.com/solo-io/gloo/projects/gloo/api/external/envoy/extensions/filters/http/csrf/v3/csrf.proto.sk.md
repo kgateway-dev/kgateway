@@ -20,7 +20,7 @@ copied from https://github.com/envoyproxy/envoy/blob/main/api/envoy/extensions/f
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto)
 
 
 
