@@ -571,6 +571,50 @@ func (m *MatchedListener) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *MatchedTcpListener) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*MatchedTcpListener)
+	if !ok {
+		that2, ok := that.(MatchedTcpListener)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetMatcher()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetMatcher()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetMatcher(), target.GetMatcher()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetTcpListener()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTcpListener()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTcpListener(), target.GetTcpListener()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *Matcher) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -674,6 +718,23 @@ func (m *AggregateListener) Equal(that interface{}) bool {
 			}
 		} else {
 			if !proto.Equal(v, target.GetHttpFilterChains()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetTcpListeners()) != len(target.GetTcpListeners()) {
+		return false
+	}
+	for idx, v := range m.GetTcpListeners() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTcpListeners()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTcpListeners()[idx]) {
 				return false
 			}
 		}

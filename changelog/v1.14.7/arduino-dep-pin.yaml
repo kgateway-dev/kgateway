@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5024
+    resolvesIssue: false
+    description: >-
+      Repair reference to arduino/setup-protoc by pinning to v1, rather than master

@@ -265,4 +265,5 @@ message MatchedListenerReport {
 // the report for an AggregateListener
 message AggregateListenerReport {
     map<string, HttpListenerReport> http_listener_reports = 1;
+    map<string, TcpListenerReport> tcp_listener_reports = 2;
 }

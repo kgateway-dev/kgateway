@@ -208,6 +208,16 @@ message MatchedListener {
     repeated SslConfig ssl_configurations = 4;
 }
 
+
+message MatchedTcpListener {
+    // Matchers are used to define unique matching criteria for each MatchedListener
+    // These are overridden by tcphost sni mutators
+    Matcher matcher = 1;
+
+    // The actual tcp listener to be used for this matcher in the aggregate listener
+    TcpListener tcp_listener = 2;
+}
+
 message Matcher {
     gloo.solo.io.SslConfig ssl_config = 1;
 
@@ -245,6 +255,11 @@ message AggregateListener {
 
     // The set of HttpFilterChains to create on this listener
     repeated HttpFilterChain http_filter_chains = 2;
+
+    // The set of TcpListeners to create on this listener
+    repeated MatchedTcpListener tcp_listeners = 3;
+
+
 }
 
 /*

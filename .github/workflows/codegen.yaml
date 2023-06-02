@@ -36,7 +36,7 @@ jobs:
           go-version-file: go.mod
         id: go
       - name: Install Protoc
-        uses: arduino/setup-protoc@master
+        uses: arduino/setup-protoc@v1
         with:
           version: '3.6.1'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
