@@ -301,6 +301,20 @@ spec:
           idTokenHeader: "x-token"
 {{< /highlight >}}
 
+## Proof Key for Code Exchange (PKCE) for public and untrusted clients
+
+In a traditional OAuth Authorization flow, the client sends a client secret to the authorization server to request an access token. Depending on the type of client that you use, the client secret might be shared across users and devices. Public clients, such as a mobile app, cannot securely store the client secret as it is embedded in the web browser or can be retrieved by decompiling the app. To avoid authorization code injection attacks, you can leverage the Proof Key for Code Exchange (PKCE) OAuth extension. 
+
+PKCE builds on top of the OAuth2 protocol. Instead of sending a client secret to the authorization server, the client generates a random value that is called the Code Verifier and hashes the Code Verifier to create the Code Challenge. The Code Challenge is sent to the authorization server where it is stored for later verification. At the same time, the authorization server returns an authorization code that is good for one use. To request an access token, the client now sends the authorization code and the Code Verifier that was generated earlier. The authorization server hashes the Code Verifier and compares the result to the Code Challenge that the client sent earlier. If both values match, the client is authorized and an access token is returned. If you set up an OIDC provider as part of your OAuth flow to perform client authentication, an ID and refresh token
+
+With Gloo Edge, you can implement PKCE-secured OAuth flows by leveraging the `authEndpointQueryParams` and `tokenEndpointQueryParams` fields in the AuthConfig. For example, to send the code challenge, add the `code_challenge` query parameter to the `authEndpointQueryParams` field. To request an access token, include the `code` and `code_verifier` in the `tokenEndpointQueryParams` field. 
+
+{{% notice note %}}
+PKCE-secured OAuth flows are currently not supported for the Okta OIDC provider.  
+{{% /notice %}}
+
+For more information, see the [Auth0 docs](https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-the-authorization-code-flow-with-pkce). 
+
 ## Examples
 We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
 Gloo Edge, check out the following guides:
