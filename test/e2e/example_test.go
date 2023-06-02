@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/ginkgo/labels"
-
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -17,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
-var _ = Describe("Example E2E Test For Developers", Label(labels.Nightly), func() {
+var _ = Describe("Example E2E Test For Developers", Label(), func() {
 
 	// The TestContext is a framework for writing e2e tests
 	// This test provides some basic use cases to demonstrate how to leverage the framework

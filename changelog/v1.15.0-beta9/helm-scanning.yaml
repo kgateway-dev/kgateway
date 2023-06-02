@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Ability to scan Helm charts for issues related to formatting. This will occur for every helm test.
+  issueLink: https://github.com/solo-io/gloo/issues/8268
+  resolvesIssue: false
