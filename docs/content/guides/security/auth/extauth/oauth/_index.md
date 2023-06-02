@@ -310,7 +310,7 @@ PKCE builds on top of the OAuth2 protocol. Instead of sending a client secret to
 With Gloo Edge, you can implement PKCE-secured OAuth flows by leveraging the `authEndpointQueryParams` and `tokenEndpointQueryParams` fields in the AuthConfig. For example, to send the code challenge, add the `code_challenge` query parameter to the `authEndpointQueryParams` field. To request an access token, include the `code` and `code_verifier` in the `tokenEndpointQueryParams` field. 
 
 {{% notice note %}}
-PKCE-secured OAuth flows are currently not supported for the Okta OIDC provider.  
+Support for PKCE-secured OAuth flows with Okta OIDC providers is added in Gloo Edge Enterprise version 1.15.0. 
 {{% /notice %}}
 
 For more information, see the [Auth0 docs](https://auth0.com/docs/get-started/authentication-and-authorization-flow/call-your-api-using-the-authorization-code-flow-with-pkce). 
