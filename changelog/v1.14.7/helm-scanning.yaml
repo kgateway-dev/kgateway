@@ -1,0 +1,6 @@
+changelog:
+- type: HELM
+  description: >
+    Fixes some Helm indent spacing issues.
+  issueLink: https://github.com/solo-io/gloo/issues/8268
+  resolvesIssue: false
