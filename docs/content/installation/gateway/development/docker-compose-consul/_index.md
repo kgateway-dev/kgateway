@@ -62,7 +62,7 @@ cd gloo/install/docker-compose-consul
 The files used for installation live in the `install/docker-compose-consul` directory.
 
 ```bash
-├── data
+├── source_data
 │   ├── envoy-config.yaml
 │   ├── gloo-system
 │   │   └── default.yaml
