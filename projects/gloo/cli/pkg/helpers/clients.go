@@ -111,7 +111,7 @@ func UseConsulClients(client *api.Client, rootKey string, queryOptions *api.Quer
 func UseVaultClients(client *vaultapi.Client, pathPrefix, rootKey string) {
 	lock.Lock()
 	defer lock.Unlock()
-	vaultClient = clients.NewVaultSecretClientFactory(client, pathPrefix, rootKey)
+	vaultClient = clients.NewVaultSecretClientFactory(clients.NoopVaultClientInitFunc(client), pathPrefix, rootKey)
 }
 
 func MustKubeClient() kubernetes.Interface {
