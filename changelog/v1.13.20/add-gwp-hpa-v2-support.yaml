@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: >
+      Add support for gateway proxy horizontal pod autoscaling autoscaling/v2
+    issueLink: https://github.com/solo-io/gloo/issues/7634
