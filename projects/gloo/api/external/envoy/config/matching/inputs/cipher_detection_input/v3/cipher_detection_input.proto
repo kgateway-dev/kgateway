@@ -24,6 +24,11 @@ message CipherDetectionInput {
   //    0x00,0x3c TLS_RSA_WITH_AES_128_CBC_SHA256
   // this field should be set to 0x003c
   repeated uint32 passthrough_ciphers = 1;
+  
+  // Terminating ciphers are those that should be considered as supported.
+  // If not specified, defaults to whatever the current envoy implementation
+  // finds to be the default set of ciphers.
+  repeated uint32 terminating_ciphers = 2;
 }
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/matching/inputs/cipher_detection_input/v3";
 import "extproto/ext.proto";
