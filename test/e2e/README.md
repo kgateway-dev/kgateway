@@ -26,7 +26,7 @@ If a test fails, you can retry it using the build-bot [comment directives](https
 ### Setup
 For these tests to run, we require Envoy be built in a docker container.
 
-Refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
+Refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/main/projects/envoyinit) for build instructions.
 
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
@@ -73,7 +73,7 @@ sudo ./echoapp2 --port 80 &
 
 ### Notes on AWS Lambda Tests (`test/e2e/aws_test.go`)
 
-In addition to the configuration steps provided above, you will need to do the following to run the [AWS Lambda Tests](https://github.com/solo-io/gloo/blob/master/test/e2e/aws_test.go) locally:
+In addition to the configuration steps provided above, you will need to do the following to run the [AWS Lambda Tests](https://github.com/solo-io/gloo/blob/main/test/e2e/aws_test.go) locally:
   1. Obtain an AWS IAM User account that is part of the Solo.io organization
   2. Create an AWS access key
        - Sign into the AWS console with the account created during step 1

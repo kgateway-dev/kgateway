@@ -14,7 +14,7 @@ Gloo leverages the ValidatingAdmissionWebhook to validate proposed changes to cu
 
 ### Execution
 #### Which resources are subject to the ValidatingAdmissionWebhook?
-The ValidatingWebhookConfiguration is part of the Kubernetes API, and configured through a [Helm template](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml). Based on the webhook rules, only the API groups/resources that match the rules will be subject to validation
+The ValidatingWebhookConfiguration is part of the Kubernetes API, and configured through a [Helm template](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml). Based on the webhook rules, only the API groups/resources that match the rules will be subject to validation
 
 #### Where is the Webhook entrypoint defined?
 The ValidatingWebhookConfiguration defines the `name` and `path` to the service which handles validation requests. In Gloo, this is the Gloo Service, at the `/validation` endpoint.
