@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -247,34 +246,16 @@ var _ = Describe("Bootstrap Clients", func() {
 			}, "5s", "500ms").ShouldNot(HaveOccurred())
 		}
 
-		getSettingsWithDefaults := func(setts *v1.Settings) *v1.Settings {
-			if setts == nil {
-				setts = &v1.Settings{}
-			}
-			setts.WatchNamespaces = []string{testNamespace}
-			setts.RefreshRate = durationpb.New(time.Second)
-			return setts
-		}
-
-		getSettingsForKubeSource := func(setts *v1.Settings) *v1.Settings {
-			setts = getSettingsWithDefaults(setts)
-			setts.SecretSource = &v1.Settings_KubernetesSecretSource{}
-			return setts
-		}
-
-		getVaultSecrets := func() *v1.Settings_VaultSecrets {
+		getVaultSecrets := func(vi *services.VaultInstance) *v1.Settings_VaultSecrets {
 			return &v1.Settings_VaultSecrets{
-				Address: vaultInstance.Address(),
+				Address: vi.Address(),
 				AuthMethod: &v1.Settings_VaultSecrets_AccessToken{
-					AccessToken: vaultInstance.Token(),
+					AccessToken: vi.Token(),
 				},
 			}
 		}
 
 		setVaultClientInitMap := func(idx int, vaultSettings *v1.Settings_VaultSecrets) {
-			if vaultClientInitMap == nil {
-				vaultClientInitMap = make(map[int]clients.VaultClientInitFunc)
-			}
 			vaultClientInitMap[idx] = func() *vaultapi.Client {
 				c, err := clients.VaultClientForSettings(vaultSettings)
 				Expect(err).NotTo(HaveOccurred())
@@ -282,67 +263,33 @@ var _ = Describe("Bootstrap Clients", func() {
 			}
 		}
 
-		getSettingsForVaultSource := func(setts *v1.Settings) *v1.Settings {
-			setts = getSettingsWithDefaults(setts)
-			vaultSettings := getVaultSecrets()
-			setts.SecretSource = &v1.Settings_VaultSecretSource{
-				VaultSecretSource: vaultSettings,
-			}
-			setVaultClientInitMap(clients.SecretSourceAPIVaultClientInitIndex, vaultSettings)
-			return setts
-		}
-
-		appendSource := func(sources []*v1.Settings_SecretOptions_Source, source *v1.Settings_SecretOptions_Source) []*v1.Settings_SecretOptions_Source {
-			if sources == nil {
-				sources = make([]*v1.Settings_SecretOptions_Source, 0)
-			}
-			return append(sources, source)
-		}
-
-		appendSourceToOptions := func(setts *v1.Settings, source *v1.Settings_SecretOptions_Source) *v1.Settings {
-			secretOpts := setts.GetSecretOptions()
+		appendSourceToOptions := func(source *v1.Settings_SecretOptions_Source) {
+			secretOpts := settings.GetSecretOptions()
 			if secretOpts == nil {
 				secretOpts = &v1.Settings_SecretOptions{}
 			}
-			sources := appendSource(secretOpts.GetSources(), source)
+			sources := secretOpts.GetSources()
+			if sources == nil {
+				sources = make([]*v1.Settings_SecretOptions_Source, 0)
+			}
+			sources = append(sources, source)
 
 			secretOpts.Sources = sources
-			setts.SecretOptions = secretOpts
-			return setts
-		}
-
-		getSettingsForKubeOptions := func(setts *v1.Settings) *v1.Settings {
-			return appendSourceToOptions(
-				getSettingsWithDefaults(setts),
-				&v1.Settings_SecretOptions_Source{
-					Source: &v1.Settings_SecretOptions_Source_Kubernetes{
-						Kubernetes: &v1.Settings_KubernetesSecrets{},
-					},
-				})
-		}
-
-		getSettingsForVaultOptions := func(setts *v1.Settings) *v1.Settings {
-			vaultSettings := getVaultSecrets()
-			setts = appendSourceToOptions(
-				getSettingsWithDefaults(setts),
-				&v1.Settings_SecretOptions_Source{
-					Source: &v1.Settings_SecretOptions_Source_Vault{
-						Vault: vaultSettings,
-					},
-				})
-			setVaultClientInitMap(len(setts.GetSecretOptions().GetSources())-1, vaultSettings)
-			return setts
+			settings.SecretOptions = secretOpts
 		}
 
 		BeforeEach(func() {
 			testCtx, testCancel = context.WithCancel(ctx)
 
 			testNamespace = skhelpers.RandString(8)
+			settings = &v1.Settings{
+				WatchNamespaces: []string{testNamespace},
+			}
+			vaultClientInitMap = make(map[int]clients.VaultClientInitFunc)
 		})
 
 		AfterEach(func() {
 			testCancel()
-			settings = nil
 		})
 
 		JustBeforeEach(func() {
@@ -361,41 +308,42 @@ var _ = Describe("Bootstrap Clients", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		listSecret := func(g Gomega, secretName string) error {
+		listSecret := func(g Gomega, secretName string) {
 			l, err := secretClient.List(testNamespace, skclients.ListOpts{})
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(l).NotTo(BeNil())
 			kubeSecret, err := l.Find(testNamespace, secretName)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(kubeSecret).NotTo(BeNil())
-			return nil
-		}
-		listKubeSecret := func(g Gomega) error {
-			return listSecret(g, kubeSecretName)
-		}
-		listVaultSecret := func(g Gomega) error {
-			return listSecret(g, vaultSecretName)
 		}
 
 		When("using secretSource API", func() {
 			When("using a kubernetes secret source", func() {
 				BeforeEach(func() {
 					setupKubeSecret()
-					settings = getSettingsForKubeSource(settings)
+					settings.SecretSource = &v1.Settings_KubernetesSecretSource{}
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&kubesecret.ResourceClient{}))
-					Eventually(listKubeSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(func(g Gomega) {
+						listSecret(g, kubeSecretName)
+					}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 			When("using a vault secret source", func() {
 				BeforeEach(func() {
 					setupVaultSecret()
-					settings = getSettingsForVaultSource(settings)
+					vaultSettings := getVaultSecrets(vaultInstance)
+					settings.SecretSource = &v1.Settings_VaultSecretSource{
+						VaultSecretSource: vaultSettings,
+					}
+					setVaultClientInitMap(clients.SecretSourceAPIVaultClientInitIndex, vaultSettings)
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
-					Eventually(listVaultSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(func(g Gomega) {
+						listSecret(g, vaultSecretName)
+					}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 
@@ -404,35 +352,69 @@ var _ = Describe("Bootstrap Clients", func() {
 			When("using a single kubernetes secret source", func() {
 				BeforeEach(func() {
 					setupKubeSecret()
-					settings = getSettingsForKubeOptions(settings)
+					appendSourceToOptions(
+						&v1.Settings_SecretOptions_Source{
+							Source: &v1.Settings_SecretOptions_Source_Kubernetes{
+								Kubernetes: &v1.Settings_KubernetesSecrets{},
+							},
+						})
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&kubesecret.ResourceClient{}))
-					Eventually(listKubeSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(func(g Gomega) {
+						listSecret(g, kubeSecretName)
+					}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 
 			When("using a single vault secret source", func() {
 				BeforeEach(func() {
 					setupVaultSecret()
-					settings = getSettingsForVaultOptions(settings)
+					vaultSettings := getVaultSecrets(vaultInstance)
+					appendSourceToOptions(
+						&v1.Settings_SecretOptions_Source{
+							Source: &v1.Settings_SecretOptions_Source_Vault{
+								Vault: vaultSettings,
+							},
+						})
+					setVaultClientInitMap(len(settings.GetSecretOptions().GetSources())-1, vaultSettings)
+
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
-					Eventually(listVaultSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(func(g Gomega) {
+						listSecret(g, vaultSecretName)
+					}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 			When("using a kubernetes+vault secret source", func() {
 				BeforeEach(func() {
 					setupKubeSecret()
+					appendSourceToOptions(
+						&v1.Settings_SecretOptions_Source{
+							Source: &v1.Settings_SecretOptions_Source_Kubernetes{
+								Kubernetes: &v1.Settings_KubernetesSecrets{},
+							},
+						})
+
 					setupVaultSecret()
-					settings = getSettingsForKubeOptions(settings)
-					settings = getSettingsForVaultOptions(settings)
+					vaultSettings := getVaultSecrets(vaultInstance)
+					appendSourceToOptions(
+						&v1.Settings_SecretOptions_Source{
+							Source: &v1.Settings_SecretOptions_Source_Vault{
+								Vault: vaultSettings,
+							},
+						})
+					setVaultClientInitMap(len(settings.GetSecretOptions().GetSources())-1, vaultSettings)
 				})
 				It("lists secrets", func() {
 					Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&clients.MultiSecretResourceClient{}))
-					Eventually(listKubeSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
-					Eventually(listVaultSecret, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(func(g Gomega) {
+						listSecret(g, kubeSecretName)
+					}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
+					Eventually(func(g Gomega) {
+						listSecret(g, vaultSecretName)
+					}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
 				})
 			})
 		})
