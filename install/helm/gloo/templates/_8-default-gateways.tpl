@@ -147,27 +147,27 @@ spec:
 {{- define "gloo.customResources.defaultGateways" -}}
 {{- $gatewayProxy := .Values.gatewayProxies.gatewayProxy }}
 {{- range $name, $gatewaySpec := .Values.gatewayProxies }}
-{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy ) -}}
+{{- $spec := deepCopy $gatewaySpec | mergeOverwrite (deepCopy $gatewayProxy) }}
 {{- $gatewaySettings := $spec.gatewaySettings }}
 {{- if and $spec.gatewaySettings (not $gatewaySpec.disabled) }}
-{{- $ctx := (list $ $name $spec)}}
+{{- $ctx := (list $ $name $spec) }}
 {{- if not $gatewaySettings.disableGeneratedGateways }}
 {{- if not $gatewaySettings.disableHttpGateway }}
 {{- $defaultGatewayOverride := $spec.gatewaySettings.httpGatewayKubeOverride }}
----
-{{ include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
+{{- "---" }}
+{{- include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
 {{- end }}{{/* if not $gatewaySettings.disableHttpGateway */}}
 {{- if not $gatewaySettings.disableHttpsGateway }}
 {{- $sslGatewayOverride := $spec.gatewaySettings.httpsGatewayKubeOverride }}
 ---
-{{ include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
+{{- include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
 {{- end }}{{/* if not $gatewaySettings.disableHttpsGateway  */}}
 {{- end }}{{/* if not $gatewaySettings.disableGeneratedGateways */}}
 {{- if $spec.failover }}
 {{- if $spec.failover.enabled }}
 {{- $failoverGatewayOverride := $spec.failover.kubeResourceOverride }}
 ---
-{{ include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
+{{- include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
 {{- end }}{{/* if $spec.failover.enabled */}}
 {{- end }}{{/* if $spec.failover */}}
 {{- end }}{{/* if $spec.gatewaySettings and (not $spec.disabled) */}}
