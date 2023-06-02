@@ -95,7 +95,7 @@ replace (
 ```
 {{% /expand %}}
 
-The basis of this `go.mod` file is from the [`Gloo Edge go.mod file`](https://github.com/solo-io/gloo/blob/master/go.mod)
+The basis of this `go.mod` file is from the [`Gloo Edge go.mod file`](https://github.com/solo-io/gloo/blob/main/go.mod)
 
 
 

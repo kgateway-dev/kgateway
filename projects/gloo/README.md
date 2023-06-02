@@ -1,7 +1,7 @@
 # Gloo
 
 ## Build
-*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) at the root of the repository.*
+*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile) at the root of the repository.*
 
 The `VERSION` env variable determines the name of the tag for the image.
 

@@ -13,7 +13,7 @@ The first step in the preparation process is to install the proper software on y
 
 You're going to need some software to make all this magic happen:
 
-* **Hugo** - Hugo is a static site generator written in Go. Unlike the other programs listed here, You need a specific version of Hugo for this to work, which is [noted in the docs makefile](https://github.com/solo-io/gloo/blob/master/docs/Makefile#L26) as `HUGO_VERSION`. You can find the [installation process](https://gohugo.io/getting-started/installing/) for Hugo on their website. Refer to the tarball installation section for instructions on downloading specific versions.
+* **Hugo** - Hugo is a static site generator written in Go. Unlike the other programs listed here, You need a specific version of Hugo for this to work, which is [noted in the docs makefile](https://github.com/solo-io/gloo/blob/main/docs/Makefile#L26) as `HUGO_VERSION`. You can find the [installation process](https://gohugo.io/getting-started/installing/) for Hugo on their website. Refer to the tarball installation section for instructions on downloading specific versions.
 
 * **Go** - Golang is a programming language created by Google. You can find the [installation process](https://golang.org/doc/install) for Go on their website.
 
