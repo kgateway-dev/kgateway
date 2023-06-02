@@ -513,7 +513,13 @@ func UnmarshalResource(kubeJson []byte, resource resources.Resource) error {
 	resource.SetMetadata(kubeutils.FromKubeMeta(resourceCrd.ObjectMeta, true))
 
 	if resourceCrd.Spec != nil {
-		if err := skProtoUtils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+		if cir, ok := resource.(resources.CustomInputResource); ok {
+			// Custom input resource unmarshalling
+			if err := cir.UnmarshalSpec(*resourceCrd.Spec); err != nil {
+				return errors.Wrapf(err, "parsing custom input resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
+			}
+		} else if err := skProtoUtils.UnmarshalMap(*resourceCrd.Spec, resource); err != nil {
+			// Default unmarshalling
 			return errors.Wrapf(err, "parsing resource from crd spec %v in namespace %v into %T", resourceCrd.Name, resourceCrd.Namespace, resource)
 		}
 	}
