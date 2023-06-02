@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5044
+    resolvesIssue: false
+    description: >-
+      Add a field for the enterprise passthrough feature. 
+      The new field allows for a subsection of ciphers to be considered for tls termination.
