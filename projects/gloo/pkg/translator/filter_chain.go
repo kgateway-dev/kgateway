@@ -123,19 +123,15 @@ func (h *httpFilterChainTranslator) ComputeFilterChains(params plugins.Params) [
 	sslConfigWithDefaults := h.getSslConfigurationWithDefaults()
 
 	// 3. Create duplicate FilterChains for each unique SslConfig
-	filterChains := h.createFilterChainsFromSslConfiguration(params.Snapshot, networkFilters, sslConfigWithDefaults)
+	extFilters := h.createFilterChainsFromSslConfiguration(params.Snapshot, networkFilters, sslConfigWithDefaults)
 
 	// 4. Apply SourcePrefixRange to FilterChainMatch, if defined
 	if len(h.sourcePrefixRanges) > 0 {
-		for _, fc := range filterChains {
+		for _, fc := range extFilters {
 			applySourcePrefixRangesToFilterChain(fc, h.sourcePrefixRanges)
 		}
 	}
-	extFilters := make([]*plugins.ExtendedFilterChain, len(filterChains))
-	for _, fc := range filterChains {
-		fc := fc
-		extFilters = append(extFilters, &plugins.ExtendedFilterChain{FilterChain: fc})
-	}
+
 	return extFilters
 }
 
@@ -158,17 +154,19 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 	snap *v1snap.ApiSnapshot,
 	networkFilters []*envoy_config_listener_v3.Filter,
 	sslConfigurations []*ssl.SslConfig,
-) []*envoy_config_listener_v3.FilterChain {
+) []*plugins.ExtendedFilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(sslConfigurations) == 0 {
-		return []*envoy_config_listener_v3.FilterChain{{
-			Filters: networkFilters,
+		return []*plugins.ExtendedFilterChain{{
+			FilterChain: &envoy_config_listener_v3.FilterChain{
+				Filters: networkFilters,
+			},
 		}}
 	}
 
 	// create a duplicate of the listener filter chain for each ssl cert we want to serve
-	var secureFilterChains []*envoy_config_listener_v3.FilterChain
+	var secureFilterChains []*plugins.ExtendedFilterChain
 	for _, sslConfig := range sslConfigurations {
 		// get secrets
 		downstreamTlsContext, err := h.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
@@ -186,13 +184,14 @@ func (h *httpFilterChainTranslator) createFilterChainsFromSslConfiguration(
 			validation.AppendListenerError(h.parentReport, validationapi.ListenerReport_Error_SSLConfigError, err.Error())
 			continue
 		}
-		secureFilterChains = append(secureFilterChains, filterChain)
+		secureFilterChains = append(secureFilterChains, &plugins.ExtendedFilterChain{
+			FilterChain: filterChain, TerminatingCipherSuites: sslConfig.GetParameters().GetCipherSuites()})
 	}
 	return secureFilterChains
 }
 
 func applySourcePrefixRangesToFilterChain(
-	filterChain *envoy_config_listener_v3.FilterChain,
+	filterChain *plugins.ExtendedFilterChain,
 	sourcePrefixRanges []*v3.CidrRange,
 ) {
 	if filterChain == nil || len(sourcePrefixRanges) == 0 {
