@@ -79,17 +79,17 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 		}
 	}
 
-	// 2. Apply SourcePrefixRange to FilterChainMatch, if defined
-	if len(t.sourcePrefixRanges) > 0 {
-		for _, fc := range filterChains {
-			applySourcePrefixRangesToFilterChain(fc, t.sourcePrefixRanges)
-		}
-	}
-
 	extFilterChains := make([]*plugins.ExtendedFilterChain, 0, len(filterChains))
 	for _, fc := range filterChains {
 		fc := fc
 		extFilterChains = append(extFilterChains, &plugins.ExtendedFilterChain{FilterChain: fc, PassthroughCipherSuites: t.passthroughCipherSuites})
+	}
+
+	// 2. Apply SourcePrefixRange to FilterChainMatch, if defined
+	if len(t.sourcePrefixRanges) > 0 {
+		for _, fc := range extFilterChains {
+			applySourcePrefixRangesToFilterChain(fc, t.sourcePrefixRanges)
+		}
 	}
 
 	return extFilterChains
