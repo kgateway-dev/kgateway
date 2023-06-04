@@ -4,10 +4,10 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-role-knative{{ include "gloo.rbacNameSuffix" . }}
-    labels:
-        app: gloo
-        gloo: rbac
+  name: gloo-role-knative{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
