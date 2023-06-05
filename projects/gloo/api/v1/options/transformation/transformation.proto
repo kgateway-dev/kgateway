@@ -41,6 +41,9 @@ message Transformations {
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
     Transformation response_transformation = 2;
+
+    // Log request/response info
+    bool log_request_response_info = 4;
 }
 
 message RequestResponseTransformations {

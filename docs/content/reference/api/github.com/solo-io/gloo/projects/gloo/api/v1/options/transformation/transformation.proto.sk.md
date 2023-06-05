@@ -80,6 +80,7 @@ weight: 5
 "requestTransformation": .transformation.options.gloo.solo.io.Transformation
 "clearRouteCache": bool
 "responseTransformation": .transformation.options.gloo.solo.io.Transformation
+"logRequestResponseInfo": bool
 
 ```
 
@@ -88,6 +89,7 @@ weight: 5
 | `requestTransformation` | [.transformation.options.gloo.solo.io.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to requests. |
 | `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |
 | `responseTransformation` | [.transformation.options.gloo.solo.io.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to responses. |
+| `logRequestResponseInfo` | `bool` | Log request/response info. |
 
 
 

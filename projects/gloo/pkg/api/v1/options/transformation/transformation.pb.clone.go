@@ -116,6 +116,8 @@ func (m *Transformations) Clone() proto.Message {
 		target.ResponseTransformation = proto.Clone(m.GetResponseTransformation()).(*Transformation)
 	}
 
+	target.LogRequestResponseInfo = m.GetLogRequestResponseInfo()
+
 	return target
 }
 

@@ -183,6 +183,10 @@ func (m *Transformations) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetLogRequestResponseInfo() != target.GetLogRequestResponseInfo() {
+		return false
+	}
+
 	return true
 }
 

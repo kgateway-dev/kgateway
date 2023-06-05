@@ -1848,6 +1848,8 @@ spec:
                           properties:
                             clearRouteCache:
                               type: boolean
+                            logRequestResponseInfo:
+                              type: boolean
                             requestTransformation:
                               properties:
                                 headerBodyTransform:
@@ -3164,6 +3166,8 @@ spec:
                                       transformations:
                                         properties:
                                           clearRouteCache:
+                                            type: boolean
+                                          logRequestResponseInfo:
                                             type: boolean
                                           requestTransformation:
                                             properties:
