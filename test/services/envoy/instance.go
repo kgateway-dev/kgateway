@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"os/exec"
 
+	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
+	"github.com/golang/protobuf/jsonpb"
+
 	"sync"
 	"text/template"
 	"time"
@@ -308,6 +311,30 @@ func (ei *Instance) Logs() (string, error) {
 
 func (ei *Instance) ConfigDump() (string, error) {
 	return ei.getAdminEndpointData("config_dump")
+}
+
+func (ei *Instance) StructuredConfigDump() (*adminv3.ConfigDump, error) {
+	adminUrl := fmt.Sprintf("http://%s:%d/%s", ei.LocalAddr(), ei.AdminPort, "config_dump")
+	response, err := http.Get(adminUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	defer response.Body.Close()
+
+	jsonpbMarshaler := &jsonpb.Unmarshaler{
+		// Ever since upgrading the go-control-plane to v0.10.1 this test fails with the following error:
+		// unknown field \"hidden_envoy_deprecated_build_version\" in envoy.config.core.v3.Node"
+		// Set AllowUnknownFields to true to get around this
+		AllowUnknownFields: true,
+	}
+
+	var cfgDump adminv3.ConfigDump
+	if err = jsonpbMarshaler.Unmarshal(response.Body, &cfgDump); err != nil {
+		return nil, err
+	}
+
+	return &cfgDump, nil
 }
 
 func (ei *Instance) Statistics() (string, error) {
