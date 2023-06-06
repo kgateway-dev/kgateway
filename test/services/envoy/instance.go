@@ -12,11 +12,8 @@ import (
 	"github.com/solo-io/gloo/test/services"
 
 	"sync"
-	"sync/atomic"
 	"text/template"
 	"time"
-
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -29,17 +26,6 @@ const (
 	containerName    = "e2e_envoy"
 	DefaultProxyName = "default~proxy"
 )
-
-var adminPort = uint32(20000)
-var bindPort = uint32(10080)
-
-func NextBindPort() uint32 {
-	return AdvanceBindPort(&bindPort)
-}
-
-func AdvanceBindPort(p *uint32) uint32 {
-	return atomic.AddUint32(p, 1) + uint32(parallel.GetPortOffset())
-}
 
 type Instance struct {
 	defaultBootstrapTemplate *template.Template

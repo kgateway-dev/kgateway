@@ -11,6 +11,9 @@ import (
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 )
 
+var adminPort = uint32(20000)
+
+// InstanceManager is a helper for managing multiple Envoy instances
 type InstanceManager struct {
 	// defaultBootstrapTemplate is the default template used to generate the bootstrap config for Envoy
 	// Individuals tests may supply their own

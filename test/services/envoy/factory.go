@@ -24,28 +24,40 @@ import (
 type Factory interface {
 	MustInstanceManager() *InstanceManager
 	MustEnvoyInstance() *Instance
+	NewEnvoyInstance() (*Instance, error)
+	MustClean()
 }
 
-var _ Factory = new(EnvoyFactory)
+var _ Factory = new(factoryImpl)
 
-type EnvoyFactory struct {
+type factoryImpl struct {
 	instanceManager *InstanceManager
 }
 
-func MustEnvoyFactory() *EnvoyFactory {
-	return &EnvoyFactory{
+func MustEnvoyFactory() *factoryImpl {
+	return &factoryImpl{
 		// Load the instance manager during initialization to error loudly if we don't
 		// have necessary configuration
 		instanceManager: mustGetInstanceManager(),
 	}
 }
 
-func (g *EnvoyFactory) MustInstanceManager() *InstanceManager {
+func (g *factoryImpl) MustInstanceManager() *InstanceManager {
 	return g.instanceManager
 }
 
-func (g *EnvoyFactory) MustEnvoyInstance() *Instance {
+func (g *factoryImpl) MustEnvoyInstance() *Instance {
 	return g.MustInstanceManager().MustEnvoyInstance()
+}
+
+func (g *factoryImpl) NewEnvoyInstance() (*Instance, error) {
+	return g.MustInstanceManager().NewEnvoyInstance()
+}
+
+func (g *factoryImpl) MustClean() {
+	if err := g.MustInstanceManager().Clean(); err != nil {
+		ginkgo.Fail(fmt.Sprintf("failed to clean up envoy instances: %v", err))
+	}
 }
 
 func mustGetInstanceManager() *InstanceManager {
