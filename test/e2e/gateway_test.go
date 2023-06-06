@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rotisserie/eris"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
@@ -681,6 +682,86 @@ var _ = Describe("Gateway", func() {
 
 					TestUpstreamSslReachableTcp()
 				})
+			})
+
+			Context("proxyProtocol", func() {
+				var (
+					secret *gloov1.Secret
+				)
+
+				BeforeEach(func() {
+
+					secret = &gloov1.Secret{
+						Metadata: &core.Metadata{
+							Name:      "secret",
+							Namespace: "default",
+						},
+						Kind: &gloov1.Secret_Tls{
+							Tls: &gloov1.TlsSecret{
+								CertChain:  gloohelpers.Certificate(),
+								PrivateKey: gloohelpers.PrivateKey(),
+							},
+						},
+					}
+				})
+
+				JustBeforeEach(func() {
+					_, err := testClients.SecretClient.Write(secret, clients.WriteOpts{Ctx: ctx})
+					Expect(err).NotTo(HaveOccurred())
+					tu.Upstream.ProxyProtocolVersion = &wrapperspb.StringValue{Value: "V1"}
+				})
+
+				JustAfterEach(func() {
+					err := testClients.SecretClient.Delete(secret.GetMetadata().GetNamespace(), secret.GetMetadata().GetName(), clients.DeleteOpts{Ctx: ctx})
+					Expect(err).NotTo(HaveOccurred())
+					tu.Upstream.ProxyProtocolVersion = nil
+				})
+
+				It("should set the transport socket", func() {
+
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(Not(MatchRegexp(tlsInspectorType)))
+
+					host := &gloov1.TcpHost{
+						Name: "one",
+						Destination: &gloov1.TcpHost_TcpAction{
+							Destination: &gloov1.TcpHost_TcpAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: tu.Upstream.Metadata.Ref(),
+									},
+								},
+							},
+						},
+						SslConfig: &ssl.SslConfig{
+							SslSecrets: &ssl.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name:      secret.GetMetadata().GetName(),
+									Namespace: secret.GetMetadata().GetNamespace(),
+								},
+							},
+							AlpnProtocols: []string{"http/1.1"},
+						},
+					}
+
+					tcpGatewayRef := gatewaydefaults.DefaultTcpSslGateway(writeNamespace).GetMetadata().Ref()
+					err := gloohelpers.PatchResource(
+						ctx,
+						tcpGatewayRef,
+						func(resource resources.Resource) resources.Resource {
+							gw := resource.(*gatewayv1.Gateway)
+							gw.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{host}
+							return gw
+						},
+						testClients.GatewayClient.BaseClient(),
+					)
+					Expect(err).NotTo(HaveOccurred())
+
+					// Check tls inspector is correctly configured
+					Eventually(envoyInstance.ConfigDump, "10s", "0.1s").Should(MatchRegexp(tlsInspectorType))
+					cd, _ := envoyInstance.ConfigDump()
+					Expect(cd).To(ContainSubstring("envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"))
+				})
+
 			})
 
 		})

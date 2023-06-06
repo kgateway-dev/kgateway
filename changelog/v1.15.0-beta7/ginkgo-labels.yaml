@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4919
+    resolvesIssue: false
+    description: >-
+      Create a mechanism to run certain tests only nightly and not on a PR

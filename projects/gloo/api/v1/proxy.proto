@@ -212,6 +212,8 @@ message Matcher {
     gloo.solo.io.SslConfig ssl_config = 1;
 
     repeated .solo.io.envoy.config.core.v3.CidrRange source_prefix_ranges = 2;
+
+    repeated string passthrough_cipher_suites = 3;
 }
 
 // An AggregateListener defines a set of Gloo configuration which will map to a unique set of FilterChains on a Listener
@@ -260,7 +262,7 @@ message VirtualHost {
     // but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header.
     // Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all
     // virtual hosts or the config will be invalidated by Gloo
-    // Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto)
+    // Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto)
     repeated string domains = 2;
 
     // The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches
@@ -459,7 +461,7 @@ message WeightedDestination {
     WeightedDestinationOptions options = 3;
 }
 
-// Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+// Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
 message RedirectAction {
     // The host portion of the URL will be swapped with this value.
     string host_redirect = 1;
@@ -536,7 +538,7 @@ message RedirectAction {
     bool strip_query = 6;
 }
 
-// DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+// DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
 message DirectResponseAction {
     // Specifies the HTTP response status to be returned.
     uint32 status = 1;

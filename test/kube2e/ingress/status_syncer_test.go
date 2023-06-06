@@ -171,13 +171,13 @@ var _ = Describe("StatusSyncer", func() {
 
 			// note (ilackarms): unless running on a cloud provider that supports
 			// kube lb ingress, the status ips for the service and ingress will be empty
-			Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			Eventually(func(g Gomega) {
 				ing, err := kubeIngressClient.Get(ctx, kubeIng.Name, metav1.GetOptions{})
-				if err != nil {
-					return nil, err
-				}
-				return ing.Status.LoadBalancer.Ingress, nil
-			}, time.Second*10).Should(Equal(svc.Status.LoadBalancer.Ingress))
+				g.Expect(err).NotTo(HaveOccurred())
+				// these can't be compared as they are differing nil types, so we check that both are nil
+				g.Expect(ing.Status.LoadBalancer.Ingress).To(BeNil())
+				g.Expect(svc.Status.LoadBalancer.Ingress).To(BeNil())
+			}, time.Second*10).Should(Succeed())
 		})
 
 	})
@@ -346,13 +346,20 @@ var _ = Describe("StatusSyncer", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			Eventually(func(g Gomega) {
 				ing, err := kubeIngressClient.Get(ctx, kubeIng.Name, metav1.GetOptions{})
-				if err != nil {
-					return nil, err
-				}
-				return ing.Status.LoadBalancer.Ingress, nil
-			}, time.Second*10).Should(Equal(svc.Status.LoadBalancer.Ingress))
+				g.Expect(err).NotTo(HaveOccurred())
+				// As of k8s 1.26+, Ingresses have a status of IngressLoadBalancerStatus, differing from the service's type.
+				ingIngress := ing.Status.LoadBalancer.Ingress
+				svcIngress := svc.Status.LoadBalancer.Ingress
+				g.Expect(len(ingIngress)).ToNot(BeZero())
+				g.Expect(len(ingIngress)).To(Equal(len(svcIngress)))
+				g.Expect(ingIngress[0].Hostname).To(Equal(svcIngress[0].Hostname))
+				g.Expect(ingIngress[0].IP).To(Equal(svcIngress[0].IP))
+				// `BeEquivalentTo` did not work here even when the values matched, so checking "equality" by ensuring both are nil.
+				Expect(ingIngress[0].Ports).To(BeNil())
+				Expect(svcIngress[0].Ports).To(BeNil())
+			}, time.Second*10).Should(Succeed())
 		})
 
 		It("errors when kube service ExternalName = localhost", func() {
@@ -480,7 +487,7 @@ var _ = Describe("StatusSyncer", func() {
 			}
 
 			// The only service that we have configured should be rejected
-			Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
+			Eventually(func() ([]networkingv1.IngressLoadBalancerIngress, error) {
 				ing, err := kubeIngressClient.Get(ctx, kubeIngress.Name, metav1.GetOptions{})
 				if err != nil {
 					return nil, err

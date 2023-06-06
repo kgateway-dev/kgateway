@@ -2,7 +2,7 @@ apiVersion: v2
 description: Gloo Helm chart for Kubernetes
 name: gloo
 home: https://gloo.solo.io/
-icon: https://raw.githubusercontent.com/solo-io/gloo/master/docs/content/img/Gloo-01.png
+icon: https://raw.githubusercontent.com/solo-io/gloo/main/docs/content/img/Gloo-01.png
 sources:
   - https://github.com/solo-io/gloo
 keywords:

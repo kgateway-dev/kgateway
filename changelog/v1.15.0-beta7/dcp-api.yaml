@@ -1,0 +1,30 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4792
+    resolvesIssue: false
+    description: Add a field for specifying passthrough cipher suites on a matcher (enterprise only).
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4793
+    resolvesIssue: false
+    description: Add DelegatedTcpGateway custom resource.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/4760
+    resolvesIssue: false
+    description: >
+      Static upstream support for setting proxy protocol
+      https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/transport_sockets/http_11_proxy/v3/upstream_http_11_connect.proto.html
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/4795
+    resolvesIssue: false
+    description: >
+      Changed the static upstream `useTls` field from a `bool` to `google.protobuf.BoolValue`, to allow explicitly disabling
+      TLS autodetection based on port.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/solo-projects/issues/4895
+    resolvesIssue: true
+    description: >
+      Expose the access log flush duration option in Envoy to enable flushing
+      to the access log on a periodic basis. The default behaviour is to only
+      write to the access log when a connection is closed meaning that
+      long-running tcp connections may take a long time to get written to the
+      access log.

@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -23,7 +22,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -94,7 +93,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
 
 		// write settings telling Gloo to use consul/vault
-		settingsDir, err = ioutil.TempDir("", "")
+		settingsDir, err = os.MkdirTemp("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, proxyDebugPort, writeNamespace, vaultSecretSource)
@@ -117,7 +116,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(bootstrap.NoopVaultClientInitFunc(vaultClient), customSecretEngine, bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
@@ -376,5 +375,5 @@ func writeSettings(
 	if err := os.MkdirAll(filepath.Join(settingsDir, "artifacts", "default"), 0755); err != nil {
 		return nil, err
 	}
-	return settings, ioutil.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
+	return settings, os.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
 }

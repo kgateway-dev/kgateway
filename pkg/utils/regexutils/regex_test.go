@@ -6,7 +6,6 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	. "github.com/solo-io/gloo/pkg/utils/regexutils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v32 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"

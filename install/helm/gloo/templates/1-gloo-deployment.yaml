@@ -42,11 +42,10 @@ spec:
         {{- end }}
         {{- end }}
     spec:
-      {{- with .Values.gloo.deployment.podSecurityContext }}
-      securityContext:
-      {{- toYaml . | nindent 8  }}
-      {{- end }}
-      {{- include "gloo.pullSecret" $image | nindent 6 -}}
+{{ with .Values.gloo.deployment.podSecurityContext }}
+{{- include "gloo.securityContext" (dict "values" . "defaults" (dict)) | indent 6 -}}
+{{- end }}
+{{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo
       {{- include "gloo.podSpecStandardFields" .Values.gloo.deployment | nindent 6 -}}
       volumes:
@@ -82,14 +81,10 @@ spec:
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
         {{- $securityDefaults := dict "runAsNonRoot" true }}
-        {{- if not .Values.gloo.deployment.floatingUserId -}}
+        {{- if not .Values.gloo.deployment.floatingUserId }}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
-        {{- end -}}
-        {{- $securityContext := or  .Values.global.glooMtls.envoy.securityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
         {{- end }}
+{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.envoy.securityContext "defaults" $securityDefaults) | indent 8 }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -128,15 +123,11 @@ spec:
         env:
         - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
-        {{- $securityDefaults := dict "floatingUserId" .Values.gloo.deployment.floatingUserId "runAsNonRoot" true }}
+        {{- $securityDefaults := dict "runAsNonRoot" true }}
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser}}
         {{- end -}}
-        {{- $securityContext := or .Values.global.glooMtls.sds.securityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+{{ include "gloo.securityContext" (dict "values" .Values.global.glooMtls.sds.securityContext "defaults" $securityDefaults) | nindent 8 }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: validation
@@ -177,11 +168,7 @@ spec:
         {{- if not .Values.gloo.deployment.floatingUserId -}}
           {{- $_ := set $securityDefaults "runAsUser" .Values.gloo.deployment.runAsUser }}
         {{- end -}}
-        {{- $securityContext := or .Values.gloo.deployment.glooContainerSecurityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- include "gloo.securityContext" (dict "values" .Values.gloo.deployment.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
         ports:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}

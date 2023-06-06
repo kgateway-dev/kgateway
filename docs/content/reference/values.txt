@@ -101,7 +101,7 @@
 |settings.invalidConfigPolicy.invalidRouteResponseBody|string|Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.|the response body for the direct response|
 |settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo Edge|
 |settings.disableProxyGarbageCollection|bool|false|Set this option to determine the state of an Envoy listener when the corresponding Proxy resource has no routes. If false (default), Gloo Edge will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo Edge will keep serving the routes from the last applied valid configuration.|
-|settings.regexMaxProgramSize|uint32||Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 100.|
+|settings.regexMaxProgramSize|uint32|1024|Set this field to specify the RE2 default max program size which is a rough estimate of how complex the compiled regex is to evaluate. If not specified, this defaults to 1024.|
 |settings.disableKubernetesDestinations|bool|false|Gloo Edge allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo Edge scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo Edge is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off.|
 |settings.aws.enableCredentialsDiscovery|bool||Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo Edge|
 |settings.aws.enableServiceAccountCredentials|bool||Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo Edge|
@@ -111,6 +111,7 @@
 |settings.aws.credential_refresh_delay.nanos|int32||The value of this duration in nanoseconds.|
 |settings.aws.fallbackToFirstFunction|bool||It will use the first function which if discovery is enabled the first function is the first function name alphabetically from the last discovery run. Defaults to false.|
 |settings.rateLimit|interface||Partial config for Gloo Edge Enterprise’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
+|settings.ratelimitServer|interface||External Ratelimit Server configuration for Gloo Edge Open Sources’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://docs.solo.io/gloo-edge/main/guides/security/rate_limiting/)|
 |settings.circuitBreakers.maxConnections|uint32||Set this field to specify the maximum number of connections that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
 |settings.circuitBreakers.maxPendingRequests|uint32||Set this field to specfify the maximum number of pending requests that Envoy will allow to the upstream cluster. If not specified, the default is 1024.|
 |settings.circuitBreakers.maxRequests|uint32||Set this field to specfify the maximum number of parallel requests that Envoy will make to the upstream cluster. If not specified, the default is 1024.|
@@ -154,6 +155,7 @@
 |gloo.deployment.podSecurityContext.fsGroupChangePolicy|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gloo.deployment.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -219,6 +221,7 @@
 |gloo.deployment.glooContainerSecurityContext.procMount|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.type|string|||
 |gloo.deployment.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gloo.deployment.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gloo.serviceAccount.disableAutomount|bool||disable automounting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gloo.serviceAccount.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
@@ -307,6 +310,7 @@
 |gateway.validation.webhook.disableHelmHook|bool|false|do not create the webhook as helm hook (default false)|
 |gateway.validation.webhook.timeoutSeconds|int||the timeout for the webhook, defaults to 10|
 |gateway.validation.webhook.extraAnnotations.NAME|string||extra annotations to add to the webhook|
+|gateway.validation.webhook.skipDeleteValidationResources[]|string||resource types in this list will not use webhook valdaition for DELETEs. Use '*' to skip validation for all resources. Valid values are 'virtualservices', 'routetables','upstreams', 'secrets', 'ratelimitconfigs', and '*'. Invalid values will be accepted but will not be used.|
 |gateway.validation.webhook.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gateway.validation.validationServerGrpcMaxSizeBytes|int|104857600|gRPC max message size in bytes for the gloo validation server|
 |gateway.validation.livenessProbeEnabled|bool||Set to true to enable a liveness probe for the gateway (default is false). You must also set the 'Probes' value to true.|
@@ -559,6 +563,7 @@
 |gatewayProxies.NAME.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |gatewayProxies.NAME.podTemplate.image.tag|string||The image tag for the container.|
 |gatewayProxies.NAME.podTemplate.image.repository|string||The image repository (name) for the container.|
 |gatewayProxies.NAME.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -587,6 +592,7 @@
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.NAME.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -656,7 +662,7 @@
 |gatewayProxies.NAME.envoyBootstrapExtensions[].NAME|interface||List of bootstrap extensions to add to Envoy bootstrap config. Examples include Wasm Service (https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/wasm/v3/wasm.proto#extensions-wasm-v3-wasmservice).|
 |gatewayProxies.NAME.envoyOverloadManager.NAME|interface||Overload Manager definition for Envoy bootstrap config. If enabled, a list of Resource Monitors MUST be defined in order to produce a valid Envoy config (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/overload/v3/overload.proto#overload-manager).|
 |gatewayProxies.NAME.envoyStaticClusters[].NAME|interface||List of extra static clusters to be added to Envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster|
-|gatewayProxies.NAME.horizontalPodAutoscaler.apiVersion|string||accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2.|
+|gatewayProxies.NAME.horizontalPodAutoscaler.apiVersion|string||accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2. Note: autoscaling/v2beta2 is deprecated as of Kubernetes 1.26.|
 |gatewayProxies.NAME.horizontalPodAutoscaler.minReplicas|int32||minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down.|
 |gatewayProxies.NAME.horizontalPodAutoscaler.maxReplicas|int32||maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas.|
 |gatewayProxies.NAME.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
@@ -800,6 +806,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.fsGroupChangePolicy|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.podSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |gatewayProxies.gatewayProxy.podTemplate.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -828,6 +835,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.procMount|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.type|string|||
 |gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.seccompProfile.localhostProfile|string|||
+|gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.configMap.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.gatewayProxy.customStaticLayer|interface||Configure the static layer for global overrides to Envoy behavior, as defined in the Envoy bootstrap YAML. You cannot use this setting to set overload or upstream layers. For more info, see the Envoy docs. https://www.envoyproxy.io/docs/envoy/latest/configuration/operations/runtime#config-runtime|
@@ -902,7 +910,7 @@
 |gatewayProxies.gatewayProxy.envoyOverloadManager.refreshInterval|interface||Overload Manager definition for Envoy bootstrap config. If enabled, a list of Resource Monitors MUST be defined in order to produce a valid Envoy config (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/overload/v3/overload.proto#overload-manager).|
 |gatewayProxies.gatewayProxy.envoyOverloadManager.resourceMonitors|interface||Overload Manager definition for Envoy bootstrap config. If enabled, a list of Resource Monitors MUST be defined in order to produce a valid Envoy config (https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/overload/v3/overload.proto#overload-manager).|
 |gatewayProxies.gatewayProxy.envoyStaticClusters[].NAME|interface||List of extra static clusters to be added to Envoy bootstrap config. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster|
-|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.apiVersion|string||accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2.|
+|gatewayProxies.gatewayProxy.horizontalPodAutoscaler.apiVersion|string||accepts autoscaling/v1, autoscaling/v2beta2 or autoscaling/v2. Note: autoscaling/v2beta2 is deprecated as of Kubernetes 1.26.|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.minReplicas|int32||minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down.|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.maxReplicas|int32||maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up. It cannot be less that minReplicas.|
 |gatewayProxies.gatewayProxy.horizontalPodAutoscaler.targetCPUUtilizationPercentage|int32||target average CPU utilization (represented as a percentage of requested CPU) over all the pods. Used only with apiVersion autoscaling/v1|
@@ -1152,6 +1160,7 @@
 |global.glooMtls.sds.securityContext.procMount|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.type|string|||
 |global.glooMtls.sds.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.sds.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|The image repository (name) for the container.|
 |global.glooMtls.envoy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1180,6 +1189,7 @@
 |global.glooMtls.envoy.securityContext.procMount|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.envoy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
@@ -1208,6 +1218,7 @@
 |global.glooMtls.istioProxy.securityContext.procMount|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.istioProxy.securityContext.seccompProfile.localhostProfile|string|||
+|global.glooMtls.istioProxy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
 |global.glooMtls.envoySidecarResources.limits.memory|string||amount of memory|
 |global.glooMtls.envoySidecarResources.limits.cpu|string||amount of CPUs|
 |global.glooMtls.envoySidecarResources.requests.memory|string||amount of memory|

@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8282
+    resolvesIssue: false
+    description: >-
+     Allow resource types listed in the gateway.validation.webhook.skipDeleteValidationResources array to be deleted without validation. 
+     Use "*" to skip validation for all resource types.

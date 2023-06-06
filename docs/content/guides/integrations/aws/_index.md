@@ -284,7 +284,7 @@ Another common requirement is to have the HTTP traffic redirected to HTTPS. You 
 
 ![HTTPS redirect with NLB doing TLS offloading]({{< versioned_link_path fromRoot="/img/https-redirect-tls-offloading.png" >}})
 
-If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out this guide: https://docs.solo.io/gloo-edge/master/installation/advanced_configuration/multi-gw-deployment/
+If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out this guide: https://docs.solo.io/gloo-edge/main/installation/advanced_configuration/multi-gw-deployment/
 
 Below is a configuration example:
 
@@ -327,7 +327,7 @@ gloo:
                   - redirect-https
 ```
 
-The following _Gateway_ and _VirtualService_ are solely built for HTTPS redirection:
+The following _Gateway_ and _VirtualService_ redirect HTTP traffic on the `gloo.example.com` domain to HTTPS:
 
 ```bash
 AWS_DNS=$(kubectl --namespace='gloo-system' get service/gateway-proxy --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -356,7 +356,7 @@ metadata:
 spec:
   virtualHost:
     domains:
-    - '*'
+    - 'gloo.example.com'
     routes:
     - matchers:
       - prefix: /

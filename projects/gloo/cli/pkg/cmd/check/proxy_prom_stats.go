@@ -3,7 +3,7 @@ package check
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -116,7 +116,7 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 		err := fmt.Errorf(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the "+deploymentName+" deployment")
 		return err
 	}
-	b, err := ioutil.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(errMessage)
 		return err
@@ -165,7 +165,7 @@ func parseMetrics(stats string, desiredMetricSegments []string, deploymentName s
 	for _, line := range statsLines {
 		trimLine := strings.TrimSpace(line)
 		if strings.HasPrefix(trimLine, "#") || trimLine == "" {
-			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
+			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/main/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
 		}
 		desiredMetric := false
 		for _, s := range desiredMetricSegments {

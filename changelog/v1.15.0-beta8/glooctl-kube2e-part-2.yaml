@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Update glooctl tests to wait for a healthy cluster.
+      Increase client-side QPS and Burst to reduce flakes.
+    issueLink: https://github.com/solo-io/solo-projects/issues/4913
+    resolvesIssue: false

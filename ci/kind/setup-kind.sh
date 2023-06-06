@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 # The name of the kind cluster to deploy to
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 # The version of the Node Docker image to use for booting the cluster
-CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.25.3}"
+CLUSTER_NODE_VERSION="${CLUSTER_NODE_VERSION:-v1.26.4}"
 # The version used to tag images
 VERSION="${VERSION:-1.0.0-ci}"
 # Skip building docker images if we are testing a released version

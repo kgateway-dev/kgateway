@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils/exec"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/k8s-utils/kubeutils"
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
@@ -56,12 +57,8 @@ func StartTestHelper() {
 		installGloo()
 	}
 
-	// Create KubeResourceClientSet
-	cfg, err := kubeutils.GetConfig("", "")
-	Expect(err).NotTo(HaveOccurred())
-
-	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
-	Expect(err).NotTo(HaveOccurred())
+	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
+	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 }
 
 func TearDownTestHelper() {
@@ -90,4 +87,12 @@ func uninstallGloo() {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(ctx, testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
+}
+
+// GlooctlOut take a set of arguments for glooctl and then executes local glooctl with these arguments
+func GlooctlOut(args ...string) (string, error) {
+	glooctlCommand := []string{filepath.Join(testHelper.BuildAssetDir, testHelper.GlooctlExecName)}
+	glooctlCommand = append(glooctlCommand, args...)
+	// execute the command with verbose output
+	return exec.RunCommandOutput(testHelper.RootDir, true, glooctlCommand...)
 }

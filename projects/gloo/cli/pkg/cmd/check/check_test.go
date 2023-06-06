@@ -51,6 +51,9 @@ var _ = Describe("Check", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      appName,
 					Namespace: "gloo-system",
+					Labels: map[string]string{
+						"gloo": "gloo",
+					},
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}, metav1.CreateOptions{})

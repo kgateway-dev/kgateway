@@ -3,6 +3,9 @@ package kube2e
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
+	"github.com/solo-io/k8s-utils/kubeutils"
+
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -26,6 +29,7 @@ var _ helpers.ResourceClientSet = new(KubeResourceClientSet)
 type KubeResourceClientSet struct {
 	gatewayClient           gatewayv1.GatewayClient
 	httpGatewayClient       gatewayv1.MatchableHttpGatewayClient
+	tcpGatewayClient        gatewayv1.MatchableTcpGatewayClient
 	virtualServiceClient    gatewayv1.VirtualServiceClient
 	routeTableClient        gatewayv1.RouteTableClient
 	virtualHostOptionClient gatewayv1.VirtualHostOptionClient
@@ -41,6 +45,17 @@ type KubeResourceClientSet struct {
 	secretClient            gloov1.SecretClient
 
 	kubeClient *kubernetes.Clientset
+}
+
+func NewDefaultKubeResourceClientSet(ctx context.Context) (*KubeResourceClientSet, error) {
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, err
+	}
+	cfg.QPS = clients.DefaultK8sQPS
+	cfg.Burst = clients.DefaultK8sBurst
+
+	return NewKubeResourceClientSet(ctx, cfg)
 }
 
 func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResourceClientSet, error) {
@@ -87,6 +102,21 @@ func NewKubeResourceClientSet(ctx context.Context, cfg *rest.Config) (*KubeResou
 		return nil, err
 	}
 	resourceClientSet.httpGatewayClient = httpGatewayClient
+
+	// TcpGateway
+	tcpGatewayClientFactory := &factory.KubeResourceClientFactory{
+		Crd:         gatewayv1.MatchableTcpGatewayCrd,
+		Cfg:         cfg,
+		SharedCache: cache,
+	}
+	tcpGatewayClient, err := gatewayv1.NewMatchableTcpGatewayClient(ctx, tcpGatewayClientFactory)
+	if err != nil {
+		return nil, err
+	}
+	if err = tcpGatewayClient.Register(); err != nil {
+		return nil, err
+	}
+	resourceClientSet.tcpGatewayClient = tcpGatewayClient
 
 	// VirtualService
 	virtualServiceClientFactory := &factory.KubeResourceClientFactory{
@@ -282,6 +312,10 @@ func (k KubeResourceClientSet) GatewayClient() gatewayv1.GatewayClient {
 
 func (k KubeResourceClientSet) HttpGatewayClient() gatewayv1.MatchableHttpGatewayClient {
 	return k.httpGatewayClient
+}
+
+func (k KubeResourceClientSet) TcpGatewayClient() gatewayv1.MatchableTcpGatewayClient {
+	return k.tcpGatewayClient
 }
 
 func (k KubeResourceClientSet) VirtualServiceClient() gatewayv1.VirtualServiceClient {

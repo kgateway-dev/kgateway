@@ -36,6 +36,8 @@ const (
 	envoySidecarConfig = "envoy-sidecar-config"
 )
 
+// GetGlooXdsDump returns a dump of the last config applied to the given proxy
+// According to gloo
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
 
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
@@ -250,41 +252,42 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, dr *discovery_v3.Dis
 
 func (xd *XdsDump) String() string {
 	buf := &bytes.Buffer{}
-	errString := "unable to parse yaml"
+	errStrFmt := "unable to parse yaml: yaml format of %s failed to parse with: %s"
 
 	fmt.Fprintf(buf, "\n\n#role: %v", xd.Role)
 	fmt.Fprintf(buf, "\n\n#clusters")
-	for _, c := range xd.Clusters {
+	for _, c := range xd.Clusters { //nolint:all
 		yam, err := toYaml(&c)
 		if err != nil {
-			return errString
+			return fmt.Sprintf(errStrFmt, "clusters", err.Error())
 		}
 		fmt.Fprintf(buf, "\n%s", yam)
 	}
 
 	fmt.Fprintf(buf, "\n\n#eds")
-	for _, c := range xd.Endpoints {
+	for _, c := range xd.Endpoints { //nolint:all
 		yam, err := toYaml(&c)
 		if err != nil {
-			return errString
+			return fmt.Sprintf(errStrFmt, "endpoints", err.Error())
 		}
 		fmt.Fprintf(buf, "\n%s", yam)
 	}
 
 	fmt.Fprintf(buf, "\n\n#listeners")
-	for _, c := range xd.Listeners {
+
+	for _, c := range xd.Listeners { //nolint:all
 		yam, err := toYaml(&c)
 		if err != nil {
-			return errString
+			return fmt.Sprintf(errStrFmt, "listeners", err.Error())
 		}
 		fmt.Fprintf(buf, "\n%s", yam)
 	}
 	fmt.Fprintf(buf, "\n\n#rds")
 
-	for _, c := range xd.Routes {
+	for _, c := range xd.Routes { //nolint:all
 		yam, err := toYaml(&c)
 		if err != nil {
-			return errString
+			return fmt.Sprintf(errStrFmt, "rds", err.Error())
 		}
 		fmt.Fprintf(buf, "\n%s", yam)
 	}

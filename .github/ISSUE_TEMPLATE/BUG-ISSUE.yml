@@ -8,11 +8,11 @@ body:
       label: Gloo Edge Version
       description: What version of Gloo Edge are you using?
       options:
-        - 1.14.x (beta)
-        - 1.13.x (latest stable)
+        - 1.15.x (beta)
+        - 1.14.x (latest stable)
+        - 1.13.x
         - 1.12.x
         - 1.11.x
-        - 1.10.x
     validations:
       required: true
   - type: dropdown
@@ -21,6 +21,7 @@ body:
       label: Kubernetes Version
       description: What version of Kubernetes are you using with Gloo Edge?
       options:
+        - 1.27.x
         - 1.26.x
         - 1.25.x
         - 1.24.x

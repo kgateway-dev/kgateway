@@ -9,7 +9,7 @@
 # Leaving this script in the repository in case we want to use it in the future, but removing the execution
 # in our CI pipeline because it is a no-op
 
-# this file as adapted from here: https://github.com/envoyproxy/envoy/blob/master/tools/check_spelling.sh
+# this file as adapted from here: https://github.com/envoyproxy/envoy/tree/main/tools/spelling
 
 # Applies requisite code formatters to the source tree
 # check_spelling.sh

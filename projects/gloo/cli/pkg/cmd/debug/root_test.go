@@ -9,6 +9,7 @@ import (
 )
 
 var _ = Describe("Debug", func() {
+
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 	})
@@ -19,8 +20,4 @@ var _ = Describe("Debug", func() {
 		Expect(err).To(Equal(constants.SubcommandError))
 	})
 
-	It("should not crash with debug log command", func() {
-		err := testutils.Glooctl("debug log")
-		Expect(err).NotTo(HaveOccurred())
-	})
 })

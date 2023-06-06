@@ -22,29 +22,33 @@ You can install the Gloo Edge command line, `glooctl`, to help install, configur
   $env:Path += ";$env:userprofile/.gloo/bin/"
   ```
 
-* **Direct download**: You can download `glooctl` directly via the [GitHub releases page](https://github.com/solo-io/gloo/releases). After downloading, rename the executable to `glooctl` and add it to your system's `PATH`.
+* **Direct download**: You can download `glooctl` directly via the GitHub releases page.
+  1. In your browser, navigate to the [Gloo project releases](https://github.com/solo-io/gloo/releases).
+  2. Choose the version to upgrade `glooctl` to. For Gloo Edge Enterprise, use the Gloo Edge OSS version that corresponds to the Gloo Edge Enterprise version you want to upgrade to. To find the OSS version that corresponds to each Gloo Edge Enterprise release, see the [Gloo Edge Enterprise changelogs](https://docs.solo.io/gloo-edge/latest/reference/changelog/enterprise/).
+  3. Click the version of `glooctl` that you want to install.
+  4. In the **Assets**, download the `glooctl` package that matches your operating system, and follow your operating system procedures for replacing your existing `glooctl` binary file with the upgraded version.
+  5. After downloading, rename the executable to `glooctl` and add it to your system's `PATH`.
 
 ### Update glooctl CLI version {#update-glooctl}
 
-If you already installed `glooctl`, make sure to update `glooctl` to the same minor version as the version of Gloo Edge that is installed in your cluster. For example, if you're using Gloo Edge 1.13.8, you should use a 1.13.8 release of `glooctl`.
+When it's time to upgrade Gloo Edge, make sure to update the `glooctl` version before upgrading.
 
-You can use the `glooctl upgrade` command to set the `--release` that you want to use. You can use this command to upgrade or roll back the `glooctl` version. For example, you might change versions during an upgrade process, or when you have multiple versions of Gloo Edge across clusters that you manage from the same workstation.
+You can use the `glooctl upgrade` command to upgrade or roll back the `glooctl` version. For example, you might change versions during an upgrade process, or when you have multiple versions of Gloo Edge across clusters that you manage from the same workstation. For more options, run `glooctl upgrade --help`.
 
-```bash
-glooctl upgrade --release v1.13.8
-```
+1. Set the version to upgrade `glooctl` to in an environment variable. Include the patch version. For Gloo Edge Enterprise, specify the Gloo Edge OSS version that corresponds to the Gloo Edge Enterprise version you want to upgrade to. To find the OSS version that corresponds to each Gloo Edge Enterprise release, see the [Gloo Edge Enterprise changelogs](https://docs.solo.io/gloo-edge/latest/reference/changelog/enterprise/).
+   ```sh
+   export GLOOCTL_VERSION=<version>
+   ```
+   
+2. Upgrade your version of `glooctl`.
+   ```bash
+   glooctl upgrade --release v${GLOOCTL_VERSION}
+   ```
 
 ### Verify the installation or update {#verify-glooctl}
 
-You can verify the `glooctl` CLI is installed and running the appropriate version.
+Verify the `glooctl` CLI is installed and running the appropriate version. In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if Gloo Edge is not installed yet.
 
 ```bash
 glooctl version
-```
-
-In the output, the **Client** is your local version. The **Server** is the version that runs in your cluster, and is `undefined` if you did not install Gloo Edge yet.
-
-```shell
-Client: {"version":"1.13.8"}
-Server: version undefined, could not find any version of gloo running
 ```

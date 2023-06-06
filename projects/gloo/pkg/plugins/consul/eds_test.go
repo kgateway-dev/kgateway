@@ -31,6 +31,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
@@ -235,8 +236,8 @@ var _ = Describe("Consul EDS", func() {
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
-					Eventually(endpointsChan).Should(BeClosed())
-					Eventually(errorChan).Should(BeClosed())
+					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 				})
 			})
 
@@ -315,13 +316,13 @@ var _ = Describe("Consul EDS", func() {
 					serviceMetaProducer <- consulServiceSnapshot // removed svc1 and added svc2; this means we will close watch on svc1 and open a new one on svc2
 
 					// Provide time to let the snapshot be processed
-					Consistently(endpointsChan).ShouldNot(BeClosed())
-					Consistently(errorChan).ShouldNot(BeClosed())
+					Consistently(endpointsChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(BeClosed())
+					Consistently(errorChan, DefaultConsistentlyDuration, DefaultConsistentlyPollingInterval).ShouldNot(BeClosed())
 
 					// Cancel and verify that all the channels have been closed
 					cancel()
-					Eventually(endpointsChan).Should(BeClosed())
-					Eventually(errorChan).Should(BeClosed())
+					Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+					Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 				})
 
 			})
@@ -355,7 +356,7 @@ var _ = Describe("Consul EDS", func() {
 					fmt.Fprint(GinkgoWriter, "Updated resolve called.")
 				}).Return(updatedIps, nil).AnyTimes()
 
-				duration := &durationpb.Duration{Seconds: 0, Nanos: 100000}
+				duration := durationpb.New(time.Microsecond * 100) // 100,000 ns or 0.1 ms
 				eds := NewPlugin(consulWatcherMock, mockDnsResolver, duration)
 
 				endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
@@ -401,12 +402,12 @@ var _ = Describe("Consul EDS", func() {
 				}
 
 				// ensure we don't receive anything else on channel even though we receive more DNS queries
-				Consistently(endpointsChan, pollingInterval, totalInterval).ShouldNot(Receive())
+				Consistently(endpointsChan, totalInterval, pollingInterval).ShouldNot(Receive())
 
 				// Cancel and verify that all the channels have been closed
 				cancel()
-				Eventually(endpointsChan).Should(BeClosed())
-				Eventually(errorChan).Should(BeClosed())
+				Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+				Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 			})
 		})
 
@@ -643,8 +644,9 @@ var _ = Describe("Consul EDS", func() {
 				defer GinkgoRecover()
 				for {
 					select {
-					default:
-						Consistently(errorChan).ShouldNot(Receive())
+					case err := <-errorChan:
+						Expect(err).NotTo(HaveOccurred())
+						Fail("err chan closed prematurely")
 					case <-errRoutineCtx.Done():
 						return nil
 					}
@@ -657,24 +659,24 @@ var _ = Describe("Consul EDS", func() {
 			for _, v := range expectedEndpointsFirstAttempt {
 				asProtos = append(asProtos, v)
 			}
-			Eventually(endpointsChan).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(proto_matchers.ConsistOfProtos(asProtos...)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
 			_ = eg.Wait()
 
 			errorProducer <- eris.New("fail")
-			Eventually(errorChan).Should(Receive())
+			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
 
 			// Simulate an update to the services
 			// We use the same metadata snapshot because what changed is the service spec
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
 
 			// Cancel and verify that all the channels have been closed
 			cancel()
-			Eventually(endpointsChan).Should(BeClosed())
-			Eventually(errorChan).Should(BeClosed())
+			Eventually(endpointsChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
+			Eventually(errorChan, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeClosed())
 		})
 
 	})

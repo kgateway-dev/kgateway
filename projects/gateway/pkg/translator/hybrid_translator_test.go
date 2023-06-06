@@ -292,7 +292,7 @@ var _ = Describe("Hybrid Translator", func() {
 
 	})
 
-	Context("DelegatedHttpGateways", func() {
+	Context("DelegatedGateways", func() {
 
 		Context("http", func() {
 
@@ -679,6 +679,114 @@ var _ = Describe("Hybrid Translator", func() {
 					Expect(matchedHttpListener.GetHttpListener()).NotTo(BeNil())
 					Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 
+					// Only the VirtualServices with SslConfig should be aggregated on the Gateway
+					Expect(matchedHttpListener.GetSslConfigurations()).To(HaveLen(len(snap.VirtualServices)))
+				})
+
+			})
+
+		})
+
+		Context("tcp", func() {
+			Context("ssl", func() {
+				var (
+					tcpHostSSL    *gloov1.TcpHost
+					tcpHostBadSSL *gloov1.TcpHost
+					tcpHostNotSSL *gloov1.TcpHost
+				)
+				BeforeEach(func() {
+
+					tcpHostSSL = &gloov1.TcpHost{
+						Name:      "host-one",
+						SslConfig: &ssl.SslConfig{SniDomains: []string{"foo.com"}},
+						Destination: &gloov1.TcpHost_TcpAction{
+							Destination: &gloov1.TcpHost_TcpAction_UpstreamGroup{
+								UpstreamGroup: &core.ResourceRef{
+									Namespace: ns,
+									Name:      "ug-name",
+								},
+							},
+						},
+					}
+					tcpHostBadSSL = &gloov1.TcpHost{
+						Name:      "host-bad",
+						SslConfig: &ssl.SslConfig{SniDomains: []string{"fooz.com"}},
+						Destination: &gloov1.TcpHost_TcpAction{
+							Destination: &gloov1.TcpHost_TcpAction_UpstreamGroup{
+								UpstreamGroup: &core.ResourceRef{
+									Namespace: ns,
+									Name:      "ug-name",
+								},
+							},
+						},
+					}
+					tcpHostNotSSL = &gloov1.TcpHost{
+						Name: "host-notssl",
+
+						Destination: &gloov1.TcpHost_TcpAction{
+							Destination: &gloov1.TcpHost_TcpAction_UpstreamGroup{
+								UpstreamGroup: &core.ResourceRef{
+									Namespace: ns,
+									Name:      "ug-name",
+								},
+							},
+						},
+					}
+
+					snap = &gloov1snap.ApiSnapshot{
+						Gateways: v1.GatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								GatewayType: &v1.Gateway_HybridGateway{
+									HybridGateway: &v1.HybridGateway{
+										DelegatedTcpGateways: &v1.DelegatedTcpGateway{
+
+											SelectionType: &v1.DelegatedTcpGateway_Ref{
+												Ref: &core.ResourceRef{
+													Name:      "name",
+													Namespace: ns,
+												},
+											},
+										},
+									},
+								},
+								BindPort: 2,
+							},
+						},
+						TcpGateways: v1.MatchableTcpGatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								Matcher: &v1.MatchableTcpGateway_Matcher{
+									SslConfig: &ssl.SslConfig{SniDomains: []string{"foo.com"}},
+									SourcePrefixRanges: []*v3.CidrRange{
+										{
+											AddressPrefix: "match1",
+										},
+									},
+								},
+								TcpGateway: &v1.TcpGateway{
+									TcpHosts: []*gloov1.TcpHost{tcpHostSSL, tcpHostNotSSL, tcpHostBadSSL},
+								},
+							},
+						},
+					}
+				})
+
+				It("works", func() {
+					params := NewTranslatorParams(ctx, snap, reports)
+
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					Expect(listener).NotTo(BeNil())
+
+					hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
+					Expect(hybridListener.MatchedListeners).To(HaveLen(1))
+
+					matchedHttpListener := hybridListener.MatchedListeners[0]
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges).To(HaveLen(1))
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
+					Expect(matchedHttpListener.GetTcpListener()).NotTo(BeNil())
+					Expect(matchedHttpListener.GetTcpListener().TcpHosts).To(HaveLen(3))
+					Expect(reports.Validate()).To(HaveOccurred())
 					// Only the VirtualServices with SslConfig should be aggregated on the Gateway
 					Expect(matchedHttpListener.GetSslConfigurations()).To(HaveLen(len(snap.VirtualServices)))
 				})

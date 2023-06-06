@@ -9,15 +9,14 @@
 
 
 
-# remove the "v" prefix
-VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
+VERSION 	?= 1.0.1-dev    # a basic version that can be overidden
 
 HUGO_VERSION := 0.69.2
 
-SOLO_HUGO_THEME_REVISION := v0.0.24
+SOLO_HUGO_THEME_REVISION := v0.0.25
 
 # The minimum version to maintain in our public docs
-MIN_SCANNED_VERSION ?= v1.10.0
+MIN_SCANNED_VERSION ?= v1.11.0
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -96,7 +95,7 @@ build-site: clean
 # corresponding to content in changelog directory.
 .PHONY: gloo-enterprise-version
 gloo-enterprise-version:
-	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version.go
+	cd .. && GO111MODULE=on go run hack/find_latest_enterprise_version/main.go
 
 #----------------------------------------------------------------------------------
 # Printing makefile variables utility

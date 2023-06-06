@@ -117,7 +117,7 @@ func (c *FakeRouteOptions) UpdateStatus(ctx context.Context, routeOption *gatewa
 // Delete takes name of the routeOption and deletes it. Returns an error if one occurs.
 func (c *FakeRouteOptions) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(routeoptionsResource, c.ns, name), &gatewaysoloiov1.RouteOption{})
+		Invokes(testing.NewDeleteActionWithOptions(routeoptionsResource, c.ns, name, opts), &gatewaysoloiov1.RouteOption{})
 
 	return err
 }

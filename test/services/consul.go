@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"io/ioutil"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+
+	"github.com/hashicorp/consul/api"
 
 	"github.com/solo-io/go-utils/log"
 )
@@ -55,8 +55,8 @@ func NewConsulFactory() (*ConsulFactory, error) {
 		}, nil
 	}
 
-	// try to grab one form docker...
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
+	// try to grab one from docker...
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ docker rm -f $CID
     `, consulDockerImage, consulDockerImage)
 	scriptFile := filepath.Join(tmpdir, "get_consul.sh")
 
-	err = ioutil.WriteFile(scriptFile, []byte(bash), 0755)
+	err = os.WriteFile(scriptFile, []byte(bash), 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -93,26 +93,26 @@ docker rm -f $CID
 	}, nil
 }
 
-func (ef *ConsulFactory) Clean() error {
-	if ef == nil {
+func (cf *ConsulFactory) Clean() error {
+	if cf == nil {
 		return nil
 	}
-	if ef.tmpdir != "" {
-		_ = os.RemoveAll(ef.tmpdir)
+	if cf.tmpdir != "" {
+		_ = os.RemoveAll(cf.tmpdir)
 
 	}
 	return nil
 }
 
-func (ef *ConsulFactory) MustConsulInstance() *ConsulInstance {
-	instance, err := ef.NewConsulInstance()
+func (cf *ConsulFactory) MustConsulInstance() *ConsulInstance {
+	instance, err := cf.NewConsulInstance()
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return instance
 }
 
-func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
+func (cf *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 	// try to grab one form docker...
-	tmpdir, err := ioutil.TempDir(os.Getenv("HELPER_TMP"), "consul")
+	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
 	}
@@ -123,13 +123,13 @@ func (ef *ConsulFactory) NewConsulInstance() (*ConsulInstance, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command(ef.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
+	cmd := exec.Command(cf.consulPath, "agent", "-dev", "--client=0.0.0.0", "-config-dir", cfgDir,
 		"-node", "consul-dev")
-	cmd.Dir = ef.tmpdir
+	cmd.Dir = cf.tmpdir
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
 	return &ConsulInstance{
-		consulPath:         ef.consulPath,
+		consulPath:         cf.consulPath,
 		tmpdir:             tmpdir,
 		cfgDir:             cfgDir,
 		cmd:                cmd,
@@ -146,11 +146,13 @@ type ConsulInstance struct {
 	session *gexec.Session
 
 	registeredServices map[string]*serviceDef
+
+	client *api.Client
 }
 
 func (i *ConsulInstance) AddConfig(svcId, content string) error {
 	fileName := filepath.Join(i.cfgDir, svcId+".json")
-	return ioutil.WriteFile(fileName, []byte(content), 0644)
+	return os.WriteFile(fileName, []byte(content), 0644)
 }
 
 func (i *ConsulInstance) AddConfigFromStruct(svcId string, cfg interface{}) error {
@@ -191,6 +193,14 @@ func (i *ConsulInstance) Run(ctx context.Context) error {
 	}
 	EventuallyWithOffset(1, i.session.Out, "5s").Should(gbytes.Say("New leader elected"))
 	return nil
+}
+
+func (i *ConsulInstance) withClient() *ConsulInstance {
+	client, err := api.NewClient(api.DefaultConfig())
+	Expect(err).NotTo(HaveOccurred())
+
+	i.client = client
+	return i
 }
 
 func (i *ConsulInstance) Binary() string {
@@ -257,7 +267,7 @@ func (i *ConsulInstance) RegisterLiveService(svcName, svcId, address string, tag
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	err = ioutil.WriteFile(fileName, content, 0644)
+	err = os.WriteFile(fileName, content, 0644)
 	if err != nil {
 		return err
 	}
@@ -269,4 +279,24 @@ func (i *ConsulInstance) RegisterLiveService(svcName, svcId, address string, tag
 		return err
 	}
 	return nil
+}
+
+// Put wraps the Consul KV Put API call
+func (i *ConsulInstance) Put(key string, value []byte) error {
+	kvp := &api.KVPair{
+		Key:   key,
+		Value: value,
+	}
+	_, err := i.Client().KV().Put(kvp, &api.WriteOptions{})
+
+	return err
+
+}
+
+// Client returns the Consul API client, constructing one if necessary
+func (i *ConsulInstance) Client() *api.Client {
+	if i.client == nil {
+		i = i.withClient()
+	}
+	return i.client
 }
