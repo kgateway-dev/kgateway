@@ -25,3 +25,9 @@ CVE-2022-23526
 # No handlers exposed by the control plane fall victim to this attack
 # because we do not use the maxBytesHandler
 CVE-2022-41721
+
+# https://github.com/distribution/distribution/security/advisories/GHSA-hqxw-f8mx-cpmw
+# This CVE has not yet been patched in the kubectl version we are using, however it should not
+# affect us as kubernetes does not use the affected code path (see description in
+# https://github.com/kubernetes/kubernetes/pull/118036).
+CVE-2023-2253

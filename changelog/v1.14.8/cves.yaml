@@ -1,0 +1,12 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: docker
+  dependencyRepo: distribution
+  dependencyTag: v2.8.2+incompatible
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/8346
+  resolvesIssue: false
+  description: >
+    Upgrade docker distribution dependency which fixes CVE-2023-2253 for all images except kubectl.
+    Also add the CVE to .trivyignore because kubectl does not have a fixed version yet and kubectl
+    is not vulnerable. Upgrade openssl version in kubectl image to fix CVE-2023-2650.
