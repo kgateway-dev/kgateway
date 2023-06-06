@@ -26,7 +26,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
 2. Make the following changes to the resource.
    * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which directs the gateway to use secret stores other than Vault.
    * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
-   * Add the `refreshRate` field to watch for changes in Vault secrets and the local filesystem of where Gloo Edge runs.
+   * Add the `refreshRate` field to configure the polling rate at which we watch for changes in Vault secrets and the local filesystem of where Gloo Edge runs.
    {{< highlight yaml "hl_lines=16-27" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
@@ -43,7 +43,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
        xdsBindAddr: 0.0.0.0:9977
      kubernetesArtifactSource: {}
      kubernetesConfigSource: {}
-     # Delete or comment out the existing \*SecretSource field
+     # Delete or comment out the existing *SecretSource field
      #kubernetesSecretSource: {}
      secretOptions:
        sources:
@@ -77,7 +77,7 @@ An example using AWS IAM auth might look like the following:
        xdsBindAddr: 0.0.0.0:9977
      kubernetesArtifactSource: {}
      kubernetesConfigSource: {}
-     # Delete or comment out the existing \*SecretSource field
+     # Delete or comment out the existing *SecretSource field
      #kubernetesSecretSource: {}
      secretOptions:
        sources:

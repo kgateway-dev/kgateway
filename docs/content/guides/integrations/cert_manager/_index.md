@@ -5,7 +5,7 @@ description: Secure your ingress traffic using Gloo Edge and cert-manager
 weight: 20
 ---
 
-Secure ingress traffic to your host domain by using Gloo Edge and cert-manager to manage your domain's certificates. 
+Secure ingress traffic to your host domain by using Gloo Edge and cert-manager to manage your domain's certificates.
 
 The guide includes examples for the following scenarios and Certificate Authorities (CA):
 * Verify domain ownership with the [DNS-01 challenge](#dns-01) with Let's Encrypt CA and cert-manager in an AWS environment.
@@ -128,7 +128,7 @@ For production environments, you can use AWS IAM roles for service accounts (IRS
      ]
    }
    EOF
-   
+
    aws iam create-policy \
        --policy-name AwsCertManagerToRoute53 \
        --policy-document file://policy.json
@@ -156,10 +156,10 @@ For production environments, you can use AWS IAM roles for service accounts (IRS
      ]
    }
    EOF
-   
+
    aws iam create-role --role-name EksCertManagerRole --assume-role-policy-document file://trust-policy.json
    aws iam attach-role-policy --policy-arn arn:aws:iam::${AWS_ACCOUNT}:policy/AwsCertManagerToRoute53 --role-name EksCertManagerRole
-   
+
    export IAM_ROLE_ARN=$(aws iam get-role --role-name EksCertManagerRole --query Role.Arn | tr -d '"')
    ```
 
@@ -263,9 +263,9 @@ Now that the AWS access is configured, you can configure the Gloo Edge resources
 
 ## Verify your domain with the ACME HTTP-01 Challenge {#http-01}
 
-To verify ownership of your domain, you can perform the ACME HTTP-01 challenge with cert-manager. The HTTP-01 challenge has the ACME server (Let's Encrypt) pass a token to your ACME client (cert-manager). The token is reachable on your domain along a "well known" at `http://<YOUR_DOMAIN>/.well-known/acme-challenge/<TOKEN>`. Unlike the DNS-01 challenge, the HTTP-01 challenge does not require you to change your DNS configuration. As such, you might use the HTTP-01 challenge when you want a simpler and automatable verification method. 
+To verify ownership of your domain, you can perform the ACME HTTP-01 challenge with cert-manager. The HTTP-01 challenge has the ACME server (Let's Encrypt) pass a token to your ACME client (cert-manager). The token is reachable on your domain along a "well known" at `http://<YOUR_DOMAIN>/.well-known/acme-challenge/<TOKEN>`. Unlike the DNS-01 challenge, the HTTP-01 challenge does not require you to change your DNS configuration. As such, you might use the HTTP-01 challenge when you want a simpler and automatable verification method.
 
-The following example shows how to perform this challenge in an AWS environment with Let's Encrypt as the CA. To use HashiCorp Vault instead, refer to [Use HashiCorp Vault as a Certificate Authority](#vault-ca). A `LoadBalancer` service in the cluster provides the external IP address. [nip.io](https://nip.io/) maps this IP address to a specific domain name via DNS. 
+The following example shows how to perform this challenge in an AWS environment with Let's Encrypt as the CA. To use HashiCorp Vault instead, refer to [Use HashiCorp Vault as a Certificate Authority](#vault-ca). A `LoadBalancer` service in the cluster provides the external IP address. [nip.io](https://nip.io/) maps this IP address to a specific domain name via DNS.
 
 {{% notice note %}}
 These steps are specific for Gloo Edge running in gateway mode. When running in ingress mode, cert-manager automatically creates the `Ingress` resources. Therefore, you can skip adding or modifying the VirtualService.
@@ -444,14 +444,14 @@ Cert-manager supports using HashiCorp Vault as a CA. For Gloo Edge to use the ce
 
 1. [Set up Vault as a CA by using the PKI secrets engine to generate certificates](https://developer.hashicorp.com/vault/docs/secrets/pki).
 2. [Create a cert-manager `Issuer` for the Vault CA](https://cert-manager.io/docs/configuration/vault/).
-3. If you use Vault to store other, non-TLS secrets along with the TLS certificates, then configure you default Gloo Edge Settings.
+3. If you use Vault to store other, non-TLS secrets, then configure your default Gloo Edge Settings.
    ```shell
    kubectl -n gloo-system edit settings default
    ```
 4. Update the Settings as follows:
    * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field.
    * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
-   * Add the `refreshRate` field to watch for changes in Vault secrets and the local filesystem of where Gloo Edge runs.
+   * Add the `refreshRate` field to configure the polling rate at which we watch for changes in Vault secrets.
    {{< highlight yaml "hl_lines=16-28" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
@@ -468,7 +468,7 @@ Cert-manager supports using HashiCorp Vault as a CA. For Gloo Edge to use the ce
        xdsBindAddr: 0.0.0.0:9977
      kubernetesArtifactSource: {}
      kubernetesConfigSource: {}
-     # Delete or comment out the existing \*SecretSource field
+     # Delete or comment out the existing *SecretSource field
      #kubernetesSecretSource: {}
      secretOptions:
        sources:
