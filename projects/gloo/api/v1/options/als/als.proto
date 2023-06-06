@@ -127,10 +127,10 @@ message StatusCodeFilter {
   }
   
   // Filters on total request duration in milliseconds.
-  message DurationFilter {  
+message DurationFilter {
     // Comparison.
     ComparisonFilter comparison = 1 [(validate.rules).message = {required: true}];
-  }
+}
 
 // Filters for requests that are not health check requests. A health check
 // request is marked by the health check filter.
