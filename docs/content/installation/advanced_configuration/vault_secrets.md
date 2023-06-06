@@ -24,9 +24,9 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
    ```
 
 2. Make the following changes to the resource.
-   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field.
-   * Add the `secretOptions` section with a Vault source specified to enable secrets to be read from Vault.
-   * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
+   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which directs the gateway to use secret stores other than Vault.
+   * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
+   * Add the `refreshRate` field to watch for changes in Vault secrets and the local filesystem of where Gloo Edge runs.
    {{< highlight yaml "hl_lines=16-27" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
@@ -49,11 +49,11 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
        sources:
        # Enable secrets to be read from and written to HashiCorp Vault
        - vault:
-         # Address that your Vault instance is routeable on
+         # Add the address that your Vault instance is routeable on
          address: http://vault:8200
          accessToken: root
-     # refresh rate for polling config backends for changes
-     # this is used for watching vault secrets and by other resource clients
+     # Add the refresh rate for polling config backends for changes
+     # This setting is used for watching vault secrets and by other resource clients
      refreshRate: 15s
      requestTimeout: 0.5s
    {{< /highlight >}}
