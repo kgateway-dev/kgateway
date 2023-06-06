@@ -63,7 +63,7 @@ func NewConsulFactory() (*ConsulFactory, error) {
 
 	bash := fmt.Sprintf(`
 set -ex
-CID=$(docker run -d  %s /bin/sh -c exit)
+CID=$(docker Run -d  %s /bin/sh -c exit)
 
 # just print the image sha for repoducibility
 echo "Using Consul Image:"
