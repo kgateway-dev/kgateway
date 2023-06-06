@@ -5,8 +5,8 @@ description: Secure your ingress traffic using Gloo Edge and cert-manager
 weight: 20
 ---
 
-This document shows how to secure your traffic using Gloo Edge, Let's Encrypt, and cert-manager. This guide assumes you already 
-have a Kubernetes cluster up and running. Further, it assumes your cluster has a load-balancer such that when 
+This document shows how to secure your traffic using Gloo Edge, Let's Encrypt, and cert-manager. This guide assumes you already
+have a Kubernetes cluster up and running. Further, it assumes your cluster has a load-balancer such that when
 Gloo Edge is installed, the proxy service is granted an external IP. This guide will show examples for both the DNS-01 and HTTP-01 challenges.
 
 ## Table of Contents
@@ -27,7 +27,7 @@ glooctl install gateway
 
 ### Install cert manager
 
-The official installation guide is [here](https://cert-manager.io/docs/installation/). 
+The official installation guide is [here](https://cert-manager.io/docs/installation/).
 You can install with static manifests or helm. For this example we will use the short version - static manifests:
 
 ```shell
@@ -45,13 +45,13 @@ Choose between the following options:
 * Development and testing environments: Use an [**AWS key pair**](#using-an-aws-key-pair).
 * Production environments: Use [**IAM roles for service accounts (IRSA)**](#using-aws-irsa).
 
-For more details on the access requirements for cert-manager, especially for cross-account cases that are not covered in this guide, see the cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/). 
+For more details on the access requirements for cert-manager, especially for cross-account cases that are not covered in this guide, see the cert manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/).
 
 
-In this example we used the domain name `test-123456789.solo.io`. We'll create an `A` record that maps to the IP address of the 
+In this example we used the domain name `test-123456789.solo.io`. We'll create an `A` record that maps to the IP address of the
 gateway proxy that we installed with Gloo Edge.
 
-You can run these commands to update AWS route53 through the AWS command line tool 
+You can run these commands to update AWS route53 through the AWS command line tool
 (remember to replace *HOSTED_ZONE* and *RECORD* with your values):
 
 ```shell
@@ -67,7 +67,7 @@ aws route53 change-resource-record-sets --hosted-zone-id $ROUTE53_ZONE_ID --chan
 
 #### Provide AWS account details to cert-manager
 
-Allow cert-manager access to configure DNS records in AWS. See cert-manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager. 
+Allow cert-manager access to configure DNS records in AWS. See cert-manager [docs](https://cert-manager.io/docs/configuration/acme/dns01/route53/) for more details on the access requirements for cert-manager.
 
 Once you have configured access, add the access keys as a Kubernetes secret, so that cert-manager can access them:
 
@@ -299,7 +299,7 @@ EOF
 
 ### Test!
 
-Now we can open the petclinic application at `https://test-123456789.solo.io/`. 
+Now we can open the petclinic application at `https://test-123456789.solo.io/`.
 
 ---
 
@@ -342,7 +342,7 @@ spec:
 EOF
 ```
 
-Notice the use of the `http01` solver. By default, cert-manager will create a `Service` of type `NodePort` to be routed via an `Ingress`. However, since we are running Gloo Edge in gateway mode, incoming traffic is routed via a `VirtualService` and does not require a `NodePort`, so we are explicitly setting the `serviceType` to `ClusterIP`. 
+Notice the use of the `http01` solver. By default, cert-manager will create a `Service` of type `NodePort` to be routed via an `Ingress`. However, since we are running Gloo Edge in gateway mode, incoming traffic is routed via a `VirtualService` and does not require a `NodePort`, so we are explicitly setting the `serviceType` to `ClusterIP`.
 
 Additionally, we are specifying the `dnsName` to be a [nip.io](https://nip.io/) subdomain with the IP of our external facing LoadBalancer IP. The inline command uses `glooctl proxy address` to get the external facing IP address of our proxy and we append the 'nip.io' domain, leaving us with a domain that looks something like: `34.71.xx.xx.nip.io`.
 
@@ -497,3 +497,52 @@ issuer=/CN=Fake LE Intermediate X1
 ```
 
 We have just confirmed that the service is accessible over the HTTPS port and the certificate from Let's Encrypt has been presented!
+
+## Using HashiCorp Vault as a Certificate Authority
+
+Cert-Manager supports using Vault as a CA. In order to configure this in a way which allows Gloo Edge to use the generated certificates, we need to have a Vault instance set up with a CA and we need to have Cert-Manager set up to use that Vault as an `Issuer`.
+- [Vault PKI guide](https://developer.hashicorp.com/vault/docs/secrets/pki)
+- [Cert-Manager with Vault Issuer guide](https://cert-manager.io/docs/configuration/vault/)
+
+If you are using Kubernetes to store your TLS and other secrets, that's it!
+
+If you are using Vault to store other, non-TLS secrets, then your Vault instance and Kubernetes can _both_ be configured as persistence layers for Gloo Edge to list/watch secrets.
+
+This can be done by editing the `Settings` resource to include `secretOptions`.
+2. Make the following changes to the resource.
+   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which direct the gateway to use other secret stores than Vault.
+   * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
+   * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
+   {{< highlight yaml "hl_lines=16-27" >}}
+   apiVersion: gloo.solo.io/v1
+   kind: Settings
+   metadata:
+     name: default
+     namespace: gloo-system
+   spec:
+     discoveryNamespace: gloo-system
+     gateway:
+       validation:
+         alwaysAccept: true
+         proxyValidationServerAddr: gloo:9988
+     gloo:
+       xdsBindAddr: 0.0.0.0:9977
+     kubernetesArtifactSource: {}
+     kubernetesConfigSource: {}
+     # Delete or comment out the existing \*SecretSource field
+     #kubernetesSecretSource: {}
+     secretOptions:
+       sources:
+       - kubernetes: {}
+       # Enable secrets to be read from and written to HashiCorp Vault
+       - vault:
+         # Address that your Vault instance is routeable on
+         address: http://vault:8200
+         accessToken: root
+     # refresh rate for polling config backends for changes
+     # this is used for watching vault secrets and by other resource clients
+     refreshRate: 15s
+     requestTimeout: 0.5s
+   {{< /highlight >}}
+
+An in-depth guide to configuring Vault as a secret source can be found in [this guide]({{< versioned_link_path fromRoot="/installation/advanced_configuration/vault_secrets">}}).

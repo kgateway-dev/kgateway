@@ -9,7 +9,7 @@ Use [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets
 When Gloo Edge boots, it reads the {{< protobuf name="gloo.solo.io.Settings">}} custom resource named `default` in the `gloo-system` namespace of your Kubernetes cluster to receive the proxy configuration for the gateway. By default, this configuration directs Gloo Edge to connect to and use Kubernetes as the secret store for your environment. If you want Gloo Edge to read and write secrets using a HashiCorp Vault instance instead of storing secrets directly in your Kubernetes cluster, you can edit the Settings custom resource to point the gateway proxy to Vault.
 
 {{% notice tip %}}
-Want to use Vault with Gloo Edge outside of Kubernetes instead? You can provide your settings file to Gloo Edge inside of a configuration directory when you [run Gloo Edge locally]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file">}}).
+Want to use Vault with Gloo Edge outside of Kubernetes instead? You can provide your settings file to Gloo Edge inside of a configuration directory when you [run Gloo Edge locally]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file">}})
 {{% /notice %}}
 
 ## Customizing the Gloo Edge settings file
@@ -24,10 +24,10 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
    ```
 
 2. Make the following changes to the resource.
-   * Remove the existing `kubernetesSecretSource` or `directorySecretSource` field, which direct the gateway to use other secret stores than Vault.
-   * Add the `vaultSecretSource` section to enable secrets to be read from and written to Vault.
+   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field.
+   * Add the `secretOptions` section with a Vault source specified to enable secrets to be read from Vault.
    * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
-   {{< highlight yaml "hl_lines=16-23" >}}
+   {{< highlight yaml "hl_lines=16-27" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
    metadata:
@@ -43,14 +43,15 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
        xdsBindAddr: 0.0.0.0:9977
      kubernetesArtifactSource: {}
      kubernetesConfigSource: {}
-     # Delete or comment out the existing
-     # kubernetesSecretSource or directorySecretSource field
+     # Delete or comment out the existing \*SecretSource field
      #kubernetesSecretSource: {}
-     # Enable secrets to be read from and written to HashiCorp Vault
-     vaultSecretSource:
-       # Address that your Vault instance is routeable on
-       address: http://vault:8200
-       accessToken: root
+     secretOptions:
+       sources:
+       # Enable secrets to be read from and written to HashiCorp Vault
+       - vault:
+         # Address that your Vault instance is routeable on
+         address: http://vault:8200
+         accessToken: root
      # refresh rate for polling config backends for changes
      # this is used for watching vault secrets and by other resource clients
      refreshRate: 15s
@@ -60,7 +61,7 @@ Edit the `default` settings resource so Gloo Edge reads and writes secrets using
 For the full list of options for Gloo Edge Settings, including the ability to set auth/TLS parameters for Vault, see the {{< protobuf name="gloo.solo.io.Settings" display="v1.Settings API reference">}}.
 
 An example using AWS IAM auth might look like the following:
-   {{< highlight yaml "hl_lines=16-29" >}}
+   {{< highlight yaml "hl_lines=16-30" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
    metadata:
@@ -76,20 +77,21 @@ An example using AWS IAM auth might look like the following:
        xdsBindAddr: 0.0.0.0:9977
      kubernetesArtifactSource: {}
      kubernetesConfigSource: {}
-     # Delete or comment out the existing
-     # kubernetesSecretSource or directorySecretSource field
+     # Delete or comment out the existing \*SecretSource field
      #kubernetesSecretSource: {}
-     # Enable secrets to be read from and written to HashiCorp Vault
-     vaultSecretSource:
-       # Address that your Vault instance is routeable on
-       address: http://vault:8200
-       aws:
-         vaultRole: vault-role
-         region: us-east-1
-         iamServerIdHeader: vault.example.com
-         accessKeyId: your-aws-iam-access-key-id
-         secretAccessKey: your-aws-iam-secret-access-key
-         sessionToken: your-aws-iam-session-token
+     secretOptions:
+       sources:
+       # Enable secrets to be read from and written to HashiCorp Vault
+       - vault:
+           # Address that your Vault instance is routeable on
+           address: http://vault:8200
+           aws:
+             vaultRole: vault-role
+             region: us-east-1
+             iamServerIdHeader: vault.example.com
+             accessKeyId: your-aws-iam-access-key-id
+             secretAccessKey: your-aws-iam-secret-access-key
+             sessionToken: your-aws-iam-session-token
      # refresh rate for polling config backends for changes
      # this is used for watching vault secrets and by other resource clients
      refreshRate: 15s
