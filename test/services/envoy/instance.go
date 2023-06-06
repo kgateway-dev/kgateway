@@ -60,6 +60,10 @@ type DockerOptions struct {
 	Env []string
 }
 
+func (ei *Instance) Run(port int) error {
+	return ei.RunWithRole(DefaultProxyName, port)
+}
+
 func (ei *Instance) RunWith(eic InstanceConfig) error {
 	return ei.runWithAll(eic, &templateBootstrapBuilder{
 		template: ei.defaultBootstrapTemplate,
