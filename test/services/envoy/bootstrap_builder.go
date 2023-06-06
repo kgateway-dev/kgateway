@@ -6,7 +6,7 @@ import (
 	"text/template"
 )
 
-type BootstrapBuilder interface {
+type bootstrapBuilder interface {
 	Build(ei *Instance) string
 }
 

@@ -145,7 +145,7 @@ func (eic *envoyInstanceConfig) Context() context.Context {
 	return eic.context
 }
 
-func (ei *Instance) runWithAll(eic InstanceConfig, bootstrapBuilder BootstrapBuilder) error {
+func (ei *Instance) runWithAll(eic InstanceConfig, bootstrapBuilder bootstrapBuilder) error {
 	go func() {
 		<-eic.Context().Done()
 		ei.Clean()

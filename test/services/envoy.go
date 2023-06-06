@@ -9,7 +9,6 @@ import (
 
 type EnvoyInstance = envoy.Instance
 type EnvoyFactory = envoy.Factory
-type EnvoyBootstrapBuilder = envoy.BootstrapBuilder
 type DockerOptions = envoy.DockerOptions
 
 const DefaultProxyName = envoy.DefaultProxyName
