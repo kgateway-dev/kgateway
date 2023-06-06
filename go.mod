@@ -12,6 +12,7 @@ require (
 	github.com/bshuster-repo/logrus-logstash-hook v1.0.0 // indirect
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/docker/cli v20.10.10+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v20.10.3+incompatible // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e // indirect
