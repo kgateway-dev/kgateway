@@ -4,6 +4,9 @@ ARG GOARCH=amd64
 
 RUN apk -U upgrade
 
+# Fix for CVE-2023-2650. If alpine upgrades this dep, we can remove this line.
+RUN apk add openssl=3.0.9-r1
+
 COPY gateway-linux-$GOARCH /usr/local/bin/gateway
 
 USER 10101
