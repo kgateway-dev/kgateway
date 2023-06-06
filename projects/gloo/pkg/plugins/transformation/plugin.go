@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/utils/lru"
 
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -25,6 +26,15 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
+
+type TransformationPlugin interface {
+	plugins.Plugin
+	ConvertTransformation(
+		ctx context.Context,
+		t *transformation.Transformations,
+		stagedTransformations *transformation.TransformationStages,
+	) (*envoytransformation.RouteTransformations, error)
+}
 
 var (
 	_ plugins.Plugin                    = new(Plugin)
@@ -111,7 +121,7 @@ func (p *Plugin) ProcessVirtualHost(
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
-	envoyTransformation, err := p.convertTransformation(
+	envoyTransformation, err := p.ConvertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
 		in.GetOptions().GetStagedTransformations(),
@@ -133,7 +143,7 @@ func (p *Plugin) ProcessVirtualHost(
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
-	envoyTransformation, err := p.convertTransformation(
+	envoyTransformation, err := p.ConvertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
 		in.GetOptions().GetStagedTransformations(),
@@ -158,7 +168,7 @@ func (p *Plugin) ProcessWeightedDestination(
 	in *v1.WeightedDestination,
 	out *envoy_config_route_v3.WeightedCluster_ClusterWeight,
 ) error {
-	envoyTransformation, err := p.convertTransformation(
+	envoyTransformation, err := p.ConvertTransformation(
 		params.Ctx,
 		in.GetOptions().GetTransformations(),
 		in.GetOptions().GetStagedTransformations(),
@@ -210,7 +220,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return filters, nil
 }
 
-func (p *Plugin) convertTransformation(
+func (p *Plugin) ConvertTransformation(
 	ctx context.Context,
 	t *transformation.Transformations,
 	stagedTransformations *transformation.TransformationStages,
@@ -230,6 +240,7 @@ func (p *Plugin) convertTransformation(
 		if err != nil {
 			return nil, err
 		}
+
 		ret.RequestTransformation = requestTransform
 		ret.ClearRouteCache = t.GetClearRouteCache()
 		ret.ResponseTransformation = responseTransform
@@ -263,6 +274,28 @@ func (p *Plugin) convertTransformation(
 		}
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
+
+	// need to support filter-level setting
+	logRequestResponseInfo := stagedTransformations.GetLogRequestResponseInfo().GetValue()
+
+	if logRequestResponseInfo {
+		for _, t := range ret.Transformations {
+			if requestMatch := t.GetRequestMatch(); requestMatch != nil {
+				if requestTransformation := requestMatch.GetRequestTransformation(); requestTransformation != nil {
+					requestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				}
+				if responseTransformation := requestMatch.GetResponseTransformation(); responseTransformation != nil {
+					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				}
+			}
+			if responseMatch := t.GetResponseMatch(); responseMatch != nil {
+				if responseTransformation := responseMatch.GetResponseTransformation(); responseTransformation != nil {
+					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				}
+			}
+		}
+	}
+
 	return ret, nil
 }
 
@@ -301,6 +334,11 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (
 	default:
 		return nil, UnknownTransformationType(typedTransformation)
 	}
+
+	if glooTransform.GetLogRequestResponseInfo() {
+		out.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+	}
+
 	return out, nil
 }
 
