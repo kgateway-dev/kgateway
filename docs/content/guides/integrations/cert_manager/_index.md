@@ -452,7 +452,7 @@ Cert-manager supports using HashiCorp Vault as a CA. For Gloo Edge to use the ce
    * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field.
    * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
    * Add the `refreshRate` field to watch for changes in Vault secrets and the local filesystem of where Gloo Edge runs.
-   {{< highlight yaml "hl_lines=16-27" >}}
+   {{< highlight yaml "hl_lines=16-28" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
    metadata:
