@@ -12,7 +12,7 @@
 
 VERSION 	?= 1.0.1-dev    # a basic version that can be overidden
 
-HUGO_VERSION := 0.113.0
+HUGO_VERSION := 0.81.0
 
 SOLO_HUGO_THEME_REVISION := v0.0.25
 
