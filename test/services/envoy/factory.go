@@ -99,7 +99,7 @@ func mustGetInstanceManager() *InstanceManager {
 
 		bash := fmt.Sprintf(`
 set -ex
-CID=$(docker Run -d  quay.io/solo-io/envoy-gloo:%s /bin/bash -c exit)
+CID=$(docker run -d  quay.io/solo-io/envoy-gloo:%s /bin/bash -c exit)
 
 # just print the image sha for repoducibility
 echo "Using Envoy Image:"

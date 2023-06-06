@@ -175,8 +175,7 @@ func (ei *Instance) runWithAll(eic InstanceConfig, bootstrapBuilder BootstrapBui
 	cmd.Stdout = w
 	cmd.Stderr = w
 
-	runner := Runner{Sourcepath: ei.envoypath, ComponentName: "ENVOY"}
-	cmd, err := runner.Run(cmd)
+	err := cmd.Start()
 	if err != nil {
 		return err
 	}

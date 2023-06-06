@@ -42,8 +42,10 @@ const (
 	// If a tag is not provided, the tests dynamically identify the latest released tag to use
 	EnvoyImageTag = "ENVOY_IMAGE_TAG"
 
+	// EnvoyBinary is used in e2e tests to specify the path to the envoy binary to use for the tests
 	EnvoyBinary = "ENVOY_BINARY"
 
+	// FetchEnvoyBinary is used in e2e tests to specify that the envoy binary should be fetched from the path
 	FetchEnvoyBinary = "FETCH_ENVOY_BINARY"
 )
 
