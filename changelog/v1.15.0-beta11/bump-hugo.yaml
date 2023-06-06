@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: gohugoio
+  dependencyRepo: hugo
+  dependencyTag: v0.81.0
+  description: >-
+    Bump hugo to include the commit which removes the arbitrary, hardcoded 1mb filesize limit.
+    skipCI-kube-tests:true
