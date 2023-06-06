@@ -35,5 +35,9 @@ RUN CGO_ENABLED=1 GOARCH=${GOARCH} GOOS=linux go build \
 
 
 FROM alpine:3.17.3
+
+# Fix for CVE-2023-2650. If alpine upgrades this dep, we can remove this line.
+RUN apk add openssl=3.0.9-r1
+
 ARG GOARCH
 COPY --from=build-env /go/src/github.com/solo-io/gloo/gloo-linux-${GOARCH} /
