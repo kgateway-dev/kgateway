@@ -40,7 +40,7 @@ type VaultFactory struct {
 
 // NewVaultFactory returns a VaultFactory
 // TODO (sam-heilbron):
-// TODO This factory supports a number of mechanisms to Run vault (binary path as env var, lookup vault, docker)
+// TODO This factory supports a number of mechanisms to run vault (binary path as env var, lookup vault, docker)
 // TODO We should just decide what pattern(s) we want to support and simplify this service to match
 func NewVaultFactory() (*VaultFactory, error) {
 	path := os.Getenv("VAULT_BINARY")
@@ -66,7 +66,7 @@ func NewVaultFactory() (*VaultFactory, error) {
 
 	bash := fmt.Sprintf(`
 set -ex
-CID=$(docker Run -d  %s /bin/sh -c exit)
+CID=$(docker run -d  %s /bin/sh -c exit)
 
 # just print the image sha for repoducibility
 echo "Using Vault Image:"

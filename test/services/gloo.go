@@ -128,7 +128,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	settings := constructTestSettings(runOptions)
 	ctx = settingsutil.WithSettings(ctx, settings)
 
-	// All Gloo Edge components Run using a Bootstrap.Opts object
+	// All Gloo Edge components run using a Bootstrap.Opts object
 	// These values are extracted from the Settings object and as part of our SetupSyncer
 	// we pull values off the Settings object to build the Bootstrap.Opts. It would be ideal if we
 	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality
