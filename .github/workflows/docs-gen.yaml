@@ -55,7 +55,7 @@ jobs:
         name: Determine Docs Build Strategy
         run: |
           should_build=true
-          
+
           is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
           if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
             should_build=false
@@ -100,7 +100,7 @@ jobs:
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v2
       with:
-        hugo-version: '0.69.2'
+        hugo-version: '0.113.0'
     - name: Generate versioned docs site
       run: make -C docs build-site
       env:
