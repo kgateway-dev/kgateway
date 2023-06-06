@@ -30,6 +30,9 @@ type Instance struct {
 
 	AccessLogAddr string
 	AccessLogPort uint32
+	// Path to access logs for binary run
+	AccessLogs string
+
 	RatelimitAddr string
 	RatelimitPort uint32
 	ID            string
