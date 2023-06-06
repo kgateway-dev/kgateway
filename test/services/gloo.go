@@ -72,177 +72,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// TestClients represents the set of ResourceClients available for tests
-type TestClients struct {
-	GatewayClient        gatewayv1.GatewayClient
-	HttpGatewayClient    gatewayv1.MatchableHttpGatewayClient
-	TcpGatewayClient     gatewayv1.MatchableTcpGatewayClient
-	VirtualServiceClient gatewayv1.VirtualServiceClient
-	ProxyClient          gloov1.ProxyClient
-	UpstreamClient       gloov1.UpstreamClient
-	SecretClient         gloov1.SecretClient
-	ArtifactClient       gloov1.ArtifactClient
-	ServiceClient        skkube.ServiceClient
-
-	AuthConfigClient      extauthv1.AuthConfigClient
-	RateLimitConfigClient v1alpha1.RateLimitConfigClient
-	GraphQLApiClient      graphqlv1beta1.GraphQLApiClient
-
-	GlooPort    int
-	RestXdsPort int
-}
-
-// WriteSnapshot writes all resources in the ApiSnapshot to the cache
-func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) error {
-	// We intentionally create child resources first to avoid having the validation webhook reject
-	// the parent resource
-
-	writeOptions := clients.WriteOpts{
-		Ctx:               ctx,
-		OverwriteExisting: false,
-	}
-	for _, secret := range snapshot.Secrets {
-		if _, writeErr := c.SecretClient.Write(secret, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, artifact := range snapshot.Artifacts {
-		if _, writeErr := c.ArtifactClient.Write(artifact, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, us := range snapshot.Upstreams {
-		if _, writeErr := c.UpstreamClient.Write(us, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, ac := range snapshot.AuthConfigs {
-		if _, writeErr := c.AuthConfigClient.Write(ac, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, rlc := range snapshot.Ratelimitconfigs {
-		if _, writeErr := c.RateLimitConfigClient.Write(rlc, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, gql := range snapshot.GraphqlApis {
-		if _, writeErr := c.GraphQLApiClient.Write(gql, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, vs := range snapshot.VirtualServices {
-		if _, writeErr := c.VirtualServiceClient.Write(vs, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, hgw := range snapshot.HttpGateways {
-		if _, writeErr := c.HttpGatewayClient.Write(hgw, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, tgw := range snapshot.TcpGateways {
-		if _, writeErr := c.TcpGatewayClient.Write(tgw, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, gw := range snapshot.Gateways {
-		if _, writeErr := c.GatewayClient.Write(gw, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-	for _, proxy := range snapshot.Proxies {
-		if _, writeErr := c.ProxyClient.Write(proxy, writeOptions); writeErr != nil {
-			return writeErr
-		}
-	}
-
-	return nil
-}
-
-// DeleteSnapshot deletes all resources in the ApiSnapshot from the cache
-func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) error {
-	// We intentionally delete resources in the reverse order that we create resources
-	// If we delete child resources first, the validation webhook may reject the change
-
-	deleteOptions := clients.DeleteOpts{
-		Ctx:            ctx,
-		IgnoreNotExist: true,
-	}
-
-	for _, gw := range snapshot.Gateways {
-		gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
-		if deleteErr := c.GatewayClient.Delete(gwNamespace, gwName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, hgw := range snapshot.HttpGateways {
-		hgwNamespace, hgwName := hgw.GetMetadata().Ref().Strings()
-		if deleteErr := c.HttpGatewayClient.Delete(hgwNamespace, hgwName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, tgw := range snapshot.TcpGateways {
-		tgwNamespace, tgwName := tgw.GetMetadata().Ref().Strings()
-		if deleteErr := c.TcpGatewayClient.Delete(tgwNamespace, tgwName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, vs := range snapshot.VirtualServices {
-		vsNamespace, vsName := vs.GetMetadata().Ref().Strings()
-		if deleteErr := c.VirtualServiceClient.Delete(vsNamespace, vsName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, gql := range snapshot.GraphqlApis {
-		gqlNamespace, gqlName := gql.GetMetadata().Ref().Strings()
-		if deleteErr := c.GraphQLApiClient.Delete(gqlNamespace, gqlName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, rlc := range snapshot.Ratelimitconfigs {
-		rlcNamespace, rlcName := rlc.GetMetadata().Ref().Strings()
-		if deleteErr := c.GraphQLApiClient.Delete(rlcNamespace, rlcName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, ac := range snapshot.AuthConfigs {
-		acNamespace, acName := ac.GetMetadata().Ref().Strings()
-		if deleteErr := c.GraphQLApiClient.Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, us := range snapshot.Upstreams {
-		usNamespace, usName := us.GetMetadata().Ref().Strings()
-		if deleteErr := c.UpstreamClient.Delete(usNamespace, usName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, artifact := range snapshot.Artifacts {
-		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
-		if deleteErr := c.ArtifactClient.Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-	for _, secret := range snapshot.Secrets {
-		secretNamespace, secretName := secret.GetMetadata().Ref().Strings()
-		if deleteErr := c.SecretClient.Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-
-	// Proxies are auto generated by Gateway resources
-	// Therefore we delete Proxies after we have deleted the resources that may regenerate a Proxy
-	for _, proxy := range snapshot.Proxies {
-		proxyNamespace, proxyName := proxy.GetMetadata().Ref().Strings()
-		if deleteErr := c.ProxyClient.Delete(proxyNamespace, proxyName, deleteOptions); deleteErr != nil {
-			return deleteErr
-		}
-	}
-
-	return nil
-}
-
 var glooPortBase = int32(30400)
 
 func AllocateGlooPort() int32 {
@@ -256,17 +85,17 @@ type RunOptions struct {
 	WhatToRun What
 	Settings  *gloov1.Settings
 
-	// Deprecated: do not write tests that require a kube client
+	// ExtensionsBuilders are injection points for Enterprise functionality
+	ExtensionsBuilders ExtensionsBuilders
+
+	// ports are not intended to be set by developers
+	// This is just a convenient way to pass the ports from the test to the setup functions
+	ports Ports
+
+	// Deprecated: do not write tests that require a Kubernetes client
 	// This is an artifact of legacy tests which interacted with Kubernetes directly
 	// If you need a KubeClient, you should be introducing a test in the `test/kube2e` package
 	KubeClient kubernetes.Interface
-
-	// ExtensionsBuilders are injection point for Enterprise extensions
-	ExtensionsBuilders ExtensionsBuilders
-
-	// ports are not intended to be set by the users
-	// This is just a convenient way to pass the ports from the test to the setup functions
-	ports Ports
 }
 
 type What struct {
@@ -286,7 +115,8 @@ type ExtensionsBuilders struct {
 	Fds  func(ctx context.Context, opts bootstrap.Opts) fds_syncer.Extensions
 }
 
-//goland:noinspection GoUnhandledErrorResult
+// RunGlooGatewayUdsFds runs the Gloo Edge control plane components in goroutines and stores
+// configuration in-memory. This is used by the e2e tests in `test/e2e` package.
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
 	runOptions.ports = Ports{
 		Gloo:       AllocateGlooPort(),
@@ -305,21 +135,27 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	go func() {
 		defer GinkgoRecover()
-		glooExtensions := runOptions.ExtensionsBuilders.Gloo(ctx, bootstrapOpts)
-		setup.RunGlooWithExtensions(bootstrapOpts, glooExtensions)
+		var glooExtensions setup.Extensions
+		if runOptions.ExtensionsBuilders.Gloo != nil {
+			glooExtensions = runOptions.ExtensionsBuilders.Gloo(ctx, bootstrapOpts)
+		}
+		_ = setup.RunGlooWithExtensions(bootstrapOpts, glooExtensions)
 	}()
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
-			fdsExtensions := runOptions.ExtensionsBuilders.Fds(ctx, bootstrapOpts)
-			fds_syncer.RunFDSWithExtensions(bootstrapOpts, fdsExtensions)
+			var fdsExtensions fds_syncer.Extensions
+			if runOptions.ExtensionsBuilders.Fds != nil {
+				fdsExtensions = runOptions.ExtensionsBuilders.Fds(ctx, bootstrapOpts)
+			}
+			_ = fds_syncer.RunFDSWithExtensions(bootstrapOpts, fdsExtensions)
 		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
 		go func() {
 			defer GinkgoRecover()
-			uds_syncer.RunUDS(bootstrapOpts)
+			_ = uds_syncer.RunUDS(bootstrapOpts)
 		}()
 	}
 
@@ -327,48 +163,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	testClients.GlooPort = int(runOptions.ports.Gloo)
 	testClients.RestXdsPort = int(runOptions.ports.RestXds)
 	return testClients
-}
-
-func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClients {
-	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, bootstrapOpts.Gateways)
-	Expect(err).NotTo(HaveOccurred())
-	httpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, bootstrapOpts.MatchableHttpGateways)
-	Expect(err).NotTo(HaveOccurred())
-	tcpGatewayClient, err := gatewayv1.NewMatchableTcpGatewayClient(ctx, bootstrapOpts.MatchableTcpGateways)
-	Expect(err).NotTo(HaveOccurred())
-	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, bootstrapOpts.VirtualServices)
-	Expect(err).NotTo(HaveOccurred())
-	upstreamClient, err := gloov1.NewUpstreamClient(ctx, bootstrapOpts.Upstreams)
-	Expect(err).NotTo(HaveOccurred())
-	secretClient, err := gloov1.NewSecretClient(ctx, bootstrapOpts.Secrets)
-	Expect(err).NotTo(HaveOccurred())
-	artifactClient, err := gloov1.NewArtifactClient(ctx, bootstrapOpts.Artifacts)
-	Expect(err).NotTo(HaveOccurred())
-	proxyClient, err := gloov1.NewProxyClient(ctx, bootstrapOpts.Proxies)
-	Expect(err).NotTo(HaveOccurred())
-
-	authConfigClient, err := extauthv1.NewAuthConfigClient(ctx, bootstrapOpts.AuthConfigs)
-	Expect(err).NotTo(HaveOccurred())
-	rlcClient, err := v1alpha1.NewRateLimitConfigClient(ctx, bootstrapOpts.RateLimitConfigs)
-	Expect(err).NotTo(HaveOccurred())
-	gqlClient, err := graphqlv1beta1.NewGraphQLApiClient(ctx, bootstrapOpts.GraphQLApis)
-	Expect(err).NotTo(HaveOccurred())
-
-	return TestClients{
-		GatewayClient:        gatewayClient,
-		HttpGatewayClient:    httpGatewayClient,
-		TcpGatewayClient:     tcpGatewayClient,
-		VirtualServiceClient: virtualServiceClient,
-		UpstreamClient:       upstreamClient,
-		SecretClient:         secretClient,
-		ArtifactClient:       artifactClient,
-		ProxyClient:          proxyClient,
-		ServiceClient:        bootstrapOpts.KubeServiceClient,
-
-		AuthConfigClient:      authConfigClient,
-		RateLimitConfigClient: rlcClient,
-		GraphQLApiClient:      gqlClient,
-	}
 }
 
 func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
@@ -607,4 +401,217 @@ func newServiceClient(ctx context.Context, memFactory *factory.MemoryResourceCli
 		panic(err)
 	}
 	return client
+}
+
+func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClients {
+	gatewayClient, err := gatewayv1.NewGatewayClient(ctx, bootstrapOpts.Gateways)
+	Expect(err).NotTo(HaveOccurred())
+	httpGatewayClient, err := gatewayv1.NewMatchableHttpGatewayClient(ctx, bootstrapOpts.MatchableHttpGateways)
+	Expect(err).NotTo(HaveOccurred())
+	tcpGatewayClient, err := gatewayv1.NewMatchableTcpGatewayClient(ctx, bootstrapOpts.MatchableTcpGateways)
+	Expect(err).NotTo(HaveOccurred())
+	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, bootstrapOpts.VirtualServices)
+	Expect(err).NotTo(HaveOccurred())
+	upstreamClient, err := gloov1.NewUpstreamClient(ctx, bootstrapOpts.Upstreams)
+	Expect(err).NotTo(HaveOccurred())
+	secretClient, err := gloov1.NewSecretClient(ctx, bootstrapOpts.Secrets)
+	Expect(err).NotTo(HaveOccurred())
+	artifactClient, err := gloov1.NewArtifactClient(ctx, bootstrapOpts.Artifacts)
+	Expect(err).NotTo(HaveOccurred())
+	proxyClient, err := gloov1.NewProxyClient(ctx, bootstrapOpts.Proxies)
+	Expect(err).NotTo(HaveOccurred())
+
+	authConfigClient, err := extauthv1.NewAuthConfigClient(ctx, bootstrapOpts.AuthConfigs)
+	Expect(err).NotTo(HaveOccurred())
+	rlcClient, err := v1alpha1.NewRateLimitConfigClient(ctx, bootstrapOpts.RateLimitConfigs)
+	Expect(err).NotTo(HaveOccurred())
+	gqlClient, err := graphqlv1beta1.NewGraphQLApiClient(ctx, bootstrapOpts.GraphQLApis)
+	Expect(err).NotTo(HaveOccurred())
+
+	return TestClients{
+		GatewayClient:        gatewayClient,
+		HttpGatewayClient:    httpGatewayClient,
+		TcpGatewayClient:     tcpGatewayClient,
+		VirtualServiceClient: virtualServiceClient,
+		UpstreamClient:       upstreamClient,
+		SecretClient:         secretClient,
+		ArtifactClient:       artifactClient,
+		ProxyClient:          proxyClient,
+		ServiceClient:        bootstrapOpts.KubeServiceClient,
+
+		AuthConfigClient:      authConfigClient,
+		RateLimitConfigClient: rlcClient,
+		GraphQLApiClient:      gqlClient,
+	}
+}
+
+// TestClients represents the set of ResourceClients available for tests
+type TestClients struct {
+	GatewayClient        gatewayv1.GatewayClient
+	HttpGatewayClient    gatewayv1.MatchableHttpGatewayClient
+	TcpGatewayClient     gatewayv1.MatchableTcpGatewayClient
+	VirtualServiceClient gatewayv1.VirtualServiceClient
+	ProxyClient          gloov1.ProxyClient
+	UpstreamClient       gloov1.UpstreamClient
+	SecretClient         gloov1.SecretClient
+	ArtifactClient       gloov1.ArtifactClient
+	ServiceClient        skkube.ServiceClient
+
+	AuthConfigClient      extauthv1.AuthConfigClient
+	RateLimitConfigClient v1alpha1.RateLimitConfigClient
+	GraphQLApiClient      graphqlv1beta1.GraphQLApiClient
+
+	GlooPort    int
+	RestXdsPort int
+}
+
+// WriteSnapshot writes all resources in the ApiSnapshot to the cache
+func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) error {
+	// We intentionally create child resources first to avoid having the validation webhook reject
+	// the parent resource
+
+	writeOptions := clients.WriteOpts{
+		Ctx:               ctx,
+		OverwriteExisting: false,
+	}
+	for _, secret := range snapshot.Secrets {
+		if _, writeErr := c.SecretClient.Write(secret, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, artifact := range snapshot.Artifacts {
+		if _, writeErr := c.ArtifactClient.Write(artifact, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, us := range snapshot.Upstreams {
+		if _, writeErr := c.UpstreamClient.Write(us, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, ac := range snapshot.AuthConfigs {
+		if _, writeErr := c.AuthConfigClient.Write(ac, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, rlc := range snapshot.Ratelimitconfigs {
+		if _, writeErr := c.RateLimitConfigClient.Write(rlc, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, gql := range snapshot.GraphqlApis {
+		if _, writeErr := c.GraphQLApiClient.Write(gql, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, vs := range snapshot.VirtualServices {
+		if _, writeErr := c.VirtualServiceClient.Write(vs, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, hgw := range snapshot.HttpGateways {
+		if _, writeErr := c.HttpGatewayClient.Write(hgw, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, tgw := range snapshot.TcpGateways {
+		if _, writeErr := c.TcpGatewayClient.Write(tgw, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, gw := range snapshot.Gateways {
+		if _, writeErr := c.GatewayClient.Write(gw, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, proxy := range snapshot.Proxies {
+		if _, writeErr := c.ProxyClient.Write(proxy, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+
+	return nil
+}
+
+// DeleteSnapshot deletes all resources in the ApiSnapshot from the cache
+func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.ApiSnapshot) error {
+	// We intentionally delete resources in the reverse order that we create resources
+	// If we delete child resources first, the validation webhook may reject the change
+
+	deleteOptions := clients.DeleteOpts{
+		Ctx:            ctx,
+		IgnoreNotExist: true,
+	}
+
+	for _, gw := range snapshot.Gateways {
+		gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
+		if deleteErr := c.GatewayClient.Delete(gwNamespace, gwName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, hgw := range snapshot.HttpGateways {
+		hgwNamespace, hgwName := hgw.GetMetadata().Ref().Strings()
+		if deleteErr := c.HttpGatewayClient.Delete(hgwNamespace, hgwName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, tgw := range snapshot.TcpGateways {
+		tgwNamespace, tgwName := tgw.GetMetadata().Ref().Strings()
+		if deleteErr := c.TcpGatewayClient.Delete(tgwNamespace, tgwName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, vs := range snapshot.VirtualServices {
+		vsNamespace, vsName := vs.GetMetadata().Ref().Strings()
+		if deleteErr := c.VirtualServiceClient.Delete(vsNamespace, vsName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, gql := range snapshot.GraphqlApis {
+		gqlNamespace, gqlName := gql.GetMetadata().Ref().Strings()
+		if deleteErr := c.GraphQLApiClient.Delete(gqlNamespace, gqlName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, rlc := range snapshot.Ratelimitconfigs {
+		rlcNamespace, rlcName := rlc.GetMetadata().Ref().Strings()
+		if deleteErr := c.GraphQLApiClient.Delete(rlcNamespace, rlcName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, ac := range snapshot.AuthConfigs {
+		acNamespace, acName := ac.GetMetadata().Ref().Strings()
+		if deleteErr := c.GraphQLApiClient.Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, us := range snapshot.Upstreams {
+		usNamespace, usName := us.GetMetadata().Ref().Strings()
+		if deleteErr := c.UpstreamClient.Delete(usNamespace, usName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, artifact := range snapshot.Artifacts {
+		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
+		if deleteErr := c.ArtifactClient.Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, secret := range snapshot.Secrets {
+		secretNamespace, secretName := secret.GetMetadata().Ref().Strings()
+		if deleteErr := c.SecretClient.Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+
+	// Proxies are auto generated by Gateway resources
+	// Therefore we delete Proxies after we have deleted the resources that may regenerate a Proxy
+	for _, proxy := range snapshot.Proxies {
+		proxyNamespace, proxyName := proxy.GetMetadata().Ref().Strings()
+		if deleteErr := c.ProxyClient.Delete(proxyNamespace, proxyName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+
+	return nil
 }
