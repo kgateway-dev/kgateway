@@ -135,21 +135,24 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	go func() {
 		defer GinkgoRecover()
-		var glooExtensions setup.Extensions
-		if runOptions.ExtensionsBuilders.Gloo != nil {
-			glooExtensions = runOptions.ExtensionsBuilders.Gloo(ctx, bootstrapOpts)
+
+		if runOptions.ExtensionsBuilders.Gloo == nil {
+			_ = setup.RunGloo(bootstrapOpts)
+		} else {
+			glooExtensions := runOptions.ExtensionsBuilders.Gloo(ctx, bootstrapOpts)
+			_ = setup.RunGlooWithExtensions(bootstrapOpts, glooExtensions)
 		}
-		_ = setup.RunGlooWithExtensions(bootstrapOpts, glooExtensions)
 	}()
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
-			var fdsExtensions fds_syncer.Extensions
-			if runOptions.ExtensionsBuilders.Fds != nil {
-				fdsExtensions = runOptions.ExtensionsBuilders.Fds(ctx, bootstrapOpts)
+			if runOptions.ExtensionsBuilders.Fds == nil {
+				_ = fds_syncer.RunFDS(bootstrapOpts)
+			} else {
+				fdsExtensions := runOptions.ExtensionsBuilders.Fds(ctx, bootstrapOpts)
+				_ = fds_syncer.RunFDSWithExtensions(bootstrapOpts, fdsExtensions)
 			}
-			_ = fds_syncer.RunFDSWithExtensions(bootstrapOpts, fdsExtensions)
 		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
