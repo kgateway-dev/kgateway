@@ -1,0 +1,10 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: docker
+  dependencyRepo: distribution
+  dependencyTag: v2.8.2+incompatible
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/8348
+  description: >
+    Upgrade docker distribution dependency to fix CVE-2023-2253.
+    Upgrade openssl version in kubectl image to fix CVE-2023-2650.
