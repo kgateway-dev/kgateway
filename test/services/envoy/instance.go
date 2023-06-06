@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/solo-io/gloo/test/services"
-
 	"sync"
 	"text/template"
 	"time"
@@ -167,7 +165,7 @@ func (ei *Instance) runWithAll(eic InstanceConfig, bootstrapBuilder BootstrapBui
 	cmd.Stdout = w
 	cmd.Stderr = w
 
-	runner := services.Runner{Sourcepath: ei.envoypath, ComponentName: "ENVOY"}
+	runner := Runner{Sourcepath: ei.envoypath, ComponentName: "ENVOY"}
 	cmd, err := runner.Run(cmd)
 	if err != nil {
 		return err
