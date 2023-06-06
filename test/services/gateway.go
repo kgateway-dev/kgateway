@@ -3,6 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	graphqlv1beta1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/graphql/v1beta1"
+
 	"net"
 	"net/http"
 	"reflect"
@@ -79,8 +83,13 @@ type TestClients struct {
 	SecretClient         gloov1.SecretClient
 	ArtifactClient       gloov1.ArtifactClient
 	ServiceClient        skkube.ServiceClient
-	GlooPort             int
-	RestXdsPort          int
+
+	AuthConfigClient      extauthv1.AuthConfigClient
+	RateLimitConfigClient v1alpha1.RateLimitConfigClient
+	GraphQLApiClient      graphqlv1beta1.GraphQLApiClient
+
+	GlooPort    int
+	RestXdsPort int
 }
 
 // WriteSnapshot writes all resources in the ApiSnapshot to the cache
@@ -104,6 +113,21 @@ func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.A
 	}
 	for _, us := range snapshot.Upstreams {
 		if _, writeErr := c.UpstreamClient.Write(us, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, ac := range snapshot.AuthConfigs {
+		if _, writeErr := c.AuthConfigClient.Write(ac, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, rlc := range snapshot.Ratelimitconfigs {
+		if _, writeErr := c.RateLimitConfigClient.Write(rlc, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, gql := range snapshot.GraphqlApis {
+		if _, writeErr := c.GraphQLApiClient.Write(gql, writeOptions); writeErr != nil {
 			return writeErr
 		}
 	}
@@ -170,6 +194,24 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 			return deleteErr
 		}
 	}
+	for _, gql := range snapshot.GraphqlApis {
+		gqlNamespace, gqlName := gql.GetMetadata().Ref().Strings()
+		if deleteErr := c.GraphQLApiClient.Delete(gqlNamespace, gqlName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, rlc := range snapshot.Ratelimitconfigs {
+		rlcNamespace, rlcName := rlc.GetMetadata().Ref().Strings()
+		if deleteErr := c.GraphQLApiClient.Delete(rlcNamespace, rlcName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, ac := range snapshot.AuthConfigs {
+		acNamespace, acName := ac.GetMetadata().Ref().Strings()
+		if deleteErr := c.GraphQLApiClient.Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
 	for _, us := range snapshot.Upstreams {
 		usNamespace, usName := us.GetMetadata().Ref().Strings()
 		if deleteErr := c.UpstreamClient.Delete(usNamespace, usName, deleteOptions); deleteErr != nil {
@@ -207,33 +249,49 @@ func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(parallel.GetPortOffset())
 }
 
+// RunOptions are options for running an in-memory e2e test
+type RunOptions struct {
+	NsToWrite string
+	NsToWatch []string
+	WhatToRun What
+	Settings  *gloov1.Settings
+
+	// Deprecated: do not write tests that require a kube client
+	// This is an artifact of legacy tests which interacted with Kubernetes directly
+	// If you need a KubeClient, you should be introducing a test in the `test/kube2e` package
+	KubeClient kubernetes.Interface
+
+	// ExtensionsBuilders are injection point for Enterprise extensions
+	ExtensionsBuilders ExtensionsBuilders
+
+	// ports are not intended to be set by the users
+	// This is just a convenient way to pass the ports from the test to the setup functions
+	ports Ports
+}
+
 type What struct {
 	DisableGateway bool
 	DisableUds     bool
 	DisableFds     bool
 }
 
-type RunOptions struct {
-	NsToWrite      string
-	NsToWatch      []string
-	WhatToRun      What
-	GlooPort       int32
-	ValidationPort int32
-	RestXdsPort    int32
-	Settings       *gloov1.Settings
-	KubeClient     kubernetes.Interface
+type Ports struct {
+	Gloo       int32
+	Validation int32
+	RestXds    int32
+}
+
+type ExtensionsBuilders struct {
+	Gloo func(ctx context.Context, opts bootstrap.Opts) setup.Extensions
+	Fds  func(ctx context.Context, opts bootstrap.Opts) fds_syncer.Extensions
 }
 
 //goland:noinspection GoUnhandledErrorResult
 func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClients {
-	if runOptions.GlooPort == 0 {
-		runOptions.GlooPort = AllocateGlooPort()
-	}
-	if runOptions.ValidationPort == 0 {
-		runOptions.ValidationPort = AllocateGlooPort()
-	}
-	if runOptions.RestXdsPort == 0 {
-		runOptions.RestXdsPort = AllocateGlooPort()
+	runOptions.ports = Ports{
+		Gloo:       AllocateGlooPort(),
+		Validation: AllocateGlooPort(),
+		RestXds:    AllocateGlooPort(),
 	}
 
 	settings := constructTestSettings(runOptions)
@@ -245,12 +303,17 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality
 	bootstrapOpts := constructTestOpts(ctx, runOptions, settings)
 
-	go setup.RunGloo(bootstrapOpts)
+	go func() {
+		defer GinkgoRecover()
+		glooExtensions := runOptions.ExtensionsBuilders.Gloo(ctx, bootstrapOpts)
+		setup.RunGlooWithExtensions(bootstrapOpts, glooExtensions)
+	}()
 
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
-			fds_syncer.RunFDS(bootstrapOpts)
+			fdsExtensions := runOptions.ExtensionsBuilders.Fds(ctx, bootstrapOpts)
+			fds_syncer.RunFDSWithExtensions(bootstrapOpts, fdsExtensions)
 		}()
 	}
 	if !runOptions.WhatToRun.DisableUds {
@@ -261,8 +324,8 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	}
 
 	testClients := getTestClients(ctx, bootstrapOpts)
-	testClients.GlooPort = int(runOptions.GlooPort)
-	testClients.RestXdsPort = int(runOptions.RestXdsPort)
+	testClients.GlooPort = int(runOptions.ports.Gloo)
+	testClients.RestXdsPort = int(runOptions.ports.RestXds)
 	return testClients
 }
 
@@ -284,6 +347,13 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 	proxyClient, err := gloov1.NewProxyClient(ctx, bootstrapOpts.Proxies)
 	Expect(err).NotTo(HaveOccurred())
 
+	authConfigClient, err := extauthv1.NewAuthConfigClient(ctx, bootstrapOpts.AuthConfigs)
+	Expect(err).NotTo(HaveOccurred())
+	rlcClient, err := v1alpha1.NewRateLimitConfigClient(ctx, bootstrapOpts.RateLimitConfigs)
+	Expect(err).NotTo(HaveOccurred())
+	gqlClient, err := graphqlv1beta1.NewGraphQLApiClient(ctx, bootstrapOpts.GraphQLApis)
+	Expect(err).NotTo(HaveOccurred())
+
 	return TestClients{
 		GatewayClient:        gatewayClient,
 		HttpGatewayClient:    httpGatewayClient,
@@ -294,6 +364,10 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 		ArtifactClient:       artifactClient,
 		ProxyClient:          proxyClient,
 		ServiceClient:        bootstrapOpts.KubeServiceClient,
+
+		AuthConfigClient:      authConfigClient,
+		RateLimitConfigClient: rlcClient,
+		GraphQLApiClient:      gqlClient,
 	}
 }
 
@@ -305,7 +379,7 @@ func constructTestSettings(runOptions *RunOptions) *gloov1.Settings {
 		DevMode:            true,
 		Gloo: &gloov1.GlooOptions{
 			RemoveUnusedFilters: &wrappers.BoolValue{Value: true},
-			RestXdsBindAddr:     fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.RestXdsPort),
+			RestXdsBindAddr:     fmt.Sprintf("%s:%d", net.IPv4zero.String(), runOptions.ports.RestXds),
 			EnableRestEds:       &wrappers.BoolValue{Value: false},
 			// Invalid Routes can be difficult to track down
 			// By creating a Response Code and Body that are unique, hopefully it is easier to identify situations
@@ -472,11 +546,11 @@ func constructTestOpts(ctx context.Context, runOptions *RunOptions, settings *gl
 		},
 		ControlPlane: setup.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
-			Port: int(runOptions.GlooPort),
+			Port: int(runOptions.ports.Gloo),
 		}, nil, true),
 		ValidationServer: setup.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
 			IP:   net.IPv4zero,
-			Port: int(runOptions.ValidationPort),
+			Port: int(runOptions.ports.Validation),
 		}, true),
 		ProxyDebugServer: setup.NewProxyDebugServer(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.IPv4zero,
