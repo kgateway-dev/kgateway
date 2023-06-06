@@ -440,19 +440,14 @@ You just confirmed that the service is accessible over the HTTPS port and that E
 
 ## Use HashiCorp Vault as a Certificate Authority {#vault-ca}
 
-Cert-Manager supports using Vault as a CA. In order to configure this in a way which allows Gloo Edge to use the generated certificates, we need to have a Vault instance set up with a CA and we need to have Cert-Manager set up to use that Vault as an `Issuer`.
-- [Vault PKI guide](https://developer.hashicorp.com/vault/docs/secrets/pki)
-- [Cert-Manager with Vault Issuer guide](https://cert-manager.io/docs/configuration/vault/)
+Cert-manager supports using HashiCorp Vault as a CA. For Gloo Edge to use the certificates from Vault, you must set up a Vault instance as the CA. Then, set up cert-manager to use that Vault instance as an `Issuer`.
 
-If you are using Kubernetes to store your TLS and other secrets, that's it!
-
-If you are using Vault to store other, non-TLS secrets, then your Vault instance and Kubernetes can _both_ be configured as persistence layers for Gloo Edge to list/watch secrets.
-
-This can be done by editing the `Settings` resource to include `secretOptions`.
-2. Make the following changes to the resource.
-   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which direct the gateway to use other secret stores than Vault.
+1. [Set up Vault as a CA by using the PKI secrets engine to generate certificates](https://developer.hashicorp.com/vault/docs/secrets/pki).
+2. [Create a cert-manager `Issuer` for the Vault CA](https://cert-manager.io/docs/configuration/vault/).
+3. If you use Vault to store other, non-TLS secrets along with the TLS certificates, then configure you default Gloo Edge Settingsto use Vault in the `secretOptions`.
+   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which directs the gateway to use secret stores other than Vault.
    * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
-   * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
+   * Add the `refreshRate` field to watch for changes in Vault secrets and the local filesystem of where Gloo Edge runs.
    {{< highlight yaml "hl_lines=16-27" >}}
    apiVersion: gloo.solo.io/v1
    kind: Settings
@@ -476,13 +471,13 @@ This can be done by editing the `Settings` resource to include `secretOptions`.
        - kubernetes: {}
        # Enable secrets to be read from and written to HashiCorp Vault
        - vault:
-         # Address that your Vault instance is routeable on
+         # Add the address that your Vault instance is routeable on
          address: http://vault:8200
          accessToken: root
-     # refresh rate for polling config backends for changes
-     # this is used for watching vault secrets and by other resource clients
+     # Add the refresh rate for polling config backends for changes
+     # This setting is used for watching vault secrets and by other resource clients
      refreshRate: 15s
      requestTimeout: 0.5s
    {{< /highlight >}}
 
-An in-depth guide to configuring Vault as a secret source can be found in [this guide]({{< versioned_link_path fromRoot="/installation/advanced_configuration/vault_secrets">}}).
+For a more in-depth guide to configuring Vault as a secret source, refer to [Storing Gloo Edge secrets in HashiCorp Vault]({{< versioned_link_path fromRoot="/installation/advanced_configuration/vault_secrets">}}).
