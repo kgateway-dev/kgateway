@@ -22,7 +22,6 @@ import (
 )
 
 type Factory interface {
-	MustInstanceManager() *InstanceManager
 	MustEnvoyInstance() *Instance
 	NewEnvoyInstance() (*Instance, error)
 	MustClean()
@@ -42,20 +41,16 @@ func MustEnvoyFactory() *factoryImpl {
 	}
 }
 
-func (g *factoryImpl) MustInstanceManager() *InstanceManager {
-	return g.instanceManager
-}
-
 func (g *factoryImpl) MustEnvoyInstance() *Instance {
-	return g.MustInstanceManager().MustEnvoyInstance()
+	return g.instanceManager.MustEnvoyInstance()
 }
 
 func (g *factoryImpl) NewEnvoyInstance() (*Instance, error) {
-	return g.MustInstanceManager().NewEnvoyInstance()
+	return g.instanceManager.NewEnvoyInstance()
 }
 
 func (g *factoryImpl) MustClean() {
-	if err := g.MustInstanceManager().Clean(); err != nil {
+	if err := g.instanceManager.Clean(); err != nil {
 		ginkgo.Fail(fmt.Sprintf("failed to clean up envoy instances: %v", err))
 	}
 }
