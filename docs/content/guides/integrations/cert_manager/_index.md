@@ -509,8 +509,13 @@ If you are using Kubernetes to store your TLS and other secrets, that's it!
 If you are using Vault to store other, non-TLS secrets, then your Vault instance and Kubernetes can _both_ be configured as persistence layers for Gloo Edge to list/watch secrets.
 
 This can be done by editing the `Settings` resource to include `secretOptions`.
+1. Edit the `default` settings resource.
+   ```shell script
+   kubectl --namespace gloo-system edit settings default
+   ```
+
 2. Make the following changes to the resource.
-   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field, which direct the gateway to use other secret stores than Vault.
+   * Remove the existing `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` field.
    * Add the `secretOptions` section with a Kubernetes source and a Vault source specified to enable secrets to be read from both Kubernetes and Vault.
    * Add the `refreshRate` field, which is used for watching Vault secrets and the local filesystem of where Gloo Edge is run for changes.
    {{< highlight yaml "hl_lines=16-27" >}}
