@@ -139,6 +139,9 @@ func translateFilter(accessLog *envoyal.AccessLog, inFilter *als.AccessLogFilter
 }
 
 var (
+	NoValueError = func(filterName string, fieldName string) error {
+		return eris.Errorf("No value found for field %s of %s", fieldName, filterName)
+	}
 	InvalidEnumValueError = func(filterName string, fieldName string, value string) error {
 		return eris.Errorf("Invalid value of %s in Enum field %s of %s", value, fieldName, filterName)
 	}
@@ -155,17 +158,35 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 		if name == "" {
 			return InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", denominator.String())
 		}
+		runtimeKey := filter.RuntimeFilter.GetRuntimeKey()
+		if len(runtimeKey) == 0 {
+			return NoValueError("RuntimeFilter", "FractionalPercent.RuntimeKey")
+		}
 	case *als.AccessLogFilter_StatusCodeFilter:
 		op := filter.StatusCodeFilter.GetComparison().GetOp()
 		name := als.ComparisonFilter_Op_name[int32(op.Number())]
 		if name == "" {
 			return InvalidEnumValueError("StatusCodeFilter", "ComparisonFilter.Op", op.String())
 		}
+		value := filter.StatusCodeFilter.GetComparison().GetValue()
+		if value == nil {
+			return NoValueError("StatusCodeFilter", "ComparisonFilter.Value")
+		}
+		if len(value.GetRuntimeKey()) == 0 {
+			return NoValueError("StatusCodeFilter", "ComparisonFilter.Value.RuntimeKey")
+		}
 	case *als.AccessLogFilter_DurationFilter:
 		op := filter.DurationFilter.GetComparison().GetOp()
 		name := als.ComparisonFilter_Op_name[int32(op.Number())]
 		if name == "" {
 			return InvalidEnumValueError("DurationFilter", "ComparisonFilter.Op", op.String())
+		}
+		value := filter.DurationFilter.GetComparison().GetValue()
+		if value == nil {
+			return NoValueError("DurationFilter", "ComparisonFilter.Value")
+		}
+		if len(value.GetRuntimeKey()) == 0 {
+			return NoValueError("DurationFilter", "ComparisonFilter.Value.RuntimeKey")
 		}
 	case *als.AccessLogFilter_AndFilter:
 		subfilters := filter.AndFilter.GetFilters()
@@ -191,7 +212,6 @@ func validateFilterEnums(filter *als.AccessLogFilter) error {
 				return InvalidEnumValueError("GrpcStatusFilter", "Status", status.String())
 			}
 		}
-
 	}
 
 	return nil
