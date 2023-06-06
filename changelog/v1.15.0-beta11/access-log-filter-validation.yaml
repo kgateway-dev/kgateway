@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/4991
+    description: >-
+      The following `AccessLogFilter`s now require the following values to be set: 
+      `FractionalPercent.RuntimeKey` on `RuntimeFilter`,
+      `ComparisonFilter.Value` and `ComparisonFilter.Value.RuntimeKey` on `StatusCodeFilter`
+      `ComparisonFilter.Value` and `ComparisonFilter.Value.RuntimeKey` on `DurationFilter`
+    resolvesIssue: false
