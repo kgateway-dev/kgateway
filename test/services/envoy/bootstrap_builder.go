@@ -2,9 +2,10 @@ package envoy
 
 import (
 	"bytes"
-	"github.com/onsi/ginkgo/v2"
 	"os"
 	"text/template"
+
+	"github.com/onsi/ginkgo/v2"
 )
 
 type bootstrapBuilder interface {

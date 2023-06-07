@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/skv2/codegen/util"
 )
 
-var _ Factory = new(FactoryImpl)
+var _ Factory = new(factoryImpl)
 
 // Factory is a helper for running multiple envoy instances
 type Factory interface {
@@ -28,8 +28,8 @@ type Factory interface {
 	MustClean()
 }
 
-// FactoryImpl is the default implementation of the Factory interface
-type FactoryImpl struct {
+// factoryImpl is the default implementation of the Factory interface
+type factoryImpl struct {
 	// defaultBootstrapTemplate is the default template used to generate the bootstrap config for Envoy
 	// Individuals tests may supply their own
 	defaultBootstrapTemplate *template.Template
@@ -46,7 +46,7 @@ type FactoryImpl struct {
 	instances []*Instance
 }
 
-func NewFactory() *FactoryImpl {
+func NewFactory() Factory {
 	var err error
 
 	// if an envoy binary is explicitly specified, use it
@@ -157,16 +157,16 @@ func mustGetEnvoyWrapperTag() string {
 	return strings.TrimPrefix(latestPatchVersion.String(), "v")
 }
 
-func NewDockerFactory(defaultBootstrapTemplate *template.Template, dockerImage string) *FactoryImpl {
-	return &FactoryImpl{
+func NewDockerFactory(defaultBootstrapTemplate *template.Template, dockerImage string) Factory {
+	return &factoryImpl{
 		defaultBootstrapTemplate: defaultBootstrapTemplate,
 		useDocker:                true,
 		dockerImage:              dockerImage,
 	}
 }
 
-func NewLinuxFactory(defaultBootstrapTemplate *template.Template, envoyPath, tmpDir string) *FactoryImpl {
-	return &FactoryImpl{
+func NewLinuxFactory(defaultBootstrapTemplate *template.Template, envoyPath, tmpDir string) Factory {
+	return &factoryImpl{
 		defaultBootstrapTemplate: defaultBootstrapTemplate,
 		useDocker:                false,
 		envoypath:                envoyPath,
@@ -174,7 +174,7 @@ func NewLinuxFactory(defaultBootstrapTemplate *template.Template, envoyPath, tmp
 	}
 }
 
-func (f *FactoryImpl) MustClean() {
+func (f *factoryImpl) MustClean() {
 	if f == nil {
 		return
 	}
@@ -188,7 +188,7 @@ func (f *FactoryImpl) MustClean() {
 	}
 }
 
-func (f *FactoryImpl) MustEnvoyInstance() *Instance {
+func (f *factoryImpl) MustEnvoyInstance() *Instance {
 	envoyInstance, err := f.NewEnvoyInstance()
 	if err != nil {
 		ginkgo.Fail(errors.Wrap(err, "failed to create envoy instance").Error())
@@ -196,7 +196,7 @@ func (f *FactoryImpl) MustEnvoyInstance() *Instance {
 	return envoyInstance
 }
 
-func (f *FactoryImpl) NewEnvoyInstance() (*Instance, error) {
+func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
 	gloo := "127.0.0.1"
 
 	if f.useDocker {
