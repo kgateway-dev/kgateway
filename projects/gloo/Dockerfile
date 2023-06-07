@@ -35,6 +35,5 @@ RUN CGO_ENABLED=1 GOARCH=${GOARCH} GOOS=linux go build \
 
 
 FROM alpine:3.17.3
-
 ARG GOARCH
 COPY --from=build-env /go/src/github.com/solo-io/gloo/gloo-linux-${GOARCH} /
