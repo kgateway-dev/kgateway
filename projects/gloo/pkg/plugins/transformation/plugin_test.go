@@ -172,6 +172,21 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(output).To(Equal(expectedOutput))
 			})
+
+			It("can override transformation-level log_request_response_info with transformation-stages level", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.LogRequestResponseInfo = false
+				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+
+				output, err := p.(TransformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
 		})
 
 	})
