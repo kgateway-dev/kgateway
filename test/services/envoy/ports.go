@@ -7,13 +7,6 @@ import (
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 )
 
-// NOTE TO DEVELOPERS:
-// This file contains definitions for port values that the test suite will use
-// Ideally these ports would be owned only by the envoy package.
-// However, the challenge is that we have some default resources, which are created using the defaults package.
-// Therefore, I tried to keep the defaults package as the source of truth, but allow for tests to reference
-// the envoy package for the ports.
-
 var (
 	adminPort = uint32(20000)
 	bindPort  = uint32(10080)
@@ -33,7 +26,21 @@ func NextAdminPort() uint32 {
 }
 
 func AdvanceRequestPorts() {
-	defaults.AdvanceRequestPorts()
+	HttpPort = AdvancePort(&HttpPort)
+	HttpsPort = AdvancePort(&HttpsPort)
+	TcpPort = AdvancePort(&TcpPort)
+	HybridPort = AdvancePort(&HybridPort)
+
+	// NOTE TO DEVELOPERS:
+	// This file contains definitions for port values that the test suite will use
+	// Ideally these ports would be owned exclusively by the envoy package.
+	// However, the challenge is that we have some default resources, which are created using the defaults package.
+	// Therefore, we need to keep the defaults package ports in sync with the envoy ports
+
+	defaults.HttpPort = HttpPort
+	defaults.HttpsPort = HttpsPort
+	defaults.HybridPort = HybridPort
+	defaults.TcpPort = TcpPort
 }
 
 func AdvancePort(p *uint32) uint32 {

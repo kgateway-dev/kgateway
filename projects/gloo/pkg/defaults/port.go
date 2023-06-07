@@ -1,8 +1,6 @@
 package defaults
 
 import (
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
-	"sync/atomic"
 	"time"
 )
 
@@ -29,14 +27,3 @@ var ReadConfigListenerPort = 8082
 // Used for testing
 var TcpPort uint32 = 8000
 var HybridPort uint32 = 8087
-
-func AdvanceRequestPorts() {
-	HttpPort = AdvancePort(&HttpPort)
-	HttpsPort = AdvancePort(&HttpsPort)
-	TcpPort = AdvancePort(&TcpPort)
-	HybridPort = AdvancePort(&HybridPort)
-}
-
-func AdvancePort(p *uint32) uint32 {
-	return atomic.AddUint32(p, 1) + uint32(parallel.GetPortOffset())
-}
