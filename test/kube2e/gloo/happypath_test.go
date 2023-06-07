@@ -34,7 +34,6 @@ var _ = Describe("Happy path", func() {
 		testClients   services.TestClients
 		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
-		envoyPort     uint32
 
 		testCases = []struct {
 			Title               string
@@ -62,7 +61,6 @@ var _ = Describe("Happy path", func() {
 		envoyInstance = envoyFactory.NewInstance()
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = envoyInstance.HttpPort
 	})
 
 	AfterEach(func() {
@@ -70,7 +68,7 @@ var _ = Describe("Happy path", func() {
 	})
 
 	TestUpstreamReachable := func() {
-		v1helpers.TestUpstreamReachableWithOffset(3, envoyPort, tu, nil)
+		v1helpers.TestUpstreamReachableWithOffset(3, envoyInstance.HttpPort, tu, nil)
 	}
 
 	for _, testCase := range testCases {
@@ -198,7 +196,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -217,7 +215,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -231,7 +229,7 @@ var _ = Describe("Happy path", func() {
 					It("correctly routes requests to a service destination", func() {
 						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
 						svcPort := svc.Spec.Ports[0].Port
-						proxy := getTrivialProxyForService(testNamespace, envoyPort, svcRef, uint32(svcPort))
+						proxy := getTrivialProxyForService(testNamespace, envoyInstance.HttpPort, svcRef, uint32(svcPort))
 
 						_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 						Expect(err).NotTo(HaveOccurred())
@@ -276,7 +274,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
