@@ -11,11 +11,11 @@ import (
 var (
 	bindPort = uint32(10080)
 
-	AdminPort  = defaults.EnvoyAdminPort
-	HttpPort   = defaults.HttpPort
-	HttpsPort  = defaults.HttpsPort
-	TcpPort    = defaults.TcpPort
-	HybridPort = defaults.HybridPort
+	adminPort  = defaults.EnvoyAdminPort
+	httpPort   = defaults.HttpPort
+	httpsPort  = defaults.HttpsPort
+	tcpPort    = defaults.TcpPort
+	hybridPort = defaults.HybridPort
 )
 
 func NextBindPort() uint32 {
@@ -23,11 +23,11 @@ func NextBindPort() uint32 {
 }
 
 func advanceRequestPorts() {
-	HttpPort = advancePort(&HttpPort)
-	HttpsPort = advancePort(&HttpsPort)
-	TcpPort = advancePort(&TcpPort)
-	HybridPort = advancePort(&HybridPort)
-	AdminPort = advancePort(&AdminPort)
+	httpPort = advancePort(&httpPort)
+	httpsPort = advancePort(&httpsPort)
+	tcpPort = advancePort(&tcpPort)
+	hybridPort = advancePort(&hybridPort)
+	adminPort = advancePort(&adminPort)
 
 	// NOTE TO DEVELOPERS:
 	// This file contains definitions for port values that the test suite will use
@@ -35,10 +35,11 @@ func advanceRequestPorts() {
 	// However, the challenge is that we have some default resources, which are created using the defaults package.
 	// Therefore, we need to keep the defaults package ports in sync with the envoy ports
 
-	defaults.HttpPort = HttpPort
-	defaults.HttpsPort = HttpsPort
-	defaults.HybridPort = HybridPort
-	defaults.TcpPort = TcpPort
+	defaults.HttpPort = httpPort
+	defaults.HttpsPort = httpsPort
+	defaults.HybridPort = hybridPort
+	defaults.TcpPort = tcpPort
+	defaults.EnvoyAdminPort = adminPort
 }
 
 func advancePort(p *uint32) uint32 {
