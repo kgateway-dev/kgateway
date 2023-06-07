@@ -3,11 +3,12 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"html"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/testutils"
 

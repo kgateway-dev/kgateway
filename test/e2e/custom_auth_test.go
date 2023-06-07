@@ -3,9 +3,10 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"net"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 

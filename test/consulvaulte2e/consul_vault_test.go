@@ -4,10 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 

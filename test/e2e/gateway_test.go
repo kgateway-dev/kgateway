@@ -3,9 +3,10 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"net/http"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/types/known/wrapperspb"

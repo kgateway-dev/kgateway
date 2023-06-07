@@ -1,8 +1,9 @@
 package envoy
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"sync/atomic"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
 )

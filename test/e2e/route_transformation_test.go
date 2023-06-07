@@ -3,8 +3,9 @@ package e2e_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"net/http"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/testutils"
 

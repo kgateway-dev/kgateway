@@ -2,11 +2,12 @@ package gloo_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/services"
 

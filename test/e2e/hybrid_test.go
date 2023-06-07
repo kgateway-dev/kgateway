@@ -3,11 +3,12 @@ package e2e_test
 import (
 	"errors"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"io"
 	"net"
 	"net/http"
 	"syscall"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"math/rand"
 

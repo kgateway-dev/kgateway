@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"io"
 	"net/http"
 	"regexp"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"

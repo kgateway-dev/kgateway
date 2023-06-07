@@ -1,9 +1,10 @@
 package consulvaulte2e_test
 
 import (
-	"github.com/solo-io/gloo/test/services/envoy"
 	"os"
 	"testing"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 

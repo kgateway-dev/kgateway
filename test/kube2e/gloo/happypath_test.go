@@ -2,9 +2,10 @@ package gloo_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"net"
 	"strings"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
