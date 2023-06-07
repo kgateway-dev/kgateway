@@ -91,7 +91,7 @@ func (gt *GwTester) configureEnvoy(requestMatchers map[string]*v1.Matcher) {
 	Expect(err).NotTo(HaveOccurred())
 
 	// use magicservername to ensure envoy has latest config
-	Eventually(func(g Gomega) (int, error) {
+	Eventually(func(g Gomega) {
 		resp, err := gt.makeARequest(gt.testContext, net.ParseIP("127.0.0.1"), magicServerName)
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(resp).To(matchers.HaveOkResponse())
