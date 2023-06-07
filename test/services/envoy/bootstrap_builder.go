@@ -2,6 +2,7 @@ package envoy
 
 import (
 	"bytes"
+	"github.com/onsi/ginkgo/v2"
 	"os"
 	"text/template"
 )
@@ -17,7 +18,7 @@ type templateBootstrapBuilder struct {
 func (tbb *templateBootstrapBuilder) Build(ei *Instance) string {
 	var b bytes.Buffer
 	if err := tbb.template.Execute(&b, ei); err != nil {
-		panic(err)
+		ginkgo.Fail(err.Error())
 	}
 	return b.String()
 }
@@ -29,14 +30,14 @@ type fileBootstrapBuilder struct {
 func (fbb *fileBootstrapBuilder) Build(ei *Instance) string {
 	templateBytes, err := os.ReadFile(fbb.file)
 	if err != nil {
-		panic(err)
+		ginkgo.Fail(err.Error())
 	}
 
 	parsedTemplate := template.Must(template.New(fbb.file).Parse(string(templateBytes)))
 
 	var b bytes.Buffer
 	if err := parsedTemplate.Execute(&b, ei); err != nil {
-		panic(err)
+		ginkgo.Fail(err.Error())
 	}
 	return b.String()
 }

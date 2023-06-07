@@ -44,9 +44,6 @@ const (
 
 	// EnvoyBinary is used in e2e tests to specify the path to the envoy binary to use for the tests
 	EnvoyBinary = "ENVOY_BINARY"
-
-	// FetchEnvoyBinary is used in e2e tests to specify that the envoy binary should be fetched from the path
-	FetchEnvoyBinary = "FETCH_ENVOY_BINARY"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

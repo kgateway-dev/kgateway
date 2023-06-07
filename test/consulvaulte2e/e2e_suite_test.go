@@ -4,8 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/solo-io/gloo/test/services/envoy"
-
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 
 	testhelpers "github.com/solo-io/gloo/test/testutils"
@@ -40,7 +38,7 @@ var _ = BeforeSuite(func() {
 	)
 
 	var err error
-	envoyFactory = envoy.MustEnvoyFactory()
+	envoyFactory = services.MustEnvoyFactory()
 
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())

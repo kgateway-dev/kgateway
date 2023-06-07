@@ -3,80 +3,57 @@ package envoy
 import (
 	"bufio"
 	"fmt"
+	"log"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/solo-io/skv2/codegen/util"
-
-	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/gloo/test/testutils/version"
+	"text/template"
 
 	"github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
-
-	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/test/testutils/version"
+	"github.com/solo-io/skv2/codegen/util"
 )
 
+var _ Factory = new(FactoryImpl)
+
+// Factory is a helper for running multiple envoy instances
 type Factory interface {
 	MustEnvoyInstance() *Instance
 	NewEnvoyInstance() (*Instance, error)
 	MustClean()
 }
 
-var _ Factory = new(factoryImpl)
+// FactoryImpl is the default implementation of the Factory interface
+type FactoryImpl struct {
+	// defaultBootstrapTemplate is the default template used to generate the bootstrap config for Envoy
+	// Individuals tests may supply their own
+	defaultBootstrapTemplate *template.Template
 
-type factoryImpl struct {
-	instanceManager *InstanceManager
+	envoypath string
+	tmpdir    string
+
+	useDocker bool
+	// The image that will be used to Run the Envoy instance in Docker
+	// This can either be a previously released tag or the tag of a locally built image
+	// See the Setup section of the ./test/e2e/README for details about building a local image
+	dockerImage string
+
+	instances []*Instance
 }
 
-func MustEnvoyFactory() *factoryImpl {
-	return &factoryImpl{
-		// Load the instance manager during initialization to error loudly if we don't
-		// have necessary configuration
-		instanceManager: mustGetInstanceManager(),
-	}
-}
-
-func (g *factoryImpl) MustEnvoyInstance() *Instance {
-	return g.instanceManager.MustEnvoyInstance()
-}
-
-func (g *factoryImpl) NewEnvoyInstance() (*Instance, error) {
-	return g.instanceManager.NewEnvoyInstance()
-}
-
-func (g *factoryImpl) MustClean() {
-	if err := g.instanceManager.Clean(); err != nil {
-		ginkgo.Fail(fmt.Sprintf("failed to clean up envoy instances: %v", err))
-	}
-}
-
-func mustGetInstanceManager() *InstanceManager {
+func NewFactory() *FactoryImpl {
 	var err error
 
 	// if an envoy binary is explicitly specified, use it
 	envoyPath := os.Getenv(testutils.EnvoyBinary)
 	if envoyPath != "" {
 		log.Printf("Using envoy from environment variable: %s", envoyPath)
-		return NewLinuxInstanceManager(bootstrapTemplate, envoyPath, "")
-	}
-
-	// maybe it is in the path?!
-	// only try to use local path if FETCH_ENVOY_BINARY is not set;
-	// there are two options:
-	// - you are using local envoy binary you just built and want to test (don't set the variable)
-	// - you want to use the envoy version gloo is shipped with (set the variable)
-	shouldFetchBinary := os.Getenv(testutils.FetchEnvoyBinary) != ""
-	if shouldFetchBinary {
-		envoyPath, err = exec.LookPath("envoy")
-		if err == nil {
-			log.Printf("Using envoy from PATH: %s", envoyPath)
-			return NewLinuxInstanceManager(bootstrapTemplate, envoyPath, "")
-		}
+		return NewLinuxFactory(bootstrapTemplate, envoyPath, "")
 	}
 
 	switch runtime.GOOS {
@@ -84,14 +61,16 @@ func mustGetInstanceManager() *InstanceManager {
 		log.Printf("Using docker to Run envoy")
 
 		image := fmt.Sprintf("quay.io/solo-io/envoy-gloo-wrapper:%s", mustGetEnvoyWrapperTag())
-		return NewDockerInstanceManager(bootstrapTemplate, image)
+		return NewDockerFactory(bootstrapTemplate, image)
 
 	case "linux":
 		var tmpDir string
 
-		// try to grab one form docker...
+		// try to grab one from docker...
 		tmpDir, err = os.MkdirTemp(os.Getenv("HELPER_TMP"), "envoy")
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("failed to create tmp dir: %v", err))
+		}
 
 		envoyImageTag := mustGetEnvoyGlooTag()
 
@@ -101,7 +80,7 @@ func mustGetInstanceManager() *InstanceManager {
 set -ex
 CID=$(docker run -d  quay.io/solo-io/envoy-gloo:%s /bin/bash -c exit)
 
-# just print the image sha for repoducibility
+# just print the image sha for reproducibility
 echo "Using Envoy Image:"
 docker inspect quay.io/solo-io/envoy-gloo:%s -f "{{.RepoDigests}}"
 
@@ -110,16 +89,17 @@ docker rm $CID
     `, envoyImageTag, envoyImageTag)
 		scriptfile := filepath.Join(tmpDir, "getenvoy.sh")
 
-		os.WriteFile(scriptfile, []byte(bash), 0755)
+		_ = os.WriteFile(scriptfile, []byte(bash), 0755)
 
 		cmd := exec.Command("bash", scriptfile)
 		cmd.Dir = tmpDir
 		cmd.Stdout = ginkgo.GinkgoWriter
 		cmd.Stderr = ginkgo.GinkgoWriter
-		err = cmd.Run()
-		Expect(err).NotTo(HaveOccurred())
+		if err := cmd.Run(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("failed to run envoy binary: %v", err))
+		}
 
-		return NewLinuxInstanceManager(bootstrapTemplate, filepath.Join(tmpDir, "envoy"), tmpDir)
+		return NewLinuxFactory(bootstrapTemplate, filepath.Join(tmpDir, "envoy"), tmpDir)
 
 	default:
 		ginkgo.Fail("Unsupported OS: " + runtime.GOOS)
@@ -139,7 +119,9 @@ func mustGetEnvoyGlooTag() string {
 
 	makefile := filepath.Join(util.GetModuleRoot(), "Makefile")
 	inFile, err := os.Open(makefile)
-	Expect(err).NotTo(HaveOccurred())
+	if err != nil {
+		ginkgo.Fail(errors.Wrapf(err, "failed to open Makefile").Error())
+	}
 
 	defer inFile.Close()
 
@@ -153,7 +135,7 @@ func mustGetEnvoyGlooTag() string {
 		}
 	}
 
-	ginkgo.Fail("Could not determine envoy-gloo tag. Find valid tag names here https://quay.io/repository/solo-io/envoy-gloo?tab=tags")
+	ginkgo.Fail("Could not determine envoy-gloo tag. Find valid tag names here https://quay.io/repository/solo-io/envoy-gloo?tab=tags and update your make target or use the variable ENVOY_IMAGE_TAG to set it.")
 	return ""
 }
 
@@ -173,4 +155,105 @@ func mustGetEnvoyWrapperTag() string {
 	}
 
 	return strings.TrimPrefix(latestPatchVersion.String(), "v")
+}
+
+func NewDockerFactory(defaultBootstrapTemplate *template.Template, dockerImage string) *FactoryImpl {
+	return &FactoryImpl{
+		defaultBootstrapTemplate: defaultBootstrapTemplate,
+		useDocker:                true,
+		dockerImage:              dockerImage,
+	}
+}
+
+func NewLinuxFactory(defaultBootstrapTemplate *template.Template, envoyPath, tmpDir string) *FactoryImpl {
+	return &FactoryImpl{
+		defaultBootstrapTemplate: defaultBootstrapTemplate,
+		useDocker:                false,
+		envoypath:                envoyPath,
+		tmpdir:                   tmpDir,
+	}
+}
+
+func (f *FactoryImpl) MustClean() {
+	if f == nil {
+		return
+	}
+	if f.tmpdir != "" {
+		_ = os.RemoveAll(f.tmpdir)
+	}
+	instances := f.instances
+	f.instances = nil
+	for _, ei := range instances {
+		ei.Clean()
+	}
+}
+
+func (f *FactoryImpl) MustEnvoyInstance() *Instance {
+	envoyInstance, err := f.NewEnvoyInstance()
+	if err != nil {
+		ginkgo.Fail(errors.Wrap(err, "failed to create envoy instance").Error())
+	}
+	return envoyInstance
+}
+
+func (f *FactoryImpl) NewEnvoyInstance() (*Instance, error) {
+	gloo := "127.0.0.1"
+
+	if f.useDocker {
+		var err error
+		gloo, err = localAddr()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	ei := &Instance{
+		defaultBootstrapTemplate: f.defaultBootstrapTemplate,
+		envoypath:                f.envoypath,
+		UseDocker:                f.useDocker,
+		DockerImage:              f.dockerImage,
+		GlooAddr:                 gloo,
+		AccessLogAddr:            gloo,
+		AdminPort:                NextAdminPort(),
+		ApiVersion:               "V3",
+	}
+	f.instances = append(f.instances, ei)
+	return ei, nil
+
+}
+
+func localAddr() (string, error) {
+	ip := os.Getenv("GLOO_IP")
+	if ip != "" {
+		return ip, nil
+	}
+	// go over network interfaces
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+	for _, i := range ifaces {
+		if (i.Flags&net.FlagUp == 0) ||
+			(i.Flags&net.FlagLoopback != 0) ||
+			(i.Flags&net.FlagPointToPoint != 0) {
+			continue
+		}
+		addrs, err := i.Addrs()
+		if err != nil {
+			return "", err
+		}
+		for _, addr := range addrs {
+			switch v := addr.(type) {
+			case *net.IPNet:
+				if v.IP.To4() != nil {
+					return v.IP.String(), nil
+				}
+			case *net.IPAddr:
+				if v.IP.To4() != nil {
+					return v.IP.String(), nil
+				}
+			}
+		}
+	}
+	return "", errors.New("unable to find Gloo IP")
 }
