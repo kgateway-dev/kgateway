@@ -9,7 +9,7 @@ package transformation
 import (
 	reflect "reflect"
 	sync "sync"
-	
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"

@@ -66,7 +66,9 @@ message TransformationStages {
     // only one transformation will run per stage.
     // Defaults to false.
     bool inherit_transformation = 3;
-    // Log request/response info
+    
+    // When enabled, log request/response body and headers before and after all transformations defined here are applied.\
+    // This overrides the log_request_response_info field in the Transformation message.
     google.protobuf.BoolValue log_request_response_info = 4;
 }
 
@@ -85,6 +87,6 @@ message Transformation {
         envoy.config.transformer.xslt.v2.XsltTransformation xslt_transformation = 3;
 
     }
-    // Log request/response info
+    // When enabled, log request/response body and headers before and after this transformation is applied.
     bool log_request_response_info = 4;
 }

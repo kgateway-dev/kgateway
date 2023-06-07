@@ -7,6 +7,9 @@
 package transformation
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	xslt "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
@@ -14,8 +17,6 @@ import (
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -310,7 +311,8 @@ type TransformationStages struct {
 	// only one transformation will run per stage.
 	// Defaults to false.
 	InheritTransformation bool `protobuf:"varint,3,opt,name=inherit_transformation,json=inheritTransformation,proto3" json:"inherit_transformation,omitempty"`
-	// Log request/response info
+	// When enabled, log request/response body and headers before and after all transformations defined here are applied.\
+	// This overrides the log_request_response_info field in the Transformation message.
 	LogRequestResponseInfo *wrappers.BoolValue `protobuf:"bytes,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
 }
 
@@ -388,7 +390,7 @@ type Transformation struct {
 	//	*Transformation_HeaderBodyTransform
 	//	*Transformation_XsltTransformation
 	TransformationType isTransformation_TransformationType `protobuf_oneof:"transformation_type"`
-	// Log request/response info
+	// When enabled, log request/response body and headers before and after this transformation is applied.
 	LogRequestResponseInfo bool `protobuf:"varint,4,opt,name=log_request_response_info,json=logRequestResponseInfo,proto3" json:"log_request_response_info,omitempty"`
 }
 

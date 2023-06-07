@@ -280,7 +280,7 @@ func (p *Plugin) ConvertTransformation(
 	logRequestResponseInfo := stagedTransformations.GetLogRequestResponseInfo().GetValue()
 
 	if logRequestResponseInfo {
-		for _, t := range ret.Transformations {
+		for _, t := range ret.GetTransformations() {
 			if requestMatch := t.GetRequestMatch(); requestMatch != nil {
 				if requestTransformation := requestMatch.GetRequestTransformation(); requestTransformation != nil {
 					requestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
