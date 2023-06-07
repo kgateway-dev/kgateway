@@ -88,9 +88,14 @@ var _ = Describe("Gateway", func() {
 
 		Context("http gateway", func() {
 
-			var defaultGateways []*gatewayv1.Gateway
+			var (
+				envoyInstance   *envoy.Instance
+				defaultGateways []*gatewayv1.Gateway
+			)
 
 			BeforeEach(func() {
+				envoyInstance = envoyFactory.NewInstance()
+
 				defaultGateway := gatewaydefaults.DefaultGateway(writeNamespace)
 				defaultSslGateway := gatewaydefaults.DefaultSslGateway(writeNamespace)
 
@@ -310,8 +315,7 @@ var _ = Describe("Gateway", func() {
 			Context("traffic", func() {
 
 				var (
-					envoyInstance *envoy.Instance
-					testUpstream  *v1helpers.TestUpstream
+					testUpstream *v1helpers.TestUpstream
 				)
 
 				TestUpstreamReachable := func() {
@@ -319,8 +323,6 @@ var _ = Describe("Gateway", func() {
 				}
 
 				BeforeEach(func() {
-					envoyInstance = envoyFactory.NewInstance()
-
 					testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
 					err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)

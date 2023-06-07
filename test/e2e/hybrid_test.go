@@ -24,7 +24,7 @@ import (
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/e2e"
 )
