@@ -275,7 +275,8 @@ func (p *Plugin) ConvertTransformation(
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 
-	// need to support filter-level setting
+	// this is the route/vhost-level logRequestResponseInfo setting
+	// it will override the transformation-level settings
 	logRequestResponseInfo := stagedTransformations.GetLogRequestResponseInfo().GetValue()
 
 	if logRequestResponseInfo {
@@ -335,6 +336,7 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (
 		return nil, UnknownTransformationType(typedTransformation)
 	}
 
+	// this is the transformation-level logRequestResponseInfo setting
 	if glooTransform.GetLogRequestResponseInfo() {
 		out.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 	}
