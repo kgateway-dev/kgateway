@@ -26,7 +26,7 @@ func TestE2e(t *testing.T) {
 }
 
 var (
-	envoyFactory  *services.EnvoyFactory
+	envoyFactory  services.EnvoyFactory
 	consulFactory *services.ConsulFactory
 	vaultFactory  *services.VaultFactory
 )
@@ -38,8 +38,8 @@ var _ = BeforeSuite(func() {
 	)
 
 	var err error
-	envoyFactory, err = services.NewEnvoyFactory()
-	Expect(err).NotTo(HaveOccurred())
+	envoyFactory = services.MustEnvoyFactory()
+
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 	vaultFactory, err = services.NewVaultFactory()
@@ -47,7 +47,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	_ = envoyFactory.Clean()
+	envoyFactory.MustClean()
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
 })

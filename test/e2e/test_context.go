@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -42,7 +44,7 @@ var (
 )
 
 type TestContextFactory struct {
-	EnvoyFactory  *services.EnvoyFactory
+	EnvoyFactory  envoy.Factory
 	VaultFactory  *services.VaultFactory
 	ConsulFactory *services.ConsulFactory
 }
@@ -84,7 +86,7 @@ func (f *TestContextFactory) NewTestContextWithConsul(testRequirements ...testut
 type TestContext struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
-	envoyInstance *services.EnvoyInstance
+	envoyInstance *envoy.Instance
 
 	runOptions  *services.RunOptions
 	testClients services.TestClients
@@ -197,7 +199,7 @@ func (c *TestContext) ResourcesToCreate() *gloosnapshot.ApiSnapshot {
 
 // EnvoyInstance returns the wrapper for the running instance of Envoy that this test is using
 // It contains utility methods to easily inspect the live configuration and statistics for the instance
-func (c *TestContext) EnvoyInstance() *services.EnvoyInstance {
+func (c *TestContext) EnvoyInstance() *envoy.Instance {
 	return c.envoyInstance
 }
 
