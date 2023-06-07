@@ -216,7 +216,7 @@ var _ = Describe("Plugin", func() {
 				Expect(output).To(Equal(expectedOutput))
 			})
 
-			FIt("can enable settings-object-level setting", func() {
+			It("can enable settings-object-level setting", func() {
 				// override plugin created in BeforeEach
 				p = NewPlugin()
 				// initialize with settings-object-level setting enabled
