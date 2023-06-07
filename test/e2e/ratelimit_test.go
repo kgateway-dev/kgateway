@@ -151,7 +151,7 @@ var _ = Describe("Rate Limit", func() {
 			envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
 
-			envoyPort = envoy.HttpPort
+			envoyPort = envoyInstance.HttpPort
 
 			// add the rl service as a static upstream
 			rlserver := &gloov1.Upstream{

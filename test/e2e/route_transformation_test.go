@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/services/envoy"
-
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -313,7 +311,7 @@ var _ = Describe("Transformations", func() {
 
 		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
 			// form request
-			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2", envoy.HttpPort), nil)
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2", envoyInstance.HttpPort), nil)
 			// form matcher
 			matcher := &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -332,7 +330,7 @@ var _ = Describe("Transformations", func() {
 		It("should handle 3 and 4 values in multiValueQueryStringParameters", func() {
 			By("populating MultiValueQueryStringParameters with 3 values", func() {
 				// form request
-				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3", envoy.HttpPort), nil)
+				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3", envoyInstance.HttpPort), nil)
 				// form matcher
 				matcher := &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -350,7 +348,7 @@ var _ = Describe("Transformations", func() {
 
 			By("populating MultiValueQueryStringParameters with 4 values", func() {
 				// form request
-				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3&multiple=4", envoy.HttpPort), nil)
+				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3&multiple=4", envoyInstance.HttpPort), nil)
 				// form matcher
 				matcher := &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -369,7 +367,7 @@ var _ = Describe("Transformations", func() {
 
 		It("should handle headers and multiValueHeaders", func() {
 			// form request
-			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/", envoy.HttpPort), map[string][]string{
+			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/", envoyInstance.HttpPort), map[string][]string{
 				"foo":      {"bar"},
 				"multiple": {"1", "2"},
 			})

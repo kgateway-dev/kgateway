@@ -75,8 +75,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		restXdsPort = int(services.AllocateGlooPort())
 		proxyDebugPort = int(services.AllocateGlooPort())
 
-		envoy.AdvanceRequestPorts()
-
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())

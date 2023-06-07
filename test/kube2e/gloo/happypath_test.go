@@ -59,8 +59,6 @@ var _ = Describe("Happy path", func() {
 	)
 
 	BeforeEach(func() {
-		envoy.AdvanceRequestPorts()
-
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())

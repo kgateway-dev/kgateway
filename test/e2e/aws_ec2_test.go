@@ -206,7 +206,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
 				BindAddress: "::",
-				BindPort:    envoy.HttpPort,
+				BindPort:    envoyInstance.HttpPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
 						VirtualHosts: []*gloov1.VirtualHost{{
@@ -239,13 +239,11 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 		})
 
-		validateEc2Endpoint(envoy.HttpPort, "Counts")
+		validateEc2Endpoint(envoyInstance.HttpPort, "Counts")
 	})
 
 	BeforeEach(func() {
-
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		runOptions := &services.RunOptions{
 			NsToWrite: writeNamespace,

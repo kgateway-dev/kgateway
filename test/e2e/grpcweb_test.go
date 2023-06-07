@@ -169,7 +169,7 @@ var _ = Describe("Grpc Web", func() {
 			var bufferbase64 bytes.Buffer
 			bufferbase64.Write(dest)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", envoy.HttpPort), &bufferbase64)
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", envoyInstance.HttpPort), &bufferbase64)
 			Expect(err).NotTo(HaveOccurred())
 
 			req.Host = "grpc.com"

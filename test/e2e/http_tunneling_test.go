@@ -81,7 +81,6 @@ var _ = Describe("tunneling", func() {
 		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		// run gloo
 		ro := &services.RunOptions{
@@ -150,7 +149,7 @@ var _ = Describe("tunneling", func() {
 			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", envoy.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), bytes.NewBuffer(json))
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedResponseStatusCode,

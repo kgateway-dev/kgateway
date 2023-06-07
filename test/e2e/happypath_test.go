@@ -69,14 +69,13 @@ var _ = Describe("Happy path", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = envoy.HttpPort
+		envoyPort = envoyInstance.HttpPort
 	})
 
 	AfterEach(func() {
@@ -198,7 +197,7 @@ var _ = Describe("Happy path", func() {
 					TestUpstreamReachable()
 
 					// This will hit the virtual host with the above virtual cluster config
-					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoy.HttpPort))
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoyInstance.HttpPort))
 					Expect(err).NotTo(HaveOccurred())
 					Expect(response.Header).NotTo(HaveKey("X-Envoy-Upstream-Service-Time"))
 
@@ -223,7 +222,7 @@ var _ = Describe("Happy path", func() {
 					TestUpstreamReachable()
 
 					// This will hit the virtual host with the above virtual cluster config
-					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoy.HttpPort))
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoyInstance.HttpPort))
 					Expect(err).NotTo(HaveOccurred())
 					Expect(response.Header).To(HaveKey("X-Envoy-Upstream-Service-Time"))
 

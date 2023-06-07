@@ -57,7 +57,6 @@ var _ = Describe("Health Checks", func() {
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
@@ -99,7 +98,7 @@ var _ = Describe("Health Checks", func() {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(b)
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", envoy.HttpPort), "application/json", &buf)
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), "application/json", &buf)
 			if err != nil {
 				return "", err
 			}

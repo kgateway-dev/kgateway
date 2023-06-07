@@ -207,6 +207,9 @@ func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
 		}
 	}
 
+	// Ensure that each Instance has a unique set of ports
+	advanceRequestPorts()
+
 	ei := &Instance{
 		defaultBootstrapTemplate: f.defaultBootstrapTemplate,
 		envoypath:                f.envoypath,
@@ -214,8 +217,14 @@ func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
 		DockerImage:              f.dockerImage,
 		GlooAddr:                 gloo,
 		AccessLogAddr:            gloo,
-		AdminPort:                NextAdminPort(),
 		ApiVersion:               "V3",
+		RequestPorts: &RequestPorts{
+			HttpPort:   HttpPort,
+			HttpsPort:  HttpsPort,
+			HybridPort: HybridPort,
+			TcpPort:    TcpPort,
+			AdminPort:  AdminPort,
+		},
 	}
 	f.instances = append(f.instances, ei)
 	return ei, nil

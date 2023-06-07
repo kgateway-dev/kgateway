@@ -80,7 +80,6 @@ var _ = Describe("AWS Lambda", func() {
 
 	setupEnvoy := func(justGloo bool) {
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		runOptions.WhatToRun.DisableGateway = justGloo
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
@@ -236,7 +235,7 @@ var _ = Describe("AWS Lambda", func() {
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
 				BindAddress: "::",
-				BindPort:    envoy.HttpPort,
+				BindPort:    envoyInstance.HttpPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
 						VirtualHosts: []*gloov1.VirtualHost{{
@@ -288,7 +287,7 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, false, false, "uppercase")
-		validateLambdaUppercase(envoy.HttpPort)
+		validateLambdaUppercase(envoyInstance.HttpPort)
 	}
 
 	testProxyWithResponseTransform := func() {
@@ -298,7 +297,7 @@ var _ = Describe("AWS Lambda", func() {
 		createProxy(false, false, true, "contact-form")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          envoy.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`},
 		})
 	}
@@ -310,7 +309,7 @@ var _ = Describe("AWS Lambda", func() {
 		createProxy(false, true, false, "dumpContext")
 		validateLambda(lambdaValidationParams{
 			offset:    1,
-			envoyPort: envoy.HttpPort,
+			envoyPort: envoyInstance.HttpPort,
 			expectedSubstrings: []string{`\"body\": \"\\\"solo.io\\\"\", \"headers\": `,
 				`\"queryString\": \"param_a=value_1&param_b=value_b\"`,
 				`\"path\": \"/1\"`,
@@ -327,7 +326,7 @@ var _ = Describe("AWS Lambda", func() {
 		// need querystring, multivaluequerystring
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          envoy.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			requestBody:        `{"headers":{"Content-Type":"application/test"}, "body":"solo.io", "multiValueHeaders":{"x-header":["value-1", "value-2"]}, "statusCode":201, "queryStringParameters":{"param_a":"value_2", "param_b":"value_b"}, "multiValueQueryStringParameters":{"param_a":["value_1", "value_2"]}}`,
 			expectedSubstrings: []string{"solo.io"},
 			expectedHeaders:    http.Header{"Content-Type": {"application/test"}, "X-Header": {"value-1,value-2"}},
@@ -342,7 +341,7 @@ var _ = Describe("AWS Lambda", func() {
 		createProxy(false, true, true, "dumpContext")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          envoy.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`"\"solo.io\""`},
 		})
 	}
@@ -354,7 +353,7 @@ var _ = Describe("AWS Lambda", func() {
 		createProxy(false, false, false, "resource-based-cross-account-hello")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          envoy.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`"\"Hello from Lambda!\""`},
 		})
 	}
@@ -397,7 +396,7 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.VirtualServiceClient.Write(vs, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		validateLambdaUppercase(envoy.HttpPort)
+		validateLambdaUppercase(envoyInstance.HttpPort)
 	}
 
 	testLambdaTransformations := func() {
@@ -485,7 +484,7 @@ var _ = Describe("AWS Lambda", func() {
 		var body []byte
 		path := "transforms-req-test"
 		waitForLambdaAndGetBody := func() error {
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", envoy.HttpPort, path), bytes.NewBufferString(`"test"`))
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", envoyInstance.HttpPort, path), bytes.NewBufferString(`"test"`))
 			Expect(err).NotTo(HaveOccurred())
 			req.Header.Set("Content-Type", "application/octet-stream")
 			req.Host = "test"
@@ -744,7 +743,6 @@ var _ = Describe("AWS Lambda", func() {
 
 		setupEnvoySts := func(justGloo bool) {
 			ctx, cancel = context.WithCancel(context.Background())
-			envoy.AdvanceRequestPorts()
 			ns := defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: ns,

@@ -46,7 +46,6 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	format.MaxLength = 0
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
@@ -230,7 +229,7 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 
 	return &gatewayv1.Gateway{
 		BindAddress:        "::",
-		BindPort:           envoy.HttpPort,
+		BindPort:           defaults.HttpPort,
 		NamespacedStatuses: &core.NamespacedStatuses{},
 		Metadata: &core.Metadata{
 			Name:      "gateway-proxy",

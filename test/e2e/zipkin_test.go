@@ -52,7 +52,6 @@ var _ = Describe("Tracing config loading", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		envoy.AdvanceRequestPorts()
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
@@ -73,7 +72,7 @@ var _ = Describe("Tracing config loading", func() {
 		})
 
 		It("should send trace msgs to the zipkin server", func() {
-			err := envoyInstance.RunWithConfigFile(int(envoy.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
+			err := envoyInstance.RunWithConfigFile(int(envoyInstance.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 			Expect(err).NotTo(HaveOccurred())
 
 			// Start a dummy server listening on 9411 for Zipkin requests
@@ -198,7 +197,7 @@ var _ = Describe("Tracing config loading", func() {
 				0,
 				v1helpers.CurlRequest{
 					RootCA: nil,
-					Port:   envoy.HttpPort,
+					Port:   envoyInstance.HttpPort,
 					Host:   "test.com", // to match the vs-test
 					Path:   "/",
 					Body:   []byte("solo.io test"),
@@ -244,7 +243,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", envoy.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
@@ -285,7 +284,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", envoy.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
@@ -315,7 +314,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", envoy.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Not(Receive()))
@@ -358,7 +357,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", envoy.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
@@ -401,7 +400,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", envoy.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())

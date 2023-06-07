@@ -292,8 +292,8 @@ func (c *TestContext) GetHttpRequestBuilder() *testutils.HttpRequestBuilder {
 		WithScheme("http").
 		WithHostname("localhost").
 		WithContentType("application/octet-stream").
-		WithPort(envoy.HttpPort). // When running Envoy locally, we port-forward this port to accept http traffic locally
-		WithHost(DefaultHost)     // The default Virtual Service routes traffic only with a particular Host header
+		WithPort(envoyInstance.HttpPort). // When running Envoy locally, we port-forward this port to accept http traffic locally
+		WithHost(DefaultHost)             // The default Virtual Service routes traffic only with a particular Host header
 }
 
 // GetHttpsRequestBuilder returns an HttpRequestBuilder to easily build https requests used in e2e tests
@@ -302,8 +302,8 @@ func (c *TestContext) GetHttpsRequestBuilder() *testutils.HttpRequestBuilder {
 		WithScheme("https").
 		WithHostname("localhost").
 		WithContentType("application/octet-stream").
-		WithPort(envoy.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
-		WithHost(DefaultHost)      // The default Virtual Service routes traffic only with a particular Host header
+		WithPort(envoyInstance.HttpsPort). // When running Envoy locally, we port-forward this port to accept https traffic locally
+		WithHost(DefaultHost)              // The default Virtual Service routes traffic only with a particular Host header
 }
 
 // TestContextWithVault represents the aggregate set of configuration needed to run a single e2e test

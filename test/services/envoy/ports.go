@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	adminPort = uint32(20000)
-	bindPort  = uint32(10080)
+	bindPort = uint32(10080)
 
+	AdminPort  = defaults.EnvoyAdminPort
 	HttpPort   = defaults.HttpPort
 	HttpsPort  = defaults.HttpsPort
 	TcpPort    = defaults.TcpPort
@@ -19,18 +19,15 @@ var (
 )
 
 func NextBindPort() uint32 {
-	return AdvancePort(&bindPort)
+	return advancePort(&bindPort)
 }
 
-func NextAdminPort() uint32 {
-	return AdvancePort(&adminPort)
-}
-
-func AdvanceRequestPorts() {
-	HttpPort = AdvancePort(&HttpPort)
-	HttpsPort = AdvancePort(&HttpsPort)
-	TcpPort = AdvancePort(&TcpPort)
-	HybridPort = AdvancePort(&HybridPort)
+func advanceRequestPorts() {
+	HttpPort = advancePort(&HttpPort)
+	HttpsPort = advancePort(&HttpsPort)
+	TcpPort = advancePort(&TcpPort)
+	HybridPort = advancePort(&HybridPort)
+	AdminPort = advancePort(&AdminPort)
 
 	// NOTE TO DEVELOPERS:
 	// This file contains definitions for port values that the test suite will use
@@ -44,6 +41,6 @@ func AdvanceRequestPorts() {
 	defaults.TcpPort = TcpPort
 }
 
-func AdvancePort(p *uint32) uint32 {
+func advancePort(p *uint32) uint32 {
 	return atomic.AddUint32(p, 1) + uint32(parallel.GetPortOffset())
 }

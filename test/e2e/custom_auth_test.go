@@ -100,7 +100,7 @@ var _ = Describe("CustomAuth", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create a proxy routing to the upstream and wait for it to be accepted
-		proxy := getProxyExtAuth("default", "proxy", envoy.HttpPort, testUpstream.Upstream.Metadata.Ref())
+		proxy := getProxyExtAuth("default", "proxy", envoyInstance.HttpPort, testUpstream.Upstream.Metadata.Ref())
 
 		_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -120,7 +120,7 @@ var _ = Describe("CustomAuth", func() {
 		client := &http.Client{}
 
 		getRequest := func(prefix string) *http.Request {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/%s", "localhost", envoy.HttpPort, prefix), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/%s", "localhost", envoyInstance.HttpPort, prefix), nil)
 			Expect(err).NotTo(HaveOccurred())
 			return req
 		}
