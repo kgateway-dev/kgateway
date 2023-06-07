@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	skMatchers "github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -213,6 +214,30 @@ var _ = Describe("Plugin", func() {
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(output).To(Equal(expectedOutput))
+			})
+
+			FIt("can enable settings-object-level setting", func() {
+				// override plugin created in BeforeEach
+				p = NewPlugin()
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+
+				stagedHttpFilters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, &v1.HttpListener{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(stagedHttpFilters).To(HaveLen(1))
+				Expect(stagedHttpFilters[0].HttpFilter.Name).To(Equal("io.solo.transformation"))
+				// pretty print the typed config of the filter
+				typedConfig := stagedHttpFilters[0].HttpFilter.GetTypedConfig()
+				expectedFilter := plugins.MustNewStagedFilter(
+					FilterName,
+					&envoytransformation.FilterTransformations{
+						LogRequestResponseInfo: true,
+					},
+					plugins.AfterStage(plugins.AuthZStage),
+				)
+
+				Expect(typedConfig).To(skMatchers.MatchProto(expectedFilter.HttpFilter.GetTypedConfig()))
 			})
 		})
 

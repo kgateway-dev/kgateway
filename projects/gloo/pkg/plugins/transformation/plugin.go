@@ -75,7 +75,7 @@ type Plugin struct {
 	RequireEarlyTransformation bool
 	TranslateTransformation    TranslateTransformationFn
 	settings                   *v1.Settings
-
+	logRequestResponseInfo     bool
 	// validationLruCache is a map of: (transformation hash) -> error state
 	// this is usually a typed error but may be an untyped nil interface
 	validationLruCache *lru.Cache
@@ -98,6 +98,7 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
+	p.logRequestResponseInfo = params.Settings.GetGloo().GetLogTransformationRequestResponseInfo().GetValue()
 }
 
 func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {
@@ -202,7 +203,8 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		// only add early transformations if we have to, to allow rolling gloo updates;
 		// i.e. an older envoy without stages connects to gloo, it shouldn't have 2 filters.
 		earlyStageConfig := &envoytransformation.FilterTransformations{
-			Stage: EarlyStageNumber,
+			Stage:                  EarlyStageNumber,
+			LogRequestResponseInfo: p.logRequestResponseInfo,
 		}
 		earlyFilter, err := plugins.NewStagedFilter(FilterName, earlyStageConfig, earlyPluginStage)
 		if err != nil {
@@ -213,7 +215,9 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 	filters = append(filters,
 		plugins.MustNewStagedFilter(FilterName,
-			&envoytransformation.FilterTransformations{},
+			&envoytransformation.FilterTransformations{
+				LogRequestResponseInfo: p.logRequestResponseInfo,
+			},
 			pluginStage),
 	)
 

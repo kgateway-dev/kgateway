@@ -692,6 +692,10 @@ message GlooOptions {
 
     // Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`
     string proxy_debug_bind_addr = 15;
+
+    // When enabled, log the request/response body and headers before and after
+    // any transformations are applied.
+    google.protobuf.BoolValue log_transformation_request_response_info = 16;
 }
 
 

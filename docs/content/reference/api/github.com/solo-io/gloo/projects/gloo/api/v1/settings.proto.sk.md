@@ -698,6 +698,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "failoverUpstreamDnsPollingInterval": .google.protobuf.Duration
 "removeUnusedFilters": .google.protobuf.BoolValue
 "proxyDebugBindAddr": string
+"logTransformationRequestResponseInfo": .google.protobuf.BoolValue
 
 ```
 
@@ -718,6 +719,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `failoverUpstreamDnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s. |
 | `removeUnusedFilters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo adds a series of filters to envoy to ensure that new routes are picked up Even if the listener previously did not have a filter on the chain previously. When set to true unused filters are not added to the chain by default. Defaults to false. |
 | `proxyDebugBindAddr` | `string` | Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`. |
+| `logTransformationRequestResponseInfo` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When enabled, log the request/response body and headers before and after any transformations are applied. |
 
 
 
