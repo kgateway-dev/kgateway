@@ -1,17 +1,12 @@
 # Note to developers/testers
 # >> to run host the docs locally, do the following
+# ensure you have hugo installed e.g. go install github.com/gohugoio/hugo@v0.81.0
 # cd to the docs dir
 # make serve-site -B
 
-# Additional steps are required for darwin/arm64 (M1 macOS)
-# build hugo v0.69.2:
-# https://github.com/gohugoio/hugo must be built from commit ec9dcf304849ded11cea70ab9ad46e0a0a4615b2 and installed on $PATH
-
-
-
 VERSION 	?= 1.0.1-dev    # a basic version that can be overidden
 
-HUGO_VERSION := 0.69.2
+HUGO_VERSION := 0.81.0
 
 SOLO_HUGO_THEME_REVISION := v0.0.25
 

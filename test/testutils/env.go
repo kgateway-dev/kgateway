@@ -41,6 +41,9 @@ const (
 	// EnvoyImageTag is used in e2e tests to specify the tag of the docker image to use for the tests
 	// If a tag is not provided, the tests dynamically identify the latest released tag to use
 	EnvoyImageTag = "ENVOY_IMAGE_TAG"
+
+	// EnvoyBinary is used in e2e tests to specify the path to the envoy binary to use for the tests
+	EnvoyBinary = "ENVOY_BINARY"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

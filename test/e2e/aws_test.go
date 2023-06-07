@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	errors "github.com/rotisserie/eris"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -701,7 +703,7 @@ var _ = Describe("AWS Lambda", func() {
 			os.Setenv(webIdentityTokenFile, tmpFile.Name())
 			os.Setenv(awsRoleArn, roleArn)
 
-			envoyInstance.DockerOptions = services.DockerOptions{
+			envoyInstance.DockerOptions = envoy.DockerOptions{
 				Volumes: []string{fmt.Sprintf("%s:%s", tmpFile.Name(), tmpFile.Name())},
 				Env:     []string{webIdentityTokenFile, awsRoleArn},
 			}
