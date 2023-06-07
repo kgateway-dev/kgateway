@@ -58,9 +58,7 @@ var _ = Describe("Health Checks", func() {
 
 		ctx, cancel = context.WithCancel(context.Background())
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -82,7 +80,7 @@ var _ = Describe("Health Checks", func() {
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
+		err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")

@@ -23,9 +23,8 @@ var _ Factory = new(factoryImpl)
 
 // Factory is a helper for running multiple envoy instances
 type Factory interface {
-	MustEnvoyInstance() *Instance
-	NewEnvoyInstance() (*Instance, error)
-	MustClean()
+	NewInstance() *Instance
+	Clean()
 }
 
 // factoryImpl is the default implementation of the Factory interface
@@ -174,7 +173,7 @@ func NewLinuxFactory(defaultBootstrapTemplate *template.Template, envoyPath, tmp
 	}
 }
 
-func (f *factoryImpl) MustClean() {
+func (f *factoryImpl) Clean() {
 	if f == nil {
 		return
 	}
@@ -188,15 +187,15 @@ func (f *factoryImpl) MustClean() {
 	}
 }
 
-func (f *factoryImpl) MustEnvoyInstance() *Instance {
-	envoyInstance, err := f.NewEnvoyInstance()
+func (f *factoryImpl) NewInstance() *Instance {
+	instance, err := f.newInstanceOrError()
 	if err != nil {
 		ginkgo.Fail(errors.Wrap(err, "failed to create envoy instance").Error())
 	}
-	return envoyInstance
+	return instance
 }
 
-func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
+func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 	gloo := "127.0.0.1"
 
 	if f.useDocker {

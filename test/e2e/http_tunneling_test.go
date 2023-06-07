@@ -82,6 +82,8 @@ var _ = Describe("tunneling", func() {
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
 
+		envoyInstance = envoyFactory.NewInstance()
+
 		// run gloo
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -101,8 +103,6 @@ var _ = Describe("tunneling", func() {
 		}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 
 		// run envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 	})

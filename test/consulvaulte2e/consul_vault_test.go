@@ -89,6 +89,8 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = vaultInstance.EnableSecretEngine(customSecretEngine)
 		Expect(err).NotTo(HaveOccurred())
 
+		envoyInstance = envoyFactory.NewInstance()
+
 		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
 
 		// write settings telling Gloo to use consul/vault
@@ -142,8 +144,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		}()
 
 		// Start Envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -221,7 +221,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
-		v1helpers.TestUpstreamReachable(envoy.HttpsPort, svc1, &cert)
+		v1helpers.TestUpstreamReachable(envoyInstance.HttpsPort, svc1, &cert)
 	})
 	It("can do function routing with consul services", func() {
 
@@ -243,7 +243,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
-		v1helpers.ExpectHttpOK(nil, nil, envoy.HttpPort,
+		v1helpers.ExpectHttpOK(nil, nil, envoyInstance.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 `)
 	})

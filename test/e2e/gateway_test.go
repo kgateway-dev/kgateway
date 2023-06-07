@@ -319,13 +319,11 @@ var _ = Describe("Gateway", func() {
 				}
 
 				BeforeEach(func() {
-					var err error
-					envoyInstance, err = envoyFactory.NewEnvoyInstance()
-					Expect(err).NotTo(HaveOccurred())
+					envoyInstance = envoyFactory.NewInstance()
 
 					testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-					err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+					err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -561,8 +559,10 @@ var _ = Describe("Gateway", func() {
 			)
 
 			BeforeEach(func() {
-				var err error
+				envoyInstance = envoyFactory.NewInstance()
+
 				// Use tcp gateway instead of default
+				// Resources need to be created after the Envoy Instance because the port is dynamically allocated
 				defaultGateway := gatewaydefaults.DefaultTcpGateway(writeNamespace)
 				defaultSslGateway := gatewaydefaults.DefaultTcpSslGateway(writeNamespace)
 
@@ -571,12 +571,9 @@ var _ = Describe("Gateway", func() {
 					defaultSslGateway,
 				}
 
-				envoyInstance, err = envoyFactory.NewEnvoyInstance()
-				Expect(err).NotTo(HaveOccurred())
-
 				tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+				err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -777,16 +774,13 @@ var _ = Describe("Gateway", func() {
 			)
 
 			BeforeEach(func() {
-				var err error
-
-				envoyInstance, err = envoyFactory.NewEnvoyInstance()
-				Expect(err).NotTo(HaveOccurred())
+				envoyInstance = envoyFactory.NewInstance()
 
 				testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 				virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
 				hybridGateway = gatewaydefaults.DefaultHybridGateway(writeNamespace)
 
-				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+				err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 

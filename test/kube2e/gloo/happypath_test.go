@@ -59,12 +59,10 @@ var _ = Describe("Happy path", func() {
 	)
 
 	BeforeEach(func() {
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = envoy.HttpPort
+		envoyPort = envoyInstance.HttpPort
 	})
 
 	AfterEach(func() {

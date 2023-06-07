@@ -11,11 +11,11 @@ import (
 var (
 	bindPort = uint32(10080)
 
-	adminPort  = defaults.EnvoyAdminPort
-	httpPort   = defaults.HttpPort
-	httpsPort  = defaults.HttpsPort
-	tcpPort    = defaults.TcpPort
-	hybridPort = defaults.HybridPort
+	adminPort  = atomic.AddUint32(&defaults.GlooAdminPort, uint32(parallel.GetPortOffset()))
+	httpPort   = atomic.AddUint32(&defaults.HttpPort, uint32(parallel.GetPortOffset()))
+	httpsPort  = atomic.AddUint32(&defaults.HttpsPort, uint32(parallel.GetPortOffset()))
+	tcpPort    = atomic.AddUint32(&defaults.TcpPort, uint32(parallel.GetPortOffset()))
+	hybridPort = atomic.AddUint32(&defaults.HybridPort, uint32(parallel.GetPortOffset()))
 )
 
 func NextBindPort() uint32 {
@@ -43,5 +43,5 @@ func advanceRequestPorts() {
 }
 
 func advancePort(p *uint32) uint32 {
-	return atomic.AddUint32(p, 1) + uint32(parallel.GetPortOffset())
+	return atomic.AddUint32(p, 1)
 }

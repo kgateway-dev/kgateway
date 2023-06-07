@@ -57,7 +57,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	envoyFactory.MustClean()
+	envoyFactory.Clean()
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
 })

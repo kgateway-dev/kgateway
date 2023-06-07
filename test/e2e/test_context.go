@@ -54,7 +54,7 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requir
 	testutils.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
 	return &TestContext{
-		envoyInstance:         f.EnvoyFactory.MustEnvoyInstance(),
+		envoyInstance:         f.EnvoyFactory.NewInstance(),
 		testUpstreamGenerator: v1helpers.NewTestHttpUpstream,
 	}
 }

@@ -147,10 +147,7 @@ var _ = Describe("Rate Limit", func() {
 		)
 
 		BeforeEach(func() {
-			var err error
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
-
+			envoyInstance = envoyFactory.NewInstance()
 			envoyPort = envoyInstance.HttpPort
 
 			// add the rl service as a static upstream
@@ -190,7 +187,7 @@ var _ = Describe("Rate Limit", func() {
 			}
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			_, err = testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
+			_, err := testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
 			err = helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)

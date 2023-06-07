@@ -245,6 +245,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
+		envoyInstance = envoyFactory.NewInstance()
+
 		runOptions := &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
@@ -253,10 +255,6 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
-
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 
 		addCredentials()
 		addUpstream()

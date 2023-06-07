@@ -172,12 +172,12 @@ var _ = Describe("Grpc Web", func() {
 				WithPostBody(bufferbase64.String()).
 				WithHost("grpc.com").
 				WithHeader("content-type", "application/grpc-web-text").
-				WithPath("/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs").
+				WithPath("envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs").
 				Build()
 
-			Eventually(func() (*http.Response, error) {
-				return http.DefaultClient.Do(req)
-			}, "10s", "0.5s").Should(matchers.HaveOkResponse())
+			Eventually(func(g Gomega) {
+				g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+			}, "10s", "0.5s").Should(Succeed())
 
 			var entry *envoy_data_accesslog_v3.HTTPAccessLogEntry
 			Eventually(msgChan, time.Second).Should(Receive(&entry))

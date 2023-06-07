@@ -11,6 +11,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/solo-io/gloo/test/services/envoy"
 
 	errors "github.com/rotisserie/eris"
@@ -81,14 +83,13 @@ var _ = Describe("AWS Lambda", func() {
 	setupEnvoy := func(justGloo bool) {
 		ctx, cancel = context.WithCancel(context.Background())
 
+		envoyInstance = envoyFactory.NewInstance()
+
 		runOptions.WhatToRun.DisableGateway = justGloo
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 	}
 
 	type lambdaValidationParams struct {
@@ -743,6 +744,9 @@ var _ = Describe("AWS Lambda", func() {
 
 		setupEnvoySts := func(justGloo bool) {
 			ctx, cancel = context.WithCancel(context.Background())
+
+			envoyInstance = envoyFactory.NewInstance()
+
 			ns := defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: ns,
@@ -767,10 +771,12 @@ var _ = Describe("AWS Lambda", func() {
 
 			err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
 		}
+
+		BeforeEach(func() {
+			testutils.ValidateRequirementsAndNotifyGinkgo(testutils.DefinedEnv(jwtPrivateKey))
+		})
+
 		AfterEach(func() {
 			if tmpFile != nil {
 				os.Remove(tmpFile.Name())
