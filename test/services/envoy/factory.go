@@ -60,7 +60,7 @@ func NewFactory() Factory {
 	case "darwin":
 		log.Printf("Using docker to Run envoy")
 
-		image := fmt.Sprintf("quay.io/solo-io/envoy-gloo-wrapper:%s", mustGetEnvoyWrapperTag())
+		image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", mustGetEnvoyWrapperTag())
 		return NewDockerFactory(bootstrapTemplate, image)
 
 	case "linux":
@@ -139,7 +139,7 @@ func mustGetEnvoyGlooTag() string {
 	return ""
 }
 
-// mustGetEnvoyWrapperTag returns the tag of the envoy-gloo-wrapper image which will be executed
+// mustGetEnvoyWrapperTag returns the tag of the gloo-envoy-wrapper image which will be executed
 // The tag is chosen using the following process:
 //  1. If ENVOY_IMAGE_TAG is defined, use that tag
 //  2. If not defined, use the latest released tag of that image
@@ -219,11 +219,11 @@ func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
 		AccessLogAddr:            gloo,
 		ApiVersion:               "V3",
 		RequestPorts: &RequestPorts{
-			HttpPort:   HttpPort,
-			HttpsPort:  HttpsPort,
-			HybridPort: HybridPort,
-			TcpPort:    TcpPort,
-			AdminPort:  AdminPort,
+			HttpPort:   httpPort,
+			HttpsPort:  httpsPort,
+			HybridPort: hybridPort,
+			TcpPort:    tcpPort,
+			AdminPort:  adminPort,
 		},
 	}
 	f.instances = append(f.instances, ei)

@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -169,11 +168,12 @@ var _ = Describe("Grpc Web", func() {
 			var bufferbase64 bytes.Buffer
 			bufferbase64.Write(dest)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs", envoyInstance.HttpPort), &bufferbase64)
-			Expect(err).NotTo(HaveOccurred())
-
-			req.Host = "grpc.com"
-			req.Header.Set("content-type", "application/grpc-web-text")
+			req := testContext.GetHttpRequestBuilder().
+				WithPostBody(bufferbase64.String()).
+				WithHost("grpc.com").
+				WithHeader("content-type", "application/grpc-web-text").
+				WithPath("/envoy.service.accesslog.v3.AccessLogService/StreamAccessLogs").
+				Build()
 
 			Eventually(func() (*http.Response, error) {
 				return http.DefaultClient.Do(req)
