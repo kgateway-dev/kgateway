@@ -305,6 +305,7 @@ var _ = Describe("Plugin", func() {
 				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
 			}
 			upstreamSpec.UseTls = wrapperspb.Bool(true)
+			upstream.ProxyProtocolVersion = &wrapperspb.StringValue{Value: "V1"}
 			p.ProcessUpstream(params, upstream, out)
 			Expect(tlsContext()).To(Equal(existing))
 		})
