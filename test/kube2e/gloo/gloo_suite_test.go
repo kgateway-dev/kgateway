@@ -41,7 +41,7 @@ var (
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	envoyFactory *services.EnvoyFactory
+	envoyFactory services.EnvoyFactory
 	vaultFactory *services.VaultFactory
 )
 
@@ -63,8 +63,7 @@ var _ = BeforeSuite(func() {
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 
-	envoyFactory, err = services.NewEnvoyFactory()
-	Expect(err).NotTo(HaveOccurred())
+	envoyFactory = services.MustEnvoyFactory()
 
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
