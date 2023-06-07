@@ -113,7 +113,7 @@ var _ = Describe("Gateway", func() {
 
 				// wait for the two gateways to be created.
 				Eventually(func() (gatewayv1.GatewayList, error) {
-					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
 				}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 			})
 
@@ -125,8 +125,7 @@ var _ = Describe("Gateway", func() {
 			})
 
 			It("should create 2 gateways (1 ssl)", func() {
-				gatewaycli := testClients.GatewayClient
-				gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
+				gw, err := testClients.GatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				numssl := 0
