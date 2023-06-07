@@ -27,15 +27,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
-type TransformationPlugin interface {
-	plugins.Plugin
-	ConvertTransformation(
-		ctx context.Context,
-		t *transformation.Transformations,
-		stagedTransformations *transformation.TransformationStages,
-	) (*envoytransformation.RouteTransformations, error)
-}
-
 var (
 	_ plugins.Plugin                    = new(Plugin)
 	_ plugins.VirtualHostPlugin         = new(Plugin)

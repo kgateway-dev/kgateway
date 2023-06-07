@@ -118,6 +118,15 @@ var _ = Describe("Plugin", func() {
 				expectedOutput            *envoytransformation.RouteTransformations
 			)
 
+			type transformationPlugin interface {
+				plugins.Plugin
+				ConvertTransformation(
+					ctx context.Context,
+					t *transformation.Transformations,
+					stagedTransformations *transformation.TransformationStages,
+				) (*envoytransformation.RouteTransformations, error)
+			}
+
 			BeforeEach(func() {
 				inputTransformationStages = &transformation.TransformationStages{
 					Regular: &transformation.RequestResponseTransformations{
@@ -150,7 +159,7 @@ var _ = Describe("Plugin", func() {
 				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 
-				output, err := p.(TransformationPlugin).ConvertTransformation(
+				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
 					&transformation.Transformations{},
 					inputTransformationStages,
@@ -163,7 +172,7 @@ var _ = Describe("Plugin", func() {
 			It("does not set log_request_response_info if transformation-stages-level setting is false", func() {
 				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: false}
 
-				output, err := p.(TransformationPlugin).ConvertTransformation(
+				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
 					&transformation.Transformations{},
 					inputTransformationStages,
@@ -178,7 +187,7 @@ var _ = Describe("Plugin", func() {
 				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.LogRequestResponseInfo = true
 				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 
-				output, err := p.(TransformationPlugin).ConvertTransformation(
+				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
 					&transformation.Transformations{},
 					inputTransformationStages,
@@ -191,7 +200,7 @@ var _ = Describe("Plugin", func() {
 			It("does not set log_request_response_info if transformation-level setting is false", func() {
 				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.LogRequestResponseInfo = false
 
-				output, err := p.(TransformationPlugin).ConvertTransformation(
+				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
 					&transformation.Transformations{},
 					inputTransformationStages,
@@ -206,7 +215,7 @@ var _ = Describe("Plugin", func() {
 				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 
-				output, err := p.(TransformationPlugin).ConvertTransformation(
+				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
 					&transformation.Transformations{},
 					inputTransformationStages,
