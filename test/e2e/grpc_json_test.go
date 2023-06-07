@@ -59,7 +59,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
-					// https://github.com/solo-io/gloo/issues/7577
+					// https://github.com/solo-io/gloo/issues/8374
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 			},
