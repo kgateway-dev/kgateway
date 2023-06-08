@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7577
+    description: | 
+      Resolves a typo in factory.go which caused the gateway-proxy image
+      to be set to `envoy-gloo-wrapper` instead of `gloo-envoy-wrapper`
+      when running e2e tests
+    resolvesIssue: false

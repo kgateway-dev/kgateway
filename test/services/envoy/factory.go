@@ -60,7 +60,7 @@ func NewFactory() Factory {
 	case "darwin":
 		log.Printf("Using docker to Run envoy")
 
-		image := fmt.Sprintf("quay.io/solo-io/envoy-gloo-wrapper:%s", mustGetEnvoyWrapperTag())
+		image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", mustGetEnvoyWrapperTag())
 		return NewDockerFactory(bootstrapTemplate, image)
 
 	case "linux":
