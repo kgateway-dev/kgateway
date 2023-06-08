@@ -694,7 +694,9 @@ message GlooOptions {
     string proxy_debug_bind_addr = 15;
 
     // When enabled, log the request/response body and headers before and after
-    // any transformations are applied.
+    // any transformations are applied. May be useful in the case where many
+    // transformations are applied and it is difficult to determine which are
+    // causing issues. Defaults to false.
     google.protobuf.BoolValue log_transformation_request_response_info = 16;
 }
 

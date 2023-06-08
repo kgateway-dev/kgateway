@@ -747,7 +747,9 @@ type GlooOptions struct {
 	// Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`
 	ProxyDebugBindAddr string `protobuf:"bytes,15,opt,name=proxy_debug_bind_addr,json=proxyDebugBindAddr,proto3" json:"proxy_debug_bind_addr,omitempty"`
 	// When enabled, log the request/response body and headers before and after
-	// any transformations are applied.
+	// any transformations are applied. May be useful in the case where many
+	// transformations are applied and it is difficult to determine which are
+	// causing issues. Defaults to false.
 	LogTransformationRequestResponseInfo *wrappers.BoolValue `protobuf:"bytes,16,opt,name=log_transformation_request_response_info,json=logTransformationRequestResponseInfo,proto3" json:"log_transformation_request_response_info,omitempty"`
 }
 
