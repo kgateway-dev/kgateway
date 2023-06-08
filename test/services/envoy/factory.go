@@ -12,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/test/testutils"
@@ -207,6 +209,9 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 	}
 
 	// Ensure that each Instance has a unique set of ports
+	// This is done in an attempt to allow multiple envoy Instances to be executed in parallel
+	// without port conflicts. This get's us a step closer to being able to run e2e tests in parallel.
+	// I believe there are some lingering blockers to that succeeding, but this is a step in the right direction.
 	advanceRequestPorts()
 
 	ei := &Instance{
@@ -218,11 +223,11 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		AccessLogAddr:            gloo,
 		ApiVersion:               "V3",
 		RequestPorts: &RequestPorts{
-			HttpPort:   httpPort,
-			HttpsPort:  httpsPort,
-			HybridPort: hybridPort,
-			TcpPort:    tcpPort,
-			AdminPort:  adminPort,
+			HttpPort:   defaults.HttpPort,
+			HttpsPort:  defaults.HttpsPort,
+			HybridPort: defaults.HybridPort,
+			TcpPort:    defaults.TcpPort,
+			AdminPort:  defaults.EnvoyAdminPort,
 		},
 	}
 	f.instances = append(f.instances, ei)
