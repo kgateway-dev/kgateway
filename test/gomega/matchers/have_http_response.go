@@ -17,19 +17,16 @@ var (
 	_ types.GomegaMatcher = new(HaveHttpResponseMatcher)
 )
 
-// HaveOkResponse expects a 200 response with an empty body
+// HaveOkResponse expects a http response with a 200 status code
 func HaveOkResponse() types.GomegaMatcher {
-	return HaveHttpResponse(&HttpResponse{
-		StatusCode: http.StatusOK,
-		Body:       gomega.BeEmpty(),
-	})
+	return HaveStatusCode(http.StatusOK)
 }
 
-// HaveStatusCode expects an http response with a particular status code and an empty body
+// HaveStatusCode expects a http response with a particular status code
 func HaveStatusCode(statusCode int) types.GomegaMatcher {
 	return HaveHttpResponse(&HttpResponse{
 		StatusCode: statusCode,
-		Body:       gomega.BeEmpty(),
+		Body:       gstruct.Ignore(),
 	})
 }
 

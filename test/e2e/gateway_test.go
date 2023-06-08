@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/rotisserie/eris"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -50,10 +52,6 @@ var _ = Describe("Gateway", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
-		defaults.TcpPort = services.NextBindPort()
-		defaults.HybridPort = services.NextBindPort()
 	})
 
 	AfterEach(func() {
@@ -90,9 +88,14 @@ var _ = Describe("Gateway", func() {
 
 		Context("http gateway", func() {
 
-			var defaultGateways []*gatewayv1.Gateway
+			var (
+				envoyInstance   *envoy.Instance
+				defaultGateways []*gatewayv1.Gateway
+			)
 
 			BeforeEach(func() {
+				envoyInstance = envoyFactory.NewInstance()
+
 				defaultGateway := gatewaydefaults.DefaultGateway(writeNamespace)
 				defaultSslGateway := gatewaydefaults.DefaultSslGateway(writeNamespace)
 
@@ -110,7 +113,7 @@ var _ = Describe("Gateway", func() {
 
 				// wait for the two gateways to be created.
 				Eventually(func() (gatewayv1.GatewayList, error) {
-					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
+					return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
 				}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 			})
 
@@ -122,8 +125,7 @@ var _ = Describe("Gateway", func() {
 			})
 
 			It("should create 2 gateways (1 ssl)", func() {
-				gatewaycli := testClients.GatewayClient
-				gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
+				gw, err := testClients.GatewayClient.List(writeNamespace, clients.ListOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
 				numssl := 0
@@ -312,22 +314,17 @@ var _ = Describe("Gateway", func() {
 			Context("traffic", func() {
 
 				var (
-					envoyInstance *services.EnvoyInstance
-					testUpstream  *v1helpers.TestUpstream
+					testUpstream *v1helpers.TestUpstream
 				)
 
 				TestUpstreamReachable := func() {
-					v1helpers.TestUpstreamReachable(defaults.HttpPort, testUpstream, nil)
+					v1helpers.TestUpstreamReachable(envoyInstance.HttpPort, testUpstream, nil)
 				}
 
 				BeforeEach(func() {
-					var err error
-					envoyInstance, err = envoyFactory.NewEnvoyInstance()
-					Expect(err).NotTo(HaveOccurred())
-
 					testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-					err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+					err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 					Expect(err).NotTo(HaveOccurred())
 				})
 
@@ -412,7 +409,7 @@ var _ = Describe("Gateway", func() {
 					}, "10s", "0.1s").Should(BeTrue())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", defaults.HttpPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", envoyInstance.HttpPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(ctx)
 
@@ -434,7 +431,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", envoyInstance.HttpPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(ctx)
 
@@ -479,7 +476,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", envoyInstance.HttpPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(context.TODO())
 					request.Header.Add("cluster-header-name", upstreamName)
@@ -526,7 +523,7 @@ var _ = Describe("Gateway", func() {
 
 					TestUpstreamSslReachable := func() {
 						cert := gloohelpers.Certificate()
-						v1helpers.TestUpstreamReachable(defaults.HttpsPort, testUpstream, &cert)
+						v1helpers.TestUpstreamReachable(envoyInstance.HttpsPort, testUpstream, &cert)
 					}
 
 					It("should work with ssl", func() {
@@ -558,13 +555,15 @@ var _ = Describe("Gateway", func() {
 
 			var (
 				defaultGateways []*gatewayv1.Gateway
-				envoyInstance   *services.EnvoyInstance
+				envoyInstance   *envoy.Instance
 				tu              *v1helpers.TestUpstream
 			)
 
 			BeforeEach(func() {
-				var err error
+				envoyInstance = envoyFactory.NewInstance()
+
 				// Use tcp gateway instead of default
+				// Resources need to be created after the Envoy Instance because the port is dynamically allocated
 				defaultGateway := gatewaydefaults.DefaultTcpGateway(writeNamespace)
 				defaultSslGateway := gatewaydefaults.DefaultTcpSslGateway(writeNamespace)
 
@@ -573,12 +572,9 @@ var _ = Describe("Gateway", func() {
 					defaultSslGateway,
 				}
 
-				envoyInstance, err = envoyFactory.NewEnvoyInstance()
-				Expect(err).NotTo(HaveOccurred())
-
 				tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
-				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+				err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -634,7 +630,7 @@ var _ = Describe("Gateway", func() {
 
 				TestUpstreamSslReachableTcp := func() {
 					cert := gloohelpers.Certificate()
-					v1helpers.TestUpstreamReachable(defaults.HttpsPort, tu, &cert)
+					v1helpers.TestUpstreamReachable(envoyInstance.HttpsPort, tu, &cert)
 				}
 
 				It("should work with ssl", func() {
@@ -771,7 +767,7 @@ var _ = Describe("Gateway", func() {
 		Context("hybrid gateway", func() {
 
 			var (
-				envoyInstance *services.EnvoyInstance
+				envoyInstance *envoy.Instance
 				testUpstream  *v1helpers.TestUpstream
 
 				virtualService *gatewayv1.VirtualService
@@ -779,16 +775,13 @@ var _ = Describe("Gateway", func() {
 			)
 
 			BeforeEach(func() {
-				var err error
-
-				envoyInstance, err = envoyFactory.NewEnvoyInstance()
-				Expect(err).NotTo(HaveOccurred())
+				envoyInstance = envoyFactory.NewInstance()
 
 				testUpstream = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 				virtualService = getTrivialVirtualServiceForUpstream(writeNamespace, testUpstream.Upstream.Metadata.Ref())
 				hybridGateway = gatewaydefaults.DefaultHybridGateway(writeNamespace)
 
-				err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+				err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -963,7 +956,7 @@ var _ = Describe("Gateway", func() {
 			Context("http traffic", func() {
 
 				TestUpstreamReachable := func() {
-					v1helpers.TestUpstreamReachable(defaults.HybridPort, testUpstream, nil)
+					v1helpers.TestUpstreamReachable(envoyInstance.HybridPort, testUpstream, nil)
 				}
 
 				It("works when rapid virtual service creation and deletion causes no race conditions", func() {
@@ -1001,7 +994,7 @@ var _ = Describe("Gateway", func() {
 					}, "10s", "0.1s").Should(BeTrue())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", defaults.HybridPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d", envoyInstance.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(ctx)
 
@@ -1018,7 +1011,7 @@ var _ = Describe("Gateway", func() {
 
 				It("should not match requests that contain a header that is excluded from match", func() {
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HybridPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", envoyInstance.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(ctx)
 
@@ -1069,7 +1062,7 @@ var _ = Describe("Gateway", func() {
 					}, "5s", "0.3s").ShouldNot(HaveOccurred())
 
 					// Create a regular request
-					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HybridPort), nil)
+					request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", envoyInstance.HybridPort), nil)
 					Expect(err).NotTo(HaveOccurred())
 					request = request.WithContext(context.TODO())
 					request.Header.Add("cluster-header-name", upstreamName)
@@ -1116,7 +1109,7 @@ var _ = Describe("Gateway", func() {
 
 					TestUpstreamSslReachable := func() {
 						cert := gloohelpers.Certificate()
-						v1helpers.TestUpstreamReachable(defaults.HybridPort, testUpstream, &cert)
+						v1helpers.TestUpstreamReachable(envoyInstance.HybridPort, testUpstream, &cert)
 					}
 
 					It("should work with ssl if ssl config is present in matcher", func() {
@@ -1200,7 +1193,7 @@ var _ = Describe("Gateway", func() {
 
 				TestUpstreamSslReachableTcp := func() {
 					cert := gloohelpers.Certificate()
-					v1helpers.TestUpstreamReachable(defaults.HybridPort, testUpstream, &cert)
+					v1helpers.TestUpstreamReachable(envoyInstance.HybridPort, testUpstream, &cert)
 				}
 
 				It("should work with ssl", func() {

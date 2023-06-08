@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/services"
 
 	"github.com/avast/retry-go"
@@ -41,7 +43,7 @@ var (
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	envoyFactory services.EnvoyFactory
+	envoyFactory envoy.Factory
 	vaultFactory *services.VaultFactory
 )
 
@@ -63,7 +65,7 @@ var _ = BeforeSuite(func() {
 
 	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
 
-	envoyFactory = services.MustEnvoyFactory()
+	envoyFactory = envoy.NewFactory()
 
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
