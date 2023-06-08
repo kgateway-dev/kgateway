@@ -16,8 +16,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	"github.com/onsi/ginkgo/v2"
 
 	errors "github.com/rotisserie/eris"
@@ -47,7 +45,6 @@ type Instance struct {
 	GlooAddr      string // address for gloo and services
 	Port          uint32
 	RestXdsPort   uint32
-	AdminPort     uint32
 
 	// Envoy API Version to use, default to V3
 	ApiVersion string
@@ -55,6 +52,17 @@ type Instance struct {
 	DockerOptions
 	UseDocker   bool
 	DockerImage string
+
+	*RequestPorts
+}
+
+// RequestPorts are the ports that the Instance will listen on for requests
+type RequestPorts struct {
+	HttpPort   uint32
+	HttpsPort  uint32
+	HybridPort uint32
+	TcpPort    uint32
+	AdminPort  uint32
 }
 
 // DockerOptions contains extra options for running in docker
@@ -224,9 +232,10 @@ func (ei *Instance) Clean() {
 
 func (ei *Instance) runContainer(ctx context.Context) error {
 	args := []string{"run", "--rm", "--name", containerName,
-		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
-		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
-		"-p", fmt.Sprintf("%d:%d", defaults.HybridPort, defaults.HybridPort),
+		"-p", fmt.Sprintf("%d:%d", ei.HttpPort, ei.HttpPort),
+		"-p", fmt.Sprintf("%d:%d", ei.HttpsPort, ei.HttpsPort),
+		"-p", fmt.Sprintf("%d:%d", ei.TcpPort, ei.TcpPort),
+		"-p", fmt.Sprintf("%d:%d", ei.HybridPort, ei.HybridPort),
 		"-p", fmt.Sprintf("%d:%d", ei.AdminPort, ei.AdminPort),
 	}
 
