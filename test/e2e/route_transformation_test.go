@@ -2,10 +2,7 @@ package e2e_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/testutils"
 
@@ -263,16 +260,6 @@ var _ = Describe("Transformations", func() {
 	})
 
 	Context("requestTransformation", func() {
-		// form a request with the given headers
-		// note that the Host header is set to the default host
-		formRequestWithUrlAndHeaders := func(url string, headers map[string][]string) *http.Request {
-			// form request
-			req, err := http.NewRequest(http.MethodGet, url, nil)
-			Expect(err).NotTo(HaveOccurred())
-			req.Header = headers
-			req.Host = e2e.DefaultHost
-			return req
-		}
 
 		// send the given request and assert that the response matches the given expected response
 		eventuallyRequestMatches := func(req *http.Request, expectedResponse *testmatchers.HttpResponse) AsyncAssertion {
@@ -313,7 +300,9 @@ var _ = Describe("Transformations", func() {
 
 		It("should handle queryStringParameters and multiValueQueryStringParameters", func() {
 			// form request
-			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2", defaults.HttpPort), nil)
+			req := testContext.GetHttpRequestBuilder().
+				WithPath("?foo=bar&multiple=1&multiple=2").
+				Build()
 			// form matcher
 			matcher := &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,
@@ -332,7 +321,9 @@ var _ = Describe("Transformations", func() {
 		It("should handle 3 and 4 values in multiValueQueryStringParameters", func() {
 			By("populating MultiValueQueryStringParameters with 3 values", func() {
 				// form request
-				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3", defaults.HttpPort), nil)
+				req := testContext.GetHttpRequestBuilder().
+					WithPath("?foo=bar&multiple=1&multiple=2&multiple=3").
+					Build()
 				// form matcher
 				matcher := &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -350,7 +341,9 @@ var _ = Describe("Transformations", func() {
 
 			By("populating MultiValueQueryStringParameters with 4 values", func() {
 				// form request
-				req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/?foo=bar&multiple=1&multiple=2&multiple=3&multiple=4", defaults.HttpPort), nil)
+				req := testContext.GetHttpRequestBuilder().
+					WithPath("?foo=bar&multiple=1&multiple=2&multiple=3&multiple=4").
+					Build()
 				// form matcher
 				matcher := &testmatchers.HttpResponse{
 					StatusCode: http.StatusOK,
@@ -369,10 +362,10 @@ var _ = Describe("Transformations", func() {
 
 		It("should handle headers and multiValueHeaders", func() {
 			// form request
-			req := formRequestWithUrlAndHeaders(fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), map[string][]string{
-				"foo":      {"bar"},
-				"multiple": {"1", "2"},
-			})
+			req := testContext.GetHttpRequestBuilder().
+				WithHeader("foo", "bar").
+				WithHeader("multiple", "1,2").
+				Build()
 			// form matcher
 			matcher := &testmatchers.HttpResponse{
 				StatusCode: http.StatusOK,

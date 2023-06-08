@@ -5,13 +5,14 @@ import (
 	"net"
 	"strings"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -31,9 +32,8 @@ var _ = Describe("Happy path", func() {
 
 	var (
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
-		envoyPort     uint32
 
 		testCases = []struct {
 			Title               string
@@ -58,15 +58,9 @@ var _ = Describe("Happy path", func() {
 	)
 
 	BeforeEach(func() {
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
-
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = defaults.HttpPort
 	})
 
 	AfterEach(func() {
@@ -74,7 +68,7 @@ var _ = Describe("Happy path", func() {
 	})
 
 	TestUpstreamReachable := func() {
-		v1helpers.TestUpstreamReachableWithOffset(3, envoyPort, tu, nil)
+		v1helpers.TestUpstreamReachableWithOffset(3, envoyInstance.HttpPort, tu, nil)
 	}
 
 	for _, testCase := range testCases {
@@ -202,7 +196,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -221,7 +215,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -235,7 +229,7 @@ var _ = Describe("Happy path", func() {
 					It("correctly routes requests to a service destination", func() {
 						svcRef := skkubeutils.FromKubeMeta(svc.ObjectMeta, true).Ref()
 						svcPort := svc.Spec.Ports[0].Port
-						proxy := getTrivialProxyForService(testNamespace, envoyPort, svcRef, uint32(svcPort))
+						proxy := getTrivialProxyForService(testNamespace, envoyInstance.HttpPort, svcRef, uint32(svcPort))
 
 						_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 						Expect(err).NotTo(HaveOccurred())
@@ -280,7 +274,7 @@ var _ = Describe("Happy path", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						proxycli := testClients.ProxyClient
-						proxy := getTrivialProxyForUpstream(testNamespace, envoyPort, up.Metadata.Ref())
+						proxy := getTrivialProxyForUpstream(testNamespace, envoyInstance.HttpPort, up.Metadata.Ref())
 						var opts clients.WriteOpts
 						_, err = proxycli.Write(proxy, opts)
 						Expect(err).NotTo(HaveOccurred())
@@ -350,7 +344,7 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 }
 
 // getNonSpecialIP returns a non-special IP that Kubernetes will allow in an endpoint.
-func getNonSpecialIP(instance *services.EnvoyInstance) string {
+func getNonSpecialIP(instance *envoy.Instance) string {
 	if instance.UseDocker {
 		return instance.LocalAddr()
 	}

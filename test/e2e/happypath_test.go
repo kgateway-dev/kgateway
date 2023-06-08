@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -39,7 +41,7 @@ var _ = Describe("Happy path", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
 		envoyPort     uint32
 
@@ -67,15 +69,11 @@ var _ = Describe("Happy path", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
-		envoyPort = defaults.HttpPort
+		envoyPort = envoyInstance.HttpPort
 	})
 
 	AfterEach(func() {
@@ -197,7 +195,7 @@ var _ = Describe("Happy path", func() {
 					TestUpstreamReachable()
 
 					// This will hit the virtual host with the above virtual cluster config
-					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoyInstance.HttpPort))
 					Expect(err).NotTo(HaveOccurred())
 					Expect(response.Header).NotTo(HaveKey("X-Envoy-Upstream-Service-Time"))
 
@@ -222,7 +220,7 @@ var _ = Describe("Happy path", func() {
 					TestUpstreamReachable()
 
 					// This will hit the virtual host with the above virtual cluster config
-					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort))
+					response, err := http.Get(fmt.Sprintf("http://%s:%d/", "localhost", envoyInstance.HttpPort))
 					Expect(err).NotTo(HaveOccurred())
 					Expect(response.Header).To(HaveKey("X-Envoy-Upstream-Service-Time"))
 
@@ -478,7 +476,7 @@ func getTrivialProxy(ns string, bindPort uint32) *gloov1.Proxy {
 }
 
 // getNonSpecialIP returns a non-special IP that Kubernetes will allow in an endpoint.
-func getNonSpecialIP(instance *services.EnvoyInstance) string {
+func getNonSpecialIP(instance *envoy.Instance) string {
 	if instance.UseDocker {
 		return instance.LocalAddr()
 	}

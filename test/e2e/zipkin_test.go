@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
@@ -31,8 +33,6 @@ import (
 	. "github.com/solo-io/gloo/test/gomega"
 
 	"github.com/solo-io/gloo/test/services"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 const (
@@ -47,17 +47,13 @@ var _ = Describe("Tracing config loading", func() {
 	var (
 		ctx           context.Context
 		cancel        context.CancelFunc
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 	)
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 	})
 
 	AfterEach(func() {
@@ -74,7 +70,7 @@ var _ = Describe("Tracing config loading", func() {
 		})
 
 		It("should send trace msgs to the zipkin server", func() {
-			err := envoyInstance.RunWithConfigFile(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
+			err := envoyInstance.RunWithConfigFile(int(envoyInstance.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
 			Expect(err).NotTo(HaveOccurred())
 
 			// Start a dummy server listening on 9411 for Zipkin requests
@@ -199,7 +195,7 @@ var _ = Describe("Tracing config loading", func() {
 				0,
 				v1helpers.CurlRequest{
 					RootCA: nil,
-					Port:   defaults.HttpPort,
+					Port:   envoyInstance.HttpPort,
 					Host:   "test.com", // to match the vs-test
 					Path:   "/",
 					Body:   []byte("solo.io test"),
@@ -245,7 +241,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
@@ -286,7 +282,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
@@ -316,7 +312,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Not(Receive()))
@@ -359,7 +355,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
@@ -402,7 +398,7 @@ var _ = Describe("Tracing config loading", func() {
 			)
 			Expect(err).NotTo(HaveOccurred())
 
-			testRequest := createRequestWithTracingEnabled("localhost", defaults.HttpPort)
+			testRequest := createRequestWithTracingEnabled("localhost", envoyInstance.HttpPort)
 			Eventually(func(g Gomega) {
 				g.Eventually(testRequest, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(BeEmpty())
 				g.Eventually(collectorApiHit, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive())
