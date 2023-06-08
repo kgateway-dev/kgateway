@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -32,7 +34,7 @@ var _ = Describe("CustomAuth", func() {
 	var (
 		ctx           context.Context
 		cancel        context.CancelFunc
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		testUpstream  *v1helpers.TestUpstream
 		testClients   services.TestClients
 		srv           *grpc.Server
@@ -42,11 +44,10 @@ var _ = Describe("CustomAuth", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		// Initialize Envoy instance
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		// Start custom extauth server and create upstream for it
+		var err error
 		srv, err = startCustomExtauthServer(8095)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -89,7 +90,7 @@ var _ = Describe("CustomAuth", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Run envoy
-		err = envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err = envoyInstance.RunWithRoleAndRestXds(envoy.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create a test upstream
@@ -98,7 +99,7 @@ var _ = Describe("CustomAuth", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// Create a proxy routing to the upstream and wait for it to be accepted
-		proxy := getProxyExtAuth("default", "proxy", defaults.HttpPort, testUpstream.Upstream.Metadata.Ref())
+		proxy := getProxyExtAuth("default", "proxy", envoyInstance.HttpPort, testUpstream.Upstream.Metadata.Ref())
 
 		_, err = testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -118,7 +119,7 @@ var _ = Describe("CustomAuth", func() {
 		client := &http.Client{}
 
 		getRequest := func(prefix string) *http.Request {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/%s", "localhost", defaults.HttpPort, prefix), nil)
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/%s", "localhost", envoyInstance.HttpPort, prefix), nil)
 			Expect(err).NotTo(HaveOccurred())
 			return req
 		}

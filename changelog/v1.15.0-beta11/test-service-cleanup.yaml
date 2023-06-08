@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7577
+    resolvesIssue: false
+    description: >-
+      Ensure e2e tests use the envoy.Instance to determine the port for requests, instead of
+      the default package
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5057
+    resolvesIssue: false
+    description: >-
+      Cleanup the envoy.Factory interface to remove the need for the default package

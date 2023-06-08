@@ -1,6 +1,8 @@
 package defaults
 
-import "time"
+import (
+	"time"
+)
 
 const GlooRestXdsName = "rest_xds_cluster"
 

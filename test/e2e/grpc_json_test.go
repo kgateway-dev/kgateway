@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -38,18 +40,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
 	)
 	format.MaxLength = 0
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -61,14 +59,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
-					// https://github.com/solo-io/gloo/issues/7577
+					// https://github.com/solo-io/gloo/issues/8374
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
