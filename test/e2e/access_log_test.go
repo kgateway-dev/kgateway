@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/test/services/envoy"
-
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -61,9 +59,7 @@ var _ = Describe("Access Log", func() {
 		)
 
 		BeforeEach(func() {
-			accessLogPort := envoy.NextBindPort()
-			msgChan = runAccessLog(testContext.Ctx(), accessLogPort)
-			testContext.EnvoyInstance().AccessLogPort = accessLogPort
+			msgChan = runAccessLog(testContext.Ctx(), testContext.EnvoyInstance().AccessLogPort)
 
 			gw := gwdefaults.DefaultGateway(writeNamespace)
 			gw.Options = &gloov1.ListenerOptions{

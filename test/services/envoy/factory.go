@@ -220,6 +220,7 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		UseDocker:                f.useDocker,
 		DockerImage:              f.dockerImage,
 		GlooAddr:                 gloo,
+		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
 		ApiVersion:               "V3",
 		RequestPorts: &RequestPorts{

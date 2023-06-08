@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/solo-io/gloo/test/services/envoy"
-
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
 	proto_matchers "github.com/solo-io/solo-kit/test/matchers"
@@ -87,7 +85,6 @@ var _ = Describe("Grpc Web", func() {
 		)
 
 		BeforeEach(func() {
-			accessLogPort := envoy.NextBindPort()
 			grpcUpstream := &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Name:      "grpc-service",
@@ -99,7 +96,7 @@ var _ = Describe("Grpc Web", func() {
 						Hosts: []*static_plugin_gloo.Host{
 							{
 								Addr: testContext.EnvoyInstance().LocalAddr(),
-								Port: accessLogPort,
+								Port: testContext.EnvoyInstance().AccessLogPort,
 							},
 						},
 					},
@@ -115,7 +112,7 @@ var _ = Describe("Grpc Web", func() {
 
 			// we want to test grpc web, so lets reuse the access log service
 			// we could use any other service, but we already have the ALS setup for tests
-			msgChan = runAccessLog(testContext.Ctx(), accessLogPort)
+			msgChan = runAccessLog(testContext.Ctx(), testContext.EnvoyInstance().AccessLogPort)
 
 			gw := gatewaydefaults.DefaultGateway(writeNamespace)
 			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{

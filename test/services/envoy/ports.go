@@ -9,19 +9,24 @@ import (
 )
 
 var (
-	bindPort = uint32(10080)
+	baseAdminPort     = defaults.EnvoyAdminPort
+	baseHttpPort      = defaults.HttpPort
+	baseHttpsPort     = defaults.HttpsPort
+	baseTcpPort       = defaults.TcpPort
+	baseHybridPort    = defaults.HybridPort
+	baseAccessLogPort = uint32(10080)
 )
 
-func NextBindPort() uint32 {
-	return advancePort(&bindPort)
+func NextAccessLogPort() uint32 {
+	return advancePort(&baseAccessLogPort)
 }
 
 func advanceRequestPorts() {
-	defaults.EnvoyAdminPort = advancePort(&defaults.EnvoyAdminPort)
-	defaults.HttpPort = advancePort(&defaults.HttpPort)
-	defaults.HttpsPort = advancePort(&defaults.HttpsPort)
-	defaults.TcpPort = advancePort(&defaults.TcpPort)
-	defaults.HybridPort = advancePort(&defaults.HybridPort)
+	defaults.HttpPort = advancePort(&baseHttpPort)
+	defaults.HttpsPort = advancePort(&baseHttpsPort)
+	defaults.HybridPort = advancePort(&baseHybridPort)
+	defaults.TcpPort = advancePort(&baseTcpPort)
+	defaults.EnvoyAdminPort = advancePort(&baseAdminPort)
 }
 
 func advancePort(p *uint32) uint32 {
