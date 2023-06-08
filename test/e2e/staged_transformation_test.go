@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
 
-var _ = FDescribe("Staged Transformation", func() {
+var _ = Describe("Staged Transformation", func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -198,7 +198,7 @@ var _ = FDescribe("Staged Transformation", func() {
 			}, "15s", ".5s").Should(Succeed())
 		})
 
-		FIt("Should be able to base64 decode the body", func() {
+		It("Should be able to base64 decode the body", func() {
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vsBuilder := helpers.BuilderFromVirtualService(vs)
 				vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
@@ -376,10 +376,12 @@ var _ = FDescribe("Staged Transformation", func() {
 			// get the logs from the gateway-proxy container
 			logs, err := testContext.EnvoyInstance().Logs()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(logs).To(ContainSubstring(`body before transformation: test`))
-			Expect(logs).To(ContainSubstring(`body after transformation: regular-transformed`))
-			Expect(logs).To(ContainSubstring(`body before transformation: regular-transformed`))
-			Expect(logs).To(ContainSubstring(`body after transformation: regular-transformed-early-transformed`))
+			Expect(logs).To(And(
+				ContainSubstring(`body before transformation: test`),
+				ContainSubstring(`body after transformation: regular-transformed`),
+				ContainSubstring(`body before transformation: regular-transformed`),
+				ContainSubstring(`body after transformation: regular-transformed-early-transformed`),
+			))
 		})
 
 		It("can enable enhanced logging for an individual transformation", func() {
@@ -450,10 +452,60 @@ var _ = FDescribe("Staged Transformation", func() {
 			// get the logs from the gateway-proxy container
 			logs, err := testContext.EnvoyInstance().Logs()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(logs).NotTo(ContainSubstring(`body before transformation: test`))
-			Expect(logs).NotTo(ContainSubstring(`body after transformation: regular-transformed\n`))
-			Expect(logs).To(ContainSubstring(`body before transformation: regular-transformed`))
-			Expect(logs).To(ContainSubstring(`body after transformation: regular-transformed-early-transformed`))
+			Expect(logs).NotTo(And(
+				ContainSubstring(`body before transformation: test`),
+				ContainSubstring(`body after transformation: regular-transformed`),
+			))
+			Expect(logs).To(And(
+				ContainSubstring(`body before transformation: regular-transformed`),
+				ContainSubstring(`body after transformation: regular-transformed-early-transformed`),
+			))
+		})
+
+		It("does not enable enhanced logging for a transformation when not requested", func() {
+			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+				vsBuilder := helpers.BuilderFromVirtualService(vs)
+				vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+					StagedTransformations: &transformation.TransformationStages{
+						Regular: &transformation.RequestResponseTransformations{
+							ResponseTransforms: []*transformation.ResponseMatch{{
+								ResponseTransformation: &transformation.Transformation{
+									TransformationType: &transformation.Transformation_TransformationTemplate{
+										TransformationTemplate: &envoytransformation.TransformationTemplate{
+											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+												Body: &envoytransformation.InjaTemplate{
+													Text: "{{base64_decode(body())}}",
+												},
+											},
+										},
+									},
+								},
+							}},
+						},
+					},
+				})
+				return vsBuilder.Build()
+			})
+
+			// send a request, expect that the response body is base64 decoded
+			body := "test"
+			encodedBody := base64.StdEncoding.EncodeToString([]byte(body))
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(encodedBody)
+			Eventually(func(g Gomega) {
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+					StatusCode: http.StatusOK,
+					Body:       body,
+				}))
+			}, "15s", ".5s").Should(Succeed())
+
+			// get the logs from the gateway-proxy container
+			logs, err := testContext.EnvoyInstance().Logs()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(logs).NotTo(And(
+				ContainSubstring(`body before transformation: `+encodedBody),
+				ContainSubstring(`body after transformation: `+body),
+			))
 		})
 
 		It("should apply transforms from most specific level only", func() {
