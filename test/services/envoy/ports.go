@@ -11,12 +11,21 @@ import (
 var (
 	bindPort = uint32(10080)
 
-	adminPort  = atomic.AddUint32(&defaults.GlooAdminPort, uint32(parallel.GetPortOffset()))
-	httpPort   = atomic.AddUint32(&defaults.HttpPort, uint32(parallel.GetPortOffset()))
-	httpsPort  = atomic.AddUint32(&defaults.HttpsPort, uint32(parallel.GetPortOffset()))
-	tcpPort    = atomic.AddUint32(&defaults.TcpPort, uint32(parallel.GetPortOffset()))
-	hybridPort = atomic.AddUint32(&defaults.HybridPort, uint32(parallel.GetPortOffset()))
+	adminPort  = defaults.GlooAdminPort
+	httpPort   = defaults.HttpPort
+	httpsPort  = defaults.HttpsPort
+	tcpPort    = defaults.TcpPort
+	hybridPort = defaults.HybridPort
 )
+
+func init() {
+	// advance the ports by the offset to enable tests to run in parallel
+	atomic.AddUint32(&adminPort, uint32(parallel.GetPortOffset()))
+	atomic.AddUint32(&httpPort, uint32(parallel.GetPortOffset()))
+	atomic.AddUint32(&httpsPort, uint32(parallel.GetPortOffset()))
+	atomic.AddUint32(&tcpPort, uint32(parallel.GetPortOffset()))
+	atomic.AddUint32(&hybridPort, uint32(parallel.GetPortOffset()))
+}
 
 func NextBindPort() uint32 {
 	return advancePort(&bindPort)
