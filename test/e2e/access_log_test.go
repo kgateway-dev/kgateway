@@ -24,8 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/test/e2e"
-	"github.com/solo-io/gloo/test/gomega/matchers"
+
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -276,10 +275,12 @@ var _ = Describe("Access Log", func() {
 			It("Can filter by status code", func() {
 				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 				Expect(err).NotTo(HaveOccurred())
-				req.Host = e2e.DefaultHost
+				req.Host = "test.com"
 
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(req)).Should(matchers.HaveOkResponse())
+					resp, err := http.DefaultClient.Do(req)
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 					logs, err := envoyInstance.Logs()
 					g.Expect(err).NotTo(HaveOccurred())
@@ -291,7 +292,9 @@ var _ = Describe("Access Log", func() {
 				req.Host = "" // We can get a 404 by not setting the Host header.
 
 				Eventually(func(g Gomega) {
-					g.Expect(http.DefaultClient.Do(req)).Should(matchers.StatusNotFound())
+					resp, err := http.DefaultClient.Do(req)
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
 
 					logs, err := envoyInstance.Logs()
 					g.Expect(err).To(Not(HaveOccurred()))
