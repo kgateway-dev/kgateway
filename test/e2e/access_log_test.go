@@ -271,6 +271,8 @@ var _ = Describe("Access Log", func() {
 						},
 					},
 				}
+				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
 
 			})
 
@@ -289,6 +291,7 @@ var _ = Describe("Access Log", func() {
 				}, time.Second*30, time.Second/2).Should(Succeed())
 
 				req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/BAD/HOST", "localhost", defaults.HttpPort), nil)
+
 				Expect(err).NotTo(HaveOccurred())
 				req.Host = "" // We can get a 404 by not setting the Host header.
 
