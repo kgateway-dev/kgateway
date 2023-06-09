@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  issueLink: https://github.com/solo-io/gloo/issues/8349
-  description: Upgrade openssl version in all images to fix CVE-2023-2650.
