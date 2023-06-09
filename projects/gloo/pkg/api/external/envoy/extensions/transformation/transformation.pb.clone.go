@@ -15,6 +15,8 @@ import (
 
 	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
 
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_route_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
@@ -55,6 +57,8 @@ func (m *FilterTransformations) Clone() proto.Message {
 	}
 
 	target.Stage = m.GetStage()
+
+	target.LogRequestResponseInfo = m.GetLogRequestResponseInfo()
 
 	return target
 }
@@ -180,6 +184,12 @@ func (m *Transformation) Clone() proto.Message {
 		return target
 	}
 	target = &Transformation{}
+
+	if h, ok := interface{}(m.GetLogRequestResponseInfo()).(clone.Cloner); ok {
+		target.LogRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.LogRequestResponseInfo = proto.Clone(m.GetLogRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	switch m.TransformationType.(type) {
 

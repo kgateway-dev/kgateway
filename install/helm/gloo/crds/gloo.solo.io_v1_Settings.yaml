@@ -413,6 +413,9 @@ spec:
                       replaceInvalidRoutes:
                         type: boolean
                     type: object
+                  logTransformationRequestResponseInfo:
+                    nullable: true
+                    type: boolean
                   proxyDebugBindAddr:
                     type: string
                   regexMaxProgramSize:
