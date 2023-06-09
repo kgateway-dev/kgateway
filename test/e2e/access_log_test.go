@@ -276,7 +276,6 @@ var _ = Describe("Access Log", func() {
 				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
 				Expect(err).NotTo(HaveOccurred())
 				req.Host = "test.com"
-
 				Eventually(func(g Gomega) {
 					resp, err := http.DefaultClient.Do(req)
 					g.Expect(err).NotTo(HaveOccurred())
