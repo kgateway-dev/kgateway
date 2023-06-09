@@ -44,6 +44,12 @@ const (
 
 	// EnvoyBinary is used in e2e tests to specify the path to the envoy binary to use for the tests
 	EnvoyBinary = "ENVOY_BINARY"
+
+	// ConsulBinary is used in e2e tests to specify the path to the consul binary to use for the tests
+	ConsulBinary = "CONSUL_BINARY"
+
+	// VaultBinary is used in e2e tests to specify the path to the vault binary to use for the tests
+	VaultBinary = "VAULT_BINARY"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
