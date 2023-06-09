@@ -651,6 +651,16 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogTransformationRequestResponseInfo()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogTransformationRequestResponseInfo(), target.GetLogTransformationRequestResponseInfo()) {
+			return false
+		}
+	}
+
 	return true
 }
 

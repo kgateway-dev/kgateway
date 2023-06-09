@@ -434,6 +434,12 @@ func (m *GlooOptions) Clone() proto.Message {
 
 	target.ProxyDebugBindAddr = m.GetProxyDebugBindAddr()
 
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(clone.Cloner); ok {
+		target.LogTransformationRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.LogTransformationRequestResponseInfo = proto.Clone(m.GetLogTransformationRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
