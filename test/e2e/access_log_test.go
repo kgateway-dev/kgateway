@@ -288,7 +288,7 @@ var _ = Describe("Access Log", func() {
 					g.Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
 				}, time.Second*30, time.Second/2).Should(Succeed())
 
-				req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/BAD/HOST", "localhost", defaults.HttpPort), nil)
+				req, err = http.NewRequest(http.MethodPost, "http://BAD/HOST", nil)
 				Expect(err).NotTo(HaveOccurred())
 				req.Host = "" // We can get a 404 by not setting the Host header.
 
