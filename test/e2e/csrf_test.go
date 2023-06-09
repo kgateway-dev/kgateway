@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -25,7 +26,6 @@ import (
 	glootype "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/gloo/test/services"
 )
 
 const (
@@ -290,7 +290,7 @@ func buildRequestFromOrigin(origin string) func() (*http.Response, error) {
 	}
 }
 
-func EventuallyAllowedOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
+func EventuallyAllowedOriginResponse(request func() (*http.Response, error), envoyInstance *envoy.Instance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
 		g.Expect(request()).Should(matchers.HaveOkResponse())
 
@@ -303,7 +303,7 @@ func EventuallyAllowedOriginResponse(request func() (*http.Response, error), env
 	}, time.Second*30).Should(Succeed())
 }
 
-func EventuallyInvalidOriginResponse(request func() (*http.Response, error), envoyInstance *services.EnvoyInstance, validateStatistics bool) {
+func EventuallyInvalidOriginResponse(request func() (*http.Response, error), envoyInstance *envoy.Instance, validateStatistics bool) {
 	EventuallyWithOffset(1, func(g Gomega) {
 		g.Expect(request()).Should(matchers.HaveHttpResponse(&matchers.HttpResponse{
 			StatusCode: http.StatusForbidden,

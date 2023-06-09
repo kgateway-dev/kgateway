@@ -12,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/test/testutils"
@@ -23,9 +25,8 @@ var _ Factory = new(factoryImpl)
 
 // Factory is a helper for running multiple envoy instances
 type Factory interface {
-	MustEnvoyInstance() *Instance
-	NewEnvoyInstance() (*Instance, error)
-	MustClean()
+	NewInstance() *Instance
+	Clean()
 }
 
 // factoryImpl is the default implementation of the Factory interface
@@ -60,7 +61,7 @@ func NewFactory() Factory {
 	case "darwin":
 		log.Printf("Using docker to Run envoy")
 
-		image := fmt.Sprintf("quay.io/solo-io/envoy-gloo-wrapper:%s", mustGetEnvoyWrapperTag())
+		image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", mustGetEnvoyWrapperTag())
 		return NewDockerFactory(bootstrapTemplate, image)
 
 	case "linux":
@@ -139,7 +140,7 @@ func mustGetEnvoyGlooTag() string {
 	return ""
 }
 
-// mustGetEnvoyWrapperTag returns the tag of the envoy-gloo-wrapper image which will be executed
+// mustGetEnvoyWrapperTag returns the tag of the gloo-envoy-wrapper image which will be executed
 // The tag is chosen using the following process:
 //  1. If ENVOY_IMAGE_TAG is defined, use that tag
 //  2. If not defined, use the latest released tag of that image
@@ -174,7 +175,7 @@ func NewLinuxFactory(defaultBootstrapTemplate *template.Template, envoyPath, tmp
 	}
 }
 
-func (f *factoryImpl) MustClean() {
+func (f *factoryImpl) Clean() {
 	if f == nil {
 		return
 	}
@@ -188,15 +189,15 @@ func (f *factoryImpl) MustClean() {
 	}
 }
 
-func (f *factoryImpl) MustEnvoyInstance() *Instance {
-	envoyInstance, err := f.NewEnvoyInstance()
+func (f *factoryImpl) NewInstance() *Instance {
+	instance, err := f.newInstanceOrError()
 	if err != nil {
 		ginkgo.Fail(errors.Wrap(err, "failed to create envoy instance").Error())
 	}
-	return envoyInstance
+	return instance
 }
 
-func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
+func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 	gloo := "127.0.0.1"
 
 	if f.useDocker {
@@ -207,15 +208,28 @@ func (f *factoryImpl) NewEnvoyInstance() (*Instance, error) {
 		}
 	}
 
+	// Ensure that each Instance has a unique set of ports
+	// This is done in an attempt to allow multiple envoy Instances to be executed in parallel
+	// without port conflicts. This get's us a step closer to being able to run e2e tests in parallel.
+	// I believe there are some lingering blockers to that succeeding, but this is a step in the right direction.
+	advanceRequestPorts()
+
 	ei := &Instance{
 		defaultBootstrapTemplate: f.defaultBootstrapTemplate,
 		envoypath:                f.envoypath,
 		UseDocker:                f.useDocker,
 		DockerImage:              f.dockerImage,
 		GlooAddr:                 gloo,
+		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
-		AdminPort:                NextAdminPort(),
 		ApiVersion:               "V3",
+		RequestPorts: &RequestPorts{
+			HttpPort:   defaults.HttpPort,
+			HttpsPort:  defaults.HttpsPort,
+			HybridPort: defaults.HybridPort,
+			TcpPort:    defaults.TcpPort,
+			AdminPort:  defaults.EnvoyAdminPort,
+		},
 	}
 	f.instances = append(f.instances, ei)
 	return ei, nil

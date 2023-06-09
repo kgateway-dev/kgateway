@@ -10,7 +10,6 @@ import (
 
 	"math/rand"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/testutils"
@@ -25,7 +24,7 @@ import (
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/e2e"
 )
@@ -65,17 +64,17 @@ func (gt *GwTester) getMatchedMatcher(cp ClientConnectionProperties, matchers ma
 	return stringBody
 }
 
-func (gt *GwTester) configureEnvoy(matchers map[string]*v1.Matcher) {
+func (gt *GwTester) configureEnvoy(requestMatchers map[string]*v1.Matcher) {
 	// create a magic servername value to ensure that envoy is configured
 	// then we send a request against this magic servername to make sure
 	// envoy has been fully configured
 	magicServerName := fmt.Sprintf("%d", rand.Uint32()) + ".com"
-	matchers[magicServerName] = &v1.Matcher{
+	requestMatchers[magicServerName] = &v1.Matcher{
 		SslConfig: &ssl.SslConfig{
 			SniDomains: []string{magicServerName},
 		},
 	}
-	vss, gw := gt.getGwWithMatches(magicServerName, matchers)
+	vss, gw := gt.getGwWithMatches(magicServerName, requestMatchers)
 
 	writeOptions := clients.WriteOpts{
 		Ctx:               gt.testContext.Ctx(),
@@ -92,19 +91,16 @@ func (gt *GwTester) configureEnvoy(matchers map[string]*v1.Matcher) {
 	Expect(err).NotTo(HaveOccurred())
 
 	// use magicservername to ensure envoy has latest config
-	Eventually(func(g Gomega) (int, error) {
+	Eventually(func(g Gomega) {
 		resp, err := gt.makeARequest(gt.testContext, net.ParseIP("127.0.0.1"), magicServerName)
-		if err != nil {
-			return 0, err
-		}
-		defer resp.Body.Close()
-		return resp.StatusCode, nil
-	}, "5s", "0.1s").Should(Equal(200))
+		g.Expect(err).NotTo(HaveOccurred())
+		g.Expect(resp).To(matchers.HaveOkResponse())
+	}, "5s", "0.1s").Should(Succeed())
 }
 
 func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Matcher) ([]*v1.VirtualService, *v1.Gateway) {
 	gw := gatewaydefaults.DefaultHybridGateway(writeNamespace)
-	virtual_services := []*v1.VirtualService{}
+	var virtualServices []*v1.VirtualService
 	gw.Options = &gloov1.ListenerOptions{
 		ProxyProtocol: &proxy_protocol.ProxyProtocol{},
 	}
@@ -128,7 +124,7 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 		i++
 		curVs := gatewaydefaults.DirectResponseVirtualService(gw.Metadata.Namespace, fmt.Sprintf("vs-%s-%d", configver, i), name)
 		curVs.VirtualHost.Options = vsopts
-		virtual_services = append(virtual_services, curVs)
+		virtualServices = append(virtualServices, curVs)
 		matchedGw = append(matchedGw, &v1.MatchedGateway{
 			Matcher: m,
 			GatewayType: &v1.MatchedGateway_HttpGateway{
@@ -141,7 +137,7 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 		})
 	}
 
-	for _, v := range virtual_services {
+	for _, v := range virtualServices {
 		v.SslConfig = &ssl.SslConfig{
 			SslSecrets: &ssl.SslConfig_SecretRef{
 				SecretRef: gt.secret.Metadata.Ref(),
@@ -150,14 +146,14 @@ func (gt *GwTester) getGwWithMatches(configver string, matches map[string]*v1.Ma
 	}
 
 	gw.GetHybridGateway().MatchedGateways = matchedGw
-	return virtual_services, gw
+	return virtualServices, gw
 }
 
 func (gt *GwTester) makeARequest(testContext *e2e.TestContext, srcip net.IP, sni string) (*http.Response, error) {
 	if srcip == nil {
 		srcip = net.ParseIP("127.0.0.1")
 	}
-	requestBuilder := testContext.GetHttpRequestBuilder().WithScheme("https").WithPort(defaults.HybridPort)
+	requestBuilder := testContext.GetHttpsRequestBuilder().WithPort(testContext.EnvoyInstance().HybridPort)
 	proxyProtocolBytes = []byte("PROXY TCP4 " + srcip.String() + " 1.2.3.4 123 123\r\n")
 	client := testutils.DefaultClientBuilder().
 		WithTLSRootCa(gloohelpers.Certificate()).
@@ -235,7 +231,7 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request works as expected", func() {
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(testContext.EnvoyInstance().HybridPort)
 			Eventually(func(g Gomega) {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", "0.5s").Should(Succeed())
@@ -278,7 +274,7 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request works as expected", func() {
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(testContext.EnvoyInstance().HybridPort)
 			Eventually(func(g Gomega) {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveOkResponse())
 			}, "5s", "0.5s").Should(Succeed())
@@ -316,7 +312,7 @@ var _ = Describe("Hybrid Gateway", func() {
 		})
 
 		It("http request fails", func() {
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(defaults.HybridPort)
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPort(testContext.EnvoyInstance().HybridPort)
 			Consistently(func(g Gomega) {
 				_, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
 				g.Expect(err).Should(HaveOccurred())
