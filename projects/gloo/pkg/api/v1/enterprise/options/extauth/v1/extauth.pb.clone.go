@@ -2611,8 +2611,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
 	}
 
-	target.DisableClientSecret = m.GetDisableClientSecret()
-
 	return target
 }
 
@@ -2749,8 +2747,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Clone() proto.Message {
 	} else {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
 	}
-
-	target.DisableClientSecret = m.GetDisableClientSecret()
 
 	return target
 }

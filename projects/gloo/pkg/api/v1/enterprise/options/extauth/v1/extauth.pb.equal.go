@@ -4420,10 +4420,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	}
 
-	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
-		return false
-	}
-
 	return true
 }
 
@@ -4645,10 +4641,6 @@ func (m *ExtAuthConfig_PlainOAuth2Config) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetUserSession(), target.GetUserSession()) {
 			return false
 		}
-	}
-
-	if m.GetDisableClientSecret() != target.GetDisableClientSecret() {
-		return false
 	}
 
 	return true
