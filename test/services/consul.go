@@ -16,10 +16,14 @@ import (
 
 	"github.com/hashicorp/consul/api"
 
-	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/gloo/test/services/utils"
+	"github.com/solo-io/gloo/test/testutils"
 )
 
-const consulDockerImage = "consul:1.5.2"
+const (
+	consulDockerImage = "hashicorp/consul:1.15.3"
+	consulBinaryName  = "consul"
+)
 
 type ConsulFactory struct {
 	consulPath string
@@ -38,57 +42,25 @@ type consulService struct {
 	Address string   `json:"address"`
 }
 
+// NewConsulFactory returns a ConsulFactory
 func NewConsulFactory() (*ConsulFactory, error) {
-	consulPath := os.Getenv("CONSUL_BINARY")
-
-	if consulPath != "" {
-		return &ConsulFactory{
-			consulPath: consulPath,
-		}, nil
-	}
-
-	consulPath, err := exec.LookPath("consul")
-	if err == nil {
-		log.Printf("Using consul from PATH: %s", consulPath)
-		return &ConsulFactory{
-			consulPath: consulPath,
-		}, nil
-	}
-
-	// try to grab one from docker...
 	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "consul")
 	if err != nil {
 		return nil, err
 	}
-
-	bash := fmt.Sprintf(`
-set -ex
-CID=$(docker run -d  %s /bin/sh -c exit)
-
-# just print the image sha for repoducibility
-echo "Using Consul Image:"
-docker inspect %s -f "{{.RepoDigests}}"
-
-docker cp $CID:/bin/consul .
-docker rm -f $CID
-    `, consulDockerImage, consulDockerImage)
-	scriptFile := filepath.Join(tmpdir, "get_consul.sh")
-
-	err = os.WriteFile(scriptFile, []byte(bash), 0755)
+	binaryPath, err := utils.GetBinary(utils.GetBinaryParams{
+		Filename:    consulBinaryName,
+		DockerImage: consulDockerImage,
+		DockerPath:  "/bin/consul",
+		EnvKey:      testutils.ConsulBinary,
+		TmpDir:      tmpdir,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command("bash", scriptFile)
-	cmd.Dir = tmpdir
-	cmd.Stdout = GinkgoWriter
-	cmd.Stderr = GinkgoWriter
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	}
-
 	return &ConsulFactory{
-		consulPath: filepath.Join(tmpdir, "consul"),
+		consulPath: binaryPath,
 		tmpdir:     tmpdir,
 	}, nil
 }
