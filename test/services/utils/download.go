@@ -18,11 +18,11 @@ type GetBinaryParams struct {
 	TmpDir      string // the temp directory to store a downloaded binary if needed
 }
 
-// GetBinary uses the passes params structure to get a binary for the service in the first found of 3 locations:
+// GetBinary uses the passed params structure to get a binary for the service in the first found of 3 locations:
 //
 // 1. specified via environment variable
 //
-// 2. matching binary already on path TODO(jbohanon) assess the validity of this since we could inadvertently use a bad/old version
+// 2. matching binary already on path
 //
 // 3. download the hard-coded version via docker and extract the binary from that
 func GetBinary(params GetBinaryParams) (string, error) {
@@ -47,6 +47,8 @@ func GetBinary(params GetBinaryParams) (string, error) {
 
 func dockerDownload(tmpdir string, params GetBinaryParams) (string, error) {
 	log.Printf("Using %s from docker image: %s", params.Filename, params.DockerImage)
+
+	// use bash to run a docker container and extract the binary file from the running container
 	bash := fmt.Sprintf(`
 set -ex
 CID=$(docker run -d  %s /bin/sh -c exit)
@@ -60,11 +62,13 @@ docker rm -f $CID
     `, params.DockerImage, params.Filename, params.DockerImage, params.DockerPath, params.Filename)
 	scriptFile := filepath.Join(tmpdir, "get_binary.sh")
 
+	// write out our custom script to the filesystem
 	err := os.WriteFile(scriptFile, []byte(bash), 0755)
 	if err != nil {
 		return "", err
 	}
 
+	// run our script to extract a binary from a docker container
 	cmd := exec.Command("bash", scriptFile)
 	cmd.Dir = tmpdir
 	cmd.Stdout = ginkgo.GinkgoWriter
