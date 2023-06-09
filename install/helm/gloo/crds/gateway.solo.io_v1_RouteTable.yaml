@@ -1203,6 +1203,8 @@ spec:
                                               addRequestMetadata:
                                                 type: boolean
                                             type: object
+                                          logRequestResponseInfo:
+                                            type: boolean
                                           transformationTemplate:
                                             properties:
                                               advancedTemplates:
@@ -1291,6 +1293,8 @@ spec:
                                               addRequestMetadata:
                                                 type: boolean
                                             type: object
+                                          logRequestResponseInfo:
+                                            type: boolean
                                           transformationTemplate:
                                             properties:
                                               advancedTemplates:
@@ -1399,6 +1403,8 @@ spec:
                                               addRequestMetadata:
                                                 type: boolean
                                             type: object
+                                          logRequestResponseInfo:
+                                            type: boolean
                                           transformationTemplate:
                                             properties:
                                               advancedTemplates:
@@ -1485,6 +1491,9 @@ spec:
                               type: object
                             inheritTransformation:
                               type: boolean
+                            logRequestResponseInfo:
+                              nullable: true
+                              type: boolean
                             regular:
                               properties:
                                 requestTransforms:
@@ -1541,6 +1550,8 @@ spec:
                                               addRequestMetadata:
                                                 type: boolean
                                             type: object
+                                          logRequestResponseInfo:
+                                            type: boolean
                                           transformationTemplate:
                                             properties:
                                               advancedTemplates:
@@ -1629,6 +1640,8 @@ spec:
                                               addRequestMetadata:
                                                 type: boolean
                                             type: object
+                                          logRequestResponseInfo:
+                                            type: boolean
                                           transformationTemplate:
                                             properties:
                                               advancedTemplates:
@@ -1737,6 +1750,8 @@ spec:
                                               addRequestMetadata:
                                                 type: boolean
                                             type: object
+                                          logRequestResponseInfo:
+                                            type: boolean
                                           transformationTemplate:
                                             properties:
                                               advancedTemplates:
@@ -1855,6 +1870,8 @@ spec:
                                     addRequestMetadata:
                                       type: boolean
                                   type: object
+                                logRequestResponseInfo:
+                                  type: boolean
                                 transformationTemplate:
                                   properties:
                                     advancedTemplates:
@@ -1943,6 +1960,8 @@ spec:
                                     addRequestMetadata:
                                       type: boolean
                                   type: object
+                                logRequestResponseInfo:
+                                  type: boolean
                                 transformationTemplate:
                                   properties:
                                     advancedTemplates:
@@ -2542,6 +2561,8 @@ spec:
                                                             addRequestMetadata:
                                                               type: boolean
                                                           type: object
+                                                        logRequestResponseInfo:
+                                                          type: boolean
                                                         transformationTemplate:
                                                           properties:
                                                             advancedTemplates:
@@ -2630,6 +2651,8 @@ spec:
                                                             addRequestMetadata:
                                                               type: boolean
                                                           type: object
+                                                        logRequestResponseInfo:
+                                                          type: boolean
                                                         transformationTemplate:
                                                           properties:
                                                             advancedTemplates:
@@ -2738,6 +2761,8 @@ spec:
                                                             addRequestMetadata:
                                                               type: boolean
                                                           type: object
+                                                        logRequestResponseInfo:
+                                                          type: boolean
                                                         transformationTemplate:
                                                           properties:
                                                             advancedTemplates:
@@ -2824,6 +2849,9 @@ spec:
                                             type: object
                                           inheritTransformation:
                                             type: boolean
+                                          logRequestResponseInfo:
+                                            nullable: true
+                                            type: boolean
                                           regular:
                                             properties:
                                               requestTransforms:
@@ -2880,6 +2908,8 @@ spec:
                                                             addRequestMetadata:
                                                               type: boolean
                                                           type: object
+                                                        logRequestResponseInfo:
+                                                          type: boolean
                                                         transformationTemplate:
                                                           properties:
                                                             advancedTemplates:
@@ -2968,6 +2998,8 @@ spec:
                                                             addRequestMetadata:
                                                               type: boolean
                                                           type: object
+                                                        logRequestResponseInfo:
+                                                          type: boolean
                                                         transformationTemplate:
                                                           properties:
                                                             advancedTemplates:
@@ -3076,6 +3108,8 @@ spec:
                                                             addRequestMetadata:
                                                               type: boolean
                                                           type: object
+                                                        logRequestResponseInfo:
+                                                          type: boolean
                                                         transformationTemplate:
                                                           properties:
                                                             advancedTemplates:
@@ -3172,6 +3206,8 @@ spec:
                                                   addRequestMetadata:
                                                     type: boolean
                                                 type: object
+                                              logRequestResponseInfo:
+                                                type: boolean
                                               transformationTemplate:
                                                 properties:
                                                   advancedTemplates:
@@ -3260,6 +3296,8 @@ spec:
                                                   addRequestMetadata:
                                                     type: boolean
                                                 type: object
+                                              logRequestResponseInfo:
+                                                type: boolean
                                               transformationTemplate:
                                                 properties:
                                                   advancedTemplates:

@@ -67,6 +67,10 @@ func (m *FilterTransformations) Equal(that interface{}) bool {
 		return false
 	}
 
+	if m.GetLogRequestResponseInfo() != target.GetLogRequestResponseInfo() {
+		return false
+	}
+
 	return true
 }
 
@@ -293,6 +297,16 @@ func (m *Transformation) Equal(that interface{}) bool {
 		return m == nil
 	} else if m == nil {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetLogRequestResponseInfo()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogRequestResponseInfo()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogRequestResponseInfo(), target.GetLogRequestResponseInfo()) {
+			return false
+		}
 	}
 
 	switch m.TransformationType.(type) {

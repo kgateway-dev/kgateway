@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformers_xslt "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
@@ -178,6 +180,12 @@ func (m *TransformationStages) Clone() proto.Message {
 
 	target.InheritTransformation = m.GetInheritTransformation()
 
+	if h, ok := interface{}(m.GetLogRequestResponseInfo()).(clone.Cloner); ok {
+		target.LogRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.LogRequestResponseInfo = proto.Clone(m.GetLogRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -188,6 +196,8 @@ func (m *Transformation) Clone() proto.Message {
 		return target
 	}
 	target = &Transformation{}
+
+	target.LogRequestResponseInfo = m.GetLogRequestResponseInfo()
 
 	switch m.TransformationType.(type) {
 
