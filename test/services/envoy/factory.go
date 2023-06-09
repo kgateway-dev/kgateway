@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -16,12 +15,17 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/test/services/utils"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/gloo/test/testutils/version"
 	"github.com/solo-io/skv2/codegen/util"
 )
 
 var _ Factory = new(factoryImpl)
+
+const (
+	envoyBinaryName = "envoy"
+)
 
 // Factory is a helper for running multiple envoy instances
 type Factory interface {
@@ -47,9 +51,8 @@ type factoryImpl struct {
 	instances []*Instance
 }
 
+// NewFactory returns a new envoy service Factory
 func NewFactory() Factory {
-	var err error
-
 	// if an envoy binary is explicitly specified, use it
 	envoyPath := os.Getenv(testutils.EnvoyBinary)
 	if envoyPath != "" {
@@ -59,48 +62,30 @@ func NewFactory() Factory {
 
 	switch runtime.GOOS {
 	case "darwin":
-		log.Printf("Using docker to Run envoy")
+		log.Printf("Using docker to run envoy")
 
 		image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", mustGetEnvoyWrapperTag())
 		return NewDockerFactory(bootstrapTemplate, image)
 
 	case "linux":
-		var tmpDir string
-
-		// try to grab one from docker...
-		tmpDir, err = os.MkdirTemp(os.Getenv("HELPER_TMP"), "envoy")
+		tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "envoy")
 		if err != nil {
 			ginkgo.Fail(fmt.Sprintf("failed to create tmp dir: %v", err))
 		}
 
-		envoyImageTag := mustGetEnvoyGlooTag()
+		image := fmt.Sprintf("quay.io/solo-io/envoy-gloo:%s", mustGetEnvoyGlooTag())
 
-		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
-
-		bash := fmt.Sprintf(`
-set -ex
-CID=$(docker run -d  quay.io/solo-io/envoy-gloo:%s /bin/bash -c exit)
-
-# just print the image sha for reproducibility
-echo "Using Envoy Image:"
-docker inspect quay.io/solo-io/envoy-gloo:%s -f "{{.RepoDigests}}"
-
-docker cp $CID:/usr/local/bin/envoy .
-docker rm $CID
-    `, envoyImageTag, envoyImageTag)
-		scriptfile := filepath.Join(tmpDir, "getenvoy.sh")
-
-		_ = os.WriteFile(scriptfile, []byte(bash), 0755)
-
-		cmd := exec.Command("bash", scriptfile)
-		cmd.Dir = tmpDir
-		cmd.Stdout = ginkgo.GinkgoWriter
-		cmd.Stderr = ginkgo.GinkgoWriter
-		if err := cmd.Run(); err != nil {
-			ginkgo.Fail(fmt.Sprintf("failed to run envoy binary: %v", err))
+		binaryPath, err := utils.GetBinary(utils.GetBinaryParams{
+			Filename:    envoyBinaryName,
+			DockerImage: image,
+			DockerPath:  "/usr/local/bin/envoy",
+			EnvKey:      testutils.EnvoyBinary, // this is inert here since we already check the env in this function, but leaving it for future compatibility
+			TmpDir:      tmpdir,
+		})
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("failed to get binary: %v", err))
 		}
-
-		return NewLinuxFactory(bootstrapTemplate, filepath.Join(tmpDir, "envoy"), tmpDir)
+		return NewLinuxFactory(bootstrapTemplate, binaryPath, tmpdir)
 
 	default:
 		ginkgo.Fail("Unsupported OS: " + runtime.GOOS)

@@ -69,6 +69,7 @@ var _ = Describe("AWS Lambda", func() {
 	)
 
 	BeforeEach(func() {
+		testutils.ValidateRequirementsAndNotifyGinkgo(testutils.AwsCredentials())
 		httpClient = http.DefaultClient
 		httpClient.Timeout = 10 * time.Second
 		runOptions = &services.RunOptions{
