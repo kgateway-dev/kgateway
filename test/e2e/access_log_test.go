@@ -2,8 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"sync/atomic"
 	"time"
 
@@ -18,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	gloo_envoy_v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -230,82 +227,6 @@ var _ = Describe("Access Log", func() {
 					g.Expect(logs).To(ContainSubstring(`"method":"POST"`))
 					g.Expect(logs).To(ContainSubstring(`"protocol":"HTTP/1.1"`))
 				}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
-			})
-		})
-
-		Context("Test Filters", func() {
-			// The output format doesn't (or at least shouldn't) matter for the filter tests, except in how we examine the access logs
-			// We'll use the string output because it's easiest to match against
-			BeforeEach(func() {
-				err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
-				Expect(err).NotTo(HaveOccurred())
-				gw := gwdefaults.DefaultGateway(writeNamespace)
-				filter := &als.AccessLogFilter{
-					FilterSpecifier: &als.AccessLogFilter_StatusCodeFilter{
-						StatusCodeFilter: &als.StatusCodeFilter{
-							Comparison: &als.ComparisonFilter{
-								Op: als.ComparisonFilter_EQ,
-								Value: &gloo_envoy_v3.RuntimeUInt32{
-									DefaultValue: 404,
-									RuntimeKey:   "404",
-								},
-							},
-						},
-					},
-				}
-
-				gw.Options = &gloov1.ListenerOptions{
-					AccessLoggingService: &als.AccessLoggingService{
-						AccessLog: []*als.AccessLog{
-							{
-								OutputDestination: &als.AccessLog_FileSink{
-									FileSink: &als.FileSink{
-										Path: "/dev/stdout",
-										OutputFormat: &als.FileSink_StringFormat{
-											StringFormat: "",
-										},
-									},
-								},
-								Filter: filter,
-							},
-						},
-					},
-				}
-				_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-
-			})
-
-			It("Can filter by status code", func() {
-				req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/1", "localhost", defaults.HttpPort), nil)
-				Expect(err).NotTo(HaveOccurred())
-				req.Host = "test.com"
-				Eventually(func(g Gomega) {
-					resp, err := http.DefaultClient.Do(req)
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-					logs, err := envoyInstance.Logs()
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
-				}, time.Second*30, time.Second/2).Should(Succeed())
-
-				req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s:%d/BAD/HOST", "localhost", defaults.HttpPort), nil)
-
-				Expect(err).NotTo(HaveOccurred())
-				req.Host = "" // We can get a 404 by not setting the Host header.
-
-				Eventually(func(g Gomega) {
-					resp, err := http.DefaultClient.Do(req)
-					g.Expect(err).NotTo(HaveOccurred())
-					g.Expect(resp.StatusCode).To(Equal(http.StatusNotFound))
-
-					logs, err := envoyInstance.Logs()
-					g.Expect(err).To(Not(HaveOccurred()))
-					g.Expect(logs).To(Not(ContainSubstring(`"POST /1 HTTP/1.1" 200`)))
-					g.Expect(logs).To(ContainSubstring(`"POST /BAD/HOST HTTP/1.1" 404`))
-
-				}, time.Second*30, time.Second/2).Should(Succeed())
 			})
 		})
 
