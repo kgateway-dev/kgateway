@@ -634,6 +634,8 @@ spec:
                           properties:
                             fastInputConversion:
                               type: boolean
+                            returnDecisionReason:
+                              type: boolean
                           type: object
                         query:
                           type: string

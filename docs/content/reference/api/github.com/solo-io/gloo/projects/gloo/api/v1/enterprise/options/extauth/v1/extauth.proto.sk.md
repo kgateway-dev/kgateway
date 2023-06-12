@@ -1410,12 +1410,14 @@ DEPRECATED: use ApiKey
 
 ```yaml
 "fastInputConversion": bool
+"returnDecisionReason": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fastInputConversion` | `bool` | Decreases OPA latency by speeding up conversion of input to the OPA engine. If this is set to true, only http_request and state fields which are a scalar, map, or string array are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. By default, this is set to false and all fields are evaluated by OPA. |
+| `returnDecisionReason` | `bool` | Return the reason given from the OPA engine after a decision made on this policy. |
 
 
 
