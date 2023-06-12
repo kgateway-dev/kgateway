@@ -1,0 +1,12 @@
+
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7577
+    resolvesIssue: false
+    description: >-
+      Ensure Enterprise e2e tests can use the same envoy service
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5057
+    resolvesIssue: false
+    description: >-
+      Allow Envoy service to be re-used by Enterprise tests

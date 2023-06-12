@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5037
+    resolvesIssue: false
+    description: |
+      repair publish-glooctl by passing VERSION as a named variable (as opposed to forgetting about it as a Makefile)
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

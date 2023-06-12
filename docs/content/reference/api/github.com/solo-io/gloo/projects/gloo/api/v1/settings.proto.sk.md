@@ -12,6 +12,8 @@ weight: 5
 
 
 - [Settings](#settings) **Top-Level Resource**
+- [SecretOptions](#secretoptions)
+- [Source](#source)
 - [KubernetesCrds](#kubernetescrds)
 - [KubernetesSecrets](#kubernetessecrets)
 - [VaultSecrets](#vaultsecrets)
@@ -69,6 +71,7 @@ Represents global settings for all the Gloo components.
 "kubernetesSecretSource": .gloo.solo.io.Settings.KubernetesSecrets
 "vaultSecretSource": .gloo.solo.io.Settings.VaultSecrets
 "directorySecretSource": .gloo.solo.io.Settings.Directory
+"secretOptions": .gloo.solo.io.Settings.SecretOptions
 "kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
 "directoryArtifactSource": .gloo.solo.io.Settings.Directory
 "consulKvArtifactSource": .gloo.solo.io.Settings.ConsulKv
@@ -108,6 +111,7 @@ Represents global settings for all the Gloo components.
 | `kubernetesSecretSource` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetesSecretSource`, `vaultSecretSource`, or `directorySecretSource` can be set. |
 | `vaultSecretSource` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vaultSecretSource`, `kubernetesSecretSource`, or `directorySecretSource` can be set. |
 | `directorySecretSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directorySecretSource`, `kubernetesSecretSource`, or `vaultSecretSource` can be set. |
+| `secretOptions` | [.gloo.solo.io.Settings.SecretOptions](../settings.proto.sk/#secretoptions) | Settings for secrets storage. This API is experimental and not suitable for production use. |
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, `kubernetesArtifactSource`, or `directoryArtifactSource` can be set. |
@@ -134,6 +138,44 @@ Represents global settings for all the Gloo components.
 | `upstreamOptions` | [.gloo.solo.io.UpstreamOptions](../settings.proto.sk/#upstreamoptions) | Default configuration to use for upstreams, when not provided by specific upstream When these properties are defined on an upstream, this configuration will be ignored. |
 | `consoleOptions` | [.gloo.solo.io.ConsoleOptions](../settings.proto.sk/#consoleoptions) | Enterprise-only: Settings for the Gloo Edge Enterprise Console (UI). |
 | `graphqlOptions` | [.gloo.solo.io.GraphqlOptions](../settings.proto.sk/#graphqloptions) | Enterprise-only: GraphQL settings. |
+
+
+
+
+---
+### SecretOptions
+
+
+
+```yaml
+"sources": []gloo.solo.io.Settings.SecretOptions.Source
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `sources` | [[]gloo.solo.io.Settings.SecretOptions.Source](../settings.proto.sk/#source) | Required. List of configured secret sources. These clients will be sorted and initialized in a stable order kubernetes > directory > vault. |
+
+
+
+
+---
+### Source
+
+
+
+```yaml
+"kubernetes": .gloo.solo.io.Settings.KubernetesSecrets
+"vault": .gloo.solo.io.Settings.VaultSecrets
+"directory": .gloo.solo.io.Settings.Directory
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `kubernetes` | [.gloo.solo.io.Settings.KubernetesSecrets](../settings.proto.sk/#kubernetessecrets) |  Only one of `kubernetes`, `vault`, or `directory` can be set. |
+| `vault` | [.gloo.solo.io.Settings.VaultSecrets](../settings.proto.sk/#vaultsecrets) |  Only one of `vault`, `kubernetes`, or `directory` can be set. |
+| `directory` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directory`, `kubernetes`, or `vault` can be set. |
 
 
 
@@ -656,6 +698,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 "failoverUpstreamDnsPollingInterval": .google.protobuf.Duration
 "removeUnusedFilters": .google.protobuf.BoolValue
 "proxyDebugBindAddr": string
+"logTransformationRequestResponseInfo": .google.protobuf.BoolValue
 
 ```
 
@@ -676,6 +719,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `failoverUpstreamDnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server if upstream failover is configured. If there is a failover upstream address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 10s. |
 | `removeUnusedFilters` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default gloo adds a series of filters to envoy to ensure that new routes are picked up Even if the listener previously did not have a filter on the chain previously. When set to true unused filters are not added to the chain by default. Defaults to false. |
 | `proxyDebugBindAddr` | `string` | Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`. |
+| `logTransformationRequestResponseInfo` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When enabled, log the request/response body and headers before and after any transformations are applied. May be useful in the case where many transformations are applied and it is difficult to determine which are causing issues. Defaults to false. |
 
 
 

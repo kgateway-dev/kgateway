@@ -327,7 +327,7 @@ gloo:
                   - redirect-https
 ```
 
-The following _Gateway_ and _VirtualService_ are solely built for HTTPS redirection:
+The following _Gateway_ and _VirtualService_ redirect HTTP traffic on the `gloo.example.com` domain to HTTPS:
 
 ```bash
 AWS_DNS=$(kubectl --namespace='gloo-system' get service/gateway-proxy --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
@@ -356,7 +356,7 @@ metadata:
 spec:
   virtualHost:
     domains:
-    - '*'
+    - 'gloo.example.com'
     routes:
     - matchers:
       - prefix: /

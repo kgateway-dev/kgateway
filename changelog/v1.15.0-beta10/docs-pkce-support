@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Adds support for PKCE-secured OAuth flows. 
+      skipCI-kube-tests:true

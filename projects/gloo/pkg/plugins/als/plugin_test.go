@@ -126,8 +126,11 @@ var _ = Describe("Plugin", func() {
 						FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
 							StatusCodeFilter: &accessLogService.StatusCodeFilter{
 								Comparison: &accessLogService.ComparisonFilter{
-									Op:    accessLogService.ComparisonFilter_EQ,
-									Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+									Op: accessLogService.ComparisonFilter_EQ,
+									Value: &gloo_envoy_v3.RuntimeUInt32{
+										DefaultValue: STATUS_CODE_VALUE,
+										RuntimeKey:   FILTER_RUNTIME_KEY,
+									},
 								},
 							},
 						},
@@ -136,8 +139,11 @@ var _ = Describe("Plugin", func() {
 						FilterSpecifier: &envoyal.AccessLogFilter_StatusCodeFilter{
 							StatusCodeFilter: &envoyal.StatusCodeFilter{
 								Comparison: &envoyal.ComparisonFilter{
-									Op:    envoyal.ComparisonFilter_EQ,
-									Value: &envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+									Op: envoyal.ComparisonFilter_EQ,
+									Value: &envoy_v3.RuntimeUInt32{
+										DefaultValue: STATUS_CODE_VALUE,
+										RuntimeKey:   FILTER_RUNTIME_KEY,
+									},
 								},
 							},
 						},
@@ -148,8 +154,11 @@ var _ = Describe("Plugin", func() {
 						FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
 							DurationFilter: &accessLogService.DurationFilter{
 								Comparison: &accessLogService.ComparisonFilter{
-									Op:    accessLogService.ComparisonFilter_EQ,
-									Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
+									Op: accessLogService.ComparisonFilter_EQ,
+									Value: &gloo_envoy_v3.RuntimeUInt32{
+										DefaultValue: DURATION_FILTER_VALUE,
+										RuntimeKey:   FILTER_RUNTIME_KEY,
+									},
 								},
 							},
 						},
@@ -158,8 +167,11 @@ var _ = Describe("Plugin", func() {
 						FilterSpecifier: &envoyal.AccessLogFilter_DurationFilter{
 							DurationFilter: &envoyal.DurationFilter{
 								Comparison: &envoyal.ComparisonFilter{
-									Op:    envoyal.ComparisonFilter_EQ,
-									Value: &envoy_v3.RuntimeUInt32{DefaultValue: DURATION_FILTER_VALUE},
+									Op: envoyal.ComparisonFilter_EQ,
+									Value: &envoy_v3.RuntimeUInt32{
+										DefaultValue: DURATION_FILTER_VALUE,
+										RuntimeKey:   FILTER_RUNTIME_KEY,
+									},
 								},
 							},
 						},
@@ -377,13 +389,31 @@ var _ = Describe("Plugin", func() {
 				InvalidEnumValueError("RuntimeFilter", "FractionalPercent.Denominator", strconv.FormatUint(uint64(INVALID_FRACTIONAL_PERCENT_DENOMINATOR_TYPE), 10)),
 			),
 			Entry(
+				"Missing RuntimeKey in RuntimeFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_RuntimeFilter{
+						RuntimeFilter: &accessLogService.RuntimeFilter{
+							PercentSampled: &gloo_envoy_types.FractionalPercent{
+								Numerator:   FRACTIONAL_PERCENT_NUMERATOR,
+								Denominator: gloo_envoy_types.FractionalPercent_DenominatorType(FRACTIONAL_PERCENT_DENOMINATOR_TYPE),
+							},
+							UseIndependentRandomness: true,
+						},
+					},
+				},
+				NoValueError("RuntimeFilter", "FractionalPercent.RuntimeKey"),
+			),
+			Entry(
 				"Bad OP in StatusCodeFilter",
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
 						StatusCodeFilter: &accessLogService.StatusCodeFilter{
 							Comparison: &accessLogService.ComparisonFilter{
-								Op:    accessLogService.ComparisonFilter_Op(INVALID_OP),
-								Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+								Op: accessLogService.ComparisonFilter_Op(INVALID_OP),
+								Value: &gloo_envoy_v3.RuntimeUInt32{
+									DefaultValue: STATUS_CODE_VALUE,
+									RuntimeKey:   FILTER_RUNTIME_KEY,
+								},
 							},
 						},
 					},
@@ -391,18 +421,79 @@ var _ = Describe("Plugin", func() {
 				InvalidEnumValueError("StatusCodeFilter", "ComparisonFilter.Op", strconv.Itoa(INVALID_OP)),
 			),
 			Entry(
+				"Missing Value in StatusCodeFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
+						StatusCodeFilter: &accessLogService.StatusCodeFilter{
+							Comparison: &accessLogService.ComparisonFilter{
+								Op: accessLogService.ComparisonFilter_EQ,
+							},
+						},
+					},
+				},
+				NoValueError("StatusCodeFilter", "ComparisonFilter.Value"),
+			),
+			Entry(
+				"Missing RuntimeKey in StatusCodeFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_StatusCodeFilter{
+						StatusCodeFilter: &accessLogService.StatusCodeFilter{
+							Comparison: &accessLogService.ComparisonFilter{
+								Op: accessLogService.ComparisonFilter_EQ,
+								Value: &gloo_envoy_v3.RuntimeUInt32{
+									DefaultValue: STATUS_CODE_VALUE,
+								},
+							},
+						},
+					},
+				},
+				NoValueError("StatusCodeFilter", "ComparisonFilter.Value.RuntimeKey"),
+			),
+			Entry(
 				"Bad OP in DurationFilter",
 				&accessLogService.AccessLogFilter{
 					FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
 						DurationFilter: &accessLogService.DurationFilter{
 							Comparison: &accessLogService.ComparisonFilter{
-								Op:    accessLogService.ComparisonFilter_Op(INVALID_OP),
-								Value: &gloo_envoy_v3.RuntimeUInt32{DefaultValue: STATUS_CODE_VALUE},
+								Op: accessLogService.ComparisonFilter_Op(INVALID_OP),
+								Value: &gloo_envoy_v3.RuntimeUInt32{
+									DefaultValue: STATUS_CODE_VALUE,
+									RuntimeKey:   FILTER_RUNTIME_KEY,
+								},
 							},
 						},
 					},
 				},
 				InvalidEnumValueError("DurationFilter", "ComparisonFilter.Op", strconv.Itoa(INVALID_OP)),
+			),
+			Entry(
+				"Missing Value in DurationFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
+						DurationFilter: &accessLogService.DurationFilter{
+							Comparison: &accessLogService.ComparisonFilter{
+								Op: accessLogService.ComparisonFilter_EQ,
+							},
+						},
+					},
+				},
+				NoValueError("DurationFilter", "ComparisonFilter.Value"),
+			),
+			Entry(
+				"Missing RuntimeKey in DurationFilter",
+				&accessLogService.AccessLogFilter{
+					FilterSpecifier: &accessLogService.AccessLogFilter_DurationFilter{
+						DurationFilter: &accessLogService.DurationFilter{
+							Comparison: &accessLogService.ComparisonFilter{
+								Op: accessLogService.ComparisonFilter_EQ,
+								Value: &gloo_envoy_v3.RuntimeUInt32{
+									DefaultValue: STATUS_CODE_VALUE,
+								},
+							},
+						},
+					},
+				},
+				NoValueError("DurationFilter", "ComparisonFilter.Value.RuntimeKey"),
 			),
 			Entry(
 				"Bad Subfilter in AndFilter",

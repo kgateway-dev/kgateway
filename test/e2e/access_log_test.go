@@ -9,8 +9,6 @@ import (
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
-	"github.com/solo-io/gloo/test/services"
-
 	envoy_data_accesslog_v3 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
@@ -61,9 +59,7 @@ var _ = Describe("Access Log", func() {
 		)
 
 		BeforeEach(func() {
-			accessLogPort := services.NextBindPort()
-			msgChan = runAccessLog(testContext.Ctx(), accessLogPort)
-			testContext.EnvoyInstance().AccessLogPort = accessLogPort
+			msgChan = runAccessLog(testContext.Ctx(), testContext.EnvoyInstance().AccessLogPort)
 
 			gw := gwdefaults.DefaultGateway(writeNamespace)
 			gw.Options = &gloov1.ListenerOptions{

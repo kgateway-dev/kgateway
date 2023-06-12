@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: <-
+      Migrate glooctl debug tests which depended on a k8s cluster into our kube2e suite
+    issueLink: https://github.com/solo-io/solo-projects/issues/4913
+    resolvesIssue: false

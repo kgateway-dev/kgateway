@@ -120,6 +120,7 @@ weight: 5
 "early": .transformation.options.gloo.solo.io.RequestResponseTransformations
 "regular": .transformation.options.gloo.solo.io.RequestResponseTransformations
 "inheritTransformation": bool
+"logRequestResponseInfo": .google.protobuf.BoolValue
 
 ```
 
@@ -128,6 +129,7 @@ weight: 5
 | `early` | [.transformation.options.gloo.solo.io.RequestResponseTransformations](../transformation.proto.sk/#requestresponsetransformations) | Early transformations happen before most other options (Like Auth and Rate Limit). |
 | `regular` | [.transformation.options.gloo.solo.io.RequestResponseTransformations](../transformation.proto.sk/#requestresponsetransformations) | Regular transformations happen after Auth and Rate limit decisions has been made. |
 | `inheritTransformation` | `bool` | Inherit transformation config from parent. This has no affect on VirtualHost level transformations. If a RouteTable or Route wants to inherit transformations from it's parent RouteTable or VirtualHost, this should be set to true, else transformations from parents will not be inherited. Transformations are ordered so the child's transformation gets priority, so in the case where a child and parent's transformation matchers are the same, only the child's transformation will run because only one transformation will run per stage. Defaults to false. |
+| `logRequestResponseInfo` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When enabled, log request/response body and headers before and after all transformations defined here are applied.\ This overrides the log_request_response_info field in the Transformation message. |
 
 
 
@@ -142,6 +144,7 @@ User-facing API for transformation.
 "transformationTemplate": .envoy.api.v2.filter.http.TransformationTemplate
 "headerBodyTransform": .envoy.api.v2.filter.http.HeaderBodyTransform
 "xsltTransformation": .envoy.config.transformer.xslt.v2.XsltTransformation
+"logRequestResponseInfo": bool
 
 ```
 
@@ -150,6 +153,7 @@ User-facing API for transformation.
 | `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate`, `headerBodyTransform`, or `xsltTransformation` can be set. |
 | `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform`, `transformationTemplate`, or `xsltTransformation` can be set. |
 | `xsltTransformation` | [.envoy.config.transformer.xslt.v2.XsltTransformation](../../../../external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#xslttransformation) | (Enterprise Only): Xslt Transformation. Only one of `xsltTransformation`, `transformationTemplate`, or `headerBodyTransform` can be set. |
+| `logRequestResponseInfo` | `bool` | When enabled, log request/response body and headers before and after this transformation is applied. |
 
 
 

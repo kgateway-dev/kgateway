@@ -413,6 +413,9 @@ spec:
                       replaceInvalidRoutes:
                         type: boolean
                     type: object
+                  logTransformationRequestResponseInfo:
+                    nullable: true
+                    type: boolean
                   proxyDebugBindAddr:
                     type: string
                   regexMaxProgramSize:
@@ -636,6 +639,80 @@ spec:
                 type: object
               refreshRate:
                 type: string
+              secretOptions:
+                properties:
+                  sources:
+                    items:
+                      properties:
+                        directory:
+                          properties:
+                            directory:
+                              type: string
+                          type: object
+                        kubernetes:
+                          type: object
+                        vault:
+                          properties:
+                            accessToken:
+                              type: string
+                            address:
+                              type: string
+                            aws:
+                              properties:
+                                accessKeyId:
+                                  type: string
+                                iamServerIdHeader:
+                                  type: string
+                                mountPath:
+                                  type: string
+                                region:
+                                  type: string
+                                secretAccessKey:
+                                  type: string
+                                sessionToken:
+                                  type: string
+                                vaultRole:
+                                  type: string
+                              type: object
+                            caCert:
+                              type: string
+                            caPath:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
+                            insecure:
+                              nullable: true
+                              type: boolean
+                            pathPrefix:
+                              type: string
+                            rootKey:
+                              type: string
+                            tlsConfig:
+                              properties:
+                                caCert:
+                                  type: string
+                                caPath:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                insecure:
+                                  nullable: true
+                                  type: boolean
+                                tlsServerName:
+                                  type: string
+                              type: object
+                            tlsServerName:
+                              type: string
+                            token:
+                              type: string
+                          type: object
+                      type: object
+                    type: array
+                type: object
               upstreamOptions:
                 properties:
                   globalAnnotations:

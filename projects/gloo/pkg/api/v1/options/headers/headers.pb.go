@@ -35,7 +35,7 @@ type HeaderManipulation struct {
 	// Specifies a list of HTTP headers that should be added to each request
 	// handled by this route or virtual host. For more information, including
 	// details on header value syntax, see the
-	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .
+	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html#) .
 	RequestHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,1,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
 	// Specifies a list of HTTP headers that should be removed from each request
 	// handled by this route or virtual host.
@@ -43,7 +43,7 @@ type HeaderManipulation struct {
 	// Specifies a list of HTTP headers that should be added to each response
 	// handled by this route or host. For more information, including
 	// details on header value syntax, see the
-	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers) .
+	// [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers.html# .
 	ResponseHeadersToAdd []*HeaderValueOption `protobuf:"bytes,3,rep,name=response_headers_to_add,json=responseHeadersToAdd,proto3" json:"response_headers_to_add,omitempty"`
 	// Specifies a list of HTTP headers that should be removed from each response
 	// handled by this route or virtual host.

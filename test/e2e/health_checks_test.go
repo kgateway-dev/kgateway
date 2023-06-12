@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -31,8 +33,8 @@ import (
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -45,7 +47,7 @@ var _ = Describe("Health Checks", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
 	)
 
@@ -55,12 +57,8 @@ var _ = Describe("Health Checks", func() {
 		)
 
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -82,7 +80,7 @@ var _ = Describe("Health Checks", func() {
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
+		err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
@@ -98,7 +96,7 @@ var _ = Describe("Health Checks", func() {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(b)
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), "application/json", &buf)
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), "application/json", &buf)
 			if err != nil {
 				return "", err
 			}
@@ -187,7 +185,7 @@ var _ = Describe("Health Checks", func() {
 				testRequest := basicReq([]byte(`"foo"`))
 				Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-				Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+				Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 					"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 				}))))
 			})
@@ -215,7 +213,7 @@ var _ = Describe("Health Checks", func() {
 
 			Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
-			Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
+			Eventually(tu.C, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 				"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 			}))))
 		})

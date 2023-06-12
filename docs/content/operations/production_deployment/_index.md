@@ -104,7 +104,7 @@ You can also patch the `default` *Settings* CR with this value and delete the `d
 Optionally, you may choose to enable Envoy's gzip filter through Gloo Edge. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
 
 ### Set up an EDS warming timeout
-Set up the endpoints warming timeout to a non-zero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/v1.3/#recommended-settings" %}}).
+Set up the endpoints warming timeout to a non-zero value. More details [here](https://docs.solo.io/gloo-edge/latest/operations/upgrading/v1.3/#recommended-settings).
 
 
 ## Access Logging

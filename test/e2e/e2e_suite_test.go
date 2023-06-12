@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"testing"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 
 	"github.com/solo-io/gloo/test/e2e"
@@ -29,7 +31,7 @@ func TestE2e(t *testing.T) {
 }
 
 var (
-	envoyFactory  *services.EnvoyFactory
+	envoyFactory  envoy.Factory
 	consulFactory *services.ConsulFactory
 	vaultFactory  *services.VaultFactory
 
@@ -40,8 +42,8 @@ var (
 
 var _ = BeforeSuite(func() {
 	var err error
-	envoyFactory, err = services.NewEnvoyFactory()
-	Expect(err).NotTo(HaveOccurred())
+	envoyFactory = envoy.NewFactory()
+
 	consulFactory, err = services.NewConsulFactory()
 	Expect(err).NotTo(HaveOccurred())
 	vaultFactory, err = services.NewVaultFactory()
@@ -55,7 +57,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	_ = envoyFactory.Clean()
+	envoyFactory.Clean()
 	_ = consulFactory.Clean()
 	_ = vaultFactory.Clean()
 })

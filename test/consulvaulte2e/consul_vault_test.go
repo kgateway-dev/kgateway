@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -45,7 +47,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		cancel         context.CancelFunc
 		consulInstance *services.ConsulInstance
 		vaultInstance  *services.VaultInstance
-		envoyInstance  *services.EnvoyInstance
+		envoyInstance  *envoy.Instance
 		svc1           *v1helpers.TestUpstream
 		err            error
 		settingsDir    string
@@ -73,9 +75,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		restXdsPort = int(services.AllocateGlooPort())
 		proxyDebugPort = int(services.AllocateGlooPort())
 
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
-
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
@@ -89,6 +88,8 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = vaultInstance.EnableSecretEngine(customSecretEngine)
 		Expect(err).NotTo(HaveOccurred())
+
+		envoyInstance = envoyFactory.NewInstance()
 
 		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
 
@@ -116,7 +117,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(bootstrap.NoopVaultClientInitFunc(vaultClient), customSecretEngine, bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
@@ -143,8 +144,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		}()
 
 		// Start Envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -222,7 +221,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
-		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
+		v1helpers.TestUpstreamReachable(envoyInstance.HttpsPort, svc1, &cert)
 	})
 	It("can do function routing with consul services", func() {
 
@@ -244,7 +243,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
-		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
+		v1helpers.ExpectHttpOK(nil, nil, envoyInstance.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 `)
 	})
