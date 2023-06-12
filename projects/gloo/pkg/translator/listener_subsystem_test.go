@@ -546,6 +546,54 @@ var _ = Describe("Listener Subsystem", func() {
 			},
 		),
 	)
+
+	Describe("hybrid listener chains", func() {
+
+		It("doesnt crash with unknown types", func() {
+
+			listener := &v1.Listener{
+				Name:        "aggregate-listener",
+				BindAddress: gatewaydefaults.GatewayBindAddress,
+				BindPort:    defaults.HttpPort,
+				ListenerType: &v1.Listener_HybridListener{
+					HybridListener: &v1.HybridListener{
+						MatchedListeners: []*v1.MatchedListener{
+							&v1.MatchedListener{},
+						},
+					},
+				},
+			}
+			proxy := &v1.Proxy{
+				Metadata: &core.Metadata{
+					Name:      "proxy",
+					Namespace: defaults.GlooSystem,
+				},
+				Listeners: []*v1.Listener{listener},
+			}
+
+			proxyReport := gloovalidation.MakeReport(proxy)
+			listenerReport := proxyReport.GetListenerReports()[0] // 1 Listener -> 1 ListenerReport
+
+			listenerTranslator, routeConfigurationTranslator := translatorFactory.GetHybridListenerTranslators(
+				ctx,
+				proxy,
+				listener,
+				listenerReport)
+			params := plugins.Params{
+				Ctx: ctx,
+				Snapshot: &gloov1snap.ApiSnapshot{
+					// To support ssl filter chain
+					Secrets: v1.SecretList{createTLSSecret()},
+				},
+			}
+			li := listenerTranslator.ComputeListener(params)
+			_ = routeConfigurationTranslator.ComputeRouteConfiguration(params)
+
+			Expect(len(li.GetFilterChains())).To(BeZero())
+
+		})
+	})
+
 })
 
 func createTLSSecret() *v1.Secret {

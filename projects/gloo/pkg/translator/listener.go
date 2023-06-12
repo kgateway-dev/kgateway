@@ -74,7 +74,7 @@ func (l *listenerTranslatorInstance) ComputeListener(params plugins.Params) *env
 		}
 	}
 
-	CheckForFilterChainConsistency(filterChains, l.report, out)
+	CheckForFilterChainConsistency(out.GetFilterChains(), l.report, out)
 
 	// run the Listener Plugins
 	for _, listenerPlugin := range l.plugins {

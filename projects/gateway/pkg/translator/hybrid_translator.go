@@ -252,6 +252,12 @@ func (t *HybridTranslator) computeMatchedHttpListener(
 	return matchedListener
 }
 
+// computeMatchedTcpListener from a matchedtcpGateway
+// note that TCP gateways do not have nearly as much complexity as HTTP gateways
+// so most other locations where we compute listeners should also be updated
+// if this function is being updated.
+// It is likely that this should be exported and shared at some point if we continue
+// to copy it to more locations.
 func (t *HybridTranslator) computeMatchedTcpListener(
 	params Params,
 	proxyName string,

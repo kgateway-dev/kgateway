@@ -202,8 +202,8 @@ type PluginRegistryFactory func(ctx context.Context) PluginRegistry
 // This extra information may not end up on the final filter chain
 // But may be used to compute other aspects of the listener that are
 // pulled along with filter chain.
-// TODO(nfuden): Is this the right place for this?
 type ExtendedFilterChain struct {
 	*envoy_config_listener_v3.FilterChain
 	PassthroughCipherSuites []string
+	TerminatingCipherSuites []string
 }
