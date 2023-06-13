@@ -42,5 +42,14 @@ func (m *CipherDetectionInput) Clone() proto.Message {
 		}
 	}
 
+	if m.GetTerminatingCiphers() != nil {
+		target.TerminatingCiphers = make([]uint32, len(m.GetTerminatingCiphers()))
+		for idx, v := range m.GetTerminatingCiphers() {
+
+			target.TerminatingCiphers[idx] = v
+
+		}
+	}
+
 	return target
 }

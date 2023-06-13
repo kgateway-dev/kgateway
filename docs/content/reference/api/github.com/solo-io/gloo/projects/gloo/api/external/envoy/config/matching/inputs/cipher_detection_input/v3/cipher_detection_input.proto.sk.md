@@ -31,12 +31,14 @@ Specifies that matching should be performed by the destination IP address.
 
 ```yaml
 "passthroughCiphers": []int
+"terminatingCiphers": []int
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `passthroughCiphers` | `[]int` | List of TLS ciphers to send to the passthrough cipher chain. Ciphers must be provided using their 16-bit value. These numbers of IANA standardised values for all possible cipher suites and can be found here: https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml example: to select the following cipher 0x00,0x3c TLS_RSA_WITH_AES_128_CBC_SHA256 this field should be set to 0x003c. |
+| `terminatingCiphers` | `[]int` | Terminating ciphers are those that should be considered as supported. If not specified, defaults to whatever the current envoy implementation finds to be the default set of ciphers. |
 
 
 

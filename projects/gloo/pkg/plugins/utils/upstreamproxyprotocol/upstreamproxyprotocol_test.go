@@ -19,6 +19,13 @@ var _ = Describe("upstream proxyprotocol", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newTs.Name).To(Equal("envoy.transport_sockets.upstream_proxy_protocol"))
 		})
+		It("can set protocol even if it is wrapped with \"", func() {
+
+			protocolV := `"V1"`
+			newTs, err := WrapWithPProtocol(ts, protocolV)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(newTs.Name).To(Equal("envoy.transport_sockets.upstream_proxy_protocol"))
+		})
 
 		It("doesnt always set protocol ", func() {
 			protocolV := ""

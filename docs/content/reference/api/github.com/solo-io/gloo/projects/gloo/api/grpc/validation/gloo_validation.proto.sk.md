@@ -621,12 +621,14 @@ the report for an AggregateListener
 
 ```yaml
 "httpListenerReports": map<string, .gloo.solo.io.HttpListenerReport>
+"tcpListenerReports": map<string, .gloo.solo.io.TcpListenerReport>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `httpListenerReports` | `map<string, .gloo.solo.io.HttpListenerReport>` |  |
+| `tcpListenerReports` | `map<string, .gloo.solo.io.TcpListenerReport>` |  |
 
 
 

@@ -16,6 +16,7 @@ import (
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	upstream_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upstreamproxyprotocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -294,8 +295,23 @@ var _ = Describe("Plugin", func() {
 			Expect(tlsContext()).To(Equal(existing))
 		})
 
-		It("should set proxy protocol", func() {
+		It("should not override existing tls config even with proxy protocol", func() {
+
+			existing := &envoyauth.UpstreamTlsContext{}
+			typedConfig, err := utils.MessageToAny(existing)
+			Expect(err).ToNot(HaveOccurred())
+			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+				Name:       wellknown.TransportSocketTls,
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: typedConfig},
+			}
 			upstreamSpec.UseTls = wrapperspb.Bool(true)
+			upstream.ProxyProtocolVersion = &wrapperspb.StringValue{Value: "V1"}
+			p.ProcessUpstream(params, upstream, out)
+			Expect(tlsContext()).To(Equal(existing))
+		})
+
+		It("should set proxy protocol", func() {
+
 			upstreamSpec.Hosts[0].SniAddr = "test"
 			upstream.ProxyProtocolVersion = &wrapperspb.StringValue{Value: "V1"}
 			initParams.Settings = &v1.Settings{
@@ -308,10 +324,20 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
+
+			// mimick clusters.go initializecluster which sets some extra things on the upstream
+
+			tls, _ := utils.MessageToAny(&envoyauth.UpstreamTlsContext{})
+
+			ppuv, _ := utils.MessageToAny(&proxyproto.ProxyProtocolUpstreamTransport{TransportSocket: &envoy_config_core_v3.TransportSocket{ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: tls}}})
+
+			out.TransportSocket = &envoy_config_core_v3.TransportSocket{
+				Name:       upstream_proxy_protocol.UpstreamProxySocketName,
+				ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{TypedConfig: ppuv},
+			}
 			err := p.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.TransportSocketMatches[0].Match).To(BeEquivalentTo(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[TransportSocketMatchKey]))
-			Expect(out.TransportSocketMatches[0].TransportSocket.Name).To(Equal("envoy.transport_sockets.upstream_proxy_protocol"))
+			Expect(out.TransportSocketMatches[0].TransportSocket.Name).To(Equal(upstream_proxy_protocol.UpstreamProxySocketName))
 
 			pMsg := utils.MustAnyToMessage(out.TransportSocketMatches[0].GetTransportSocket().GetTypedConfig()).(*proxyproto.ProxyProtocolUpstreamTransport)
 			tlsMsg := utils.MustAnyToMessage(pMsg.GetTransportSocket().GetTypedConfig()).(*envoyauth.UpstreamTlsContext)

@@ -12,7 +12,8 @@ import (
 
 const (
 	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
-	upstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
+	// UpstreamProxySocketName is the base name of the transport socket for proxy protocol on an upstream
+	UpstreamProxySocketName = "envoy.transport_sockets.upstream_proxy_protocol"
 )
 
 // WrapWithPPortocol wraps the upstream with a proxy protocol transport socket
@@ -23,7 +24,14 @@ func WrapWithPProtocol(oldTs *envoy_config_core_v3.TransportSocket, pPVerValStr 
 	}
 	pPVerVal, ok := envoy_config_core_v3.ProxyProtocolConfig_Version_value[pPVerValStr]
 	if !ok {
-		return oldTs, errors.Errorf("proxy protocol version %s is not supported", pPVerValStr)
+		// attempt to unroll in case of implementor errors such as using .String()
+		if len(pPVerValStr) >= 2 && pPVerValStr[:1] == "\"" {
+			pPVerVal, ok = envoy_config_core_v3.ProxyProtocolConfig_Version_value[pPVerValStr[1:len(pPVerValStr)-1]]
+
+		}
+		if !ok {
+			return oldTs, errors.Errorf("proxy protocol version %s is not supported", pPVerValStr[1:len(pPVerValStr)-1])
+		}
 	}
 
 	// if unset envoy uses a raw buffer transport socket
@@ -49,7 +57,7 @@ func WrapWithPProtocol(oldTs *envoy_config_core_v3.TransportSocket, pPVerValStr 
 	typCfg.TypeUrl = "type.googleapis.com/" + proxyProtocolUpstreamClusterName // As of writing this is not in go-control-plane's well known
 
 	newTs := &envoy_config_core_v3.TransportSocket{
-		Name: upstreamProxySocketName,
+		Name: UpstreamProxySocketName,
 		// https://github.com/envoyproxy/envoy/blob/29b46144739578a72a8f18eb8eb0855e23426f6e/api/envoy/extensions/transport_sockets/proxy_protocol/v3/upstream_proxy_protocol.proto#L21
 		ConfigType: &envoy_config_core_v3.TransportSocket_TypedConfig{
 			TypedConfig: typCfg,

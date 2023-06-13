@@ -57,5 +57,16 @@ func (m *CipherDetectionInput) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetTerminatingCiphers()) != len(target.GetTerminatingCiphers()) {
+		return false
+	}
+	for idx, v := range m.GetTerminatingCiphers() {
+
+		if v != target.GetTerminatingCiphers()[idx] {
+			return false
+		}
+
+	}
+
 	return true
 }

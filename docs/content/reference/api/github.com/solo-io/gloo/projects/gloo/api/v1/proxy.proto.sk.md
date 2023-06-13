@@ -19,6 +19,7 @@ weight: 5
 - [HttpListener](#httplistener)
 - [HybridListener](#hybridlistener)
 - [MatchedListener](#matchedlistener)
+- [MatchedTcpListener](#matchedtcplistener)
 - [Matcher](#matcher)
 - [AggregateListener](#aggregatelistener)
 - [HttpResources](#httpresources)
@@ -257,6 +258,25 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 
 ---
+### MatchedTcpListener
+
+
+
+```yaml
+"matcher": .gloo.solo.io.Matcher
+"tcpListener": .gloo.solo.io.TcpListener
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matchers are used to define unique matching criteria for each MatchedListener These are overridden by tcphost sni mutators. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | The actual tcp listener to be used for this matcher in the aggregate listener. |
+
+
+
+
+---
 ### Matcher
 
 
@@ -286,6 +306,7 @@ An AggregateListener defines a set of Gloo configuration which will map to a uni
 ```yaml
 "httpResources": .gloo.solo.io.AggregateListener.HttpResources
 "httpFilterChains": []gloo.solo.io.AggregateListener.HttpFilterChain
+"tcpListeners": []gloo.solo.io.MatchedTcpListener
 
 ```
 
@@ -293,6 +314,7 @@ An AggregateListener defines a set of Gloo configuration which will map to a uni
 | ----- | ---- | ----------- | 
 | `httpResources` | [.gloo.solo.io.AggregateListener.HttpResources](../proxy.proto.sk/#httpresources) | The aggregate set of resources available on this listener. |
 | `httpFilterChains` | [[]gloo.solo.io.AggregateListener.HttpFilterChain](../proxy.proto.sk/#httpfilterchain) | The set of HttpFilterChains to create on this listener. |
+| `tcpListeners` | [[]gloo.solo.io.MatchedTcpListener](../proxy.proto.sk/#matchedtcplistener) | The set of TcpListeners to create on this listener. |
 
 
 

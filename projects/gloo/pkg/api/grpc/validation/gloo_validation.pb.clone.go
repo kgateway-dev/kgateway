@@ -608,6 +608,19 @@ func (m *AggregateListenerReport) Clone() proto.Message {
 		}
 	}
 
+	if m.GetTcpListenerReports() != nil {
+		target.TcpListenerReports = make(map[string]*TcpListenerReport, len(m.GetTcpListenerReports()))
+		for k, v := range m.GetTcpListenerReports() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.TcpListenerReports[k] = h.Clone().(*TcpListenerReport)
+			} else {
+				target.TcpListenerReports[k] = proto.Clone(v).(*TcpListenerReport)
+			}
+
+		}
+	}
+
 	return target
 }
 
