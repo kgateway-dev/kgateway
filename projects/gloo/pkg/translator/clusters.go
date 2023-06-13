@@ -130,9 +130,9 @@ func (t *translatorInstance) initializeCluster(
 	}
 	// proxyprotocol may be wiped by some plugins that transform transport sockets
 	// see static and failover at time of writing.
-	if upstreamProxyProtocol := upstream.GetProxyProtocolVersion(); upstreamProxyProtocol != nil {
+	if upstream.GetProxyProtocolVersion() != nil {
 
-		tp, err := upstream_proxy_protocol.WrapWithPProtocol(out.GetTransportSocket(), upstreamProxyProtocol.String())
+		tp, err := upstream_proxy_protocol.WrapWithPProtocol(out.GetTransportSocket(), upstream.GetProxyProtocolVersion().GetValue())
 		if err != nil {
 			reports.AddError(upstream, err)
 		} else {
@@ -430,8 +430,3 @@ func applyDefaultsToUpstreamSslConfig(sslConfig *ssl.UpstreamSslConfig, options 
 		sslConfig.Parameters = options.GetSslParameters()
 	}
 }
-
-const (
-	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
-	upstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
-)

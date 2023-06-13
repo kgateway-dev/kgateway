@@ -14,33 +14,54 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
+// Make sure that aggregate Translator implements our ListenerTranslator interface
 var _ ListenerTranslator = new(AggregateTranslator)
 
 const AggregateTranslatorName = "aggregate"
 
+// AggregateTranslator is responsible for translating a Gateway into a Gloo Listener
+// It attempts to use Gateways as a storage for shared filterchain options.
+// Therefore it splits gateways into appropriate filterchains based on the sni options.
 type AggregateTranslator struct {
 	VirtualServiceTranslator *VirtualServiceTranslator
+	TcpTranslator            *TcpTranslator
 }
 
 func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, gateway *v1.Gateway) *gloov1.Listener {
 	snap := params.snapshot
 
-	// currently the AggregateListener only support HTTP features (and not TCP)
-	// therefore, we are safe to guard against empty VirtualServices first, since all HTTP features
-	// require VirtualServices to function. If TCP support is added later, this guard will need
-	// to be moved
-	if len(snap.VirtualServices) == 0 {
-		snapHash := hashutils.MustHash(snap)
-		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
-		return nil
-	}
-
 	var aggregateListener *gloov1.AggregateListener
-	switch gateway.GetGatewayType().(type) {
+	switch gw := gateway.GetGatewayType().(type) {
 	case *v1.Gateway_HttpGateway:
+		// we are safe to guard against empty VirtualServices first, since all HTTP features require VirtualServices to function.
+		if len(snap.VirtualServices) == 0 {
+			snapHash := hashutils.MustHash(snap)
+			contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
+			return nil
+		}
+
 		aggregateListener = a.computeAggregateListenerForHttpGateway(params, proxyName, gateway)
 
 	case *v1.Gateway_HybridGateway:
+		hybrid := gw.HybridGateway
+
+		// warn early if there are no virtual services and no tcp configurations
+		if len(snap.VirtualServices) == 0 {
+			hasTCP := hybrid.GetDelegatedTcpGateways() != nil
+			if !hasTCP && hybrid.GetMatchedGateways() != nil {
+				for _, matched := range hybrid.GetMatchedGateways() {
+					if matched.GetTcpGateway() != nil {
+						hasTCP = true
+						break
+					}
+				}
+			}
+			if !hasTCP {
+				snapHash := hashutils.MustHash(snap)
+				contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services or tcp gateways", snapHash)
+				return nil
+			}
+		}
 		aggregateListener = a.computeAggregateListenerForHybridGateway(params, proxyName, gateway)
 	}
 
@@ -98,8 +119,9 @@ func (a *AggregateTranslator) computeAggregateListenerForHybridGateway(params Pa
 	hybridGateway := gateway.GetHybridGateway()
 
 	matchedGateways := hybridGateway.GetMatchedGateways()
-	delegatedGateways := hybridGateway.GetDelegatedHttpGateways()
-	if matchedGateways == nil && delegatedGateways == nil {
+	delegatedHttpGateways := hybridGateway.GetDelegatedHttpGateways()
+	delegatedTcpGateways := hybridGateway.GetDelegatedTcpGateways()
+	if matchedGateways == nil && delegatedHttpGateways == nil && delegatedTcpGateways == nil {
 		return nil
 	}
 
@@ -116,8 +138,8 @@ func (a *AggregateTranslator) computeAggregateListenerForHybridGateway(params Pa
 		}
 	} else {
 		// DelegatedHttpGateways is only processed if there are no MatchedGateways defined
-		aggregateListener = a.computeListenerFromDelegatedGateway(params, proxyName, gateway, delegatedGateways)
-		if len(aggregateListener.GetHttpFilterChains()) == 0 {
+		aggregateListener = a.computeListenerFromDelegatedGateway(params, proxyName, gateway, delegatedHttpGateways, delegatedTcpGateways)
+		if len(aggregateListener.GetHttpFilterChains()) == 0 && len(aggregateListener.GetTcpListeners()) == 0 {
 			// missing refs should only result in a warning
 			// this allows resources to be applied asynchronously if the validation webhook is configured to allow warnings
 			params.reports.AddWarning(gateway, EmptyHybridGatewayMessage)
@@ -140,8 +162,19 @@ func (a *AggregateTranslator) computeListenerFromMatchedGateways(
 
 		switch gt := matchedGateway.GetGatewayType().(type) {
 		case *v1.MatchedGateway_TcpGateway:
-			params.reports.AddError(gateway, errors.New("AggregateListener does not support TCP features (yet)"))
-			continue
+			// for now the parent gateway does not provide inheritable aspects so ignore it
+			tcpListener := &gloov1.MatchedTcpListener{
+				Matcher: &gloov1.Matcher{
+					SslConfig:               matchedGateway.GetMatcher().GetSslConfig(),
+					SourcePrefixRanges:      matchedGateway.GetMatcher().GetSourcePrefixRanges(),
+					PassthroughCipherSuites: matchedGateway.GetMatcher().GetPassthroughCipherSuites(),
+				},
+				TcpListener: a.TcpTranslator.ComputeTcpListener(matchedGateway.GetTcpGateway()),
+			}
+			if builder.tcpListeners == nil {
+				builder.tcpListeners = make([]*gloov1.MatchedTcpListener, 0)
+			}
+			builder.tcpListeners = append(builder.tcpListeners, tcpListener)
 
 		case *v1.MatchedGateway_HttpGateway:
 			gatewaySsl := matchedGateway.GetMatcher().GetSslConfig()
@@ -185,31 +218,45 @@ func (a *AggregateTranslator) computeListenerFromDelegatedGateway(
 	params Params,
 	proxyName string,
 	gateway *v1.Gateway,
-	delegatedGateway *v1.DelegatedHttpGateway,
+	delegatedHttpGateway *v1.DelegatedHttpGateway,
+	delegatedTcpGateway *v1.DelegatedTcpGateway,
 ) *gloov1.AggregateListener {
-	// 1. Select the HttpGateways
-	httpGatewaySelector := NewHttpGatewaySelector(params.snapshot.HttpGateways)
+
+	// 1. Initialize the builder, used to aggregate resources
+	builder := newBuilder()
+
 	onSelectionError := func(err error) {
 		params.reports.AddError(gateway, err)
 	}
-	matchableHttpGateways := httpGatewaySelector.SelectMatchableHttpGateways(delegatedGateway, onSelectionError)
-	if len(matchableHttpGateways) == 0 {
+
+	// 2. Select the HttpGateways
+	httpGatewaySelector := NewHttpGatewaySelector(params.snapshot.HttpGateways)
+	matchableHttpGateways := httpGatewaySelector.SelectMatchableHttpGateways(delegatedHttpGateway, onSelectionError)
+
+	// 3. Select the TcpGateways
+	tcpGatewaySelector := NewTcpGatewaySelector(params.snapshot.TcpGateways)
+	matchableTcpGateways := tcpGatewaySelector.SelectMatchableTcpGateways(delegatedTcpGateway, onSelectionError)
+
+	// nothing to do if there are no matchable gateways so dont do anything more
+	if len(matchableHttpGateways) == 0 && len(matchableTcpGateways) == 0 {
 		return nil
 	}
 
-	// 2. Initialize the builder, used to aggregate resources
-	builder := newBuilder()
-
-	// 3. Process each MatchableHttpGateway, which may create 1 or more distinct filter chains
-	matchableHttpGateways.Each(func(element *v1.MatchableHttpGateway) {
-		a.processMatchableGateway(params, proxyName, gateway, element, builder)
+	// 4. Process each  matchable Gateway, which may create 1 or more distinct filter chains
+	matchableHttpGateways.Each(func(httpGw *v1.MatchableHttpGateway) {
+		a.processMatchableHttpGateway(params, proxyName, gateway, httpGw, builder)
+	})
+	// 5. Process each matchable tcp gateway which creates a tcp impl that by default
+	// knows how to make multiple filter chains
+	matchableTcpGateways.Each(func(tcpGw *v1.MatchableTcpGateway) {
+		a.processMatchableTcpGateway(params, proxyName, gateway, tcpGw, builder)
 	})
 
-	// 4. Build the listener
+	// 5. Build the listener from all the accumulated resources
 	return builder.build()
 }
 
-func (a *AggregateTranslator) processMatchableGateway(
+func (a *AggregateTranslator) processMatchableHttpGateway(
 	params Params,
 	proxyName string,
 	parentGateway *v1.Gateway,
@@ -255,6 +302,37 @@ func (a *AggregateTranslator) processMatchableGateway(
 
 		builder.addHttpFilterChain(virtualHosts, listenerOptions, matcher)
 	}
+}
+
+// processMatchableTcpGateway  from a matchedtcpGateway
+// note that TCP gateways do not have nearly as much complexity as HTTP gateways
+// so most other locations where we compute listeners should also be updated
+// if this function is being updated.
+// It is likely that this should be exported and shared at some point if we continue
+// to copy it to more locations.
+// For example in hybrid a similar function is called computeMatchedTcpListener
+func (a *AggregateTranslator) processMatchableTcpGateway(
+	params Params,
+	proxyName string,
+	parentGateway *v1.Gateway,
+	matchableTcpGateway *v1.MatchableTcpGateway,
+	builder *aggregateListenerBuilder,
+
+) {
+	validateTcpHosts(params, parentGateway, matchableTcpGateway.GetTcpGateway(), matchableTcpGateway.GetMatcher().GetSslConfig())
+	// for now the parent gateway does not provide inheritable aspects so ignore it
+	tcpListener := &gloov1.MatchedTcpListener{
+		Matcher: &gloov1.Matcher{
+			SslConfig:               matchableTcpGateway.GetMatcher().GetSslConfig(),
+			SourcePrefixRanges:      matchableTcpGateway.GetMatcher().GetSourcePrefixRanges(),
+			PassthroughCipherSuites: matchableTcpGateway.GetMatcher().GetPassthroughCipherSuites(),
+		},
+		TcpListener: a.TcpTranslator.ComputeTcpListener(matchableTcpGateway.GetTcpGateway()),
+	}
+	if builder.tcpListeners == nil {
+		builder.tcpListeners = make([]*gloov1.MatchedTcpListener, 0)
+	}
+	builder.tcpListeners = append(builder.tcpListeners, tcpListener)
 }
 
 // A Gateway and MatchableHttpGateway share configuration
@@ -305,6 +383,8 @@ type aggregateListenerBuilder struct {
 	virtualHostsByName map[string]*gloov1.VirtualHost
 	httpOptionsByName  map[string]*gloov1.HttpListenerOptions
 	httpFilterChains   []*gloov1.AggregateListener_HttpFilterChain
+
+	tcpListeners []*gloov1.MatchedTcpListener
 }
 
 func newBuilder() *aggregateListenerBuilder {
@@ -344,5 +424,6 @@ func (b *aggregateListenerBuilder) build() *gloov1.AggregateListener {
 			HttpOptions:  b.httpOptionsByName,
 		},
 		HttpFilterChains: b.httpFilterChains,
+		TcpListeners:     b.tcpListeners,
 	}
 }
