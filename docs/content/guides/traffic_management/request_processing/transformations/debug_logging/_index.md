@@ -222,6 +222,10 @@ These logs should contain the following excerpt:
 
 Here, we can see that the body and request headers are logged before an after the transformation -- note that the `x-regular-request-header` is present in the request headers after the transformation is processed.
 
+### Notes
+
+Please note that `logRequestResponseInfo` can be enabled at the `stagedTransformations` level, which will enable debug logging for all stages of the transformation. Additionally, 
+`gloo.logTransformationRequestResponseInfo` can be enabled in the global Settings object to enable debug logging for all transformations in the cluster.
 ### Cleanup
 To cleanup the resources created in this tutorial you can run the following commands:
 
