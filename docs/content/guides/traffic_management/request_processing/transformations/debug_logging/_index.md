@@ -214,7 +214,7 @@ These logs should contain the following excerpt:
 'x-regular-request-header', 'regular'
 ```
 
-Here, we can see that the body and request headers are logged before an after the transformation -- note that the `x-regular-request-header` is present in the request headers after the transformation is processed.
+Here, we can see that the body and request headers are logged before and after the transformation. Note that the `x-regular-request-header` is present in the request headers after the transformation is processed.
 
 ### Notes
 
