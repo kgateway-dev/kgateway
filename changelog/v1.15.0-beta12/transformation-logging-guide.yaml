@@ -2,6 +2,8 @@ changelog:
   - type: NEW_FEATURE
     description: >-
       Adds a user guide for new transformation debug logging functionality.
-
+    issueLink: https://github.com/solo-io/gloo/issues/8266
+  - type: NON_USER_FACING
+    description: >-
       skipCI-kube-tests:true
     issueLink: https://github.com/solo-io/gloo/issues/8266
