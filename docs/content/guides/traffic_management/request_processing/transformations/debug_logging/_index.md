@@ -10,7 +10,7 @@ In this tutorial we will see how to use Gloo Edge's debug logging feature to deb
 This feature has the potential to log sensitive information. We do not recommend enabling this feature in production environments.
 {{% /notice %}}
 
-### Setup
+## Setup
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
 
 Let's also create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
@@ -61,7 +61,7 @@ You should see an output similar like this:
 }
 ```
 
-#### Update Virtual Service
+### Update Virtual Service
 Now, let's update the virtual service to include transformations that add headers to the response.
 
 {{< highlight yaml "hl_lines=20-35" >}}
@@ -100,7 +100,7 @@ spec:
                     text: "regular"
 {{< /highlight >}}
 
-#### Test the modified configuration
+### Test the modified configuration
 To test that our configuration has been correctly picked up by Gloo Edge, let's execute our `curl` command again:
 
 ```shell
@@ -128,7 +128,7 @@ Notice that the response now includes the headers we added in the transformation
 }
 {{< /highlight >}}
 
-#### Add debug logging
+### Add debug logging
 Now, let's add debug logging to our Virtual Service. We will add debug logging for the `regular` stage of the transformation.
 
 {{< highlight yaml "hl_lines=32" >}}
@@ -168,7 +168,7 @@ spec:
                     text: "regular"
 {{< /highlight >}}
 
-#### Test the modified configuration
+### Test the modified configuration
 To test that our configuration has been correctly picked up by Gloo Edge, let's first set the log level within the gateway-proxy pod to `debug`:
 
 ```shell
@@ -216,11 +216,11 @@ These logs should contain the following excerpt:
 
 Here, we can see that the body and request headers are logged before an after the transformation -- note that the `x-regular-request-header` is present in the request headers after the transformation is processed.
 
-### Notes
+## Notes
 
 Please note that `logRequestResponseInfo` can be enabled at the `stagedTransformations` level, which will enable debug logging for all stages of the transformation. Additionally, 
 `gloo.logTransformationRequestResponseInfo` can be enabled in the global Settings object to enable debug logging for all transformations in the cluster.
-### Cleanup
+## Cleanup
 To cleanup the resources created in this tutorial you can run the following commands:
 
 ```shell
