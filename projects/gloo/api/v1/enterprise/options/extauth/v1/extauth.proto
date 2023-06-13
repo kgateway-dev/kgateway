@@ -771,7 +771,7 @@ message JwtValidation {
 // [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 //
 // If the token introspection url requires client authentication, both the client_id and client_secret
-// are required. If only one is provided, the config will be rejected.
+// are required. Unless disable_client_secret is set, when only one is provided, the config will be rejected.
 // These values will be encoded in a basic auth header in order to authenticate the client.
 message IntrospectionValidation {
     // The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
@@ -794,6 +794,9 @@ message IntrospectionValidation {
     // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
     // This field is optional and by default the server will not try to derive the user ID.
     string user_id_attribute_name = 4;
+
+    // Allows setting a client id but not a client secret.
+    bool disable_client_secret = 5;
 
 }
 

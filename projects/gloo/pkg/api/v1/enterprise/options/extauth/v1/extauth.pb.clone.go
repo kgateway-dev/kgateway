@@ -958,6 +958,8 @@ func (m *IntrospectionValidation) Clone() proto.Message {
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
 
+	target.DisableClientSecret = m.GetDisableClientSecret()
+
 	return target
 }
 

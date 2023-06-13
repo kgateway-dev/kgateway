@@ -1054,7 +1054,7 @@ Defines how (opaque) access tokens, received from the oauth authorization endpoi
 [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 
 If the token introspection url requires client authentication, both the client_id and client_secret
-are required. If only one is provided, the config will be rejected.
+are required. Unless disable_client_secret is set, when only one is provided, the config will be rejected.
 These values will be encoded in a basic auth header in order to authenticate the client.
 
 ```yaml
@@ -1062,6 +1062,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 "clientId": string
 "clientSecretRef": .core.solo.io.ResourceRef
 "userIdAttributeName": string
+"disableClientSecret": bool
 
 ```
 
@@ -1071,6 +1072,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | `clientId` | `string` | Your client id as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Your client secret as registered with the issuer. Optional: Use if the token introspection url requires client authentication. |
 | `userIdAttributeName` | `string` | The name of the [introspection response](https://tools.ietf.org/html/rfc7662#section-2.2) attribute that contains the ID of the resource owner (e.g. `sub`, `username`). If specified, the external auth server will use the value of the attribute as the identifier of the authenticated user and add it to the request headers and/or dynamic metadata (depending on how the server is configured); if the field is set and the attribute cannot be found, the request will be denied. This field is optional and by default the server will not try to derive the user ID. |
+| `disableClientSecret` | `bool` | Allows setting a client id but not a client secret. |
 
 
 
