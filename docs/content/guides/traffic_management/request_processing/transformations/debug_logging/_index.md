@@ -34,8 +34,6 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-      options:
-        autoHostRewrite: true
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -84,8 +82,6 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-      options:
-        autoHostRewrite: true
     options:
       stagedTransformations:
         early:
@@ -153,8 +149,6 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-      options:
-        autoHostRewrite: true
     options:
       stagedTransformations:
         early:
