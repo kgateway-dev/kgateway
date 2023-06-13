@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Mark table test in deprecated cipher passthrough to run only on linux
+
