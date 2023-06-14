@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8387
+    resolvesIssue: false
+    description: Fixed bug runAsUser was improperly being rendered with a value of 0 instead of being omitted, along with tests that should have caught it
