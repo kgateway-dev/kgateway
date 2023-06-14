@@ -285,6 +285,7 @@ spec:
                                       type: string
                                   type: object
                                 disableClientSecret:
+                                  nullable: true
                                   type: boolean
                                 introspectionUrl:
                                   type: string
@@ -344,6 +345,7 @@ spec:
                                   type: string
                               type: object
                             disableClientSecret:
+                              nullable: true
                               type: boolean
                             logoutPath:
                               type: string
@@ -465,6 +467,7 @@ spec:
                                   type: string
                               type: object
                             disableClientSecret:
+                              nullable: true
                               type: boolean
                             discoveryOverride:
                               properties:

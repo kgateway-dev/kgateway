@@ -670,7 +670,7 @@ message OidcAuthorizationCode {
     // If true, do not check for or use the client secret.
     // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
-    bool disable_client_secret = 21;
+    google.protobuf.BoolValue disable_client_secret = 21;
 }
 
 message PlainOAuth2 {
@@ -726,7 +726,7 @@ message PlainOAuth2 {
     // If true, do not check for or use the client secret.
     // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret.
-    bool disable_client_secret = 14;
+    google.protobuf.BoolValue disable_client_secret = 14;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -806,7 +806,7 @@ message IntrospectionValidation {
     string user_id_attribute_name = 4;
 
     // Allows setting a client id but not a client secret.
-    bool disable_client_secret = 5;
+    google.protobuf.BoolValue disable_client_secret = 5;
 
 }
 

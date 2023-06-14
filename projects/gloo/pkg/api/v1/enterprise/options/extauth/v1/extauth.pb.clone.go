@@ -833,7 +833,11 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		}
 	}
 
-	target.DisableClientSecret = m.GetDisableClientSecret()
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }
@@ -901,7 +905,11 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.RevocationEndpoint = m.GetRevocationEndpoint()
 
-	target.DisableClientSecret = m.GetDisableClientSecret()
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }
@@ -967,7 +975,11 @@ func (m *IntrospectionValidation) Clone() proto.Message {
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
 
-	target.DisableClientSecret = m.GetDisableClientSecret()
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }
