@@ -374,7 +374,7 @@ var _ = Describe("Hybrid Gateway", func() {
 				// requests mysteriously close with an EOF and no further
 				// diagnostic information. unable to investigate in greater
 				// depth at this time
-				testutils.ValidateRequirementsAndNotifyGinkgo(testutils.LinuxOnly("Unknown"))
+				testutils.ValidateRequirementsAndNotifyGinkgo(testutils.LinuxOnly("Unknown (possibly uses 127.0.0.1?)"))
 			})
 			DescribeTable("SetResource[Invalid|Valid] works as expected",
 				func(cp ClientConnectionProperties, matches map[string]*v1.Matcher, expected string) {
