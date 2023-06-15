@@ -44,6 +44,9 @@ data:
         # Specifies the proxy's in-memory xds cache key (see projects/gloo/pkg/xds/envoy.go)
         # This value needs to match discoveryNamespace (or "writeNamespace") in the settings template
         role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
+{{- if $spec.envoyStatsConfig }}
+    stats_config: {{- toYaml $spec.envoyStatsConfig | nindent 6}}
+{{- end }} {{- /* if $spec.envoyStatsConfig */}}
     static_resources:
 {{- if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper) }}
       listeners:
