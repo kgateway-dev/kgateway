@@ -247,6 +247,34 @@ var _ = Describe("Plugin", func() {
 				)
 
 				Expect(typedConfig).To(skMatchers.MatchProto(expectedFilter.HttpFilter.GetTypedConfig()))
+
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can override settings-object-level setting with transformation-stages level", func() {
+				// override plugin created in BeforeEach
+				p = NewPlugin()
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+
+				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: false}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
 			})
 		})
 
