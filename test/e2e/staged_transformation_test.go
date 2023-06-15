@@ -423,6 +423,87 @@ var _ = Describe("Staged Transformation", func() {
 			Entry("staged logging disabled, individual logging disabled", false, false, containsNoEnhancedLoggingSubstrings),
 		)
 
+		Context("Enhanced logging in global settings", func() {
+			BeforeEach(func() {
+				testContext.SetRunSettings(&gloov1.Settings{
+					Gloo: &gloov1.GlooOptions{
+						LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+					},
+				})
+			})
+
+			It("can enable enhanced logging from global settings object", func() {
+				testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+					vsBuilder := helpers.BuilderFromVirtualService(vs)
+					vsBuilder.WithVirtualHostOptions(&gloov1.VirtualHostOptions{
+						StagedTransformations: &transformation.TransformationStages{
+							Early: &transformation.RequestResponseTransformations{
+								ResponseTransforms: []*transformation.ResponseMatch{
+									{
+										Matchers: []*matchers.HeaderMatcher{
+											{
+												Name:  ":status",
+												Value: "200",
+											},
+										},
+										ResponseTransformation: &transformation.Transformation{
+											TransformationType: &transformation.Transformation_TransformationTemplate{
+												TransformationTemplate: &envoytransformation.TransformationTemplate{
+													ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+													BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+														Body: &envoytransformation.InjaTemplate{
+															Text: "{{body()}}-early-transformed",
+														},
+													},
+												},
+											},
+										},
+									}},
+							},
+							Regular: &transformation.RequestResponseTransformations{
+								ResponseTransforms: []*transformation.ResponseMatch{
+									{
+										Matchers: []*matchers.HeaderMatcher{
+											{
+												Name:  ":status",
+												Value: "200",
+											},
+										},
+										ResponseTransformation: &transformation.Transformation{
+											TransformationType: &transformation.Transformation_TransformationTemplate{
+												TransformationTemplate: &envoytransformation.TransformationTemplate{
+													ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
+													BodyTransformation: &envoytransformation.TransformationTemplate_Body{
+														Body: &envoytransformation.InjaTemplate{
+															Text: "regular-transformed",
+														},
+													},
+												},
+											},
+										},
+									}},
+							},
+						},
+					})
+					return vsBuilder.Build()
+				})
+
+				requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody("test")
+				Eventually(func(g Gomega) {
+					g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
+						StatusCode: http.StatusOK,
+						Body:       "regular-transformed-early-transformed",
+					}))
+				}, "15s", ".5s").Should(Succeed())
+
+				// get the logs from the gateway-proxy container
+				logs, err := testContext.EnvoyInstance().Logs()
+				Expect(err).NotTo(HaveOccurred())
+
+				containsAllEnhancedLoggingSubstrings(logs)
+			})
+		})
+
 		It("should apply transforms from most specific level only", func() {
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vsBuilder := helpers.BuilderFromVirtualService(vs)
