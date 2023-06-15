@@ -6080,11 +6080,11 @@ metadata:
 					Entry("1-gloo-deployment", "gloo", "gloo.deployment.podSecurityContext"),
 				)
 
-				DescribeTable("floatingUserID is properly applied (container)", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+				DescribeTable("floatingUserId is properly applied (container)", func(resourceName string, containerName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
 					// Pass 1 - get with no changes
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							fpuidRoot + ".floatingUserID=false",
+							fpuidRoot + ".floatingUserId=false",
 							securityRoot + ".runAsUser=30303",
 						}, extraArgs...),
 					})
@@ -6092,22 +6092,22 @@ metadata:
 					container := getContainer(testManifest, "Deployment", resourceName, containerName)
 					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
 
-					// Pass 2: floatingUserID=true
-					// Get the default user id
+					// Pass 2: floatingUserId=true
+					// runAsUser should not be defined
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							fpuidRoot + ".floatingUserID=true",
+							fpuidRoot + ".floatingUserId=true",
 						}, extraArgs...),
 					})
 
 					container = getContainer(testManifest, "Deployment", resourceName, containerName)
-					Expect(container.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
+					Expect(container.SecurityContext.RunAsUser).To(BeNil())
 
-					// Pass 3: floatingUserID=true
+					// Pass 3: floatingUserId=true
 					// BUT also pass in an override for the runAsUser
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							fpuidRoot + ".floatingUserID=true",
+							fpuidRoot + ".floatingUserId=true",
 							securityRoot + ".runAsUser=20202",
 							securityRoot + ".mergePolicy=helm-merge",
 						}, extraArgs...),
@@ -6119,15 +6119,15 @@ metadata:
 				},
 					Entry("1-gloo-deployment-envoy-sidecar", "gloo", "envoy-sidecar", "gloo.deployment", "global.glooMtls.envoy.securityContext", "global.glooMtls.enabled=true"),
 					Entry("1-gloo-deployment-sds", "gloo", "sds", "gloo.deployment", "global.glooMtls.sds.securityContext", "global.glooMtls.enabled=true"),
-					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"), //Entry("7-gateway-proxy-deployment-istio-proxy", "gateway-proxy", "istio-proxy", "gatewayProxies.gatewayProxy.podTemplate", "global.glooMtls.istioProxy.securityContext", "global.istioSDS.enabled=true"),
+					Entry("7-gateway-proxy-deployment-gateway-proxy", "gateway-proxy", "gateway-proxy", "gatewayProxies.gatewayProxy.podTemplate", "gatewayProxies.gatewayProxy.podTemplate.glooContainerSecurityContext"),
 				)
 
-				DescribeTable("floatingUserID is properly applied (pod)", func(resourceName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
-					// Pass 1: floatingUserID=false
+				DescribeTable("floatingUserId is properly applied (pod)", func(resourceName string, fpuidRoot string, securityRoot string, extraArgs ...string) {
+					// Pass 1: floatingUserId=false
 					// Also set the runAsUser to something other than the default
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							fpuidRoot + ".floatingUserID=false",
+							fpuidRoot + ".floatingUserId=false",
 							securityRoot + ".runAsUser=30303",
 						}, extraArgs...),
 					})
@@ -6136,22 +6136,22 @@ metadata:
 					structuredDeployment := getStructuredDeployment(testManifest, resourceName)
 					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(30303))))
 
-					// Pass 2: floatingUserID=true
+					// Pass 2: floatingUserId=true
 					// The chart uses the default user id
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							fpuidRoot + ".floatingUserID=true",
+							fpuidRoot + ".floatingUserId=true",
 						}, extraArgs...),
 					})
 
 					structuredDeployment = getStructuredDeployment(testManifest, resourceName)
-					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(Equal(pointer.Int64(int64(10101))))
+					Expect(structuredDeployment.Spec.Template.Spec.SecurityContext.RunAsUser).To(BeNil())
 
-					// // Pass 3: floatingUserID=true
+					// // Pass 3: floatingUserId=true
 					// // BUT also pass in an override for the runAsUser
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: append([]string{
-							fpuidRoot + ".floatingUserID=true",
+							fpuidRoot + ".floatingUserId=true",
 							securityRoot + ".runAsUser=20202",
 							securityRoot + ".mergePolicy=helm-merge",
 						}, extraArgs...),
