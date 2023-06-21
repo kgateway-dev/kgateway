@@ -20,6 +20,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 var (
@@ -72,8 +73,10 @@ func (p *plugin) ProcessVirtualHost(
 		)
 	}
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
-	out.Cors = &envoy_config_route_v3.CorsPolicy{}
-	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.GetCors())
+	corsPolicy := &envoy_config_cors_v3.CorsPolicy{}
+	p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, corsPolicy)
+
+	return pluginutils.SetVhostPerFilterConfig(out, wellknown.CORS, corsPolicy)
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
@@ -96,18 +99,19 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
-	outRa.Cors = &envoy_config_route_v3.CorsPolicy{}
-	if err := p.translateCommonUserCorsConfig(params.Ctx, in.GetOptions().GetCors(), outRa.GetCors()); err != nil {
+	corsPolicy := &envoy_config_cors_v3.CorsPolicy{}
+	if err := p.translateCommonUserCorsConfig(params.Ctx, in.GetOptions().GetCors(), corsPolicy); err != nil {
 		return err
 	}
-	p.translateRouteSpecificCorsConfig(in.GetOptions().GetCors(), outRa.GetCors())
-	return nil
+	p.translateRouteSpecificCorsConfig(in.GetOptions().GetCors(), corsPolicy)
+
+	return pluginutils.SetRoutePerFilterConfig(out, wellknown.CORS, corsPolicy)
 }
 
 func (p *plugin) translateCommonUserCorsConfig(
 	ctx context.Context,
 	in *cors.CorsPolicy,
-	out *envoy_config_route_v3.CorsPolicy,
+	out *envoy_config_cors_v3.CorsPolicy,
 ) error {
 	if len(in.GetAllowOrigin()) == 0 && len(in.GetAllowOriginRegex()) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
@@ -135,16 +139,14 @@ func (p *plugin) translateCommonUserCorsConfig(
 // not expecting this to be used
 const runtimeKey = "gloo.routeplugin.cors"
 
-func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoy_config_route_v3.CorsPolicy) {
+func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoy_config_cors_v3.CorsPolicy) {
 	if in.GetDisableForRoute() {
-		out.EnabledSpecifier = &envoy_config_route_v3.CorsPolicy_FilterEnabled{
-			FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
-				DefaultValue: &envoy_type_v3.FractionalPercent{
-					Numerator:   0,
-					Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
-				},
-				RuntimeKey: runtimeKey,
+		out.FilterEnabled = &envoy_config_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   0,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 			},
+			RuntimeKey: runtimeKey,
 		}
 	}
 }
