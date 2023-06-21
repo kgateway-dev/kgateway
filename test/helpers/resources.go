@@ -20,7 +20,16 @@ import (
 type scaledSnapshotBuilder struct {
 	endpoints int
 	upstreams int
+
+	eb *endpointBuilder
+	ub *upstreamBuilder
 }
+
+type upstreamBuilder struct {
+	sni string
+}
+
+type endpointBuilder struct{}
 
 func upMeta(i int) *core.Metadata {
 	return &core.Metadata{
@@ -236,17 +245,17 @@ func Proxy(numRoutes int) *v1.Proxy {
 	}
 }
 
-// ScaledSnapshot generates a snapshot populated with particular numbers of each resource types as determined by the
-// passed config
+// Build generates a snapshot populated with particular numbers of each resource types as determined by the
+// scaledSnapshotBuilder
 func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 	endpointList := make(v1.EndpointList, b.endpoints)
 	for i := 0; i < b.endpoints; i++ {
-		endpointList[i] = Endpoint(i + 1) // names are 1-indexed
+		endpointList[i] = b.eb.Build(i + 1) // names are 1-indexed
 	}
 
 	upstreamList := make(v1.UpstreamList, b.upstreams)
 	for i := 0; i < b.upstreams; i++ {
-		upstreamList[i] = Upstream(i + 1) // names are 1-indexed
+		upstreamList[i] = b.ub.Build(i + 1) // names are 1-indexed
 	}
 
 	return &gloosnapshot.ApiSnapshot{
@@ -259,7 +268,10 @@ func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 }
 
 func NewScaledSnapshotBuilder() *scaledSnapshotBuilder {
-	return &scaledSnapshotBuilder{}
+	return &scaledSnapshotBuilder{
+		eb: NewEndpointBuilder(),
+		ub: NewUpstreamBuilder(),
+	}
 }
 
 func (b *scaledSnapshotBuilder) WithUpstreams(n int) *scaledSnapshotBuilder {
@@ -267,7 +279,56 @@ func (b *scaledSnapshotBuilder) WithUpstreams(n int) *scaledSnapshotBuilder {
 	return b
 }
 
+func (b *scaledSnapshotBuilder) WithUpstreamBuilder(ub *upstreamBuilder) *scaledSnapshotBuilder {
+	b.ub = ub
+	return b
+}
+
 func (b *scaledSnapshotBuilder) WithEndpoints(n int) *scaledSnapshotBuilder {
 	b.endpoints = n
 	return b
+}
+
+func (b *scaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *scaledSnapshotBuilder {
+	b.eb = eb
+	return b
+}
+
+func NewEndpointBuilder() *endpointBuilder {
+	return &endpointBuilder{}
+}
+
+func (b *endpointBuilder) Build(i int) *v1.Endpoint {
+	return Endpoint(i)
+}
+
+func NewUpstreamBuilder() *upstreamBuilder {
+	return &upstreamBuilder{}
+}
+
+func (b *upstreamBuilder) WithUniqueSni() *upstreamBuilder {
+	b.sni = "unique"
+	return b
+}
+
+func (b *upstreamBuilder) WithConsistentSni() *upstreamBuilder {
+	b.sni = "consistent"
+	return b
+}
+
+func (b *upstreamBuilder) Build(i int) *v1.Upstream {
+	up := Upstream(i)
+
+	switch b.sni {
+	case "unique":
+		up.SslConfig = &ssl.UpstreamSslConfig{
+			Sni: fmt.Sprintf("unique-domain-%d", i),
+		}
+	case "consistent":
+		up.SslConfig = &ssl.UpstreamSslConfig{
+			Sni: "consistent-domain",
+		}
+	}
+
+	return up
 }

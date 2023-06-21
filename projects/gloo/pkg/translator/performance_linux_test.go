@@ -155,6 +155,10 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1).WithEndpoints(10).Build(), basicConfig, "endpoint scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1).WithEndpoints(1000).Build(), basicConfig, "endpoint scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(10).Build(), basicConfig, "endpoint scale", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(1).
+			WithUpstreamBuilder(gloohelpers.NewUpstreamBuilder().WithConsistentSni()).Build(), basicConfig, "consistent SNI", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(1).
+			WithUpstreamBuilder(gloohelpers.NewUpstreamBuilder().WithUniqueSni()).Build(), basicConfig, "unique SNI", "upstream scale"),
 	)
 })
 
