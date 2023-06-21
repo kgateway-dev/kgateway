@@ -5,6 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/go-utils/contextutils"
+
+	"github.com/solo-io/gloo/test/testutils"
+
+	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
+	"github.com/solo-io/gloo/test/ginkgo/labels"
+
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/test/gomega/matchers"
 
@@ -30,8 +37,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-	"github.com/solo-io/gloo/test/ginkgo/labels"
 )
 
 // benchmarkConfig allows configuration for benchmarking tests to be reused for similar cases
@@ -42,6 +47,13 @@ type benchmarkConfig struct {
 	benchmarkMatchers []types.GomegaMatcher // matchers representing the assertions we wish to make for a particular entry
 }
 
+// These tests only compile and run on Linux machines due to the use of the go-utils benchmarking package which is only
+// compatible with Linux
+
+// Tests are run as part of the "Nightly" action in a GHA using the default Linux runner
+// More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+// When developing new tests, users should manually run that action in order to test performance under the same parameters
+// Results can then be found in the logs for that instance of the action
 var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Performance), func() {
 	var (
 		ctrl       *gomock.Controller
@@ -50,6 +62,7 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 	)
 
 	BeforeEach(func() {
+		testutils.LinuxOnly("uses go-utils benchmarking.Measure() which only compiles on Linux")
 
 		ctrl = gomock.NewController(T)
 
@@ -82,6 +95,8 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 				snap   cache.Snapshot
 				errs   reporter.ResourceReports
 				report *validation.ProxyReport
+
+				tooFastWarningCount int
 			)
 
 			params := plugins.Params{
@@ -101,17 +116,33 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 			experiment.Sample(func(idx int) {
 
 				// Time translation
-				experiment.MeasureDuration(desc, func() {
+				res, ignore, err := gloohelpers.MeasureIgnore0ns(func() {
 					snap, errs, report = translator.Translate(params, proxy)
 				})
+				Expect(err).NotTo(HaveOccurred())
 
 				if idx == 0 {
-					// Assert expected results
+					// Assert expected results on the first sample
 					Expect(errs.Validate()).NotTo(HaveOccurred())
 					Expect(snap).NotTo(BeNil())
 					Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 				}
+
+				if ignore {
+					tooFastWarningCount++
+					return
+				}
+
+				// Benchmark total time spent
+				// If desired, a field can be added to benchmarkConfig to allow benchmarking according to User and/or
+				// System time
+				experiment.RecordDuration(desc, res.Total)
 			}, gmeasure.SamplingConfig{N: config.iterations, Duration: config.maxDur})
+
+			if tooFastWarningCount > 0 {
+				logger := contextutils.LoggerFrom(params.Ctx)
+				logger.Warnf("entry %s registered %d 0ns measurements; consider increasing the scale of the proxy being tested for more accurate results", desc, tooFastWarningCount)
+			}
 
 			durations := experiment.Get(desc).Durations
 
@@ -171,19 +202,19 @@ var basicSnap = &v1snap.ApiSnapshot{
 
 var basicConfig = benchmarkConfig{
 	iterations: 1000,
-	maxDur:     time.Second,
+	maxDur:     10 * time.Second,
 	benchmarkMatchers: []types.GomegaMatcher{
-		matchers.HaveMedianLessThan(5 * time.Millisecond),
-		matchers.HavePercentileLessThan(90, 10*time.Millisecond),
+		matchers.HaveMedianLessThan(50 * time.Millisecond),
+		matchers.HavePercentileLessThan(90, 100*time.Millisecond),
 	},
 }
 
 /* 1k Upstreams Scale Test */
 var oneKUpstreamsConfig = benchmarkConfig{
 	iterations: 100,
-	maxDur:     2 * time.Second,
+	maxDur:     30 * time.Second,
 	benchmarkMatchers: []types.GomegaMatcher{
-		matchers.HaveMedianLessThan(30 * time.Millisecond),
-		matchers.HavePercentileLessThan(90, 60*time.Millisecond),
+		matchers.HaveMedianLessThan(time.Second),
+		matchers.HavePercentileLessThan(90, 2*time.Second),
 	},
 }

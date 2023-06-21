@@ -9,10 +9,18 @@ on:
     - cron: "10 10 * * 1"   # monday   @ 05:10 EST, run expanded tests against v1.14.x
     - cron: "6 6 * * 1"     # monday   @ 01:06 EST, run expanded tests against v1.13.x
   workflow_dispatch:
+    inputs:
+      run-regression:
+        description: "Run regression tests"
+        type: boolean
+      run-performance:
+        description: "Run performance tests"
+        type: boolean
+
 jobs:
   regression_tests_latest_main:
     name: latest main regression tests
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression) || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
     # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
     #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
@@ -31,7 +39,7 @@ jobs:
 
   performance_tests_latest_main:
     name: latest performance tests
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 5 * * 1-5'
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance) || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3

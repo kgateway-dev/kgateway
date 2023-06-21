@@ -3,6 +3,8 @@ package helpers
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -24,7 +26,7 @@ type ScaleConfig struct {
 func upMeta(i int) *core.Metadata {
 	return &core.Metadata{
 		Name:      fmt.Sprintf("test-%06d", i),
-		Namespace: "gloo-system",
+		Namespace: defaults.GlooSystem,
 	}
 }
 
@@ -55,7 +57,7 @@ func Endpoint(i int) *v1.Endpoint {
 		Port:      32,
 		Metadata: &core.Metadata{
 			Name:      fmt.Sprintf("test-ep-%06d", i),
-			Namespace: "gloo-system",
+			Namespace: defaults.GlooSystem,
 		},
 	}
 }
@@ -225,7 +227,7 @@ func Proxy(numRoutes int) *v1.Proxy {
 	return &v1.Proxy{
 		Metadata: &core.Metadata{
 			Name:      "test",
-			Namespace: "gloo-system",
+			Namespace: defaults.GlooSystem,
 		},
 		Listeners: []*v1.Listener{
 			HttpListener(numRoutes),
