@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/solo-projects/issues/5112
+  description: >-
+    Adds a new direct route to the local gatway proxy bootstrap config.
+
