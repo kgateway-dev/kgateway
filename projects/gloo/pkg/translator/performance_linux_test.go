@@ -150,26 +150,11 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", basicSnap, basicConfig),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 10,
-			Endpoints: 1,
-		}), basicConfig, "upstream scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 1000,
-			Endpoints: 1,
-		}), oneKUpstreamsConfig, "upstream scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 1,
-			Endpoints: 10,
-		}), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 1,
-			Endpoints: 1000,
-		}), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 10,
-			Endpoints: 10,
-		}), basicConfig, "endpoint scale", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(1).Build(), basicConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1000).WithEndpoints(1).Build(), oneKUpstreamsConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1).WithEndpoints(10).Build(), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1).WithEndpoints(1000).Build(), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(10).Build(), basicConfig, "endpoint scale", "upstream scale"),
 	)
 })
 
