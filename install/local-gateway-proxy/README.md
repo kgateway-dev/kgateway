@@ -1,6 +1,12 @@
 # Local Gateway-Proxy
 It can be useful to run the Envoy proxy, without the control-plane, as a way of validating proxy behavior.
 
+The envoy proxy is configured to perform the following tasks :
+- Defines a listener on port 8000
+- Defines a cluster `echo_service` mapped to `postman-echo.com` as the upstream endpoint
+- Defines a `direct_response` filter which responds with a 200 for the `/direct` path
+- Defines an `http_connection_manager` filter which routes all requests to the `echo_service`
+
 ## Setup
 [source_data/bootstrap.yaml](./source_data/bootstrap.yaml) provides example bootstrap that can be used. To run this locally, first execute:
 ```shell

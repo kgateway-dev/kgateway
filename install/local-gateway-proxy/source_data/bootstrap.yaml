@@ -68,6 +68,7 @@ static_resources:
                     - name: local_service
                       domains: ["*"]
                       routes:
+		        # https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/direct_response_filter.html
                         - match: { path: "/direct" }
                           direct_response:
                             status: 200
