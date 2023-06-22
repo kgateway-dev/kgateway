@@ -94,7 +94,7 @@ After creating this role the following ENV variables need to be set for the rema
      export AWS_ROLE_ARN=<role-arn> # The Role ARN of the Role created above.
      export SECONDARY_AWS_ROLE_ARN=<secondary-role-arn> # (Optional): A secondary Role ARN with Lambda access.
 
-The ROle ARN will be of the form: `arn:aws:iam::<AWS ACCOUNT ID>:role/<ROLE NAME>`
+The Role ARN will be of the form: `arn:aws:iam::<AWS ACCOUNT ID>:role/<ROLE NAME>`
 For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
 
 
