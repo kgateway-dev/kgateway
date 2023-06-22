@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -9,27 +10,125 @@ import (
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// scaledSnapshotBuilder enumerates the number of each type of resource that should be included in a snapshot
+// scaledSnapshotBuilder enumerates the number of each type of resource that should be included in a snapshot and
+// contains a builder for each sub-resource type which is responsible for building instances of that resource
 // Additional fields should be added as needed
 type scaledSnapshotBuilder struct {
-	endpoints int
-	upstreams int
+	epCount int
+	usCount int
 
-	eb *endpointBuilder
-	ub *upstreamBuilder
+	epBuilder *endpointBuilder
+	usBuilder *upstreamBuilder
 }
 
+func NewScaledSnapshotBuilder() *scaledSnapshotBuilder {
+	return &scaledSnapshotBuilder{
+		epBuilder: NewEndpointBuilder(),
+		usBuilder: NewUpstreamBuilder(),
+	}
+}
+
+func (b *scaledSnapshotBuilder) WithUpstreamCount(n int) *scaledSnapshotBuilder {
+	b.usCount = n
+	return b
+}
+
+func (b *scaledSnapshotBuilder) WithUpstreamBuilder(ub *upstreamBuilder) *scaledSnapshotBuilder {
+	b.usBuilder = ub
+	return b
+}
+
+func (b *scaledSnapshotBuilder) WithEndpointCount(n int) *scaledSnapshotBuilder {
+	b.epCount = n
+	return b
+}
+
+func (b *scaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *scaledSnapshotBuilder {
+	b.epBuilder = eb
+	return b
+}
+
+// Build generates a snapshot populated with the specified number of each resource for the builder, using the
+// sub-resource builders to build each sub-resource
+func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
+	endpointList := make(v1.EndpointList, b.epCount)
+	for i := 0; i < b.epCount; i++ {
+		endpointList[i] = b.epBuilder.Build(i + 1) // names are 1-indexed
+	}
+
+	upstreamList := make(v1.UpstreamList, b.usCount)
+	for i := 0; i < b.usCount; i++ {
+		upstreamList[i] = b.usBuilder.Build(i + 1) // names are 1-indexed
+	}
+
+	return &gloosnapshot.ApiSnapshot{
+		// The proxy should contain a route for each upstream
+		Proxies: []*v1.Proxy{Proxy(b.usCount)},
+
+		Endpoints: endpointList,
+		Upstreams: upstreamList,
+	}
+}
+
+// upstreamBuilder contains options for building Upstreams to be included in scaled Snapshots
 type upstreamBuilder struct {
-	sni string
+	sniPattern sniPattern
 }
 
+type sniPattern int
+
+const (
+	unique sniPattern = iota
+	consistent
+)
+
+func NewUpstreamBuilder() *upstreamBuilder {
+	return &upstreamBuilder{}
+}
+
+func (b *upstreamBuilder) WithUniqueSni() *upstreamBuilder {
+	b.sniPattern = unique
+	return b
+}
+
+func (b *upstreamBuilder) WithConsistentSni() *upstreamBuilder {
+	b.sniPattern = consistent
+	return b
+}
+
+func (b *upstreamBuilder) Build(i int) *v1.Upstream {
+	up := Upstream(i)
+
+	switch b.sniPattern {
+	case unique:
+		up.SslConfig = &ssl.UpstreamSslConfig{
+			Sni: fmt.Sprintf("unique-domain-%d", i),
+		}
+	case consistent:
+		up.SslConfig = &ssl.UpstreamSslConfig{
+			Sni: "consistent-domain",
+		}
+	}
+
+	return up
+}
+
+// endpointBuilder contains options for building Endpoints to be included in scaled Snapshots
+// there are no options currently configurable for the endpointBuilder
 type endpointBuilder struct{}
+
+func NewEndpointBuilder() *endpointBuilder {
+	return &endpointBuilder{}
+}
+
+func (b *endpointBuilder) Build(i int) *v1.Endpoint {
+	return Endpoint(i)
+}
 
 func upMeta(i int) *core.Metadata {
 	return &core.Metadata{
@@ -243,92 +342,4 @@ func Proxy(numRoutes int) *v1.Proxy {
 			hybridListener(numRoutes),
 		},
 	}
-}
-
-// Build generates a snapshot populated with particular numbers of each resource types as determined by the
-// scaledSnapshotBuilder
-func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
-	endpointList := make(v1.EndpointList, b.endpoints)
-	for i := 0; i < b.endpoints; i++ {
-		endpointList[i] = b.eb.Build(i + 1) // names are 1-indexed
-	}
-
-	upstreamList := make(v1.UpstreamList, b.upstreams)
-	for i := 0; i < b.upstreams; i++ {
-		upstreamList[i] = b.ub.Build(i + 1) // names are 1-indexed
-	}
-
-	return &gloosnapshot.ApiSnapshot{
-		// The proxy should contain a route for each upstream
-		Proxies: []*v1.Proxy{Proxy(b.upstreams)},
-
-		Endpoints: endpointList,
-		Upstreams: upstreamList,
-	}
-}
-
-func NewScaledSnapshotBuilder() *scaledSnapshotBuilder {
-	return &scaledSnapshotBuilder{
-		eb: NewEndpointBuilder(),
-		ub: NewUpstreamBuilder(),
-	}
-}
-
-func (b *scaledSnapshotBuilder) WithUpstreams(n int) *scaledSnapshotBuilder {
-	b.upstreams = n
-	return b
-}
-
-func (b *scaledSnapshotBuilder) WithUpstreamBuilder(ub *upstreamBuilder) *scaledSnapshotBuilder {
-	b.ub = ub
-	return b
-}
-
-func (b *scaledSnapshotBuilder) WithEndpoints(n int) *scaledSnapshotBuilder {
-	b.endpoints = n
-	return b
-}
-
-func (b *scaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *scaledSnapshotBuilder {
-	b.eb = eb
-	return b
-}
-
-func NewEndpointBuilder() *endpointBuilder {
-	return &endpointBuilder{}
-}
-
-func (b *endpointBuilder) Build(i int) *v1.Endpoint {
-	return Endpoint(i)
-}
-
-func NewUpstreamBuilder() *upstreamBuilder {
-	return &upstreamBuilder{}
-}
-
-func (b *upstreamBuilder) WithUniqueSni() *upstreamBuilder {
-	b.sni = "unique"
-	return b
-}
-
-func (b *upstreamBuilder) WithConsistentSni() *upstreamBuilder {
-	b.sni = "consistent"
-	return b
-}
-
-func (b *upstreamBuilder) Build(i int) *v1.Upstream {
-	up := Upstream(i)
-
-	switch b.sni {
-	case "unique":
-		up.SslConfig = &ssl.UpstreamSslConfig{
-			Sni: fmt.Sprintf("unique-domain-%d", i),
-		}
-	case "consistent":
-		up.SslConfig = &ssl.UpstreamSslConfig{
-			Sni: "consistent-domain",
-		}
-	}
-
-	return up
 }

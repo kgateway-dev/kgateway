@@ -9,7 +9,7 @@ import (
 var _ = Describe("ScaledSnapshotBuilder", func() {
 	When("with endpoints", func() {
 		It("generates a snapshot with the expected number of endpoints", func() {
-			snap := helpers.NewScaledSnapshotBuilder().WithEndpoints(10).Build()
+			snap := helpers.NewScaledSnapshotBuilder().WithEndpointCount(10).Build()
 			Expect(snap.Endpoints).To(HaveLen(10))
 			Expect(snap.Upstreams).To(HaveLen(0))
 		})
@@ -17,7 +17,7 @@ var _ = Describe("ScaledSnapshotBuilder", func() {
 
 	When("with upstreams", func() {
 		It("generates a snapshot with the expected number of upstreams", func() {
-			snap := helpers.NewScaledSnapshotBuilder().WithUpstreams(10).Build()
+			snap := helpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).Build()
 			Expect(snap.Endpoints).To(HaveLen(0))
 			Expect(snap.Upstreams).To(HaveLen(10))
 		})
@@ -26,7 +26,7 @@ var _ = Describe("ScaledSnapshotBuilder", func() {
 	When("with upstream builder", func() {
 		When("with consistent SNI", func() {
 			It("generates a snapshot with upstreams that all have the same SNI", func() {
-				snap := helpers.NewScaledSnapshotBuilder().WithUpstreams(10).
+				snap := helpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).
 					WithUpstreamBuilder(helpers.NewUpstreamBuilder().WithConsistentSni()).Build()
 				Expect(snap.Upstreams).To(HaveLen(10))
 				Expect(snap.Upstreams[0].SslConfig).NotTo(BeNil())
@@ -40,7 +40,7 @@ var _ = Describe("ScaledSnapshotBuilder", func() {
 
 		When("with unique SNI", func() {
 			It("generates a snapshot with upstreams that all have unique SNI", func() {
-				snap := helpers.NewScaledSnapshotBuilder().WithUpstreams(10).
+				snap := helpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).
 					WithUpstreamBuilder(helpers.NewUpstreamBuilder().WithUniqueSni()).Build()
 				Expect(snap.Upstreams).To(HaveLen(10))
 				foundSNI := map[string]bool{}

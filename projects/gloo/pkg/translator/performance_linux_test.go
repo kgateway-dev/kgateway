@@ -150,14 +150,14 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", basicSnap, basicConfig),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(1).Build(), basicConfig, "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1000).WithEndpoints(1).Build(), oneKUpstreamsConfig, "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1).WithEndpoints(10).Build(), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(1).WithEndpoints(1000).Build(), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(10).Build(), basicConfig, "endpoint scale", "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(1).
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).Build(), basicConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1).Build(), oneKUpstreamsConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(10).Build(), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1000).Build(), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(10).Build(), basicConfig, "endpoint scale", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
 			WithUpstreamBuilder(gloohelpers.NewUpstreamBuilder().WithConsistentSni()).Build(), basicConfig, "consistent SNI", "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreams(10).WithEndpoints(1).
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
 			WithUpstreamBuilder(gloohelpers.NewUpstreamBuilder().WithUniqueSni()).Build(), basicConfig, "unique SNI", "upstream scale"),
 	)
 })
