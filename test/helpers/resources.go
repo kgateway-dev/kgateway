@@ -84,8 +84,9 @@ type upstreamBuilder struct {
 type sniPattern int
 
 const (
-	unique sniPattern = iota
-	consistent
+	noSni sniPattern = iota
+	uniqueSni
+	consistentSni
 )
 
 func NewUpstreamBuilder() *upstreamBuilder {
@@ -93,12 +94,12 @@ func NewUpstreamBuilder() *upstreamBuilder {
 }
 
 func (b *upstreamBuilder) WithUniqueSni() *upstreamBuilder {
-	b.sniPattern = unique
+	b.sniPattern = uniqueSni
 	return b
 }
 
 func (b *upstreamBuilder) WithConsistentSni() *upstreamBuilder {
-	b.sniPattern = consistent
+	b.sniPattern = consistentSni
 	return b
 }
 
@@ -106,11 +107,11 @@ func (b *upstreamBuilder) Build(i int) *v1.Upstream {
 	up := Upstream(i)
 
 	switch b.sniPattern {
-	case unique:
+	case uniqueSni:
 		up.SslConfig = &ssl.UpstreamSslConfig{
 			Sni: fmt.Sprintf("unique-domain-%d", i),
 		}
-	case consistent:
+	case consistentSni:
 		up.SslConfig = &ssl.UpstreamSslConfig{
 			Sni: "consistent-domain",
 		}
