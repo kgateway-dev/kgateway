@@ -59,12 +59,12 @@ func (b *scaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *scaled
 func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 	endpointList := make(v1.EndpointList, b.epCount)
 	for i := 0; i < b.epCount; i++ {
-		endpointList[i] = b.epBuilder.Build(i + 1) // names are 1-indexed
+		endpointList[i] = b.epBuilder.Build(i)
 	}
 
 	upstreamList := make(v1.UpstreamList, b.usCount)
 	for i := 0; i < b.usCount; i++ {
-		upstreamList[i] = b.usBuilder.Build(i + 1) // names are 1-indexed
+		upstreamList[i] = b.usBuilder.Build(i)
 	}
 
 	return &gloosnapshot.ApiSnapshot{
