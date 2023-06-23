@@ -57,15 +57,19 @@ Options for log levels are:
 - error
 
 For example, to set the log level of the Gloo service to `debug` and the Envoy service to `error`, you would set:
-```
-SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error
-```
-
-#### Using Recently Published Image (Most Common)
-This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
 
 ```bash
-TEST_PKG=./test/e2e/... make test
+SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error TEST_PKG=./test/e2e/... make test
+```
+
+#### Controlling Log Verbosity of Ginkgo Runner
+Ginkgo has 4 verbosity settings, whose details can be found in the [Ginkgo docs](https://onsi.github.io/ginkgo/#controlling-verbosity)
+
+To control these settings, you must pass the flags using the `GINKGO_USER_FLAGS` environment variable.
+
+For example, to set the Ginkgo runner to `very verbose` mode, you would set:
+```bash
+GINKGO_USER_FLAGS=-vv TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Previously Published Image
