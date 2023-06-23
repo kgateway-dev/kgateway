@@ -72,6 +72,13 @@ For example, to set the Ginkgo runner to `very verbose` mode, you would set:
 GINKGO_USER_FLAGS=-vv TEST_PKG=./test/e2e/... make test
 ```
 
+#### Using Recently Published Image (Most Common)
+This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
+
+```bash
+TEST_PKG=./test/e2e/... make test
+```
+
 #### Using Previously Published Image
 If you want to specify a particular version that was previously published, you can also do that by specifying the `ENVOY_IMAGE_TAG`.
 
