@@ -16,10 +16,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-// scaledSnapshotBuilder enumerates the number of each type of resource that should be included in a snapshot and
+// ScaledSnapshotBuilder enumerates the number of each type of resource that should be included in a snapshot and
 // contains a builder for each sub-resource type which is responsible for building instances of that resource
 // Additional fields should be added as needed
-type scaledSnapshotBuilder struct {
+type ScaledSnapshotBuilder struct {
 	epCount int
 	usCount int
 
@@ -27,36 +27,36 @@ type scaledSnapshotBuilder struct {
 	usBuilder *upstreamBuilder
 }
 
-func NewScaledSnapshotBuilder() *scaledSnapshotBuilder {
-	return &scaledSnapshotBuilder{
+func NewScaledSnapshotBuilder() *ScaledSnapshotBuilder {
+	return &ScaledSnapshotBuilder{
 		epBuilder: NewEndpointBuilder(),
 		usBuilder: NewUpstreamBuilder(),
 	}
 }
 
-func (b *scaledSnapshotBuilder) WithUpstreamCount(n int) *scaledSnapshotBuilder {
+func (b *ScaledSnapshotBuilder) WithUpstreamCount(n int) *ScaledSnapshotBuilder {
 	b.usCount = n
 	return b
 }
 
-func (b *scaledSnapshotBuilder) WithUpstreamBuilder(ub *upstreamBuilder) *scaledSnapshotBuilder {
+func (b *ScaledSnapshotBuilder) WithUpstreamBuilder(ub *upstreamBuilder) *ScaledSnapshotBuilder {
 	b.usBuilder = ub
 	return b
 }
 
-func (b *scaledSnapshotBuilder) WithEndpointCount(n int) *scaledSnapshotBuilder {
+func (b *ScaledSnapshotBuilder) WithEndpointCount(n int) *ScaledSnapshotBuilder {
 	b.epCount = n
 	return b
 }
 
-func (b *scaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *scaledSnapshotBuilder {
+func (b *ScaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *ScaledSnapshotBuilder {
 	b.epBuilder = eb
 	return b
 }
 
 // Build generates a snapshot populated with the specified number of each resource for the builder, using the
 // sub-resource builders to build each sub-resource
-func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
+func (b *ScaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 	endpointList := make(v1.EndpointList, b.epCount)
 	for i := 0; i < b.epCount; i++ {
 		endpointList[i] = b.epBuilder.Build(i)

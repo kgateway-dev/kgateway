@@ -156,9 +156,9 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1000).Build(), basicConfig, "endpoint scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(10).Build(), basicConfig, "endpoint scale", "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
-			WithUpstreamBuilder(gloohelpers.NewUpstreamBuilder().WithConsistentSni()).Build(), basicConfig, "consistent SNI", "upstream scale"),
+			WithUpstreamBuilder(consistentSniUsBuilder).Build(), basicConfig, "consistent SNI", "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
-			WithUpstreamBuilder(gloohelpers.NewUpstreamBuilder().WithUniqueSni()).Build(), basicConfig, "unique SNI", "upstream scale"),
+			WithUpstreamBuilder(uniqueSniUsBuilder).Build(), basicConfig, "unique SNI", "upstream scale"),
 	)
 })
 
@@ -207,3 +207,9 @@ var oneKUpstreamsConfig = benchmarkConfig{
 		matchers.HavePercentileLessThan(90, 2*time.Second),
 	},
 }
+
+/* Upstream SNI Test */
+var (
+	consistentSniUsBuilder = gloohelpers.NewUpstreamBuilder().WithConsistentSni()
+	uniqueSniUsBuilder     = gloohelpers.NewUpstreamBuilder().WithUniqueSni()
+)
