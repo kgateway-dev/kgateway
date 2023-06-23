@@ -75,6 +75,12 @@ import (
 
 var glooPortBase = int32(30400)
 
+const (
+	glooServiceName = "gloo"
+	fdsServiceName  = "fds"
+	udsServiceName  = "uds"
+)
+
 func AllocateGlooPort() int32 {
 	return atomic.AddInt32(&glooPortBase, 1) + int32(parallel.GetPortOffset())
 }
@@ -137,7 +143,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	go func(bootstrapOpts bootstrap.Opts) {
 		defer GinkgoRecover()
 
-		ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger("gloo"))
+		ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(glooServiceName))
 		bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
 
 		if runOptions.ExtensionsBuilders.Gloo == nil {
@@ -152,10 +158,8 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go func(bootstrapOpts bootstrap.Opts) {
 			defer GinkgoRecover()
 
-			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger("discovery"))
+			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(fdsServiceName))
 			bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
-
-			contextutils.SetLogLevelFromString(GetLogLevel("discovery").String())
 
 			if runOptions.ExtensionsBuilders.Fds == nil {
 				_ = fds_syncer.RunFDS(bootstrapOpts)
@@ -170,7 +174,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go func(bootstrapOpts bootstrap.Opts) {
 			defer GinkgoRecover()
 
-			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger("discovery"))
+			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(udsServiceName))
 			bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
 
 			_ = uds_syncer.RunUDS(bootstrapOpts)

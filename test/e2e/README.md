@@ -39,6 +39,27 @@ The `run-tests` make target runs ginkgo with a set of useful flags. The followin
 | TEST_PKG          | ""      | The path to the package of the test suite you want to run                                                                                                                                                                                          |
 | WAIT_ON_FAIL      | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
 | INVALID_TEST_REQS | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
+| SERVICE_LOG_LEVEL | ""      | The log levels used for services. See "Controlling Log Verbosity of Services" below.                                                                                                                                                               |    
+
+#### Controlling Log Verbosity of Services
+Multiple services (Gloo, Envoy, Discovery) are executed in parallel to run these tests. By default, these services log at the `info` level. To change the log level of a service, set the `SERVICE_LOG_LEVEL` environment variable to a comma separated list of `service:level` pairs. 
+
+Options for services are:
+- gateway-proxy
+- gloo
+- uds
+- fds
+
+Options for log levels are:
+- debug
+- info
+- warn
+- error
+
+For example, to set the log level of the Gloo service to `debug` and the Envoy service to `error`, you would set:
+```
+SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error
+```
 
 #### Using Recently Published Image (Most Common)
 This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
