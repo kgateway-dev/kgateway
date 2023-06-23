@@ -88,9 +88,10 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 	// We measure the duration of the translation of the snapshot, benchmarking according to the benchmarkConfig
 	// Labels are used to add context to the entry description
 	DescribeTable("Benchmark table",
-		func(apiSnap *v1snap.ApiSnapshot, config benchmarkConfig, labels ...string) {
+		func(snapBuilder *gloohelpers.ScaledSnapshotBuilder, config benchmarkConfig, labels ...string) {
 			var (
-				proxy *v1.Proxy
+				apiSnap *v1snap.ApiSnapshot
+				proxy   *v1.Proxy
 
 				snap   cache.Snapshot
 				errs   reporter.ResourceReports
@@ -98,6 +99,8 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 
 				tooFastWarningCount int
 			)
+
+			apiSnap = snapBuilder.Build()
 
 			params := plugins.Params{
 				Ctx:      context.Background(),
@@ -150,26 +153,15 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", basicSnap, basicConfig),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 10,
-			Endpoints: 1,
-		}), basicConfig, "upstream scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 1000,
-			Endpoints: 1,
-		}), oneKUpstreamsConfig, "upstream scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 1,
-			Endpoints: 10,
-		}), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 1,
-			Endpoints: 1000,
-		}), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.ScaledSnapshot(gloohelpers.ScaleConfig{
-			Upstreams: 10,
-			Endpoints: 10,
-		}), basicConfig, "endpoint scale", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1), basicConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1), oneKUpstreamsConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(10), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1000), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(10), basicConfig, "endpoint scale", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
+			WithUpstreamBuilder(consistentSniUsBuilder), basicConfig, "consistent SNI", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
+			WithUpstreamBuilder(uniqueSniUsBuilder), basicConfig, "unique SNI", "upstream scale"),
 	)
 })
 
@@ -218,3 +210,9 @@ var oneKUpstreamsConfig = benchmarkConfig{
 		matchers.HavePercentileLessThan(90, 2*time.Second),
 	},
 }
+
+/* Upstream SNI Test */
+var (
+	consistentSniUsBuilder = gloohelpers.NewUpstreamBuilder().WithConsistentSni()
+	uniqueSniUsBuilder     = gloohelpers.NewUpstreamBuilder().WithUniqueSni()
+)
