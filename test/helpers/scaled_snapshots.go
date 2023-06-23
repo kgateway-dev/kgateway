@@ -76,62 +76,6 @@ func (b *scaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 	}
 }
 
-// upstreamBuilder contains options for building Upstreams to be included in scaled Snapshots
-type upstreamBuilder struct {
-	sniPattern sniPattern
-}
-
-type sniPattern int
-
-const (
-	noSni sniPattern = iota
-	uniqueSni
-	consistentSni
-)
-
-func NewUpstreamBuilder() *upstreamBuilder {
-	return &upstreamBuilder{}
-}
-
-func (b *upstreamBuilder) WithUniqueSni() *upstreamBuilder {
-	b.sniPattern = uniqueSni
-	return b
-}
-
-func (b *upstreamBuilder) WithConsistentSni() *upstreamBuilder {
-	b.sniPattern = consistentSni
-	return b
-}
-
-func (b *upstreamBuilder) Build(i int) *v1.Upstream {
-	up := Upstream(i)
-
-	switch b.sniPattern {
-	case uniqueSni:
-		up.SslConfig = &ssl.UpstreamSslConfig{
-			Sni: fmt.Sprintf("unique-domain-%d", i),
-		}
-	case consistentSni:
-		up.SslConfig = &ssl.UpstreamSslConfig{
-			Sni: "consistent-domain",
-		}
-	}
-
-	return up
-}
-
-// endpointBuilder contains options for building Endpoints to be included in scaled Snapshots
-// there are no options currently configurable for the endpointBuilder
-type endpointBuilder struct{}
-
-func NewEndpointBuilder() *endpointBuilder {
-	return &endpointBuilder{}
-}
-
-func (b *endpointBuilder) Build(i int) *v1.Endpoint {
-	return Endpoint(i)
-}
-
 func upMeta(i int) *core.Metadata {
 	return &core.Metadata{
 		Name:      fmt.Sprintf("test-%06d", i),
