@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/test/services"
-
 	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/gomega/matchers"
@@ -17,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 )
 
-var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
+var _ = Describe("Example E2E Test For Developers", Label(), func() {
 
 	// The TestContext is a framework for writing e2e tests
 	// This test provides some basic use cases to demonstrate how to leverage the framework
@@ -36,10 +34,6 @@ var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
 
 		testContext = testContextFactory.NewTestContext(testRequirements...)
 		testContext.BeforeEach()
-
-		testContext.SetRunServices(services.What{
-			DisableUds: false,
-		})
 	})
 
 	AfterEach(func() {
@@ -78,8 +72,6 @@ var _ = FDescribe("Example E2E Test For Developers", Label(), func() {
 			Eventually(func(g Gomega) {
 				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).Should(matchers.HaveExactResponseBody(requestBody)) // The default server that we route to is an echo server
 			}, "5s", ".5s").Should(Succeed(), "POST with request body should return same body in response")
-
-			Expect(1).To(Equal(2))
 		})
 
 		It("can access envoy config dump", func() {
