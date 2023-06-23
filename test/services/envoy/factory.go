@@ -234,10 +234,7 @@ func getInstanceLogLevel() string {
 	// There are a few options which are available in Envoy, but not in Gloo ("trace", "critical", "off")
 	// We opted not to support those options, to provide developers a consistent experience
 	switch logLevel {
-	case zapcore.DebugLevel:
-	case zapcore.InfoLevel:
-	case zapcore.WarnLevel:
-	case zapcore.ErrorLevel:
+	case zapcore.DebugLevel, zapcore.InfoLevel, zapcore.WarnLevel, zapcore.ErrorLevel:
 		return logLevel.String()
 	}
 

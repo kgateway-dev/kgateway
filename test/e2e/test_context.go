@@ -53,6 +53,9 @@ func (f *TestContextFactory) NewTestContext(testRequirements ...testutils.Requir
 	// Skip or Fail tests which do not satisfy the provided requirements
 	testutils.ValidateRequirementsAndNotifyGinkgo(testRequirements...)
 
+	// Reload the user defined log level from the environment
+	services.LoadUserDefinedLogLevelFromEnv()
+
 	return &TestContext{
 		envoyInstance:         f.EnvoyFactory.NewInstance(),
 		testUpstreamGenerator: v1helpers.NewTestHttpUpstream,
