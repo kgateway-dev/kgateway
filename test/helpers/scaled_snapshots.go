@@ -23,8 +23,8 @@ type ScaledSnapshotBuilder struct {
 	epCount int
 	usCount int
 
-	epBuilder *endpointBuilder
-	usBuilder *upstreamBuilder
+	epBuilder *EndpointBuilder
+	usBuilder *UpstreamBuilder
 }
 
 func NewScaledSnapshotBuilder() *ScaledSnapshotBuilder {
@@ -39,7 +39,7 @@ func (b *ScaledSnapshotBuilder) WithUpstreamCount(n int) *ScaledSnapshotBuilder 
 	return b
 }
 
-func (b *ScaledSnapshotBuilder) WithUpstreamBuilder(ub *upstreamBuilder) *ScaledSnapshotBuilder {
+func (b *ScaledSnapshotBuilder) WithUpstreamBuilder(ub *UpstreamBuilder) *ScaledSnapshotBuilder {
 	b.usBuilder = ub
 	return b
 }
@@ -49,7 +49,7 @@ func (b *ScaledSnapshotBuilder) WithEndpointCount(n int) *ScaledSnapshotBuilder 
 	return b
 }
 
-func (b *ScaledSnapshotBuilder) WithEndpointBuilder(eb *endpointBuilder) *ScaledSnapshotBuilder {
+func (b *ScaledSnapshotBuilder) WithEndpointBuilder(eb *EndpointBuilder) *ScaledSnapshotBuilder {
 	b.epBuilder = eb
 	return b
 }
