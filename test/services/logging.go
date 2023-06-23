@@ -3,6 +3,7 @@ package services
 import (
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
@@ -23,6 +24,7 @@ const (
 )
 
 var (
+	singletonMutex       = &sync.RWMutex{}
 	logProviderSingleton *logProvider
 )
 
@@ -35,6 +37,9 @@ func LoadUserDefinedLogLevelFromEnv() {
 }
 
 func LoadUserDefinedLogLevel(userDefinedLogLevel string) {
+	singletonMutex.Lock()
+	defer singletonMutex.Unlock()
+
 	serviceLogPairs := strings.Split(userDefinedLogLevel, pairSeparator)
 	logProviderSingleton = &logProvider{
 		defaultLogLevel: zapcore.InfoLevel,
@@ -65,6 +70,8 @@ func LoadUserDefinedLogLevel(userDefinedLogLevel string) {
 // for the name of the service. To confirm the name of the service that is being used, check the
 // invocation for the given service
 func GetLogLevel(serviceName string) zapcore.Level {
+	singletonMutex.RLock()
+	defer singletonMutex.RUnlock()
 	return logProviderSingleton.GetLogLevel(serviceName)
 }
 
