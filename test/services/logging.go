@@ -24,8 +24,10 @@ const (
 )
 
 var (
-	singletonMutex       = &sync.RWMutex{}
-	logProviderSingleton *logProvider
+	logProviderSingleton = &logProvider{
+		defaultLogLevel: zapcore.InfoLevel,
+		serviceLogLevel: make(map[string]zapcore.Level, 3),
+	}
 )
 
 func init() {
@@ -37,15 +39,9 @@ func LoadUserDefinedLogLevelFromEnv() {
 }
 
 func LoadUserDefinedLogLevel(userDefinedLogLevel string) {
-	singletonMutex.Lock()
-	defer singletonMutex.Unlock()
+	logProviderSingleton.Reset()
 
 	serviceLogPairs := strings.Split(userDefinedLogLevel, pairSeparator)
-	logProviderSingleton = &logProvider{
-		defaultLogLevel: zapcore.InfoLevel,
-		serviceLogLevel: make(map[string]zapcore.Level, len(serviceLogPairs)),
-	}
-
 	for _, serviceLogPair := range serviceLogPairs {
 		nameValue := strings.Split(serviceLogPair, nameValueSeparator)
 		if len(nameValue) != 2 {
@@ -61,7 +57,7 @@ func LoadUserDefinedLogLevel(userDefinedLogLevel string) {
 			panic(errors.Wrapf(err, "invalid log level string: %s", logLevelStr))
 		}
 
-		logProviderSingleton.serviceLogLevel[name] = logLevel
+		logProviderSingleton.SetLogLevel(name, logLevel)
 	}
 }
 
@@ -70,8 +66,6 @@ func LoadUserDefinedLogLevel(userDefinedLogLevel string) {
 // for the name of the service. To confirm the name of the service that is being used, check the
 // invocation for the given service
 func GetLogLevel(serviceName string) zapcore.Level {
-	singletonMutex.RLock()
-	defer singletonMutex.RUnlock()
 	return logProviderSingleton.GetLogLevel(serviceName)
 }
 
@@ -98,15 +92,33 @@ func MustGetSugaredLogger(serviceName string) *zap.SugaredLogger {
 
 // logProvider is a helper for managing the log level of multiple services
 type logProvider struct {
-	defaultLogLevel zapcore.Level
+	mutex sync.RWMutex
 
+	defaultLogLevel zapcore.Level
 	serviceLogLevel map[string]zapcore.Level
 }
 
 func (l *logProvider) GetLogLevel(serviceName string) zapcore.Level {
+	l.mutex.RLock()
+	defer l.mutex.RUnlock()
+
 	logLevel, ok := l.serviceLogLevel[serviceName]
 	if !ok {
 		return l.defaultLogLevel
 	}
 	return logLevel
+}
+
+func (l *logProvider) SetLogLevel(serviceName string, logLevel zapcore.Level) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	l.serviceLogLevel[serviceName] = logLevel
+}
+
+func (l *logProvider) Reset() {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	l.serviceLogLevel = make(map[string]zapcore.Level)
 }
