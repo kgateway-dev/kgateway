@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var _ = FDescribe("Logging", func() {
+var _ = Describe("Logging", func() {
 
 	Context("GetLogLevel", func() {
 
