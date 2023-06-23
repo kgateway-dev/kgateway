@@ -31,42 +31,30 @@ var (
 )
 
 func init() {
+	// Initialize the log provider with the log level provided in the environment variable
 	LoadUserDefinedLogLevelFromEnv()
 }
 
+// LoadUserDefinedLogLevelFromEnv loads the log level from the environment variable
+// and resets the entire LogProvider state to the values in that environment variable
 func LoadUserDefinedLogLevelFromEnv() {
-	LoadUserDefinedLogLevel(os.Getenv(testutils.ServiceLogLevel))
+	logProviderSingleton.ReloadFromEnv()
 }
 
+// LoadUserDefinedLogLevel loads the log level from the provided string
+// and resets the entire LogProvider state to the values in that string
 func LoadUserDefinedLogLevel(userDefinedLogLevel string) {
-	logProviderSingleton.Reset()
-
-	serviceLogPairs := strings.Split(userDefinedLogLevel, pairSeparator)
-	for _, serviceLogPair := range serviceLogPairs {
-		nameValue := strings.Split(serviceLogPair, nameValueSeparator)
-		if len(nameValue) != 2 {
-			continue
-		}
-
-		name := nameValue[0]
-		logLevelStr := nameValue[1]
-		logLevel, err := zapcore.ParseLevel(logLevelStr)
-		// We intentionally error loudly here
-		// This will occur if the user passes an invalid log level string
-		if err != nil {
-			panic(errors.Wrapf(err, "invalid log level string: %s", logLevelStr))
-		}
-
-		logProviderSingleton.SetLogLevel(name, logLevel)
-	}
+	logProviderSingleton.ReloadFromString(userDefinedLogLevel)
 }
 
 // GetLogLevel returns the log level for the given service
-// In general, we try to use the name of the deployment, e.g. gateway-proxy, gloo, discovery, etc.
-// for the name of the service. To confirm the name of the service that is being used, check the
-// invocation for the given service
 func GetLogLevel(serviceName string) zapcore.Level {
 	return logProviderSingleton.GetLogLevel(serviceName)
+}
+
+// SetLogLevel sets the log level for the given service
+func SetLogLevel(serviceName string, logLevel zapcore.Level) {
+	logProviderSingleton.SetLogLevel(serviceName, logLevel)
 }
 
 // IsDebugLogLevel returns true if the given service is logging at the debug level
@@ -116,9 +104,31 @@ func (l *logProvider) SetLogLevel(serviceName string, logLevel zapcore.Level) {
 	l.serviceLogLevel[serviceName] = logLevel
 }
 
-func (l *logProvider) Reset() {
+func (l *logProvider) ReloadFromEnv() {
+	l.ReloadFromString(os.Getenv(testutils.ServiceLogLevel))
+}
+
+func (l *logProvider) ReloadFromString(userDefinedLogLevel string) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	l.serviceLogLevel = make(map[string]zapcore.Level)
+	serviceLogPairs := strings.Split(userDefinedLogLevel, pairSeparator)
+	for _, serviceLogPair := range serviceLogPairs {
+		nameValue := strings.Split(serviceLogPair, nameValueSeparator)
+		if len(nameValue) != 2 {
+			continue
+		}
+
+		name := nameValue[0]
+		logLevelStr := nameValue[1]
+		logLevel, err := zapcore.ParseLevel(logLevelStr)
+		// We intentionally error loudly here
+		// This will occur if the user passes an invalid log level string
+		if err != nil {
+			panic(errors.Wrapf(err, "invalid log level string: %s", logLevelStr))
+		}
+
+		// This whole function operates with a lock, so we can modify the map directly
+		logProviderSingleton.serviceLogLevel[name] = logLevel
+	}
 }

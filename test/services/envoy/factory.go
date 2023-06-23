@@ -28,7 +28,7 @@ var _ Factory = new(factoryImpl)
 
 const (
 	envoyBinaryName = "envoy"
-	serviceName     = "gateway-proxy"
+	ServiceName     = "gateway-proxy"
 )
 
 // Factory is a helper for running multiple envoy instances
@@ -227,7 +227,7 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 }
 
 func getInstanceLogLevel() string {
-	logLevel := services.GetLogLevel(serviceName)
+	logLevel := services.GetLogLevel(ServiceName)
 
 	// Envoy log level options do not match Gloo's log level options, so we must convert
 	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy

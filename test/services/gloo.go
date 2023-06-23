@@ -76,9 +76,9 @@ import (
 var glooPortBase = int32(30400)
 
 const (
-	glooServiceName = "gloo"
-	fdsServiceName  = "fds"
-	udsServiceName  = "uds"
+	GlooServiceName = "gloo"
+	FdsServiceName  = "fds"
+	UdsServiceName  = "uds"
 )
 
 func AllocateGlooPort() int32 {
@@ -143,7 +143,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	go func(bootstrapOpts bootstrap.Opts) {
 		defer GinkgoRecover()
 
-		ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(glooServiceName))
+		ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(GlooServiceName))
 		bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
 
 		if runOptions.ExtensionsBuilders.Gloo == nil {
@@ -158,7 +158,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go func(bootstrapOpts bootstrap.Opts) {
 			defer GinkgoRecover()
 
-			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(fdsServiceName))
+			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(FdsServiceName))
 			bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
 
 			if runOptions.ExtensionsBuilders.Fds == nil {
@@ -174,7 +174,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		go func(bootstrapOpts bootstrap.Opts) {
 			defer GinkgoRecover()
 
-			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(udsServiceName))
+			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger(UdsServiceName))
 			bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
 
 			_ = uds_syncer.RunUDS(bootstrapOpts)
