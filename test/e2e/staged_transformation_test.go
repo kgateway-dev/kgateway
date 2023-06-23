@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"encoding/base64"
+	"os"
 
 	"github.com/solo-io/gloo/test/testutils"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -33,11 +34,18 @@ var _ = Describe("Staged Transformation", func() {
 	)
 
 	BeforeEach(func() {
+		// These tests require debug logging to be enabled
+		err := os.Setenv(testutils.ServiceLogLevel, "gateway-proxy:debug")
+		Expect(err).NotTo(HaveOccurred())
+
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
+		err := os.Unsetenv(testutils.ServiceLogLevel)
+		Expect(err).NotTo(HaveOccurred())
+
 		testContext.AfterEach()
 	})
 
