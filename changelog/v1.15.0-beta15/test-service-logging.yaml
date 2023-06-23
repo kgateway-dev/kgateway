@@ -4,3 +4,6 @@ changelog:
     resolvesIssue: true
     description: >-
       Expose configuration to control verbosity of service logging in e2e tests
+      
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
