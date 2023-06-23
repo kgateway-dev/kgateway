@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5006
+    resolvesIssue: true
+    description: >-
+      Expose configuration to control verbosity of service logging in e2e tests
