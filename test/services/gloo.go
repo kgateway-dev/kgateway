@@ -134,8 +134,11 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	// could use the same setup code, but in the meantime, we use constructTestOpts to mirror the functionality
 	bootstrapOpts := constructTestOpts(ctx, runOptions, settings)
 
-	go func() {
+	go func(bootstrapOpts bootstrap.Opts) {
 		defer GinkgoRecover()
+
+		ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger("gloo"))
+		bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
 
 		if runOptions.ExtensionsBuilders.Gloo == nil {
 			_ = setup.RunGloo(bootstrapOpts)
@@ -143,24 +146,35 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 			glooExtensions := runOptions.ExtensionsBuilders.Gloo(ctx, bootstrapOpts)
 			_ = setup.RunGlooWithExtensions(bootstrapOpts, glooExtensions)
 		}
-	}()
+	}(bootstrapOpts)
 
 	if !runOptions.WhatToRun.DisableFds {
-		go func() {
+		go func(bootstrapOpts bootstrap.Opts) {
 			defer GinkgoRecover()
+
+			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger("discovery"))
+			bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
+
+			contextutils.SetLogLevelFromString(GetLogLevel("discovery").String())
+
 			if runOptions.ExtensionsBuilders.Fds == nil {
 				_ = fds_syncer.RunFDS(bootstrapOpts)
 			} else {
 				fdsExtensions := runOptions.ExtensionsBuilders.Fds(ctx, bootstrapOpts)
 				_ = fds_syncer.RunFDSWithExtensions(bootstrapOpts, fdsExtensions)
 			}
-		}()
+		}(bootstrapOpts)
 	}
+
 	if !runOptions.WhatToRun.DisableUds {
-		go func() {
+		go func(bootstrapOpts bootstrap.Opts) {
 			defer GinkgoRecover()
+
+			ctxWithLogLevel := contextutils.WithExistingLogger(bootstrapOpts.WatchOpts.Ctx, MustGetSugaredLogger("discovery"))
+			bootstrapOpts.WatchOpts.Ctx = ctxWithLogLevel
+
 			_ = uds_syncer.RunUDS(bootstrapOpts)
-		}()
+		}(bootstrapOpts)
 	}
 
 	testClients := getTestClients(ctx, bootstrapOpts)
