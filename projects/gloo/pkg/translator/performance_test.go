@@ -152,7 +152,7 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 			Expect(durations).Should(And(config.benchmarkMatchers...))
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
-		Entry("basic", gloohelpers.NewScaledSnapshotBuilder().WithInjectedSnapshot(basicSnap), basicConfig),
+		Entry("basic", gloohelpers.NewInjectedSnapshotBuilder(basicSnap), basicConfig),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1), basicConfig, "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1), oneKUpstreamsConfig, "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(10), basicConfig, "endpoint scale"),

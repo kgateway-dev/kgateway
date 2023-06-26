@@ -36,12 +36,12 @@ func NewScaledSnapshotBuilder() *ScaledSnapshotBuilder {
 	}
 }
 
-// WithInjectedSnapshot takes a snapshot object to be returned directly by Build()
+// NewInjectedSnapshotBuilder takes a snapshot object to be returned directly by Build()
 // All other settings on a builder with an InjectedSnapshot will be ignored
-func (b *ScaledSnapshotBuilder) WithInjectedSnapshot(snap *gloosnapshot.ApiSnapshot) *ScaledSnapshotBuilder {
-	b.injectedSnap = snap
-
-	return b
+func NewInjectedSnapshotBuilder(snap *gloosnapshot.ApiSnapshot) *ScaledSnapshotBuilder {
+	return &ScaledSnapshotBuilder{
+		injectedSnap: snap,
+	}
 }
 
 func (b *ScaledSnapshotBuilder) WithUpstreamCount(n int) *ScaledSnapshotBuilder {

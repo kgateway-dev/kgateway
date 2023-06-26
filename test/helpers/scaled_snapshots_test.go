@@ -56,21 +56,21 @@ var _ = Describe("ScaledSnapshotBuilder", func() {
 			})
 		})
 	})
+})
 
-	When("with injected snapshot", func() {
-		It("returns the injected snapshot regardless of other settings", func() {
-			inSnap := &gloosnapshot.ApiSnapshot{
-				Upstreams: []*v1.Upstream{
-					{
-						Metadata: &core.Metadata{
-							Name:      "injected-name",
-							Namespace: "injected-namespace",
-						},
+var _ = Describe("InjectedSnapshotBuilder", func() {
+	It("returns the injected snapshot regardless of other settings", func() {
+		inSnap := &gloosnapshot.ApiSnapshot{
+			Upstreams: []*v1.Upstream{
+				{
+					Metadata: &core.Metadata{
+						Name:      "injected-name",
+						Namespace: "injected-namespace",
 					},
 				},
-			}
-			outSnap := helpers.NewScaledSnapshotBuilder().WithInjectedSnapshot(inSnap).WithUpstreamCount(10).Build()
-			Expect(outSnap).To(Equal(inSnap))
-		})
+			},
+		}
+		outSnap := helpers.NewInjectedSnapshotBuilder(inSnap).WithUpstreamCount(10).Build()
+		Expect(outSnap).To(Equal(inSnap))
 	})
 })
