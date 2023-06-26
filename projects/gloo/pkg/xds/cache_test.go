@@ -16,8 +16,8 @@ var _ = Describe("Cache", func() {
 	It("NodeRoleHasher generates the correct ID", func() {
 		nodeRoleHasher := xds.NewNodeRoleHasher()
 		node := &envoy_config_core_v3.Node{}
-		// Ensure it returns the fallback key if the role field in the node metadata is not present
-		Expect(nodeRoleHasher.ID(node)).To(Equal(xds.FallbackNodeCacheKey))
+		Expect(nodeRoleHasher.ID(node)).To(Equal(xds.FallbackNodeCacheKey),
+			fmt.Sprintf("Should return %s if the role field in the node metadata is not present", xds.FallbackNodeCacheKey))
 
 		role := "role"
 		node.Metadata = &structpb.Struct{
@@ -25,8 +25,7 @@ var _ = Describe("Cache", func() {
 				role: structpb.NewStringValue(role),
 			},
 		}
-		// Ensure it returns the role field in the node metadata
-		Expect(nodeRoleHasher.ID(node)).To(Equal(role))
+		Expect(nodeRoleHasher.ID(node)).To(Equal(role), "Should return the role field in the node metadata")
 	})
 
 	It("SnapshotCacheKeys returns the keys formatted correctly", func() {
