@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4918
+    resolvesIssue: true
+    description: >-
+      Improve performance tests by, among other things, using a more precise measurement method for benchmarking, and 
+      rewriting existing benchmarking tests to function as intended
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

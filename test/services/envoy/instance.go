@@ -41,6 +41,7 @@ type Instance struct {
 	envoypath     string
 	envoycfg      string
 	logs          *SafeBuffer
+	logLevel      string
 	cmd           *exec.Cmd
 	GlooAddr      string // address for gloo and services
 	Port          uint32
@@ -170,7 +171,7 @@ func (ei *Instance) runWithAll(eic InstanceConfig, bootstrapBuilder bootstrapBui
 		return ei.runContainer(eic.Context())
 	}
 
-	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
+	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", ei.logLevel}
 
 	// run directly
 	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
@@ -251,7 +252,7 @@ func (ei *Instance) runContainer(ctx context.Context) error {
 		"--entrypoint=envoy",
 		ei.DockerImage,
 		"--disable-hot-restart",
-		"--log-level", "debug",
+		"--log-level", ei.logLevel,
 		"--config-yaml", ei.envoycfg,
 	)
 
