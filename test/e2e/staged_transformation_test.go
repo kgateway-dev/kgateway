@@ -36,13 +36,13 @@ var _ = Describe("Staged Transformation", func() {
 
 		// This test relies on running the gateway-proxy with debug logging enabled
 		// This variable allows us to reset the original log level after the test
-		customAfterEach func()
+		resetLogLevel func()
 	)
 
 	BeforeEach(func() {
 		originalProxyLogLevel := services.GetLogLevel(envoy.ServiceName)
 		services.SetLogLevel(envoy.ServiceName, zapcore.DebugLevel)
-		customAfterEach = func() {
+		resetLogLevel = func() {
 			services.SetLogLevel(envoy.ServiceName, originalProxyLogLevel)
 		}
 
@@ -51,7 +51,7 @@ var _ = Describe("Staged Transformation", func() {
 	})
 
 	AfterEach(func() {
-		customAfterEach()
+		resetLogLevel()
 
 		testContext.AfterEach()
 	})

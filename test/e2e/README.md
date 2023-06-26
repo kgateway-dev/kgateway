@@ -62,6 +62,8 @@ For example, to set the log level of the Gloo service to `debug` and the Envoy s
 SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error TEST_PKG=./test/e2e/... make test
 ```
 
+*If the same service has multiple log levels specified, we will log a warning and the last one defined will be used.*
+
 #### Controlling Log Verbosity of Ginkgo Runner
 Ginkgo has 4 verbosity settings, whose details can be found in the [Ginkgo docs](https://onsi.github.io/ginkgo/#controlling-verbosity)
 

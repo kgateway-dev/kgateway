@@ -1,9 +1,12 @@
 package services
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"sync"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/onsi/gomega"
 	errors "github.com/rotisserie/eris"
@@ -18,7 +21,7 @@ const (
 	// In general, we try to use the name of the deployment, e.g. gateway-proxy, gloo, discovery, etc.
 	// for the name of the service. To confirm the name of the service that is being used, check the
 	// invocation for the given service
-	_loggingConfigRegex = "service:logLevel,service:logLevel"
+	_loggingConfigRegex = "serviceA:logLevel,serviceB:logLevel"
 	pairSeparator       = ","
 	nameValueSeparator  = ":"
 )
@@ -73,22 +76,22 @@ func MustGetSugaredLogger(serviceName string) *zap.SugaredLogger {
 	config.Level.SetLevel(logLevel)
 
 	logger, err := config.Build()
-	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "failed to build logger")
+	gomega.Expect(err).NotTo(gomega.HaveOccurred(), "failed to build logger for: %s", serviceName)
 
 	return logger.Sugar()
 }
 
 // logProvider is a helper for managing the log level of multiple services
 type logProvider struct {
-	mutex sync.RWMutex
+	sync.RWMutex
 
 	defaultLogLevel zapcore.Level
 	serviceLogLevel map[string]zapcore.Level
 }
 
 func (l *logProvider) GetLogLevel(serviceName string) zapcore.Level {
-	l.mutex.RLock()
-	defer l.mutex.RUnlock()
+	l.RLock()
+	defer l.RUnlock()
 
 	logLevel, ok := l.serviceLogLevel[serviceName]
 	if !ok {
@@ -98,8 +101,8 @@ func (l *logProvider) GetLogLevel(serviceName string) zapcore.Level {
 }
 
 func (l *logProvider) SetLogLevel(serviceName string, logLevel zapcore.Level) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	l.Lock()
+	defer l.Unlock()
 
 	l.serviceLogLevel[serviceName] = logLevel
 }
@@ -109,18 +112,26 @@ func (l *logProvider) ReloadFromEnv() {
 }
 
 func (l *logProvider) ReloadFromString(userDefinedLogLevel string) {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
+	l.Lock()
+	defer l.Unlock()
 
 	serviceLogPairs := strings.Split(userDefinedLogLevel, pairSeparator)
+	serviceNameSet := sets.NewString()
 	for _, serviceLogPair := range serviceLogPairs {
 		nameValue := strings.Split(serviceLogPair, nameValueSeparator)
 		if len(nameValue) != 2 {
 			continue
 		}
 
-		name := nameValue[0]
+		serviceName := nameValue[0]
 		logLevelStr := nameValue[1]
+
+		if serviceNameSet.Has(serviceName) {
+			// This isn't an error, but we want to warn the user that with multiple definitions
+			// there may be unknown behavior
+			fmt.Printf("WARNING: duplicate service name found in log level string: %s\n", serviceName)
+		}
+
 		logLevel, err := zapcore.ParseLevel(logLevelStr)
 		// We intentionally error loudly here
 		// This will occur if the user passes an invalid log level string
@@ -129,6 +140,7 @@ func (l *logProvider) ReloadFromString(userDefinedLogLevel string) {
 		}
 
 		// This whole function operates with a lock, so we can modify the map directly
-		logProviderSingleton.serviceLogLevel[name] = logLevel
+		logProviderSingleton.serviceLogLevel[serviceName] = logLevel
+		serviceNameSet.Insert(serviceName)
 	}
 }
