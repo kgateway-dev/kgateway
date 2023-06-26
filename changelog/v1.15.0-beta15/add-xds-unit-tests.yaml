@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/5113
+  resolvesIssue: true
+  description: >-
+    Adds new unit tests to improve coverage of the xds package.
+
