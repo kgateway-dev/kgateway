@@ -17,7 +17,7 @@ var _ = Describe("Cache", func() {
 		nodeRoleHasher := xds.NewNodeRoleHasher()
 		node := &envoy_config_core_v3.Node{}
 		Expect(nodeRoleHasher.ID(node)).To(Equal(xds.FallbackNodeCacheKey),
-			fmt.Sprintf("Should return %s if the role field in the node metadata is not present", xds.FallbackNodeCacheKey))
+			"Should return %s if the role field in the node metadata is not present", xds.FallbackNodeCacheKey)
 
 		role := "role"
 		node.Metadata = &structpb.Struct{
