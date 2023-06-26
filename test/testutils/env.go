@@ -50,6 +50,9 @@ const (
 
 	// VaultBinary is used in e2e tests to specify the path to the vault binary to use for the tests
 	VaultBinary = "VAULT_BINARY"
+
+	// ServiceLogLevel is used to set the log level for the test services. See services/logging.go for more details
+	ServiceLogLevel = "SERVICE_LOG_LEVEL"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
