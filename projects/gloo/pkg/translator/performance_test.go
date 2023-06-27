@@ -7,8 +7,6 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/test/testutils"
-
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 
@@ -47,9 +45,6 @@ type benchmarkConfig struct {
 	benchmarkMatchers []types.GomegaMatcher // matchers representing the assertions we wish to make for a particular entry
 }
 
-// These tests only compile and run on Linux machines due to the use of the go-utils benchmarking package which is only
-// compatible with Linux
-
 // Tests are run as part of the "Nightly" action in a GHA using the default Linux runner
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
@@ -62,8 +57,6 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 	)
 
 	BeforeEach(func() {
-		testutils.LinuxOnly("uses go-utils benchmarking.Measure() which only compiles on Linux")
-
 		ctrl = gomock.NewController(T)
 
 		settings = &v1.Settings{}
