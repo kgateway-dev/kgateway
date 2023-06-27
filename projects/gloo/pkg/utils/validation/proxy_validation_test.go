@@ -116,6 +116,23 @@ var _ = Describe("validation utils", func() {
 		}
 		return proxy
 	}
+	makeAggregateListenerProxy := func() *v1.Proxy {
+		proxy := makeHybridProxy()
+		proxy.Listeners = []*v1.Listener{{
+			Name:        "aggregate-listener",
+			BindAddress: "::",
+			BindPort:    defaults.HttpPort,
+			ListenerType: &v1.Listener_AggregateListener{
+				AggregateListener: &v1.AggregateListener{
+					TcpListeners: []*v1.MatchedTcpListener{{
+						Matcher:     &v1.Matcher{},
+						TcpListener: nil,
+					}},
+				},
+			},
+		}}
+		return proxy
+	}
 
 	var _ = Describe("MakeReport", func() {
 		It("generates a report which matches an http proxy", func() {
@@ -191,20 +208,7 @@ var _ = Describe("validation utils", func() {
 		It("properly instantiates TCP reports in aggregate listeners", func() {
 			// fixes a crash reported in
 			// https://github.com/solo-io/gloo/issues/8405
-			proxy := makeHybridProxy()
-			proxy.Listeners = []*v1.Listener{{
-				Name:        "aggregate-listener",
-				BindAddress: "::",
-				BindPort:    defaults.HttpPort,
-				ListenerType: &v1.Listener_AggregateListener{
-					AggregateListener: &v1.AggregateListener{
-						TcpListeners: []*v1.MatchedTcpListener{{
-							Matcher:     &v1.Matcher{},
-							TcpListener: nil,
-						}},
-					},
-				},
-			}}
+			proxy := makeAggregateListenerProxy()
 			proxyReports := MakeReport(proxy)
 			Expect(proxyReports.GetListenerReports()).To(HaveLen(1))
 			tcpListenerReports := proxyReports.GetListenerReports()[0].GetAggregateListenerReport().GetTcpListenerReports()
@@ -248,6 +252,21 @@ var _ = Describe("validation utils", func() {
 			err := GetProxyError(rpt)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
+		})
+		It("aggregates the errors at every level for aggregate hybrid listener", func() {
+			proxy := makeAggregateListenerProxy()
+			rpt := MakeReport(proxy)
+
+			rpt.ListenerReports[0].Errors = append(rpt.ListenerReports[0].Errors,
+				&validation.ListenerReport_Error{
+					Type:   validation.ListenerReport_Error_BindPortNotUniqueError,
+					Reason: "bind port not unique",
+				},
+			)
+
+			err := GetProxyError(rpt)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
 		})
 		It("aggregates the errors at every level for hybrid listener", func() {
 			proxy := makeHybridProxy()
