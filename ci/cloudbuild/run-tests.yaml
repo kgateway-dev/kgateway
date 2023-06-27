@@ -100,6 +100,8 @@ steps:
   - 'prepare-test-tools'
   secretEnv:
   - 'JWT_PRIVATE_KEY'
+  env:
+  - 'GINKGO_USER_FLAGS=-procs=3'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.2'
   id: 'run-hashicorp-e2e-tests'
