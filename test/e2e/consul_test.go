@@ -28,7 +28,9 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 )
 
-var _ = Describe("Consul e2e", func() {
+var _ = Describe("Consul e2e", Serial, func() {
+
+	// These tests use the Serial decorator because they rely on a hard-coded port for the Consul agent (8300)
 
 	Context("Consul Service Registry", func() {
 
