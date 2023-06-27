@@ -25,7 +25,7 @@ const (
 	vaultRole = "vault-role"
 )
 
-var _ = Describe("Vault Secret Store (AWS Auth)", Serial, func() {
+var _ = Describe("Vault Secret Store (AWS Auth)", func() {
 
 	var (
 		testContext *e2e.TestContextWithVault

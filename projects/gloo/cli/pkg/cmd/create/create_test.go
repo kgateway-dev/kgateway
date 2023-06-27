@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/gloo/test/testutils"
 )
 
-var _ = Describe("Create", func() {
+var _ = Describe("Create", Serial, func() {
 	if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
 		log.Print("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 		return

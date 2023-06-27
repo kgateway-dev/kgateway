@@ -1,6 +1,9 @@
 package parallel
 
-import "github.com/onsi/ginkgo/v2"
+import (
+	"github.com/onsi/ginkgo/v2"
+	"sync/atomic"
+)
 
 // GetParallelProcessCount returns the parallel process number for the current ginkgo process
 func GetParallelProcessCount() int {
@@ -12,4 +15,8 @@ func GetParallelProcessCount() int {
 // in parallel without port conflict
 func GetPortOffset() int {
 	return GetParallelProcessCount() * 100
+}
+
+func AdvancePort(p *uint32) uint32 {
+	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
 }
