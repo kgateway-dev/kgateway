@@ -3,7 +3,6 @@ package envoy
 import (
 	"bufio"
 	"fmt"
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
 	"log"
 	"net"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
+
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
 
 	"github.com/solo-io/gloo/test/services"
 	"go.uber.org/zap/zapcore"
