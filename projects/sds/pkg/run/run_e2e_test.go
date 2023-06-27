@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("SDS Server E2E Test", func() {
+var _ = Describe("SDS Server E2E Test", Serial, func() {
 
 	var (
 		ctx                                                             context.Context
