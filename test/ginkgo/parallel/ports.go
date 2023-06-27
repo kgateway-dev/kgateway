@@ -20,3 +20,7 @@ func GetPortOffset() int {
 func AdvancePort(p *uint32) uint32 {
 	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
 }
+
+func AdvancePortByDelta(p *uint32, delta uint32) uint32 {
+	return atomic.AddUint32(p, delta) + uint32(GetPortOffset())
+}

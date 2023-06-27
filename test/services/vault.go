@@ -107,7 +107,7 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 		useTls:    false, // this is not used currently but we know we will need to support it soon
 		token:     DefaultVaultToken,
 		hostname:  DefaultHost,
-		port:      parallel.AdvancePort(&vf.basePort),
+		port:      parallel.AdvancePortByDelta(&vf.basePort, 2),
 	}, nil
 }
 
