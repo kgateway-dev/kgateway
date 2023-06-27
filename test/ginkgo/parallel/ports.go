@@ -1,8 +1,9 @@
 package parallel
 
 import (
-	"github.com/onsi/ginkgo/v2"
 	"sync/atomic"
+
+	"github.com/onsi/ginkgo/v2"
 )
 
 // GetParallelProcessCount returns the parallel process number for the current ginkgo process

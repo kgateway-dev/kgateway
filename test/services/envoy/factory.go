@@ -215,7 +215,7 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
 		ApiVersion:               "V3",
-		logLevel:                 getInstanceLogLevel(),
+		LogLevel:                 getInstanceLogLevel(),
 		RequestPorts: &RequestPorts{
 			HttpPort:   defaults.HttpPort,
 			HttpsPort:  defaults.HttpsPort,

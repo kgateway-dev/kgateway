@@ -3,8 +3,6 @@ package e2e_test
 import (
 	"encoding/base64"
 
-	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/services/envoy"
 	"github.com/solo-io/gloo/test/testutils"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -33,27 +31,14 @@ var _ = Describe("Staged Transformation", Ordered, func() {
 
 	var (
 		testContext *e2e.TestContext
-
-		// This test relies on running the gateway-proxy with debug logging enabled
-		// This variable allows us to reset the original log level after the test
-		resetLogLevel func()
 	)
-
-	BeforeAll(func() {
-		originalProxyLogLevel := services.GetLogLevel(envoy.ServiceName)
-		services.SetLogLevel(envoy.ServiceName, zapcore.DebugLevel)
-		resetLogLevel = func() {
-			services.SetLogLevel(envoy.ServiceName, originalProxyLogLevel)
-		}
-	})
-
-	AfterAll(func() {
-		resetLogLevel()
-	})
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
+
+		// This test relies on running the gateway-proxy with debug logging enabled
+		testContext.EnvoyInstance().LogLevel = zapcore.DebugLevel.String()
 	})
 
 	AfterEach(func() {
