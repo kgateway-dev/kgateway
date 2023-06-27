@@ -3,7 +3,10 @@ package helpers_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("ScaledSnapshotBuilder", func() {
@@ -52,5 +55,22 @@ var _ = Describe("ScaledSnapshotBuilder", func() {
 				}
 			})
 		})
+	})
+})
+
+var _ = Describe("InjectedSnapshotBuilder", func() {
+	It("returns the injected snapshot regardless of other settings", func() {
+		inSnap := &gloosnapshot.ApiSnapshot{
+			Upstreams: []*v1.Upstream{
+				{
+					Metadata: &core.Metadata{
+						Name:      "injected-name",
+						Namespace: "injected-namespace",
+					},
+				},
+			},
+		}
+		outSnap := helpers.NewInjectedSnapshotBuilder(inSnap).WithUpstreamCount(10).Build()
+		Expect(outSnap).To(Equal(inSnap))
 	})
 })
