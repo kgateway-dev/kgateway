@@ -37,7 +37,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var _ = Describe("Consul EDS", Serial, func() {
+var _ = Describe("Consul EDS", func() {
 
 	var (
 		ctrl *gomock.Controller
@@ -46,7 +46,7 @@ var _ = Describe("Consul EDS", Serial, func() {
 	const writeNamespace = defaults.GlooSystem
 
 	BeforeEach(func() {
-		ctrl = gomock.NewController(T)
+		ctrl = gomock.NewController(GinkgoT())
 	})
 
 	AfterEach(func() {
