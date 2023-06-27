@@ -7,8 +7,6 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/test/testutils"
-
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 
@@ -47,9 +45,6 @@ type benchmarkConfig struct {
 	benchmarkMatchers []types.GomegaMatcher // matchers representing the assertions we wish to make for a particular entry
 }
 
-// These tests only compile and run on Linux machines due to the use of the go-utils benchmarking package which is only
-// compatible with Linux
-
 // Tests are run as part of the "Nightly" action in a GHA using the default Linux runner
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
@@ -62,8 +57,6 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 	)
 
 	BeforeEach(func() {
-		testutils.LinuxOnly("uses go-utils benchmarking.Measure() which only compiles on Linux")
-
 		ctrl = gomock.NewController(T)
 
 		settings = &v1.Settings{}
@@ -110,7 +103,7 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 			Expect(apiSnap.Proxies).NotTo(BeEmpty())
 			proxy = apiSnap.Proxies[0]
 
-			desc := generateDesc(apiSnap, config, labels...)
+			desc := generateDesc(snapBuilder, config, labels...)
 
 			experiment := gmeasure.NewExperiment(fmt.Sprintf("Experiment - %s", desc))
 
@@ -152,7 +145,7 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 			Expect(durations).Should(And(config.benchmarkMatchers...))
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
-		Entry("basic", basicSnap, basicConfig),
+		Entry("basic", gloohelpers.NewInjectedSnapshotBuilder(basicSnap), basicConfig),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1), basicConfig, "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1), oneKUpstreamsConfig, "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(10), basicConfig, "endpoint scale"),
@@ -165,14 +158,18 @@ var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Perfor
 	)
 })
 
-func generateDesc(apiSnap *v1snap.ApiSnapshot, _ benchmarkConfig, labels ...string) string {
+func generateDesc(b *gloohelpers.ScaledSnapshotBuilder, _ benchmarkConfig, labels ...string) string {
 	labelPrefix := ""
 	if len(labels) > 0 {
 		labelPrefix = fmt.Sprintf("(%s) ", strings.Join(labels, ", "))
 	}
 
+	if b.HasInjectedSnapshot() {
+		return fmt.Sprintf("%sinjected snapshot", labelPrefix)
+	}
+
 	// If/when additional Snapshot fields are included in testing, the description should be updated accordingly
-	return fmt.Sprintf("%s%d endpoint(s), %d upstream(s)", labelPrefix, len(apiSnap.Endpoints), len(apiSnap.Upstreams))
+	return fmt.Sprintf("%s%d endpoint(s), %d upstream(s)", labelPrefix, b.EndpointCount(), b.UpstreamCount())
 }
 
 // Test assets: Add blocks for logical groupings of tests, including:
@@ -188,8 +185,8 @@ var basicSnap = &v1snap.ApiSnapshot{
 			},
 		},
 	},
-	Endpoints: []*v1.Endpoint{gloohelpers.Endpoint(1)},
-	Upstreams: []*v1.Upstream{gloohelpers.Upstream(1)},
+	Endpoints: []*v1.Endpoint{gloohelpers.Endpoint(0)},
+	Upstreams: []*v1.Upstream{gloohelpers.Upstream(0)},
 }
 
 var basicConfig = benchmarkConfig{

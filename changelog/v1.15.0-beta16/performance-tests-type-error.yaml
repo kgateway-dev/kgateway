@@ -1,0 +1,22 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5116
+    resolvesIssue: false
+    description: >-
+      Resolve a bug introduced in #8415 due to type mismatch in the translation performance test table's descriptor func
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5116
+    resolvesIssue: false
+    description: >-
+      Resolve a bug introduced in #8415 due to 0-indexing names of some resources but not all
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4918
+    resolvesIssue: false
+    description: >-
+      Add a Darwin implementation of benchmark measurement to allow tests to run locally
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
