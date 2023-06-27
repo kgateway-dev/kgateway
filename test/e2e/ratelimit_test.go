@@ -125,7 +125,7 @@ func (s *metadataCheckingRateLimitServer) getActionsForServer() []*rltypes.RateL
 	}
 }
 
-var _ = Describe("Rate Limit", func() {
+var _ = Describe("Rate Limit", Serial, func() {
 
 	var (
 		ctx         context.Context
