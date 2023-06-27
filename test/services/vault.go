@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
 	"net"
 	"os"
 	"os/exec"
@@ -107,7 +106,7 @@ func (vf *VaultFactory) NewVaultInstance() (*VaultInstance, error) {
 		useTls:    false, // this is not used currently but we know we will need to support it soon
 		token:     DefaultVaultToken,
 		hostname:  DefaultHost,
-		port:      parallel.AdvancePortByDelta(&vf.basePort, 2),
+		port:      vf.basePort,
 	}, nil
 }
 

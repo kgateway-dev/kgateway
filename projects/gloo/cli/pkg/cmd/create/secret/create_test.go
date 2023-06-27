@@ -12,7 +12,7 @@ import (
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 )
 
-var _ = Describe("Create", func() {
+var _ = Describe("Create", Serial, func() {
 
 	if !glootestutils.IsEnvTruthy(glootestutils.RunVaultTests) {
 		log.Print("This test downloads and runs vault and is disabled by default. To enable, set RUN_VAULT_TESTS=1 in your env.")
