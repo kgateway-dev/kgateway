@@ -3,6 +3,7 @@ package validation_test
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -273,5 +274,29 @@ var _ = Describe("validation utils", func() {
 			Expect(err.Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
 
+	})
+
+	It("properly instantiates TCP reports in aggregate listeners", func() {
+		// fixes a crash reported in
+		// https://github.com/solo-io/gloo/issues/8405
+		listener := &v1.Listener{
+			Name:        "aggregate-listener",
+			BindAddress: "::",
+			BindPort:    defaults.HttpPort,
+			ListenerType: &v1.Listener_AggregateListener{
+				AggregateListener: &v1.AggregateListener{
+					TcpListeners: []*v1.MatchedTcpListener{{
+						Matcher:     &v1.Matcher{},
+						TcpListener: nil,
+					}},
+				},
+			},
+		}
+		proxy := makeHybridProxy()
+		proxy.Listeners = []*v1.Listener{listener}
+		proxyReports := MakeReport(proxy)
+		Expect(proxyReports.GetListenerReports()).To(HaveLen(1))
+		tcpListenerReports := proxyReports.GetListenerReports()[0].GetAggregateListenerReport().GetTcpListenerReports()
+		Expect(tcpListenerReports).To(HaveLen(1))
 	})
 })
