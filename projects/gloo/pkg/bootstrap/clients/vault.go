@@ -55,6 +55,9 @@ func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Clien
 	if err != nil {
 		return nil, err
 	}
+
+	configureVaultNamespace(vaultSettings, client)
+
 	return configureVaultAuth(vaultSettings, client)
 }
 
@@ -142,6 +145,16 @@ func configureVaultAuth(vaultSettings *v1.Settings_VaultSecrets, client *api.Cli
 		}
 		client.SetToken(token)
 		return client, nil
+	}
+}
+
+// configureVaultNamespace sets the Vault Namespace on the Vault API client, if one is provided
+// https://developer.hashicorp.com/vault/tutorials/enterprise/namespaces
+func configureVaultNamespace(_ *v1.Settings_VaultSecrets, client *api.Client) {
+	// This is a temporary solution for exposing the Vault Namespace to the Vault API client.
+	// In the future, we would pull this value off of the Settings object
+	if vaultNs := os.Getenv("VAULT_NAMESPACE"); vaultNs != "" {
+		client.SetNamespace(vaultNs)
 	}
 }
 
