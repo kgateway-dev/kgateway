@@ -1,8 +1,6 @@
 package envoy
 
 import (
-	"sync/atomic"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
@@ -18,17 +16,13 @@ var (
 )
 
 func NextAccessLogPort() uint32 {
-	return advancePort(&baseAccessLogPort)
+	return parallel.AdvancePort(&baseAccessLogPort)
 }
 
 func advanceRequestPorts() {
-	defaults.HttpPort = advancePort(&baseHttpPort)
-	defaults.HttpsPort = advancePort(&baseHttpsPort)
-	defaults.HybridPort = advancePort(&baseHybridPort)
-	defaults.TcpPort = advancePort(&baseTcpPort)
-	defaults.EnvoyAdminPort = advancePort(&baseAdminPort)
-}
-
-func advancePort(p *uint32) uint32 {
-	return atomic.AddUint32(p, 1) + uint32(parallel.GetPortOffset())
+	defaults.HttpPort = parallel.AdvancePort(&baseHttpPort)
+	defaults.HttpsPort = parallel.AdvancePort(&baseHttpsPort)
+	defaults.HybridPort = parallel.AdvancePort(&baseHybridPort)
+	defaults.TcpPort = parallel.AdvancePort(&baseTcpPort)
+	defaults.EnvoyAdminPort = parallel.AdvancePort(&baseAdminPort)
 }
