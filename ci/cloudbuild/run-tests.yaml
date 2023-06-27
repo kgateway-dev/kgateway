@@ -134,7 +134,7 @@ options:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
-  - 'GINKGO_USER_FLAGS=-procs=3'
+  - 'GINKGO_USER_FLAGS=-procs=4'
   volumes:
   - name: 'gopath'
     path: '/go'

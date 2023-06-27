@@ -37,7 +37,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var _ = Describe("Consul EDS", func() {
+var _ = Describe("Consul EDS", Serial, func() {
 
 	var (
 		ctrl *gomock.Controller
