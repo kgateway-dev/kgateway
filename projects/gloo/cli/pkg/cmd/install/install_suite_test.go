@@ -36,7 +36,7 @@ const (
 )
 
 // NOTE: This needs to be run from the root of the repo as the working directory
-var _ = BeforeSuite(func() {
+var onceBeforeSuite = func() {
 
 	// Make sure we don't hit a real cluster during any of the tests in this suite
 	helpers.UseMemoryClients()
@@ -100,9 +100,9 @@ settings:
 		}
 	}
 	Expect(install.GlooCrdNames).To(ContainElements(crdNames))
-})
+}
 
-var _ = AfterSuite(func() {
+var onceAfterSuite = func() {
 	err := os.Remove(file)
 	Expect(err).NotTo(HaveOccurred())
 	err = os.Remove(values1)
@@ -111,4 +111,9 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = os.RemoveAll(dir)
 	Expect(err).NotTo(HaveOccurred())
-})
+}
+
+var (
+	_ = SynchronizedBeforeSuite(onceBeforeSuite, func() {})
+	_ = SynchronizedAfterSuite(func() {}, onceAfterSuite)
+)
