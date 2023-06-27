@@ -20,6 +20,8 @@ import (
 // contains a builder for each sub-resource type which is responsible for building instances of that resource
 // Additional fields should be added as needed
 type ScaledSnapshotBuilder struct {
+	injectedSnap *gloosnapshot.ApiSnapshot
+
 	epCount int
 	usCount int
 
@@ -31,6 +33,14 @@ func NewScaledSnapshotBuilder() *ScaledSnapshotBuilder {
 	return &ScaledSnapshotBuilder{
 		epBuilder: NewEndpointBuilder(),
 		usBuilder: NewUpstreamBuilder(),
+	}
+}
+
+// NewInjectedSnapshotBuilder takes a snapshot object to be returned directly by Build()
+// All other settings on a builder with an InjectedSnapshot will be ignored
+func NewInjectedSnapshotBuilder(snap *gloosnapshot.ApiSnapshot) *ScaledSnapshotBuilder {
+	return &ScaledSnapshotBuilder{
+		injectedSnap: snap,
 	}
 }
 
@@ -54,9 +64,27 @@ func (b *ScaledSnapshotBuilder) WithEndpointBuilder(eb *EndpointBuilder) *Scaled
 	return b
 }
 
+/* Getter funcs to be used by the description generator */
+
+func (b *ScaledSnapshotBuilder) HasInjectedSnapshot() bool {
+	return b.injectedSnap != nil
+}
+
+func (b *ScaledSnapshotBuilder) UpstreamCount() int {
+	return b.usCount
+}
+
+func (b *ScaledSnapshotBuilder) EndpointCount() int {
+	return b.epCount
+}
+
 // Build generates a snapshot populated with the specified number of each resource for the builder, using the
 // sub-resource builders to build each sub-resource
 func (b *ScaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
+	if b.injectedSnap != nil {
+		return b.injectedSnap
+	}
+
 	endpointList := make(v1.EndpointList, b.epCount)
 	for i := 0; i < b.epCount; i++ {
 		endpointList[i] = b.epBuilder.Build(i)
@@ -142,7 +170,7 @@ func route(i int) *v1.Route {
 func routes(n int) []*v1.Route {
 	routes := make([]*v1.Route, n)
 	for i := 0; i < n; i++ {
-		routes[i] = route(i + 1) // names are 1-indexed
+		routes[i] = route(i)
 	}
 	return routes
 }
@@ -182,8 +210,8 @@ func tcpListener() *v1.Listener {
 								Single: &v1.Destination{
 									DestinationType: &v1.Destination_Upstream{
 										Upstream: &core.ResourceRef{
-											Name:      upMeta(1).GetName(),
-											Namespace: upMeta(1).GetNamespace(),
+											Name:      upMeta(0).GetName(),
+											Namespace: upMeta(0).GetNamespace(),
 										},
 									},
 								},
