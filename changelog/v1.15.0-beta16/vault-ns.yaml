@@ -1,0 +1,13 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/8390
+    resolvesIssue: false
+    description: >-
+      Support configuring the namespace for the Vault API client.
+      When using Vault Enterprise, namespaces are security mandated to ensure isolation of credentials.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8390
+    resolvesIssue: false
+    description: >-
+      This is currently a POC, and we expose the API through an environment variable.
+      Once this solution is confirmed to work, we will expose this through the Settings API.
