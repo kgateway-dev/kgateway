@@ -40,7 +40,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
+var _ = Describe("Consul + Vault Configuration Happy Path e2e", Serial, func() {
+
+	// ConsulVaultE2eSuite must be run Serially since the Consul and Vault Services do not rotate ports
 
 	var (
 		ctx            context.Context
