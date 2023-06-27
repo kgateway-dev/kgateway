@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/test/services"
 	"io"
 	"net"
 	"net/http"
@@ -22,7 +23,6 @@ import (
 )
 
 const (
-	containerName    = "e2e_envoy"
 	DefaultProxyName = "default~proxy"
 )
 
@@ -51,8 +51,9 @@ type Instance struct {
 	ApiVersion string
 
 	DockerOptions
-	UseDocker   bool
-	DockerImage string
+	UseDocker           bool
+	DockerImage         string
+	DockerContainerName string
 
 	*RequestPorts
 }
@@ -227,12 +228,12 @@ func (ei *Instance) Clean() {
 	if ei.UseDocker {
 		// No need to handle the error here as the call to quitquitquit above should kill and exit the container
 		// This is just a backup to make sure it really gets deleted
-		_ = stopContainer()
+		services.MustStopAndRemoveContainer(ei.DockerContainerName)
 	}
 }
 
 func (ei *Instance) runContainer(ctx context.Context) error {
-	args := []string{"run", "--rm", "--name", containerName,
+	args := []string{"run", "--rm", "--name", ei.DockerContainerName,
 		"-p", fmt.Sprintf("%d:%d", ei.HttpPort, ei.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", ei.HttpsPort, ei.HttpsPort),
 		"-p", fmt.Sprintf("%d:%d", ei.TcpPort, ei.TcpPort),
@@ -293,20 +294,9 @@ func (ei *Instance) waitForEnvoyToBeRunning() error {
 	}
 }
 
-func stopContainer() error {
-	cmd := exec.Command("docker", "stop", containerName)
-	cmd.Stdout = ginkgo.GinkgoWriter
-	cmd.Stderr = ginkgo.GinkgoWriter
-	err := cmd.Run()
-	if err != nil {
-		return errors.Wrap(err, "Error stopping container "+containerName)
-	}
-	return nil
-}
-
 func (ei *Instance) Logs() (string, error) {
 	if ei.UseDocker {
-		logsArgs := []string{"logs", containerName}
+		logsArgs := []string{"logs", ei.DockerContainerName}
 		cmd := exec.Command("docker", logsArgs...)
 		byt, err := cmd.CombinedOutput()
 		if err != nil {

@@ -3,6 +3,7 @@ package envoy
 import (
 	"bufio"
 	"fmt"
+	"github.com/solo-io/gloo/test/ginkgo/parallel"
 	"log"
 	"net"
 	"os"
@@ -208,6 +209,7 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		envoypath:                f.envoypath,
 		UseDocker:                f.useDocker,
 		DockerImage:              f.dockerImage,
+		DockerContainerName:      fmt.Sprintf("e2e_envoy-%d", parallel.GetParallelProcessCount()),
 		GlooAddr:                 gloo,
 		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
@@ -221,6 +223,8 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 			AdminPort:  defaults.EnvoyAdminPort,
 		},
 	}
+
+	log.Printf("Envoy Instance (%s) Ports: %+v", ei.DockerContainerName, ei.RequestPorts)
 	f.instances = append(f.instances, ei)
 	return ei, nil
 
