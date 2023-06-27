@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
 
-var _ = Describe("Staged Transformation", func() {
+var _ = Describe("Staged Transformation", Ordered, func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -39,20 +39,24 @@ var _ = Describe("Staged Transformation", func() {
 		resetLogLevel func()
 	)
 
-	BeforeEach(func() {
+	BeforeAll(func() {
 		originalProxyLogLevel := services.GetLogLevel(envoy.ServiceName)
 		services.SetLogLevel(envoy.ServiceName, zapcore.DebugLevel)
 		resetLogLevel = func() {
 			services.SetLogLevel(envoy.ServiceName, originalProxyLogLevel)
 		}
+	})
 
+	AfterAll(func() {
+		resetLogLevel()
+	})
+
+	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
 	})
 
 	AfterEach(func() {
-		resetLogLevel()
-
 		testContext.AfterEach()
 	})
 
