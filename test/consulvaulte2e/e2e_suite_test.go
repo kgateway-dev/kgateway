@@ -24,7 +24,9 @@ func TestE2e(t *testing.T) {
 
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
-	RunSpecs(t, "Consul+Vault E2e Suite", Label(labels.E2E))
+
+	// ConsulVaultE2eSuite must be run Serially since the Consul and Vault Services do not rotate ports
+	RunSpecs(t, "Consul+Vault E2e Suite", Label(labels.E2E), Serial)
 }
 
 var (
