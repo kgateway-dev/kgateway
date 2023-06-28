@@ -202,7 +202,7 @@ func (ei *Instance) Clean() {
 	}
 
 	if ei.UseDocker {
-		// No need to handle the error here as the call to quitquitquit above should kill and exit the container
+		// An earlier call to quitquitquit should kill and exit the container
 		// This is just a backup to make sure it really gets deleted
 		services.MustStopAndRemoveContainer(ei.DockerContainerName)
 	}
