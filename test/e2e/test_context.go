@@ -326,8 +326,10 @@ func (v *TestContextWithVault) RunVault() {
 	// The VaultInstance will be cleaned up when the provided context is cancelled
 	// By running Vault with the TestContext.Ctxt, we can be sure that when the TestContext
 	// completes, Vault will be cleaned up
-	err := v.VaultInstance().Run(v.Ctx())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	EventuallyWithOffset(1, func(g Gomega) {
+		err := v.VaultInstance().Run(v.Ctx())
+		g.Expect(err).NotTo(HaveOccurred())
+	}, "5s", ".1s").ShouldNot(HaveOccurred(), "Can run VaultInstance")
 }
 
 // TestContextWithConsul represents the aggregate set of configuration needed to run a single e2e test
@@ -351,6 +353,8 @@ func (c *TestContextWithConsul) RunConsul() {
 	// The ConsulInstance will be cleaned up when the provided context is cancelled
 	// By running Consul with the TestContext.Ctxt, we can be sure that when the TestContext
 	// completes, Consul will be cleaned up
-	err := c.ConsulInstance().Run(c.Ctx())
-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	EventuallyWithOffset(1, func(g Gomega) {
+		err := c.ConsulInstance().Run(c.Ctx())
+		g.Expect(err).NotTo(HaveOccurred())
+	}, "5s", ".1s").ShouldNot(HaveOccurred(), "Can run ConsulInstance")
 }
