@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -84,7 +83,8 @@ func StopContainer(containerName string) {
 	cmd.Stderr = ginkgo.GinkgoWriter
 	err := cmd.Run()
 	if err != nil {
-		log.Printf("Error stopping container %s: %v", containerName, err)
+		// We have seen this trip, even when the container is successfully stopped
+		// log.Printf("Error stopping container %s: %v", containerName, err)
 	}
 }
 
@@ -103,7 +103,7 @@ func WaitUntilContainerRemoved(containerName string) error {
 			return err != nil
 		}),
 		retry.Attempts(10),
-		retry.Delay(time.Millisecond*200),
+		retry.Delay(time.Millisecond*500),
 		retry.DelayType(retry.BackOffDelay),
 		retry.LastErrorOnly(true),
 	)

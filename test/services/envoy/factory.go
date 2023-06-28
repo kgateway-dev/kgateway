@@ -11,8 +11,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/solo-io/gloo/test/ginkgo/parallel"
-
 	"github.com/solo-io/gloo/test/services"
 	"go.uber.org/zap/zapcore"
 
@@ -210,7 +208,7 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		envoypath:                f.envoypath,
 		UseDocker:                f.useDocker,
 		DockerImage:              f.dockerImage,
-		DockerContainerName:      fmt.Sprintf("e2e_envoy-%d", parallel.GetParallelProcessCount()),
+		DockerContainerName:      fmt.Sprintf("e2e_envoy-%d", defaults.HttpPort),
 		GlooAddr:                 gloo,
 		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
