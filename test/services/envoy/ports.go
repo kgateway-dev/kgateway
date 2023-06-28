@@ -16,13 +16,13 @@ var (
 )
 
 func NextAccessLogPort() uint32 {
-	return parallel.AdvancePort(&baseAccessLogPort)
+	return parallel.AdvancePortSafeDenylist(&baseAccessLogPort)
 }
 
 func advanceRequestPorts() {
-	defaults.HttpPort = parallel.AdvancePort(&baseHttpPort)
-	defaults.HttpsPort = parallel.AdvancePort(&baseHttpsPort)
-	defaults.HybridPort = parallel.AdvancePort(&baseHybridPort)
-	defaults.TcpPort = parallel.AdvancePort(&baseTcpPort)
-	defaults.EnvoyAdminPort = parallel.AdvancePort(&baseAdminPort)
+	defaults.HttpPort = parallel.AdvancePortSafeDenylist(&baseHttpPort)
+	defaults.HttpsPort = parallel.AdvancePortSafeDenylist(&baseHttpsPort)
+	defaults.HybridPort = parallel.AdvancePortSafeDenylist(&baseHybridPort)
+	defaults.TcpPort = parallel.AdvancePortSafeDenylist(&baseTcpPort)
+	defaults.EnvoyAdminPort = parallel.AdvancePortSafeDenylist(&baseAdminPort)
 }

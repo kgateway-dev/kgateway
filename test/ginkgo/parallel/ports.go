@@ -2,6 +2,9 @@ package parallel
 
 import (
 	"sync/atomic"
+	"time"
+
+	"github.com/avast/retry-go"
 
 	"github.com/onsi/ginkgo/v2"
 )
@@ -19,9 +22,40 @@ func GetPortOffset() int {
 }
 
 func AdvancePort(p *uint32) uint32 {
-	return AdvancePortByDelta(p, 1)
+	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
 }
 
-func AdvancePortByDelta(p *uint32, delta uint32) uint32 {
-	return atomic.AddUint32(p, delta) + uint32(GetPortOffset())
+func AdvancePortSafe(p *uint32, portInUse func(proposedPort uint32) bool) uint32 {
+	var newPort uint32
+
+	_ = retry.Do(func() error {
+		newPort = AdvancePort(p)
+		return nil
+	},
+		retry.RetryIf(func(err error) bool {
+			return portInUse(newPort)
+		}),
+		retry.Attempts(3),
+		retry.Delay(time.Millisecond*0))
+
+	return newPort
+}
+
+func portInUseDenylist(proposedPort uint32) bool {
+	var denyList = map[uint32]struct{}{
+		10010: {}, // used by Gloo, when devMode is enabled
+	}
+
+	if _, ok := denyList[proposedPort]; ok {
+		return true
+	}
+	return false
+}
+
+// AdvancePortSafeDenylist returns a port that is safe to use in parallel tests
+// It relies on a hard-coded denylist, of ports that we know are hard-coded in Gloo
+// And will cause tests to fail if they attempt to bind on the same port
+// If you need a more advanced port selection mechanism, use AdvancePortSafe
+func AdvancePortSafeDenylist(p *uint32) uint32 {
+	return AdvancePortSafe(p, portInUseDenylist)
 }
