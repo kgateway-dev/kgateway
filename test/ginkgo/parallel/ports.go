@@ -4,6 +4,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/avast/retry-go"
 
 	"github.com/onsi/ginkgo/v2"
@@ -25,15 +27,15 @@ func AdvancePort(p *uint32) uint32 {
 	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
 }
 
-func AdvancePortSafe(p *uint32, portInUse func(proposedPort uint32) bool) uint32 {
+func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) uint32 {
 	var newPort uint32
 
 	_ = retry.Do(func() error {
 		newPort = AdvancePort(p)
-		return nil
+		return errIfPortInUse(newPort)
 	},
 		retry.RetryIf(func(err error) bool {
-			return portInUse(newPort)
+			return err != nil
 		}),
 		retry.Attempts(3),
 		retry.Delay(time.Millisecond*0))
@@ -41,15 +43,15 @@ func AdvancePortSafe(p *uint32, portInUse func(proposedPort uint32) bool) uint32
 	return newPort
 }
 
-func portInUseDenylist(proposedPort uint32) bool {
+func portInUseDenylist(proposedPort uint32) error {
 	var denyList = map[uint32]struct{}{
 		10010: {}, // used by Gloo, when devMode is enabled
 	}
 
 	if _, ok := denyList[proposedPort]; ok {
-		return true
+		return eris.Errorf("port %d is in use", proposedPort)
 	}
-	return false
+	return nil
 }
 
 // AdvancePortSafeDenylist returns a port that is safe to use in parallel tests
