@@ -102,8 +102,9 @@ func WaitUntilContainerRemoved(containerName string) error {
 		retry.RetryIf(func(err error) bool {
 			return err != nil
 		}),
-		retry.Attempts(5),
-		retry.Delay(time.Second),
+		retry.Attempts(10),
+		retry.Delay(time.Millisecond*200),
+		retry.DelayType(retry.BackOffDelay),
 		retry.LastErrorOnly(true),
 	)
 }
