@@ -1,6 +1,8 @@
 package parallel
 
 import (
+	"fmt"
+	"net"
 	"sync/atomic"
 	"time"
 
@@ -23,10 +25,6 @@ func GetPortOffset() int {
 	return GetParallelProcessCount() * 1000
 }
 
-func AdvancePort(p *uint32) uint32 {
-	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
-}
-
 func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) uint32 {
 	var newPort uint32
 
@@ -43,6 +41,18 @@ func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) 
 	return newPort
 }
 
+func AdvancePort(p *uint32) uint32 {
+	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
+}
+
+// AdvancePortSafeDenylist returns a port that is safe to use in parallel tests
+// It relies on a hard-coded denylist, of ports that we know are hard-coded in Gloo
+// And will cause tests to fail if they attempt to bind on the same port
+// If you need a more advanced port selection mechanism, use AdvancePortSafe
+func AdvancePortSafeDenylist(p *uint32) uint32 {
+	return AdvancePortSafe(p, portInUseDenylist)
+}
+
 func portInUseDenylist(proposedPort uint32) error {
 	var denyList = map[uint32]struct{}{
 		10010: {}, // used by Gloo, when devMode is enabled
@@ -54,10 +64,21 @@ func portInUseDenylist(proposedPort uint32) error {
 	return nil
 }
 
-// AdvancePortSafeDenylist returns a port that is safe to use in parallel tests
-// It relies on a hard-coded denylist, of ports that we know are hard-coded in Gloo
-// And will cause tests to fail if they attempt to bind on the same port
-// If you need a more advanced port selection mechanism, use AdvancePortSafe
-func AdvancePortSafeDenylist(p *uint32) uint32 {
-	return AdvancePortSafe(p, portInUseDenylist)
+// AdvancePortSafeListen returns a port that is safe to use in parallel tests
+// It relies on pinging the port to see if it is in use
+// This may be slow than using a denylist, but it is more robust
+func AdvancePortSafeListen(p *uint32) uint32 {
+	return AdvancePortSafe(p, portInUseListen)
+}
+
+func portInUseListen(proposedPort uint32) error {
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", proposedPort))
+
+	if err != nil {
+		return eris.Wrapf(err, "port %d is in use", proposedPort)
+	}
+
+	_ = ln.Close()
+	// Port is available
+	return nil
 }

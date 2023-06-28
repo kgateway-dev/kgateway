@@ -81,7 +81,7 @@ const (
 )
 
 func AllocateGlooPort() int32 {
-	return int32(parallel.AdvancePortSafeDenylist(&glooPortBase))
+	return int32(parallel.AdvancePortSafeListen(&glooPortBase))
 }
 
 // RunOptions are options for running an in-memory e2e test
