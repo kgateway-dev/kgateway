@@ -53,6 +53,10 @@ const (
 
 	// ServiceLogLevel is used to set the log level for the test services. See services/logging.go for more details
 	ServiceLogLevel = "SERVICE_LOG_LEVEL"
+
+	// GcloudBuildId is used by Cloudbuild to identify the build id
+	// This is set when running tests in Cloudbuild
+	GcloudBuildId = "GCLOUD_BUILD_ID"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
@@ -73,9 +77,20 @@ func ShouldSkipTempDisabledTests() bool {
 	return IsEnvTruthy(SkipTempDisabledTests)
 }
 
+// IsRunningInCloudbuild returns true if tests are running in Cloudbuild
+func IsRunningInCloudbuild() bool {
+	return IsEnvDefined(GcloudBuildId)
+}
+
 // IsEnvTruthy returns true if a given environment variable has a truthy value
 // Examples of truthy values are: "1", "t", "T", "true", "TRUE", "True". Anything else is considered false.
 func IsEnvTruthy(envVarName string) bool {
 	envValue, _ := strconv.ParseBool(os.Getenv(envVarName))
 	return envValue
+}
+
+// IsEnvDefined returns true if a given environment variable has any value
+func IsEnvDefined(envVarName string) bool {
+	envValue := os.Getenv(envVarName)
+	return len(envValue) > 0
 }

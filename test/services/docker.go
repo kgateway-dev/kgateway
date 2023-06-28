@@ -3,8 +3,11 @@ package services
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"time"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/avast/retry-go"
 
@@ -13,6 +16,33 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/pkg/errors"
 )
+
+const (
+	// defaultNetwork is the default docker network driver
+	// https://docs.docker.com/network/drivers/bridge/
+	defaultNetwork = "bridge"
+
+	// cloudbuildNetwork is the docker network driver used by Google Cloudbuild
+	// https://cloud.google.com/build/docs/build-config-file-schema#network
+	cloudbuildNetwork = "cloudbuild"
+)
+
+func RunContainer(containerName string, args []string) error {
+	runArgs := append([]string{
+		"run",
+		"--rm",
+		"--name",
+		containerName,
+	}, args...)
+	cmd := exec.Command("docker", runArgs...)
+	cmd.Stdout = ginkgo.GinkgoWriter
+	cmd.Stderr = ginkgo.GinkgoWriter
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "Unable to start "+containerName+" container")
+	}
+	return nil
+}
 
 // ContainerExistsWithName returns an empty string if the container does not exist
 func ContainerExistsWithName(containerName string) string {
@@ -61,21 +91,47 @@ func StopContainer(containerName string) {
 // WaitUntilContainerRemoved polls docker for removal of the container named containerName - block until
 // successful or fail after a small number of retries
 func WaitUntilContainerRemoved(containerName string) error {
-	inspectErr := retry.Do(func() error {
-		return exec.Command("docker", "inspect", containerName).Run()
+	return retry.Do(func() error {
+		inspectErr := exec.Command("docker", "inspect", containerName).Run()
+		if inspectErr == nil {
+			// If there is no error, it means the container still exists, so we want to retry
+			return errors.Errorf("container %s still exists", containerName)
+		}
+		return nil
 	},
 		retry.RetryIf(func(err error) bool {
-			// If there is no error, it means the container still exists, so we want to retry
-			return err == nil
+			return err != nil
 		}),
 		retry.Attempts(5),
-		retry.Delay(time.Millisecond*1000),
+		retry.Delay(time.Second),
 		retry.LastErrorOnly(true),
 	)
+}
 
-	if inspectErr == nil {
-		// If there is no error, it means the container still exists
-		return errors.Errorf("container %s still exists", containerName)
+func RunningInDocker() bool {
+	if _, err := os.Stat("/.dockerenv"); os.IsNotExist(err) {
+		// magic docker env file doesn't exist. not running in docker
+		return false
 	}
-	return nil
+	return true
+}
+
+func GetDockerHost(containerName string) string {
+	if RunningInDocker() {
+		return containerName
+	} else {
+		return "127.0.0.1"
+	}
+}
+
+func GetContainerNetwork() string {
+	network := defaultNetwork
+	if RunningInDocker() {
+		if !testutils.IsRunningInCloudbuild() {
+			// We error loudly here so that if/when we move off of Google Cloudbuild, we can clean up this logic
+			ginkgo.Fail("Running in docker but not in cloudbuild. Could not determine docker network")
+		}
+		network = cloudbuildNetwork
+	}
+	return network
 }
