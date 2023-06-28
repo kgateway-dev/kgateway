@@ -89,6 +89,8 @@ steps:
   - 'prepare-test-tools'
   secretEnv:
   - 'JWT_PRIVATE_KEY'
+  env:
+  - 'GINKGO_USER_FLAGS=-procs=4 --output-interceptor-mode=none'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.2'
   id: 'run-e2e-tests'
@@ -100,6 +102,8 @@ steps:
   - 'prepare-test-tools'
   secretEnv:
   - 'JWT_PRIVATE_KEY'
+  env:
+  - 'GINKGO_USER_FLAGS=-procs=2 --output-interceptor-mode=none'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.2'
   id: 'run-hashicorp-e2e-tests'
@@ -111,6 +115,8 @@ steps:
     - 'prepare-test-tools'
   secretEnv:
     - 'JWT_PRIVATE_KEY'
+  env:
+  - 'GINKGO_USER_FLAGS=-procs=1 --output-interceptor-mode=none'
 
 secrets:
 - kmsKeyName: 'projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key'
@@ -134,7 +140,6 @@ options:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
-  - 'GINKGO_USER_FLAGS=-procs=4'
   volumes:
   - name: 'gopath'
     path: '/go'
