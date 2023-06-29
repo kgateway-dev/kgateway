@@ -3,7 +3,7 @@ changelog:
     issueLink: https://github.com/solo-io/solo-projects/issues/5143
     resolvesIssue: true
     description: >-
-      Enable tests to be run in parallel. Turn on this by default in CI.
+      Enable tests to be run in parallel. Turn this OFF by default in CI.
 
       skipCI-kube-tests:true
       skipCI-docs-build:true
