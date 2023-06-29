@@ -68,6 +68,15 @@ var _ = Describe("GlooResourcesTest", func() {
 				// the other benefit is this ensures that all tests start with a valid Proxy CR
 				testRunnerVs,
 			},
+			// Proxies are auto-generated when Gateways and VirtualServices are created
+			// We create this reference in our glooResources Snapshot to ensure that the SnapshotWriter
+			// will delete the Proxy after each test
+			Proxies: gloov1.ProxyList{{
+				Metadata: &core.Metadata{
+					Name:      defaults.GatewayProxyName,
+					Namespace: namespace,
+				},
+			}},
 		}
 	})
 

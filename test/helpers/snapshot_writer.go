@@ -3,6 +3,8 @@ package helpers
 import (
 	"time"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -144,10 +146,20 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	// We intentionally delete resources in the reverse order that we create resources
 	// If we delete child resources first, the validation webhook may reject the change
 
+	uniqueProxyRefs := make(map[*core.ResourceRef]struct{})
+
 	for _, gw := range snapshot.Gateways {
 		gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
 		if deleteErr := s.GatewayClient().Delete(gwNamespace, gwName, deleteOptions); deleteErr != nil {
 			return deleteErr
+		}
+
+		for _, proxyName := range gw.GetProxyNames() {
+			uniqueProxyRefs[&core.ResourceRef{
+				Name: proxyName,
+				// We assume the Gateway and Proxy are in the same namespace, though settings.WriteNamespace is the true location
+				Namespace: gwNamespace,
+			}] = struct{}{}
 		}
 	}
 	for _, hgw := range snapshot.HttpGateways {
@@ -228,6 +240,11 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	for _, proxy := range snapshot.Proxies {
 		proxyNamespace, proxyName := proxy.GetMetadata().Ref().Strings()
 		if deleteErr := s.ProxyClient().Delete(proxyNamespace, proxyName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for proxyRef := range uniqueProxyRefs {
+		if deleteErr := s.ProxyClient().Delete(proxyRef.GetName(), proxyRef.GetName(), deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
