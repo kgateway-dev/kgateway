@@ -53,6 +53,11 @@ const (
 
 	// ServiceLogLevel is used to set the log level for the test services. See services/logging.go for more details
 	ServiceLogLevel = "SERVICE_LOG_LEVEL"
+
+	// ReleasedVersion can be used when running KubeE2E tests to have the test suite use a previously released version of Gloo Edge
+	// If set to 'LATEST', the most recently released version will be used
+	// If set to another value, the test suite will use that version (ie '1.15.0-beta1')
+	ReleasedVersion = "RELEASED_VERSION"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

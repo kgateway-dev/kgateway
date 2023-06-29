@@ -122,11 +122,9 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 			return writeErr
 		}
 	}
-	for _, proxy := range snapshot.Proxies {
-		if _, writeErr := s.ProxyClient().Write(proxy, writeOptions); !s.isContinuableWriteError(writeErr) {
-			return writeErr
-		}
-	}
+
+	// Proxies are intended to be an opaque resource to users
+	// As a result, we do not let our tests write Proxies directly.
 
 	return nil
 }
@@ -146,7 +144,7 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 	// We intentionally delete resources in the reverse order that we create resources
 	// If we delete child resources first, the validation webhook may reject the change
 
-	uniqueProxyRefs := make(map[*core.ResourceRef]struct{})
+	dynamicProxyRefs := make(map[*core.ResourceRef]struct{})
 
 	for _, gw := range snapshot.Gateways {
 		gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
@@ -155,7 +153,7 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 		}
 
 		for _, proxyName := range gw.GetProxyNames() {
-			uniqueProxyRefs[&core.ResourceRef{
+			dynamicProxyRefs[&core.ResourceRef{
 				Name: proxyName,
 				// We assume the Gateway and Proxy are in the same namespace, though settings.WriteNamespace is the true location
 				Namespace: gwNamespace,
@@ -243,8 +241,8 @@ func (s snapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, d
 			return deleteErr
 		}
 	}
-	for proxyRef := range uniqueProxyRefs {
-		if deleteErr := s.ProxyClient().Delete(proxyRef.GetName(), proxyRef.GetName(), deleteOptions); deleteErr != nil {
+	for proxyRef := range dynamicProxyRefs {
+		if deleteErr := s.ProxyClient().Delete(proxyRef.GetNamespace(), proxyRef.GetName(), deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
