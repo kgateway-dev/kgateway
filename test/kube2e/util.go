@@ -2,11 +2,12 @@ package kube2e
 
 import (
 	"context"
-	"github.com/solo-io/gloo/test/testutils"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/go-utils/stats"
