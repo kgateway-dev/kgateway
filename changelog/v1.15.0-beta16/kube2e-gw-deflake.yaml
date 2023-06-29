@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7795
+    resolvesIssue: false
+    description: >-
+      Delete Proxies when cleaning up the Snapshot between tests. This ensures that each tests starts
+      with a clean state.
