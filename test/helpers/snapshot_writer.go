@@ -3,6 +3,8 @@ package helpers
 import (
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/avast/retry-go"
@@ -122,10 +124,13 @@ func (s snapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 			return writeErr
 		}
 	}
-
-	// Proxies are intended to be an opaque resource to users
-	// As a result, we do not let our tests write Proxies directly.
-
+	for _, gw := range snapshot.Proxies {
+		// It is recommended to configure Gateway resources (GW, VS, RT, etc) instead of Proxy resources
+		ginkgo.GinkgoWriter.Printf("Proxies are intended to be an opaque resources to users and are not recommended to be written directly in tests")
+		if _, writeErr := s.ProxyClient().Write(gw, writeOptions); !s.isContinuableWriteError(writeErr) {
+			return writeErr
+		}
+	}
 	return nil
 }
 
