@@ -3,8 +3,9 @@ package translator_test
 import (
 	"context"
 	"encoding/json"
-	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"time"
+
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
 
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 

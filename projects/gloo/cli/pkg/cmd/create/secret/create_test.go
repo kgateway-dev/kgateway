@@ -3,8 +3,9 @@ package secret_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"log"
+
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

@@ -2,8 +2,9 @@ package add_test
 
 import (
 	"context"
-	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"log"
+
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
 
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"

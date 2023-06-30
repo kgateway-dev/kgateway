@@ -3,8 +3,9 @@ package translator_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"strings"
+
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
 
 	"github.com/solo-io/go-utils/contextutils"
 
