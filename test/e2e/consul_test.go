@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/test/e2e"
@@ -28,9 +30,7 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 )
 
-var _ = Describe("Consul e2e", Serial, func() {
-
-	// These tests use the Serial decorator because they rely on a hard-coded port for the Consul agent (8300)
+var _ = Describe("Consul e2e", decorators.Consul, func() {
 
 	Context("Consul Service Registry", func() {
 

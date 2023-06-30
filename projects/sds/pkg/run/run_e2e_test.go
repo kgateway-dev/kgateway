@@ -20,6 +20,8 @@ import (
 
 var _ = Describe("SDS Server E2E Test", Serial, func() {
 
+	// These tests use the Serial decorator because they rely on a hard-coded port for the SDS server (8236)
+
 	var (
 		ctx                                                             context.Context
 		cancel                                                          context.CancelFunc
