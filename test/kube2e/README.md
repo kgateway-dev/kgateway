@@ -29,7 +29,7 @@ The list of tests to run during CI and nightly builds is provided in `kube-e2e-t
 ### Setup (Previously Released Assets)
 It is possible to run these tests against a previously released version of Gloo Edge. This is useful for testing a release candidate, or a nightly build.
 
-There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests.
+There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
 
 ### Setup (Locally Build Assets)
 
