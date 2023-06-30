@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -84,7 +85,16 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if corsPlugin == nil {
 		return nil
 	}
-	// the cors plugin should only be used on routes that are of type envoyroute.Route_Route
+
+	// if the route has a direct response action, the cors filter will not apply headers to the response
+	// instead, configure ResponseHeadersToAdd on the direct response action
+	if _, ok := out.GetAction().(*envoy_config_route_v3.Route_DirectResponse); ok &&
+		!corsPlugin.GetDisableForRoute() {
+		out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), getCorsResponseHeadersFromPolicy(corsPlugin)...)
+		return nil
+	}
+
+	// the cors filter can only be used on routes that are of type envoyroute.Route_Route
 	if out.GetAction() != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
@@ -158,4 +168,76 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}
 
 	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(wellknown.CORS, &envoy_config_cors_v3.Cors{}, pluginStage)}, nil
+}
+
+// convert allowOrigin and allowOriginRegex options to a deduplicated slice of strings
+func convertAllowOriginToSlice(corsPolicy *cors.CorsPolicy) []string {
+	exists := struct{}{}
+	allowOriginSet := make(map[string]struct{})
+	for _, origin := range corsPolicy.GetAllowOrigin() {
+		allowOriginSet[origin] = exists
+	}
+	for _, originRegex := range corsPolicy.GetAllowOriginRegex() {
+		allowOriginSet[originRegex] = exists
+	}
+
+	// concatenate the allow origin set into a string
+	allowedOrigins := []string{}
+	for origin := range allowOriginSet {
+		allowedOrigins = append(allowedOrigins, origin)
+	}
+
+	return allowedOrigins
+}
+
+// get response headers to add from cors policy
+// this is only used when processing direct response actions, for which
+// the cors filter is disabled
+func getCorsResponseHeadersFromPolicy(corsPolicy *cors.CorsPolicy) []*envoy_config_core_v3.HeaderValueOption {
+	allowOriginString := strings.Join(convertAllowOriginToSlice(corsPolicy), ",")
+
+	return []*envoy_config_core_v3.HeaderValueOption{
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Origin",
+				Value: allowOriginString,
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Methods",
+				Value: strings.Join(corsPolicy.GetAllowMethods(), ","),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Headers",
+				Value: strings.Join(corsPolicy.GetAllowHeaders(), ","),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Expose-Headers",
+				Value: strings.Join(corsPolicy.GetExposeHeaders(), ","),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Max-Age",
+				Value: corsPolicy.GetMaxAge(),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Credentials",
+				Value: strconv.FormatBool(corsPolicy.GetAllowCredentials()),
+			},
+			KeepEmptyValue: false,
+		},
+	}
 }
