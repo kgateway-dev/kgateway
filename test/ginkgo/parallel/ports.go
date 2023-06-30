@@ -66,7 +66,7 @@ func portInUseDenylist(proposedPort uint32) error {
 
 // AdvancePortSafeListen returns a port that is safe to use in parallel tests
 // It relies on pinging the port to see if it is in use
-// This may be slow than using a denylist, but it is more robust
+// This may be slower than using a denylist, but it is more robust
 func AdvancePortSafeListen(p *uint32) uint32 {
 	return AdvancePortSafe(p, portInUseListen)
 }
