@@ -5,7 +5,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"golang.org/x/exp/maps"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -126,7 +125,11 @@ var _ = Describe("validation utils", func() {
 			ListenerType: &v1.Listener_AggregateListener{
 				AggregateListener: &v1.AggregateListener{
 					TcpListeners: []*v1.MatchedTcpListener{{
-						Matcher:     &v1.Matcher{},
+						Matcher: &v1.Matcher{
+							SourcePrefixRanges: []*v3.CidrRange{{
+								AddressPrefix: "tcp-0",
+							}},
+						},
 						TcpListener: nil,
 					}},
 					HttpResources: &v1.AggregateListener_HttpResources{},
@@ -273,12 +276,14 @@ var _ = Describe("validation utils", func() {
 				},
 			)
 
-			// aggregate listener reports are a map of tcp listener reports -
-			// one entry in the map for each listener; here, we extract the
-			// map, then obtain the first and only key for the single listener
-			// that we created
-			tcpListenerReportsMap := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_AggregateListenerReport).AggregateListenerReport.TcpListenerReports
-			tcpListenerReport := tcpListenerReportsMap[maps.Keys(tcpListenerReportsMap)[0]]
+			tcpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix: "tcp-0",
+					},
+				},
+			}
+			tcpListenerReport := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_AggregateListenerReport).AggregateListenerReport.TcpListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[0], tcpMatcher)]
 
 			// populate the errors - we should hit all cases in
 			// getTcpListenerReportErrs with the errors we create here
