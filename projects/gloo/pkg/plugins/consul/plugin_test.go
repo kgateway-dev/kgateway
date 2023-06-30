@@ -24,10 +24,9 @@ var _ = Describe("Resolve", func() {
 	)
 
 	BeforeEach(func() {
-		ctrl = gomock.NewController(T)
+		ctrl = gomock.NewController(GinkgoT())
 
 		consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
-
 	})
 
 	AfterEach(func() {

@@ -134,6 +134,9 @@ options:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'SKIP_TEMP_DISABLED=1' # https://github.com/solo-io/solo-projects/issues/4515
+  # Gloo supports running tests in parallel (https://github.com/solo-io/gloo/pull/8423) but occasionally
+  # Ginkgo reports a failure, even when all test suites pass. As a result, we do not run tests in parallel in CI.
+  - 'GINKGO_USER_FLAGS=-procs=1'
   volumes:
   - name: 'gopath'
     path: '/go'

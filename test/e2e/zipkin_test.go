@@ -42,7 +42,9 @@ const (
 	zipkinCollectionPath         = "/api/v2/spans"
 )
 
-var _ = Describe("Tracing config loading", func() {
+var _ = Describe("Tracing config loading", Serial, func() {
+
+	// These tests use the Serial decorator because they rely on a hard-coded port for the tracing collector (9411)
 
 	var (
 		ctx           context.Context

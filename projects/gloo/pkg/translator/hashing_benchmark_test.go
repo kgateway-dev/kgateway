@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
+
 	"github.com/solo-io/gloo/test/ginkgo/labels"
 
 	"github.com/onsi/gomega/gmeasure"
@@ -42,7 +44,7 @@ import (
 )
 
 // These tests are meant to demonstrate that FNV hashing is more efficient than hashstructure hashing
-var _ = Describe("Hashing Benchmarks", Serial, Label(labels.Performance), func() {
+var _ = Describe("Hashing Benchmarks", decorators.Performance, Label(labels.Performance), func() {
 	var allUpstreams v1.UpstreamList
 	BeforeEach(func() {
 		var upstreams []interface{}
