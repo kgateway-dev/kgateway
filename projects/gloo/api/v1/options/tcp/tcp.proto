@@ -33,6 +33,11 @@ message TcpProxySettings {
     // payloads over a shared HTTP tunnel. If this message is absent, the payload
     // will be proxied upstream as per usual.
     TunnelingConfig tunneling_config = 12;
+
+     // If set, Envoy will flush the access log on this time interval. Must be a
+    // minimum of 1 ms. By default, will only write to the access log when a
+    // connection is closed.
+    google.protobuf.Duration access_log_flush_interval = 15;
 }
 
 // Header name/value pair plus option to control append behavior.

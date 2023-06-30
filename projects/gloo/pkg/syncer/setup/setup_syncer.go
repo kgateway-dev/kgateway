@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,7 @@ import (
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap_clients "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
@@ -332,28 +334,58 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousProxyDebugServer.addr = proxyDebugAddr
 		s.previousProxyDebugServer.maxGrpcRecvSize = maxGrpcRecvSize
 	}
-	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
+	consulClient, err := bootstrap_clients.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}
 
-	var vaultClient *vaultapi.Client
-	if vaultSettings := settings.GetVaultSecretSource(); vaultSettings != nil {
-		vaultClient, err = bootstrap.VaultClientForSettings(vaultSettings)
-		if err != nil {
-			return err
+	getVaultInit := func(vaultSettings *v1.Settings_VaultSecrets) bootstrap_clients.VaultClientInitFunc {
+		return func() *vaultapi.Client {
+			c, err := bootstrap_clients.VaultClientForSettings(vaultSettings)
+			if err != nil {
+				// We log this error here, but we do not have a feasible way to raise
+				// it when this function is called in NewVaultSecretClientFactory.
+				// The error is handled after we create the factory in getFactoryForSource
+				// for the multi client, and NewSecretResourceClientFactory for the
+				// traditional single client.
+				contextutils.LoggerFrom(ctx).Error(err)
+			}
+			return c
 		}
+	}
+	vaultInitMap := make(map[int]bootstrap_clients.VaultClientInitFunc)
+	vaultSettings := settings.GetVaultSecretSource()
+	if vaultSettings != nil {
+		vaultInitMap[bootstrap_clients.SecretSourceAPIVaultClientInitIndex] = getVaultInit(vaultSettings)
+	}
+	if secretSources := settings.GetSecretOptions().GetSources(); secretSources != nil {
+		sourceList := bootstrap_clients.SourceList(secretSources)
+		sort.Stable(sourceList)
+		for i := range sourceList {
+			switch src := sourceList[i].GetSource().(type) {
+			case *v1.Settings_SecretOptions_Source_Vault:
+				vaultInitMap[i] = getVaultInit(src.Vault)
+			default:
+				// We are not concerned with source types that are not Vault since
+				// we are only getting the indices of Vault sources to accurately
+				// map the vault source to its API client setup func
+				continue
+			}
+		}
+		settings.GetSecretOptions().Sources = sourceList
 	}
 
 	var clientset kubernetes.Interface
 	opts, err := constructOpts(ctx,
-		&clientset,
-		kubeCache,
-		consulClient,
-		vaultClient,
-		memCache,
-		settings,
-		writeNamespace,
+		constructOptsParams{
+			clientset:          &clientset,
+			kubeCache:          kubeCache,
+			consulClient:       consulClient,
+			vaultClientInitMap: vaultInitMap,
+			memCache:           memCache,
+			settings:           settings,
+			writeNamespace:     writeNamespace,
+		},
 	)
 	if err != nil {
 		return err
@@ -380,7 +412,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	}
 	opts.Consul.DnsPollingInterval = settings.GetConsul().GetDnsPollingInterval()
 
-	// if vault service discovery specified, initialize consul watcher
+	// if consul service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
 		consulClientWrapper, err := consul.NewConsulWatcher(consulClient, consulServiceDiscovery.GetDataCenters(), settings.GetConsulDiscovery().GetServiceTagsAllowlist())
 		if err != nil {
@@ -541,6 +573,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if err := matchableHttpGatewayClient.Register(); err != nil {
 		return err
 	}
+
+	matchableTcpGatewayClient, err := gateway.NewMatchableTcpGatewayClient(watchOpts.Ctx, opts.MatchableTcpGateways)
+	if err != nil {
+		return err
+	}
+	if err := matchableTcpGatewayClient.Register(); err != nil {
+		return err
+	}
+
 	virtualHostOptionClient, err := gateway.NewVirtualHostOptionClient(watchOpts.Ctx, opts.VirtualHostOptions)
 	if err != nil {
 		return err
@@ -626,6 +667,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		virtualHostOptionClient,
 		routeOptionClient,
 		matchableHttpGatewayClient,
+		matchableTcpGatewayClient,
 		graphqlApiClient,
 		extensions.ApiEmitterChannel,
 	)
@@ -638,6 +680,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		authConfigClient.BaseClient(),
 		gatewayClient.BaseClient(),
 		matchableHttpGatewayClient.BaseClient(),
+		matchableTcpGatewayClient.BaseClient(),
 		virtualServiceClient.BaseClient(),
 		rtClient.BaseClient(),
 		virtualHostOptionClient.BaseClient(),
@@ -970,32 +1013,42 @@ func startRestXdsServer(opts bootstrap.Opts) {
 	}()
 }
 
-func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings, writeNamespace string) (bootstrap.Opts, error) {
+type constructOptsParams struct {
+	clientset          *kubernetes.Interface
+	kubeCache          kube.SharedCache
+	consulClient       *consulapi.Client
+	vaultClientInitMap map[int]bootstrap_clients.VaultClientInitFunc
+	memCache           memory.InMemoryResourceCache
+	settings           *v1.Settings
+	writeNamespace     string
+}
+
+func constructOpts(ctx context.Context, params constructOptsParams) (bootstrap.Opts, error) {
 
 	var (
 		cfg           *rest.Config
 		kubeCoreCache corecache.KubeCoreCache
 	)
 
-	params := bootstrap.NewConfigFactoryParams(
-		settings,
-		memCache,
-		kubeCache,
+	factoryParams := bootstrap_clients.NewConfigFactoryParams(
+		params.settings,
+		params.memCache,
+		params.kubeCache,
 		&cfg,
-		consulClient,
+		params.consulClient,
 	)
 
-	upstreamFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamCrd)
+	upstreamFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, v1.UpstreamCrd)
 	if err != nil {
 		return bootstrap.Opts{}, errors.Wrapf(err, "creating config source from settings")
 	}
 
-	kubeServiceClient, err := bootstrap.KubeServiceClientForSettings(
+	kubeServiceClient, err := bootstrap_clients.KubeServiceClientForSettings(
 		ctx,
-		settings,
-		memCache,
+		params.settings,
+		params.memCache,
 		&cfg,
-		clientset,
+		params.clientset,
 		&kubeCoreCache,
 	)
 	if err != nil {
@@ -1006,10 +1059,10 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	// Delete proxies that may have been left from prior to an upgrade or from previously having set persistProxySpec
 	// Ignore errors because gloo will still work with stray proxies.
 	proxyCleanup := func() {
-		doProxyCleanup(ctx, params, settings, writeNamespace)
+		doProxyCleanup(ctx, factoryParams, params.settings, params.writeNamespace)
 	}
-	if settings.GetGateway().GetPersistProxySpec().GetValue() {
-		proxyFactory, err = bootstrap.ConfigFactoryForSettings(params, v1.ProxyCrd)
+	if params.settings.GetGateway().GetPersistProxySpec().GetValue() {
+		proxyFactory, err = bootstrap_clients.ConfigFactoryForSettings(factoryParams, v1.ProxyCrd)
 		if err != nil {
 			return bootstrap.Opts{}, err
 		}
@@ -1019,85 +1072,92 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		}
 	}
 
-	secretFactory, err := bootstrap.SecretFactoryForSettings(
-		ctx,
-		settings,
-		memCache,
-		&cfg,
-		clientset,
-		&kubeCoreCache,
-		vaultClient,
-		v1.SecretCrd.Plural,
+	secretFactory, err := bootstrap_clients.SecretFactoryForSettings(ctx,
+		bootstrap_clients.SecretFactoryParams{
+			Settings:           params.settings,
+			SharedCache:        params.memCache,
+			Cfg:                &cfg,
+			Clientset:          params.clientset,
+			KubeCoreCache:      &kubeCoreCache,
+			VaultClientInitMap: params.vaultClientInitMap,
+			PluralName:         v1.SecretCrd.Plural,
+		},
 	)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	upstreamGroupFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.UpstreamGroupCrd)
+	upstreamGroupFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, v1.UpstreamGroupCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	artifactFactory, err := bootstrap.ArtifactFactoryForSettings(
+	artifactFactory, err := bootstrap_clients.ArtifactFactoryForSettings(
 		ctx,
-		settings,
-		memCache,
+		params.settings,
+		params.memCache,
 		&cfg,
-		clientset,
+		params.clientset,
 		&kubeCoreCache,
-		consulClient,
+		params.consulClient,
 		v1.ArtifactCrd.Plural,
 	)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	authConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, extauth.AuthConfigCrd)
+	authConfigFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, extauth.AuthConfigCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	rateLimitConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, rlv1alpha1.RateLimitConfigCrd)
+	rateLimitConfigFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, rlv1alpha1.RateLimitConfigCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	graphqlApiFactory, err := bootstrap.ConfigFactoryForSettings(params, v1beta1.GraphQLApiCrd)
+	graphqlApiFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, v1beta1.GraphQLApiCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	virtualServiceFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualServiceCrd)
+	virtualServiceFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.VirtualServiceCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	routeTableFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteTableCrd)
+	routeTableFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.RouteTableCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	virtualHostOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.VirtualHostOptionCrd)
+	virtualHostOptionFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.VirtualHostOptionCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	routeOptionFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.RouteOptionCrd)
+	routeOptionFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.RouteOptionCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.GatewayCrd)
+	gatewayFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.GatewayCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
 
-	matchableHttpGatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, gateway.MatchableHttpGatewayCrd)
+	matchableHttpGatewayFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.MatchableHttpGatewayCrd)
 	if err != nil {
 		return bootstrap.Opts{}, err
 	}
+
+	matchableTcpGatewayFactory, err := bootstrap_clients.ConfigFactoryForSettings(factoryParams, gateway.MatchableTcpGatewayCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	var validation *gwtranslator.ValidationOpts
-	validationCfg := settings.GetGateway().GetValidation()
+	validationCfg := params.settings.GetGateway().GetValidation()
 
 	validationServerEnabled := validationCfg != nil // default to true if validation top level field is set
 	if validationCfg.GetServerEnabled() != nil {
@@ -1106,8 +1166,8 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 	}
 
 	var gatewayMode bool
-	if settings.GetGateway().GetEnableGatewayController() != nil {
-		gatewayMode = settings.GetGateway().GetEnableGatewayController().GetValue()
+	if params.settings.GetGateway().GetEnableGatewayController() != nil {
+		gatewayMode = params.settings.GetGateway().GetEnableGatewayController().GetValue()
 	} else {
 		gatewayMode = true
 	}
@@ -1152,10 +1212,10 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 				"Ensure the v1.Settings %v contains the spec.gateway.validation config."+
 				"If you have removed the webhook configuration from K8s since installing and want to disable validation, "+
 				"set the environment variable VALIDATION_MUST_START=false",
-				settings.GetMetadata().Ref())
+				params.settings.GetMetadata().Ref())
 		}
 	}
-	readGatewaysFromAllNamespaces := settings.GetGateway().GetReadGatewaysFromAllNamespaces()
+	readGatewaysFromAllNamespaces := params.settings.GetGateway().GetReadGatewaysFromAllNamespaces()
 
 	return bootstrap.Opts{
 		Upstreams:                    upstreamFactory,
@@ -1173,6 +1233,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		RouteOptions:                 routeOptionFactory,
 		Gateways:                     gatewayFactory,
 		MatchableHttpGateways:        matchableHttpGatewayFactory,
+		MatchableTcpGateways:         matchableTcpGatewayFactory,
 		KubeCoreCache:                kubeCoreCache,
 		ValidationOpts:               validation,
 		ReadGatwaysFromAllNamespaces: readGatewaysFromAllNamespaces,

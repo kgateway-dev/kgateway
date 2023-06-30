@@ -231,19 +231,30 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 			// Our current TcpFilterChainPlugins have a 1-many relationship,
 			// meaning that a single TcpListener produces many FilterChains
 			filterChainTranslator = &tcpFilterChainTranslator{
-				plugins:            l.pluginRegistry.GetTcpFilterChainPlugins(),
-				parentListener:     listener,
-				listener:           listenerType.TcpListener,
-				report:             hybridListenerReport.GetMatchedListenerReports()[utils.MatchedRouteConfigName(listener, matcher)].GetTcpListenerReport(),
-				sourcePrefixRanges: matcher.GetSourcePrefixRanges(), // HybridGateway only feature
+				plugins:                 l.pluginRegistry.GetTcpFilterChainPlugins(),
+				parentListener:          listener,
+				listener:                listenerType.TcpListener,
+				report:                  hybridListenerReport.GetMatchedListenerReports()[utils.MatchedRouteConfigName(listener, matcher)].GetTcpListenerReport(),
+				defaultSslConfig:        matcher.GetSslConfig(),          // HybridGateway only feature
+				sourcePrefixRanges:      matcher.GetSourcePrefixRanges(), // HybridGateway only feature
+				passthroughCipherSuites: matcher.GetPassthroughCipherSuites(),
 			}
 
 			// A TcpListener does not produce any RouteConfiguration
 			routeConfigurationTranslator = &emptyRouteConfigurationTranslator{}
 		}
 
-		filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
-		routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+		// This should never happen unless the listener type is unknown or not fully supported
+		if filterChainTranslator != nil {
+			filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
+		}
+		if routeConfigurationTranslator != nil {
+			routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+		}
+		if routeConfigurationTranslator == nil && filterChainTranslator == nil {
+			contextutils.LoggerFrom(ctx).Warnf("listener (%v) had a matched listener with an unknown type (%T) ", listener.GetName(), matchedListener.GetListenerType())
+		}
+
 	}
 
 	listenerTranslator := &listenerTranslatorInstance{
@@ -266,15 +277,18 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 	ListenerTranslator,
 	RouteConfigurationTranslator,
 ) {
+	// 1. Check that our report type is correct
 	aggregateListenerReport := listenerReport.GetAggregateListenerReport()
 	if aggregateListenerReport == nil {
 		contextutils.LoggerFrom(ctx).DPanic("internal error: listener report was not aggregate type")
 		return nil, nil
 	}
 
+	// 2. Setup shared resources that we will create final output with
 	var routeConfigurationTranslators []RouteConfigurationTranslator
 	var filterChainTranslators []FilterChainTranslator
 
+	// 3. Process all the http related resources
 	httpResources := listener.GetAggregateListener().GetHttpResources()
 
 	for _, httpFilterChain := range listener.GetAggregateListener().GetHttpFilterChains() {
@@ -337,6 +351,39 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 
 		filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
 		routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+	}
+
+	// 4. Process tcp related resources (if any) in the same way that Hybrid already supports
+	for _, tcpListeners := range listener.GetAggregateListener().GetTcpListeners() {
+		var (
+			routeConfigurationTranslator RouteConfigurationTranslator
+			filterChainTranslator        FilterChainTranslator
+		)
+		tcpL := tcpListeners.GetTcpListener() // convert back from matchable
+		if tcpL == nil {
+			contextutils.LoggerFrom(ctx).DPanic("internal error: listener on aggregate was not tcp type depsite being loaded to that slice")
+			continue
+		}
+		matcher := tcpListeners.GetMatcher()
+		// This translator produces FilterChains
+		// Our current TcpFilterChainPlugins have a 1-many relationship,
+		// meaning that a single TcpListener produces many FilterChains
+		filterChainTranslator = &tcpFilterChainTranslator{
+			plugins:                 l.pluginRegistry.GetTcpFilterChainPlugins(),
+			parentListener:          listener,
+			listener:                tcpL,
+			report:                  aggregateListenerReport.GetTcpListenerReports()[utils.MatchedRouteConfigName(listener, matcher)],
+			defaultSslConfig:        matcher.GetSslConfig(),
+			sourcePrefixRanges:      matcher.GetSourcePrefixRanges(),
+			passthroughCipherSuites: matcher.GetPassthroughCipherSuites(),
+		}
+
+		// A TcpListener does not produce any RouteConfiguration
+		routeConfigurationTranslator = &emptyRouteConfigurationTranslator{}
+
+		filterChainTranslators = append(filterChainTranslators, filterChainTranslator)
+		routeConfigurationTranslators = append(routeConfigurationTranslators, routeConfigurationTranslator)
+
 	}
 
 	listenerTranslator := &listenerTranslatorInstance{

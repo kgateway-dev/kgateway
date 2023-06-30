@@ -19,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	skMatchers "github.com/solo-io/solo-kit/test/matchers"
 )
 
 var _ = Describe("Plugin", func() {
@@ -109,6 +110,174 @@ var _ = Describe("Plugin", func() {
 			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
 
 		})
+
+		Context("LogRequestResponseInfo", func() {
+
+			var (
+				inputTransformationStages *transformation.TransformationStages
+				expectedOutput            *envoytransformation.RouteTransformations
+			)
+
+			type transformationPlugin interface {
+				plugins.Plugin
+				ConvertTransformation(
+					ctx context.Context,
+					t *transformation.Transformations,
+					stagedTransformations *transformation.TransformationStages,
+				) (*envoytransformation.RouteTransformations, error)
+			}
+
+			BeforeEach(func() {
+				inputTransformationStages = &transformation.TransformationStages{
+					Regular: &transformation.RequestResponseTransformations{
+						RequestTransforms: []*transformation.RequestMatch{{
+							RequestTransformation: &transformation.Transformation{
+								TransformationType: &transformation.Transformation_HeaderBodyTransform{
+									HeaderBodyTransform: &envoytransformation.HeaderBodyTransform{},
+								},
+							},
+						}},
+					},
+				}
+
+				expectedOutput = &envoytransformation.RouteTransformations{
+					Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{{
+						Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+								RequestTransformation: &envoytransformation.Transformation{
+									TransformationType: &envoytransformation.Transformation_HeaderBodyTransform{
+										HeaderBodyTransform: &envoytransformation.HeaderBodyTransform{},
+									},
+								},
+							},
+						},
+					}},
+				}
+			})
+
+			It("can set log_request_response_info on transformation-stages level", func() {
+				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("does not set log_request_response_info if transformation-stages-level setting is false", func() {
+				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: false}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+
+			})
+
+			It("can set log_request_response_info on transformation level", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.LogRequestResponseInfo = true
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("does not set log_request_response_info if transformation-level setting is false", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.LogRequestResponseInfo = false
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can override transformation-level log_request_response_info with transformation-stages level", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.LogRequestResponseInfo = false
+				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can enable settings-object-level setting", func() {
+				// override plugin created in BeforeEach
+				p = NewPlugin()
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+
+				stagedHttpFilters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, &v1.HttpListener{})
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(stagedHttpFilters).To(HaveLen(1))
+				Expect(stagedHttpFilters[0].HttpFilter.Name).To(Equal("io.solo.transformation"))
+				// pretty print the typed config of the filter
+				typedConfig := stagedHttpFilters[0].HttpFilter.GetTypedConfig()
+				expectedFilter := plugins.MustNewStagedFilter(
+					FilterName,
+					&envoytransformation.FilterTransformations{
+						LogRequestResponseInfo: true,
+					},
+					plugins.AfterStage(plugins.AuthZStage),
+				)
+
+				Expect(typedConfig).To(skMatchers.MatchProto(expectedFilter.HttpFilter.GetTypedConfig()))
+
+				expectedOutput.Transformations[0].Match.(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.RequestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can override settings-object-level setting with transformation-stages level", func() {
+				// override plugin created in BeforeEach
+				p = NewPlugin()
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+
+				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: false}
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+		})
+
 	})
 
 	Context("deprecated transformations", func() {

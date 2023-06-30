@@ -381,6 +381,29 @@ func (m *MatchedListener) Clone() proto.Message {
 }
 
 // Clone function
+func (m *MatchedTcpListener) Clone() proto.Message {
+	var target *MatchedTcpListener
+	if m == nil {
+		return target
+	}
+	target = &MatchedTcpListener{}
+
+	if h, ok := interface{}(m.GetMatcher()).(clone.Cloner); ok {
+		target.Matcher = h.Clone().(*Matcher)
+	} else {
+		target.Matcher = proto.Clone(m.GetMatcher()).(*Matcher)
+	}
+
+	if h, ok := interface{}(m.GetTcpListener()).(clone.Cloner); ok {
+		target.TcpListener = h.Clone().(*TcpListener)
+	} else {
+		target.TcpListener = proto.Clone(m.GetTcpListener()).(*TcpListener)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *Matcher) Clone() proto.Message {
 	var target *Matcher
 	if m == nil {
@@ -403,6 +426,15 @@ func (m *Matcher) Clone() proto.Message {
 			} else {
 				target.SourcePrefixRanges[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.CidrRange)
 			}
+
+		}
+	}
+
+	if m.GetPassthroughCipherSuites() != nil {
+		target.PassthroughCipherSuites = make([]string, len(m.GetPassthroughCipherSuites()))
+		for idx, v := range m.GetPassthroughCipherSuites() {
+
+			target.PassthroughCipherSuites[idx] = v
 
 		}
 	}
@@ -432,6 +464,19 @@ func (m *AggregateListener) Clone() proto.Message {
 				target.HttpFilterChains[idx] = h.Clone().(*AggregateListener_HttpFilterChain)
 			} else {
 				target.HttpFilterChains[idx] = proto.Clone(v).(*AggregateListener_HttpFilterChain)
+			}
+
+		}
+	}
+
+	if m.GetTcpListeners() != nil {
+		target.TcpListeners = make([]*MatchedTcpListener, len(m.GetTcpListeners()))
+		for idx, v := range m.GetTcpListeners() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.TcpListeners[idx] = h.Clone().(*MatchedTcpListener)
+			} else {
+				target.TcpListeners[idx] = proto.Clone(v).(*MatchedTcpListener)
 			}
 
 		}

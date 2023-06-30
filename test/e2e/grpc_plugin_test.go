@@ -5,8 +5,11 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/e2e"
 
@@ -39,19 +42,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
 	)
 
 	BeforeEach(func() {
-
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -63,7 +61,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
-					// https://github.com/solo-io/gloo/issues/7577
+					// https://github.com/solo-io/gloo/issues/8374
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 				Discovery: &gloov1.Settings_DiscoveryOptions{
@@ -72,7 +70,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+		err := helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to create the default gateways")
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
@@ -94,12 +92,12 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(b)
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), "application/json", &buf)
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), "application/json", &buf)
 			if err != nil {
 				return "", err
 			}
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			return string(body), err
 		}
 	}
@@ -133,7 +131,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 				return "", err
 			}
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			return string(body), err
 		}
 
@@ -185,7 +183,7 @@ func getGrpcVs(writeNamespace string, usRef *core.ResourceRef) *gatewayv1.Virtua
 func populateDeprecatedApi(res resources.Resource) resources.Resource {
 	tu := res.(*gloov1.Upstream)
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	bytes, err := os.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 	singleEncoded := []byte(base64.StdEncoding.EncodeToString(bytes))
 	grpcServices := []*grpc.ServiceSpec_GrpcService{

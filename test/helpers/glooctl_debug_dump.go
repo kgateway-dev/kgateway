@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -19,7 +18,7 @@ func RegisterGlooDebugLogPrintHandler() {
 }
 
 func PrintGlooDebugLogs() {
-	logs, _ := ioutil.ReadFile(cliutil.GetLogsPath())
+	logs, _ := os.ReadFile(cliutil.GetLogsPath())
 	fmt.Println("*** Gloo debug logs ***")
 	fmt.Println(string(logs))
 	fmt.Println("*** End Gloo debug logs ***")

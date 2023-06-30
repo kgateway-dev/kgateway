@@ -11,11 +11,11 @@ import (
 	"os"
 	"time"
 
-	errors "github.com/rotisserie/eris"
-
 	"github.com/solo-io/gloo/test/testutils"
 
-	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/services/envoy"
+
+	errors "github.com/rotisserie/eris"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -61,7 +61,7 @@ var _ = Describe("AWS Lambda", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		secret        *gloov1.Secret
 		upstream      *gloov1.Upstream
 		httpClient    *http.Client
@@ -69,6 +69,7 @@ var _ = Describe("AWS Lambda", func() {
 	)
 
 	BeforeEach(func() {
+		testutils.ValidateRequirementsAndNotifyGinkgo(testutils.AwsCredentials())
 		httpClient = http.DefaultClient
 		httpClient.Timeout = 10 * time.Second
 		runOptions = &services.RunOptions{
@@ -77,23 +78,19 @@ var _ = Describe("AWS Lambda", func() {
 			WhatToRun: services.What{
 				DisableFds: false,
 			},
-			KubeClient: kube2e.MustKubeClient(),
 		}
 	})
 
 	setupEnvoy := func(justGloo bool) {
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
+
+		envoyInstance = envoyFactory.NewInstance()
 
 		runOptions.WhatToRun.DisableGateway = justGloo
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
 
 		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 	}
 
 	type lambdaValidationParams struct {
@@ -240,7 +237,7 @@ var _ = Describe("AWS Lambda", func() {
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
 				BindAddress: "::",
-				BindPort:    defaults.HttpPort,
+				BindPort:    envoyInstance.HttpPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
 						VirtualHosts: []*gloov1.VirtualHost{{
@@ -288,33 +285,33 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testProxy := func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(envoy.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, false, false, "uppercase")
-		validateLambdaUppercase(defaults.HttpPort)
+		validateLambdaUppercase(envoyInstance.HttpPort)
 	}
 
 	testProxyWithResponseTransform := func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(envoy.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, false, true, "contact-form")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          defaults.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`},
 		})
 	}
 
 	testProxyWithRequestTransform := func() {
-		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, true, false, "dumpContext")
 		validateLambda(lambdaValidationParams{
 			offset:    1,
-			envoyPort: defaults.HttpPort,
+			envoyPort: envoyInstance.HttpPort,
 			expectedSubstrings: []string{`\"body\": \"\\\"solo.io\\\"\", \"headers\": `,
 				`\"queryString\": \"param_a=value_1&param_b=value_b\"`,
 				`\"path\": \"/1\"`,
@@ -323,7 +320,7 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testProxyWithUnwrapAsApiGateway := func() {
-		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(true, false, false, "echo")
@@ -331,7 +328,7 @@ var _ = Describe("AWS Lambda", func() {
 		// need querystring, multivaluequerystring
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          defaults.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			requestBody:        `{"headers":{"Content-Type":"application/test"}, "body":"solo.io", "multiValueHeaders":{"x-header":["value-1", "value-2"]}, "statusCode":201, "queryStringParameters":{"param_a":"value_2", "param_b":"value_b"}, "multiValueQueryStringParameters":{"param_a":["value_1", "value_2"]}}`,
 			expectedSubstrings: []string{"solo.io"},
 			expectedHeaders:    http.Header{"Content-Type": {"application/test"}, "X-Header": {"value-1,value-2"}},
@@ -340,25 +337,25 @@ var _ = Describe("AWS Lambda", func() {
 	}
 
 	testProxyWithRequestAndResponseTransforms := func() {
-		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, true, true, "dumpContext")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          defaults.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`"\"solo.io\""`},
 		})
 	}
 
 	testProxyWithCrossAccountLambda := func() {
-		err := envoyInstance.RunWithRole(services.DefaultProxyName, testClients.GlooPort)
+		err := envoyInstance.RunWithRole(envoy.DefaultProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		createProxy(false, false, false, "resource-based-cross-account-hello")
 		validateLambda(lambdaValidationParams{
 			offset:             1,
-			envoyPort:          defaults.HttpPort,
+			envoyPort:          envoyInstance.HttpPort,
 			expectedSubstrings: []string{`"\"Hello from Lambda!\""`},
 		})
 	}
@@ -401,7 +398,7 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.VirtualServiceClient.Write(vs, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		validateLambdaUppercase(defaults.HttpPort)
+		validateLambdaUppercase(envoyInstance.HttpPort)
 	}
 
 	testLambdaTransformations := func() {
@@ -489,7 +486,7 @@ var _ = Describe("AWS Lambda", func() {
 		var body []byte
 		path := "transforms-req-test"
 		waitForLambdaAndGetBody := func() error {
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", defaults.HttpPort, path), bytes.NewBufferString(`"test"`))
+			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", envoyInstance.HttpPort, path), bytes.NewBufferString(`"test"`))
 			Expect(err).NotTo(HaveOccurred())
 			req.Header.Set("Content-Type", "application/octet-stream")
 			req.Host = "test"
@@ -526,12 +523,6 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(string(body)).To(Equal(`"test"`))
 
 	}
-
-	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.Kubernetes("Uses a Kubernetes client"),
-		)
-	})
 
 	AfterEach(func() {
 		envoyInstance.Clean()
@@ -712,7 +703,7 @@ var _ = Describe("AWS Lambda", func() {
 			os.Setenv(webIdentityTokenFile, tmpFile.Name())
 			os.Setenv(awsRoleArn, roleArn)
 
-			envoyInstance.DockerOptions = services.DockerOptions{
+			envoyInstance.DockerOptions = envoy.DockerOptions{
 				Volumes: []string{fmt.Sprintf("%s:%s", tmpFile.Name(), tmpFile.Name())},
 				Env:     []string{webIdentityTokenFile, awsRoleArn},
 			}
@@ -754,8 +745,9 @@ var _ = Describe("AWS Lambda", func() {
 
 		setupEnvoySts := func(justGloo bool) {
 			ctx, cancel = context.WithCancel(context.Background())
-			defaults.HttpPort = services.NextBindPort()
-			defaults.HttpsPort = services.NextBindPort()
+
+			envoyInstance = envoyFactory.NewInstance()
+
 			ns := defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: ns,
@@ -763,7 +755,6 @@ var _ = Describe("AWS Lambda", func() {
 				WhatToRun: services.What{
 					DisableGateway: justGloo,
 				},
-				KubeClient: kube2e.MustKubeClient(),
 				Settings: &gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
 						AwsOptions: &gloov1.GlooOptions_AWSOptions{
@@ -781,10 +772,12 @@ var _ = Describe("AWS Lambda", func() {
 
 			err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-
-			envoyInstance, err = envoyFactory.NewEnvoyInstance()
-			Expect(err).NotTo(HaveOccurred())
 		}
+
+		BeforeEach(func() {
+			testutils.ValidateRequirementsAndNotifyGinkgo(testutils.DefinedEnv(jwtPrivateKey))
+		})
+
 		AfterEach(func() {
 			if tmpFile != nil {
 				os.Remove(tmpFile.Name())

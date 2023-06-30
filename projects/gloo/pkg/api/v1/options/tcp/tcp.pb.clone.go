@@ -55,6 +55,12 @@ func (m *TcpProxySettings) Clone() proto.Message {
 		target.TunnelingConfig = proto.Clone(m.GetTunnelingConfig()).(*TcpProxySettings_TunnelingConfig)
 	}
 
+	if h, ok := interface{}(m.GetAccessLogFlushInterval()).(clone.Cloner); ok {
+		target.AccessLogFlushInterval = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.AccessLogFlushInterval = proto.Clone(m.GetAccessLogFlushInterval()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
 	return target
 }
 

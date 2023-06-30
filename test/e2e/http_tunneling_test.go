@@ -17,6 +17,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/solo-io/gloo/test/services/envoy"
+
 	"github.com/solo-io/gloo/test/testutils"
 
 	testmatchers "github.com/solo-io/gloo/test/gomega/matchers"
@@ -34,8 +36,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -49,7 +49,7 @@ var _ = Describe("tunneling", func() {
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
+		envoyInstance  *envoy.Instance
 		up             *gloov1.Upstream
 		tuPort         uint32
 		vs             *gatewayv1.VirtualService
@@ -81,7 +81,8 @@ var _ = Describe("tunneling", func() {
 		tlsHttpConnect = false
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
+
+		envoyInstance = envoyFactory.NewInstance()
 
 		// run gloo
 		ro := &services.RunOptions{
@@ -102,8 +103,6 @@ var _ = Describe("tunneling", func() {
 		}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 
 		// run envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -150,7 +149,7 @@ var _ = Describe("tunneling", func() {
 			var json = []byte(requestJsonBody)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), bytes.NewBuffer(json))
+			req, err := http.NewRequestWithContext(ctx, "POST", fmt.Sprintf("http://%s:%d/test", "localhost", envoyInstance.HttpPort), bytes.NewBuffer(json))
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(http.DefaultClient.Do(req)).Should(testmatchers.HaveHttpResponse(&testmatchers.HttpResponse{
 				StatusCode: expectedResponseStatusCode,

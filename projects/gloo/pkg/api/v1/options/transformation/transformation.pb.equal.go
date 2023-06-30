@@ -289,6 +289,16 @@ func (m *TransformationStages) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetLogRequestResponseInfo()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogRequestResponseInfo()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogRequestResponseInfo(), target.GetLogRequestResponseInfo()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -310,6 +320,10 @@ func (m *Transformation) Equal(that interface{}) bool {
 	if target == nil {
 		return m == nil
 	} else if m == nil {
+		return false
+	}
+
+	if m.GetLogRequestResponseInfo() != target.GetLogRequestResponseInfo() {
 		return false
 	}
 

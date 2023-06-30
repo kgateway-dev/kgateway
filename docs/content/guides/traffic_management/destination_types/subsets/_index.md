@@ -29,7 +29,7 @@ subsetSpec:
 
 means that the pods for the upstream will be divided into subsets based both on the values of the `color` and `size` 
 labels, and on the value of the `size` label alone. Envoy requires this information to limit the combinations of subsets 
-that it needs to compute. The [Envoy documentation](https://github.com/envoyproxy/envoy/blob/master/source/docs/subset_load_balancer.md) 
+that it needs to compute. The [Envoy documentation](https://github.com/envoyproxy/envoy/blob/main/source/docs/subset_load_balancer.md) 
 contains a great explanation of how on subset load balancing works and we strongly recommend that you read it if you plan to use this feature.
 
 **Second**, you need to add a {{< protobuf name="gloo.solo.io.Subset">}}

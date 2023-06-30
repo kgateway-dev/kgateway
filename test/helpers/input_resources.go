@@ -53,8 +53,11 @@ func EventuallyResourceStatusMatchesState(offset int, getter InputResourceGetter
 		}
 
 		status := statusClient.GetStatus(resource)
-		if status == nil {
-			return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-nil", resource.GetMetadata().GetName())
+
+		// In newer versions of Gloo Edge we provide a default "empty" status, which allows us to patch it to perform updates
+		// As a result, a nil check isn't enough to determine that that status hasn't been reported
+		if status == nil || status.GetReportedBy() == "" {
+			return core.Status{}, errors.Wrapf(err, "waiting for %v status to be non-empty", resource.GetMetadata().GetName())
 		}
 
 		return *status, nil

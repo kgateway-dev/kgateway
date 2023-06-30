@@ -22,7 +22,7 @@ Gloo Edge Open-Source runs in 3 different modes to enable different use cases:
       <a href="{{% versioned_link_path fromRoot="/installation/knative/" %}}"><img src='{{% versioned_link_path fromRoot="/img/knative.png" %}}' width="60"/></a>
     </td>
     <td>
-     Run Gloo Edge in <code>knative</code> mode to serve as the Gateway/Ingress for Knative, configured automatically by <a href="https://github.com/knative/serving">Knative Serving</a> to route to <a href="https://github.com/knative/serving/blob/master/docs/spec/spec.md">Knative Services</a>.
+     Run Gloo Edge in <code>knative</code> mode to serve as the Gateway/Ingress for Knative, configured automatically by <a href="https://github.com/knative/serving">Knative Serving</a> to route to <a href="https://github.com/knative/serving/blob/main/docs/spec/spec.md">Knative Services</a>.
     </td>
   </tr>
   <tr height="100">

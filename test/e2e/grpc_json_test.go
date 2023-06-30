@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -38,18 +40,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		tu            *v1helpers.TestUpstream
 	)
 	format.MaxLength = 0
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
 
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
+		envoyInstance = envoyFactory.NewInstance()
 
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -61,14 +59,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 			},
 			Settings: &gloov1.Settings{
 				Gloo: &gloov1.GlooOptions{
-					// https://github.com/solo-io/gloo/issues/7577
+					// https://github.com/solo-io/gloo/issues/8374
 					RemoveUnusedFilters: &wrappers.BoolValue{Value: false},
 				},
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
@@ -126,7 +124,7 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 		It("with protodescriptor from configmap", func() {
 			// create an artifact containing the proto descriptor data
 			pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-			bytes, err := ioutil.ReadFile(pathToDescriptors)
+			bytes, err := os.ReadFile(pathToDescriptors)
 			Expect(err).ToNot(HaveOccurred())
 			encoded := base64.StdEncoding.EncodeToString(bytes)
 			artifact := &gloov1.Artifact{
@@ -224,7 +222,7 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	bytes, err := os.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 
 	return &gatewayv1.Gateway{
@@ -253,7 +251,7 @@ func addGrpcJsonToUpstream(res resources.Resource) resources.Resource {
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
 	tu := res.(*gloov1.Upstream)
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	bytes, err := os.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
 	t := tu.GetUpstreamType().(*gloov1.Upstream_Static)
 	t.SetServiceSpec(&options.ServiceSpec{

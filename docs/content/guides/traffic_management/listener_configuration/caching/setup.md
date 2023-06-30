@@ -51,7 +51,7 @@ Create a caching server during Gloo Edge Enterprise installation time, and speci
 
 should be able to configure general settings for the server in the future, like the default caching time
 
-https://docs.solo.io/gloo-edge/master/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto.sk/#settings
+https://docs.solo.io/gloo-edge/main/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto.sk/#settings
 -->
 
 ## Configure caching for a listener

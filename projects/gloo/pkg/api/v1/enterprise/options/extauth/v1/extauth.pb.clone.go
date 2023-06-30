@@ -824,6 +824,21 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.EndSessionProperties = proto.Clone(m.GetEndSessionProperties()).(*EndSessionProperties)
 	}
 
+	if m.GetDynamicMetadataFromClaims() != nil {
+		target.DynamicMetadataFromClaims = make(map[string]string, len(m.GetDynamicMetadataFromClaims()))
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+
+			target.DynamicMetadataFromClaims[k] = v
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -890,6 +905,12 @@ func (m *PlainOAuth2) Clone() proto.Message {
 
 	target.RevocationEndpoint = m.GetRevocationEndpoint()
 
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -954,6 +975,12 @@ func (m *IntrospectionValidation) Clone() proto.Message {
 
 	target.UserIdAttributeName = m.GetUserIdAttributeName()
 
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -971,6 +998,15 @@ func (m *AccessTokenValidation) Clone() proto.Message {
 		target.CacheTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
 		target.CacheTimeout = proto.Clone(m.GetCacheTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if m.GetDynamicMetadataFromClaims() != nil {
+		target.DynamicMetadataFromClaims = make(map[string]string, len(m.GetDynamicMetadataFromClaims()))
+		for k, v := range m.GetDynamicMetadataFromClaims() {
+
+			target.DynamicMetadataFromClaims[k] = v
+
+		}
 	}
 
 	switch m.ValidationType.(type) {

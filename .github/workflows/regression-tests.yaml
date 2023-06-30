@@ -1,9 +1,5 @@
 name: CI
-on:
-  push:
-    branches:
-      - 'master'
-  pull_request:
+on: pull_request
 
 env:
   VERSION: '1.0.0-ci'
@@ -14,91 +10,53 @@ jobs:
     name: Prepare Environment
     runs-on: ubuntu-22.04
     outputs:
-      should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
-      should-pass-regression-tests: ${{ steps.regression-tests.outputs.pass_value }}
+      should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.11.0
       with:
         access_token: ${{ github.token }}
-    - id: is-draft-pr
-      name: Process draft Pull Requests
-      if: ${{ github.event.pull_request.draft }}
-      run: echo "value=true" >> $GITHUB_OUTPUT
-    - id: signal-ci-comment
-      name: Process comments on Pull Request to signal CI
-      if:  ${{ github.event.issue.pull_request }}
-      run: echo "value=${{ contains(github.event.comment.body, '/sig-ci') }}" >> $GITHUB_OUTPUT
-    - id: skip-ci-comment
-      name: Process comments on Pull Request to skip CI
-      if: ${{ github.event.issue.pull_request }}
-      run: echo "value=${{ contains(github.event.comment.body, '/skip-ci') }}" >> $GITHUB_OUTPUT
-    - id: regression-tests
-      name: Determine how to run regression tests
+    - id: checkout-code
+      uses: actions/checkout@v3
+      with:
+        # We require gathering the branch and tag history since we rely on a `git diff`
+        # which compares the state of two branches
+        fetch-depth: 0
+    - id: process-skip-directives
+      uses: ./.github/workflows/composite-actions/process-skip-directives
+      with:
+        base-ref: ${{ github.base_ref }}
+    - id: run-strategy
+      name: Determine Test Run Strategy
       run: |
-        should_run=true
-
-        is_draft_pr=${{ steps.is-draft-pr.outputs.value }}
-        if [[ ! -z $is_draft_pr && $is_draft_pr = true ]] ; then
-          should_run=false
+        skip_kube_tests=${{ steps.process-skip-directives.outputs.skip-kube-tests }}
+        if [[ ! -z $skip_kube_tests && $skip_kube_tests = true ]] ; then
+          echo "auto_succeed=true" >> $GITHUB_OUTPUT
         fi
-
-        pr_comment_signal=${{ steps.signal-ci-comment.outputs.value }}
-        if [[ ! -z $pr_comment_signal && $pr_comment_signal = true ]] ; then
-          should_run=true
-        fi
-
-        pr_comment_skip=${{ steps.skip-ci-comment.outputs.value }}
-        if [[ ! -z $pr_comment_skip && $pr_comment_skip = true ]] ; then
-          should_run=false
-        fi
-
-        echo "Should run regression tests? $should_run"
-        echo "run_value=$should_run" >> $GITHUB_OUTPUT
 
   regression_tests:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
     runs-on: ubuntu-22.04
-    if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
+    if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
       matrix:
-        # upgrade tests are run on LTS but not on master branch, for master they are run nightly
+        # upgrade tests are run on LTS but not on main branch, for main they are run nightly
         # this is the github action version of ternary op
         kube-e2e-test-type: [ 'gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'istio', 'upgrade']
-        kube-version: [ { node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' } ]
-        merge-to-master:
-          - ${{ github.event.pull_request.base.ref == 'master' }}
+        kube-version: [ { node: 'v1.26.3@sha256:61b92f38dff6ccc29969e7aa154d34e38b89443af1a2c14e6cfbd2df6419c66f', kubectl: 'v1.26.3', kind: 'v0.18.0', helm: 'v3.11.2' } ]
+        merge-to-main:
+          - ${{ github.event.pull_request.base.ref == 'main' }}
         exclude:
-          - merge-to-master: true
+          - merge-to-main: true
             kube-e2e-test-type: upgrade
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/regression-tests
-
-  notify_slack:
-    name: Notify slack
-    runs-on: ubuntu-22.04
-    if: ${{ github.event_name == 'pull_request' && failure() }}
-    needs: [ regression_tests ]
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: go.mod
-      - uses: actions/download-artifact@v3
-      - name: Set pull_request_url
-        run: echo "pull_request_url=$(cat ${{ github.event_path }} | jq --raw-output .pull_request._links.html.href)" >> $GITHUB_ENV
-      - name: Set direct_message_id
-        run: echo "direct_message_id=$(cat ./.github/workflows/notify-on-regression-failure-list.json | jq -r '."${{ github.actor }}"')" >> $GITHUB_ENV
-      - name: send slack message
-        env:
-          PARENT_JOB_URL: ${{ env.pull_request_url }}       # parent job hyperlink
-          PREAMBLE: "Your recent Gloo PR regression tests"  # text to hyperlink at start of slack message
-          SLACK_CHANNEL: ${{ env.direct_message_id }}       # DM to the user who ran CI
-          SLACKBOT_BEARER: ${{ secrets.SLACKBOT_BEARER }}
-        run: |
-          test_results="$(cat */test-out.json | jq -c --slurp .)"
-          echo $test_results
-          go run .github/workflows/helpers/notify-from-json.go $test_results
+    - id: run-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests != 'true'
+      uses: ./.github/workflows/composite-actions/regression-tests
+    - id: auto-succeed-tests
+      if: needs.prepare_env.outputs.should-auto-succeed-regression-tests == 'true'
+      run: |
+        echo "Regression tests auto-succeeded"

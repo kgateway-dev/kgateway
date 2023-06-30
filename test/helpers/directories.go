@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -45,7 +44,7 @@ func GetCallerDirectory(skip ...int) (string, error) {
 func MustReadFile(name string) []byte {
 	dir, err := GetCallerDirectory(1)
 	Must(err)
-	b, err := ioutil.ReadFile(filepath.Join(dir, name))
+	b, err := os.ReadFile(filepath.Join(dir, name))
 	Must(err)
 	return b
 }

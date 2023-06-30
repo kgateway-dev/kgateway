@@ -64,6 +64,12 @@ func (m *Settings) Clone() proto.Message {
 		}
 	}
 
+	if h, ok := interface{}(m.GetSecretOptions()).(clone.Cloner); ok {
+		target.SecretOptions = h.Clone().(*Settings_SecretOptions)
+	} else {
+		target.SecretOptions = proto.Clone(m.GetSecretOptions()).(*Settings_SecretOptions)
+	}
+
 	if h, ok := interface{}(m.GetRefreshRate()).(clone.Cloner); ok {
 		target.RefreshRate = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
@@ -428,6 +434,12 @@ func (m *GlooOptions) Clone() proto.Message {
 
 	target.ProxyDebugBindAddr = m.GetProxyDebugBindAddr()
 
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(clone.Cloner); ok {
+		target.LogTransformationRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.LogTransformationRequestResponseInfo = proto.Clone(m.GetLogTransformationRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 
@@ -532,6 +544,30 @@ func (m *GraphqlOptions) Clone() proto.Message {
 		target.SchemaChangeValidationOptions = h.Clone().(*GraphqlOptions_SchemaChangeValidationOptions)
 	} else {
 		target.SchemaChangeValidationOptions = proto.Clone(m.GetSchemaChangeValidationOptions()).(*GraphqlOptions_SchemaChangeValidationOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_SecretOptions) Clone() proto.Message {
+	var target *Settings_SecretOptions
+	if m == nil {
+		return target
+	}
+	target = &Settings_SecretOptions{}
+
+	if m.GetSources() != nil {
+		target.Sources = make([]*Settings_SecretOptions_Source, len(m.GetSources()))
+		for idx, v := range m.GetSources() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Sources[idx] = h.Clone().(*Settings_SecretOptions_Source)
+			} else {
+				target.Sources[idx] = proto.Clone(v).(*Settings_SecretOptions_Source)
+			}
+
+		}
 	}
 
 	return target
@@ -898,6 +934,57 @@ func (m *Settings_ObservabilityOptions) Clone() proto.Message {
 			}
 
 		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Settings_SecretOptions_Source) Clone() proto.Message {
+	var target *Settings_SecretOptions_Source
+	if m == nil {
+		return target
+	}
+	target = &Settings_SecretOptions_Source{}
+
+	switch m.Source.(type) {
+
+	case *Settings_SecretOptions_Source_Kubernetes:
+
+		if h, ok := interface{}(m.GetKubernetes()).(clone.Cloner); ok {
+			target.Source = &Settings_SecretOptions_Source_Kubernetes{
+				Kubernetes: h.Clone().(*Settings_KubernetesSecrets),
+			}
+		} else {
+			target.Source = &Settings_SecretOptions_Source_Kubernetes{
+				Kubernetes: proto.Clone(m.GetKubernetes()).(*Settings_KubernetesSecrets),
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Vault:
+
+		if h, ok := interface{}(m.GetVault()).(clone.Cloner); ok {
+			target.Source = &Settings_SecretOptions_Source_Vault{
+				Vault: h.Clone().(*Settings_VaultSecrets),
+			}
+		} else {
+			target.Source = &Settings_SecretOptions_Source_Vault{
+				Vault: proto.Clone(m.GetVault()).(*Settings_VaultSecrets),
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Directory:
+
+		if h, ok := interface{}(m.GetDirectory()).(clone.Cloner); ok {
+			target.Source = &Settings_SecretOptions_Source_Directory{
+				Directory: h.Clone().(*Settings_Directory),
+			}
+		} else {
+			target.Source = &Settings_SecretOptions_Source_Directory{
+				Directory: proto.Clone(m.GetDirectory()).(*Settings_Directory),
+			}
+		}
+
 	}
 
 	return target

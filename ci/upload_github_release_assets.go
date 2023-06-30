@@ -20,7 +20,7 @@ import (
 
 func main() {
 	ctx := context.Background()
-	versionBeingReleased := versionutils.GetReleaseVersionOrExitGracefully()
+	versionBeingReleased := getReleaseVersionOrExitGracefully()
 	assetsOnly := false
 	if len(os.Args) > 1 {
 		var err error
@@ -61,18 +61,6 @@ func main() {
 			ParentPath: buildDir,
 			UploadSHA:  true,
 		},
-		{
-			Name:       "gloo-gateway.yaml",
-			ParentPath: "install",
-		},
-		{
-			Name:       "gloo-ingress.yaml",
-			ParentPath: "install",
-		},
-		{
-			Name:       "gloo-knative.yaml",
-			ParentPath: "install",
-		},
 	}
 
 	spec := githubutils.UploadReleaseAssetSpec{
@@ -100,7 +88,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:       "homebrew-tap", // assumes this repo is forked from PRRepoOwner
 			PRRepoOwner:    repoOwner,      // Make PR to this repo
 			PRRepoName:     "homebrew-tap",
-			PRBranch:       "master",
+			PRBranch:       "main",
 			PRDescription:  "",
 			PRCommitName:   "Solo-io Bot",
 			PRCommitEmail:  "bot@solo.io",
@@ -116,7 +104,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:        "fish-food",
 			PRRepoOwner:     "fishworks",
 			PRRepoName:      "fish-food",
-			PRBranch:        "master",
+			PRBranch:        "main",
 			PRDescription:   "",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",
@@ -133,7 +121,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 			RepoName:        "homebrew-core",
 			PRRepoOwner:     "homebrew",
 			PRRepoName:      "homebrew-core",
-			PRBranch:        "master",
+			PRBranch:        "main",
 			PRDescription:   "Created by Solo-io Bot",
 			PRCommitName:    "Solo-io Bot",
 			PRCommitEmail:   "bot@solo.io",
@@ -170,7 +158,7 @@ func mustUpdateFormulas(ctx context.Context, versionBeingReleased *versionutils.
 }
 
 func validateReleaseVersionOfCli() {
-	releaseVersion := versionutils.GetReleaseVersionOrExitGracefully().String()[1:]
+	releaseVersion := getReleaseVersionOrExitGracefully().String()[1:]
 	name := fmt.Sprintf("_output/glooctl-%s-amd64", runtime.GOOS)
 	cmd := exec.Command(name, "version")
 	bytes, err := cmd.Output()
@@ -191,4 +179,22 @@ func validateReleaseVersionOfCli() {
 	if !expectedVersion.Equal(foundVersion) {
 		log.Fatalf("Expected to release artifacts for version %s, glooctl binary reported version %s", expectedVersion, foundVersion)
 	}
+}
+
+// stolen from "github.com/solo-io/go-utils/versionutils", but changed the hardcoding of "TAGGED_VERSION" to "VERSION"
+func getReleaseVersionOrExitGracefully() *versionutils.Version {
+	versionStr, present := os.LookupEnv("VERSION")
+	if !present || versionStr == "" {
+		fmt.Printf("VERSION not found in environment.\n")
+		os.Exit(1)
+	}
+
+	tag := "v" + versionStr
+
+	version, err := versionutils.ParseVersion(tag)
+	if err != nil {
+		fmt.Printf("VERSION %s is not a valid semver version.\n", tag)
+		os.Exit(1)
+	}
+	return version
 }

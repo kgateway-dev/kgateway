@@ -65,6 +65,16 @@ func (m *Settings) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetSecretOptions()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetSecretOptions()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetSecretOptions(), target.GetSecretOptions()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetRefreshRate()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRefreshRate()) {
 			return false
@@ -641,6 +651,16 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		return false
 	}
 
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogTransformationRequestResponseInfo()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLogTransformationRequestResponseInfo(), target.GetLogTransformationRequestResponseInfo()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -841,6 +861,47 @@ func (m *GraphqlOptions) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetSchemaChangeValidationOptions(), target.GetSchemaChangeValidationOptions()) {
 			return false
 		}
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_SecretOptions) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_SecretOptions)
+	if !ok {
+		that2, ok := that.(Settings_SecretOptions)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetSources()) != len(target.GetSources()) {
+		return false
+	}
+	for idx, v := range m.GetSources() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSources()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetSources()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true
@@ -1546,6 +1607,84 @@ func (m *Settings_ObservabilityOptions) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	return true
+}
+
+// Equal function
+func (m *Settings_SecretOptions_Source) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*Settings_SecretOptions_Source)
+	if !ok {
+		that2, ok := that.(Settings_SecretOptions_Source)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Source.(type) {
+
+	case *Settings_SecretOptions_Source_Kubernetes:
+		if _, ok := target.Source.(*Settings_SecretOptions_Source_Kubernetes); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetKubernetes()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetKubernetes()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetKubernetes(), target.GetKubernetes()) {
+				return false
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Vault:
+		if _, ok := target.Source.(*Settings_SecretOptions_Source_Vault); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetVault()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetVault()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetVault(), target.GetVault()) {
+				return false
+			}
+		}
+
+	case *Settings_SecretOptions_Source_Directory:
+		if _, ok := target.Source.(*Settings_SecretOptions_Source_Directory); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetDirectory()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetDirectory()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetDirectory(), target.GetDirectory()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Source != target.Source {
+			return false
+		}
 	}
 
 	return true

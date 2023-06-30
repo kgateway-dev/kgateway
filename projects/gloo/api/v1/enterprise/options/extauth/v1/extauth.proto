@@ -554,7 +554,8 @@ message OidcAuthorizationCode {
     // your client id as registered with the issuer
     string client_id = 1;
 
-    // your client secret as registered with the issuer
+    // your client secret as registered with the issuer.
+    // This is required unless `disable_client_secret` is true
     core.solo.io.ResourceRef client_secret_ref = 2;
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
@@ -655,13 +656,29 @@ message OidcAuthorizationCode {
     // specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html)
     // in the OIDC documentation.
     EndSessionProperties end_session_properties = 19;
+
+    // Map of metadata key to claim. Ie:
+    // dynamic_metadata_from_claims:
+    //   issuer: iss
+    //   email: email
+    // When specified, the matching claims from the ID token will be emitted as dynamic metadata.
+    // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+    // and the structure of the claim value will be preserved in the metadata struct.
+    map<string, string> dynamic_metadata_from_claims = 20;
+
+    // If true, do not check for or use the client secret.
+    // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+    // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
+    google.protobuf.BoolValue disable_client_secret = 21;
 }
 
 message PlainOAuth2 {
     // Your client ID as registered with the issuer
     string client_id = 1;
 
-    // Your client secret as registered with the issuer
+    // Your client secret as registered with the issuer.
+    // This is required unless `disable_client_secret` is set.
     core.solo.io.ResourceRef client_secret_ref = 2;
 
     // Extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider.
@@ -706,6 +723,10 @@ message PlainOAuth2 {
     // The URL of the provider token revocation endpoint.
     // For more information, refer to https://www.rfc-editor.org/rfc/rfc7009.
     string revocation_endpoint = 13;
+    // If true, do not check for or use the client secret.
+    // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+    // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oauth2 without a client secret.
+    google.protobuf.BoolValue disable_client_secret = 14;
 }
 
 // Defines how JSON Web Token (JWT) access tokens are validated.
@@ -760,7 +781,7 @@ message JwtValidation {
 // [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 //
 // If the token introspection url requires client authentication, both the client_id and client_secret
-// are required. If only one is provided, the config will be rejected.
+// are required. Unless disable_client_secret is set, when only one is provided, the config will be rejected.
 // These values will be encoded in a basic auth header in order to authenticate the client.
 message IntrospectionValidation {
     // The URL for the [OAuth2.0 Token Introspection](https://tools.ietf.org/html/rfc7662) endpoint.
@@ -783,6 +804,10 @@ message IntrospectionValidation {
     // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
     // This field is optional and by default the server will not try to derive the user ID.
     string user_id_attribute_name = 4;
+
+    // Allows setting a client id but not a client secret.
+    google.protobuf.BoolValue disable_client_secret = 5;
+
 }
 
 message AccessTokenValidation {
@@ -830,6 +855,17 @@ message AccessTokenValidation {
 
         // in the future we may add other types of scope validation (e.g. predicate matching)
     }
+
+    // Map of metadata key to claim. Ie:
+    // dynamic_metadata_from_claims:
+    //   issuer: iss
+    //   email: email
+    // When specified, the matching claims from the access token will be emitted as dynamic metadata.
+    // Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators.
+    // Works when the access token is a JWT or when the access token is opaque, in which case the claims will refer to field in the response from the token introspection endpoint.
+    // The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`),
+    // and the structure of the claim value will be preserved in the metadata struct.
+    map<string, string> dynamic_metadata_from_claims = 7;
 
     message ScopeList {
       repeated string scope = 1;
@@ -1398,6 +1434,7 @@ message ExtAuthConfig {
 
         // Configuration related to the user session.
         UserSessionConfig user_session = 20;
+
     }
 
     message AccessTokenValidationConfig {
@@ -1476,6 +1513,7 @@ message ExtAuthConfig {
             // server is configured); if the field is set and the attribute cannot be found, the request will be denied.
             // This field is optional and by default the server will not try to derive the user ID.
             string user_id_attribute_name = 4;
+
         }
 
         oneof validation_type {

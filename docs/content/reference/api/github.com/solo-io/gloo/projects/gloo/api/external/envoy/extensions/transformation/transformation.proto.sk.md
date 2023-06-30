@@ -48,6 +48,7 @@ weight: 5
 ```yaml
 "transformations": []envoy.api.v2.filter.http.TransformationRule
 "stage": int
+"logRequestResponseInfo": bool
 
 ```
 
@@ -55,6 +56,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `transformations` | [[]envoy.api.v2.filter.http.TransformationRule](../transformation.proto.sk/#transformationrule) | Specifies transformations based on the route matches. The first matched transformation will be applied. If there are overlapped match conditions, please put the most specific match first. |
 | `stage` | `int` | Only RouteTransformations.RouteTransformation with matching stage will be used with this filter. |
+| `logRequestResponseInfo` | `bool` | Logs request/response sensitive information By default, this is false so no request or response sensitive information is logged. If set to true, the filter will log the request/response body and headers before and after any transformation is applied. |
 
 
 
@@ -236,6 +238,7 @@ This proto is for envoy filter config, not user-facing API.
 "transformationTemplate": .envoy.api.v2.filter.http.TransformationTemplate
 "headerBodyTransform": .envoy.api.v2.filter.http.HeaderBodyTransform
 "transformerConfig": .solo.io.envoy.config.core.v3.TypedExtensionConfig
+"logRequestResponseInfo": .google.protobuf.BoolValue
 
 ```
 
@@ -244,6 +247,7 @@ This proto is for envoy filter config, not user-facing API.
 | `transformationTemplate` | [.envoy.api.v2.filter.http.TransformationTemplate](../transformation.proto.sk/#transformationtemplate) | Apply transformation templates. Only one of `transformationTemplate`, `headerBodyTransform`, or `transformerConfig` can be set. |
 | `headerBodyTransform` | [.envoy.api.v2.filter.http.HeaderBodyTransform](../transformation.proto.sk/#headerbodytransform) | This type of transformation will make all the headers available in the response body. The resulting JSON body will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body. Only one of `headerBodyTransform`, `transformationTemplate`, or `transformerConfig` can be set. |
 | `transformerConfig` | [.solo.io.envoy.config.core.v3.TypedExtensionConfig](../../../config/core/v3/extension.proto.sk/#typedextensionconfig) | Configuration for an externally implemented transformer, used by envoy transformation filter. Only one of `transformerConfig`, `transformationTemplate`, or `headerBodyTransform` can be set. |
+| `logRequestResponseInfo` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Logs request/response sensitive information By default, this is false so no request or response sensitive information is logged. If set to true, the filter will log the request/response body and headers before and after this transformation is applied. |
 
 
 

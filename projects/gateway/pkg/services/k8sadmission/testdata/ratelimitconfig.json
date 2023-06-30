@@ -1,0 +1,105 @@
+{
+    "kind": "AdmissionReview",
+    "apiVersion": "admission.k8s.io/v1beta1",
+    "request": {
+        "kind": {
+            "group": "ratelimit.solo.io",
+            "version": "v1alpha1",
+            "kind": "RateLimitConfig"
+        },
+        "resource": {
+            "group": "ratelimit.solo.io",
+            "version": "v1alpha1",
+            "resource": "ratelimitconfigs"
+        },
+        "requestKind": {
+            "group": "ratelimit.solo.io",
+            "version": "v1alpha1",
+            "kind": "RateLimitConfig"
+        },
+        "requestResource": {
+            "group": "ratelimit.solo.io",
+            "version": "v1alpha1",
+            "resource": "ratelimitconfigs"
+        },
+        "name": "global-limit",
+        "namespace": "gloo-system",
+        "operation": "CREATE",
+        "userInfo": {
+            "username": "kubernetes-admin",
+            "groups": [
+                "system:masters",
+                "system:authenticated"
+            ]
+        },
+        "object": {
+            "apiVersion": "ratelimit.solo.io/v1alpha1",
+            "kind": "RateLimitConfig",
+            "metadata": {
+                "annotations": {
+                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"ratelimit.solo.io/v1alpha1\",\"kind\":\"RateLimitConfig\",\"metadata\":{\"annotations\":{},\"name\":\"global-limit\",\"namespace\":\"gloo-system\"},\"spec\":{\"raw\":{\"descriptors\":[{\"key\":\"generic_key\",\"rateLimit\":{\"requestsPerUnit\":450,\"unit\":\"MINUTE\"},\"value\":\"counter\"}],\"rateLimits\":[{\"actions\":[{\"genericKey\":{\"descriptorValue\":\"counter\"}}]}]}}}\n"
+                },
+                "generation": 1,
+                "managedFields": [
+                    {
+                        "apiVersion": "ratelimit.solo.io/v1alpha1",
+                        "fieldsType": "FieldsV1",
+                        "fieldsV1": {
+                            "f:metadata": {
+                                "f:annotations": {
+                                    ".": {},
+                                    "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                                }
+                            },
+                            "f:spec": {
+                                ".": {},
+                                "f:raw": {
+                                    ".": {},
+                                    "f:descriptors": {},
+                                    "f:rateLimits": {}
+                                }
+                            }
+                        },
+                        "manager": "kubectl-client-side-apply",
+                        "operation": "Update"
+                    }
+                ],
+                "name": "global-limit",
+                "namespace": "gloo-system"
+            },
+            "spec": {
+                "raw": {
+                    "descriptors": [
+                        {
+                            "key": "generic_key",
+                            "rateLimit": {
+                                "requestsPerUnit": 450,
+                                "unit": "MINUTE"
+                            },
+                            "value": "counter"
+                        }
+                    ],
+                    "rateLimits": [
+                        {
+                            "actions": [
+                                {
+                                    "genericKey": {
+                                        "descriptorValue": "counter"
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "oldObject": null,
+        "dryRun": false,
+        "options": {
+            "kind": "CreateOptions",
+            "apiVersion": "meta.k8s.io/v1",
+            "fieldManager": "kubectl-client-side-apply",
+            "fieldValidation": "Strict"
+        }
+    }
+}

@@ -109,19 +109,18 @@ spec:
         {{- end }}
 {{- end}}
     spec:
-      {{- $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
-      {{- if not $spec.podTemplate.floatingUserId -}}
-        {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
-      {{- end -}}
-      {{- $securityContext := or $spec.podTemplate.podSecurityContext $securityDefaults }}
-      {{- if and $spec.podTemplate.enablePodSecurityContext $securityContext }}
-      securityContext:
-      {{- toYaml $securityContext | nindent 8  }}
-      {{- end }}
+{{ $securityDefaults := dict "fsGroup" $spec.podTemplate.fsGroup }}
+{{- if not $spec.podTemplate.floatingUserId -}}
+  {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
+{{ end -}}
+{{- if $spec.podTemplate.enablePodSecurityContext -}}
+{{ include "gloo.securityContext" (dict "values" $spec.podTemplate.podSecurityContext "defaults" $securityDefaults) | indent 6 -}}
+{{- end -}}
+
 {{- if $spec.kind.deployment }}
 {{ if or ($spec.antiAffinity) ($spec.affinity) }}
       affinity:
-{{- end}}
+{{- end }}
 {{ if $spec.antiAffinity }}
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -218,20 +217,15 @@ spec:
         {{- end}}
         {{- end}}
         name: {{ $name | kebabcase }}
-        {{- $runAsUser := $spec.podTemplate.runAsUser -}}
-        {{- if $spec.podTemplate.floatingUserId -}}
-        {{- $runAsUser = 0 -}}
-        {{- end -}}
         {{- $capabilities := dict "drop" (list "ALL") }}
         {{- if not $spec.podTemplate.disableNetBind -}}
           {{- $_ := set $capabilities "add"  (list "NET_BIND_SERVICE") }}
         {{- end -}}
-        {{- $securityDefaults := dict "runAsNonRoot" $spec.podTemplate.runUnprivileged "runAsUser" $runAsUser "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
-        {{- $securityContext := or $spec.podTemplate.glooContainerSecurityContext $securityDefaults }}
-        {{- with $securityContext }}
-        securityContext:
-        {{- toYaml . | nindent 10  }}
-        {{- end }}
+        {{- $securityDefaults := dict "runAsNonRoot" $spec.podTemplate.runUnprivileged "capabilities" $capabilities "readOnlyRootFilesystem" true "allowPrivilegeEscalation" false }}
+        {{- if not $spec.podTemplate.floatingUserId -}}
+          {{- $_ := set $securityDefaults "runAsUser" $spec.podTemplate.runAsUser }}
+        {{- end -}}
+        {{- include "gloo.securityContext" (dict "values" $spec.podTemplate.glooContainerSecurityContext "defaults" $securityDefaults) | nindent 8 }}
 
         ports:
         - containerPort: {{ $spec.podTemplate.httpPort }}
