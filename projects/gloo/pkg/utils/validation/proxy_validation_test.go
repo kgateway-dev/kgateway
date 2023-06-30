@@ -117,7 +117,7 @@ var _ = Describe("validation utils", func() {
 		}
 		return proxy
 	}
-	makeAggregateListenerProxy := func() *v1.Proxy {
+	makeInvalidAggregateListenerProxyTcp := func() *v1.Proxy {
 		proxy := makeHybridProxy()
 		proxy.Listeners = []*v1.Listener{{
 			Name:        "aggregate-listener",
@@ -209,7 +209,7 @@ var _ = Describe("validation utils", func() {
 		It("properly instantiates TCP reports in aggregate listeners", func() {
 			// fixes a crash reported in
 			// https://github.com/solo-io/gloo/issues/8405
-			proxy := makeAggregateListenerProxy()
+			proxy := makeInvalidAggregateListenerProxyTcp()
 			proxyReports := MakeReport(proxy)
 			Expect(proxyReports.GetListenerReports()).To(HaveLen(1))
 			tcpListenerReports := proxyReports.GetListenerReports()[0].GetAggregateListenerReport().GetTcpListenerReports()
@@ -255,7 +255,7 @@ var _ = Describe("validation utils", func() {
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
 		It("aggregates the errors at every level for aggregate hybrid listener", func() {
-			proxy := makeAggregateListenerProxy()
+			proxy := makeInvalidAggregateListenerProxyTcp()
 			rpt := MakeReport(proxy)
 
 			rpt.ListenerReports[0].Errors = append(rpt.ListenerReports[0].Errors,
