@@ -67,7 +67,7 @@ func ExecOnContainer(containerName string, args []string) ([]byte, error) {
 func MustStopAndRemoveContainer(containerName string) {
 	StopContainer(containerName)
 
-	// We assumed that the container was run with auto-remove, and thus stopping the container will cause it to be removed
+	// We assume that the container was run with auto-remove, and thus stopping the container will cause it to be removed
 	err := WaitUntilContainerRemoved(containerName)
 	Expect(err).ToNot(HaveOccurred())
 
