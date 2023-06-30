@@ -179,6 +179,8 @@ func GetTestReleasedVersion(ctx context.Context, repoName string) string {
 	releasedVersion := os.Getenv(testutils.ReleasedVersion)
 
 	if releasedVersion == "" {
+		// In the case where the released version is empty, we return an empty string
+		// The function which consumes this value will then use the locally built chart
 		return releasedVersion
 	}
 

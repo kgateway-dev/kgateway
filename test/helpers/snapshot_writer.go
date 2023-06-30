@@ -139,12 +139,9 @@ func (s *SnapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot,
 			return writeErr
 		}
 	}
-	for _, gw := range snapshot.Proxies {
+	if len(snapshot.Proxies) > 0 {
 		// It is recommended to configure Gateway resources (GW, VS, RT, etc) instead of Proxy resources
-		ginkgo.GinkgoWriter.Printf("Proxies are intended to be an opaque resources to users and are not recommended to be written directly in tests")
-		if _, writeErr := s.ProxyClient().Write(gw, writeOptions); !s.isContinuableWriteError(writeErr) {
-			return writeErr
-		}
+		ginkgo.Fail("Proxies are intended to be an opaque resources to users and are not recommended to be written directly in tests")
 	}
 	return nil
 }
