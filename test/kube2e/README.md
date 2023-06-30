@@ -26,7 +26,13 @@ The `GetTestHelper` util method handles installing gloo from either a local or r
 The list of tests to run during CI and nightly builds is provided in `kube-e2e-test-type` matrices in the github workflows. A new test can be added to one or both lists of tests.  
 ## Local Development
 
-### Setup
+### Setup (Previously Released Assets)
+It is possible to run these tests against a previously released version of Gloo Edge. This is useful for testing a release candidate, or a nightly build.
+
+There is no setup required for this option, as the test suite will download the helm chart archive and `glooctl` binary from the specified release. You will use the `RELEASED_VERSION` environment variable when running the tests. See the [variable definition](/test/testutils/env.go) for more details.
+
+### Setup (Locally Build Assets)
+
 For these tests to run, we require the following conditions:
   - Gloo Edge Helm chart archive be present in the `_test` folder,
   - `glooctl` be built in the`_output` folder
@@ -49,7 +55,7 @@ Example:
 CLUSTER_NAME=solo-test-cluster CLUSTER_NODE_VERSION=v1.25.3 VERSION=v1.0.0-solo-test ci/kind/setup-kind.sh
 ```
 
-### Verify Your Setup
+#### Verify Your Setup
 Before running your tests, it's worthwhile to verify that a cluster was created, and the proper images have been loaded.
 
 ```bash
@@ -84,6 +90,7 @@ The below table contains the environment variables that can be used to configure
 | WAIT_ON_FAIL     | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
 | TEAR_DOWN        | false   | Set to true to uninstall Gloo after the test suite completes                                                                                                                                                                                       |
 | RELEASED_VERSION | ''      | Used by nightlies to tests a specific released version. 'LATEST' will find the latest release                                                                                                                                                      |
+
 #### Common Test Errors
 `getting Helm chart version: expected a single entry with name [gloo], found: 5`\
 The test helm charts are written to the `_test` directory, with the `index.yaml` file containing references to all available charts. The tests require that this file contain only 1 entry. Delete the other entries manually, or run `make clean` to delete this folder entirely, and then re-build the test helm chart.

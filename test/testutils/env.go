@@ -57,6 +57,12 @@ const (
 	// GcloudBuildId is used by Cloudbuild to identify the build id
 	// This is set when running tests in Cloudbuild
 	GcloudBuildId = "GCLOUD_BUILD_ID"
+
+	// ReleasedVersion can be used when running KubeE2E tests to have the test suite use a previously released version of Gloo Edge
+	// If set to 'LATEST', the most recently released version will be used
+	// If set to another value, the test suite will use that version (ie '1.15.0-beta1')
+	// This is an optional value, so if it is not set, the test suite will use the locally built version of Gloo Edge
+	ReleasedVersion = "RELEASED_VERSION"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)

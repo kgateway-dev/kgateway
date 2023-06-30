@@ -64,7 +64,7 @@ func StartTestHelper() {
 	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
 	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{}).WithWriteNamespace(testHelper.InstallNamespace)
 }
 
 func TearDownTestHelper() {

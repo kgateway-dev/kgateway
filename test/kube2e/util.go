@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/solo-io/gloo/test/testutils"
+
 	"github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/go-utils/stats"
 
@@ -174,15 +176,22 @@ func GetSimpleTestRunnerHttpResponse() string {
 // For nightly runs, we want to install a released version rather than using a locally built chart
 // To do this, set the environment variable RELEASED_VERSION with either a version name or "LATEST" to get the last release
 func GetTestReleasedVersion(ctx context.Context, repoName string) string {
-	var useVersion string
-	if useVersion = os.Getenv("RELEASED_VERSION"); useVersion != "" {
-		if useVersion == "LATEST" {
-			_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
-			Expect(err).NotTo(HaveOccurred())
-			useVersion = current.String()
-		}
+	releasedVersion := os.Getenv(testutils.ReleasedVersion)
+
+	if releasedVersion == "" {
+		// In the case where the released version is empty, we return an empty string
+		// The function which consumes this value will then use the locally built chart
+		return releasedVersion
 	}
-	return useVersion
+
+	if releasedVersion == "LATEST" {
+		_, current, err := upgrade.GetUpgradeVersions(ctx, repoName)
+		Expect(err).NotTo(HaveOccurred())
+		return current.String()
+	}
+
+	// Assume that releasedVersion is a valid version, for a previously released version of Gloo Edge
+	return releasedVersion
 }
 func GetTestHelper(ctx context.Context, namespace string) (*helper.SoloTestHelper, error) {
 	cwd, err := os.Getwd()
