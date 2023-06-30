@@ -225,6 +225,9 @@ func GetProxyError(proxyRpt *validation.ProxyReport) error {
 			for _, httpListenerReport := range listenerType.AggregateListenerReport.GetHttpListenerReports() {
 				errs = append(errs, getHttpListenerReportErrs(httpListenerReport)...)
 			}
+			for _, tcpListenerReport := range listenerType.AggregateListenerReport.GetTcpListenerReports() {
+				errs = append(errs, getTcpListenerReportErrs(tcpListenerReport)...)
+			}
 		}
 	}
 

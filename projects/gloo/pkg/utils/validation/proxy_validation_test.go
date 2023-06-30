@@ -5,6 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"golang.org/x/exp/maps"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -264,9 +265,41 @@ var _ = Describe("validation utils", func() {
 				},
 			)
 
+			// aggregate listener reports are a map of tcp listener reports -
+			// one entry in the map for each listener; here, we extract the
+			// map, then obtain the first and only key for the single listener
+			// that we created
+			tcpListenerReportsMap := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_AggregateListenerReport).AggregateListenerReport.TcpListenerReports
+			tcpListenerReport := tcpListenerReportsMap[maps.Keys(tcpListenerReportsMap)[0]]
+
+			// populate the errors - we should hit all cases in
+			// getTcpListenerReportErrs with the errors we create here
+			tcpListenerReport.Errors = append(tcpListenerReport.Errors,
+				&validation.TcpListenerReport_Error{
+					Type:   validation.TcpListenerReport_Error_SSLConfigError,
+					Reason: "test SSLConfig Error",
+				},
+			)
+			tcpListenerReport.TcpHostReports = append(tcpListenerReport.TcpHostReports,
+				&validation.TcpHostReport{
+					Errors: []*validation.TcpHostReport_Error{
+						{
+							Type:   validation.TcpHostReport_Error_InvalidDestinationError,
+							Reason: "testing invalid destination error",
+						},
+						{
+							Type:   validation.TcpHostReport_Error_ProcessingError,
+							Reason: "testing processing error",
+						},
+					},
+				})
+
 			err := GetProxyError(rpt)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
+			Expect(err.Error()).To(ContainSubstring("TcpListener Error: SSLConfigError. Reason: test SSLConfig Error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: InvalidDestinationError. Reason: testing invalid destination error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: ProcessingError. Reason: testing processing error"))
 		})
 		It("aggregates the errors at every level for hybrid listener", func() {
 			proxy := makeHybridProxy()
