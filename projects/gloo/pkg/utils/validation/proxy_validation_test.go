@@ -311,6 +311,13 @@ var _ = Describe("validation utils", func() {
 					Reason: "bind port not unique",
 				},
 			)
+			tcpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix: "tcp-0",
+					},
+				},
+			}
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
 					&v3.CidrRange{
@@ -342,11 +349,35 @@ var _ = Describe("validation utils", func() {
 				},
 			)
 
+			tcpListenerReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[2], tcpMatcher)].GetTcpListenerReport()
+			tcpListenerReport.Errors = append(tcpListenerReport.Errors,
+				&validation.TcpListenerReport_Error{
+					Type:   validation.TcpListenerReport_Error_SSLConfigError,
+					Reason: "test SSLConfig Error",
+				},
+			)
+			tcpListenerReport.TcpHostReports = append(tcpListenerReport.TcpHostReports,
+				&validation.TcpHostReport{
+					Errors: []*validation.TcpHostReport_Error{
+						{
+							Type:   validation.TcpHostReport_Error_InvalidDestinationError,
+							Reason: "testing invalid destination error",
+						},
+						{
+							Type:   validation.TcpHostReport_Error_ProcessingError,
+							Reason: "testing processing error",
+						},
+					},
+				})
+
 			err := GetProxyError(rpt)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique"))
 			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
 			Expect(err.Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: bad http plugin"))
+			Expect(err.Error()).To(ContainSubstring("TcpListener Error: SSLConfigError. Reason: test SSLConfig Error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: InvalidDestinationError. Reason: testing invalid destination error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: ProcessingError. Reason: testing processing error"))
 		})
 
 	})
