@@ -17,7 +17,7 @@ import (
 	clusteringressv1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	clusteringresstranslator "github.com/solo-io/gloo/projects/clusteringress/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
@@ -74,14 +74,15 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 	secretFactory, err := bootstrap.SecretFactoryForSettings(
 		ctx,
-		settings,
-		inMemoryCache,
-		&cfg,
-		&clientset,
-		&kubeCoreCache,
-		nil, // ingress client does not support vault config
-		gloov1.SecretCrd.Plural,
-	)
+		bootstrap.SecretFactoryParams{
+			Settings:           settings,
+			SharedCache:        inMemoryCache,
+			Cfg:                &cfg,
+			Clientset:          &clientset,
+			KubeCoreCache:      &kubeCoreCache,
+			VaultClientInitMap: nil,
+			PluralName:         gloov1.SecretCrd.Plural,
+		})
 	if err != nil {
 		return err
 	}

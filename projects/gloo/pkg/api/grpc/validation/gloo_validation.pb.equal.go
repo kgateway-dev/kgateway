@@ -969,6 +969,23 @@ func (m *AggregateListenerReport) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetTcpListenerReports()) != len(target.GetTcpListenerReports()) {
+		return false
+	}
+	for k, v := range m.GetTcpListenerReports() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetTcpListenerReports()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetTcpListenerReports()[k]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 

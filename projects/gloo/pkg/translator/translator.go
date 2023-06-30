@@ -344,13 +344,9 @@ func EnvoyCacheResourcesListToFnvHash(resources []envoycache.Resource) (uint64, 
 	return hasher.Sum64(), nil
 }
 
-// deprecated, slower than MustEnvoyCacheResourcesListToFnvHash
-func MustEnvoyCacheResourcesListToHash(resources []envoycache.Resource) uint64 {
-	hash, err := hashstructure.Hash(resources, nil)
-	if err != nil {
-		panic(errors.Wrap(err, "constructing version hash for endpoints envoy snapshot components"))
-	}
-	return hash
+// deprecated, slower than EnvoyCacheResourcesListToFnvHash
+func EnvoyCacheResourcesListToHash(resources []envoycache.Resource) (uint64, error) {
+	return hashstructure.Hash(resources, nil)
 }
 
 func MakeRdsResources(routeConfigs []*envoy_config_route_v3.RouteConfiguration) envoycache.Resources {

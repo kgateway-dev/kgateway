@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Extract logic for downloading test service binaries into a helper to de-duplicate
+    and increase the readability of the factory code.

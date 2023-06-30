@@ -50,7 +50,11 @@ func (m *UpstreamSpec) Clone() proto.Message {
 		}
 	}
 
-	target.UseTls = m.GetUseTls()
+	if h, ok := interface{}(m.GetUseTls()).(clone.Cloner); ok {
+		target.UseTls = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.UseTls = proto.Clone(m.GetUseTls()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	if h, ok := interface{}(m.GetServiceSpec()).(clone.Cloner); ok {
 		target.ServiceSpec = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options.ServiceSpec)

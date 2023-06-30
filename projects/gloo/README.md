@@ -1,7 +1,7 @@
 # Gloo
 
 ## Build
-*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/master/Makefile) at the root of the repository.*
+*All make targets are currently defined in the [Makefile](https://github.com/solo-io/gloo/blob/main/Makefile) at the root of the repository.*
 
 The `VERSION` env variable determines the name of the tag for the image.
 
@@ -21,7 +21,7 @@ During a Gloo Edge release, the `gloo` image is published to the [Google Cloud R
 ## Components
 
 ### xDS Server
-Gloo sends Envoy dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/master/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
+Gloo sends Envoy dynamic configuration via the [xDS protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol). The Gloo [xDS](https://github.com/solo-io/gloo/tree/main/projects/gloo/pkg/xds) package contains relevant code for serving dynamic configuration.
 
 
 ## Testing

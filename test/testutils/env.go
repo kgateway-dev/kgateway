@@ -21,10 +21,6 @@ const (
 	// are not met. See ValidateRequirementsAndNotifyGinkgo for a detail of available behaviors
 	InvalidTestReqsEnvVar = "INVALID_TEST_REQS"
 
-	// RunKubeTests is used to enable any tests which depend on Kubernetes. NOTE: Kubernetes back tests should
-	// be written into the kube2e suites, and those don't require this guard.
-	RunKubeTests = "RUN_KUBE_TESTS"
-
 	// RunVaultTests is used to enable any tests which depend on Vault.
 	RunVaultTests = "RUN_VAULT_TESTS"
 
@@ -45,6 +41,18 @@ const (
 	// EnvoyImageTag is used in e2e tests to specify the tag of the docker image to use for the tests
 	// If a tag is not provided, the tests dynamically identify the latest released tag to use
 	EnvoyImageTag = "ENVOY_IMAGE_TAG"
+
+	// EnvoyBinary is used in e2e tests to specify the path to the envoy binary to use for the tests
+	EnvoyBinary = "ENVOY_BINARY"
+
+	// ConsulBinary is used in e2e tests to specify the path to the consul binary to use for the tests
+	ConsulBinary = "CONSUL_BINARY"
+
+	// VaultBinary is used in e2e tests to specify the path to the vault binary to use for the tests
+	VaultBinary = "VAULT_BINARY"
+
+	// ServiceLogLevel is used to set the log level for the test services. See services/logging.go for more details
+	ServiceLogLevel = "SERVICE_LOG_LEVEL"
 )
 
 // ShouldTearDown returns true if any assets that were created before a test (for example Gloo being installed)
@@ -58,13 +66,6 @@ func ShouldTearDown() bool {
 // both the tear down and install of Gloo Edge.
 func ShouldSkipInstall() bool {
 	return IsEnvTruthy(SkipInstall)
-}
-
-// ShouldRunKubeTests returns true if any tests which require a Kubernetes cluster should be executed
-// This may guard tests which are run using our old CloudBuilder infrastructure. In the future, all kube tests
-// should be written in our Kube2e suites, which are run with a kubernetes cluster
-func ShouldRunKubeTests() bool {
-	return IsEnvTruthy(RunKubeTests)
 }
 
 // ShouldSkipTempDisabledTests returns true if temporarily disabled tests should be skipped

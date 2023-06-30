@@ -3,7 +3,7 @@ package install
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -95,7 +95,7 @@ var expected0100Manifests = func() string {
 		panic(err)
 	}
 	knativeTestYaml := filepath.Join(filepath.Dir(currentFile), "knative_test_yaml.yaml")
-	b, err := ioutil.ReadFile(knativeTestYaml)
+	b, err := os.ReadFile(knativeTestYaml)
 	if err != nil {
 		panic(err)
 	}

@@ -18,7 +18,6 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -432,7 +431,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -469,7 +468,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -610,7 +609,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -671,7 +670,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -764,7 +763,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -801,7 +800,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(testutils.DefaultHttpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -951,7 +950,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))
@@ -1012,7 +1011,7 @@ var _ = Describe("Aggregate Listener", func() {
 					httpRequestBuilder := testContext.GetHttpsRequestBuilder().
 						WithHost(host).
 						WithPath(path).
-						WithPort(defaults.HybridPort)
+						WithPort(testContext.EnvoyInstance().HybridPort)
 
 					Eventually(func(g Gomega) {
 						g.Expect(httpClient.Do(httpRequestBuilder.Build())).To(matchers.HaveStatusCode(statusCode))

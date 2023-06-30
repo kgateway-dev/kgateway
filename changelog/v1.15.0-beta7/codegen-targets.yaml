@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: |
+      Add/modify and document various Make targets involved in the codegen process to enable devs to more easily only
+      run the steps they need
+    issueLink: https://github.com/solo-io/solo-projects/issues/4906

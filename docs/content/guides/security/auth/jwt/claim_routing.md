@@ -127,7 +127,7 @@ openssl genrsa 2048 > private-key.pem
 openssl rsa -in private-key.pem -pubout > public-key.pem
 ```
 
-Please refer to the [JWT and Access Control guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/#create-the-json-web-token-jwt" %}}) to see how to use the [jwt.io](http://jwt.io) website to two RS256 JWTs:
+Please refer to the [JWT and Access Control guide]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/access_control/#create-the-json-web-token-jwt" %}}) to see how to use the [jwt.io](http://jwt.io) website to create two RS256 JWTs:
 
 - one for `solo.io` employees with the following payload:
 ```json

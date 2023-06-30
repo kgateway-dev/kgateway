@@ -28,7 +28,7 @@ For these tests to run, we require that our gateway-proxy component be previousl
 
 If you have not made local changes to the component, you can rely on a previously published image and no setup is required.
 
-However, if you have made changes to the component, refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/master/projects/envoyinit) for build instructions.
+However, if you have made changes to the component, refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/main/projects/envoyinit) for build instructions.
 
 ### Run Tests
 The `run-tests` make target runs ginkgo with a set of useful flags. The following environment variables can be configured for this target:
@@ -39,26 +39,60 @@ The `run-tests` make target runs ginkgo with a set of useful flags. The followin
 | TEST_PKG          | ""      | The path to the package of the test suite you want to run                                                                                                                                                                                          |
 | WAIT_ON_FAIL      | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
 | INVALID_TEST_REQS | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
+| SERVICE_LOG_LEVEL | ""      | The log levels used for services. See "Controlling Log Verbosity of Services" below.                                                                                                                                                               |    
+
+#### Controlling Log Verbosity of Services
+Multiple services (Gloo, Envoy, Discovery) are executed in parallel to run these tests. By default, these services log at the `info` level. To change the log level of a service, set the `SERVICE_LOG_LEVEL` environment variable to a comma separated list of `service:level` pairs. 
+
+Options for services are:
+- gateway-proxy
+- gloo
+- uds
+- fds
+
+Options for log levels are:
+- debug
+- info
+- warn
+- error
+
+For example, to set the log level of the Gloo service to `debug` and the Envoy service to `error`, you would set:
+
+```bash
+SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error TEST_PKG=./test/e2e/... make test
+```
+
+*If the same service has multiple log levels specified, we will log a warning and the last one defined will be used.*
+
+#### Controlling Log Verbosity of Ginkgo Runner
+Ginkgo has 4 verbosity settings, whose details can be found in the [Ginkgo docs](https://onsi.github.io/ginkgo/#controlling-verbosity)
+
+To control these settings, you must pass the flags using the `GINKGO_USER_FLAGS` environment variable.
+
+For example, to set the Ginkgo runner to `very verbose` mode, you would set:
+```bash
+GINKGO_USER_FLAGS=-vv TEST_PKG=./test/e2e/... make test
+```
 
 #### Using Recently Published Image (Most Common)
 This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
 
 ```bash
-TEST_PKG=./test/e2e/... make run-tests
+TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Previously Published Image
 If you want to specify a particular version that was previously published, you can also do that by specifying the `ENVOY_IMAGE_TAG`.
 
 ```bash
-ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make run-tests
+ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Locally Built Image
 If you have made changes to the component, you will have had to rebuild the image locally (see [setup tests](#setup)). After you rebuild the image, you need to supply the tag of that image when running the tests:
 
 ```bash
-ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make run-tests
+ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make test
 ```
 
 ### Debugging Tests
@@ -67,7 +101,7 @@ When Ginkgo encounters a [test failure](https://onsi.github.io/ginkgo/#mental-mo
 
 To avoid this clean up, run the test(s) with `WAIT_ON_FAIL=1`. When the test fails, it will halt execution, allowing you to inspect the state of the Envoy instance.
 
-Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/master/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
+Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/main/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
 
 #### Use INVALID_TEST_REQS
 Certain test require environmental conditions to be true for them to succeed. For example, certain tests will only run on a Linux machine.
@@ -91,7 +125,7 @@ sudo ./echoapp2 --port 80 &
 
 ### Notes on AWS Lambda Tests (`test/e2e/aws_test.go`)
 
-In addition to the configuration steps provided above, you will need to do the following to run the [AWS Lambda Tests](https://github.com/solo-io/gloo/blob/master/test/e2e/aws_test.go) locally:
+In addition to the configuration steps provided above, you will need to do the following to run the [AWS Lambda Tests](https://github.com/solo-io/gloo/blob/main/test/e2e/aws_test.go) locally:
   1. Obtain an AWS IAM User account that is part of the Solo.io organization
   2. Create an AWS access key
        - Sign into the AWS console with the account created during step 1

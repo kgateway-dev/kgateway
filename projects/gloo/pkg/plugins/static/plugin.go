@@ -8,12 +8,14 @@ import (
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	proxyproto "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/proxy_protocol/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	pbgostruct "github.com/golang/protobuf/ptypes/struct"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	upstream_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upstreamproxyprotocol"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -26,6 +28,9 @@ var (
 const (
 	// TODO: make solo-projects use this constant
 	TransportSocketMatchKey = "envoy.transport_socket_match"
+
+	proxyProtocolUpstreamClusterName = "envoy.extensions.transport_sockets.proxy_protocol.v3.ProxyProtocolUpstreamTransport"
+	UpstreamProxySocketName          = "envoy.transport_sockets.upstream_proxy_protocol"
 
 	AdvancedHttpCheckerName = "io.solo.health_checkers.advanced_http"
 	PathFieldName           = "path"
@@ -143,7 +148,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	// if host port is 443 or if the user wants it, we will use TLS
-	if spec.GetUseTls() || foundSslPort {
+	if spec.GetUseTls().GetValue() || (spec.GetUseTls() == nil && foundSslPort) {
 		// tell envoy to use TLS to connect to this upstream
 		// TODO: support client certificates
 		if out.GetTransportSocket() == nil {
@@ -167,20 +172,62 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 	if out.GetTransportSocket() != nil {
-		for _, host := range spec.GetHosts() {
-			sniname := sniAddr(spec, host)
-			if sniname == "" {
-				continue
-			}
-			ts, err := mutateSni(out.GetTransportSocket(), sniname)
+		// we may have to operate on a different pointer so lets store this for now
+		topTS := out.GetTransportSocket()
+		shouldMutate := topTS.GetName() == wellknown.TransportSocketTls
+		// we have a transport socket and its not tls which was the former intention here
+		// given this we attempt to parse if we have a wrapped proxy protocol ts.
+		// We need this so that we can mutate the snis in any nested or non-nested
+		// tls transport sockets.
+		if out.GetTransportSocket().GetName() == upstream_proxy_protocol.UpstreamProxySocketName {
+			// strip it we will reset it
+			tcMsg, err := utils.AnyToMessage(out.GetTransportSocket().GetTypedConfig())
 			if err != nil {
 				return err
 			}
-			out.TransportSocketMatches = append(out.GetTransportSocketMatches(), &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
-				Name:            name(spec, host),
-				Match:           metadataMatch(spec, host),
-				TransportSocket: ts,
-			})
+
+			typedTransport, ok := tcMsg.(*proxyproto.ProxyProtocolUpstreamTransport)
+			if !ok {
+				return fmt.Errorf("static upstream cannot convert transport socket: %v", tcMsg)
+			}
+			topTS = typedTransport.GetTransportSocket()
+
+			cfg, err := utils.AnyToMessage(topTS.GetTypedConfig())
+			if err != nil {
+				return errors.Wrapf(err, "static upstream cannot convert transport socket: %v", tcMsg)
+			}
+
+			_, ok = cfg.(*envoyauth.UpstreamTlsContext)
+			shouldMutate = ok
+
+		}
+		if shouldMutate {
+			for _, host := range spec.GetHosts() {
+
+				sniname := sniAddr(spec, host)
+				if sniname == "" {
+					continue
+				}
+				ts, err := mutateSni(topTS, sniname)
+				if err != nil {
+					return err
+				}
+
+				if in.GetProxyProtocolVersion() != nil {
+					// reinstate the proxy protocol as we may wipe it out when we mutate the sni
+					newTs, err := upstream_proxy_protocol.WrapWithPProtocol(ts, in.GetProxyProtocolVersion().GetValue())
+					if err != nil {
+						return err
+					}
+					ts = newTs
+				}
+
+				out.TransportSocketMatches = append(out.GetTransportSocketMatches(), &envoy_config_cluster_v3.Cluster_TransportSocketMatch{
+					Name:            name(spec, host),
+					Match:           metadataMatch(spec, host),
+					TransportSocket: ts,
+				})
+			}
 		}
 	}
 
@@ -197,6 +244,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	return nil
 }
+
 func mutateSni(in *envoy_config_core_v3.TransportSocket, sni string) (*envoy_config_core_v3.TransportSocket, error) {
 	copy := *in
 

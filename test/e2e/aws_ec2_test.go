@@ -3,14 +3,14 @@ package e2e_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/solo-io/gloo/test/testutils"
+	"github.com/solo-io/gloo/test/services/envoy"
 
-	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -21,7 +21,6 @@ import (
 	"github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -74,7 +73,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		ctx           context.Context
 		cancel        context.CancelFunc
 		testClients   services.TestClients
-		envoyInstance *services.EnvoyInstance
+		envoyInstance *envoy.Instance
 		secret        *gloov1.Secret
 		upstream      *gloov1.Upstream
 		roleArn       string
@@ -159,7 +158,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			}
 
 			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
+			body, err := io.ReadAll(res.Body)
 			if err != nil {
 				return "", eris.Wrapf(err, "unable to read body")
 			}
@@ -196,7 +195,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 
 	// NOTE: you need to configure EC2 instances before running this
 	It("be able to call upstream function", func() {
-		err := envoyInstance.RunWithRoleAndRestXds(services.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
+		err := envoyInstance.RunWithRoleAndRestXds(envoy.DefaultProxyName, testClients.GlooPort, testClients.RestXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		proxy := &gloov1.Proxy{
@@ -207,7 +206,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
 				BindAddress: "::",
-				BindPort:    defaults.HttpPort,
+				BindPort:    envoyInstance.HttpPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
 						VirtualHosts: []*gloov1.VirtualHost{{
@@ -240,17 +239,13 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			return testClients.ProxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
 		})
 
-		validateEc2Endpoint(defaults.HttpPort, "Counts")
+		validateEc2Endpoint(envoyInstance.HttpPort, "Counts")
 	})
 
 	BeforeEach(func() {
-		testutils.ValidateRequirementsAndNotifyGinkgo(
-			testutils.Kubernetes("Uses a Kubernetes client"),
-		)
-
 		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
+
+		envoyInstance = envoyFactory.NewInstance()
 
 		runOptions := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -258,13 +253,8 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 			WhatToRun: services.What{
 				DisableGateway: true,
 			},
-			KubeClient: kube2e.MustKubeClient(),
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, runOptions)
-
-		var err error
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 
 		addCredentials()
 		addUpstream()

@@ -69,6 +69,7 @@ func NewDefaultTranslator(opts Opts) *GwTranslator {
 	}
 	aggregateTranslator := &AggregateTranslator{
 		VirtualServiceTranslator: virtualServiceTranslator,
+		TcpTranslator:            tcpTranslator,
 	}
 
 	translatorsByName := map[string]ListenerTranslator{

@@ -13,7 +13,7 @@ The first step in the preparation process is to install the proper software on y
 
 You're going to need some software to make all this magic happen:
 
-* **Hugo** - Hugo is a static site generator written in Go. Unlike the other programs listed here, You need a specific version of Hugo for this to work, which is [noted in the docs makefile](https://github.com/solo-io/gloo/blob/master/docs/Makefile#L26) as `HUGO_VERSION`. You can find the [installation process](https://gohugo.io/getting-started/installing/) for Hugo on their website. Refer to the tarball installation section for instructions on downloading specific versions.
+* **Hugo** - Hugo is a static site generator written in Go. Unlike the other programs listed here, You need a specific version of Hugo for this to work, which is [noted in the docs makefile](https://github.com/solo-io/gloo/blob/main/docs/Makefile#L26) as `HUGO_VERSION`. You can find the [installation process](https://gohugo.io/getting-started/installing/) for Hugo on their website. Refer to the tarball installation section for instructions on downloading specific versions.
 
 * **Go** - Golang is a programming language created by Google. You can find the [installation process](https://golang.org/doc/install) for Go on their website.
 
@@ -23,8 +23,8 @@ You're going to need some software to make all this magic happen:
 
 For each software component you should install the most recent version. This document was written and tested with the following versions on Ubuntu 18.04:
 
-* Hugo - 0.69.2
-* Go - 1.16.3
+* Hugo - 0.81.0
+* Go - 1.20.3
 * Git - 2.17.1
 * Make - 4.1
 
@@ -90,7 +90,7 @@ In a browser, navigate to http://localhost:1313 and make sure that the site load
 
 You've got the docs site running locally, and now you're ready to make some changes. The process for creating and submitting changes is very similar to the steps outlined in the [Quickstart]({{< versioned_link_path fromRoot="/contributing/documentation/#quickstart" >}}) section of the main Contributing page.
 
-1. Log an issue on the main Gloo Edge repository 
+1. Log an issue on the main Gloo Edge repository
 2. Create a new branch locally for your change
 3. Make the update, commit it, and push to origin
 4. Create a pull request to merge the change to the Gloo Edge repository

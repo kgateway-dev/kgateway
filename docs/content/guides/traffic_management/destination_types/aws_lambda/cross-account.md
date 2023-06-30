@@ -5,114 +5,147 @@ description: |
   This guide describes how to configure Gloo Edge to route to AWS Lambda functions in different accounts than the one used to authenticate with AWS.
 ---
 
-# Overview
- - Gloo Edge supports routing to AWS Lambda functions in different accounts than the one used to authenticate with AWS
- - There are two strategies that can be used to configure this behavior:
-   1. [IAM Roles for Service Accounts/Role-Chained Configuration](#iam-roles-for-service-accounts-irsa-configuration) (Recommended)
-   2. [Resource-Based Configuration](#resource-based-configuration)
+Route to AWS Lambda functions that exist in different accounts than the account you use to authenticate with AWS.
 
-# IAM Roles for Service Accounts/Role-Chained Configuration
- - This is the recommended workflow for using cross-account Lambda functions with Gloo Edge
- - The configuration is essentially a modified version of the AWS Lambda with EKS ServiceAccounts [guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}})
-## AWS Configuration
-- For this configuration you will need to create two roles, one in the primary account and one in the target account. The primary account is the account that you will use to authenticate with AWS, and the target account is the account that contains the Lambda functions that you wish to route to. The role in the primary account will be used to assume the role in the target account, which will be used to invoke the Lambda function.
-### Primary Account
-  - Follow the steps in the [AWS Lambda with EKS ServiceAccounts guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}})
-    - As part of this guide, you will create a role which will be associated with the ServiceAccount in your cluster. This role will be used to assume the role in the target account, which will be used to invoke the Lambda function. Make sure to note the `ARN` of this role to use when configuring the target account's role later.
-### Target Account
- - Create a Lambda function in the target account
- - Create a role which:
-   1. Can be used to invoke the Lambda function, which requires the `lambda:InvokeFunction` permission
-   1. Can be assumed by the role associated with the ServiceAccount in the primary account
-     - To do so, specify the following trust policy on the role with the `ARN` of the primary account's role that you previously retrieved:
-       ```json
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {
-                        "AWS": <ARN OF PRIMARY ACCOUNT ROLE>,
-                    },
-                    "Action": "sts:AssumeRole",
-                    "Condition": {}
-                }
-            ]
-        }
-       ```
-    
-## Gloo Edge Configuration
- - Disable Function Discovery (FDS), which automatically discovers functions in your primary AWS account. Because you want to route to Lambdas in more than one account, you must disable discovery and instead manually configure the functions.
-   - This can be done via the `gloo.discovery.fdsMode` setting to `DISABLED` in the enterprise Helm chart
-   - Alternatively, you can set `spec.discovery.fdsMode` to `DISABLED` in the `gloo.solo.io/v1.Settings` custom resource
- - Specify the Lambda functions in the target account that you wish to route to on the upstream
-   - These are defined under the `spec.aws.LambdaFunctions` field of the upstream
-- Configure the `spec.aws.roleArn` field of the upstream to point to the IAM role that will be used to invoke the Lambda functions, which is the role that you created in the target account
-  - This role should have the `lambda:InvokeFunction` permission
-  - Example Upstream:
-      ```yaml
-      apiVersion: gloo.solo.io/v1
-      kind: Upstream
-      metadata:
-        name: aws-upstream
-        namespace: gloo-system
-      spec:
-        aws:
-          region: us-east-1
-          secretRef:
-            name: aws-creds
-            namespace: gloo-system
-          roleArn: arn:aws:iam::123456789012:role/lambda-role
-          # because we have disabled FDS, we need to hardcode the lambda functions in the upstream spec
-          lambdaFunctions:
-          - lambdaFunctionName: target-name
-            logicalName: target-name
+You can set up multi-account routing in the following ways:
+* [IAM Roles for Service Accounts/Role-chained configuration (recommended)](#irsa)
+* [Resource-based configuration](#resource-based-configuration)
+
+## IAM Roles for Service Accounts/Role-chained configuration {#irsa}
+
+Use AWS IAM Roles for Service Accounts (IRSA) to configure routing to functions in different accounts. This method is recommended for using cross-account Lambda functions with Gloo Edge.
+
+### AWS configuration
+
+Create roles in your authentication and Lambda AWS accounts. In the account that you want to use to authenticate with AWS, you create a role that is used to assume the role in the Lambda account. In the account that contains the Lambda functions you want to route to, you create a role that is used to invoke the Lambda functions.
+
+1. In your authentication account, create a role by following the steps in the [AWS Lambda with EKS ServiceAccounts guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/eks-service-accounts/" >}}). In this guide, you create a role that is associated with the ServiceAccount in your cluster. Make sure to note the ARN of this role, which you use in subsequent steps to create the Lambda account's role.
+
+2. In your Lambda account, create the following resources.
+   1. Choose an existing or create a new Lambda function that you want to route to.
+   2. Create an IAM policy that contains at least the `lambda:InvokeFunction` permission to allow Lambda function invocation, such as the following example.
+      ```json
+      {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Sid": "VisualEditor0",
+                  "Effect": "Allow",
+                  "Action": [
+                      "lambda:ListFunctions",
+                      "lambda:InvokeFunction",
+                      "lambda:GetFunction",
+                      "lambda:InvokeAsync"
+                  ],
+                  "Resource": "*"
+              }
+          ]
+      }
+      ```
+   3. Create an IAM role that uses your invocation policy. In the role, specify the ARN of the authentication account's role that you created in step 1, such as the following example. After you create this role, make sure to note the role's ARN, which you specify in a Gloo Edge upstream resource in subsequent steps.
+      ```json
+      {
+          "Version": "2012-10-17",
+          "Statement": [
+              {
+                  "Effect": "Allow",
+                  "Principal": {
+                      "AWS": <ARN of authentication account role>,
+                  },
+                  "Action": "sts:AssumeRole",
+                  "Condition": {}
+              }
+          ]
+      }
+      ```
+   
+### Gloo Edge configuration
+
+Modify your Gloo Edge installation settings and upstream resources to support routing to the Lambda functions.
+
+1. Disable Function Discovery (FDS), which automatically discovers functions in your authentication account. You can disable FDS in one of the following ways:
+   - In the Gloo Edge Enterprise Helm chart, set `gloo.discovery.fdsMode` to `DISABLED`.
+   - In the `gloo.solo.io/v1.Settings` custom resource, set `spec.discovery.fdsMode` to `DISABLED`.
+
+2. Create an upstream resource for each Lambda function that you want to route to.
+   - In the `spec.aws.roleArn` field, specify the IAM role ARN that is used to invoke the Lambda functions, which you created for the Lambda account in step 2.3 of the previous section.
+   - In the `spec.aws.lambdaFunctions` section, specify the Lambda function details.
+   ```yaml
+   apiVersion: gloo.solo.io/v1
+   kind: Upstream
+   metadata:
+     name: aws-upstream
+     namespace: gloo-system
+   spec:
+     aws:
+       region: us-east-1
+       roleArn: arn:aws:iam::123456789012:role/lambda-role
+       lambdaFunctions:
+       - lambdaFunctionName: target-name
+         logicalName: target-name
+   ```
+3. Optional: [Verify routing](#verify-routing).
+
+## Resource-based configuration
+
+Use AWS resource-based configuration to configure routing to functions in different accounts.
+### AWS configuration
+
+For the AWS configuration, you create a user or role in the authentication account, and a Lambda function in the account that contains the Lambda functions. The Lambda function has a resource-based policy statement which allows the user or role in the authentication account to invoke it.
+
+1. Create the following resources for your authentication account. 
+   1. Create a user or role in your authentication account. Be sure to give the user or role the `lambda:InvokeFunction` permission, so that the role can used to invoke the Lambda functions in the other account.
+   2. Create an access key for the user or role, which is used to authenticate with AWS when invoking the Lambda functions.
+   3. Create a Kubernetes secret that contains the access key and secret key.
+      ```sh
+      glooctl create secret aws \
+          --name 'aws-creds' \
+          --namespace gloo-system \
+          --access-key $ACCESS_KEY \
+          --secret-key $SECRET_KEY
       ```
 
-# Resource-Based Configuration
-## AWS Configuration
-- For this configuration you will need to create a user or role in the primary account, and a Lambda function in the target account. The Lambda function will have a resource-based policy statement which will allow the user or role in the primary account to invoke it.
-### Primary Account
- - Create a user or role in the primary account that will be used to invoke the Lambda functions in the secondary account
-   - Give the user the `lambda:InvokeFunction` permission
-   - Create an access key for the user. This will be used to authenticate with AWS when invoking the Lambda functions
-### Target Account
- - Create a Lambda function in the target account
- - Define a Resource-based policy statement for the function, which will allow the user in the Primary account to invoke it
-   - In the AWS console, select the Lambda function, and click the "Configuration" tab
-   - From there, click the "Permissions" tab in the sidebar, and scroll down to the "Resource-based policy statements" section
-   - Click "Add Permissions", and select "AWS account" as the entity which will invoke the function
-   - Use the ARN of the user or role in the primary account as the principal
-   - Select `lambda:InvokeFunction` as the action
-## Gloo Edge Configuration
- - Disable Function Discovery (FDS). This can be used to automatically discover functions in the user's primary AWS account, but since we are using a secondary account, we will need to manually configure the functions.
-   - This can be done via the `gloo.discovery.fdsMode` setting to `DISABLED` in the enterprise Helm chart
-   - Alternatively, you can set `spec.discovery.fdsMode` to `DISABLED` in the `gloo.solo.io/v1.Settings` custom resource
- - Configure an AWS secret, using the access key and secret key of the user in the primary account
-   - See the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/" >}}) for more information on how to do this
-   - This secret will be used to authenticate with AWS when invoking the Lambda functions
- - Specify the Lambda functions in the target account that you wish to route to on the upstream
-   - These are defined under the `spec.aws.LambdaFunctions` field of the upstream 
- - Specify the target account ID in the upstream
-   - This is defined under the `spec.aws.awsAccountId` field of the upstream
- - Example Upstream:
-     ```yaml
-     apiVersion: gloo.solo.io/v1
-     kind: Upstream
-     metadata:
-       name: aws-upstream
-       namespace: gloo-system
-     spec:
-       aws:
-         region: us-east-1
-         secretRef:
-           name: aws-creds
-           namespace: gloo-system
-         awsAccountId: "123456789012"
-         # because we have disabled FDS, we need to hardcode the lambda functions in the upstream spec
-         lambdaFunctions:
-         - lambdaFunctionName: target-name
-           logicalName: target-name
-     ```
-## Validation
- - To validate that the configuration is correct, you can follow the steps in the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda#step-3-create-an-upstream-and-virtual-service" >}}) to create a virtual service that routes to the Lambda function via the AWS upstream
+2. Create the following resources for your Lambda account.
+   1. Choose an existing or create a new Lambda function that you want to route to.
+   2. Define a resource-based policy statement for the function, which allows the user in the authentication account to invoke it.
+      1. In the AWS console, select the Lambda function.
+      2. Click the **Configuration** tab.
+      3. In the sidebar, click the **Permissions** tab.
+      4. In the **Resource-based policy statements** section, click **Add Permissions**.
+         * Select **AWS account** as the entity which invokes the function.
+         * Specify the ARN of the user or role in the authentication account as the principal.
+         * Select `lambda:InvokeFunction` as the action.
+
+### Gloo Edge configuration
+
+Modify your Gloo Edge installation settings and upstream resources to support routing to the Lambda functions.
+
+1. Disable Function Discovery (FDS), which automatically discovers functions in your authentication account. You can disable FDS in one of the following ways:
+   - In the Gloo Edge Enterprise Helm chart, set `gloo.discovery.fdsMode` to `DISABLED`.
+   - In the `gloo.solo.io/v1.Settings` custom resource, set `spec.discovery.fdsMode` to `DISABLED`.
+
+2. Create an upstream resource for each Lambda function that you want to route to.
+   - In the `spec.aws.awsAccountId` field, specify the ID for the account that contains the Lambda functions.
+   - In the `spec.aws.lambdaFunctions` section, specify the Lambda function details.
+   ```yaml
+   apiVersion: gloo.solo.io/v1
+   kind: Upstream
+   metadata:
+     name: aws-upstream
+     namespace: gloo-system
+   spec:
+     aws:
+       region: us-east-1
+       secretRef:
+         name: aws-creds
+         namespace: gloo-system
+       awsAccountId: "123456789012"
+       lambdaFunctions:
+       - lambdaFunctionName: target-name
+         logicalName: target-name
+   ```
+3. Optional: [Verify routing](#verify-routing).
+
+## Verify routing
+
+To verify that the configuration is correct, you can follow the steps in the [AWS Lambda guide]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda#step-3-create-an-upstream-and-virtual-service" >}}) to create a virtual service that routes to the Lambda function via the AWS upstream.

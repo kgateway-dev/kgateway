@@ -14,22 +14,23 @@ import (
 	errors "github.com/rotisserie/eris"
 
 	"github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/services/utils"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/log"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/gexec"
 )
 
 const (
-	DefaultHost = "127.0.0.1"
-	DefaultPort = 8200
+	DefaultHost       = "127.0.0.1"
+	DefaultPort       = 8200
+	DefaultVaultToken = "root"
 
-	DefaultVaultToken       = "root"
-	defaultVaultDockerImage = "vault:1.12.2"
+	vaultDockerImage = "hashicorp/vault:1.13.3"
+	vaultBinaryName  = "vault"
 )
 
 type VaultFactory struct {
@@ -39,56 +40,24 @@ type VaultFactory struct {
 }
 
 // NewVaultFactory returns a VaultFactory
-// TODO (sam-heilbron):
-// TODO This factory supports a number of mechanisms to run vault (binary path as env var, lookup vault, docker)
-// TODO We should just decide what pattern(s) we want to support and simplify this service to match
 func NewVaultFactory() (*VaultFactory, error) {
-	path := os.Getenv("VAULT_BINARY")
-	if path != "" {
-		return &VaultFactory{
-			vaultPath: path,
-		}, nil
-	}
-
-	vaultPath, err := exec.LookPath("vault")
-	if err == nil {
-		log.Printf("Using vault from PATH: %s", vaultPath)
-		return &VaultFactory{
-			vaultPath: vaultPath,
-		}, nil
-	}
-
-	// try to grab one form docker...
 	tmpdir, err := os.MkdirTemp(os.Getenv("HELPER_TMP"), "vault")
 	if err != nil {
 		return nil, err
 	}
-
-	bash := fmt.Sprintf(`
-set -ex
-CID=$(docker run -d  %s /bin/sh -c exit)
-
-# just print the image sha for repoducibility
-echo "Using Vault Image:"
-docker inspect %s -f "{{.RepoDigests}}"
-
-docker cp $CID:/bin/vault .
-docker rm -f $CID
-    `, defaultVaultDockerImage, defaultVaultDockerImage)
-	scriptfile := filepath.Join(tmpdir, "getvault.sh")
-
-	os.WriteFile(scriptfile, []byte(bash), 0755)
-
-	cmd := exec.Command("bash", scriptfile)
-	cmd.Dir = tmpdir
-	cmd.Stdout = ginkgo.GinkgoWriter
-	cmd.Stderr = ginkgo.GinkgoWriter
-	if err := cmd.Run(); err != nil {
+	binaryPath, err := utils.GetBinary(utils.GetBinaryParams{
+		Filename:    vaultBinaryName,
+		DockerImage: vaultDockerImage,
+		DockerPath:  "/bin/vault",
+		EnvKey:      testutils.VaultBinary,
+		TmpDir:      tmpdir,
+	})
+	if err != nil {
 		return nil, err
 	}
 
 	return &VaultFactory{
-		vaultPath: filepath.Join(tmpdir, "vault"),
+		vaultPath: binaryPath,
 		tmpdir:    tmpdir,
 	}, nil
 }

@@ -19,6 +19,7 @@ weight: 5
 - [HttpListener](#httplistener)
 - [HybridListener](#hybridlistener)
 - [MatchedListener](#matchedlistener)
+- [MatchedTcpListener](#matchedtcplistener)
 - [Matcher](#matcher)
 - [AggregateListener](#aggregatelistener)
 - [HttpResources](#httpresources)
@@ -257,6 +258,25 @@ Some traffic policies can be configured to work both on the listener and virtual
 
 
 ---
+### MatchedTcpListener
+
+
+
+```yaml
+"matcher": .gloo.solo.io.Matcher
+"tcpListener": .gloo.solo.io.TcpListener
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matcher` | [.gloo.solo.io.Matcher](../proxy.proto.sk/#matcher) | Matchers are used to define unique matching criteria for each MatchedListener These are overridden by tcphost sni mutators. |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | The actual tcp listener to be used for this matcher in the aggregate listener. |
+
+
+
+
+---
 ### Matcher
 
 
@@ -264,6 +284,7 @@ Some traffic policies can be configured to work both on the listener and virtual
 ```yaml
 "sslConfig": .gloo.solo.io.SslConfig
 "sourcePrefixRanges": []solo.io.envoy.config.core.v3.CidrRange
+"passthroughCipherSuites": []string
 
 ```
 
@@ -271,6 +292,7 @@ Some traffic policies can be configured to work both on the listener and virtual
 | ----- | ---- | ----------- | 
 | `sslConfig` | [.gloo.solo.io.SslConfig](../ssl/ssl.proto.sk/#sslconfig) |  |
 | `sourcePrefixRanges` | [[]solo.io.envoy.config.core.v3.CidrRange](../../external/envoy/config/core/v3/address.proto.sk/#cidrrange) |  |
+| `passthroughCipherSuites` | `[]string` |  |
 
 
 
@@ -284,6 +306,7 @@ An AggregateListener defines a set of Gloo configuration which will map to a uni
 ```yaml
 "httpResources": .gloo.solo.io.AggregateListener.HttpResources
 "httpFilterChains": []gloo.solo.io.AggregateListener.HttpFilterChain
+"tcpListeners": []gloo.solo.io.MatchedTcpListener
 
 ```
 
@@ -291,6 +314,7 @@ An AggregateListener defines a set of Gloo configuration which will map to a uni
 | ----- | ---- | ----------- | 
 | `httpResources` | [.gloo.solo.io.AggregateListener.HttpResources](../proxy.proto.sk/#httpresources) | The aggregate set of resources available on this listener. |
 | `httpFilterChains` | [[]gloo.solo.io.AggregateListener.HttpFilterChain](../proxy.proto.sk/#httpfilterchain) | The set of HttpFilterChains to create on this listener. |
+| `tcpListeners` | [[]gloo.solo.io.MatchedTcpListener](../proxy.proto.sk/#matchedtcplistener) | The set of TcpListeners to create on this listener. |
 
 
 
@@ -357,7 +381,7 @@ If a request is not matched to any virtual host or a route therein, the target p
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | `string` | the logical name of the virtual host. names must be unique for each virtual host within a listener. |
-| `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all virtual hosts or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |
+| `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all virtual hosts or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto). |
 | `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |
 | `options` | [.gloo.solo.io.VirtualHostOptions](../options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Metadata for the individual route This data is opaque to Gloo, used by controllers to track ownership of routes within a proxy as they are typically generated by a controller (such as the gateway) Deprecated: prefer the any field below. Only one of `metadata` or `metadataStatic` can be set. |
@@ -565,7 +589,7 @@ WeightedDestination attaches a weight to a single destination.
 ### RedirectAction
 
  
-Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
 
 ```yaml
 "hostRedirect": string
@@ -611,7 +635,7 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 ### DirectResponseAction
 
  
-DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
+DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy/blob/main/api/envoy/api/v2/route/route.proto
 
 ```yaml
 "status": int

@@ -4,10 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/test/services/envoy"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -23,7 +24,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/projects/gloo/pkg/setup"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -46,7 +47,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		cancel         context.CancelFunc
 		consulInstance *services.ConsulInstance
 		vaultInstance  *services.VaultInstance
-		envoyInstance  *services.EnvoyInstance
+		envoyInstance  *envoy.Instance
 		svc1           *v1helpers.TestUpstream
 		err            error
 		settingsDir    string
@@ -74,9 +75,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		restXdsPort = int(services.AllocateGlooPort())
 		proxyDebugPort = int(services.AllocateGlooPort())
 
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
-
 		// Start Consul
 		consulInstance, err = consulFactory.NewConsulInstance()
 		Expect(err).NotTo(HaveOccurred())
@@ -91,10 +89,12 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = vaultInstance.EnableSecretEngine(customSecretEngine)
 		Expect(err).NotTo(HaveOccurred())
 
+		envoyInstance = envoyFactory.NewInstance()
+
 		vaultSecretSource := getVaultSecretSource(vaultInstance, customSecretEngine)
 
 		// write settings telling Gloo to use consul/vault
-		settingsDir, err = ioutil.TempDir("", "")
+		settingsDir, err = os.MkdirTemp("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		settings, err := writeSettings(settingsDir, glooPort, validationPort, restXdsPort, proxyDebugPort, writeNamespace, vaultSecretSource)
@@ -117,7 +117,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
-		vaultResources = bootstrap.NewVaultSecretClientFactory(vaultClient, customSecretEngine, bootstrap.DefaultRootKey)
+		vaultResources = bootstrap.NewVaultSecretClientFactory(bootstrap.NoopVaultClientInitFunc(vaultClient), customSecretEngine, bootstrap.DefaultRootKey)
 
 		// set flag for gloo to use settings dir
 		err = flag.Set("dir", settingsDir)
@@ -144,8 +144,6 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		}()
 
 		// Start Envoy
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRoleAndRestXds(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, glooPort, restXdsPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -223,7 +221,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
-		v1helpers.TestUpstreamReachable(defaults.HttpsPort, svc1, &cert)
+		v1helpers.TestUpstreamReachable(envoyInstance.HttpsPort, svc1, &cert)
 	})
 	It("can do function routing with consul services", func() {
 
@@ -245,7 +243,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			return proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 		}, "60s", ".2s")
 
-		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
+		v1helpers.ExpectHttpOK(nil, nil, envoyInstance.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 `)
 	})
@@ -376,5 +374,5 @@ func writeSettings(
 	if err := os.MkdirAll(filepath.Join(settingsDir, "artifacts", "default"), 0755); err != nil {
 		return nil, err
 	}
-	return settings, ioutil.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
+	return settings, os.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
 }
