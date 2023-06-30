@@ -44,8 +44,6 @@ import (
 
 var _ = Describe("Consul + Vault Configuration Happy Path e2e", decorators.Vault, decorators.Consul, func() {
 
-	// ConsulVaultE2eSuite must be run Serially since the Consul and Vault Services do not rotate ports
-
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
