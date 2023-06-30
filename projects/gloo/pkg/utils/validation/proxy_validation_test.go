@@ -262,7 +262,7 @@ var _ = Describe("validation utils", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
-		It("aggregates the errors at every level for aggregate listener (TCP only)", func() {
+		It("aggregates the errors at every level for aggregate listener", func() {
 			proxy := makeInvalidAggregateListenerProxyTcp()
 			rpt := MakeReport(proxy)
 
