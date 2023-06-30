@@ -25,6 +25,8 @@ func GetPortOffset() int {
 	return GetParallelProcessCount() * 1000
 }
 
+// AdvancePortSafe advances the provided port by 1 until it returns a port that is safe to use
+// The availability of the port is determined by the errIfPortInUse function
 func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) uint32 {
 	var newPort uint32
 
@@ -41,32 +43,13 @@ func AdvancePortSafe(p *uint32, errIfPortInUse func(proposedPort uint32) error) 
 	return newPort
 }
 
+// AdvancePort advances the provided port by 1, and adds an offset to support running tests in parallel
 func AdvancePort(p *uint32) uint32 {
 	return atomic.AddUint32(p, 1) + uint32(GetPortOffset())
 }
 
-// AdvancePortSafeDenylist returns a port that is safe to use in parallel tests
-// It relies on a hard-coded denylist, of ports that we know are hard-coded in Gloo
-// And will cause tests to fail if they attempt to bind on the same port
-// If you need a more advanced port selection mechanism, use AdvancePortSafe
-func AdvancePortSafeDenylist(p *uint32) uint32 {
-	return AdvancePortSafe(p, portInUseDenylist)
-}
-
-func portInUseDenylist(proposedPort uint32) error {
-	var denyList = map[uint32]struct{}{
-		10010: {}, // used by Gloo, when devMode is enabled
-	}
-
-	if _, ok := denyList[proposedPort]; ok {
-		return eris.Errorf("port %d is in use", proposedPort)
-	}
-	return nil
-}
-
 // AdvancePortSafeListen returns a port that is safe to use in parallel tests
 // It relies on pinging the port to see if it is in use
-// This may be slower than using a denylist, but it is more robust
 func AdvancePortSafeListen(p *uint32) uint32 {
 	return AdvancePortSafe(p, portInUseListen)
 }
