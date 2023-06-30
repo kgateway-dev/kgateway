@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issuelink: https://github.com/solo-io/gloo/issues/8266
+    resolvesIssue: false
+    description: >
+     Fixes an issue which prevented the global setting (gloo.logTransformationRequestResponseInfo)
+     for transformation logging from being respected.
