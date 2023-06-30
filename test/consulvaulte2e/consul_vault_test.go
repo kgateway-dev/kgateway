@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
+
 	"github.com/solo-io/gloo/test/services/envoy"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -40,7 +42,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
+var _ = Describe("Consul + Vault Configuration Happy Path e2e", decorators.Vault, decorators.Consul, func() {
 
 	var (
 		ctx            context.Context

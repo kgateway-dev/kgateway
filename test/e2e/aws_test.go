@@ -64,14 +64,11 @@ var _ = Describe("AWS Lambda", func() {
 		envoyInstance *envoy.Instance
 		secret        *gloov1.Secret
 		upstream      *gloov1.Upstream
-		httpClient    *http.Client
 		runOptions    *services.RunOptions
 	)
 
 	BeforeEach(func() {
 		testutils.ValidateRequirementsAndNotifyGinkgo(testutils.AwsCredentials())
-		httpClient = http.DefaultClient
-		httpClient.Timeout = 10 * time.Second
 		runOptions = &services.RunOptions{
 			NsToWrite: writeNamespace,
 			NsToWatch: []string{"default", writeNamespace},
@@ -486,6 +483,8 @@ var _ = Describe("AWS Lambda", func() {
 		var body []byte
 		path := "transforms-req-test"
 		waitForLambdaAndGetBody := func() error {
+			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
+
 			req, err := http.NewRequest("POST", fmt.Sprintf("http://%s:%d/%s?foo=bar", "localhost", envoyInstance.HttpPort, path), bytes.NewBufferString(`"test"`))
 			Expect(err).NotTo(HaveOccurred())
 			req.Header.Set("Content-Type", "application/octet-stream")

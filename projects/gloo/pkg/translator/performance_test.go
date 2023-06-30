@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -49,7 +51,7 @@ type benchmarkConfig struct {
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
 // Results can then be found in the logs for that instance of the action
-var _ = Describe("Translation - Benchmarking Tests", Serial, Label(labels.Performance), func() {
+var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
 	var (
 		ctrl       *gomock.Controller
 		settings   *v1.Settings

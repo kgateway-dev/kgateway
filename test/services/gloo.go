@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"reflect"
-	"sync/atomic"
 	"time"
 
 	"github.com/hashicorp/consul/api"
@@ -73,7 +72,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var glooPortBase = int32(30400)
+var glooPortBase = uint32(30400)
 
 const (
 	GlooServiceName = "gloo"
@@ -82,7 +81,7 @@ const (
 )
 
 func AllocateGlooPort() int32 {
-	return atomic.AddInt32(&glooPortBase, 1) + int32(parallel.GetPortOffset())
+	return int32(parallel.AdvancePortSafeListen(&glooPortBase))
 }
 
 // RunOptions are options for running an in-memory e2e test
