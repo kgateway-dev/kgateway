@@ -135,7 +135,7 @@ var _ = Describe("Route Plugin", func() {
 			Expect(outRoute.TypedPerFilterConfig).To(Equal(expected.TypedPerFilterConfig))
 
 		})
-		FIt("should process empty specification", func() {
+		It("should process empty specification", func() {
 			inRoute := routeWithCors(&cors.CorsPolicy{})
 			outRoute := basicEnvoyRoute()
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
