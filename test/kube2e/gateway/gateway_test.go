@@ -2232,7 +2232,9 @@ spec:
 				kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
 			})
 
-			Context("with a mix of valid and invalid virtual services", func() {
+			Context("with a mix of valid and invalid virtual services", FlakeAttempts(3), func() {
+				// We have resolved most of the flakiness in this test, but it still occasionally fails
+				// We have not been able to reproduce the failure locally, so we are marking it as flaky
 
 				var (
 					validVsName, invalidVsName string
