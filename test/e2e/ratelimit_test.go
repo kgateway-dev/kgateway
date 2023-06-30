@@ -125,7 +125,9 @@ func (s *metadataCheckingRateLimitServer) getActionsForServer() []*rltypes.RateL
 	}
 }
 
-var _ = Describe("Rate Limit", func() {
+var _ = Describe("Rate Limit", Serial, func() {
+
+	// These tests use the Serial decorator because they rely on a hard-coded port for the RateLimit server (18081)
 
 	var (
 		ctx         context.Context

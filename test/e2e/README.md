@@ -95,6 +95,15 @@ If you have made changes to the component, you will have had to rebuild the imag
 ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make test
 ```
 
+#### Running Tests in Parallel
+It is possible to run tests in parallel locally, however it is not recommended, because debugging failures becomes more difficult. If you do want to run tests in parallel, you can do so by passing in the relevant `GINKGO_USER_FLAGS` values:
+```bash
+GINKGO_USER_FLAGS=-procs=4 TEST_PKG=./test/e2e/... make test
+```
+
+*Note: When using Docker to run Envoy, we have seen occasional failures: `Error response from daemon: dial unix docker.raw.sock: connect: connection refused`*
+
+
 ### Debugging Tests
 #### Use WAIT_ON_FAIL
 When Ginkgo encounters a [test failure](https://onsi.github.io/ginkgo/#mental-model-how-ginkgo-handles-failure) it will attempt to clean up relevant resources, which includes stopping the running instance of Envoy, preventing the developer from inspecting the state of the Envoy instance for useful clues.

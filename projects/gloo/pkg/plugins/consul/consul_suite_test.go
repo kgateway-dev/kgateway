@@ -9,13 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var T *testing.T
-
 func TestConsul(t *testing.T) {
+	// This has caused issues when tests are run in parallel (not enabled in CI)
 	leakDetector := helpers.DeferredGoroutineLeakDetector(t)
 	defer leakDetector()
 
 	RegisterFailHandler(Fail)
-	T = t
 	RunSpecs(t, "Consul Plugin Suite")
 }

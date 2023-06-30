@@ -24,6 +24,7 @@ func TestE2e(t *testing.T) {
 
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
+
 	RunSpecs(t, "Consul+Vault E2e Suite", Label(labels.E2E))
 }
 

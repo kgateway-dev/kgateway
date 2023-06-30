@@ -208,11 +208,12 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		envoypath:                f.envoypath,
 		UseDocker:                f.useDocker,
 		DockerImage:              f.dockerImage,
+		DockerContainerName:      fmt.Sprintf("e2e_envoy-%d", defaults.HttpPort),
 		GlooAddr:                 gloo,
 		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
 		ApiVersion:               "V3",
-		logLevel:                 getInstanceLogLevel(),
+		LogLevel:                 getInstanceLogLevel(),
 		RequestPorts: &RequestPorts{
 			HttpPort:   defaults.HttpPort,
 			HttpsPort:  defaults.HttpsPort,
@@ -221,6 +222,8 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 			AdminPort:  defaults.EnvoyAdminPort,
 		},
 	}
+
+	log.Printf("Envoy Instance (%s) Ports: %+v", ei.DockerContainerName, ei.RequestPorts)
 	f.instances = append(f.instances, ei)
 	return ei, nil
 
