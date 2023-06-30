@@ -129,6 +129,14 @@ var _ = Describe("validation utils", func() {
 						Matcher:     &v1.Matcher{},
 						TcpListener: nil,
 					}},
+					HttpResources: &v1.AggregateListener_HttpResources{},
+					HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+						Matcher: &v1.Matcher{
+							SourcePrefixRanges: []*v3.CidrRange{{
+								AddressPrefix: "http-0",
+							}},
+						},
+					}},
 				},
 			},
 		}}
@@ -294,8 +302,22 @@ var _ = Describe("validation utils", func() {
 					},
 				})
 
+			httpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix: "http-0",
+					},
+				},
+			}
+			httpListenerReport := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_AggregateListenerReport).AggregateListenerReport.HttpListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[0], httpMatcher)]
+			httpListenerReport.Errors = append(httpListenerReport.Errors, &validation.HttpListenerReport_Error{
+				Type:   validation.HttpListenerReport_Error_ProcessingError,
+				Reason: "bad http plugin",
+			})
+
 			err := GetProxyError(rpt)
 			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: bad http plugin"))
 			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
 			Expect(err.Error()).To(ContainSubstring("TcpListener Error: SSLConfigError. Reason: test SSLConfig Error"))
 			Expect(err.Error()).To(ContainSubstring("TcpHost Error: InvalidDestinationError. Reason: testing invalid destination error"))
