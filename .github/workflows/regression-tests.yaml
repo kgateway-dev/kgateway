@@ -60,7 +60,7 @@ jobs:
       fail-fast: false
       matrix:
         kube-e2e-test-type: ['gateway', 'gloo', 'ingress', 'helm', 'gloomtls', 'glooctl', 'upgrade', 'istio']
-        kube-version: [{ node: 'v1.25.3@sha256:f52781bc0d7a19fb6c405c2af83abfeb311f130707a0e219175677e366cc45d1', kubectl: 'v1.25.8', kind: 'v0.17.0', helm: 'v3.11.2' }]
+        kube-version: [{ node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.0', kind: 'v0.20.0', helm: 'v3.11.2' }]
     steps:
     - uses: actions/checkout@v3
     - uses: ./.github/actions/regression-tests
