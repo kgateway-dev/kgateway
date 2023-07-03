@@ -1,5 +1,5 @@
 changelog:
   - type: BREAKING_CHANGE
-    description: Update Kubernetes API to 1.26. - WIP
+    description: Update Kubernetes API to 1.26. -  WIP
     issueLink: https://github.com/solo-io/gloo/issues/8164
     resolvesIssue: false
