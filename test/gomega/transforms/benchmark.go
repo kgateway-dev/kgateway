@@ -2,6 +2,7 @@ package transforms
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"time"
 )
@@ -17,7 +18,9 @@ func WithPercentile(percentile int) func(durations []time.Duration) time.Duratio
 		sort.Slice(durations, func(i, j int) bool {
 			return durations[i] < durations[j]
 		})
-		return durations[int(float64(len(durations))*(float64(percentile-1)/float64(100)))]
+
+		idx := int(math.Ceil(float64(len(durations))*(float64(percentile)/float64(100)))) - 1
+		return durations[idx]
 	}
 }
 
