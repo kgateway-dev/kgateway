@@ -8,3 +8,11 @@ changelog:
 
       skipCI-kube-tests:true
       skipCI-docs-build:true
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5038
+    resolvesIssue: false
+    description: >-
+      Add a `HavePercentileWithin()` matcher for use in performance tests
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
