@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5058
+    resolvesIssue: false
+    description: >- 
+      Add `WithRawHeader` method for http request builder.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
