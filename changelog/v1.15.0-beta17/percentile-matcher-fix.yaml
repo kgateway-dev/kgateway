@@ -1,0 +1,18 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5116
+    resolvesIssue: false
+    description: >-
+      Resolve an off-by-one error introduced in initial implementation of WithPercentile() Transform in #8364 and explicitly
+      state intended percentile method
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5038
+    resolvesIssue: false
+    description: >-
+      Add a `HavePercentileWithin()` matcher for use in performance tests
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
