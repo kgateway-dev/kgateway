@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  repositoryOwner: solo-io
+  repositoryName: envoy-gloo
+  repositoryTag: v1.26.2-patch2
+  issueLink: https://github.com/solo-io/gloo/issues/8177
+  resolvesIssue: false
+  description: >-
+    Use latest envoy-gloo to access latest version of Inja.
