@@ -362,7 +362,7 @@ This will cause the resulting body to include the following extra attributes (in
 ##### dynamicMetadataValues
 This attribute can be used to define an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry. This metadata can be used by other filters in the filter chain to implement custom behavior.
 
-As an example, the following configuration creates a dynamic metadata entry in the `com.example` namespace with key  `foo` and value equal to that of the `foo` header .
+As an example, the following configuration creates a dynamic metadata entry in the `com.example` namespace with key  `foo` and value equal to that of the `foo` header.
 
 ```yaml
 dynamicMetadataValues:
@@ -387,7 +387,7 @@ Please note that, if set to `true`, you will need to use the `extraction` functi
 Unless `parseBodyBehavior` is set to `DontParse`, templates can be used only if the request/response payload is a JSON string.
 {{% /notice %}}
 
-Gloo Edge templates are powered by the [Inja](https://github.com/pantor/inja/tree/v3.4.0) template engine v3.4, which is inspired by the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python. When writing your templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic, and functions.
+Gloo Edge templates are powered by v3.4 of the [Inja](https://github.com/pantor/inja/tree/v3.4.0) template engine, which is inspired by the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python. When writing your templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic, and functions.
 
 In addition to the standard functions available in the core _Inja_ library, you can use additional custom functions that we have added:
 
