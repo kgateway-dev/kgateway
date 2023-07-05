@@ -714,7 +714,8 @@ type TransformationTemplate struct {
 	//	*TransformationTemplate_Passthrough
 	//	*TransformationTemplate_MergeExtractorsToBody
 	BodyTransformation isTransformationTemplate_BodyTransformation `protobuf_oneof:"body_transformation"`
-	ParseBodyBehavior  TransformationTemplate_RequestBodyParse     `protobuf:"varint,7,opt,name=parse_body_behavior,json=parseBodyBehavior,proto3,enum=envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse" json:"parse_body_behavior,omitempty"`
+	// Determines how the body will be parsed. Defaults to ParseAsJson
+	ParseBodyBehavior TransformationTemplate_RequestBodyParse `protobuf:"varint,7,opt,name=parse_body_behavior,json=parseBodyBehavior,proto3,enum=envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse" json:"parse_body_behavior,omitempty"`
 	// If set to true, Envoy will not throw an exception in case the body parsing
 	// fails.
 	IgnoreErrorOnParse bool `protobuf:"varint,8,opt,name=ignore_error_on_parse,json=ignoreErrorOnParse,proto3" json:"ignore_error_on_parse,omitempty"`
