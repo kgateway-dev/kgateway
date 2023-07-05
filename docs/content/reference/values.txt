@@ -676,6 +676,7 @@
 |gatewayProxies.NAME.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.NAME.istioDiscoveryAddress|string||discoveryAddress field of the PROXY_CONFIG environment variable. Defaults to "istiod.istio-system.svc:15012"|
 |gatewayProxies.NAME.envoyLogLevel|string||Level at which the pod should log. Options include "trace", "info", "debug", "warn", "error", "critical" and "off". Default level is info|
+|gatewayProxies.NAME.envoyStatsConfig.NAME|interface||Envoy statistics configuration, such as tagging. For more info, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig|
 |gatewayProxies.NAME.xdsServiceAddress|string||The k8s service name for the xds server. Defaults to gloo.|
 |gatewayProxies.NAME.xdsServicePort|uint32||The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay.|
 |gatewayProxies.NAME.tcpKeepaliveTimeSeconds|uint32||The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60. See here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive|
@@ -924,6 +925,7 @@
 |gatewayProxies.gatewayProxy.istioMetaClusterId|string||ISTIO_META_CLUSTER_ID Environment Variable. Defaults to "Kubernetes"|
 |gatewayProxies.gatewayProxy.istioDiscoveryAddress|string||discoveryAddress field of the PROXY_CONFIG environment variable. Defaults to "istiod.istio-system.svc:15012"|
 |gatewayProxies.gatewayProxy.envoyLogLevel|string||Level at which the pod should log. Options include "trace", "info", "debug", "warn", "error", "critical" and "off". Default level is info|
+|gatewayProxies.gatewayProxy.envoyStatsConfig.NAME|interface||Envoy statistics configuration, such as tagging. For more info, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#config-metrics-v3-statsconfig|
 |gatewayProxies.gatewayProxy.xdsServiceAddress|string||The k8s service name for the xds server. Defaults to gloo.|
 |gatewayProxies.gatewayProxy.xdsServicePort|uint32||The k8s service port for the xds server. Defaults to the value from .Values.gloo.deployment.xdsPort, but can be overridden to use, for example, xds-relay.|
 |gatewayProxies.gatewayProxy.tcpKeepaliveTimeSeconds|uint32|60|The amount of time in seconds for connections to be idle before sending keep-alive probes. Defaults to 60. See here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/address.proto#envoy-v3-api-msg-config-core-v3-tcpkeepalive|
