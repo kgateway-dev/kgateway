@@ -1,9 +1,10 @@
 package transforms
 
 import (
-	"github.com/solo-io/gloo/test/helpers"
 	"sort"
 	"time"
+
+	"github.com/solo-io/gloo/test/helpers"
 )
 
 // WithPercentile returns a function that extracts the value at the given percentile from a slice of durations
