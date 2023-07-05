@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 # ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.26.2-patch2
-ENVOY_GLOO_IMAGE ?= bohanon/envoy-gloo:health-checkers-extensions
+ENVOY_GLOO_IMAGE ?= bohanon/envoy-gloo:12ad8a8a3a4d82733ecec6d7c0e7d593a10fcce3
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
