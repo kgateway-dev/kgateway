@@ -118,6 +118,14 @@ func (h *HttpRequestBuilder) WithHeader(key, value string) *HttpRequestBuilder {
 	return h
 }
 
+// WithRawHeader accepts multiple header values for a key.
+// Unlike WithHeader, it does not split the value by a headerDelimiter (,) and instead allows for N values to be
+// set as-is.
+func (h *HttpRequestBuilder) WithRawHeader(key string, values ...string) *HttpRequestBuilder {
+	h.headers[key] = values
+	return h
+}
+
 func (h *HttpRequestBuilder) errorIfInvalid() error {
 	if h.scheme == "" {
 		return errors.New("scheme is empty, but required")
