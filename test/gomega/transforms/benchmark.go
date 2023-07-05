@@ -1,8 +1,7 @@
 package transforms
 
 import (
-	"fmt"
-	"math"
+	"github.com/solo-io/gloo/test/helpers"
 	"sort"
 	"time"
 )
@@ -11,15 +10,12 @@ import (
 // The Nearest Rank Method is used to determine percentiles (https://en.wikipedia.org/wiki/Percentile#The_nearest-rank_method)
 // Valid inputs are 0 < n <= 100
 func WithPercentile(percentile int) func(durations []time.Duration) time.Duration {
-	if percentile <= 0 || percentile > 100 {
-		panic(fmt.Sprintf("percentile must be > 0 and <= 100, given %d", percentile))
-	}
 	return func(durations []time.Duration) time.Duration {
 		sort.Slice(durations, func(i, j int) bool {
 			return durations[i] < durations[j]
 		})
 
-		idx := int(math.Ceil(float64(len(durations))*(float64(percentile)/float64(100)))) - 1
+		idx := helpers.PercentileIndex(len(durations), percentile)
 		return durations[idx]
 	}
 }
