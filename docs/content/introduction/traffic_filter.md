@@ -67,7 +67,10 @@ Examples of parent and child objects:
 * VirtualHost parent object options append to children objects like Routes and WeightedDestinations
 * Route parent object options to children objects like WeightedDestinations
 
-For examples of inherited options, see [Request processing transformations]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}) or [Auth config inheritance]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#configuration-format/" %}}).
+For examples of inherited options, see the following guides:
+* [Request processing transformation inheritance]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}})
+* [Header inheritance]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/append_remove_headers/#inheritance" %}})
+* [Auth config inheritance]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#configuration-format/" %}})
 
 ---
 
