@@ -39,27 +39,70 @@ The `run-tests` make target runs ginkgo with a set of useful flags. The followin
 | TEST_PKG          | ""      | The path to the package of the test suite you want to run                                                                                                                                                                                          |
 | WAIT_ON_FAIL      | 0       | Set to 1 to prevent Ginkgo from cleaning up the Gloo Edge installation in case of failure. Useful to exec into inspect resources created by the test. A command to resume the test run (and thus clean up resources) will be logged to the output. |
 | INVALID_TEST_REQS | fail    | The behavior for tests which depend on environment conditions that aren't satisfied. Options are `skip`, `run`, `fail`                                                                                                                             |
+| SERVICE_LOG_LEVEL | ""      | The log levels used for services. See "Controlling Log Verbosity of Services" below.                                                                                                                                                               |    
+
+#### Controlling Log Verbosity of Services
+Multiple services (Gloo, Envoy, Discovery) are executed in parallel to run these tests. By default, these services log at the `info` level. To change the log level of a service, set the `SERVICE_LOG_LEVEL` environment variable to a comma separated list of `service:level` pairs. 
+
+Options for services are:
+- gateway-proxy
+- gloo
+- uds
+- fds
+
+Options for log levels are:
+- debug
+- info
+- warn
+- error
+
+For example, to set the log level of the Gloo service to `debug` and the Envoy service to `error`, you would set:
+
+```bash
+SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error TEST_PKG=./test/e2e/... make test
+```
+
+*If the same service has multiple log levels specified, we will log a warning and the last one defined will be used.*
+
+#### Controlling Log Verbosity of Ginkgo Runner
+Ginkgo has 4 verbosity settings, whose details can be found in the [Ginkgo docs](https://onsi.github.io/ginkgo/#controlling-verbosity)
+
+To control these settings, you must pass the flags using the `GINKGO_USER_FLAGS` environment variable.
+
+For example, to set the Ginkgo runner to `very verbose` mode, you would set:
+```bash
+GINKGO_USER_FLAGS=-vv TEST_PKG=./test/e2e/... make test
+```
 
 #### Using Recently Published Image (Most Common)
 This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
 
 ```bash
-TEST_PKG=./test/e2e/... make run-tests
+TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Previously Published Image
 If you want to specify a particular version that was previously published, you can also do that by specifying the `ENVOY_IMAGE_TAG`.
 
 ```bash
-ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make run-tests
+ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Locally Built Image
 If you have made changes to the component, you will have had to rebuild the image locally (see [setup tests](#setup)). After you rebuild the image, you need to supply the tag of that image when running the tests:
 
 ```bash
-ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make run-tests
+ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make test
 ```
+
+#### Running Tests in Parallel
+It is possible to run tests in parallel locally, however it is not recommended, because debugging failures becomes more difficult. If you do want to run tests in parallel, you can do so by passing in the relevant `GINKGO_USER_FLAGS` values:
+```bash
+GINKGO_USER_FLAGS=-procs=4 TEST_PKG=./test/e2e/... make test
+```
+
+*Note: When using Docker to run Envoy, we have seen occasional failures: `Error response from daemon: dial unix docker.raw.sock: connect: connection refused`*
+
 
 ### Debugging Tests
 #### Use WAIT_ON_FAIL

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os/exec"
 
+	"github.com/solo-io/gloo/test/services"
+
 	adminv3 "github.com/envoyproxy/go-control-plane/envoy/admin/v3"
 	"github.com/golang/protobuf/jsonpb"
 
@@ -22,7 +24,6 @@ import (
 )
 
 const (
-	containerName    = "e2e_envoy"
 	DefaultProxyName = "default~proxy"
 )
 
@@ -41,6 +42,7 @@ type Instance struct {
 	envoypath     string
 	envoycfg      string
 	logs          *SafeBuffer
+	LogLevel      string
 	cmd           *exec.Cmd
 	GlooAddr      string // address for gloo and services
 	Port          uint32
@@ -50,8 +52,9 @@ type Instance struct {
 	ApiVersion string
 
 	DockerOptions
-	UseDocker   bool
-	DockerImage string
+	UseDocker           bool
+	DockerImage         string
+	DockerContainerName string
 
 	*RequestPorts
 }
@@ -74,106 +77,81 @@ type DockerOptions struct {
 	Env []string
 }
 
+// Deprecated: use RunWith instead
 func (ei *Instance) Run(port int) error {
-	return ei.RunWithRole(DefaultProxyName, port)
+	return ei.RunWith(RunConfig{
+		Role:    DefaultProxyName,
+		Port:    uint32(port),
+		Context: context.TODO(),
+	})
 }
 
-func (ei *Instance) RunWith(eic InstanceConfig) error {
-	return ei.runWithAll(eic, &templateBootstrapBuilder{
+// Deprecated: use RunWith instead
+func (ei *Instance) RunWithRole(role string, port int) error {
+	return ei.RunWith(RunConfig{
+		Role:    role,
+		Port:    uint32(port),
+		Context: context.TODO(),
+	})
+}
+
+// Deprecated: use RunWith instead
+func (ei *Instance) RunWithRoleAndRestXds(role string, glooPort, restXdsPort int) error {
+	return ei.RunWith(RunConfig{
+		Role:        role,
+		Port:        uint32(glooPort),
+		RestXdsPort: uint32(restXdsPort),
+		Context:     context.TODO(),
+	})
+}
+
+func (ei *Instance) RunWith(runConfig RunConfig) error {
+	return ei.runWithAll(runConfig, &templateBootstrapBuilder{
 		template: ei.defaultBootstrapTemplate,
 	})
 }
 
-func (ei *Instance) RunWithRole(role string, port int) error {
-	eic := &envoyInstanceConfig{
-		role:    role,
-		port:    uint32(port),
-		context: context.TODO(),
-	}
-	boostrapBuilder := &templateBootstrapBuilder{
-		template: ei.defaultBootstrapTemplate,
-	}
-	return ei.runWithAll(eic, boostrapBuilder)
-}
-
-func (ei *Instance) RunWithRoleAndRestXds(role string, glooPort, restXdsPort int) error {
-	eic := &envoyInstanceConfig{
-		role:        role,
-		port:        uint32(glooPort),
-		restXdsPort: uint32(restXdsPort),
-		context:     context.TODO(),
-	}
-	boostrapBuilder := &templateBootstrapBuilder{
-		template: ei.defaultBootstrapTemplate,
-	}
-	return ei.runWithAll(eic, boostrapBuilder)
-}
-
 func (ei *Instance) RunWithConfigFile(port int, configFile string) error {
-	eic := &envoyInstanceConfig{
-		role:    "gloo-system~gateway-proxy",
-		port:    uint32(port),
-		context: context.TODO(),
+	runConfig := RunConfig{
+		Role:    "gloo-system~gateway-proxy",
+		Port:    uint32(port),
+		Context: context.TODO(),
 	}
 	boostrapBuilder := &fileBootstrapBuilder{
 		file: configFile,
 	}
-	return ei.runWithAll(eic, boostrapBuilder)
+	return ei.runWithAll(runConfig, boostrapBuilder)
 }
 
-type InstanceConfig interface {
-	Role() string
-	Port() uint32
-	RestXdsPort() uint32
+type RunConfig struct {
+	Context context.Context
 
-	Context() context.Context
+	Role        string
+	Port        uint32
+	RestXdsPort uint32
 }
 
-type envoyInstanceConfig struct {
-	role        string
-	port        uint32
-	restXdsPort uint32
-
-	context context.Context
-}
-
-func (eic *envoyInstanceConfig) Role() string {
-	return eic.role
-}
-
-func (eic *envoyInstanceConfig) Port() uint32 {
-	return eic.port
-}
-
-func (eic *envoyInstanceConfig) RestXdsPort() uint32 {
-	return eic.restXdsPort
-}
-
-func (eic *envoyInstanceConfig) Context() context.Context {
-	return eic.context
-}
-
-func (ei *Instance) runWithAll(eic InstanceConfig, bootstrapBuilder bootstrapBuilder) error {
+func (ei *Instance) runWithAll(runConfig RunConfig, bootstrapBuilder bootstrapBuilder) error {
 	go func() {
-		<-eic.Context().Done()
+		<-runConfig.Context.Done()
 		ei.Clean()
 	}()
 	if ei.ID == "" {
 		ei.ID = "ingress~for-testing"
 	}
-	ei.Role = eic.Role()
-	ei.Port = eic.Port()
-	ei.RestXdsPort = eic.RestXdsPort()
+	ei.Role = runConfig.Role
+	ei.Port = runConfig.Port
+	ei.RestXdsPort = runConfig.RestXdsPort
 	ei.envoycfg = bootstrapBuilder.Build(ei)
 
 	if ei.UseDocker {
-		return ei.runContainer(eic.Context())
+		return ei.runContainer(runConfig.Context)
 	}
 
-	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
+	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", ei.LogLevel}
 
 	// run directly
-	cmd := exec.CommandContext(eic.Context(), ei.envoypath, args...)
+	cmd := exec.CommandContext(runConfig.Context, ei.envoypath, args...)
 
 	safeBuffer := &SafeBuffer{
 		buffer: &bytes.Buffer{},
@@ -224,14 +202,14 @@ func (ei *Instance) Clean() {
 	}
 
 	if ei.UseDocker {
-		// No need to handle the error here as the call to quitquitquit above should kill and exit the container
+		// An earlier call to quitquitquit should kill and exit the container
 		// This is just a backup to make sure it really gets deleted
-		_ = stopContainer()
+		services.MustStopAndRemoveContainer(ei.DockerContainerName)
 	}
 }
 
 func (ei *Instance) runContainer(ctx context.Context) error {
-	args := []string{"run", "--rm", "--name", containerName,
+	args := []string{"run", "--rm", "--name", ei.DockerContainerName,
 		"-p", fmt.Sprintf("%d:%d", ei.HttpPort, ei.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", ei.HttpsPort, ei.HttpsPort),
 		"-p", fmt.Sprintf("%d:%d", ei.TcpPort, ei.TcpPort),
@@ -251,7 +229,7 @@ func (ei *Instance) runContainer(ctx context.Context) error {
 		"--entrypoint=envoy",
 		ei.DockerImage,
 		"--disable-hot-restart",
-		"--log-level", "debug",
+		"--log-level", ei.LogLevel,
 		"--config-yaml", ei.envoycfg,
 	)
 
@@ -292,20 +270,9 @@ func (ei *Instance) waitForEnvoyToBeRunning() error {
 	}
 }
 
-func stopContainer() error {
-	cmd := exec.Command("docker", "stop", containerName)
-	cmd.Stdout = ginkgo.GinkgoWriter
-	cmd.Stderr = ginkgo.GinkgoWriter
-	err := cmd.Run()
-	if err != nil {
-		return errors.Wrap(err, "Error stopping container "+containerName)
-	}
-	return nil
-}
-
 func (ei *Instance) Logs() (string, error) {
 	if ei.UseDocker {
-		logsArgs := []string{"logs", containerName}
+		logsArgs := []string{"logs", ei.DockerContainerName}
 		cmd := exec.Command("docker", logsArgs...)
 		byt, err := cmd.CombinedOutput()
 		if err != nil {

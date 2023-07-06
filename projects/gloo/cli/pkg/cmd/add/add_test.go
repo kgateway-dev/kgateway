@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"github.com/solo-io/gloo/test/ginkgo/decorators"
+
 	"github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/test/testutils"
 )
 
-var _ = Describe("Add", func() {
+var _ = Describe("Add", decorators.Consul, func() {
 	if !testutils.IsEnvTruthy(testutils.RunConsulTests) {
 		log.Print("This test downloads and runs consul and is disabled by default. To enable, set RUN_CONSUL_TESTS=1 in your env.")
 		return

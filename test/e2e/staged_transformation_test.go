@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 
 	"github.com/solo-io/gloo/test/testutils"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -35,6 +36,9 @@ var _ = Describe("Staged Transformation", func() {
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
+
+		// This test relies on running the gateway-proxy with debug logging enabled
+		testContext.EnvoyInstance().LogLevel = zapcore.DebugLevel.String()
 	})
 
 	AfterEach(func() {
