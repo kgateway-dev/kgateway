@@ -3,6 +3,7 @@ package validation_test
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -115,6 +116,35 @@ var _ = Describe("validation utils", func() {
 		}
 		return proxy
 	}
+	makeInvalidAggregateListenerProxyTcp := func() *v1.Proxy {
+		proxy := makeHybridProxy()
+		proxy.Listeners = []*v1.Listener{{
+			Name:        "aggregate-listener",
+			BindAddress: "::",
+			BindPort:    defaults.HttpPort,
+			ListenerType: &v1.Listener_AggregateListener{
+				AggregateListener: &v1.AggregateListener{
+					TcpListeners: []*v1.MatchedTcpListener{{
+						Matcher: &v1.Matcher{
+							SourcePrefixRanges: []*v3.CidrRange{{
+								AddressPrefix: "tcp-0",
+							}},
+						},
+						TcpListener: nil,
+					}},
+					HttpResources: &v1.AggregateListener_HttpResources{},
+					HttpFilterChains: []*v1.AggregateListener_HttpFilterChain{{
+						Matcher: &v1.Matcher{
+							SourcePrefixRanges: []*v3.CidrRange{{
+								AddressPrefix: "http-0",
+							}},
+						},
+					}},
+				},
+			},
+		}}
+		return proxy
+	}
 
 	var _ = Describe("MakeReport", func() {
 		It("generates a report which matches an http proxy", func() {
@@ -186,6 +216,16 @@ var _ = Describe("validation utils", func() {
 				}
 			}
 		})
+
+		It("properly instantiates TCP reports in aggregate listeners", func() {
+			// fixes a crash reported in
+			// https://github.com/solo-io/gloo/issues/8405
+			proxy := makeInvalidAggregateListenerProxyTcp()
+			proxyReports := MakeReport(proxy)
+			Expect(proxyReports.GetListenerReports()).To(HaveLen(1))
+			tcpListenerReports := proxyReports.GetListenerReports()[0].GetAggregateListenerReport().GetTcpListenerReports()
+			Expect(tcpListenerReports).To(HaveLen(1))
+		})
 	})
 
 	var _ = Describe("GetProxyError", func() {
@@ -225,6 +265,69 @@ var _ = Describe("validation utils", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique; Listener Error: BindPortNotUniqueError. Reason: bind port not unique; HttpListener Error: ProcessingError. Reason: bad http plugin"))
 		})
+		It("aggregates the errors at every level for aggregate listener", func() {
+			proxy := makeInvalidAggregateListenerProxyTcp()
+			rpt := MakeReport(proxy)
+
+			rpt.ListenerReports[0].Errors = append(rpt.ListenerReports[0].Errors,
+				&validation.ListenerReport_Error{
+					Type:   validation.ListenerReport_Error_BindPortNotUniqueError,
+					Reason: "bind port not unique",
+				},
+			)
+
+			tcpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix: "tcp-0",
+					},
+				},
+			}
+			tcpListenerReport := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_AggregateListenerReport).AggregateListenerReport.TcpListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[0], tcpMatcher)]
+
+			// populate the errors - we should hit all cases in
+			// getTcpListenerReportErrs with the errors we create here
+			tcpListenerReport.Errors = append(tcpListenerReport.Errors,
+				&validation.TcpListenerReport_Error{
+					Type:   validation.TcpListenerReport_Error_SSLConfigError,
+					Reason: "test SSLConfig Error",
+				},
+			)
+			tcpListenerReport.TcpHostReports = append(tcpListenerReport.TcpHostReports,
+				&validation.TcpHostReport{
+					Errors: []*validation.TcpHostReport_Error{
+						{
+							Type:   validation.TcpHostReport_Error_InvalidDestinationError,
+							Reason: "testing invalid destination error",
+						},
+						{
+							Type:   validation.TcpHostReport_Error_ProcessingError,
+							Reason: "testing processing error",
+						},
+					},
+				})
+
+			httpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix: "http-0",
+					},
+				},
+			}
+			httpListenerReport := rpt.ListenerReports[0].ListenerTypeReport.(*validation.ListenerReport_AggregateListenerReport).AggregateListenerReport.HttpListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[0], httpMatcher)]
+			httpListenerReport.Errors = append(httpListenerReport.Errors, &validation.HttpListenerReport_Error{
+				Type:   validation.HttpListenerReport_Error_ProcessingError,
+				Reason: "bad http plugin",
+			})
+
+			err := GetProxyError(rpt)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: bad http plugin"))
+			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
+			Expect(err.Error()).To(ContainSubstring("TcpListener Error: SSLConfigError. Reason: test SSLConfig Error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: InvalidDestinationError. Reason: testing invalid destination error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: ProcessingError. Reason: testing processing error"))
+		})
 		It("aggregates the errors at every level for hybrid listener", func() {
 			proxy := makeHybridProxy()
 			rpt := MakeReport(proxy)
@@ -235,6 +338,13 @@ var _ = Describe("validation utils", func() {
 					Reason: "bind port not unique",
 				},
 			)
+			tcpMatcher := &v1.Matcher{
+				SourcePrefixRanges: []*v3.CidrRange{
+					&v3.CidrRange{
+						AddressPrefix: "tcp-0",
+					},
+				},
+			}
 			httpMatcher := &v1.Matcher{
 				SourcePrefixRanges: []*v3.CidrRange{
 					&v3.CidrRange{
@@ -266,11 +376,35 @@ var _ = Describe("validation utils", func() {
 				},
 			)
 
+			tcpListenerReport := rpt.ListenerReports[2].ListenerTypeReport.(*validation.ListenerReport_HybridListenerReport).HybridListenerReport.MatchedListenerReports[utils.MatchedRouteConfigName(proxy.GetListeners()[2], tcpMatcher)].GetTcpListenerReport()
+			tcpListenerReport.Errors = append(tcpListenerReport.Errors,
+				&validation.TcpListenerReport_Error{
+					Type:   validation.TcpListenerReport_Error_SSLConfigError,
+					Reason: "test SSLConfig Error",
+				},
+			)
+			tcpListenerReport.TcpHostReports = append(tcpListenerReport.TcpHostReports,
+				&validation.TcpHostReport{
+					Errors: []*validation.TcpHostReport_Error{
+						{
+							Type:   validation.TcpHostReport_Error_InvalidDestinationError,
+							Reason: "testing invalid destination error",
+						},
+						{
+							Type:   validation.TcpHostReport_Error_ProcessingError,
+							Reason: "testing processing error",
+						},
+					},
+				})
+
 			err := GetProxyError(rpt)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("VirtualHost Error: DomainsNotUniqueError. Reason: domains not unique"))
 			Expect(err.Error()).To(ContainSubstring("Listener Error: BindPortNotUniqueError. Reason: bind port not unique"))
 			Expect(err.Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: bad http plugin"))
+			Expect(err.Error()).To(ContainSubstring("TcpListener Error: SSLConfigError. Reason: test SSLConfig Error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: InvalidDestinationError. Reason: testing invalid destination error"))
+			Expect(err.Error()).To(ContainSubstring("TcpHost Error: ProcessingError. Reason: testing processing error"))
 		})
 
 	})

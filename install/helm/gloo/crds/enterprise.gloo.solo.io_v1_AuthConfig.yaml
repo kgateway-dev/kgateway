@@ -269,6 +269,10 @@ spec:
                           properties:
                             cacheTimeout:
                               type: string
+                            dynamicMetadataFromClaims:
+                              additionalProperties:
+                                type: string
+                              type: object
                             introspection:
                               properties:
                                 clientId:
@@ -280,6 +284,9 @@ spec:
                                     namespace:
                                       type: string
                                   type: object
+                                disableClientSecret:
+                                  nullable: true
+                                  type: boolean
                                 introspectionUrl:
                                   type: string
                                 userIdAttributeName:
@@ -337,6 +344,9 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            disableClientSecret:
+                              nullable: true
+                              type: boolean
                             logoutPath:
                               type: string
                             revocationEndpoint:
@@ -456,6 +466,9 @@ spec:
                                 namespace:
                                   type: string
                               type: object
+                            disableClientSecret:
+                              nullable: true
+                              type: boolean
                             discoveryOverride:
                               properties:
                                 authEndpoint:
@@ -495,6 +508,10 @@ spec:
                               type: object
                             discoveryPollInterval:
                               type: string
+                            dynamicMetadataFromClaims:
+                              additionalProperties:
+                                type: string
+                              type: object
                             endSessionProperties:
                               properties:
                                 methodType:

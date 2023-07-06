@@ -270,11 +270,10 @@ func (p *Plugin) ConvertTransformation(
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 
-	// this is the route/vhost-level logRequestResponseInfo setting
-	// it will override the transformation-level settings
-	logRequestResponseInfo := stagedTransformations.GetLogRequestResponseInfo().GetValue()
-
-	if logRequestResponseInfo {
+	// if the global settings or the route/vhost settings are set to true, set all transformation-level settings to true
+	// note that the route/vhost settings take precedence over the global settings
+	if stagedTransformations.GetLogRequestResponseInfo().GetValue() ||
+		(stagedTransformations.GetLogRequestResponseInfo() == nil && p.logRequestResponseInfo) {
 		for _, t := range ret.GetTransformations() {
 			if requestMatch := t.GetRequestMatch(); requestMatch != nil {
 				if requestTransformation := requestMatch.GetRequestTransformation(); requestTransformation != nil {

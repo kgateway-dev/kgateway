@@ -11,6 +11,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/solo-io/gloo/test/services"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/onsi/ginkgo/v2"
@@ -25,6 +28,7 @@ var _ Factory = new(factoryImpl)
 
 const (
 	envoyBinaryName = "envoy"
+	ServiceName     = "gateway-proxy"
 )
 
 // Factory is a helper for running multiple envoy instances
@@ -204,10 +208,12 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 		envoypath:                f.envoypath,
 		UseDocker:                f.useDocker,
 		DockerImage:              f.dockerImage,
+		DockerContainerName:      fmt.Sprintf("e2e_envoy-%d", defaults.HttpPort),
 		GlooAddr:                 gloo,
 		AccessLogPort:            NextAccessLogPort(),
 		AccessLogAddr:            gloo,
 		ApiVersion:               "V3",
+		LogLevel:                 getInstanceLogLevel(),
 		RequestPorts: &RequestPorts{
 			HttpPort:   defaults.HttpPort,
 			HttpsPort:  defaults.HttpsPort,
@@ -216,9 +222,26 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 			AdminPort:  defaults.EnvoyAdminPort,
 		},
 	}
+
+	log.Printf("Envoy Instance (%s) Ports: %+v", ei.DockerContainerName, ei.RequestPorts)
 	f.instances = append(f.instances, ei)
 	return ei, nil
 
+}
+
+func getInstanceLogLevel() string {
+	logLevel := services.GetLogLevel(ServiceName)
+
+	// Envoy log level options do not match Gloo's log level options, so we must convert
+	// https://www.envoyproxy.io/docs/envoy/latest/start/quick-start/run-envoy#debugging-envoy
+	// There are a few options which are available in Envoy, but not in Gloo ("trace", "critical", "off")
+	// We opted not to support those options, to provide developers a consistent experience
+	switch logLevel {
+	case zapcore.DebugLevel, zapcore.InfoLevel, zapcore.WarnLevel, zapcore.ErrorLevel:
+		return logLevel.String()
+	}
+
+	return zapcore.InfoLevel.String()
 }
 
 func localAddr() (string, error) {

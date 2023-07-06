@@ -46,7 +46,7 @@ var _ = Describe("Consul EDS", func() {
 	const writeNamespace = defaults.GlooSystem
 
 	BeforeEach(func() {
-		ctrl = gomock.NewController(T)
+		ctrl = gomock.NewController(GinkgoT())
 	})
 
 	AfterEach(func() {

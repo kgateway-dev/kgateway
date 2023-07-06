@@ -368,300 +368,309 @@ var _ = Describe("Hybrid Gateway", func() {
 		// to configure envoy with.
 		// The last argument is the name of the matcher that should match,
 		// or `NoMatch` if nothing should match.
-		DescribeTable("SetResource[Invalid|Valid] works as expected",
-			func(cp ClientConnectionProperties, matches map[string]*v1.Matcher, expected string) {
-				// uncomment to dump envoy config
-				// defer func() {
-				// 	config, _ := testContext.EnvoyInstance().ConfigDump()
-				// 	fmt.Println(config)
-				// }()
-				Expect(tester.getMatchedMatcher(cp, matches)).To(Equal(expected))
-			},
-			Entry("no match",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "test.com",
+		Context("Table test", func() {
+			BeforeEach(func() {
+				// these tests only seem to work on linux; on other platforms,
+				// requests mysteriously close with an EOF and no further
+				// diagnostic information. unable to investigate in greater
+				// depth at this time
+				testutils.ValidateRequirementsAndNotifyGinkgo(testutils.LinuxOnly("Unknown (possibly uses 127.0.0.1?)"))
+			})
+			DescribeTable("SetResource[Invalid|Valid] works as expected",
+				func(cp ClientConnectionProperties, matches map[string]*v1.Matcher, expected string) {
+					// uncomment to dump envoy config
+					// defer func() {
+					// 	config, _ := testContext.EnvoyInstance().ConfigDump()
+					// 	fmt.Println(config)
+					// }()
+					Expect(tester.getMatchedMatcher(cp, matches)).To(Equal(expected))
 				},
-				map[string]*v1.Matcher{
-					"sni-star": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.foo.com"},
-						},
+				Entry("no match",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "test.com",
 					},
-				}, NoMatch),
-			Entry("ip non-match (half ip address) without sni",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("2.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"ip-matcher": {
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 16,
+					map[string]*v1.Matcher{
+						"sni-star": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.foo.com"},
+							},
+						},
+					}, NoMatch),
+				Entry("ip non-match (half ip address) without sni",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("2.2.3.4"),
+						SNI:   "foo.test.com",
+					},
+					map[string]*v1.Matcher{
+						"ip-matcher": {
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 16,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				// for the next 2 entries, no filter chain match is recorded
+				// because the filter chain translator aborts translation if there
+				// are no network filters (ie. virtual hosts)
+				// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/gloo/pkg/translator/filter_chain.go#L94-L96
+				// so even though the ip matches, we expect the request to fail
+				// similar to the above test.
+				// there is a workaround for this: by setting SniDomains to '*.', a
+				// virtual host *will* be created that matches all sni domains -
+				// see the tests a bit further below.
+				Entry("ip matcher (full ip address) without sni",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			// for the next 2 entries, no filter chain match is recorded
-			// because the filter chain translator aborts translation if there
-			// are no network filters (ie. virtual hosts)
-			// https://github.com/solo-io/gloo/blob/d3879f282da00dc0cb6c8c9366a87b48ca1a382b/projects/gloo/pkg/translator/filter_chain.go#L94-L96
-			// so even though the ip matches, we expect the request to fail
-			// similar to the above test.
-			// there is a workaround for this: by setting SniDomains to '*.', a
-			// virtual host *will* be created that matches all sni domains -
-			// see the tests a bit further below.
-			Entry("ip matcher (full ip address) without sni",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"ip-matcher": {
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+					map[string]*v1.Matcher{
+						"ip-matcher": {
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("ip matcher (half ip address) without sni",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.5"),
+						SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			Entry("ip matcher (half ip address) without sni",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.5"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"ip-matcher": {
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 16,
+					map[string]*v1.Matcher{
+						"ip-matcher": {
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 16,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("ip matcher (half ip address) with full wildcard sni (client SNI empty)",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.5"),
+						// SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			Entry("ip matcher (half ip address) with full wildcard sni (client SNI empty)",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.5"),
-					// SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"ip-matcher": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*."},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 16,
+					map[string]*v1.Matcher{
+						"ip-matcher": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*."},
+							},
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 16,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("ip matcher (half ip address) with full wildcard sni",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.5"),
+						SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			Entry("ip matcher (half ip address) with full wildcard sni",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.5"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"ip-matcher": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*."},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 16,
+					map[string]*v1.Matcher{
+						"ip-matcher": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*."},
+							},
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 16,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("sni match",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			Entry("sni match",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"sni-star": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.test.com"},
+					map[string]*v1.Matcher{
+						"sni-star": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.test.com"},
+							},
 						},
+					}, "sni-star"),
+				Entry("sni and ip match",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, "sni-star"),
-			Entry("sni and ip match",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"sni-star": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.test.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+					map[string]*v1.Matcher{
+						"sni-star": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.test.com"},
+							},
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
 								},
 							},
 						},
+					}, "sni-star"),
+				Entry("sni match, ip non-match",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, "sni-star"),
-			Entry("sni match, ip non-match",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"sni-star": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.test.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "2.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+					map[string]*v1.Matcher{
+						"sni-star": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.test.com"},
+							},
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "2.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("sni non-match, ip match",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "test.com",
 					},
-				}, NoMatch),
-			Entry("sni non-match, ip match",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "test.com",
-				},
-				map[string]*v1.Matcher{
-					"sni-star": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.foo.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+					map[string]*v1.Matcher{
+						"sni-star": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.foo.com"},
+							},
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("most specific sni matcher",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			Entry("most specific sni matcher",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"less-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.test.com"},
+					map[string]*v1.Matcher{
+						"less-specific": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.test.com"},
+							},
 						},
+						"more-specific": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"foo.test.com", "*.com"},
+							},
+						},
+					}, "more-specific"),
+				Entry("most specific sni matcher with invalid source ip",
+					// envoy parses sni domain first - it matches 'more-specific',
+					// and then ignores all other matchers at the same level (ie.
+					// the 'less-specific' matcher). as envoy descends through the
+					// 'more-specific' branch, it finds no matching
+					// SourcePrefixRanges values, so it returns no filter chain
+					// found
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-					"more-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"foo.test.com", "*.com"},
+					map[string]*v1.Matcher{
+						"less-specific": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"*.test.com"},
+							},
 						},
-					},
-				}, "more-specific"),
-			Entry("most specific sni matcher with invalid source ip",
-				// envoy parses sni domain first - it matches 'more-specific',
-				// and then ignores all other matchers at the same level (ie.
-				// the 'less-specific' matcher). as envoy descends through the
-				// 'more-specific' branch, it finds no matching
-				// SourcePrefixRanges values, so it returns no filter chain
-				// found
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"less-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"*.test.com"},
-						},
-					},
-					"more-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"foo.test.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "2.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+						"more-specific": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"foo.test.com"},
+							},
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "2.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
 								},
 							},
 						},
+					}, NoMatch),
+				Entry("sni matcher with multiple source ip",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, NoMatch),
-			Entry("sni matcher with multiple source ip",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"more-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"foo.test.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "2.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
-								},
+					map[string]*v1.Matcher{
+						"more-specific": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"foo.test.com"},
 							},
-							{
-								AddressPrefix: "1.2.3.4",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "2.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
+								},
+								{
+									AddressPrefix: "1.2.3.4",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
 								},
 							},
 						},
+					}, "more-specific"),
+				Entry("sni matcher with multiple source ip, less precise CIDR range match",
+					ClientConnectionProperties{
+						SrcIp: net.ParseIP("1.2.3.4"),
+						SNI:   "foo.test.com",
 					},
-				}, "more-specific"),
-			Entry("sni matcher with multiple source ip, less precise CIDR range match",
-				ClientConnectionProperties{
-					SrcIp: net.ParseIP("1.2.3.4"),
-					SNI:   "foo.test.com",
-				},
-				map[string]*v1.Matcher{
-					"more-specific": {
-						SslConfig: &ssl.SslConfig{
-							SniDomains: []string{"foo.test.com"},
-						},
-						SourcePrefixRanges: []*v3.CidrRange{
-							{
-								AddressPrefix: "2.3.4.5",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 32,
-								},
+					map[string]*v1.Matcher{
+						"more-specific": {
+							SslConfig: &ssl.SslConfig{
+								SniDomains: []string{"foo.test.com"},
 							},
-							{
-								AddressPrefix: "1.2.0.0",
-								PrefixLen: &wrappers.UInt32Value{
-									Value: 16,
+							SourcePrefixRanges: []*v3.CidrRange{
+								{
+									AddressPrefix: "2.3.4.5",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 32,
+									},
+								},
+								{
+									AddressPrefix: "1.2.0.0",
+									PrefixLen: &wrappers.UInt32Value{
+										Value: 16,
+									},
 								},
 							},
 						},
-					},
-				}, "more-specific"),
-		)
+					}, "more-specific"),
+			)
+		})
 
 	})
 })

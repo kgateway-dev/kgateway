@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5116
+    resolvesIssue: true
+    description: >-
+      Generate scaled snapshots for performance tests via Builder paradigm for improved usability and extensibility
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
