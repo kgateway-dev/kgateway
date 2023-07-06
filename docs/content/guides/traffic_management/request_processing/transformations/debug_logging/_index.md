@@ -1,19 +1,19 @@
 ---
-title: Transformation Debug Logging
+title: Debug logging for transformations
 weight: 50
 description: Debug complex sequences of transformations.
 ---
 
-In this tutorial we will see how to use Gloo Edge's debug logging feature to debug complex sequences of transformations.
+You can use Gloo Edge's debug logging feature to debug complex sequences of transformations.
 
 {{% notice warning %}}
-This feature has the potential to log sensitive information. We do not recommend enabling this feature in production environments.
+This feature has the potential to log sensitive information. Do not recommend enable this feature in production environments.
 {{% /notice %}}
 
-## Setup
+## Before you begin
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
 
-Let's also create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
+Next, create a simple Virtual Service that matches any path and routes all traffic to the Upstream:
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -37,13 +37,13 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
+Test that the configuration was correctly picked up by Gloo Edge by executing the following command:
 
 ```shell
 curl $(glooctl proxy url)/get | jq
 ```
 
-You should see an output similar like this:
+Example output:
 
 ```json
 {
@@ -61,10 +61,13 @@ You should see an output similar like this:
 }
 ```
 
-### Update Virtual Service
-Now, let's update the virtual service to include transformations that add headers to the response.
+## Add debug logging to a transformation {#add-debug-logging}
 
-{{< highlight yaml "hl_lines=20-35" >}}
+You can add debug logging to individual transformations in your Virtual Service.
+
+1. Update the virtual service to include transformations that add headers to the response.
+
+   {{< highlight yaml "hl_lines=20-35" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -98,18 +101,17 @@ spec:
                 headers:
                   x-regular-request-header: 
                     text: "regular"
-{{< /highlight >}}
+   {{< /highlight >}}
 
-### Test the modified configuration
-To test that our configuration has been correctly picked up by Gloo Edge, let's execute our `curl` command again:
+1. Test that Gloo Edge picked up the configuration update.
 
-```shell
-curl $(glooctl proxy url)/get | jq
-```
+   ```shell
+   curl $(glooctl proxy url)/get | jq
+   ```
 
-Notice that the response now includes the headers we added in the transformation:
+   Example output: Notice that the response now includes the early and regular headers that you added in the transformation.
 
-{{< highlight json "hl_lines=11-12" >}}
+   {{< highlight json "hl_lines=11-12" >}}
 {
   "args": {},
   "headers": {
@@ -126,12 +128,11 @@ Notice that the response now includes the headers we added in the transformation
   },
   "url": "http://postman-echo.com/get"
 }
-{{< /highlight >}}
+   {{< /highlight >}}
 
-### Add debug logging
-Now, let's add debug logging to our Virtual Service. We will add debug logging for the `regular` stage of the transformation.
+1. Add debug logging by using the `logRequestResponseInfo` setting. Note that logging is added only to the `regular` stage of the transformation, not the `early` stage.
 
-{{< highlight yaml "hl_lines=32" >}}
+   {{< highlight yaml "hl_lines=30" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -166,62 +167,63 @@ spec:
                 headers:
                   x-regular-request-header: 
                     text: "regular"
-{{< /highlight >}}
+   {{< /highlight >}}
 
-### Test the modified configuration
-To test that our configuration has been correctly picked up by Gloo Edge, let's first set the log level within the gateway-proxy pod to `debug`:
+1. Set the log level of the gateway-proxy pod to `debug` so that you can view debug logs.
 
-```shell
-kubectl port-forward -n gloo-system deployment/gateway-proxy 19000:19000
-curl "localhost:19000/logging?level=debug" -X POST
-```
+   ```shell
+   kubectl port-forward -n gloo-system deployment/gateway-proxy 19000:19000
+   curl "localhost:19000/logging?level=debug" -X POST
+   ```
 
-Then, let's execute our `curl` command again:
+1. Repeat the request to generate fresh logs. The response matches your previous output.
 
-```shell
-curl $(glooctl proxy url)/get | jq
-```
+   ```shell
+   curl $(glooctl proxy url)/get | jq
+   ```
 
-You should see identical output as before, but now you should also see the debug logs in the gateway-proxy logs. You can see the logs by running the following command:
+1. Check the debug logs in the `gateway-proxy`.
 
-```shell
-kubectl logs -n gloo-system deployment/gateway-proxy
-```
+   ```shell
+   kubectl logs -n gloo-system deployment/gateway-proxy
+   ```
 
-These logs should contain the following excerpt:
+   Example output: The body and request headers are logged before and after the transformation. Note that only the `x-regular-request-header` is present in the request headers after the transformation is processed, because the regular transformation is the one that you enabled debug logging for.
 
-```
-[2023-06-13 13:28:27.724][38][debug][filter] [source/extensions/filters/http/transformation/transformation_filter.cc:257] [C4][S8942229055955075319] headers before transformation: ':authority', 'localhost:8080'
-':path', '/get'
-':method', 'GET'
-':scheme', 'http'
-'user-agent', 'curl/7.87.0'
-'accept', '*/*'
-'x-forwarded-proto', 'http'
-'x-request-id', '18a9cdc4-c2e4-4255-84a6-5e69f4ef0ca2'
-'x-early-request-header', 'early'
+   ```
+   [2023-06-13 13:28:27.724][38][debug][filter] [source/extensions/filters/http/transformation/transformation_filter.cc:257] [C4][S8942229055955075319] headers before transformation: ':authority', 'localhost:8080'
+   ':path', '/get'
+   ':method', 'GET'
+   ':scheme', 'http'
+   'user-agent', 'curl/7.87.0'
+   'accept', '*/*'
+   'x-forwarded-proto', 'http'
+   'x-request-id', '18a9cdc4-c2e4-4255-84a6-5e69f4ef0ca2'
+   'x-early-request-header', 'early'
 
-[2023-06-13 13:28:27.724][38][debug][filter] [source/extensions/filters/http/transformation/transformation_filter.cc:259] [C4][S8942229055955075319] body before transformation: 
-[2023-06-13 13:28:27.724][38][debug][filter] [source/extensions/filters/http/transformation/transformation_filter.cc:263] [C4][S8942229055955075319] headers after transformation: ':authority', 'localhost:8080'
-':path', '/get'
-':method', 'GET'
-':scheme', 'http'
-'user-agent', 'curl/7.87.0'
-'accept', '*/*'
-'x-forwarded-proto', 'http'
-'x-request-id', '18a9cdc4-c2e4-4255-84a6-5e69f4ef0ca2'
-'x-early-request-header', 'early'
-'x-regular-request-header', 'regular'
-```
-
-Here, we can see that the body and request headers are logged before and after the transformation. Note that the `x-regular-request-header` is present in the request headers after the transformation is processed.
+   [2023-06-13 13:28:27.724][38][debug][filter] [source/extensions/filters/http/transformation/transformation_filter.cc:259] [C4][S8942229055955075319] body before transformation: 
+   [2023-06-13 13:28:27.724][38][debug][filter] [source/extensions/filters/http/transformation/transformation_filter.cc:263] [C4][S8942229055955075319] headers after transformation: ':authority', 'localhost:8080'
+   ':path', '/get'
+   ':method', 'GET'
+   ':scheme', 'http'
+   'user-agent', 'curl/7.87.0'
+   'accept', '*/*'
+   'x-forwarded-proto', 'http'
+   'x-request-id', '18a9cdc4-c2e4-4255-84a6-5e69f4ef0ca2'
+   'x-early-request-header', 'early'
+   'x-regular-request-header', 'regular'
+   ```
 
 ## Notes
 
-Please note that `logRequestResponseInfo` can be enabled at the `stagedTransformations` level, which will enable debug logging for all stages of the transformation. Additionally, 
-`gloo.logTransformationRequestResponseInfo` can be enabled in the global Settings object to enable debug logging for all transformations in the cluster.
+You can log request and response information at the following levels:
+
+* The individual stage of the transformation, as shown in the previous example.
+* For all staged transformations, by setting `logRequestResponseInfo` at the `stagedTransformations` level.
+* For all staged transformations in your cluster, by setting `gloo.logTransformationRequestResponseInfo` in the global Settings object.
 ## Cleanup
-To cleanup the resources created in this tutorial you can run the following commands:
+
+Cleanup the resources created in this tutorial:
 
 ```shell
 kubectl delete virtualservice -n gloo-system test-debug-logs
