@@ -51,7 +51,7 @@ const (
 //	    headerManipulation:
 //	      requestHeadersToRemove: "header-from-vhost"
 //	  optionsConfigRefs:
-//      delegateOptions:
+//	    delegateOptions:
 //	      - name: virtualhost-external-options-1
 //	        namespace: opt-namespace
 //	      - name: virtualhost-external-options-2
