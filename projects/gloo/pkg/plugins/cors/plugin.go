@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -20,6 +21,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 var (
@@ -72,8 +74,12 @@ func (p *plugin) ProcessVirtualHost(
 		)
 	}
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
-	out.Cors = &envoy_config_route_v3.CorsPolicy{}
-	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.GetCors())
+	corsPolicy := &envoy_config_cors_v3.CorsPolicy{}
+	if err := p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, corsPolicy); err != nil {
+		return err
+	}
+
+	return pluginutils.SetVhostPerFilterConfig(out, wellknown.CORS, corsPolicy)
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
@@ -81,7 +87,16 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	if corsPlugin == nil {
 		return nil
 	}
-	// the cors plugin should only be used on routes that are of type envoyroute.Route_Route
+
+	// if the route has a direct response action, the cors filter will not apply headers to the response
+	// instead, configure ResponseHeadersToAdd on the direct response action
+	if _, ok := out.GetAction().(*envoy_config_route_v3.Route_DirectResponse); ok &&
+		!corsPlugin.GetDisableForRoute() {
+		out.ResponseHeadersToAdd = append(out.GetResponseHeadersToAdd(), getCorsResponseHeadersFromPolicy(corsPlugin)...)
+		return nil
+	}
+
+	// the cors filter can only be used on routes that are of type envoyroute.Route_Route
 	if out.GetAction() != nil && out.GetRoute() == nil {
 		return InvalidRouteActionError
 	}
@@ -96,18 +111,19 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	p.filterRequiredForListener[params.HttpListener] = struct{}{}
-	outRa.Cors = &envoy_config_route_v3.CorsPolicy{}
-	if err := p.translateCommonUserCorsConfig(params.Ctx, in.GetOptions().GetCors(), outRa.GetCors()); err != nil {
+	corsPolicy := &envoy_config_cors_v3.CorsPolicy{}
+	if err := p.translateCommonUserCorsConfig(params.Ctx, in.GetOptions().GetCors(), corsPolicy); err != nil {
 		return err
 	}
-	p.translateRouteSpecificCorsConfig(in.GetOptions().GetCors(), outRa.GetCors())
-	return nil
+	p.translateRouteSpecificCorsConfig(in.GetOptions().GetCors(), corsPolicy)
+
+	return pluginutils.SetRoutePerFilterConfig(out, wellknown.CORS, corsPolicy)
 }
 
 func (p *plugin) translateCommonUserCorsConfig(
 	ctx context.Context,
 	in *cors.CorsPolicy,
-	out *envoy_config_route_v3.CorsPolicy,
+	out *envoy_config_cors_v3.CorsPolicy,
 ) error {
 	if len(in.GetAllowOrigin()) == 0 && len(in.GetAllowOriginRegex()) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
@@ -135,16 +151,14 @@ func (p *plugin) translateCommonUserCorsConfig(
 // not expecting this to be used
 const runtimeKey = "gloo.routeplugin.cors"
 
-func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoy_config_route_v3.CorsPolicy) {
+func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envoy_config_cors_v3.CorsPolicy) {
 	if in.GetDisableForRoute() {
-		out.EnabledSpecifier = &envoy_config_route_v3.CorsPolicy_FilterEnabled{
-			FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
-				DefaultValue: &envoy_type_v3.FractionalPercent{
-					Numerator:   0,
-					Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
-				},
-				RuntimeKey: runtimeKey,
+		out.FilterEnabled = &envoy_config_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   0,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 			},
+			RuntimeKey: runtimeKey,
 		}
 	}
 }
@@ -156,4 +170,76 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}
 
 	return []plugins.StagedHttpFilter{plugins.MustNewStagedFilter(wellknown.CORS, &envoy_config_cors_v3.Cors{}, pluginStage)}, nil
+}
+
+// convert allowOrigin and allowOriginRegex options to a deduplicated slice of strings
+func convertAllowOriginToSlice(corsPolicy *cors.CorsPolicy) []string {
+	exists := struct{}{}
+	allowOriginSet := make(map[string]struct{})
+	for _, origin := range corsPolicy.GetAllowOrigin() {
+		allowOriginSet[origin] = exists
+	}
+	for _, originRegex := range corsPolicy.GetAllowOriginRegex() {
+		allowOriginSet[originRegex] = exists
+	}
+
+	// concatenate the allow origin set into a string
+	allowedOrigins := []string{}
+	for origin := range allowOriginSet {
+		allowedOrigins = append(allowedOrigins, origin)
+	}
+
+	return allowedOrigins
+}
+
+// get response headers to add from cors policy
+// this is only used when processing direct response actions, for which
+// the cors filter is disabled
+func getCorsResponseHeadersFromPolicy(corsPolicy *cors.CorsPolicy) []*envoy_config_core_v3.HeaderValueOption {
+	allowOriginString := strings.Join(convertAllowOriginToSlice(corsPolicy), ",")
+
+	return []*envoy_config_core_v3.HeaderValueOption{
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Origin",
+				Value: allowOriginString,
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Methods",
+				Value: strings.Join(corsPolicy.GetAllowMethods(), ","),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Headers",
+				Value: strings.Join(corsPolicy.GetAllowHeaders(), ","),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Expose-Headers",
+				Value: strings.Join(corsPolicy.GetExposeHeaders(), ","),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Max-Age",
+				Value: corsPolicy.GetMaxAge(),
+			},
+			KeepEmptyValue: false,
+		},
+		{
+			Header: &envoy_config_core_v3.HeaderValue{
+				Key:   "Access-Control-Allow-Credentials",
+				Value: strconv.FormatBool(corsPolicy.GetAllowCredentials()),
+			},
+			KeepEmptyValue: false,
+		},
+	}
 }
