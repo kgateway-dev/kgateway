@@ -7,7 +7,7 @@ description: Debug complex sequences of transformations.
 You can use Gloo Edge's debug logging feature to debug complex sequences of transformations.
 
 {{% notice warning %}}
-This feature has the potential to log sensitive information. Do not recommend enable this feature in production environments.
+This feature has the potential to log sensitive information. Do not enable this feature in production environments.
 {{% /notice %}}
 
 ## Before you begin
@@ -223,7 +223,7 @@ You can log request and response information at the following levels:
 * For all staged transformations in your cluster, by setting `gloo.logTransformationRequestResponseInfo` in the global Settings object.
 ## Cleanup
 
-Cleanup the resources created in this tutorial:
+Clean up the resources created in this tutorial:
 
 ```shell
 kubectl delete virtualservice -n gloo-system test-debug-logs
