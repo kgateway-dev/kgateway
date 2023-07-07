@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+     Update CORS plugin to no longer use deprecated configuration options.
+  - type: NEW_FEATURE
+    description: >
+      Add support for CORS on direct response by configuring ResponseHeadersToAdd.
+    issueLink: https://github.com/solo-io/gloo/issues/7336
+    resolvesIssue: true
+    
