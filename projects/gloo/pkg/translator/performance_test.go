@@ -3,7 +3,10 @@ package translator_test
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/solo-io/gloo/test/ginkgo/decorators"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -41,12 +44,23 @@ import (
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
 // Results can then be found in the logs for that instance of the action
-var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
+var _ = Describe("Translation - Benchmarking Tests", Ordered, decorators.Performance, Label(labels.Performance), func() {
 	var (
 		ctrl       *gomock.Controller
 		settings   *v1.Settings
 		translator Translator
+
+		originalLogLevel zapcore.Level
 	)
+
+	BeforeAll(func() {
+		originalLogLevel = contextutils.GetLogLevel()
+		contextutils.SetLogLevel(zap.ErrorLevel)
+	})
+
+	AfterAll(func() {
+		contextutils.SetLogLevel(originalLogLevel)
+	})
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(T)
@@ -175,8 +189,8 @@ var basicConfig = &gloohelpers.BenchmarkConfig{
 		matchers.HavePercentileLessThan(90, 100*time.Millisecond),
 	},
 	LocalMatchers: []types.GomegaMatcher{
-		matchers.HaveMedianLessThan(5 * time.Millisecond),
-		matchers.HavePercentileLessThan(90, 10*time.Millisecond),
+		matchers.HaveMedianLessThan(2 * time.Millisecond),
+		matchers.HavePercentileLessThan(90, 4*time.Millisecond),
 	},
 }
 
@@ -189,8 +203,8 @@ var oneKUpstreamsConfig = &gloohelpers.BenchmarkConfig{
 		matchers.HavePercentileLessThan(90, 2*time.Second),
 	},
 	LocalMatchers: []types.GomegaMatcher{
-		matchers.HaveMedianLessThan(100 * time.Millisecond),
-		matchers.HavePercentileLessThan(90, 200*time.Millisecond),
+		matchers.HaveMedianLessThan(40 * time.Millisecond),
+		matchers.HavePercentileLessThan(90, 80*time.Millisecond),
 	},
 }
 
