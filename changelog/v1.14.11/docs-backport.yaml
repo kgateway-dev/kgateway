@@ -1,5 +1,9 @@
 changelog:
   - type: NON_USER_FACING
     description: >- 
+      Backports docs to 1.14.x, including weekly fixes and the following issues. 
+      skipCI-kube-tests:true
+  - type: NON_USER_FACING
+    description: >- 
       Adds concept docs for inheritance and links to existing examples. 
       skipCI-kube-tests:true
