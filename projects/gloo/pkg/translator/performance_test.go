@@ -39,14 +39,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-// benchmarkConfig allows configuration for benchmarking tests to be reused for similar cases
-// This struct can be factored out to an accessible location should additional benchmarking suites be added
-type benchmarkConfig struct {
-	iterations        int                   // the number of iterations to attempt for a particular entry
-	maxDur            time.Duration         // the maximum time to spend on a particular entry even if not all iterations are complete
-	benchmarkMatchers []types.GomegaMatcher // matchers representing the assertions we wish to make for a particular entry
-}
-
 // Tests are run as part of the "Nightly" action in a GHA using the default Linux runner
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
@@ -83,7 +75,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 	// We measure the duration of the translation of the snapshot, benchmarking according to the benchmarkConfig
 	// Labels are used to add context to the entry description
 	DescribeTable("Benchmark table",
-		func(snapBuilder *gloohelpers.ScaledSnapshotBuilder, config benchmarkConfig, labels ...string) {
+		func(snapBuilder *gloohelpers.ScaledSnapshotBuilder, config gloohelpers.BenchmarkConfig, labels ...string) {
 			var (
 				apiSnap *v1snap.ApiSnapshot
 				proxy   *v1.Proxy
@@ -135,7 +127,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 				// If desired, a field can be added to benchmarkConfig to allow benchmarking according to User and/or
 				// System time
 				experiment.RecordDuration(desc, res.Total)
-			}, gmeasure.SamplingConfig{N: config.iterations, Duration: config.maxDur})
+			}, gmeasure.SamplingConfig{N: config.Iterations, Duration: config.MaxDur})
 
 			if tooFastWarningCount > 0 {
 				logger := contextutils.LoggerFrom(params.Ctx)
@@ -144,7 +136,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 
 			durations := experiment.Get(desc).Durations
 
-			Expect(durations).Should(And(config.benchmarkMatchers...))
+			Expect(durations).Should(And(config.BenchmarkMatchers...))
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", gloohelpers.NewInjectedSnapshotBuilder(basicSnap), basicConfig),
@@ -160,7 +152,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 	)
 })
 
-func generateDesc(b *gloohelpers.ScaledSnapshotBuilder, _ benchmarkConfig, labels ...string) string {
+func generateDesc(b *gloohelpers.ScaledSnapshotBuilder, _ gloohelpers.BenchmarkConfig, labels ...string) string {
 	labelPrefix := ""
 	if len(labels) > 0 {
 		labelPrefix = fmt.Sprintf("(%s) ", strings.Join(labels, ", "))
@@ -191,20 +183,20 @@ var basicSnap = &v1snap.ApiSnapshot{
 	Upstreams: []*v1.Upstream{gloohelpers.Upstream(0)},
 }
 
-var basicConfig = benchmarkConfig{
-	iterations: 1000,
-	maxDur:     10 * time.Second,
-	benchmarkMatchers: []types.GomegaMatcher{
+var basicConfig = gloohelpers.BenchmarkConfig{
+	Iterations: 1000,
+	MaxDur:     10 * time.Second,
+	BenchmarkMatchers: []types.GomegaMatcher{
 		matchers.HaveMedianLessThan(50 * time.Millisecond),
 		matchers.HavePercentileLessThan(90, 100*time.Millisecond),
 	},
 }
 
 /* 1k Upstreams Scale Test */
-var oneKUpstreamsConfig = benchmarkConfig{
-	iterations: 100,
-	maxDur:     30 * time.Second,
-	benchmarkMatchers: []types.GomegaMatcher{
+var oneKUpstreamsConfig = gloohelpers.BenchmarkConfig{
+	Iterations: 100,
+	MaxDur:     30 * time.Second,
+	BenchmarkMatchers: []types.GomegaMatcher{
 		matchers.HaveMedianLessThan(time.Second),
 		matchers.HavePercentileLessThan(90, 2*time.Second),
 	},
