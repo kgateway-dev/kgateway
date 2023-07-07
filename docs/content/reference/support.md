@@ -8,14 +8,15 @@ Review the following information about supported release versions for Gloo Edge 
 
 ## Supported versions
 
-Gloo Edge Enterprise offers `n-3` patching support for bug and critical security fixes. In other words, the current release and the three previous releases are supported. For example, if the latest stable Gloo Edge Enterprise release is 1.11, then Gloo Edge Enterprise 1.10.x, 1.9.x, and 1.8.x are also supported.
+Gloo Edge Enterprise offers `n-3` patching support for bug and critical security fixes. In other words, the current release and the three previous releases are supported. For example, if the latest stable Gloo Edge Enterprise release is 1.14, then Gloo Edge Enterprise 1.13.x, 1.12.x, and 1.11.x are also supported.
 
 | Gloo Edge | Kubernetes | Envoy | Helm | Istio |
 |------|----------|---------|--------|------|
+| 1.14.x | 1.23 - 1.25 | v3 xDS API | >= 3.8 | 1.13 - 1.17 |
+| 1.13.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
+| 1.12.x | 1.21 - 1.24 | v3 xDS API | >= 3.0 | 1.11 - 1.15 |
 | 1.11.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
-| 1.10.x | 1.21 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
-| 1.9.x | 1.19 - 1.22 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
-| 1.8.x | 1.19 - 1.21 | v3 xDS API | >= 3.0 | 1.11 - 1.12 |
+
 <!--TO FIND VERSIONS
 Go to the branch for the Edge version you want, like 1.11.x. In https://github.com/solo-io/gloo/blob/master/ci/deploy-to-kind-cluster.sh, search for CLUSTER_NODE_VERSION to see the max k8s version, and ISTIO_VERSION for max istio version. You will have to ask someone on the team to find out the minimum versions of each for a given Edge release. They do have an [issue](https://github.com/solo-io/gloo/issues/5358) open to run regular tests for min-max though.-->
 
@@ -23,23 +24,23 @@ Go to the branch for the Edge version you want, like 1.11.x. In https://github.c
 
 Gloo Edge Enterprise releases are built on the OSS codebase and typically follow the equivalent Gloo Edge OSS release. The OSS version is always released as the latest build, while Enterprise version is always released as the first stable build of that version. For example, the latest build of Gloo Edge OSS is {{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}, while the latest stable build of Gloo Edge Enterprise is {{< readfile file="static/content/version_gee_latest.md" markdown="true">}}.
 
-Stable builds for both Gloo Edge Enterprise and OSS are released as minor versions approximately every three months. A stable branch for a minor version, such as 1.10, is tagged from `master`, and stable builds for both Enterprise and OSS are supported from that branch. 
+Stable builds for both Gloo Edge Enterprise and OSS are released as minor versions approximately every three months. A stable branch for a minor version, such as {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}, is tagged from `main`, and stable builds for both Enterprise and OSS are supported from that branch. 
 
 ## Release development
 
 ### Beta release process
 
-New features for Gloo Edge Enterprise and OSS are always developed on `master`. For Enterprise, new features are often released as `beta` builds of the latest Gloo Edge Enterprise version. You can use these beta builds to test new features, or wait until the feature is released with the next stable Enterprise minor version. For OSS, new features for the latest version are released as patches off of `master`.
+New features for Gloo Edge Enterprise and OSS are always developed on `main`. For Enterprise, new features are often released as `beta` builds of the latest Gloo Edge Enterprise version. You can use these beta builds to test new features, or wait until the feature is released with the next stable Enterprise minor version. For OSS, new features for the latest version are released as patches off of `main`.
 
 ### Stable release process
 
-Development of a quality stable release on `master` typically follows this process:
-1. New feature development is suspended on `master`.
-2. Release candidates are created, such as `1.10.0-rc1`, `1.10.0-rc2`, and so on.
+Development of a quality stable release on `main` typically follows this process:
+1. New feature development is suspended on `main`.
+2. Release candidates are created, such as {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.0-rc1, {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.0-rc2, and so on.
 3. A full suite fo tests is performed for each release candidate. Testing includes all documented workflows, a test matrix of all supported platforms, and more.
 4. Documentation for that release is prepared, vetted, and staged.
 5. The stable minor version is released.
-6. Feature development on `master` is resumed.
+6. Feature development on `main` is resumed.
 
 ## Additional support information
 
