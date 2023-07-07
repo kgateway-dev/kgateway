@@ -2,7 +2,7 @@ package helpers
 
 import (
 	"fmt"
-
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 )
@@ -10,6 +10,8 @@ import (
 // UpstreamBuilder contains options for building Upstreams to be included in scaled Snapshots
 type UpstreamBuilder struct {
 	sniPattern sniPattern
+
+	healthChecks []*core.HealthCheck
 }
 
 type sniPattern int
@@ -34,8 +36,15 @@ func (b *UpstreamBuilder) WithConsistentSni() *UpstreamBuilder {
 	return b
 }
 
+func (b *UpstreamBuilder) WithHealthChecks(healthChecks []*core.HealthCheck) *UpstreamBuilder {
+	b.healthChecks = healthChecks
+	return b
+}
+
 func (b *UpstreamBuilder) Build(i int) *v1.Upstream {
 	up := Upstream(i)
+
+	up.HealthChecks = b.healthChecks
 
 	switch b.sniPattern {
 	case uniqueSni:
