@@ -38,11 +38,11 @@ By default, a transformation defined on a Virtual Service attribute is **inherit
 - transformations defined on `VirtualHosts` are inherited by `Route`s and `WeightedDestination`s.
 - transformations defined on `Route`s are inherited by `WeightedDestination`s.
 
-If a child attribute defines its own transformation, it will override the configuration on its parent.
+If a child attribute defines its own transformation, it overrides the configuration on its parent.
 However, if `inheritTransformation` is set to true on the `stagedTransformations` for a Route, it can inherit transformations
 from its parent as illustrated below.
 
-Let's define the `virtualHost` and it's child route is defined as follows:
+Let's define the `virtualHost` and its child route is defined as follows:
 {{< highlight yaml "hl_lines=7-13 20-27" >}}
 # This snippet has been abridged for brevity, and only includes transformation-relevant config
 virtualHost:
@@ -72,8 +72,7 @@ virtualHost:
                       text: 'baz'
 {{< /highlight >}}
 
-Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config will
-be merged into the child. The child route's transformations will look like:
+Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config is merged into the child. The child route's transformations look like the following.
 
 {{< highlight yaml "hl_lines=8-22" >}}
 # This snippet has been abridged for brevity, and only includes transformation-relevant config
@@ -99,10 +98,9 @@ routes:
                 text: 'bar'
 {{< /highlight >}}
 
-As stated above, the route's configuration will override its parent's, but now it also inherits the parent's transformations. So in this case,
-routes matching `/parent` will also be transformed. If `inheritTransformation` was set to `false`, this would not be the case. 
-Note that only the first matched transformation will run, so if both the child and the parent had the same matchers, the child's transformation
-would run.
+As stated above, the route's configuration overrides its parent's, but now it also inherits the parent's transformations. So in this case,
+routes matching `/parent` are also transformed. If `inheritTransformation` were set to `false`, the matching `/parent` routes would not be transformed. 
+Note that only the first matched transformation runs, so if both the child and the parent had the same matchers, the child's transformation would run.
 
 ### Configuration format
 Learn more about the properties that you can set in the `stagedTransformations` {{< protobuf display="object" name="transformation.options.gloo.solo.io.TransformationStages" >}} section of your YAML file. 
