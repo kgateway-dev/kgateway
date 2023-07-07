@@ -365,6 +365,8 @@ message RouteOptions {
         // substitution executed on path value with query and fragment removed.
         .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute host_rewrite_path_regex = 101;
     };
+    // If true and there is a host rewrite, appends the x-forwarded-host header to requests.
+    google.protobuf.BoolValue append_x_forwarded_host = 146;
     // Defines a CORS policy for the route
     // If a CORS policy is also defined on the route's virtual host, the policies are merged.
     cors.options.gloo.solo.io.CorsPolicy cors = 11;
