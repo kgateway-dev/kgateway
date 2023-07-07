@@ -48,15 +48,15 @@ require (
 	github.com/saiskee/gettercheck v0.0.0-20210820204958-38443d06ebe0
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
-	github.com/solo-io/go-utils v0.24.0
-	github.com/solo-io/k8s-utils v0.3.0
+	github.com/solo-io/go-utils v0.24.6-0.20230707210102-7026a58d55f0
+	github.com/solo-io/k8s-utils v0.4.1-0.20230707192007-91d7ffb2e785
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.29.2
 
 	// Pinned to the `gloo-edge-safe-hasher` tag of solo-apis
 	github.com/solo-io/solo-apis v0.0.0-20220923183548-9746539fc625
-	github.com/solo-io/solo-kit v0.31.0
+	github.com/solo-io/solo-kit v0.32.1-0.20230707224505-5e77a4f1b945
 	github.com/spf13/afero v1.9.2
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -64,7 +64,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/goleak v1.2.1
 	go.uber.org/multierr v1.6.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/tools v0.7.0
@@ -83,7 +83,7 @@ require (
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
-	sigs.k8s.io/controller-runtime v0.13.1
+	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -276,7 +276,7 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
-	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -328,7 +328,7 @@ replace (
 	// see https://github.com/solo-io/gloo/issues/5719
 	google.golang.org/grpc => google.golang.org/grpc v1.40.0
 
-	// Pin Kube libraries to v0.25
+	// Pin Kube libraries to v0.27
 	// These should be upgraded collectively
 	k8s.io/api => k8s.io/api v0.27.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.27.3
