@@ -43,7 +43,7 @@ import (
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
 // Results can then be found in the logs for that instance of the action
-var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
+var _ = FDescribe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
 	var (
 		ctrl       *gomock.Controller
 		settings   *v1.Settings
@@ -75,7 +75,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 	// We measure the duration of the translation of the snapshot, benchmarking according to the benchmarkConfig
 	// Labels are used to add context to the entry description
 	DescribeTable("Benchmark table",
-		func(snapBuilder *gloohelpers.ScaledSnapshotBuilder, config gloohelpers.BenchmarkConfig, labels ...string) {
+		func(snapBuilder *gloohelpers.ScaledSnapshotBuilder, config *gloohelpers.BenchmarkConfig, labels ...string) {
 			var (
 				apiSnap *v1snap.ApiSnapshot
 				proxy   *v1.Proxy
@@ -136,7 +136,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 
 			durations := experiment.Get(desc).Durations
 
-			Expect(durations).Should(And(config.BenchmarkMatchers...))
+			Expect(durations).Should(And(config.GetMatchers()...))
 		},
 		generateDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", gloohelpers.NewInjectedSnapshotBuilder(basicSnap), basicConfig),
@@ -152,7 +152,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 	)
 })
 
-func generateDesc(b *gloohelpers.ScaledSnapshotBuilder, _ gloohelpers.BenchmarkConfig, labels ...string) string {
+func generateDesc(b *gloohelpers.ScaledSnapshotBuilder, _ *gloohelpers.BenchmarkConfig, labels ...string) string {
 	labelPrefix := ""
 	if len(labels) > 0 {
 		labelPrefix = fmt.Sprintf("(%s) ", strings.Join(labels, ", "))
@@ -183,22 +183,30 @@ var basicSnap = &v1snap.ApiSnapshot{
 	Upstreams: []*v1.Upstream{gloohelpers.Upstream(0)},
 }
 
-var basicConfig = gloohelpers.BenchmarkConfig{
+var basicConfig = &gloohelpers.BenchmarkConfig{
 	Iterations: 1000,
 	MaxDur:     10 * time.Second,
-	BenchmarkMatchers: []types.GomegaMatcher{
+	GhaMatchers: []types.GomegaMatcher{
 		matchers.HaveMedianLessThan(50 * time.Millisecond),
 		matchers.HavePercentileLessThan(90, 100*time.Millisecond),
+	},
+	LocalMatchers: []types.GomegaMatcher{
+		matchers.HaveMedianLessThan(5 * time.Millisecond),
+		matchers.HavePercentileLessThan(90, 10*time.Millisecond),
 	},
 }
 
 /* 1k Upstreams Scale Test */
-var oneKUpstreamsConfig = gloohelpers.BenchmarkConfig{
+var oneKUpstreamsConfig = &gloohelpers.BenchmarkConfig{
 	Iterations: 100,
 	MaxDur:     30 * time.Second,
-	BenchmarkMatchers: []types.GomegaMatcher{
+	GhaMatchers: []types.GomegaMatcher{
 		matchers.HaveMedianLessThan(time.Second),
 		matchers.HavePercentileLessThan(90, 2*time.Second),
+	},
+	LocalMatchers: []types.GomegaMatcher{
+		matchers.HaveMedianLessThan(100 * time.Millisecond),
+		matchers.HavePercentileLessThan(90, 200*time.Millisecond),
 	},
 }
 
