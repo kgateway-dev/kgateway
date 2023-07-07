@@ -61,11 +61,11 @@ You can control the rollout of changes using canary releases or blue-green deplo
 
 ## Inheritance rules
 
-In general, options that you set in a parent object inherited by a child object. Then, the child has both its own options and those of its parent appended. If the option in the child and parent conflict, the child option takes precedence and overwrites the parent option. You can change this behavior by setting the `inheritTransformation` option to `false` in the children objects.
+In general, options that you set in a parent object are inherited by a child object. Then, the child has both its own options and those of its parent appended. If the option in the child and parent conflict, the child option takes precedence and overwrites the parent option. You can change this behavior by setting the `inheritTransformation` option to `false` in the children objects.
 
 Examples of parent and child objects:
 * VirtualHost parent object options append to children objects like Routes and WeightedDestinations
-* Route parent object options to children objects like WeightedDestinations
+* Route parent object options append to children objects like WeightedDestinations
 
 For examples of inherited options, see the following guides:
 * [Request processing transformation inheritance]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}})

@@ -72,7 +72,7 @@ virtualHost:
                       text: 'baz'
 {{< /highlight >}}
 
-Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config is merged into the child. The child route's transformations will look like:
+Because `inheritTransformation` is set to `true` on the child route, the parent `virtualHost` transformation config is merged into the child. The child route's transformations look like the following.
 
 {{< highlight yaml "hl_lines=8-22" >}}
 # This snippet has been abridged for brevity, and only includes transformation-relevant config

@@ -230,7 +230,7 @@ Headers can be inherited by children options, such as shown in the following exa
              name: 'b-routes'
              namespace: 'b'
    ```
-2. Add headers that you want all child objects to inherit in the VirtualHost parent object. In the following example, the `x-gateway-start-time` header is added to requests, and the `x-route-table: alphabet` header is added to responses.
+2. Add headers that you want all child objects to inherit in the VirtualHost parent object in the same VirtualService as the previous step. In the following example, the `x-gateway-start-time` header is added to requests, and the `x-route-table: alphabet` header is added to responses.
    ```yaml
    ...
    virtualHost:
@@ -245,7 +245,7 @@ Headers can be inherited by children options, such as shown in the following exa
                key: x-route-table
                value: alphabet
    ```
-3. In the RouteTable child object, define other headers. In the following example, , the `x-route-table` header is added to requests, and the `x-route-table: a` header is added to responses.
+3. In the RouteTable child object, define other headers. In the following example, the `x-route-table` header is added to requests, and the `x-route-table: a` header is added to responses.
    ```yaml
    apiVersion: gateway.solo.io/v1
    kind: RouteTable
