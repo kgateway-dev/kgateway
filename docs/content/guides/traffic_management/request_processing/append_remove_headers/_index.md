@@ -201,4 +201,78 @@ spec:
 status: {}
 {{< /highlight >}}
 
+## Inheritance of request headers {#inheritance}
 
+Headers can be inherited by children options, such as shown in the following example with delegated routes. For more information about inheritance, see [Inheritance rules]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}). For more information about delegation, see [Delegating with route tables]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation/" %}}).
+
+1. In your Virtual Service, set up a delegated route.
+   ```yaml
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: 'example'
+     namespace: 'gloo-system'
+   spec:
+     virtualHost:
+       domains:
+       - 'example.com'
+       routes:
+       - matchers:
+          - prefix: '/a' # delegate ownership of routes for `example.com/a`
+         delegateAction:
+           ref:
+             name: 'a-routes'
+             namespace: 'a'
+       - matchers:
+          - prefix: '/b' # delegate ownership of routes for `example.com/b`
+         delegateAction:
+           ref:
+             name: 'b-routes'
+             namespace: 'b'
+   ```
+2. Add headers that you want all child objects to inherit in the VirtualHost parent object in the same VirtualService as the previous step. In the following example, the `x-gateway-start-time` header is added to requests, and the `x-route-table: alphabet` header is added to responses.
+   ```yaml
+   ...
+   virtualHost:
+     options:
+       headerManipulation:
+         requestHeadersToAdd:
+           - header:
+               key: x-gateway-start-time
+               value: '%START_TIME%'
+         responseHeadersToAdd:
+           - header:
+               key: x-route-table
+               value: alphabet
+   ```
+3. In the RouteTable child object, define other headers. In the following example, the `x-route-table` header is added to requests, and the `x-route-table: a` header is added to responses.
+   ```yaml
+   apiVersion: gateway.solo.io/v1
+   kind: RouteTable
+   metadata:
+     name: 'a-routes'
+     namespace: 'a'
+   spec:
+     routes:
+       - matchers:
+           # the path matchers in this RouteTable must begin with the prefix `/a/`
+          - prefix: '/a/1'
+         routeAction:
+           single:
+             upstream:
+               name: 'foo-upstream'
+     options:
+       headerManipulation:
+         requestHeadersToAdd:
+           - header:
+               key: x-route-table
+               value: a
+         responseHeadersToAdd:
+           - header:
+               key: x-route-table
+               value: a
+   ```
+4. Now, requests that match the route `/a/1` get the following headers:
+   * The `x-gateway-start-time` request header is inherited from the parent VirtualHost option.
+   * The `x-route-table` request header is set in the child Route option.
+   * The `x-route-table` response header in the child overwrites the parent object's value of `alphabet` instead to `a`, because child objects take precedence in case of conflict.
