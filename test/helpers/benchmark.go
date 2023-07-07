@@ -1,8 +1,10 @@
 package helpers
 
 import (
+	"fmt"
 	"github.com/onsi/gomega/types"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -30,4 +32,18 @@ func (bc *BenchmarkConfig) GetMatchers() []types.GomegaMatcher {
 		return bc.GhaMatchers
 	}
 	return bc.LocalMatchers
+}
+
+func GenerateBenchmarkDesc(b *ScaledSnapshotBuilder, _ *BenchmarkConfig, labels ...string) string {
+	labelPrefix := ""
+	if len(labels) > 0 {
+		labelPrefix = fmt.Sprintf("(%s) ", strings.Join(labels, ", "))
+	}
+
+	if b.HasInjectedSnapshot() {
+		return fmt.Sprintf("%sinjected snapshot", labelPrefix)
+	}
+
+	// If/when additional Snapshot fields are included in testing, the description should be updated accordingly
+	return fmt.Sprintf("%s%d endpoint(s), %d upstream(s)", labelPrefix, b.EndpointCount(), b.UpstreamCount())
 }

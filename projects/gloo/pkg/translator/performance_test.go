@@ -3,8 +3,6 @@ package translator_test
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	"github.com/solo-io/gloo/test/ginkgo/decorators"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -43,7 +41,7 @@ import (
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
 // Results can then be found in the logs for that instance of the action
-var _ = FDescribe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
+var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
 	var (
 		ctrl       *gomock.Controller
 		settings   *v1.Settings
@@ -97,7 +95,7 @@ var _ = FDescribe("Translation - Benchmarking Tests", decorators.Performance, La
 			Expect(apiSnap.Proxies).NotTo(BeEmpty())
 			proxy = apiSnap.Proxies[0]
 
-			desc := generateDesc(snapBuilder, config, labels...)
+			desc := gloohelpers.GenerateBenchmarkDesc(snapBuilder, config, labels...)
 
 			experiment := gmeasure.NewExperiment(fmt.Sprintf("Experiment - %s", desc))
 
@@ -138,7 +136,7 @@ var _ = FDescribe("Translation - Benchmarking Tests", decorators.Performance, La
 
 			Expect(durations).Should(And(config.GetMatchers()...))
 		},
-		generateDesc, // generate descriptions for table entries with nil descriptions
+		gloohelpers.GenerateBenchmarkDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", gloohelpers.NewInjectedSnapshotBuilder(basicSnap), basicConfig),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1), basicConfig, "upstream scale"),
 		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1), oneKUpstreamsConfig, "upstream scale"),
@@ -151,20 +149,6 @@ var _ = FDescribe("Translation - Benchmarking Tests", decorators.Performance, La
 			WithUpstreamBuilder(uniqueSniUsBuilder), basicConfig, "unique SNI", "upstream scale"),
 	)
 })
-
-func generateDesc(b *gloohelpers.ScaledSnapshotBuilder, _ *gloohelpers.BenchmarkConfig, labels ...string) string {
-	labelPrefix := ""
-	if len(labels) > 0 {
-		labelPrefix = fmt.Sprintf("(%s) ", strings.Join(labels, ", "))
-	}
-
-	if b.HasInjectedSnapshot() {
-		return fmt.Sprintf("%sinjected snapshot", labelPrefix)
-	}
-
-	// If/when additional Snapshot fields are included in testing, the description should be updated accordingly
-	return fmt.Sprintf("%s%d endpoint(s), %d upstream(s)", labelPrefix, b.EndpointCount(), b.UpstreamCount())
-}
 
 // Test assets: Add blocks for logical groupings of tests, including:
 // - in-line snapshot definitions for tests that require granularly-configured/heterogeneous resources (ie testing a particular field or feature)
