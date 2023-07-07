@@ -35,7 +35,6 @@ Prepare to upgrade by reviewing information about the version, dependencies, and
    * [1.13.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.13/" >}})
    * [1.12.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.12/" >}})
    * [1.11.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.11/" >}})
-   * [1.10.0+]({{< versioned_link_path fromRoot="/operations/upgrading/v1.10/" >}})
 5. If you still aren't sure about the version upgrade impact, scan our [Frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}). Also, feel free to post in the `#gloo` or `#gloo-enterprise` channels of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 ### Enterprise-only: Understand the open source dependencies.
