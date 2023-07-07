@@ -203,7 +203,7 @@ status: {}
 
 ## Inheritance of request headers {#inheritance}
 
-Headers can be inherited by children options, such as shown in the following example with delegated routes. For more information about inheritance, see [Inheritance rules]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}). For more information about delegation, see [Delegating with route tables]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation/" %}}).
+Headers can be inherited by children objects, such as shown in the following example with delegated routes. For more information about inheritance, see [Inheritance rules]({{% versioned_link_path fromRoot="/introduction/traffic_filter/" %}}). For more information about delegation, see [Delegating with route tables]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation/" %}}).
 
 1. In your Virtual Service, set up a delegated route.
    ```yaml
