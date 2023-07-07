@@ -2,10 +2,11 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/onsi/gomega/types"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/onsi/gomega/types"
 )
 
 // Result represents the result of measuring a function's execution time.
