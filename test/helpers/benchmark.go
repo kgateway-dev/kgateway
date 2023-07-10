@@ -41,10 +41,5 @@ func GenerateBenchmarkDesc(b *ScaledSnapshotBuilder, _ *BenchmarkConfig, labels 
 		labelPrefix = fmt.Sprintf("(%s) ", strings.Join(labels, ", "))
 	}
 
-	if b.HasInjectedSnapshot() {
-		return fmt.Sprintf("%sinjected snapshot", labelPrefix)
-	}
-
-	// If/when additional Snapshot fields are included in testing, the description should be updated accordingly
-	return fmt.Sprintf("%s%d endpoint(s), %d upstream(s)", labelPrefix, b.EndpointCount(), b.UpstreamCount())
+	return fmt.Sprintf("%s%s", labelPrefix, b.description())
 }
