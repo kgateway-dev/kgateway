@@ -40,7 +40,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/envoy/api/v2/core/base.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto](https://github.com/solo-io/solo-kit/blob/main/api/external/envoy/api/v2/core/base.proto)
 
 
 
