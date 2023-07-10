@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/test/testutils"
 	"os"
 	"strings"
 	"time"
@@ -29,7 +30,7 @@ type BenchmarkConfig struct {
 }
 
 func (bc *BenchmarkConfig) GetMatchers() []types.GomegaMatcher {
-	if os.Getenv("GITHUB_ACTION") != "" {
+	if os.Getenv(testutils.GithubAction) != "" {
 		return bc.GhaMatchers
 	}
 	return bc.LocalMatchers
