@@ -9,12 +9,8 @@ import (
 // performance when running on the Linux GHA runner we use for Nightly tests
 // Ignore will always be false
 func MeasureIgnore0ns(f func()) (Result, bool, error) {
-	before := time.Now()
-	f()
-	elapsed := time.Since(before)
-	return Result{
-		Total: elapsed,
-	}, false, nil
+	res, err := Measure(f)
+	return res, false, err
 }
 
 // Measure as implemented here for Mac/Darwin is meant to be used in performance tests when developing locally

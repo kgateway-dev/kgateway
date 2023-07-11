@@ -11,7 +11,7 @@ import (
 // The 0ns error occurs when measuring very short durations (~100µs) when measurements may round down to 0ns
 // This function should be used in circumstances where we want to ignore that particular error but not others
 func MeasureIgnore0ns(f func()) (benchmarking.Result, bool, error) {
-	res, err := benchmarking.Measure(f)
+	res, err := Measure(f)
 	if err != nil && strings.Contains(err.Error(), "total execution time was 0 ns") {
 		return res, true, nil
 	}
