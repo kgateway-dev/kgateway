@@ -616,6 +616,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.HeaderManipulation = proto.Clone(m.GetHeaderManipulation()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_headers.HeaderManipulation)
 	}
 
+	if h, ok := interface{}(m.GetAppendXForwardedHost()).(clone.Cloner); ok {
+		target.AppendXForwardedHost = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AppendXForwardedHost = proto.Clone(m.GetAppendXForwardedHost()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	if h, ok := interface{}(m.GetCors()).(clone.Cloner); ok {
 		target.Cors = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors.CorsPolicy)
 	} else {

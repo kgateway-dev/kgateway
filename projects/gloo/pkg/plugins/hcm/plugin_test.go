@@ -64,7 +64,8 @@ var _ = Describe("Plugin", func() {
 
 	It("copy all settings to hcm filter", func() {
 		settings = &hcm.HttpConnectionManagerSettings{
-			UseRemoteAddress:      &wrappers.BoolValue{Value: false},
+			UseRemoteAddress:      &wrappers.BoolValue{Value: true},
+			AppendXForwardedPort:  &wrappers.BoolValue{Value: true},
 			XffNumTrustedHops:     &wrappers.UInt32Value{Value: 5},
 			SkipXffAppend:         &wrappers.BoolValue{Value: true},
 			Via:                   &wrappers.StringValue{Value: "Via"},
@@ -149,6 +150,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(settings.UseRemoteAddress))
+		Expect(cfg.AppendXForwardedPort).To(Equal(settings.AppendXForwardedPort.GetValue()))
 		Expect(cfg.XffNumTrustedHops).To(Equal(settings.XffNumTrustedHops.GetValue()))
 		Expect(cfg.SkipXffAppend).To(Equal(settings.SkipXffAppend.GetValue()))
 		Expect(cfg.Via).To(Equal(settings.Via.GetValue()))

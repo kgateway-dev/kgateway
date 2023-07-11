@@ -589,6 +589,9 @@ spec:
                           allowChunkedLength:
                             nullable: true
                             type: boolean
+                          appendXForwardedPort:
+                            nullable: true
+                            type: boolean
                           codecType:
                             type: string
                             x-kubernetes-int-or-string: true
