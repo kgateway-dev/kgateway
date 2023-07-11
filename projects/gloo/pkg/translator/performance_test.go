@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap/zapcore"
-
 	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"go.uber.org/zap"
 
@@ -50,8 +48,6 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 		ctrl       *gomock.Controller
 		settings   *v1.Settings
 		translator Translator
-
-		originalLogLevel zapcore.Level
 	)
 
 	BeforeEach(func() {
@@ -92,7 +88,7 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 			)
 
 			// Translating logs at info level, which is very noisy when running repeatedly
-			originalLogLevel = contextutils.GetLogLevel()
+			originalLogLevel := contextutils.GetLogLevel()
 			contextutils.SetLogLevel(zap.ErrorLevel)
 			defer contextutils.SetLogLevel(originalLogLevel)
 
