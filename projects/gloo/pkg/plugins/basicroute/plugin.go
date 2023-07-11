@@ -241,7 +241,9 @@ func applyHostRewrite(ctx context.Context, in *v1.Route, out *envoy_config_route
 	default:
 		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
 	}
-
+	if in.GetOptions().GetAppendXForwardedHost() != nil {
+		routeAction.Route.AppendXForwardedHost = in.GetOptions().GetAppendXForwardedHost().GetValue()
+	}
 	return nil
 }
 

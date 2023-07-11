@@ -393,6 +393,16 @@ func (m *HttpConnectionManagerSettings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAppendXForwardedPort()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAppendXForwardedPort()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAppendXForwardedPort(), target.GetAppendXForwardedPort()) {
+			return false
+		}
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:
