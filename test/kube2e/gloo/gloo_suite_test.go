@@ -11,7 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/test/services"
 
-	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
@@ -63,7 +62,7 @@ var _ = BeforeSuite(func() {
 	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
 	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{}).WithWriteNamespace(testHelper.InstallNamespace)
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset).WithWriteNamespace(testHelper.InstallNamespace)
 
 	envoyFactory = envoy.NewFactory()
 
