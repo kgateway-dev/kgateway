@@ -2,10 +2,11 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/testutils"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/test/testutils"
 
 	"github.com/onsi/gomega/types"
 )
