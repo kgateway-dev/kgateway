@@ -45,7 +45,7 @@ import (
 // More info on that machine can be found here: https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
 // When developing new tests, users should manually run that action in order to test performance under the same parameters
 // Results can then be found in the logs for that instance of the action
-var _ = Describe("Translation - Benchmarking Tests", Ordered, decorators.Performance, Label(labels.Performance), func() {
+var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Label(labels.Performance), func() {
 	var (
 		ctrl       *gomock.Controller
 		settings   *v1.Settings
@@ -53,15 +53,6 @@ var _ = Describe("Translation - Benchmarking Tests", Ordered, decorators.Perform
 
 		originalLogLevel zapcore.Level
 	)
-
-	BeforeAll(func() {
-		originalLogLevel = contextutils.GetLogLevel()
-		contextutils.SetLogLevel(zap.ErrorLevel)
-	})
-
-	AfterAll(func() {
-		contextutils.SetLogLevel(originalLogLevel)
-	})
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(T)
@@ -99,6 +90,11 @@ var _ = Describe("Translation - Benchmarking Tests", Ordered, decorators.Perform
 
 				tooFastWarningCount int
 			)
+
+			// Translating logs at info level, which is very noisy when running repeatedly
+			originalLogLevel = contextutils.GetLogLevel()
+			contextutils.SetLogLevel(zap.ErrorLevel)
+			defer contextutils.SetLogLevel(originalLogLevel)
 
 			apiSnap = snapBuilder.Build()
 
