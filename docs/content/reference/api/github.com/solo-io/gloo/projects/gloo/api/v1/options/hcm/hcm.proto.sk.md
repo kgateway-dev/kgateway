@@ -80,6 +80,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 "uuidRequestIdConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings
 "http2ProtocolOptions": .protocol.options.gloo.solo.io.Http2ProtocolOptions
 "internalAddressConfig": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig
+"appendXForwardedPort": .google.protobuf.BoolValue
 
 ```
 
@@ -124,6 +125,7 @@ v3 documents https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filte
 | `uuidRequestIdConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.UuidRequestIdConfigSettings](../hcm.proto.sk/#uuidrequestidconfigsettings) |  |
 | `http2ProtocolOptions` | [.protocol.options.gloo.solo.io.Http2ProtocolOptions](../../protocol/protocol.proto.sk/#http2protocoloptions) | Additional HTTP/2 settings that are passed directly to the HTTP/2 codec. |
 | `internalAddressConfig` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.InternalAddressConfig](../hcm.proto.sk/#internaladdressconfig) | Configuration of internal addresses. |
+| `appendXForwardedPort` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, configure Envoy to set the x-fowarded-port header to allow services to find Envoy's listener port. |
 
 
 

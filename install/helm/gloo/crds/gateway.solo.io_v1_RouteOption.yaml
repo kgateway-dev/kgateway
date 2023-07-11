@@ -33,6 +33,9 @@ spec:
                 type: object
               options:
                 properties:
+                  appendXForwardedHost:
+                    nullable: true
+                    type: boolean
                   autoHostRewrite:
                     nullable: true
                     type: boolean

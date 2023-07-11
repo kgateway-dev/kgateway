@@ -883,6 +883,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAppendXForwardedHost()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAppendXForwardedHost()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAppendXForwardedHost(), target.GetAppendXForwardedHost()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetCors()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetCors()) {
 			return false
