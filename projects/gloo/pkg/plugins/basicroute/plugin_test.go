@@ -512,6 +512,28 @@ var _ = Describe("host rewrite", func() {
 		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/foo"))
 	})
 
+	It("Sets x-forwarded-host", func() {
+
+		p := NewPlugin()
+		routeAction := &envoy_config_route_v3.RouteAction{
+			HostRewriteSpecifier: &envoy_config_route_v3.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "/"},
+		}
+		out := &envoy_config_route_v3.Route{
+			Action: &envoy_config_route_v3.Route_Route{
+				Route: routeAction,
+			},
+		}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				HostRewriteType:      &v1.RouteOptions_HostRewrite{HostRewrite: "/foo"},
+				AppendXForwardedHost: &wrappers.BoolValue{Value: true},
+			},
+			Action: &v1.Route_RouteAction{},
+		}, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/foo"))
+		Expect(routeAction.GetAppendXForwardedHost()).To(Equal(true))
+	})
 	It("distinguishes between empty string and nil", func() {
 		p := NewPlugin()
 		routeAction := &envoy_config_route_v3.RouteAction{

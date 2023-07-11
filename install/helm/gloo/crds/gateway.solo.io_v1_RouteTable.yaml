@@ -142,6 +142,9 @@ spec:
                       type: string
                     options:
                       properties:
+                        appendXForwardedHost:
+                          nullable: true
+                          type: boolean
                         autoHostRewrite:
                           nullable: true
                           type: boolean
