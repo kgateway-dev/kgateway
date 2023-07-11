@@ -56,7 +56,7 @@ const (
 
 	// GithubAction is used by Github Actions and is the name of the currently running action or ID of a step
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	GithubAction = "GITHUB_ACITON"
+	GithubAction = "GITHUB_ACTION"
 
 	// GcloudBuildId is used by Cloudbuild to identify the build id
 	// This is set when running tests in Cloudbuild
