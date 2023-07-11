@@ -9,8 +9,6 @@ import (
 
 	kubeutils2 "github.com/solo-io/gloo/test/testutils"
 
-	"github.com/avast/retry-go"
-
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	gloodefaults "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -67,7 +65,7 @@ func StartTestHelper() {
 	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
 	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{}).WithWriteNamespace(testHelper.InstallNamespace)
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset).WithWriteNamespace(testHelper.InstallNamespace)
 }
 
 func TearDownTestHelper() {
