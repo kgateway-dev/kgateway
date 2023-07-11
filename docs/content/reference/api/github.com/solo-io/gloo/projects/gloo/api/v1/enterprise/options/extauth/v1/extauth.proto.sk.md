@@ -1400,6 +1400,8 @@ DEPRECATED: use ApiKey
 ```yaml
 "modules": []core.solo.io.ResourceRef
 "query": string
+"package": string
+"ruleName": string
 "options": .enterprise.gloo.solo.io.OpaAuthOptions
 
 ```
@@ -1408,6 +1410,8 @@ DEPRECATED: use ApiKey
 | ----- | ---- | ----------- | 
 | `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
+| `package` | `string` | If you are using sidecar-based OPA auth (recommended), this will be the package used to query the OPA API. |
+| `ruleName` | `string` | If you are using sidecar-based OPA auth (recommended), this will be the rule name used to query the OPA API. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
 
 

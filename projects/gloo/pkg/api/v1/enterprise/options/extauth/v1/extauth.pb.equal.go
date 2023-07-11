@@ -2262,6 +2262,14 @@ func (m *OpaAuth) Equal(that interface{}) bool {
 		return false
 	}
 
+	if strings.Compare(m.GetPackage(), target.GetPackage()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetRuleName(), target.GetRuleName()) != 0 {
+		return false
+	}
+
 	if h, ok := interface{}(m.GetOptions()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetOptions()) {
 			return false

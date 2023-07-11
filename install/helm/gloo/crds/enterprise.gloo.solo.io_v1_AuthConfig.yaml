@@ -652,7 +652,11 @@ spec:
                             fastInputConversion:
                               type: boolean
                           type: object
+                        package:
+                          type: string
                         query:
+                          type: string
+                        ruleName:
                           type: string
                       type: object
                     passThroughAuth:

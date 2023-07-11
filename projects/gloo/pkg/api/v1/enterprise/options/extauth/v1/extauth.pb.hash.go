@@ -2571,6 +2571,14 @@ func (m *OpaAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetPackage())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRuleName())); err != nil {
+		return 0, err
+	}
+
 	if h, ok := interface{}(m.GetOptions()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("Options")); err != nil {
 			return 0, err
