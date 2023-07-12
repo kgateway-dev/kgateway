@@ -66,7 +66,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 				case validation.ErrorWithKnownLevel:
 					switch errType.ErrorLevel() {
 					case validation.ErrorLevels_WARNING:
-						if tcpHostNum := errType.GetHostNum(); tcpHostNum != nil {
+						if tcpHostNum := errType.GetContext().HostNum; tcpHostNum != nil {
 							validation.AppendTcpHostWarning(
 								t.report.GetTcpHostReports()[*tcpHostNum],
 								validationapi.TcpHostReport_Warning_InvalidDestinationWarning,

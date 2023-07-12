@@ -21,6 +21,15 @@ const (
 	ErrorLevels_ERROR   string = "ERROR"
 )
 
+// ErrorLevelContext carries additional information to be passed in the
+// ErrorWithKnownLevel object
+type ErrorLevelContext struct {
+	// A given TCP listener can have multiple TCP hosts; HostNum provides the
+	// numerical index of the host on the listener associated with the error to
+	// be reported
+	HostNum *int
+}
+
 // Types implementing ErrorWithKnownLevel are able to report on the severity of
 // the error they describe by evaluating ErrorLevel()
 type ErrorWithKnownLevel interface {
@@ -28,15 +37,17 @@ type ErrorWithKnownLevel interface {
 	// The severity of the error - should return either ErrorLevels_WARNING or
 	// ErrorLevels_ERROR
 	ErrorLevel() string
-	GetHostNum() *int
+	// Additional contextual information required to report the error/warning
+	GetContext() ErrorLevelContext
 }
 
-// TcpHostWarning reports an error and the host which is associated with the
-// error
+// TcpHostWarning implements ErrorWithKnownLevel; it is intended to allow
+// reporting certain errors as warnings and others as errors, and provides the
+// necessary context required for reporting errors as such
 type TcpHostWarning struct {
-	HostNum  *int
 	Err      error
 	ErrLevel string
+	Context  ErrorLevelContext
 }
 
 func (tcpHostWarning *TcpHostWarning) ErrorLevel() string {
@@ -47,8 +58,8 @@ func (tcpHostWarning *TcpHostWarning) Error() string {
 	return fmt.Sprintf("TcpHost error: %v", tcpHostWarning.Err)
 }
 
-func (tcpHostWarning *TcpHostWarning) GetHostNum() *int {
-	return tcpHostWarning.HostNum
+func (tcpHostWarning *TcpHostWarning) GetContext() ErrorLevelContext {
+	return tcpHostWarning.Context
 }
 
 func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
