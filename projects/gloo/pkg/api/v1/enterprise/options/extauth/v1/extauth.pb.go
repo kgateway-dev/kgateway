@@ -3603,7 +3603,13 @@ type OpaAuthOptions struct {
 	// are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine.
 	// By default, this is set to false and all fields are evaluated by OPA.
 	FastInputConversion bool `protobuf:"varint,1,opt,name=fast_input_conversion,json=fastInputConversion,proto3" json:"fast_input_conversion,omitempty"`
-	// Return the reason given from the OPA engine after a decision made on this policy
+	// Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second
+	// parameter of the query and will be a protobuf struct if the reason is an object, and otherwise will be a json
+	// string. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure will be
+	// DynamicMetadata
+	//
+	//	-> Name of the AuthConfig
+	//	    -> reason
 	ReturnDecisionReason bool `protobuf:"varint,2,opt,name=return_decision_reason,json=returnDecisionReason,proto3" json:"return_decision_reason,omitempty"`
 }
 
