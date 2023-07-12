@@ -28,13 +28,13 @@ type ErrorWithKnownLevel interface {
 	// The severity of the error - should return either ErrorLevels_WARNING or
 	// ErrorLevels_ERROR
 	ErrorLevel() string
-	GetHostNum() int
+	GetHostNum() *int
 }
 
 // TcpHostWarning reports an error and the host which is associated with the
 // error
 type TcpHostWarning struct {
-	HostNum  int
+	HostNum  *int
 	Err      error
 	ErrLevel string
 }
@@ -47,7 +47,7 @@ func (tcpHostWarning *TcpHostWarning) Error() string {
 	return fmt.Sprintf("TcpHost error: %v", tcpHostWarning.Err)
 }
 
-func (tcpHostWarning *TcpHostWarning) GetHostNum() int {
+func (tcpHostWarning *TcpHostWarning) GetHostNum() *int {
 	return tcpHostWarning.HostNum
 }
 

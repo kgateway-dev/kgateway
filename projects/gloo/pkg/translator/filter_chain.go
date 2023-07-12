@@ -66,10 +66,15 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 				case validation.ErrorWithKnownLevel:
 					switch errType.ErrorLevel() {
 					case validation.ErrorLevels_WARNING:
-						validation.AppendTcpHostWarning(
-							t.report.GetTcpHostReports()[errType.GetHostNum()],
-							validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
-							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
+						if tcpHostNum := errType.GetHostNum(); tcpHostNum != nil {
+							validation.AppendTcpHostWarning(
+								t.report.GetTcpHostReports()[*tcpHostNum],
+								validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
+								fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
+							break
+						}
+						// hostNum was not provided, so just report as an error
+						fallthrough
 					case validation.ErrorLevels_ERROR:
 						validation.AppendTCPListenerError(
 							t.report,
