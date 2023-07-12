@@ -59,7 +59,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 			// treat DestinationNotFoundError as a warning and all others as
 			// errors
 			reportError := func(errReport error) {
-				if tcpHostWarn, ok := err.(*validation.TcpHostWarning); ok && tcpHostWarn.ErrorLevel() == validation.ErrorLevels_WARNING {
+				if tcpHostWarn, ok := errReport.(*validation.TcpHostWarning); ok && tcpHostWarn.ErrorLevel() == validation.ErrorLevels_WARNING {
 					validation.AppendTcpHostWarning(
 						t.report.GetTcpHostReports()[tcpHostWarn.HostNum],
 						validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
@@ -67,7 +67,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 				} else {
 					validation.AppendTCPListenerError(t.report,
 						validationapi.TcpListenerReport_Error_ProcessingError,
-						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
+						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errReport.Error()))
 				}
 			}
 			if merr, ok := err.(*multierror.Error); ok {
