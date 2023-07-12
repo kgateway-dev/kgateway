@@ -16,6 +16,7 @@ var (
 	RouteIdentifierTxt = "Route Name"
 )
 
+// TcpHostError reports an error and its owning host
 type TcpHostError struct {
 	HostNum int
 	Err     error
