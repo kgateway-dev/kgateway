@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -54,9 +55,27 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 	for _, plug := range t.plugins {
 		pluginFilterChains, err := plug.CreateTcpFilterChains(params, t.parentListener, t.listener)
 		if err != nil {
-			validation.AppendTCPListenerError(t.report,
-				validationapi.TcpListenerReport_Error_ProcessingError,
-				fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
+			// unwrap the multierror object returned by CreateTcpFilterChains;
+			// treat DestinationNotFoundError as a warning and all others as
+			// errors
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, unwrappedErr := range merr.WrappedErrors() {
+					if tcpHostErr, ok := unwrappedErr.(*validation.TcpHostError); ok {
+						validation.AppendTcpHostWarning(
+							t.report.GetTcpHostReports()[tcpHostErr.HostNum],
+							validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
+							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), tcpHostErr.Error()))
+					} else {
+						validation.AppendTCPListenerError(t.report,
+							validationapi.TcpListenerReport_Error_ProcessingError,
+							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
+					}
+				}
+			} else {
+				validation.AppendTCPListenerError(t.report,
+					validationapi.TcpListenerReport_Error_ProcessingError,
+					fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
+			}
 			continue
 		}
 

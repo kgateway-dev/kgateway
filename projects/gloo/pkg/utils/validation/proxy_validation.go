@@ -16,6 +16,15 @@ var (
 	RouteIdentifierTxt = "Route Name"
 )
 
+type TcpHostError struct {
+	HostNum int
+	Err     error
+}
+
+func (invHostErr *TcpHostError) Error() string {
+	return fmt.Sprintf("TcpHost error: %s", invHostErr.Err.Error())
+}
+
 func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
 	listeners := proxy.GetListeners()
 	listenerReports := make([]*validation.ListenerReport, len(listeners))
@@ -198,6 +207,19 @@ func GetTcpHostErr(tcpHost *validation.TcpHostReport) []error {
 	return errs
 }
 
+func GetTcpHostWarning(tcpHost *validation.TcpHostReport) []string {
+	var warnings []string
+	appendWarning := func(level, errType, reason string) {
+		warnings = append(warnings, fmt.Sprintf("%v Warning: %v. Reason: %v", level, errType, reason))
+	}
+
+	for _, warning := range tcpHost.GetWarnings() {
+		appendWarning("TcpHost", warning.GetType().String(), warning.GetReason())
+	}
+
+	return warnings
+}
+
 func GetProxyError(proxyRpt *validation.ProxyReport) error {
 	var errs []error
 	for _, listener := range proxyRpt.GetListenerReports() {
@@ -286,6 +308,10 @@ func GetProxyWarning(proxyRpt *validation.ProxyReport) []string {
 				}
 			}
 		}
+		for _, tcpHostReport := range utils.GetTcpHostReportsFromListenerReport(listenerReport) {
+			warnings = append(warnings, GetTcpHostWarning(tcpHostReport)...)
+		}
+
 	}
 
 	return warnings
@@ -312,8 +338,8 @@ func AppendHTTPListenerError(httpListenerReport *validation.HttpListenerReport, 
 	})
 }
 
-func AppendTCPListenerError(httpListenerReport *validation.TcpListenerReport, errType validation.TcpListenerReport_Error_Type, reason string) {
-	httpListenerReport.Errors = append(httpListenerReport.GetErrors(), &validation.TcpListenerReport_Error{
+func AppendTCPListenerError(tcpListenerReport *validation.TcpListenerReport, errType validation.TcpListenerReport_Error_Type, reason string) {
+	tcpListenerReport.Errors = append(tcpListenerReport.GetErrors(), &validation.TcpListenerReport_Error{
 		Type:   errType,
 		Reason: reason,
 	})
@@ -328,6 +354,13 @@ func AppendRouteError(routeReport *validation.RouteReport, errType validation.Ro
 
 func AppendRouteWarning(routeReport *validation.RouteReport, errType validation.RouteReport_Warning_Type, reason string) {
 	routeReport.Warnings = append(routeReport.GetWarnings(), &validation.RouteReport_Warning{
+		Type:   errType,
+		Reason: reason,
+	})
+}
+
+func AppendTcpHostWarning(tcpHostReport *validation.TcpHostReport, errType validation.TcpHostReport_Warning_Type, reason string) {
+	tcpHostReport.Warnings = append(tcpHostReport.GetWarnings(), &validation.TcpHostReport_Warning{
 		Type:   errType,
 		Reason: reason,
 	})

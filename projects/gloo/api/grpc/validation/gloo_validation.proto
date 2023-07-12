@@ -246,8 +246,23 @@ message TcpHostReport {
         string reason = 2;
     }
 
+    // warning types for the given tcp host config
+    message Warning {
+        enum Type {
+            InvalidDestinationWarning = 0;
+        }
+
+        // the type of the error
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
     // errors on the tcp host
     repeated Error errors = 2;
+
+    // warnings on the config of the tcp host
+    repeated Warning warnings = 3;
 }
 
 message HybridListenerReport {
