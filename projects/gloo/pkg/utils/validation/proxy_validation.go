@@ -33,13 +33,13 @@ type ErrorWithKnownLevel interface {
 // TcpHostWarning reports an error and the host which is associated with the
 // error
 type TcpHostWarning struct {
-	HostNum    int
-	Err        error
-	errorLevel string
+	HostNum  int
+	Err      error
+	ErrLevel string
 }
 
 func (tcpHostWarning *TcpHostWarning) ErrorLevel() string {
-	return tcpHostWarning.errorLevel
+	return tcpHostWarning.ErrLevel
 }
 
 func (tcpHostWarning *TcpHostWarning) Error() string {
