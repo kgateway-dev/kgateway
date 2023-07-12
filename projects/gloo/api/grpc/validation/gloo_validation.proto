@@ -252,7 +252,7 @@ message TcpHostReport {
             InvalidDestinationWarning = 0;
         }
 
-        // the type of the error
+        // the type of the warning
         Type type = 1;
         // any extra info as a string
         string reason = 2;
