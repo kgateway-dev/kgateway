@@ -55,21 +55,37 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 	for _, plug := range t.plugins {
 		pluginFilterChains, err := plug.CreateTcpFilterChains(params, t.parentListener, t.listener)
 		if err != nil {
-			// unwrap the multierror object returned by CreateTcpFilterChains;
-			// treat DestinationNotFoundError as a warning and all others as
-			// errors
+			// if the error is of ErrorWithKnownLevel type, extract the level;
+			// if the level is a warning, extract the TcpHost number and report
+			// the warning on that TcpHost. if the level is an error, report it
+			// on the TcpListener object itself. errors on the TcpHost are not
+			// currently implemented as nothing currently reports errors on a
+			// TcpHost instance.
 			reportError := func(errReport error) {
-				if tcpHostWarn, ok := errReport.(*validation.TcpHostWarning); ok && tcpHostWarn.ErrorLevel() == validation.ErrorLevels_WARNING {
-					validation.AppendTcpHostWarning(
-						t.report.GetTcpHostReports()[tcpHostWarn.HostNum],
-						validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
-						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), tcpHostWarn.Error()))
-				} else {
-					validation.AppendTCPListenerError(t.report,
+				switch errType := errReport.(type) {
+				case validation.ErrorWithKnownLevel:
+					switch errType.ErrorLevel() {
+					case validation.ErrorLevels_WARNING:
+						validation.AppendTcpHostWarning(
+							t.report.GetTcpHostReports()[errType.GetHostNum()],
+							validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
+							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
+					case validation.ErrorLevels_ERROR:
+						validation.AppendTCPListenerError(
+							t.report,
+							validationapi.TcpListenerReport_Error_ProcessingError,
+							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
+					}
+				// if the error is not of ErrorWithKnownLevel type, report it
+				// as an error on the TcpListener
+				default:
+					validation.AppendTCPListenerError(
+						t.report,
 						validationapi.TcpListenerReport_Error_ProcessingError,
-						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errReport.Error()))
+						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
 				}
 			}
+
 			if merr, ok := err.(*multierror.Error); ok {
 				for _, unwrappedErr := range merr.WrappedErrors() {
 					reportError(unwrappedErr)
