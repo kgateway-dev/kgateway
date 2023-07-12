@@ -2,3 +2,4 @@ changelog:
 - type: HELM
   description: >-
     Allow configuring gateway proxy Envoy statistics configuration
+  issueLink: https://github.com/solo-io/gloo/issues/5537
