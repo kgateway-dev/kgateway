@@ -1,7 +1,7 @@
 changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/solo-projects/issues/5163
-    resolvesIssue: true
+    resolvesIssue: false
     description: >-
       When modifying gateways that depend on TCP upstreams that do not exist,
       report these validation issues not as errors, but as warnings instead
