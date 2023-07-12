@@ -10,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/test/services"
 	glootestutils "github.com/solo-io/gloo/test/testutils"
 
-	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/k8s-utils/kubeutils"
 
@@ -64,7 +63,7 @@ var _ = BeforeSuite(func() {
 	resourceClientset, err = kube2e.NewKubeResourceClientSet(ctx, cfg)
 	Expect(err).NotTo(HaveOccurred())
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{})
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset).WithWriteNamespace(testHelper.InstallNamespace)
 
 	vaultFactory, err = services.NewVaultFactory()
 	Expect(err).NotTo(HaveOccurred())
