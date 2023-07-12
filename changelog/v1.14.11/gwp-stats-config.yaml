@@ -1,4 +1,4 @@
 changelog:
-- type: NON_USER_FACING
+- type: HELM
   description: >-
     Allow configuring gateway proxy Envoy statistics configuration
