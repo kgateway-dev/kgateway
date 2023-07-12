@@ -16,19 +16,34 @@ var (
 	RouteIdentifierTxt = "Route Name"
 )
 
-// TcpHostError reports an error and the host which is associated with the
-// error
-type TcpHostError struct {
-	HostNum int
-	Err     error
+const (
+	ErrorLevels_WARNING string = "WARNING"
+	ErrorLevels_ERROR   string = "ERROR"
+)
+
+// Types implementing ErrorWithKnownLevel are able to report on the severity of
+// the error they describe by evaluating ErrorLevel()
+type ErrorWithKnownLevel interface {
+	error
+	// The severity of the error - should return either ErrorLevels_WARNING or
+	// ErrorLevels_ERROR
+	ErrorLevel() string
 }
 
-func (invHostErr *TcpHostError) Error() string {
-	var errStr string
-	if invHostErr.Err != nil {
-		invHostErr.Err.Error()
-	}
-	return fmt.Sprintf("TcpHost error: %s", errStr)
+// TcpHostWarning reports an error and the host which is associated with the
+// error
+type TcpHostWarning struct {
+	HostNum    int
+	Err        error
+	errorLevel string
+}
+
+func (tcpHostWarning *TcpHostWarning) ErrorLevel() string {
+	return tcpHostWarning.errorLevel
+}
+
+func (tcpHostWarning *TcpHostWarning) Error() string {
+	return fmt.Sprintf("TcpHost error: %v", tcpHostWarning.Err)
 }
 
 func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {

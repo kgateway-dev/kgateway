@@ -60,7 +60,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 			// errors
 			if merr, ok := err.(*multierror.Error); ok {
 				for _, unwrappedErr := range merr.WrappedErrors() {
-					if tcpHostErr, ok := unwrappedErr.(*validation.TcpHostError); ok {
+					if tcpHostErr, ok := unwrappedErr.(*validation.TcpHostWarning); ok {
 						validation.AppendTcpHostWarning(
 							t.report.GetTcpHostReports()[tcpHostErr.HostNum],
 							validationapi.TcpHostReport_Warning_InvalidDestinationWarning,

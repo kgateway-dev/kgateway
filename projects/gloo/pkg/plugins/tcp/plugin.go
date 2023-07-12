@@ -87,7 +87,7 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 				// special error object, and the caller will handle conversion
 				// from error to warning
 				// https://github.com/solo-io/solo-projects/issues/5163
-				multiErr.Errors = append(multiErr.Errors, &validation.TcpHostError{
+				multiErr.Errors = append(multiErr.Errors, &validation.TcpHostWarning{
 					HostNum: hostNum,
 					Err:     err,
 				})
