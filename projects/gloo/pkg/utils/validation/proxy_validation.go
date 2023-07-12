@@ -16,14 +16,19 @@ var (
 	RouteIdentifierTxt = "Route Name"
 )
 
-// TcpHostError reports an error and its owning host
+// TcpHostError reports an error and the host which is associated with the
+// error
 type TcpHostError struct {
 	HostNum int
 	Err     error
 }
 
 func (invHostErr *TcpHostError) Error() string {
-	return fmt.Sprintf("TcpHost error: %s", invHostErr.Err.Error())
+	var errStr string
+	if invHostErr != nil {
+		invHostErr.Err.Error()
+	}
+	return fmt.Sprintf("TcpHost error: %s", errStr)
 }
 
 func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {
