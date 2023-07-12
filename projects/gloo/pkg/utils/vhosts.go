@@ -37,7 +37,6 @@ func GetTcpHostReportsFromListenerReport(listenerReport *validation.ListenerRepo
 	switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {
 	case *validation.ListenerReport_HttpListenerReport:
 		// HostReports are a tcp-only concept
-		break
 	case *validation.ListenerReport_TcpListenerReport:
 		tcpHostReports = append(tcpHostReports, listenerReportType.TcpListenerReport.GetTcpHostReports()...)
 	case *validation.ListenerReport_HybridListenerReport:
@@ -50,8 +49,6 @@ func GetTcpHostReportsFromListenerReport(listenerReport *validation.ListenerRepo
 		for _, tcpListenerReport := range listenerReportType.AggregateListenerReport.GetTcpListenerReports() {
 			tcpHostReports = append(tcpHostReports, tcpListenerReport.GetTcpHostReports()...)
 		}
-	default:
-		break
 	}
 
 	return tcpHostReports
