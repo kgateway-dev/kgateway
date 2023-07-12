@@ -1926,7 +1926,7 @@ type TcpHostReport_Warning struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// the type of the error
+	// the type of the warning
 	Type TcpHostReport_Warning_Type `protobuf:"varint,1,opt,name=type,proto3,enum=gloo.solo.io.TcpHostReport_Warning_Type" json:"type,omitempty"`
 	// any extra info as a string
 	Reason string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`

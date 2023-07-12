@@ -595,7 +595,7 @@ warning types for the given tcp host config
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `type` | [.gloo.solo.io.TcpHostReport.Warning.Type](../gloo_validation.proto.sk/#type) | the type of the error. |
+| `type` | [.gloo.solo.io.TcpHostReport.Warning.Type](../gloo_validation.proto.sk/#type) | the type of the warning. |
 | `reason` | `string` | any extra info as a string. |
 
 
