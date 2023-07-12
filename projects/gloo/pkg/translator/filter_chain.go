@@ -58,20 +58,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 			// unwrap the multierror object returned by CreateTcpFilterChains;
 			// treat DestinationNotFoundError as a warning and all others as
 			// errors
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, unwrappedErr := range merr.WrappedErrors() {
-					if tcpHostWarn, ok := unwrappedErr.(*validation.TcpHostWarning); ok && tcpHostWarn.ErrorLevel() == validation.ErrorLevels_WARNING {
-						validation.AppendTcpHostWarning(
-							t.report.GetTcpHostReports()[tcpHostWarn.HostNum],
-							validationapi.TcpHostReport_Warning_InvalidDestinationWarning,
-							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), tcpHostWarn.Error()))
-					} else {
-						validation.AppendTCPListenerError(t.report,
-							validationapi.TcpListenerReport_Error_ProcessingError,
-							fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
-					}
-				}
-			} else {
+			reportError := func(errReport error) {
 				if tcpHostWarn, ok := err.(*validation.TcpHostWarning); ok && tcpHostWarn.ErrorLevel() == validation.ErrorLevels_WARNING {
 					validation.AppendTcpHostWarning(
 						t.report.GetTcpHostReports()[tcpHostWarn.HostNum],
@@ -82,6 +69,13 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 						validationapi.TcpListenerReport_Error_ProcessingError,
 						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
 				}
+			}
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, unwrappedErr := range merr.WrappedErrors() {
+					reportError(unwrappedErr)
+				}
+			} else {
+				reportError(err)
 			}
 			continue
 		}
