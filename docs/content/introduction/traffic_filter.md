@@ -55,7 +55,22 @@ More information about configuring the [timeout]({{% versioned_link_path fromRoo
 
 ### Traffic shadowing
 
-You can control the rollout of changes using canary releases or blue-green deployments with Upstream Groups. The downside to using either feature is that your are working with live traffic. Real clients are consuming the new version of your service, with potentially negative consequences. An alternative is to shadow the client traffic to your new release, while still processing the original request normally. [Traffic shadowing]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/shadowing//" %}}) makes a copy of an incoming request and sends it out-of-band to the new version of your service, without altering the original request.
+You can control the rollout of changes using canary releases or blue-green deployments with Upstream Groups. The downside to using either feature is that your are working with live traffic. Real clients are consuming the new version of your service, with potentially negative consequences. An alternative is to shadow the client traffic to your new release, while still processing the original request normally. [Traffic shadowing]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/shadowing/" %}}) makes a copy of an incoming request and sends it out-of-band to the new version of your service, without altering the original request.
+
+---
+
+## Inheritance rules
+
+In general, options that you set in a parent object are inherited by a child object. Then, the child has both its own options and those of its parent appended. If the option in the child and parent conflict, the child option takes precedence and overwrites the parent option. You can change this behavior by setting the `inheritTransformation` option to `false` in the children objects.
+
+Examples of parent and child objects:
+* VirtualHost parent object options append to children objects like Routes and WeightedDestinations
+* Route parent object options append to children objects like WeightedDestinations
+
+For examples of inherited options, see the following guides:
+* [Request processing transformation inheritance]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}})
+* [Header inheritance]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/append_remove_headers/#inheritance" %}})
+* [Auth config inheritance]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#configuration-format/" %}})
 
 ---
 

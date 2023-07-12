@@ -1,27 +1,22 @@
-package gloomtls_test
+package gloo_test
 
 import (
-	"time"
-
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
-	"github.com/solo-io/gloo/test/helpers"
-
-	"github.com/solo-io/gloo/test/kube2e"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/k8s-utils/testutils/helper"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/test/helpers"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"github.com/solo-io/k8s-utils/testutils/helper"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Kube2e: mTLS", func() {
+// This tests the gloo/test/helpers/snapshot_writer.go functionality in a Kubernetes cluster
+
+var _ = Describe("SnapshotWriter Test", func() {
 
 	var (
 		glooResources *gloosnapshot.ApiSnapshot
@@ -51,6 +46,9 @@ var _ = Describe("Kube2e: mTLS", func() {
 		// The set of resources that these tests will generate
 		glooResources = &gloosnapshot.ApiSnapshot{
 			VirtualServices: gatewayv1.VirtualServiceList{
+				// many tests route to the TestRunner Service so it makes sense to just
+				// always create it
+				// the other benefit is this ensures that all tests start with a valid Proxy CR
 				testRunnerVs,
 			},
 		}
@@ -72,16 +70,19 @@ var _ = Describe("Kube2e: mTLS", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("can route request to upstream", func() {
-		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-			Protocol:          "http",
-			Path:              "/",
-			Method:            "GET",
-			Host:              helper.TestrunnerName,
-			Service:           defaults.GatewayProxyName,
-			Port:              gatewayPort,
-			ConnectionTimeout: 1, // this is important, as the first curl call sometimes hangs indefinitely
-		}, kube2e.GetSimpleTestRunnerHttpResponse(), 1, time.Second*60, time.Second*1)
+	Context("DeleteSnapshot", func() {
+
+		It("continues when deleting a resource that does not exist", func() {
+			// We add a resource that does not exist to our API Snapshot
+			// In the JustAfterEach, we should attempt to delete the resource, and even though
+			// it does not exist, we should continue the delete operation and succeed
+			glooResources.Upstreams = append(glooResources.Upstreams, &gloov1.Upstream{
+				Metadata: &core.Metadata{
+					Name:      "resource-does-not-exist",
+					Namespace: namespace,
+				},
+			})
+		})
 	})
 
 })
