@@ -24,7 +24,7 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/onsi/ginkgo/v2"
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -74,7 +74,7 @@ type Params struct {
 func GetCerts(params Params) (string, string) {
 
 	if len(params.Hosts) == 0 {
-		Fail("Missing required --host parameter")
+		ginkgo.Fail("Missing required --host parameter")
 	}
 
 	var priv interface{}
@@ -98,7 +98,7 @@ func GetCerts(params Params) (string, string) {
 		case "P521":
 			priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 		default:
-			Fail(fmt.Sprintf("Unrecognized elliptic curve: %q", params.EcdsaCurve))
+			ginkgo.Fail(fmt.Sprintf("Unrecognized elliptic curve: %q", params.EcdsaCurve))
 		}
 		Expect(err).NotTo(HaveOccurred())
 	}
@@ -120,7 +120,7 @@ func GetCerts(params Params) (string, string) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		Fail(fmt.Sprintf("failed to generate serial number: %s", err))
+		ginkgo.Fail(fmt.Sprintf("failed to generate serial number: %s", err))
 	}
 
 	template := x509.Certificate{
@@ -153,7 +153,7 @@ func GetCerts(params Params) (string, string) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		Fail(fmt.Sprintf("Failed to create certificate: %s", err))
+		ginkgo.Fail(fmt.Sprintf("Failed to create certificate: %s", err))
 	}
 
 	var certOut bytes.Buffer
