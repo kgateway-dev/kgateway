@@ -236,7 +236,7 @@ message TcpHostReport {
     message Error {
         enum Type {
             NameNotUniqueError = 0;
-            InvalidDestinationError = 1;
+            InvalidDestinationError = 1 [deprecated = true];
             ProcessingError = 2;
         }
 
