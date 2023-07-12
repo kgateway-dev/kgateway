@@ -25,7 +25,7 @@ type TcpHostError struct {
 
 func (invHostErr *TcpHostError) Error() string {
 	var errStr string
-	if invHostErr != nil {
+	if invHostErr.Err != nil {
 		invHostErr.Err.Error()
 	}
 	return fmt.Sprintf("TcpHost error: %s", errStr)
