@@ -87,7 +87,9 @@ func generateCustomDynamicForwardProxyCluster(listenerCfg *dynamic_forward_proxy
 		return nil, err
 	}
 	cc := &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig{
-		DnsCacheConfig: convertedDnsCacheCfg,
+		ClusterImplementationSpecifier: &envoy_extensions_clusters_dynamic_forward_proxy_v3.ClusterConfig_DnsCacheConfig{
+			DnsCacheConfig: convertedDnsCacheCfg,
+		},
 		// AllowInsecureClusterOptions is not needed to be configurable unless we make a
 		// new upstream type so the cluster's upstream_http_protocol_options is configurable
 		AllowInsecureClusterOptions: false,
@@ -352,7 +354,9 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, err
 	}
 	dfp := &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig{
-		DnsCacheConfig:      convertedDnsCacheCfg,
+		ImplementationSpecifier: &envoy_extensions_filters_http_dynamic_forward_proxy_v3.FilterConfig_DnsCacheConfig{
+			DnsCacheConfig: convertedDnsCacheCfg,
+		},
 		SaveUpstreamAddress: cpDfp.GetSaveUpstreamAddress(),
 	}
 	p.filterHashMap[getHashString(cpDfp)] = cpDfp
