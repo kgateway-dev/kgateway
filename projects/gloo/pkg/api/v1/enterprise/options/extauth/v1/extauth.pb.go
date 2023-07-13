@@ -3606,9 +3606,9 @@ type OpaAuthOptions struct {
 	// Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second
 	// parameter of the query and will be a protobuf struct if the reason is an object, and otherwise will be a json
 	// string. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure will be
-	// DynamicMetadata
+	// envoy.filters.http.ext_authz:
 	//
-	//	-> Name of the AuthConfig
+	//	-> name of the auth step, i.e. spec.configs[i].name
 	//	    -> reason
 	ReturnDecisionReason bool `protobuf:"varint,2,opt,name=return_decision_reason,json=returnDecisionReason,proto3" json:"return_decision_reason,omitempty"`
 }
