@@ -1575,7 +1575,10 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#Pipe
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.ProxyProtocolConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/proxy_protocol.proto.sk/#ProxyProtocolConfig
+    relativepath: reference/api/envoy/config/core/v3/proxy_protocol.proto.sk/#ProxyProtocolConfig
+    package: solo.io.envoy.config.core.v3
+  solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs:
+    relativepath: reference/api/envoy/config/core/v3/proxy_protocol.proto.sk/#ProxyProtocolPassThroughTLVs
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.RemoteDataSource:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RemoteDataSource
