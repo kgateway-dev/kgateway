@@ -244,6 +244,8 @@ func GetTcpHostErr(tcpHost *validation.TcpHostReport) []error {
 	return errs
 }
 
+// Extract, format and return all warnings on this TcpHost instance as a list
+// of strings
 func GetTcpHostWarning(tcpHost *validation.TcpHostReport) []string {
 	var warnings []string
 	appendWarning := func(level, errType, reason string) {

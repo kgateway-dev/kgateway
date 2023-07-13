@@ -31,6 +31,8 @@ func GetVirtualHostsForListener(listener *v1.Listener) []*v1.VirtualHost {
 	return virtualHosts
 }
 
+// Given any supported listener type, returns the TcpHost report objects that
+// are used for error/warning reporting
 func GetTcpHostReportsFromListenerReport(listenerReport *validation.ListenerReport) []*validation.TcpHostReport {
 	var tcpHostReports []*validation.TcpHostReport
 
