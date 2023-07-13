@@ -6,5 +6,6 @@ changelog:
   dependencyTag: v1.23.11-patch1
 - type: FIX
   issueLink: https://github.com/solo-io/solo-projects/issues/5138
+  resolvesIssue: false
   description: >
     Pulls in upstream Envoy v1.23.11, which includes a fix for CVE-2023-35945
