@@ -238,4 +238,6 @@ message HttpConnectionManagerSettings {
 
     // Configuration of internal addresses
     InternalAddressConfig internal_address_config = 38;
+    // If true, configure Envoy to set the x-fowarded-port header to allow services to find Envoy's listener port.
+    google.protobuf.BoolValue append_x_forwarded_port = 40;
 }
