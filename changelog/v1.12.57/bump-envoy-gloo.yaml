@@ -4,3 +4,6 @@ changelog:
   dependencyOwner: solo-io
   dependencyRepo: envoy-gloo
   dependencyTag: v1.23.11-patch1
+- type: FIX
+  description: >
+    Pulls in upstream Envoy v1.23.11, which includes a fix for CVE-2023-35945
