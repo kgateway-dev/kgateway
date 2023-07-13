@@ -397,6 +397,7 @@ var _ = Describe("Plugin", func() {
 				}
 			}
 
+			// DO_NOT_SUBMIT: assess new fields
 			if len(newFields) > 0 {
 				failureMessage := fmt.Sprintf(`
 New Fields have been added to the envoy HTTP Connection Manager.
