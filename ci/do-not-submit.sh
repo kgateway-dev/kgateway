@@ -22,7 +22,7 @@ DO_NOT_SUBMIT_REGEX="[[:space:]]*//[[:space:]]*DO_NOT_SUBMIT"
 file_count=0
 for filename in "$@"; do
   # Only check *.go files for now
-  if [[ "$filename" == *".go" || "$filename" == *"go.mod" ]]; then
+  if [[ "$filename" == *".go" || "$filename" == *"go.mod" || "$filename" == *".proto" ]]; then
     ((file_count++))
     line_number=1
     while IFS= read -r line; do
