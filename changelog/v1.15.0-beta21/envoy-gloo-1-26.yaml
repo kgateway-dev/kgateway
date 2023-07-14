@@ -1,0 +1,32 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.26.2-patch3
+  issueLink: https://github.com/solo-io/gloo/issues/8177
+  resolvesIssue: false
+  description: >-
+    Use latest envoy-gloo which brings us onto 1.26. This also gives us access
+    to the changes which use the latest version of Inja.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: envoyproxy
+  dependencyRepo: go-control-plane
+  dependencyTag: v0.11.1
+  description: >-
+    Match version which has definitions for 1.26
+- type: DEPENDENCY_BUMP
+  dependencyOwner: envoyproxy
+  dependencyRepo: protoc-gen-validate
+  dependencyTag: v1.0.1
+- type: DEPENDENCY_BUMP
+  dependencyOwner: google.golang.org
+  dependencyRepo: grpc
+  dependencyTag: v1.55.0
+- type: DEPENDENCY_BUMP
+  dependencyOwner: google.golang.org
+  dependencyRepo: protobuf
+  dependencyTag: v1.30.0
+- type: NEW_FEATURE
+  description: >-
+    Use later version of Inja for transformations (Version 3.4) which provides
+    access to numerous new templating features.
