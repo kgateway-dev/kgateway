@@ -27,8 +27,7 @@ weight: 5
 ---
 ### ProxyProtocol
 
- 
-DO_NOT_SUBMIT: this should make codegen fail
+
 
 ```yaml
 "rules": []proxy_protocol.options.gloo.solo.io.ProxyProtocol.Rule
