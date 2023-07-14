@@ -11,6 +11,8 @@ weight: 5
 #### Types:
 
 
+- [ProxyProtocolPassThroughTLVs](#proxyprotocolpassthroughtlvs)
+- [PassTLVsMatchType](#passtlvsmatchtype)
 - [ProxyProtocolConfig](#proxyprotocolconfig)
 - [Version](#version)
   
@@ -24,18 +26,52 @@ weight: 5
 
 
 ---
+### ProxyProtocolPassThroughTLVs
+
+
+
+```yaml
+"matchType": .solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs.PassTLVsMatchType
+"tlvType": []int
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `matchType` | [.solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs.PassTLVsMatchType](../proxy_protocol.proto.sk/#passtlvsmatchtype) | The strategy to pass through TLVs. Default is INCLUDE_ALL. If INCLUDE_ALL is set, all TLVs will be passed through no matter the tlv_type field. |
+| `tlvType` | `[]int` | The TLV types that are applied based on match_type. TLV type is defined as uint8_t in proxy protocol. See `the spec <https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt>`_ for details. |
+
+
+
+
+---
+### PassTLVsMatchType
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `INCLUDE_ALL` | Pass all TLVs. |
+| `INCLUDE` | Pass specific TLVs defined in tlv_type. |
+
+
+
+
+---
 ### ProxyProtocolConfig
 
 
 
 ```yaml
 "version": .solo.io.envoy.config.core.v3.ProxyProtocolConfig.Version
+"passThroughTlvs": .solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `version` | [.solo.io.envoy.config.core.v3.ProxyProtocolConfig.Version](../proxy_protocol.proto.sk/#version) | The PROXY protocol version to use. See https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt for details. |
+| `passThroughTlvs` | [.solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs](../proxy_protocol.proto.sk/#proxyprotocolpassthroughtlvs) | This config controls which TLVs can be passed to filter state if it is Proxy Protocol V2 header. If there is no setting for this field, no TLVs will be passed through. |
 
 
 

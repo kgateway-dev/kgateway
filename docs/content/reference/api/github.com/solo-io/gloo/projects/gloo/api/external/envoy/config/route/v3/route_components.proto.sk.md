@@ -666,7 +666,7 @@ CONNECT requests, when forwarding CONNECT payload as raw TCP.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `proxyProtocolConfig` | [.solo.io.envoy.config.core.v3.ProxyProtocolConfig](../../../../../../../../../../../../envoy/config/core/v3/proxy_protocol.proto.sk/#proxyprotocolconfig) | If present, the proxy protocol header will be prepended to the CONNECT payload sent upstream. |
+| `proxyProtocolConfig` | [.solo.io.envoy.config.core.v3.ProxyProtocolConfig](../../../core/v3/proxy_protocol.proto.sk/#proxyprotocolconfig) | If present, the proxy protocol header will be prepended to the CONNECT payload sent upstream. |
 
 
 

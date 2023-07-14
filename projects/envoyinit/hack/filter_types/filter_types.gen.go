@@ -315,7 +315,6 @@ import (
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/http_path"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/jwt"
-	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxy_protocol"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	_ "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation_ee"
