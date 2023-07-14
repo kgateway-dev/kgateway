@@ -23,6 +23,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// DO_NOT_SUBMIT: this should make codegen fail
 type ProxyProtocol struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
