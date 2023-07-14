@@ -67,7 +67,7 @@ func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
 	reportTcpListenerError := func(errType error) {
 		validation.AppendTCPListenerError(
 			t.report,
-			// currently only upstream/destination not found errors are reported
+			// currently only processing errors are reported
 			validationapi.TcpListenerReport_Error_ProcessingError,
 			fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
 	}
