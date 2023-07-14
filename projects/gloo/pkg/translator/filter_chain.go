@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -47,6 +49,62 @@ type tcpFilterChainTranslator struct {
 	passthroughCipherSuites []string
 }
 
+// if the error is of ErrorWithKnownLevel type, extract the level; if the level
+// is a warning, extract the TcpHost number and report the warning on that
+// TcpHost. if the level is an error, report it on the TcpListener object
+// itself. nothing currently reports errors on a TcpHost instance or warnings
+// on a TcpListener instance, so these two branches are not currently supported
+func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
+	getWarningType := func(errType error) validationapi.TcpHostReport_Warning_Type {
+		switch errType.(type) {
+		case *pluginutils.DestinationNotFoundError:
+			return validationapi.TcpHostReport_Warning_InvalidDestinationWarning
+		default:
+			return validationapi.TcpHostReport_Warning_UnknownWarning
+		}
+	}
+
+	reportTcpListenerError := func(errType error) {
+		validation.AppendTCPListenerError(
+			t.report,
+			// currently only processing errors are reported
+			validationapi.TcpListenerReport_Error_ProcessingError,
+			fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
+	}
+
+	reportError := func(errReport error) {
+		switch errType := errReport.(type) {
+		case validation.ErrorWithKnownLevel:
+			switch errType.ErrorLevel() {
+			case validation.ErrorLevels_WARNING:
+				if tcpHostNum := errType.GetContext().HostNum; tcpHostNum != nil {
+					validation.AppendTcpHostWarning(
+						t.report.GetTcpHostReports()[*tcpHostNum],
+						getWarningType(errType.GetError()),
+						fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), errType.Error()))
+					break
+				}
+				// hostNum was not provided, so just report as an error
+				fallthrough
+			case validation.ErrorLevels_ERROR:
+				reportTcpListenerError(errType)
+			}
+		// if the error is not of ErrorWithKnownLevel type, report it
+		// as an error on the TcpListener
+		default:
+			reportTcpListenerError(errType)
+		}
+	}
+
+	if merr, ok := err.(*multierror.Error); ok {
+		for _, unwrappedErr := range merr.WrappedErrors() {
+			reportError(unwrappedErr)
+		}
+	} else {
+		reportError(err)
+	}
+}
+
 func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*plugins.ExtendedFilterChain {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 
@@ -54,9 +112,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 	for _, plug := range t.plugins {
 		pluginFilterChains, err := plug.CreateTcpFilterChains(params, t.parentListener, t.listener)
 		if err != nil {
-			validation.AppendTCPListenerError(t.report,
-				validationapi.TcpListenerReport_Error_ProcessingError,
-				fmt.Sprintf("listener %s: %s", t.parentListener.GetName(), err.Error()))
+			t.reportCreateTcpFilterChainsError(err)
 			continue
 		}
 
