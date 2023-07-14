@@ -10,6 +10,7 @@ option (extproto.clone_all) = true;
 
 import "validate/validate.proto";
 
+// DO_NOT_SUBMIT: this should make codegen fail
 message ProxyProtocol {
 
   message KeyValuePair {

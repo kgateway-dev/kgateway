@@ -4,7 +4,7 @@
 # of those files for comments including the DO_NOT_SUBMIT keyword. If the
 # keyword is present, the script exits with -1.
 #
-# This initial implementation only checks *.go files for single-line comments
+# This implementation checks go.mod, *.go, and *.proto files for single-line comments
 # (i.e. starting with // rather than /* ... */).
 #
 # This script is invoked by .github/workflows/do-not-submit.yaml
@@ -18,7 +18,7 @@ NEWLINE=$'\n'
 OUTPUT=""
 DO_NOT_SUBMIT_REGEX="[[:space:]]*//[[:space:]]*DO_NOT_SUBMIT"
 
-# Keeps track of number of *.go files (as opposed to all files provided)
+# Keeps track of number of go.mod, *.go, and *.proto files (as opposed to all files provided)
 file_count=0
 for filename in "$@"; do
   # Only check *.go files for now
