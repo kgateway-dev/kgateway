@@ -27,6 +27,8 @@ changelog:
   dependencyRepo: protobuf
   dependencyTag: v1.30.0
 - type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/8177
+  resolvesIssue: false
   description: >-
     Use later version of Inja for transformations (Version 3.4) which provides
     access to numerous new templating features.
