@@ -608,6 +608,7 @@ warning types for the given tcp host config
 
 | Name | Description |
 | ----- | ----------- | 
+| `UnknownWarning` |  |
 | `InvalidDestinationWarning` |  |
 
 

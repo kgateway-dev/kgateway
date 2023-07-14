@@ -39,6 +39,8 @@ type ErrorWithKnownLevel interface {
 	ErrorLevel() string
 	// Additional contextual information required to report the error/warning
 	GetContext() ErrorLevelContext
+	// The instance of the error itself
+	GetError() error
 }
 
 // TcpHostWarning implements ErrorWithKnownLevel; it is intended to allow
@@ -60,6 +62,11 @@ func (tcpHostWarning *TcpHostWarning) Error() string {
 
 func (tcpHostWarning *TcpHostWarning) GetContext() ErrorLevelContext {
 	return tcpHostWarning.Context
+}
+
+// return the instance of the Error this object is wrapping
+func (tcpHostWarning *TcpHostWarning) GetError() error {
+	return tcpHostWarning.Err
 }
 
 func MakeReport(proxy *v1.Proxy) *validation.ProxyReport {

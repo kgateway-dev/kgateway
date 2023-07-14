@@ -249,7 +249,8 @@ message TcpHostReport {
     // warning types for the given tcp host config
     message Warning {
         enum Type {
-            InvalidDestinationWarning = 0;
+            UnknownWarning = 0;
+            InvalidDestinationWarning = 1;
         }
 
         // the type of the warning
