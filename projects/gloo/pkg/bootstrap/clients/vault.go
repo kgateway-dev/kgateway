@@ -152,17 +152,29 @@ func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.C
 }
 
 func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
-	if accessKeyId := aws.GetAccessKeyId(); accessKeyId == "" {
-		return nil, errors.New("access key id must be defined for AWS IAM auth")
-	} else {
+
+	// determine if we are in static access / secret setup for aws
+	possibleErrStrs := []string{}
+	if accessKeyId := aws.GetAccessKeyId(); accessKeyId != "" {
 		os.Setenv("AWS_ACCESS_KEY_ID", accessKeyId)
+	} else {
+		possibleErrStrs = append(possibleErrStrs, "access key id must be defined for AWS IAM auth")
 	}
 
-	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey == "" {
-		return nil, errors.New("secret access key must be defined for AWS IAM auth")
-	} else {
+	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey != "" {
 		os.Setenv("AWS_SECRET_ACCESS_KEY", secretAccessKey)
+	} else {
+		possibleErrStrs = append(possibleErrStrs, "secret access key must be defined for AWS IAM auth")
 	}
+
+	// if we have specified partial config and not the full config this is
+	// purely a configuration error so dont even try to get around it
+	if len(possibleErrStrs) == 1 {
+		return nil, errors.New("in secret + access key mode a" + possibleErrStrs[0])
+	}
+
+	// at this point we are either valid static config or are in an environment
+	// like ec2 where vault can infer its creds and we dont have partial config
 
 	loginOptions := []awsauth.LoginOption{awsauth.WithIAMAuth()}
 
@@ -188,6 +200,15 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 
 	awsAuth, err := awsauth.NewAWSAuth(loginOptions...)
 	if err != nil {
+		// not using static
+		if len(possibleErrStrs) > 0 {
+			return nil, errors.New(
+				"aws error using implict credentials," +
+					" consider setting aws secret and access key:" +
+					err.Error(),
+			)
+		}
+
 		return nil, err
 	}
 
