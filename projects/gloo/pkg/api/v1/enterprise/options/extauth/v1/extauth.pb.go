@@ -3604,8 +3604,8 @@ type OpaAuthOptions struct {
 	// By default, this is set to false and all fields are evaluated by OPA.
 	FastInputConversion bool `protobuf:"varint,1,opt,name=fast_input_conversion,json=fastInputConversion,proto3" json:"fast_input_conversion,omitempty"`
 	// Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second
-	// parameter of the query and will be a protobuf struct if the reason is an object, and otherwise will be a json
-	// string. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure will be
+	// parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure
+	// will be
 	// envoy.filters.http.ext_authz:
 	//
 	//	-> name of the auth step, i.e. spec.configs[i].name
