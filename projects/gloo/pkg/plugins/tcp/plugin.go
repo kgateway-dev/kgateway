@@ -114,13 +114,15 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 }
 
 func (p *plugin) generateNetworkFilters(plugins *v1.TcpListenerOptions) ([]*envoy_config_listener_v3.Filter, error) {
+	var networkFilters []*envoy_config_listener_v3.Filter
 	connectionLimitFilter, err := connection_limit.GenerateFilter(plugins.GetConnectionLimit())
 	if err != nil {
 		return nil, err
 	}
-	return []*envoy_config_listener_v3.Filter{
-		connectionLimitFilter,
-	}, nil
+	if connectionLimitFilter != nil {
+		networkFilters = append(networkFilters, connectionLimitFilter)
+	}
+	return networkFilters, nil
 }
 
 func (p *plugin) tcpProxyFilters(
@@ -159,7 +161,11 @@ func (p *plugin) tcpProxyFilters(
 	if err != nil {
 		return nil, err
 	}
-	filters = append(filters, networkFilters...)
+	for _, networkFilter := range networkFilters {
+		if networkFilter != nil {
+			filters = append(filters, networkFilter)
+		}
+	}
 
 	switch dest := host.GetDestination().GetDestination().(type) {
 	case *v1.TcpHost_TcpAction_Single:
