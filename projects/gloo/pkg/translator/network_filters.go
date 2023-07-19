@@ -34,6 +34,8 @@ type httpNetworkFilterTranslator struct {
 	listener *v1.HttpListener
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
+	// List of NetworkFilterPlugin to process. This is not added to the HCM as that should only process HTTP filters
+	networkPlugins []plugins.NetworkFilterPlugin
 	// The implementation for generating the HttpConnectionManager NetworkFilter
 	hcmNetworkFilterTranslator *hcmNetworkFilterTranslator
 }
@@ -42,18 +44,20 @@ func NewHttpListenerNetworkFilterTranslator(
 	parentListener *v1.Listener,
 	listener *v1.HttpListener,
 	report *validationapi.HttpListenerReport,
-	plugins []plugins.HttpFilterPlugin,
+	networkPlugins []plugins.NetworkFilterPlugin,
+	httpPlugins []plugins.HttpFilterPlugin,
 	hcmPlugins []plugins.HttpConnectionManagerPlugin,
 	routeConfigName string,
 ) *httpNetworkFilterTranslator {
 	return &httpNetworkFilterTranslator{
-		listener: listener,
-		report:   report,
+		listener:       listener,
+		report:         report,
+		networkPlugins: networkPlugins,
 		hcmNetworkFilterTranslator: &hcmNetworkFilterTranslator{
 			parentListener:  parentListener,
 			listener:        listener,
 			report:          report,
-			plugins:         plugins,
+			httpPlugins:     httpPlugins,
 			hcmPlugins:      hcmPlugins,
 			routeConfigName: routeConfigName,
 		},
@@ -88,6 +92,22 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 		}
 	}
 
+	// Process the network filters.
+	for _, plug := range n.networkPlugins {
+		stagedFilters, err := plug.NetworkFilters(params, n.listener)
+		if err != nil {
+			validation.AppendHTTPListenerError(n.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+		}
+
+		for _, nf := range stagedFilters {
+			if nf.NetworkFilter == nil {
+				log.Warnf("plugin implements HttpFilters() but returned nil")
+				continue
+			}
+			networkFilters = append(networkFilters, nf)
+		}
+	}
+
 	// add the http connection manager filter after all the InAuth Listener Filters
 	networkFilter, err := n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params)
 	if err != nil {
@@ -117,7 +137,7 @@ type hcmNetworkFilterTranslator struct {
 	// The report where warnings/errors are persisted
 	report *validationapi.HttpListenerReport
 	// List of HttpFilterPlugins to process
-	plugins []plugins.HttpFilterPlugin
+	httpPlugins []plugins.HttpFilterPlugin
 	// List of HttpConnectionManagerPlugins to process
 	hcmPlugins []plugins.HttpConnectionManagerPlugin
 	// The name of the RouteConfiguration for the HttpConnectionManager
@@ -183,7 +203,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 	var httpFilters []plugins.StagedHttpFilter
 
 	// run the HttpFilter Plugins
-	for _, plug := range h.plugins {
+	for _, plug := range h.httpPlugins {
 		stagedFilters, err := plug.HttpFilters(params, h.listener)
 		if err != nil {
 			validation.AppendHTTPListenerError(h.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())

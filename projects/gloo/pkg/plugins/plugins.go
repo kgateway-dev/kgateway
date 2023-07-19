@@ -155,6 +155,11 @@ type HttpFilterPlugin interface {
 	HttpFilters(params Params, listener *v1.HttpListener) ([]StagedHttpFilter, error)
 }
 
+type NetworkFilterPlugin interface {
+	Plugin
+	NetworkFilters(params Params, listener *v1.HttpListener) ([]StagedNetworkFilter, error)
+}
+
 type VirtualHostPlugin interface {
 	Plugin
 	ProcessVirtualHost(params VirtualHostParams, in *v1.VirtualHost, out *envoy_config_route_v3.VirtualHost) error
@@ -184,6 +189,7 @@ type PluginRegistry interface {
 	GetListenerPlugins() []ListenerPlugin
 	GetTcpFilterChainPlugins() []TcpFilterChainPlugin
 	GetHttpFilterPlugins() []HttpFilterPlugin
+	GetNetworkFilterPlugins() []NetworkFilterPlugin
 	GetHttpConnectionManagerPlugins() []HttpConnectionManagerPlugin
 	GetVirtualHostPlugins() []VirtualHostPlugin
 	GetResourceGeneratorPlugins() []ResourceGeneratorPlugin

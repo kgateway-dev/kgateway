@@ -77,6 +77,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		listener,
 		listener.GetHttpListener(),
 		httpListenerReport,
+		l.pluginRegistry.GetNetworkFilterPlugins(),
 		l.pluginRegistry.GetHttpFilterPlugins(),
 		l.pluginRegistry.GetHttpConnectionManagerPlugins(),
 		routeConfigurationName)
@@ -195,6 +196,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 				listener,
 				listenerType.HttpListener,
 				httpListenerReport,
+				l.pluginRegistry.GetNetworkFilterPlugins(),
 				l.pluginRegistry.GetHttpFilterPlugins(),
 				l.pluginRegistry.GetHttpConnectionManagerPlugins(),
 				routeConfigurationName)
@@ -318,6 +320,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 			listener,
 			httpListener,
 			httpListenerReport,
+			l.pluginRegistry.GetNetworkFilterPlugins(),
 			l.pluginRegistry.GetHttpFilterPlugins(),
 			l.pluginRegistry.GetHttpConnectionManagerPlugins(),
 			routeConfigurationName)

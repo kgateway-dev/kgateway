@@ -85,6 +85,18 @@ spec:
                           timeout:
                             type: string
                         type: object
+                      connectionLimit:
+                        properties:
+                          delayBeforeClose:
+                            type: string
+                          maxActiveConnections:
+                            properties:
+                              value:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                            type: object
+                        type: object
                       csrf:
                         properties:
                           additionalOrigins:
@@ -1673,6 +1685,18 @@ spec:
                                     timeout:
                                       type: string
                                   type: object
+                                connectionLimit:
+                                  properties:
+                                    delayBeforeClose:
+                                      type: string
+                                    maxActiveConnections:
+                                      properties:
+                                        value:
+                                          format: int64
+                                          type: integer
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                  type: object
                                 csrf:
                                   properties:
                                     additionalOrigins:
@@ -2803,6 +2827,18 @@ spec:
                           properties:
                             options:
                               properties:
+                                connectionLimit:
+                                  properties:
+                                    delayBeforeClose:
+                                      type: string
+                                    maxActiveConnections:
+                                      properties:
+                                        value:
+                                          format: int64
+                                          type: integer
+                                          x-kubernetes-int-or-string: true
+                                      type: object
+                                  type: object
                                 tcpProxySettings:
                                   properties:
                                     accessLogFlushInterval:
@@ -4581,6 +4617,18 @@ spec:
                 properties:
                   options:
                     properties:
+                      connectionLimit:
+                        properties:
+                          delayBeforeClose:
+                            type: string
+                          maxActiveConnections:
+                            properties:
+                              value:
+                                format: int64
+                                type: integer
+                                x-kubernetes-int-or-string: true
+                            type: object
+                        type: object
                       tcpProxySettings:
                         properties:
                           accessLogFlushInterval:

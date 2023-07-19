@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/connection_limit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -112,6 +113,16 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 	return filterChains, multiErr.ErrorOrNil()
 }
 
+func (p *plugin) generateNetworkFilters(plugins *v1.TcpListenerOptions) ([]*envoy_config_listener_v3.Filter, error) {
+	connectionLimitFilter, err := connection_limit.GenerateFilter(plugins.GetConnectionLimit())
+	if err != nil {
+		return nil, err
+	}
+	return []*envoy_config_listener_v3.Filter{
+		connectionLimitFilter,
+	}, nil
+}
+
 func (p *plugin) tcpProxyFilters(
 	params plugins.Params,
 	host *v1.TcpHost,
@@ -142,6 +153,14 @@ func (p *plugin) tcpProxyFilters(
 		return nil, err
 	}
 	var filters []*envoy_config_listener_v3.Filter
+
+	// Handle all network filters before proceeding to anything else
+	networkFilters, err := p.generateNetworkFilters(plugins)
+	if err != nil {
+		return nil, err
+	}
+	filters = append(filters, networkFilters...)
+
 	switch dest := host.GetDestination().GetDestination().(type) {
 	case *v1.TcpHost_TcpAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
