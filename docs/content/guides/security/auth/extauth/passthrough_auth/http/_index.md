@@ -60,7 +60,7 @@ kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Service
 metadata:
-  name: example-grpc-auth-service
+  name: example-http-auth-service
   labels:
       app: http-extauth
 spec:
