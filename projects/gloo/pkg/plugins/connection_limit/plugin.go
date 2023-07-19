@@ -1,9 +1,10 @@
 package connection_limit
 
 import (
-	envoy_config_connection_limit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/connection_limit/v3"
+	"fmt"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_connection_limit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/connection_limit/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -17,10 +18,11 @@ var (
 
 const (
 	ExtensionName = "envoy.extensions.filters.network.connection_limit.v3.ConnectionLimit"
+	StatPrefix    = "connection_limit"
 )
 
 var (
-	pluginStage = plugins.DuringStage(plugins.RateLimitStage)
+	pluginStage = plugins.BeforeStage(plugins.AuthNStage)
 )
 
 type plugin struct {
@@ -43,11 +45,14 @@ func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) (*envoy_c
 	if connectionLimit == nil {
 		return nil, nil
 	}
-	// if connectionLimit.MaxActiveConnections == 0 {
-	// 	return nil
-	// }
+	if connectionLimit.MaxActiveConnections == nil {
+		return nil, nil
+	}
+	if connectionLimit.MaxActiveConnections.Value < 1 {
+		return nil, fmt.Errorf("MaxActiveConnections must be greater than or equal to 1. Current value : %v", connectionLimit.MaxActiveConnections)
+	}
 	config := &envoy_config_connection_limit_v3.ConnectionLimit{
-		StatPrefix:     "connection_limit",
+		StatPrefix:     StatPrefix,
 		MaxConnections: connectionLimit.GetMaxActiveConnections(),
 		Delay:          connectionLimit.GetDelayBeforeClose(),
 	}
