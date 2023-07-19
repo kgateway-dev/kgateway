@@ -11,10 +11,10 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc
+	github.com/cncf/xds/go v0.0.0-20230428030218-4003588d1b74
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/envoyproxy/go-control-plane v0.11.0
-	github.com/envoyproxy/protoc-gen-validate v0.9.1
+	github.com/envoyproxy/go-control-plane v0.11.1
+	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
@@ -25,7 +25,7 @@ require (
 	github.com/gogo/googleapis v1.4.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.0.0
 	github.com/gorilla/mux v1.8.0
@@ -68,10 +68,10 @@ require (
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/tools v0.7.0
-	google.golang.org/genproto v0.0.0-20221201164419-0e50fba7f41c
-	google.golang.org/grpc v1.52.0
-	google.golang.org/protobuf v1.28.1
+	golang.org/x/tools v0.8.0
+	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
+	google.golang.org/grpc v1.55.0
+	google.golang.org/protobuf v1.30.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.11.2
 	k8s.io/api v0.26.4
@@ -88,7 +88,11 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require golang.org/x/exp v0.0.0-20220921164117-439092de6870
+require (
+	golang.org/x/exp v0.0.0-20220921164117-439092de6870
+	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526203410-71b5a4ffd15e
+)
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.4.0 // indirect
@@ -210,6 +214,7 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/lithammer/dedent v1.1.0 // indirect
 	github.com/lyft/protoc-gen-star v0.6.1 // indirect
+	github.com/lyft/protoc-gen-star/v2 v2.0.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -241,7 +246,7 @@ require (
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
+	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
@@ -258,7 +263,6 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/src-d/gcfg v1.4.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
@@ -271,12 +275,12 @@ require (
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
-	golang.org/x/mod v0.9.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/mod v0.10.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
-	golang.org/x/sys v0.7.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/term v0.8.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect

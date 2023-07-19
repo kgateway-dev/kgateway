@@ -533,9 +533,6 @@ apis:
   envoy.config.health_checker.http_path.v2.HttpPath:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/http_path/http_path.proto.sk/#HttpPath
     package: envoy.config.health_checker.http_path.v2
-  envoy.config.listener.proxy_protocol.v3.CustomProxyProtocol:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxyprotocol/proxyprotocol.proto.sk/#CustomProxyProtocol
-    package: envoy.config.listener.proxy_protocol.v3
   envoy.config.matching.cipher_detection_input.v3.CipherDetectionInput:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/matching/inputs/cipher_detection_input/v3/cipher_detection_input.proto.sk/#CipherDetectionInput
     package: envoy.config.matching.cipher_detection_input.v3
@@ -1576,6 +1573,9 @@ apis:
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.ProxyProtocolConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/proxy_protocol.proto.sk/#ProxyProtocolConfig
+    package: solo.io.envoy.config.core.v3
+  solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/proxy_protocol.proto.sk/#ProxyProtocolPassThroughTLVs
     package: solo.io.envoy.config.core.v3
   solo.io.envoy.config.core.v3.RemoteDataSource:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RemoteDataSource

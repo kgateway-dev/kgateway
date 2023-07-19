@@ -26,6 +26,7 @@ import (
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 )
 
 var (
@@ -72,7 +73,7 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 	alsSettings := parentListener.GetOptions().GetAccessLoggingService()
 	tcpListenerOptions := in.GetOptions()
 
-	for _, tcpHost := range in.GetTcpHosts() {
+	for hostNum, tcpHost := range in.GetTcpHosts() {
 		var listenerFilters []*envoy_config_listener_v3.Filter
 		statPrefix := in.GetStatPrefix()
 		if statPrefix == "" {
@@ -81,7 +82,21 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 
 		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, tcpListenerOptions, statPrefix, alsSettings)
 		if err != nil {
-			multiErr.Errors = append(multiErr.Errors, err)
+			if _, ok := err.(*pluginutils.DestinationNotFoundError); ok {
+				// this error will be treated as just a warning; wrap in a
+				// special error object, and the caller will handle conversion
+				// from error to warning
+				// https://github.com/solo-io/solo-projects/issues/5163
+				multiErr.Errors = append(multiErr.Errors, &validation.TcpHostWarning{
+					Err:      err,
+					ErrLevel: validation.ErrorLevels_WARNING,
+					Context: validation.ErrorLevelContext{
+						HostNum: &hostNum,
+					},
+				})
+			} else {
+				multiErr.Errors = append(multiErr.Errors, err)
+			}
 			continue
 		}
 

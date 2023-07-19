@@ -2173,7 +2173,7 @@ spec:
 					resourceClientset.VirtualServiceClient().BaseClient(),
 				)
 				Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
-					"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
+					"header template ':status': [inja.exception.parser_error] (at 1:92) expected statement close, got '%'")))
 			})
 
 			Context("disable_transformation_validation is set", Ordered, func() {

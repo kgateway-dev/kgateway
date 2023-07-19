@@ -1,0 +1,6 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Check .proto files for DO_NOT_SUBMIT and do not attempt to check deleted files
+    skipCI-kube-tests:true
+    skipCI-docs-build:true
