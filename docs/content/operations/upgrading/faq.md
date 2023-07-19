@@ -60,9 +60,16 @@ You can use the changelogs' built-in [comparison tool]({{< versioned_link_path f
 {{% /notice %}}
 
 ### Feature changes {#features}
-Review the following summary of important new, deprecated, or removed features. For full details, see the [changelogs](#changelogs).
+Review the following summary of important new, deprecated, or removed features. For full details, see the [changelogs](#changelogs). 
+
 **New or improved features**:
 
+* **Upgraded Envoy version dependency**: The Envoy dependency in Gloo Edge {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} was upgraded from 1.25.x to 1.26.x. This upgrade includes the following changes:
+  * **New header validation**: Envoy now validates header names and values before a request is forwarded to the upstream. Header validations are performed after transformation filters were applied to the request. If you use transformation policies to alter header names or values, and an incorrect format is introduced by this transformation, your request might not be forwarded to the upstream. To temporarily revert this change, you can set the `envoy.reloadable_features.validate_upstream_headers` runtime flag to false. For more information about the header manipulation, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/header_validators/envoy_default/v3/header_validator.proto.html).
+  * **Bugfix for `x-envoy-original-path` header**: Envoy fixed a bug where the internal `x-envoy-original-path` header was not removed when being sent from untrusted clients. This bugfix is crucial to prevent malicious actors from injecting this header to alter the behavior in Envoy. To temporarily revert this change, you can set the `envoy.reloadable_features.sanitize_original_path` runtime flag to false. 
+  * **Sanitize non-UTF-8 header data**: Envoy now automatically sanitizes non-UTF-8 data and replaces it with a `!` character in gRPC service calls. This behavior fixes a bug where invalid protobuf messages were sent when non-UTF-8 HTTP header data was received. The receiving service typically generated an error when the protobuf message was decoded. This error message led to unintended behavior and other unforseen errors, such as a lack of visibility into requests as requests were not logged. By fixing this bug, Envoy now ensures that data in gRPC service calls is sent in valid UTF-8 format. To temporarily revert this change, you can set the `envoy.reloadable_features.service_sanitize_non_utf8_strings` runtime flag to false.
+ 
+  For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.26/v1.26.0). 
 
 **Deprecated features**:
 
