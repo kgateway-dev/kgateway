@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Update OPA return_decision_reason doc to reflect return type of object
