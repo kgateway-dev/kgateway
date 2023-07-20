@@ -45,11 +45,11 @@ func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) (*envoy_c
 	if connectionLimit == nil {
 		return nil, nil
 	}
-	if connectionLimit.MaxActiveConnections == nil {
+	if connectionLimit.GetMaxActiveConnections() == nil {
 		return nil, nil
 	}
-	if connectionLimit.MaxActiveConnections.Value < 1 {
-		return nil, fmt.Errorf("MaxActiveConnections must be greater than or equal to 1. Current value : %v", connectionLimit.MaxActiveConnections)
+	if connectionLimit.GetMaxActiveConnections().GetValue() < 1 {
+		return nil, fmt.Errorf("MaxActiveConnections must be greater than or equal to 1. Current value : %v", connectionLimit.GetMaxActiveConnections())
 	}
 	config := &envoy_config_connection_limit_v3.ConnectionLimit{
 		StatPrefix:     StatPrefix,

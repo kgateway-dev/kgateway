@@ -101,7 +101,7 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 
 		for _, nf := range stagedFilters {
 			if nf.NetworkFilter == nil {
-				log.Warnf("plugin implements HttpFilters() but returned nil")
+				log.Warnf("plugin implements NetworkFilters() but returned nil")
 				continue
 			}
 			networkFilters = append(networkFilters, nf)
