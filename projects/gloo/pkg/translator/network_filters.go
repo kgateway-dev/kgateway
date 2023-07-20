@@ -64,6 +64,26 @@ func NewHttpListenerNetworkFilterTranslator(
 	}
 }
 
+func (n *httpNetworkFilterTranslator) computePreHTTPNetworkFilters(params plugins.Params) []plugins.StagedNetworkFilter {
+	var networkFilters []plugins.StagedNetworkFilter
+	// Process the network filters.
+	for _, plug := range n.networkPlugins {
+		stagedFilters, err := plug.NetworkFilters(params, n.listener)
+		if err != nil {
+			validation.AppendHTTPListenerError(n.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
+		}
+
+		for _, nf := range stagedFilters {
+			if nf.NetworkFilter == nil {
+				log.Warnf("plugin implements NetworkFilters() but returned nil")
+				continue
+			}
+			networkFilters = append(networkFilters, nf)
+		}
+	}
+	return networkFilters
+}
+
 func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) ([]*envoy_config_listener_v3.Filter, error) {
 	// return if listener has no virtual hosts
 	if len(n.listener.GetVirtualHosts()) == 0 {
@@ -93,20 +113,7 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 	}
 
 	// Process the network filters.
-	for _, plug := range n.networkPlugins {
-		stagedFilters, err := plug.NetworkFilters(params, n.listener)
-		if err != nil {
-			validation.AppendHTTPListenerError(n.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
-		}
-
-		for _, nf := range stagedFilters {
-			if nf.NetworkFilter == nil {
-				log.Warnf("plugin implements NetworkFilters() but returned nil")
-				continue
-			}
-			networkFilters = append(networkFilters, nf)
-		}
-	}
+	networkFilters = append(networkFilters, n.computePreHTTPNetworkFilters(params)...)
 
 	// add the http connection manager filter after all the InAuth Listener Filters
 	networkFilter, err := n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params)

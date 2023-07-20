@@ -81,6 +81,13 @@ func (p *plugin) CreateTcpFilterChains(params plugins.Params, parentListener *v1
 			statPrefix = DefaultTcpStatPrefix
 		}
 
+		// Handle all network filters before proceeding to anything else
+		networkFilters, err := p.generateNetworkFilters(tcpListenerOptions)
+		if err != nil {
+			return nil, err
+		}
+		listenerFilters = append(listenerFilters, networkFilters...)
+
 		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, tcpListenerOptions, statPrefix, alsSettings)
 		if err != nil {
 			if _, ok := err.(*pluginutils.DestinationNotFoundError); ok {
@@ -155,17 +162,6 @@ func (p *plugin) tcpProxyFilters(
 		return nil, err
 	}
 	var filters []*envoy_config_listener_v3.Filter
-
-	// Handle all network filters before proceeding to anything else
-	networkFilters, err := p.generateNetworkFilters(plugins)
-	if err != nil {
-		return nil, err
-	}
-	for _, networkFilter := range networkFilters {
-		if networkFilter != nil {
-			filters = append(filters, networkFilter)
-		}
-	}
 
 	switch dest := host.GetDestination().GetDestination().(type) {
 	case *v1.TcpHost_TcpAction_Single:
