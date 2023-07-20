@@ -334,7 +334,8 @@ type HttpListenerOptions struct {
 	// and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used.
 	LeftmostXffAddress  *wrappers.BoolValue                 `protobuf:"bytes,16,opt,name=leftmost_xff_address,json=leftmostXffAddress,proto3" json:"leftmost_xff_address,omitempty"`
 	DynamicForwardProxy *dynamic_forward_proxy.FilterConfig `protobuf:"bytes,28,opt,name=dynamic_forward_proxy,json=dynamicForwardProxy,proto3" json:"dynamic_forward_proxy,omitempty"`
-	ConnectionLimit     *connection_limit.ConnectionLimit   `protobuf:"bytes,29,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
+	// ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
+	ConnectionLimit *connection_limit.ConnectionLimit `protobuf:"bytes,29,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
 	// Router is an extension of the envoy http filters
 	// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
 	Router *router.Router `protobuf:"bytes,18,opt,name=router,proto3" json:"router,omitempty"`
@@ -518,8 +519,9 @@ type TcpListenerOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TcpProxySettings *tcp.TcpProxySettings             `protobuf:"bytes,3,opt,name=tcp_proxy_settings,json=tcpProxySettings,proto3" json:"tcp_proxy_settings,omitempty"`
-	ConnectionLimit  *connection_limit.ConnectionLimit `protobuf:"bytes,4,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
+	TcpProxySettings *tcp.TcpProxySettings `protobuf:"bytes,3,opt,name=tcp_proxy_settings,json=tcpProxySettings,proto3" json:"tcp_proxy_settings,omitempty"`
+	// ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
+	ConnectionLimit *connection_limit.ConnectionLimit `protobuf:"bytes,4,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
 }
 
 func (x *TcpListenerOptions) Reset() {

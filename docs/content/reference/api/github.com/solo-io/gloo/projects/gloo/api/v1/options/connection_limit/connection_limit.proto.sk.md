@@ -26,8 +26,8 @@ weight: 5
 ### ConnectionLimit
 
  
-This plugin provides configuration options to limit active connections to envoy
-ConnectionLimit can be specified on HTTPGateways and TCPGateways
+These options provide the ability to limit the active connections in envoy.
+Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/connection_limit_filter
 
 ```yaml
 "maxActiveConnections": .google.protobuf.UInt64Value
@@ -37,8 +37,8 @@ ConnectionLimit can be specified on HTTPGateways and TCPGateways
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `maxActiveConnections` | [.google.protobuf.UInt64Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-64-value) | The maximum number of active connections for this gateway. Other connection attemps will be dropped. |
-| `delayBeforeClose` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The time to wait before a connection is dropped. |
+| `maxActiveConnections` | [.google.protobuf.UInt64Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-64-value) | The maximum number of active connections for this gateway. When this limit is reached, any incoming connection will be closed after delay duration. Must be greater than one. |
+| `delayBeforeClose` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The time to wait before a connection is dropped. Useful for DoS prevention. Defaults to zero and the connection will be closed immediately. |
 
 
 

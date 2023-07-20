@@ -25,16 +25,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// This plugin provides configuration options to limit active connections to envoy
-// ConnectionLimit can be specified on HTTPGateways and TCPGateways
+// These options provide the ability to limit the active connections in envoy.
+// Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/connection_limit_filter
 type ConnectionLimit struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The maximum number of active connections for this gateway. Other connection attemps will be dropped.
+	// The maximum number of active connections for this gateway. When this limit is reached, any incoming connection
+	// will be closed after delay duration.
+	// Must be greater than one.
 	MaxActiveConnections *wrappers.UInt64Value `protobuf:"bytes,1,opt,name=max_active_connections,json=maxActiveConnections,proto3" json:"max_active_connections,omitempty"`
-	// The time to wait before a connection is dropped.
+	// The time to wait before a connection is dropped. Useful for DoS prevention.
+	// Defaults to zero and the connection will be closed immediately.
 	DelayBeforeClose *duration.Duration `protobuf:"bytes,2,opt,name=delay_before_close,json=delayBeforeClose,proto3" json:"delay_before_close,omitempty"`
 }
 

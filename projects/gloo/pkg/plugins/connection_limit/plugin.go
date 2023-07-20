@@ -22,12 +22,12 @@ const (
 )
 
 var (
+	// Since this is an L4 filter, it would kick in before any HTTP auth can take place.
+	// This also bolsters its main use case which is protect resources.
 	pluginStage = plugins.BeforeStage(plugins.AuthNStage)
 )
 
-type plugin struct {
-	removeUnused bool
-}
+type plugin struct{}
 
 func NewPlugin() *plugin {
 	return &plugin{}
@@ -37,20 +37,17 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) {
-	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
-}
+func (p *plugin) Init(params plugins.InitParams) {}
 
 func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) (*envoy_config_listener_v3.Filter, error) {
-	if connectionLimit == nil {
-		return nil, nil
-	}
+	// Sanity checks
 	if connectionLimit.GetMaxActiveConnections() == nil {
 		return nil, nil
 	}
 	if connectionLimit.GetMaxActiveConnections().GetValue() < 1 {
 		return nil, fmt.Errorf("MaxActiveConnections must be greater than or equal to 1. Current value : %v", connectionLimit.GetMaxActiveConnections())
 	}
+
 	config := &envoy_config_connection_limit_v3.ConnectionLimit{
 		StatPrefix:     StatPrefix,
 		MaxConnections: connectionLimit.GetMaxActiveConnections(),

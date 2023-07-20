@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("Plugin", func() {
-	It("copies the connection limit config from the listener to the filter", func() {
+	It("Copies the connection limit config from the listener to the filter", func() {
 		filters, err := NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
@@ -41,9 +41,10 @@ var _ = Describe("Plugin", func() {
 				Stage: pluginStage,
 			},
 		}))
+	})
 
-		By("Ensures that max connections must be greater than or equal to 1")
-		_, err = NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
+	It("Ensures that max connections must be greater than or equal to 1", func() {
+		_, err := NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
 					MaxActiveConnections: &wrappers.UInt64Value{Value: 0},
@@ -51,5 +52,20 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("Does nothing when fields are not specified", func() {
+		filters, err := NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				ConnectionLimit: &connection_limit.ConnectionLimit{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(filters).To(Equal([]plugins.StagedNetworkFilter{
+			{
+				NetworkFilter: nil,
+				Stage:         pluginStage,
+			},
+		}))
 	})
 })

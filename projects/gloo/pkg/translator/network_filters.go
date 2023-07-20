@@ -64,7 +64,7 @@ func NewHttpListenerNetworkFilterTranslator(
 	}
 }
 
-func (n *httpNetworkFilterTranslator) computePreHTTPNetworkFilters(params plugins.Params) []plugins.StagedNetworkFilter {
+func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params) []plugins.StagedNetworkFilter {
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
 	for _, plug := range n.networkPlugins {
@@ -75,7 +75,7 @@ func (n *httpNetworkFilterTranslator) computePreHTTPNetworkFilters(params plugin
 
 		for _, nf := range stagedFilters {
 			if nf.NetworkFilter == nil {
-				log.Warnf("plugin implements NetworkFilters() but returned nil")
+				log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
 				continue
 			}
 			networkFilters = append(networkFilters, nf)
@@ -113,7 +113,7 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 	}
 
 	// Process the network filters.
-	networkFilters = append(networkFilters, n.computePreHTTPNetworkFilters(params)...)
+	networkFilters = append(networkFilters, n.computePreHCMFilters(params)...)
 
 	// add the http connection manager filter after all the InAuth Listener Filters
 	networkFilter, err := n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params)
