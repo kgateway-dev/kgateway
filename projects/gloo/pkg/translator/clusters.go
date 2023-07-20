@@ -2,6 +2,8 @@ package translator
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -177,7 +179,10 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 		if hc.GetHealthChecker() == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthChecker", i))
 		}
-		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets)
+
+		shouldEnforceNamespaceMatch := strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv)) == "true"
+		options := api_conversion.HeaderSecretOptions{UpstreamNamespace: upstream.GetMetadata().GetNamespace(), EnforceNamespaceMatch: shouldEnforceNamespaceMatch}
+		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets, options)
 		if err != nil {
 			return nil, err
 		}

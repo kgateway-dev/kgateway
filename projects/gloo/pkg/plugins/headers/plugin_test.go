@@ -6,12 +6,14 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1snap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"os"
 )
 
 var _ = Describe("Plugin", func() {
@@ -98,7 +100,6 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-
 		out := &envoy_config_route_v3.VirtualHost{}
 		err := p.ProcessVirtualHost(paramsWithSecret, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
@@ -111,7 +112,6 @@ var _ = Describe("Plugin", func() {
 		Expect(out.ResponseHeadersToAdd).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToAdd))
 		Expect(out.ResponseHeadersToRemove).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToRemove))
 	})
-
 	DescribeTable("Invalid headers", func(key string, value string, expectedErr error) {
 		params := plugins.VirtualHostParams{}
 		schemeHeader := headers.HeaderManipulation{
@@ -141,6 +141,104 @@ var _ = Describe("Plugin", func() {
 		Entry("Can't set Host header (HOST)", "HOST", "value", CantSetHostHeaderError),
 		Entry("Can't set Host header (hOST)", "hOST", "value", CantSetHostHeaderError),
 	)
+	Context("Require secrets to match upstream namespace ", func() {
+		BeforeEach(func() {
+			os.Setenv(api_conversion.MatchingNamespaceEnv, "true")
+			p = NewPlugin()
+		})
+		paramsWithSecret := plugins.Params{
+			Snapshot: &v1snap.ApiSnapshot{
+				Secrets: v1.SecretList{
+					{
+						Kind: &v1.Secret_Header{
+							Header: &v1.HeaderSecret{
+								Headers: map[string]string{
+									"Authorization": "basic dXNlcjpwYXNzd29yZA==",
+								},
+							},
+						},
+						Metadata: &coreV1.Metadata{
+							Name:      "foo",
+							Namespace: "bar",
+						},
+					},
+				},
+			},
+		}
+		singleRouteToBadUpstream := &v1.Route{Action: &v1.Route_RouteAction{RouteAction: &v1.RouteAction{
+			Destination: &v1.RouteAction_Single{Single: &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bad-tenant"}}}}}}}
+		singleRouteToGoodUpstream := &v1.Route{Action: &v1.Route_RouteAction{RouteAction: &v1.RouteAction{
+			Destination: &v1.RouteAction_Single{Single: &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bar"}}}}}}}
+		It("Errors with a WeightedDestination where the upstream namespace doesn't match the secret", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
+			in := &v1.WeightedDestination{
+				Options:     &v1.WeightedDestinationOptions{HeaderManipulation: testHeaderManipWithSecrets},
+				Destination: &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bad-tenant"}}}}
+			err := p.ProcessWeightedDestination(routeParamsWithSecret, in, out)
+			Expect(err).To(MatchError("list did not find secret bar.foo"))
+		})
+		It("Errors with a VirtualHost with routes to one upstream that matches the secret and one that doesn't", func() {
+			vhostParamsWithSecret := plugins.VirtualHostParams{
+				Params: paramsWithSecret,
+			}
+
+			out := &envoy_config_route_v3.VirtualHost{}
+			err := p.ProcessVirtualHost(vhostParamsWithSecret, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					HeaderManipulation: testHeaderManipWithSecrets,
+				},
+				Routes: []*v1.Route{singleRouteToBadUpstream, singleRouteToGoodUpstream},
+			}, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err).Should(MatchError("list did not find secret bar.foo"))
+		})
+		It("Does not error with a VirtualHost with routes to multiple upstreams when secrets are not added to headers", func() {
+			vhostParamsWithSecret := plugins.VirtualHostParams{
+				Params: paramsWithSecret,
+			}
+
+			out := &envoy_config_route_v3.VirtualHost{}
+			err := p.ProcessVirtualHost(vhostParamsWithSecret, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					HeaderManipulation: testHeaderManip,
+				},
+				Routes: []*v1.Route{singleRouteToGoodUpstream, singleRouteToBadUpstream},
+			}, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Does not error with a VirtualHost with a route to an upstream that matches the secret", func() {
+			vhostParamsWithSecret := plugins.VirtualHostParams{
+				Params: paramsWithSecret,
+			}
+
+			out := &envoy_config_route_v3.VirtualHost{}
+			err := p.ProcessVirtualHost(vhostParamsWithSecret, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					HeaderManipulation: testHeaderManipWithSecrets,
+				},
+				Routes: []*v1.Route{singleRouteToGoodUpstream},
+			}, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Errors with a Route to an upstream that does not match the secret", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.Route{}
+			in := &v1.Route{Action: singleRouteToBadUpstream.GetAction(), Options: &v1.RouteOptions{HeaderManipulation: testHeaderManipWithSecrets}}
+			err := p.ProcessRoute(routeParamsWithSecret, in, out)
+			Expect(err).To(MatchError("list did not find secret bar.foo"))
+		})
+		It("Does not error when Route destination matches secret", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.Route{}
+			in := &v1.Route{Action: singleRouteToGoodUpstream.GetAction(), Options: &v1.RouteOptions{HeaderManipulation: testHeaderManipWithSecrets}}
+			err := p.ProcessRoute(routeParamsWithSecret, in, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		AfterEach(func() {
+			os.Clearenv()
+		})
+	})
 })
 
 var testBrokenConfigNoRequestHeader = &headers.HeaderManipulation{

@@ -1,7 +1,11 @@
 package headers
 
 import (
+	"os"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -33,18 +37,21 @@ var (
 )
 
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
-type plugin struct{}
+type plugin struct {
+	enforceMatchingNamespaces bool
+}
 
 func NewPlugin() *plugin {
-	return &plugin{}
+	return &plugin{
+		enforceMatchingNamespaces: strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv)) == "true",
+	}
 }
 
 func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(_ plugins.InitParams) {
-}
+func (p *plugin) Init(_ plugins.InitParams) {}
 
 func (p *plugin) ProcessWeightedDestination(
 	params plugins.RouteParams,
@@ -55,8 +62,15 @@ func (p *plugin) ProcessWeightedDestination(
 	if headerManipulation == nil {
 		return nil
 	}
-
-	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot))
+	upstreamNamespace := "sometenant"
+	if p.enforceMatchingNamespaces {
+		us, err := upstreams.DestinationToUpstreamRef(in.GetDestination())
+		if err == nil {
+			upstreamNamespace = us.GetNamespace()
+		}
+	}
+	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: p.enforceMatchingNamespaces, UpstreamNamespace: upstreamNamespace}
+	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot), headerSecretOptions)
 	if err != nil {
 		return err
 	}
@@ -79,8 +93,23 @@ func (p *plugin) ProcessVirtualHost(
 	if headerManipulation == nil {
 		return nil
 	}
-
-	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot))
+	headerSecretOptions := api_conversion.HeaderSecretOptions{
+		EnforceNamespaceMatch: p.enforceMatchingNamespaces,
+	}
+	if p.enforceMatchingNamespaces {
+		usNamespace := getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRoutes()[0].GetRouteAction())
+		if len(in.GetName()) > 1 {
+			for _, r := range in.GetRoutes()[1:] {
+				// in order for the namespace match check to make sense, all the upstreams on the virtual host need to be the same
+				if getUpstreamNamespaceForRouteAction(params.Snapshot, r.GetRouteAction()) != usNamespace {
+					usNamespace = ""
+					break
+				}
+			}
+		}
+		headerSecretOptions.UpstreamNamespace = usNamespace
+	}
+	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot), headerSecretOptions)
 	if err != nil {
 		return err
 	}
@@ -100,7 +129,12 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
-	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot))
+	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: p.enforceMatchingNamespaces}
+	// If we need to enforce that the namespace of the secret and upstream match, then find the upstream namespace.
+	if p.enforceMatchingNamespaces {
+		headerSecretOptions.UpstreamNamespace = getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRouteAction())
+	}
+	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot), headerSecretOptions)
 	if err != nil {
 		return err
 	}
@@ -120,6 +154,24 @@ type envoyHeaderManipulation struct {
 	ResponseHeadersToRemove []string
 }
 
+func getUpstreamNamespaceForRouteAction(snapshot *v1snap.ApiSnapshot, action *v1.RouteAction) string {
+	usRefs, err := pluginutils.DestinationUpstreams(snapshot, action)
+	if err != nil || len(usRefs) == 0 {
+		return ""
+	}
+	ns := usRefs[0].GetNamespace()
+	// verify that all the upstreams in the list are in the same namespace
+	// if not, we can't do a meaningful check for matching namespaces, so we will fail if headerSecretRef is set
+	// otherwise that's weird but fine
+	if len(usRefs) > 1 {
+		for _, u := range usRefs[1:] {
+			if u.GetNamespace() != ns {
+				return ""
+			}
+		}
+	}
+	return ns
+}
 func getSecretsFromSnapshot(snapshot *v1snap.ApiSnapshot) *v1.SecretList {
 	var secrets *v1.SecretList
 	if snapshot == nil {
@@ -130,11 +182,11 @@ func getSecretsFromSnapshot(snapshot *v1snap.ApiSnapshot) *v1.SecretList {
 	return secrets
 }
 
-func convertHeaderConfig(in *headers.HeaderManipulation, secrets *v1.SecretList) (*envoyHeaderManipulation, error) {
+func convertHeaderConfig(in *headers.HeaderManipulation, secrets *v1.SecretList, secretOptions api_conversion.HeaderSecretOptions) (*envoyHeaderManipulation, error) {
 	// request headers can either be made from a normal key/value pair, or.
 	// they can be constructed from a supplied secret. To accomplish this, we use
 	// a utility function that was originally created to accomplish this for health check headers.
-	requestAdd, err := api_conversion.ToEnvoyHeaderValueOptionList(in.GetRequestHeadersToAdd(), secrets)
+	requestAdd, err := api_conversion.ToEnvoyHeaderValueOptionList(in.GetRequestHeadersToAdd(), secrets, secretOptions)
 	if err != nil {
 		return nil, err
 	}
