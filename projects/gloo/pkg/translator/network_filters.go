@@ -90,7 +90,6 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 		return nil, nil
 	}
 
-	var networkFilters []plugins.StagedNetworkFilter
 	// We used to support a ListenerFilterPlugin interface, which was used to generate
 	// a list of NetworkFilters. That plugin wasn't implemented in the codebase so it
 	// was removed. If we want to support other network filters, we would process
@@ -112,20 +111,16 @@ func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Param
 		}
 	}
 
-	// Process the network filters.
-	networkFilters = append(networkFilters, n.computePreHCMFilters(params)...)
+	// Process && sort the network filters.
+	networkFilters := sortNetworkFilters(n.computePreHCMFilters(params))
 
 	// add the http connection manager filter after all the InAuth Listener Filters
 	networkFilter, err := n.hcmNetworkFilterTranslator.ComputeNetworkFilter(params)
 	if err != nil {
 		return nil, err
 	}
-	networkFilters = append(networkFilters, plugins.StagedNetworkFilter{
-		NetworkFilter: networkFilter,
-		Stage:         plugins.AfterStage(plugins.AuthZStage),
-	})
-
-	return sortNetworkFilters(networkFilters), nil
+	networkFilters = append(networkFilters, networkFilter)
+	return networkFilters, nil
 }
 
 func sortNetworkFilters(filters plugins.StagedNetworkFilterList) []*envoy_config_listener_v3.Filter {
