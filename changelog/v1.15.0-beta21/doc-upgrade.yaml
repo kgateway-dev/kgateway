@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8478
+    resolvesIssue: true
+    description: >- 
+      Summarizes 1.15 changes in the upgrade overview. 
+      skipCI-kube-tests:true
