@@ -141,50 +141,93 @@ var _ = Describe("Transformations", func() {
 
 		})
 
-		When("constructing JSON body", func() {
+		FWhen("constructing JSON body", func() {
+			complexPostBody := `{"foo":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","bar":"\"bie\"","bas":"[\"eball\",\"ketball\"]"}`
+			complexOutput := `{"FOO":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","BARBAS":["\"bie\"","[\"eball\",\"ketball\"]"]}`
+			When("using escape_characters", func() {
 
-			BeforeEach(func() {
-				transform = &transformation.Transformations{
-					ResponseTransformation: &transformation.Transformation{
-						TransformationType: &transformation.Transformation_TransformationTemplate{
-							TransformationTemplate: &envoy_transform.TransformationTemplate{
-								BodyTransformation: &envoy_transform.TransformationTemplate_Body{
+				BeforeEach(func() {
+					transform = &transformation.Transformations{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoy_transform.TransformationTemplate{
 									EscapeCharacters: true,
-									Body: &envoy_transform.InjaTemplate{
-										Text: `{"FOO":"{{foo}}","BARBAS":["{{bar}}","{{bas}}"]}`,
+									BodyTransformation: &envoy_transform.TransformationTemplate_Body{
+										Body: &envoy_transform.InjaTemplate{
+											Text: `{"FOO":"{{foo}}","BARBAS":["{{bar}}","{{bas}}"]}`,
+										},
 									},
 								},
 							},
 						},
-					},
-				}
-			})
-			complexPostBody := `{"foo":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"},"bar":"\"bie\"","bas":"[\"eball\",\"ketball\"]"}`
-			complexOutput := `{"FOO":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}", "BARBAS":["\"bie\"", "[\"eball\",\"ketball\"]"]}`
-			It("should should transform json to html response on vhost", func() {
-				testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-					vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
-						Transformations: transform,
 					}
-					return vs
 				})
 
-				EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
-			})
+				It("should should transform json to json response on vhost", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
 
-			It("should should transform json to html response on route", func() {
-				testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-					vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
-						Transformations: transform,
-					}
-					return vs
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
 				})
 
-				EventuallyResponseTransformed(defaultPostBody, complexOutput).Should(Succeed())
+				It("should should transform json to json response on route", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
 			})
 
+			When("using raw_string", func() {
+
+				BeforeEach(func() {
+					transform = &transformation.Transformations{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &envoy_transform.TransformationTemplate{
+									BodyTransformation: &envoy_transform.TransformationTemplate_Body{
+										Body: &envoy_transform.InjaTemplate{
+											Text: `{"FOO":"{{raw_string(foo)}}","BARBAS":["{{raw_string(bar)}}","{{raw_string(bas)}}"]}`,
+										},
+									},
+								},
+							},
+						},
+					}
+				})
+				It("should should transform json to json response on vhost", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
+				It("should should transform json to json response on route", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
+			})
 		})
-
 	})
 
 	Context("parsing non-valid JSON", func() {
