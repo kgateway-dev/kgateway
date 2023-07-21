@@ -252,6 +252,12 @@ func (m *HttpConnectionManagerSettings) Clone() proto.Message {
 		target.InternalAddressConfig = proto.Clone(m.GetInternalAddressConfig()).(*HttpConnectionManagerSettings_InternalAddressConfig)
 	}
 
+	if h, ok := interface{}(m.GetAppendXForwardedPort()).(clone.Cloner); ok {
+		target.AppendXForwardedPort = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AppendXForwardedPort = proto.Clone(m.GetAppendXForwardedPort()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	switch m.HeaderFormat.(type) {
 
 	case *HttpConnectionManagerSettings_ProperCaseHeaderKeyFormat:

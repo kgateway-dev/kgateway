@@ -47,6 +47,7 @@ func (p *plugin) Init(_ plugins.InitParams) {
 func (p *plugin) ProcessHcmNetworkFilter(params plugins.Params, _ *v1.Listener, listener *v1.HttpListener, out *envoyhttp.HttpConnectionManager) error {
 	in := listener.GetOptions().GetHttpConnectionManagerSettings()
 	out.UseRemoteAddress = in.GetUseRemoteAddress()
+	out.AppendXForwardedPort = in.GetAppendXForwardedPort().GetValue()
 	out.XffNumTrustedHops = in.GetXffNumTrustedHops().GetValue()
 	out.SkipXffAppend = in.GetSkipXffAppend().GetValue()
 	out.Via = in.GetVia().GetValue()

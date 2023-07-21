@@ -651,6 +651,8 @@ spec:
                           properties:
                             fastInputConversion:
                               type: boolean
+                            returnDecisionReason:
+                              type: boolean
                           type: object
                         package:
                           type: string

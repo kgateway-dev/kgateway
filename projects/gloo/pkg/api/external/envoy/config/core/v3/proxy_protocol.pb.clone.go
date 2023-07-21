@@ -26,6 +26,28 @@ var (
 )
 
 // Clone function
+func (m *ProxyProtocolPassThroughTLVs) Clone() proto.Message {
+	var target *ProxyProtocolPassThroughTLVs
+	if m == nil {
+		return target
+	}
+	target = &ProxyProtocolPassThroughTLVs{}
+
+	target.MatchType = m.GetMatchType()
+
+	if m.GetTlvType() != nil {
+		target.TlvType = make([]uint32, len(m.GetTlvType()))
+		for idx, v := range m.GetTlvType() {
+
+			target.TlvType[idx] = v
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ProxyProtocolConfig) Clone() proto.Message {
 	var target *ProxyProtocolConfig
 	if m == nil {
@@ -34,6 +56,12 @@ func (m *ProxyProtocolConfig) Clone() proto.Message {
 	target = &ProxyProtocolConfig{}
 
 	target.Version = m.GetVersion()
+
+	if h, ok := interface{}(m.GetPassThroughTlvs()).(clone.Cloner); ok {
+		target.PassThroughTlvs = h.Clone().(*ProxyProtocolPassThroughTLVs)
+	} else {
+		target.PassThroughTlvs = proto.Clone(m.GetPassThroughTlvs()).(*ProxyProtocolPassThroughTLVs)
+	}
 
 	return target
 }

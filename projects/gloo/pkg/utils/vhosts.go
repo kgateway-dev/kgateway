@@ -31,6 +31,31 @@ func GetVirtualHostsForListener(listener *v1.Listener) []*v1.VirtualHost {
 	return virtualHosts
 }
 
+// Given any supported listener type, returns the TcpHost report objects that
+// are used for error/warning reporting
+func GetTcpHostReportsFromListenerReport(listenerReport *validation.ListenerReport) []*validation.TcpHostReport {
+	var tcpHostReports []*validation.TcpHostReport
+
+	switch listenerReportType := listenerReport.GetListenerTypeReport().(type) {
+	case *validation.ListenerReport_HttpListenerReport:
+		// HostReports are a tcp-only concept
+	case *validation.ListenerReport_TcpListenerReport:
+		tcpHostReports = append(tcpHostReports, listenerReportType.TcpListenerReport.GetTcpHostReports()...)
+	case *validation.ListenerReport_HybridListenerReport:
+		for _, matchedListenerReport := range listenerReportType.HybridListenerReport.GetMatchedListenerReports() {
+			if tcpListenerReport := matchedListenerReport.GetTcpListenerReport(); tcpListenerReport != nil {
+				tcpHostReports = append(tcpHostReports, tcpListenerReport.GetTcpHostReports()...)
+			}
+		}
+	case *validation.ListenerReport_AggregateListenerReport:
+		for _, tcpListenerReport := range listenerReportType.AggregateListenerReport.GetTcpListenerReports() {
+			tcpHostReports = append(tcpHostReports, tcpListenerReport.GetTcpHostReports()...)
+		}
+	}
+
+	return tcpHostReports
+}
+
 func GetVhostReportsFromListenerReport(listenerReport *validation.ListenerReport) []*validation.VirtualHostReport {
 	var virtualHostReports []*validation.VirtualHostReport
 

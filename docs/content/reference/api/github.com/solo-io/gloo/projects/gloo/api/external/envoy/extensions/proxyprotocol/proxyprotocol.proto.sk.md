@@ -32,6 +32,7 @@ weight: 5
 ```yaml
 "rules": []envoy.config.listener.proxy_protocol.v3.CustomProxyProtocol.Rule
 "allowRequestsWithoutProxyProtocol": bool
+"passThroughTlvs": .solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs
 
 ```
 
@@ -39,6 +40,7 @@ weight: 5
 | ----- | ---- | ----------- | 
 | `rules` | [[]envoy.config.listener.proxy_protocol.v3.CustomProxyProtocol.Rule](../proxyprotocol.proto.sk/#rule) | The list of rules to apply to requests. |
 | `allowRequestsWithoutProxyProtocol` | `bool` | Allow requests through that don't use proxy protocol. Defaults to false. .. attention:: This breaks conformance with the specification. Only enable if ALL traffic to the listener comes from a trusted source. For more information on the security implications of this feature, see https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt. |
+| `passThroughTlvs` | [.solo.io.envoy.config.core.v3.ProxyProtocolPassThroughTLVs](../../../../../../../../../../../envoy/config/core/v3/proxy_protocol.proto.sk/#proxyprotocolpassthroughtlvs) | This config controls which TLVs can be passed to filter state if it is Proxy Protocol V2 header. If there is no setting for this field, no TLVs will be passed through. .. note:: If this is configured, you likely also want to set :ref:`core.v3.ProxyProtocolConfig.pass_through_tlvs <envoy_v3_api_field_config.core.v3.ProxyProtocolConfig.pass_through_tlvs>`, which controls pass-through for the upstream. |
 
 
 

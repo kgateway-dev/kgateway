@@ -236,7 +236,7 @@ message TcpHostReport {
     message Error {
         enum Type {
             NameNotUniqueError = 0;
-            InvalidDestinationError = 1;
+            InvalidDestinationError = 1 [deprecated = true];
             ProcessingError = 2;
         }
 
@@ -246,8 +246,24 @@ message TcpHostReport {
         string reason = 2;
     }
 
+    // warning types for the given tcp host config
+    message Warning {
+        enum Type {
+            UnknownWarning = 0;
+            InvalidDestinationWarning = 1;
+        }
+
+        // the type of the warning
+        Type type = 1;
+        // any extra info as a string
+        string reason = 2;
+    }
+
     // errors on the tcp host
     repeated Error errors = 2;
+
+    // warnings on the config of the tcp host
+    repeated Warning warnings = 3;
 }
 
 message HybridListenerReport {

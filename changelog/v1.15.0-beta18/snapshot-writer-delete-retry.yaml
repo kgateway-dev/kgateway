@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5162
+    resolvesIssue: false
+    description: >-
+      Support retries in the SnapshotWriter DeleteSnapshot operation. This mirrors the logic
+      already supported in the WriteSnapshot operation.

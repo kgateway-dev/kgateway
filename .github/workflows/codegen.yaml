@@ -19,6 +19,8 @@ jobs:
           ./ci/check-generated-code.sh
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v37
       - name: Check for DO_NOT_SUBMIT
-        run: ./ci/do-not-submit.sh ${{ steps.changed-files.outputs.all_modified_files }}
+        # documentation for where we get the list of files to pass into the script:
+        # https://github.com/marketplace/actions/changed-files?version=v37#outputs
+        run: ./ci/do-not-submit.sh ${{ steps.changed-files.outputs.all_changed_files }}

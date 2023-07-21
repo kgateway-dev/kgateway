@@ -260,6 +260,7 @@ message TransformationTemplate {
     // The request/response body will be treated as plain text
     DontParse = 1;
   }
+  // Determines how the body will be parsed. Defaults to ParseAsJson
   RequestBodyParse parse_body_behavior = 7;
 
   // If set to true, Envoy will not throw an exception in case the body parsing
@@ -311,7 +312,7 @@ message Passthrough {}
 message MergeExtractorsToBody {}
 
 message HeaderBodyTransform {
-  // When transforming a request, setting this to true will additionally add "queryString", 
+  // When transforming a request, setting this to true will additionally add "queryString",
   // "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path",
   // and "multiValueHeaders" to the body
   bool add_request_metadata = 1;

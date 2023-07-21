@@ -51,8 +51,6 @@ type factoryImpl struct {
 	// This can either be a previously released tag or the tag of a locally built image
 	// See the Setup section of the ./test/e2e/README for details about building a local image
 	dockerImage string
-
-	instances []*Instance
 }
 
 // NewFactory returns a new envoy service Factory
@@ -171,11 +169,6 @@ func (f *factoryImpl) Clean() {
 	if f.tmpdir != "" {
 		_ = os.RemoveAll(f.tmpdir)
 	}
-	instances := f.instances
-	f.instances = nil
-	for _, ei := range instances {
-		ei.Clean()
-	}
 }
 
 func (f *factoryImpl) NewInstance() *Instance {
@@ -224,7 +217,6 @@ func (f *factoryImpl) newInstanceOrError() (*Instance, error) {
 	}
 
 	log.Printf("Envoy Instance (%s) Ports: %+v", ei.DockerContainerName, ei.RequestPorts)
-	f.instances = append(f.instances, ei)
 	return ei, nil
 
 }

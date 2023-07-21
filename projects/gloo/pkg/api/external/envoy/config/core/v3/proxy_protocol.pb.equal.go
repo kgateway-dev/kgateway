@@ -26,6 +26,45 @@ var (
 )
 
 // Equal function
+func (m *ProxyProtocolPassThroughTLVs) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ProxyProtocolPassThroughTLVs)
+	if !ok {
+		that2, ok := that.(ProxyProtocolPassThroughTLVs)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if m.GetMatchType() != target.GetMatchType() {
+		return false
+	}
+
+	if len(m.GetTlvType()) != len(target.GetTlvType()) {
+		return false
+	}
+	for idx, v := range m.GetTlvType() {
+
+		if v != target.GetTlvType()[idx] {
+			return false
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *ProxyProtocolConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -48,6 +87,16 @@ func (m *ProxyProtocolConfig) Equal(that interface{}) bool {
 
 	if m.GetVersion() != target.GetVersion() {
 		return false
+	}
+
+	if h, ok := interface{}(m.GetPassThroughTlvs()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPassThroughTlvs()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPassThroughTlvs(), target.GetPassThroughTlvs()) {
+			return false
+		}
 	}
 
 	return true

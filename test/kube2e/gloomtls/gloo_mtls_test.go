@@ -24,8 +24,6 @@ import (
 var _ = Describe("Kube2e: mTLS", func() {
 
 	var (
-		testRunnerVs *gatewayv1.VirtualService
-
 		glooResources *gloosnapshot.ApiSnapshot
 	)
 
@@ -42,7 +40,7 @@ var _ = Describe("Kube2e: mTLS", func() {
 				},
 			},
 		}
-		testRunnerVs = helpers.NewVirtualServiceBuilder().
+		testRunnerVs := helpers.NewVirtualServiceBuilder().
 			WithName(helper.TestrunnerName).
 			WithNamespace(testHelper.InstallNamespace).
 			WithDomain(helper.TestrunnerName).
