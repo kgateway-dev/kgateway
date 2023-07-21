@@ -2409,7 +2409,7 @@ spec:
 					BeforeEach(func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.disabled=false",
+								"gatewayProxies.gatewayProxy.disabled=true",
 								"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true",
 								"gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.virtualServiceSelector.gateway=default",
 								"gatewayProxies.firstGatewayProxy.disabled=false",
@@ -2420,16 +2420,13 @@ spec:
 						})
 					})
 					It("correctly merges custom gatewayproxy values", func() {
-						// only the 3 ssl gateways should be enabled
-						customResources := getCustomResourceManifest(3)
+						// only the first and second ssl gateways should be enabled
+						customResources := getCustomResourceManifest(2)
 						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy").To(BeNil())
+						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy-ssl").To(BeNil())
 						customResources.ExpectUnstructured("Gateway", namespace, "first-gateway-proxy").To(BeNil())
 						customResources.ExpectUnstructured("Gateway", namespace, "second-gateway-proxy").To(BeNil())
 
-						gwSsl := makeUnstructuredGateway(namespace, "gateway-proxy", true)
-						unstructured.SetNestedStringMap(gwSsl.Object,
-							map[string]string{"gateway": "default"},
-							"spec", "httpGateway", "virtualServiceSelector")
 						firstGwSsl := makeUnstructured(`
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -2468,7 +2465,6 @@ spec:
   proxyNames:
   - second-gateway-proxy
 `)
-						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy-ssl").To(BeEquivalentTo(gwSsl))
 						customResources.ExpectUnstructured("Gateway", namespace, "first-gateway-proxy-ssl").To(BeEquivalentTo(firstGwSsl))
 						customResources.ExpectUnstructured("Gateway", namespace, "second-gateway-proxy-ssl").To(BeEquivalentTo(secondGwSsl))
 					})
