@@ -75,7 +75,7 @@ func NewFactory() Factory {
 			ginkgo.Fail(fmt.Sprintf("failed to create tmp dir: %v", err))
 		}
 
-		image := fmt.Sprintf("quay.io/solo-io/gloo-envoy-wrapper:%s", mustGetEnvoyGlooTag())
+		image := fmt.Sprintf("quay.io/solo-io/envoy-gloo:%s", mustGetEnvoyGlooTag())
 
 		binaryPath, err := utils.GetBinary(utils.GetBinaryParams{
 			Filename:    envoyBinaryName,
