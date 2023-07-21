@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("Plugin", func() {
 	It("Copies the connection limit config from the listener to the filter", func() {
-		filters, err := NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
+		filters, err := NewPlugin().NetworkFiltersHTTP(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
 					MaxActiveConnections: &wrappers.UInt64Value{Value: 9},
@@ -44,8 +44,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("Ensures that max connections must be greater than or equal to 1", func() {
-		_, err := NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
+		_, err := NewPlugin().NetworkFiltersTCP(plugins.Params{}, &v1.TcpListener{
+			Options: &v1.TcpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
 					MaxActiveConnections: &wrappers.UInt64Value{Value: 0},
 				},
@@ -55,8 +55,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("Does nothing when fields are not specified", func() {
-		filters, err := NewPlugin().NetworkFilters(plugins.Params{}, &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
+		filters, err := NewPlugin().NetworkFiltersTCP(plugins.Params{}, &v1.TcpListener{
+			Options: &v1.TcpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{},
 			},
 		})
