@@ -64,12 +64,17 @@ Review the following summary of important new, deprecated, or removed features. 
 
 **New or improved features**:
 
+* **Kubernetes 1.26**: Gloo Edge version 1.15 is now supported on Kubernetes clusters that run version 1.26.
 * **Upgraded Envoy version dependency**: The Envoy dependency in Gloo Edge {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}} was upgraded from 1.25.x to 1.26.x. This upgrade includes the following changes:
   * **New header validation**: Envoy now validates header names and values before a request is forwarded to the upstream. Header validations are performed after transformation filters were applied to the request. If you use transformation policies to alter header names or values, and an incorrect format is introduced by this transformation, your request might not be forwarded to the upstream. To temporarily revert this change, you can set the `envoy.reloadable_features.validate_upstream_headers` runtime flag to false. For more information about the header manipulation, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/http/header_validators/envoy_default/v3/header_validator.proto.html).
   * **Bugfix for `x-envoy-original-path` header**: Envoy fixed a bug where the internal `x-envoy-original-path` header was not removed when being sent from untrusted clients. This bugfix is crucial to prevent malicious actors from injecting this header to alter the behavior in Envoy. To temporarily revert this change, you can set the `envoy.reloadable_features.sanitize_original_path` runtime flag to false. 
-  * **Sanitize non-UTF-8 header data**: Envoy now automatically sanitizes non-UTF-8 data and replaces it with a `!` character in gRPC service calls. This behavior fixes a bug where invalid protobuf messages were sent when non-UTF-8 HTTP header data was received. The receiving service typically generated an error when the protobuf message was decoded. This error message led to unintended behavior and other unforseen errors, such as a lack of visibility into requests as requests were not logged. By fixing this bug, Envoy now ensures that data in gRPC service calls is sent in valid UTF-8 format. To temporarily revert this change, you can set the `envoy.reloadable_features.service_sanitize_non_utf8_strings` runtime flag to false.
- 
-  For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.26/v1.26.0). 
+  * **Sanitize non-UTF-8 header data**: Envoy now automatically sanitizes non-UTF-8 data and replaces it with a `!` character in gRPC service calls. This behavior fixes a bug where invalid protobuf messages were sent when non-UTF-8 HTTP header data was received. The receiving service typically generated an error when the protobuf message was decoded. This error message led to unintended behavior and other unforseen errors, such as a lack of visibility into requests as requests were not logged. By fixing this bug, Envoy now ensures that data in gRPC service calls is sent in valid UTF-8 format. To temporarily revert this change, you can set the `envoy.reloadable_features.service_sanitize_non_utf8_strings` runtime flag to false. 
+  For more information about these changes, see the [Envoy changelog documentation](https://www.envoyproxy.io/docs/envoy/latest/version_history/v1.26/v1.26.0).
+* **Inja 3.4**: The Inja for transformations (Version 3.4) which provides access to numerous new templating features. 
+* **OCSP stapling**: If you use servers with OCSP stapling, and fetch or pre-fetch OCSP responses for server domains from OCSP responders, you can now provide an OCSP staple policy for a listener in the [`ocspStaplePolicy` field of the `ssl` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto.sk/#ocspstaplepolicy" %}}). You can store OCSP responses in TLS secrets either by using the [`glooctl create secret tls` command]({{% versioned_link_path fromRoot="/reference/cli/glooctl_create_secret_tls/" %}}) or by manually storing the OCSP response in the [`tls.ocsp-staple` field of the `secret` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/secret.proto.sk/" %}}).
+* **Access log flushing**: You can now flush the access log on a periodic basis by setting the [`tcpProxySettings.accessLogFlushInterval` field in the `tcp` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#tcpproxysettings" %}}). Because the default behaviour is to write to the access log only when a connection is closed, it might take a long time to write long-running TCP connections to the access log. If you flush periodically, you ensure that access logs can be written on a regular interval.
+* **Proxy protocol support for upstreams**: You can now set the [`proxyProtocolVersion` field in your `upstream` Gloo resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" %}}).
+* **Debug logging on transformations**: If you apply transformations in your `VirtualService` resources, you can now [enable debug logging with the `logRequestResponseInfo` field]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/debug_logging/" %}}).
 
 **Deprecated features**:
 
@@ -83,6 +88,16 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 **New Helm fields**:
 
+* In non-production environments, you can set the new [`settings.devMode` field]({{% versioned_link_path fromRoot="/operations/debugging_gloo/#dev-mode-and-gloo-debug-endpoint" %}}) to `true` to enable a debug endpoint on the Gloo deployment on port `10010`.
+* The following fields are added to the `gloo-fed` Helm settings:
+  * Custom securityContexts for pods: `gloo-fed.glooFed.podSecurityContext`
+  * Custom securityContexts for deployments: `gloo-fed.glooFed.glooFed.securityContext`
+  * Custom RBAC roles: `gloo-fed.glooFed.roleRules`
+  * Volumes and volume mounts: `gloo-fed.glooFed.volumes` and `gloo-fed.glooFed.glooFed.volumeMounts`
+* The `mergePolicy` field is added to any security context fields (such as `redis.deployment.initContainer.securityContext.mergePolicy`) to allow custom security context definitions to be merged with the default definition, instead of overwriting the it.
+* The `settings.ratelimitServer` field adds the ability to specify your [external rate limit server configuration]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/" %}}) in your Helm installation file.
+* The default value for the `settings.regexMaxProgramSize` field is changed to `1024`. Envoy has a default of 100, which is often not large enough for regex patterns.
+* Skip using the validation webhook when you delete certain resources by specifying the resource types in the `gateway.validation.webhook.skipDeleteValidationResources` field. This allows you to delete resources that were valid when created but are now invalid, such as short-lived upstreams.
 
 **Deprecated Helm fields**:
 
@@ -98,9 +113,15 @@ Review the following summary of important new, deprecated, or removed CRD update
 
 **New and updated CRDs**:
 
+* Enterprise only: In the `GraphQLApi` resource, you can now define a [`timeout` for the REST or gRPC resolver]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#restresolver" %}}).
+* In the `Gateway` CRD, you can now use the [`hybridGateway.delegatedTcpGateways` field]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" %}}) to configure multiple TCP gateways.
+* Enterprise only: In the `Gateway` CRD, you can now use the [`hybridGateway.matchedGateway.matcher.passthroughCipherSuites` field]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" %}}) to specify passthrough cipher suites.
+* You can now set x-fowarded-host and x-forwarded-post headers by using the `appendXForwardedPort` field in the [`hcm` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/" %}}) and the `appendXForwardedHost` field in the [`options` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/" %}})
 
 **Deprecated CRDs**:
 
+* In the [`UserSession` section of the `ExtAuthConfig` resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#usersession" %}}), you can now apply symmetric encryption to cookie session tokens and values by using the `cipherConfig` field.
+* In the [`oidcAuthorizationCode` and `oauth2Config` sections of the `ExtAuthConfig` resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#oidcauthorizationcodeconfig" %}}), the `session` field is now deprecated. Use the `UserSession` field instead.
 
 **Removed CRDs**:
 
@@ -113,8 +134,11 @@ Review the following summary of important new, deprecated, or removed CLI option
 
 **New CLI commands or options**:
 
+* You can use the new [`glooctl create secret encryptionkey` command]({{% versioned_link_path fromRoot="/reference/cli/glooctl_create_secret_encryptionkey/" %}}) to create encryption secrets, such as to use in the `cipherConfig` field of the `ExtAuthConfig` resource.
 
 **Changed behavior**:
+
+
 
 ## Frequently-asked questions {#faqs}
 
