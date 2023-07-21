@@ -141,7 +141,7 @@ var _ = Describe("Transformations", func() {
 
 		})
 
-		FWhen("constructing JSON body", func() {
+		When("constructing JSON body", func() {
 			complexPostBody := `{"foo":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","bar":"\"bie\"","bas":"[\"eball\",\"ketball\"]"}`
 			complexOutput := `{"FOO":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","BARBAS":["\"bie\"","[\"eball\",\"ketball\"]"]}`
 			When("using escape_characters", func() {

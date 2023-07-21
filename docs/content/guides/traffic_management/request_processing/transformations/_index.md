@@ -156,7 +156,7 @@ transformationTemplate:
   mergeExtractorsToBody: {}
   dynamicMetadataValues: []
   advancedTemplates: bool
-  escape_characters: bool
+  escapeCharacters: bool
 ```
 
 {{% notice note %}}
