@@ -17,7 +17,7 @@ For more information about how resource configuration validation works in Gloo E
 
 ## Enable strict resource validation
 
-Configure the validating admission webhook to reject invalid Gloo custom resource before they are applied in the cluster. 
+Configure the validating admission webhook to reject invalid Gloo custom resources before they are applied in the cluster. 
 
 1. Enable strict resource validation by using one of the following options: 
    * **Update the Helm settings**: Update your Gloo Edge installation and set the following Helm values.
@@ -134,7 +134,7 @@ validation_gateway_solo_io_virtual_service_config_status{name="default",namespac
 
 ## Disable resource validation in Gloo Edge
 
-Because the validation admission webhook is set up automatically in Gloo Edge, a `ValidationWebhookConfiguration` resource is created in your cluster. To disable the webhook and prevent the `ValidationWebhookConfiguration` from being created, set the following values in your Helm values file:
+Because the validation admission webhook is set up automatically in Gloo Edge, a `ValidationWebhookConfiguration` resource is created in your cluster. To disable the webhook and prevent the `ValidationWebhookConfiguration` resource from being created, set the following values in your Helm values file:
 
 ```sh
 --set gateway.enabled=false
