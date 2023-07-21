@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5151
+    resolvesIssue: false
+    description: >-
+      Add unit tests for benchmark matchers
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
