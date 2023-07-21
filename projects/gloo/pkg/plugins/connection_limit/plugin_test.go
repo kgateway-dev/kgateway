@@ -61,11 +61,6 @@ var _ = Describe("Plugin", func() {
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(filters).To(Equal([]plugins.StagedNetworkFilter{
-			{
-				NetworkFilter: nil,
-				Stage:         pluginStage,
-			},
-		}))
+		Expect(filters).To(Equal([]plugins.StagedNetworkFilter{}))
 	})
 })

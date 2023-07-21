@@ -42,12 +42,7 @@ func (p *plugin) Init(params plugins.InitParams) {}
 func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) ([]plugins.StagedNetworkFilter, error) {
 	// Sanity checks
 	if connectionLimit.GetMaxActiveConnections() == nil {
-		return []plugins.StagedNetworkFilter{
-			{
-				NetworkFilter: nil,
-				Stage:         pluginStage,
-			},
-		}, nil
+		return []plugins.StagedNetworkFilter{}, nil
 	}
 	if connectionLimit.GetMaxActiveConnections().GetValue() < 1 {
 		return nil, fmt.Errorf("MaxActiveConnections must be greater than or equal to 1. Current value : %v", connectionLimit.GetMaxActiveConnections())

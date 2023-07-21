@@ -213,7 +213,7 @@ func (h *hcmNetworkFilterTranslator) computeHttpFilters(params plugins.Params) [
 
 		for _, httpFilter := range stagedFilters {
 			if httpFilter.HttpFilter == nil {
-				log.Warnf("plugin implements HttpFilters() but returned nil")
+				log.Warnf("plugin %v implements HttpFilters() but returned nil", plug.Name())
 				continue
 			}
 			httpFilters = append(httpFilters, httpFilter)
