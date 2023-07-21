@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >- 
+      Update AuthConfig protos to support querying OPA sidecar for policy decisions.
