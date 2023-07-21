@@ -21,7 +21,6 @@ import (
 	values "github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/k8s-utils/installutils/kuberesource"
-	"github.com/solo-io/k8s-utils/manifesttestutils"
 	. "github.com/solo-io/k8s-utils/manifesttestutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -98,15 +97,19 @@ var _ = Describe("Helm Test", func() {
 			statsAnnotations map[string]string
 		)
 
-		expectCustomResourceSubstring := func(substr string, contains bool) {
+		// create a TestManifest out of the custom resource yaml from the configmap
+		getCustomResourceManifest := func(expectedResources int) TestManifest {
 			configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
-			Expect(configMap.Data).NotTo(BeNil())
-			if contains {
-				Expect(configMap.Data["custom-resources"]).To(ContainSubstring(substr))
-			} else {
-				Expect(configMap.Data["custom-resources"]).NotTo(ContainSubstring(substr))
+			ExpectWithOffset(1, configMap.Data).NotTo(BeNil())
+			customResourceYaml := configMap.Data["custom-resources"]
+			if expectedResources > 0 {
+				ExpectWithOffset(1, customResourceYaml).NotTo(BeEmpty())
 			}
+			manifest := NewTestManifestFromYaml(customResourceYaml)
+			ExpectWithOffset(1, manifest.NumResources()).To(Equal(expectedResources))
+			return manifest
 		}
+
 		BeforeEach(func() {
 			// Ensure that tests do not share manifests by accident
 			testManifest = nil
@@ -1439,59 +1442,54 @@ var _ = Describe("Helm Test", func() {
 					// Gateways are not directly included in the helm manifest anymore; instead, their contents are
 					// stored in a ConfigMap, and the resource rollout job mounts the ConfigMap as a file and applies
 					// the file via kubectl.
-					// In these tests, to confirm the existence of the Gateway CRs, we look for parts of the gateway
-					// yaml in ConfigMap data.
+					// In these tests, to confirm the existence of the Gateway CRs, we look for the gateway in the
+					// ConfigMap data.
+
+					gw := makeUnstructuredGateway(namespace, defaults.GatewayProxyName, false)
+					gwSsl := makeUnstructuredGateway(namespace, defaults.GatewayProxyName, true)
 
 					It("does not render when gatewaySettings is disabled", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gwSsl))
 
 						// if explicitly setting enabled=true, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
 						})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace, true)
+						customResources = getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gwSsl))
 
 						// if explicitly setting enabled=false, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false"},
 						})
-						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						_ = getCustomResourceManifest(0)
 					})
 
 					It("does not render when gatewayProxy is disabled", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gwSsl))
 
 						// if explicitly setting disabled=false, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
 						})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace, true)
+						customResources = getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gwSsl))
 
 						// if explicitly setting disabled=true, gateway-proxy should not render
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
 						})
-						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
+						_ = getCustomResourceManifest(0)
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled", func() {
@@ -1502,8 +1500,7 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.disabled=true",
 							},
 						})
-						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
-						expectCustomResourceSubstring("name: "+"another-gateway-proxy", false)
+						_ = getCustomResourceManifest(0)
 
 						// when disabling default gateway and enabling custom gateway, only custom gateway should render
 						prepareMakefile(namespace, helmValues{
@@ -1512,8 +1509,13 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.disabled=false",
 							},
 						})
-						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
-						expectCustomResourceSubstring("name: "+"another-gateway-proxy", true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
+						anotherGw := makeUnstructuredGateway(namespace, "another-gateway-proxy", false)
+						anotherGwSsl := makeUnstructuredGateway(namespace, "another-gateway-proxy", true)
+						customResources.ExpectUnstructured("Gateway", namespace, "another-gateway-proxy").To(BeEquivalentTo(anotherGw))
+						customResources.ExpectUnstructured("Gateway", namespace, "another-gateway-proxy-ssl").To(BeEquivalentTo(anotherGwSsl))
 					})
 
 					It("renders custom gateway when gatewayProxy is disabled and custom disabled is not set", func() {
@@ -1524,8 +1526,13 @@ metadata:
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
 						})
-						expectCustomResourceSubstring("name: "+defaults.GatewayProxyName, false)
-						expectCustomResourceSubstring("name: "+"another-gateway-proxy", true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
+						anotherGw := makeUnstructuredGateway(namespace, "another-gateway-proxy", false)
+						anotherGwSsl := makeUnstructuredGateway(namespace, "another-gateway-proxy", true)
+						customResources.ExpectUnstructured("Gateway", namespace, "another-gateway-proxy").To(BeEquivalentTo(anotherGw))
+						customResources.ExpectUnstructured("Gateway", namespace, "another-gateway-proxy-ssl").To(BeEquivalentTo(anotherGwSsl))
 					})
 
 					It("does not overwrite nodeSelectors specified for custom gateway proxy", func() {
@@ -1596,64 +1603,25 @@ metadata:
 
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace+`
-  labels:
-    app: gloo
-spec:
-  bindAddress: "`+defaults.GatewayBindAddress+`"
-  bindPort: 8080
-  httpGateway: {}
-  useProxyProto: false
-  ssl: false
-  proxyNames:
-  - `+defaults.GatewayProxyName, true)
-
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`-ssl
-  namespace: `+namespace+`
-  labels:
-    app: gloo
-spec:
-  bindAddress: "`+defaults.GatewayBindAddress+`"
-  bindPort: 8443
-  httpGateway: {}
-  useProxyProto: false
-  ssl: true
-  proxyNames:
-  - `+defaults.GatewayProxyName, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gwSsl))
 					})
 
 					It("can disable rendering http/https gateways", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true"},
 						})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace, false)
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`-ssl
-  namespace: `+namespace, false)
+						_ = getCustomResourceManifest(0)
 					})
 
 					It("can disable http gateway", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
 						})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`
-  namespace: `+namespace, false)
+						customResources := getCustomResourceManifest(1)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeEquivalentTo(gwSsl))
 					})
 
 					It("disabling http gateway disables corresponding service port", func() {
@@ -1697,11 +1665,9 @@ metadata:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpsGateway=true"},
 						})
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: `+defaults.GatewayProxyName+`-ssl
-  namespace: `+namespace, false)
+						customResources := getCustomResourceManifest(1)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeEquivalentTo(gw))
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
 					})
 
 					It("disabling https gateway disables corresponding service port", func() {
@@ -1745,7 +1711,8 @@ metadata:
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
 						ssl := "false"
-						gwYaml := `apiVersion: gateway.solo.io/v1
+						gwHybrid := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + name + `
@@ -1775,16 +1742,18 @@ spec:
   ssl: ` + ssl + `
   proxyNames:
   - gateway-proxy
-`
+`)
 						prepareMakefileFromValuesFile("values/val_gwp_http_hybrid_gateway.yaml")
-						expectCustomResourceSubstring(gwYaml, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, name).To(BeEquivalentTo(gwHybrid))
 					})
 
 					It("sets https hybrid gateway", func() {
 						name := defaults.GatewayProxyName + "-ssl"
 						bindPort := "8443"
 						ssl := "true"
-						gwYaml := `apiVersion: gateway.solo.io/v1
+						gwHybrid := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + name + `
@@ -1821,16 +1790,19 @@ spec:
   useProxyProto: false
   ssl: ` + ssl + `
   proxyNames:
-  - gateway-proxy`
+  - gateway-proxy
+`)
 						prepareMakefileFromValuesFile("values/val_gwp_https_hybrid_gateway.yaml")
-						expectCustomResourceSubstring(gwYaml, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, name).To(BeEquivalentTo(gwHybrid))
 					})
 
 					It("can set accessLoggingService", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
 						ssl := "false"
-						gwYaml := `apiVersion: gateway.solo.io/v1
+						gwAls := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + name + `
@@ -1850,14 +1822,17 @@ spec:
   useProxyProto: false
   ssl: ` + ssl + `
   proxyNames:
-  - gateway-proxy`
+  - gateway-proxy
+`)
 						prepareMakefileFromValuesFile("values/val_default_gateway_access_logging_service.yaml")
-						expectCustomResourceSubstring(gwYaml, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, name).To(BeEquivalentTo(gwAls))
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
 						ssl = "true"
-						gwSslYaml := `apiVersion: gateway.solo.io/v1
+						gwAlsSsl := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + name + `
@@ -1877,15 +1852,17 @@ spec:
   useProxyProto: false
   ssl: ` + ssl + `
   proxyNames:
-  - gateway-proxy`
-						expectCustomResourceSubstring(gwSslYaml, true)
+  - gateway-proxy
+`)
+						customResources.ExpectUnstructured("Gateway", namespace, name).To(BeEquivalentTo(gwAlsSsl))
 					})
 
 					It("can set tracing provider", func() {
 						name := defaults.GatewayProxyName
 						bindPort := "8080"
 						ssl := "false"
-						gwYaml := `apiVersion: gateway.solo.io/v1
+						gwTracing := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + name + `
@@ -1905,14 +1882,17 @@ spec:
   useProxyProto: false
   ssl: ` + ssl + `
   proxyNames:
-  - gateway-proxy`
+  - gateway-proxy
+`)
 						prepareMakefileFromValuesFile("values/val_tracing_provider_cluster.yaml")
-						expectCustomResourceSubstring(gwYaml, true)
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, name).To(BeEquivalentTo(gwTracing))
 
 						name = defaults.GatewayProxyName + "-ssl"
 						bindPort = "8443"
 						ssl = "true"
-						gwSslYaml := `apiVersion: gateway.solo.io/v1
+						gwTracingSsl := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + name + `
@@ -1932,8 +1912,9 @@ spec:
   useProxyProto: false
   ssl: ` + ssl + `
   proxyNames:
-  - gateway-proxy`
-						expectCustomResourceSubstring(gwSslYaml, true)
+  - gateway-proxy
+`)
+						customResources.ExpectUnstructured("Gateway", namespace, name).To(BeEquivalentTo(gwTracingSsl))
 					})
 
 					It("gwp hpa disabled by default", func() {
@@ -2152,7 +2133,9 @@ spec:
 
 					It("can render with custom listener yaml", func() {
 						prepareMakefileFromValuesFile("values/val_custom_gateways.yaml")
-						gwYamls := []string{`apiVersion: gateway.solo.io/v1
+						gws := []*unstructured.Unstructured{
+							makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: gateway-proxy
@@ -2169,8 +2152,10 @@ spec:
   useProxyProto: true
   ssl: false
   proxyNames:
-  - gateway-proxy`,
-							`apiVersion: gateway.solo.io/v1
+  - gateway-proxy
+`),
+							makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: gateway-proxy-ssl
@@ -2187,8 +2172,10 @@ spec:
   useProxyProto: true
   ssl: true
   proxyNames:
-  - gateway-proxy`,
-							`apiVersion: gateway.solo.io/v1
+  - gateway-proxy
+`),
+							makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: test-name
@@ -2205,8 +2192,10 @@ spec:
   useProxyProto: true
   ssl: false
   proxyNames:
-  - test-name`,
-							`apiVersion: gateway.solo.io/v1
+  - test-name
+`),
+							makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: test-name-ssl
@@ -2223,23 +2212,21 @@ spec:
   useProxyProto: true
   ssl: true
   proxyNames:
-  - test-name`}
-						for _, gwYaml := range gwYamls {
-							expectCustomResourceSubstring(gwYaml, true)
+  - test-name
+`),
 						}
+						customResources := getCustomResourceManifest(4)
+						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy").To(BeEquivalentTo(gws[0]))
+						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy-ssl").To(BeEquivalentTo(gws[1]))
+						customResources.ExpectUnstructured("Gateway", namespace, "test-name").To(BeEquivalentTo(gws[2]))
+						customResources.ExpectUnstructured("Gateway", namespace, "test-name-ssl").To(BeEquivalentTo(gws[3]))
 					})
 				})
 
 				Context("Failover Gateway", func() {
 
-					It("renders with http/https gateways by default", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.failover.enabled=true",
-								"gatewayProxies.gatewayProxy.failover.port=15444",
-							},
-						})
-						gwYaml := `apiVersion: gateway.solo.io/v1
+					gwFailover := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: ` + defaults.GatewayProxyName + "-failover" + `
@@ -2259,13 +2246,26 @@ spec:
       destination:
         forwardSniClusterName: {}
   proxyNames:
-  - ` + defaults.GatewayProxyName
-						expectCustomResourceSubstring(gwYaml, true)
+  - ` + defaults.GatewayProxyName)
+
+					It("renders with http/https gateways by default", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.failover.enabled=true",
+								"gatewayProxies.gatewayProxy.failover.port=15444",
+							},
+						})
+
+						// expect the 2 default gateways + failover gateway
+						customResources := getCustomResourceManifest(3)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-failover").To(BeEquivalentTo(gwFailover))
 					})
 
 					It("by default will not render failover gateway", func() {
 						prepareMakefile(namespace, helmValues{})
-						expectCustomResourceSubstring(defaults.GatewayProxyName+"-failover", false)
+						// expect only the 2 default gateways
+						customResources := getCustomResourceManifest(2)
+						customResources.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-failover").To(BeNil())
 					})
 
 				})
@@ -2276,21 +2276,34 @@ spec:
 						BeforeEach(func() {
 							prepareMakefile(namespace, helmValues{
 								valuesArgs: []string{
-									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive}",
+									"gatewayProxies.anotherGatewayProxy.gatewaySettings.options.socketOptions[0].description=enable keep-alive",
 								},
 							})
 						})
 						It("uses default values for the gateway", func() {
-							expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
+							anotherGw := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: another-gateway-proxy
-  namespace: `+namespace+`
   labels:
     app: gloo
+  name: another-gateway-proxy
+  namespace: ` + namespace + `
 spec:
-  bindAddress: "`+defaults.GatewayBindAddress+`"
-  bindPort: 8080`, true)
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway: {}
+  options:
+    socketOptions:
+    - description: "enable keep-alive"
+  proxyNames:
+  - another-gateway-proxy
+  ssl: false
+  useProxyProto: false
+`)
+							// expect 2 default gateways + another-gateway-proxy + another-gateway-proxy-ssl
+							customResources := getCustomResourceManifest(4)
+							customResources.ExpectUnstructured("Gateway", namespace, "another-gateway-proxy").To(BeEquivalentTo(anotherGw))
 						})
 						It("uses default values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -2326,16 +2339,26 @@ spec:
 							})
 						})
 						It("uses merged values for the gateway", func() {
-							expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
+							anotherGw := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: another-gateway-proxy
-  namespace: `+namespace+`
   labels:
     app: gloo
+  name: another-gateway-proxy
+  namespace: ` + namespace + `
 spec:
-  bindAddress: "`+defaults.GatewayBindAddress+`"
-  bindPort: 9999`, true)
+  bindAddress: '::'
+  bindPort: 9999
+  httpGateway: {}
+  proxyNames:
+  - another-gateway-proxy
+  ssl: false
+  useProxyProto: false
+`)
+							// expect 2 default gateways + another-gateway-proxy + another-gateway-proxy-ssl
+							customResources := getCustomResourceManifest(4)
+							customResources.ExpectUnstructured("Gateway", namespace, "another-gateway-proxy").To(BeEquivalentTo(anotherGw))
 						})
 						It("uses merged values for the deployment", func() {
 							deploymentUns := testManifest.ExpectCustomResource("Deployment", namespace, "another-gateway-proxy")
@@ -2386,7 +2409,7 @@ spec:
 					BeforeEach(func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.disabled=true",
+								"gatewayProxies.gatewayProxy.disabled=false",
 								"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true",
 								"gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway.virtualServiceSelector.gateway=default",
 								"gatewayProxies.firstGatewayProxy.disabled=false",
@@ -2397,23 +2420,18 @@ spec:
 						})
 					})
 					It("correctly merges custom gatewayproxy values", func() {
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: gateway-proxy
-  namespace: `+namespace, false)
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: first-gateway-proxy
-  namespace: `+namespace, false)
-						expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: second-gateway-proxy
-  namespace: `+namespace, false)
+						// only the 3 ssl gateways should be enabled
+						customResources := getCustomResourceManifest(3)
+						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy").To(BeNil())
+						customResources.ExpectUnstructured("Gateway", namespace, "first-gateway-proxy").To(BeNil())
+						customResources.ExpectUnstructured("Gateway", namespace, "second-gateway-proxy").To(BeNil())
 
-						gwSslYaml1 := `apiVersion: gateway.solo.io/v1
+						gwSsl := makeUnstructuredGateway(namespace, "gateway-proxy", true)
+						unstructured.SetNestedStringMap(gwSsl.Object,
+							map[string]string{"gateway": "default"},
+							"spec", "httpGateway", "virtualServiceSelector")
+						firstGwSsl := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: first-gateway-proxy-ssl
@@ -2429,8 +2447,10 @@ spec:
   useProxyProto: false
   ssl: true
   proxyNames:
-  - first-gateway-proxy`
-						gwSslYaml2 := `apiVersion: gateway.solo.io/v1
+  - first-gateway-proxy
+`)
+						secondGwSsl := makeUnstructured(`
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: second-gateway-proxy-ssl
@@ -2446,9 +2466,11 @@ spec:
   useProxyProto: false
   ssl: true
   proxyNames:
-  - second-gateway-proxy`
-						expectCustomResourceSubstring(gwSslYaml1, true)
-						expectCustomResourceSubstring(gwSslYaml2, true)
+  - second-gateway-proxy
+`)
+						customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy-ssl").To(BeEquivalentTo(gwSsl))
+						customResources.ExpectUnstructured("Gateway", namespace, "first-gateway-proxy-ssl").To(BeEquivalentTo(firstGwSsl))
+						customResources.ExpectUnstructured("Gateway", namespace, "second-gateway-proxy-ssl").To(BeEquivalentTo(secondGwSsl))
 					})
 				})
 
@@ -5539,7 +5561,7 @@ metadata:
 			Describe("Deployment Privileges Test", func() {
 
 				// Helper func for testing pod & container root privileges logic
-				expectNonRoot := func(testManifest manifesttestutils.TestManifest) {
+				expectNonRoot := func(testManifest TestManifest) {
 					deployments := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 						return resource.GetKind() == "Deployment"
 					})
@@ -6309,21 +6331,12 @@ metadata:
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false"},
 					})
-					expectCustomResourceSubstring(`apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  labels:
-    app: gloo
-  name: gateway-proxy-ssl
-  namespace: gloo-system
-spec:
-  bindAddress: '::'
-  bindPort: 8443
-  httpGateway: {}
-  proxyNames:
-  - gateway-proxy
-  ssl: false
-  useProxyProto: false`, true)
+					gwSsl := makeUnstructuredGateway(namespace, "gateway-proxy", true)
+					unstructured.SetNestedField(gwSsl.Object,
+						false,
+						"spec", "ssl")
+					customResources := getCustomResourceManifest(2)
+					customResources.ExpectUnstructured("Gateway", namespace, "gateway-proxy-ssl").To(BeEquivalentTo(gwSsl))
 				})
 			})
 
@@ -6661,4 +6674,31 @@ func getStructuredDeployment(t TestManifest, resourceName string) *appsv1.Deploy
 	Expect(resources.NumResources()).To(Equal(1))
 
 	return structuredDeployment
+}
+
+func makeUnstructuredGateway(namespace string, name string, ssl bool) *unstructured.Unstructured {
+	port := "8080"
+	gwName := name
+	if ssl {
+		port = "8443"
+		gwName = name + "-ssl"
+	}
+
+	return makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + gwName + `
+  namespace: ` + namespace + `
+spec:
+  bindAddress: '::'
+  bindPort: ` + port + `
+  httpGateway: {}
+  proxyNames:
+  - ` + name + `
+  ssl: ` + strconv.FormatBool(ssl) + `
+  useProxyProto: false
+`)
 }
