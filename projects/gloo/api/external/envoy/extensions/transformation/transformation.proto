@@ -283,6 +283,10 @@ message TransformationTemplate {
   }
   // Use this field to set Dynamic Metadata.
   repeated DynamicMetadataValue dynamic_metadata_values = 9;
+
+  // Use this field to set Inja behavior when rendering strings which contain
+  // characters that would need to be escaped to be valid JSON
+  bool escape_characters = 12;
 }
 
 // Defines an [Inja template](https://github.com/pantor/inja) that will be

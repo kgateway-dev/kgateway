@@ -71,13 +71,16 @@ var _ = Describe("Transformations", func() {
 			}
 		})
 
+		defaultPostBody := "{\"body\":\"test\"}"
+		defaultOutput := "test"
+
 		// EventuallyResponseTransformed returns an Asynchronous Assertion which
 		// validates that a request with a body will return the requested content.
 		// This will only work if the above transformation is applied to the request
-		EventuallyResponseTransformed := func() AsyncAssertion {
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody("{\"body\":\"test\"}")
+		EventuallyResponseTransformed := func(postBody, expectedOutput string) AsyncAssertion {
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(postBody)
 			return Eventually(func(g Gomega) {
-				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(testmatchers.HaveExactResponseBody("test"))
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(testmatchers.HaveExactResponseBody(expectedOutput))
 			}, "5s", ".5s")
 		}
 
@@ -89,7 +92,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			EventuallyResponseTransformed().Should(HaveOccurred())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(HaveOccurred())
 		})
 
 		It("should should transform json to html response on vhost", func() {
@@ -100,7 +103,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			EventuallyResponseTransformed().Should(Succeed())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
 		})
 
 		It("should should transform json to html response on route", func() {
@@ -111,7 +114,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			EventuallyResponseTransformed().Should(Succeed())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
 		})
 
 		It("should should transform json to html response on route", func() {
@@ -134,7 +137,51 @@ var _ = Describe("Transformations", func() {
 				return vsBuilder.Build()
 			})
 
-			EventuallyResponseTransformed().Should(Succeed())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
+
+		})
+
+		When("constructing JSON body", func() {
+
+			BeforeEach(func() {
+				transform = &transformation.Transformations{
+					ResponseTransformation: &transformation.Transformation{
+						TransformationType: &transformation.Transformation_TransformationTemplate{
+							TransformationTemplate: &envoy_transform.TransformationTemplate{
+								BodyTransformation: &envoy_transform.TransformationTemplate_Body{
+									EscapeCharacters: true,
+									Body: &envoy_transform.InjaTemplate{
+										Text: `{"FOO":"{{foo}}","BARBAS":["{{bar}}","{{bas}}"]}`,
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+			complexPostBody := `{"foo":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"},"bar":"\"bie\"","bas":"[\"eball\",\"ketball\"]"}`
+			complexOutput := `{"FOO":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}", "BARBAS":["\"bie\"", "[\"eball\",\"ketball\"]"]}`
+			It("should should transform json to html response on vhost", func() {
+				testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+					vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+						Transformations: transform,
+					}
+					return vs
+				})
+
+				EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+			})
+
+			It("should should transform json to html response on route", func() {
+				testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+					vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+						Transformations: transform,
+					}
+					return vs
+				})
+
+				EventuallyResponseTransformed(defaultPostBody, complexOutput).Should(Succeed())
+			})
 
 		})
 
