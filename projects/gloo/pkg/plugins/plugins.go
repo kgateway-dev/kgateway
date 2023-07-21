@@ -157,7 +157,8 @@ type HttpFilterPlugin interface {
 
 type NetworkFilterPlugin interface {
 	Plugin
-	NetworkFilters(params Params, listener *v1.HttpListener) ([]StagedNetworkFilter, error)
+	NetworkFiltersHTTP(params Params, listener *v1.HttpListener) ([]StagedNetworkFilter, error)
+	NetworkFiltersTCP(params Params, listener *v1.TcpListener) ([]StagedNetworkFilter, error)
 }
 
 type VirtualHostPlugin interface {

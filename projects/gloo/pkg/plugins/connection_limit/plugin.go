@@ -39,7 +39,7 @@ func (p *plugin) Name() string {
 
 func (p *plugin) Init(params plugins.InitParams) {}
 
-func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) (*envoy_config_listener_v3.Filter, error) {
+func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) ([]plugins.StagedNetworkFilter, error) {
 	// Sanity checks
 	if connectionLimit.GetMaxActiveConnections() == nil {
 		return nil, nil
@@ -57,24 +57,24 @@ func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) (*envoy_c
 	if err != nil {
 		return nil, err
 	}
-	return &envoy_config_listener_v3.Filter{
-		Name: ExtensionName,
-		ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
-			TypedConfig: marshalledConf,
+	return []plugins.StagedNetworkFilter{
+		{
+			NetworkFilter: &envoy_config_listener_v3.Filter{
+				Name: ExtensionName,
+				ConfigType: &envoy_config_listener_v3.Filter_TypedConfig{
+					TypedConfig: marshalledConf,
+				},
+			},
+			Stage: pluginStage,
 		},
 	}, nil
 
 }
 
-func (p *plugin) NetworkFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedNetworkFilter, error) {
-	connectionLimitFilter, err := GenerateFilter(listener.GetOptions().GetConnectionLimit())
-	if err != nil {
-		return nil, err
-	}
-	return []plugins.StagedNetworkFilter{
-		{
-			NetworkFilter: connectionLimitFilter,
-			Stage:         pluginStage,
-		},
-	}, nil
+func (p *plugin) NetworkFiltersHTTP(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedNetworkFilter, error) {
+	return GenerateFilter(listener.GetOptions().GetConnectionLimit())
+}
+
+func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListener) ([]plugins.StagedNetworkFilter, error) {
+	return GenerateFilter(listener.GetOptions().GetConnectionLimit())
 }

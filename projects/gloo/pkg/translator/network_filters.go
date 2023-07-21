@@ -68,7 +68,7 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 	var networkFilters []plugins.StagedNetworkFilter
 	// Process the network filters.
 	for _, plug := range n.networkPlugins {
-		stagedFilters, err := plug.NetworkFilters(params, n.listener)
+		stagedFilters, err := plug.NetworkFiltersHTTP(params, n.listener)
 		if err != nil {
 			validation.AppendHTTPListenerError(n.report, validationapi.HttpListenerReport_Error_ProcessingError, err.Error())
 		}
