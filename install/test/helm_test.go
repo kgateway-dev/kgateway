@@ -1455,8 +1455,8 @@ var _ = Describe("Helm Test", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:          BeEquivalentTo(gw),
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							defaults.GatewayProxyName:                    BeEquivalentTo(gw),
+							getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 						})
 
 						// if explicitly setting enabled=true, gateway-proxy should render
@@ -1464,8 +1464,8 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true"},
 						})
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:          BeEquivalentTo(gw),
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							defaults.GatewayProxyName:                    BeEquivalentTo(gw),
+							getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 						})
 
 						// if explicitly setting enabled=false, gateway-proxy should not render
@@ -1479,8 +1479,8 @@ var _ = Describe("Helm Test", func() {
 						// by default, gateway-proxy should render
 						prepareMakefile(namespace, helmValues{})
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:          BeEquivalentTo(gw),
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							defaults.GatewayProxyName:                    BeEquivalentTo(gw),
+							getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 						})
 
 						// if explicitly setting disabled=false, gateway-proxy should render
@@ -1488,8 +1488,8 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
 						})
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:          BeEquivalentTo(gw),
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							defaults.GatewayProxyName:                    BeEquivalentTo(gw),
+							getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 						})
 
 						// if explicitly setting disabled=true, gateway-proxy should not render
@@ -1609,8 +1609,8 @@ var _ = Describe("Helm Test", func() {
 					It("renders with http/https gateways by default", func() {
 						prepareMakefile(namespace, helmValues{})
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:          BeEquivalentTo(gw),
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							defaults.GatewayProxyName:                    BeEquivalentTo(gw),
+							getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 						})
 					})
 
@@ -1626,7 +1626,7 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableHttpGateway=true"},
 						})
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 						})
 					})
 
@@ -2225,7 +2225,7 @@ spec:
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + defaults.GatewayProxyName + "-failover" + `
+  name: ` + getFailoverGatewayName(defaults.GatewayProxyName) + `
   namespace: ` + namespace + `
   labels:
     app: gloo
@@ -2254,9 +2254,9 @@ spec:
 
 						// expect the 2 default gateways + failover gateway
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:               Not(BeNil()),
-							defaults.GatewayProxyName + "-ssl":      Not(BeNil()),
-							defaults.GatewayProxyName + "-failover": BeEquivalentTo(gwFailover),
+							defaults.GatewayProxyName:                         Not(BeNil()),
+							getSslGatewayName(defaults.GatewayProxyName):      Not(BeNil()),
+							getFailoverGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwFailover),
 						})
 					})
 
@@ -2264,8 +2264,8 @@ spec:
 						prepareMakefile(namespace, helmValues{})
 						// expect only the 2 default gateways
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName:          Not(BeNil()),
-							defaults.GatewayProxyName + "-ssl": Not(BeNil()),
+							defaults.GatewayProxyName:                    Not(BeNil()),
+							getSslGatewayName(defaults.GatewayProxyName): Not(BeNil()),
 						})
 					})
 
@@ -2304,10 +2304,10 @@ spec:
 `)
 							// expect 2 default gateways + another-gateway-proxy + another-gateway-proxy-ssl
 							assertCustomResourceManifest(map[string]types.GomegaMatcher{
-								defaults.GatewayProxyName:          Not(BeNil()),
-								defaults.GatewayProxyName + "-ssl": Not(BeNil()),
-								"another-gateway-proxy":            BeEquivalentTo(anotherGw),
-								"another-gateway-proxy-ssl":        Not(BeNil()),
+								defaults.GatewayProxyName:                    Not(BeNil()),
+								getSslGatewayName(defaults.GatewayProxyName): Not(BeNil()),
+								"another-gateway-proxy":                      BeEquivalentTo(anotherGw),
+								getSslGatewayName("another-gateway-proxy"):   Not(BeNil()),
 							})
 						})
 						It("uses default values for the deployment", func() {
@@ -2363,10 +2363,10 @@ spec:
 `)
 							// expect 2 default gateways + another-gateway-proxy + another-gateway-proxy-ssl
 							assertCustomResourceManifest(map[string]types.GomegaMatcher{
-								defaults.GatewayProxyName:          Not(BeNil()),
-								defaults.GatewayProxyName + "-ssl": Not(BeNil()),
-								"another-gateway-proxy":            BeEquivalentTo(anotherGw),
-								"another-gateway-proxy-ssl":        Not(BeNil()),
+								defaults.GatewayProxyName:                    Not(BeNil()),
+								getSslGatewayName(defaults.GatewayProxyName): Not(BeNil()),
+								"another-gateway-proxy":                      BeEquivalentTo(anotherGw),
+								getSslGatewayName("another-gateway-proxy"):   Not(BeNil()),
 							})
 						})
 						It("uses merged values for the deployment", func() {
@@ -6337,8 +6337,8 @@ metadata:
 						false,
 						"spec", "ssl")
 					assertCustomResourceManifest(map[string]types.GomegaMatcher{
-						defaults.GatewayProxyName:          Not(BeNil()),
-						defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+						defaults.GatewayProxyName:                    Not(BeNil()),
+						getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
 					})
 				})
 			})
@@ -6684,7 +6684,7 @@ func makeUnstructuredGateway(namespace string, name string, ssl bool) *unstructu
 	gwName := name
 	if ssl {
 		port = "8443"
-		gwName = name + "-ssl"
+		gwName = getSslGatewayName(name)
 	}
 
 	return makeUnstructured(`
@@ -6704,4 +6704,12 @@ spec:
   ssl: ` + strconv.FormatBool(ssl) + `
   useProxyProto: false
 `)
+}
+
+func getSslGatewayName(name string) string {
+	return name + "-ssl"
+}
+
+func getFailoverGatewayName(name string) string {
+	return name + "-failover"
 }
