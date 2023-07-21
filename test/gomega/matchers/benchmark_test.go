@@ -14,8 +14,8 @@ var _ = Describe("Benchmark", func() {
 	// Note that logic for determining percentile is tested in test/helpers/util_test.go
 	Describe("Percentile matchers", func() {
 		DescribeTable("HavePercentileLessThan",
-			func(percentile int, upperBound time.Duration, size int, shouldMatch bool) {
-				durations := durationSlice(size)
+			func(percentile int, upperBound time.Duration, shouldMatch bool) {
+				durations := durationSlice(5)
 
 				if shouldMatch {
 					Expect(durations).To(matchers.HavePercentileLessThan(percentile, upperBound))
@@ -23,14 +23,14 @@ var _ = Describe("Benchmark", func() {
 					Expect(durations).NotTo(matchers.HavePercentileLessThan(percentile, upperBound))
 				}
 			},
-			Entry("duration at percentile < target", 80, 5*time.Second, 5, true),
-			Entry("duration at percentile = target", 80, 4*time.Second, 5, false),
-			Entry("duration at percentile > target", 80, 3*time.Second, 5, false),
+			Entry("duration at percentile < target", 80, 5*time.Second, true),
+			Entry("duration at percentile = target", 80, 4*time.Second, false),
+			Entry("duration at percentile > target", 80, 3*time.Second, false),
 		)
 
 		DescribeTable("HavePercentileWithin",
-			func(percentile int, upperBound, window time.Duration, size int, shouldMatch bool) {
-				durations := durationSlice(size)
+			func(percentile int, upperBound, window time.Duration, shouldMatch bool) {
+				durations := durationSlice(10)
 
 				if shouldMatch {
 					Expect(durations).To(matchers.HavePercentileWithin(percentile, upperBound, window))
@@ -38,11 +38,11 @@ var _ = Describe("Benchmark", func() {
 					Expect(durations).NotTo(matchers.HavePercentileWithin(percentile, upperBound, window))
 				}
 			},
-			Entry("duration at percentile < target, below window", 80, 10*time.Second, time.Second, 10, false),
-			Entry("duration at percentile < target, within window", 80, 9*time.Second, time.Second, 10, true),
-			Entry("duration at percentile = target", 80, 8*time.Second, time.Second, 10, true),
-			Entry("duration at percentile > target, within window", 80, 7*time.Second, time.Second, 10, true),
-			Entry("duration at percentile > target, above window", 80, 6*time.Second, time.Second, 10, false),
+			Entry("duration at percentile < target, below window", 80, 10*time.Second, time.Second, false),
+			Entry("duration at percentile < target, within window", 80, 9*time.Second, time.Second, true),
+			Entry("duration at percentile = target", 80, 8*time.Second, time.Second, true),
+			Entry("duration at percentile > target, within window", 80, 7*time.Second, time.Second, true),
+			Entry("duration at percentile > target, above window", 80, 6*time.Second, time.Second, false),
 		)
 	})
 
