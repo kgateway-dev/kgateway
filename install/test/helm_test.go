@@ -101,10 +101,12 @@ var _ = Describe("Helm Test", func() {
 		// `matchers` is a map of Gateway name to the assertion to be made on that Gateway.
 		// There must be a matcher for every Gateway that's expected to be in the manifest.
 		assertCustomResourceManifest := func(matchers map[string]types.GomegaMatcher) {
-			configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+			configMap := getConfigMap(testManifest, namespace, customResourceConfigMapName)
 			ExpectWithOffset(1, configMap.Data).NotTo(BeNil())
 			customResourceYaml := configMap.Data["custom-resources"]
 			customResourceManifest := NewTestManifestFromYaml(customResourceYaml)
+			// make sure that the number of resources found in the manifest equals the number of
+			// matchers passed in, so we can ensure that every resource has an associated matcher
 			ExpectWithOffset(1, customResourceManifest.NumResources()).To(Equal(len(matchers)))
 			for gwName, matcher := range matchers {
 				customResourceManifest.ExpectUnstructured("Gateway", namespace, gwName).To(matcher)
@@ -1712,20 +1714,17 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("sets http hybrid gateway", func() {
-						name := defaults.GatewayProxyName
-						bindPort := "8080"
-						ssl := "false"
 						gwHybrid := makeUnstructured(`
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + name + `
+  name: gateway-proxy
   namespace: gloo-system
   labels:
     app: gloo
 spec:
   bindAddress: "::"
-  bindPort: ` + bindPort + `
+  bindPort: 8080
   hybridGateway:
     matchedGateways:
     - httpGateway:
@@ -1743,32 +1742,29 @@ spec:
       matcher: {}
   httpGateway: {}
   useProxyProto: false
-  ssl: ` + ssl + `
+  ssl: false
   proxyNames:
   - gateway-proxy
 `)
 						prepareMakefileFromValuesFile("values/val_gwp_http_hybrid_gateway.yaml")
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							name:                               BeEquivalentTo(gwHybrid),
-							defaults.GatewayProxyName + "-ssl": BeEquivalentTo(gwSsl),
+							"gateway-proxy":     BeEquivalentTo(gwHybrid),
+							"gateway-proxy-ssl": BeEquivalentTo(gwSsl),
 						})
 					})
 
 					It("sets https hybrid gateway", func() {
-						name := defaults.GatewayProxyName + "-ssl"
-						bindPort := "8443"
-						ssl := "true"
 						gwHybrid := makeUnstructured(`
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: ` + name + `
+  name: gateway-proxy-ssl
   namespace: gloo-system
   labels:
     app: gloo
 spec:
   bindAddress: "::"
-  bindPort: ` + bindPort + `
+  bindPort: 8443
   hybridGateway:
     matchedGateways:
     - httpGateway:
@@ -1794,14 +1790,14 @@ spec:
             namespace: gloo-system
   httpGateway: {}
   useProxyProto: false
-  ssl: ` + ssl + `
+  ssl: true
   proxyNames:
   - gateway-proxy
 `)
 						prepareMakefileFromValuesFile("values/val_gwp_https_hybrid_gateway.yaml")
 						assertCustomResourceManifest(map[string]types.GomegaMatcher{
-							defaults.GatewayProxyName: BeEquivalentTo(gw),
-							name:                      BeEquivalentTo(gwHybrid),
+							"gateway-proxy":     BeEquivalentTo(gw),
+							"gateway-proxy-ssl": BeEquivalentTo(gwHybrid),
 						})
 					})
 
@@ -4217,7 +4213,7 @@ metadata:
 								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=true",
 							}})
 
-							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+							configMap := getConfigMap(testManifest, namespace, customResourceConfigMapName)
 							Expect(configMap.Data).ToNot(BeNil())
 							Expect(configMap.Data["custom-resources"]).To(ContainSubstring("kind: Gateway"))
 							Expect(configMap.Data["has-custom-resources"]).To(Equal("true"))
@@ -4228,7 +4224,7 @@ metadata:
 								"gatewayProxies.gatewayProxy.gatewaySettings.enabled=false",
 							}})
 
-							configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+							configMap := getConfigMap(testManifest, namespace, customResourceConfigMapName)
 							Expect(configMap.Data).ToNot(BeNil())
 							Expect(configMap.Data["custom-resources"]).NotTo(ContainSubstring("kind:"))
 							Expect(configMap.Data["has-custom-resources"]).To(Equal("false"))
@@ -6312,7 +6308,7 @@ metadata:
 					countFromResources := resources.NumResources()
 
 					// gloo custom resources are stored as yaml in a configmap so they don't appear in the resources count.
-					configMap := getConfigMap(testManifest, namespace, "gloo-custom-resource-config")
+					configMap := getConfigMap(testManifest, namespace, customResourceConfigMapName)
 					Expect(configMap.Data).ToNot(BeNil())
 					Expect(configMap.Data["custom-resources"]).NotTo(BeEmpty())
 					countFromConfigMap := strings.Count(configMap.Data["custom-resources"], "overriddenLabel: label")
