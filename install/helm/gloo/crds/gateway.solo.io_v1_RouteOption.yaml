@@ -1122,6 +1122,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:
@@ -1212,6 +1214,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:
@@ -1322,6 +1326,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:
@@ -1469,6 +1475,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:
@@ -1559,6 +1567,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:
@@ -1669,6 +1679,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:
@@ -1789,6 +1801,8 @@ spec:
                                       type: object
                                   type: object
                                 type: array
+                              escapeCharacters:
+                                type: boolean
                               extractors:
                                 additionalProperties:
                                   properties:
@@ -1879,6 +1893,8 @@ spec:
                                       type: object
                                   type: object
                                 type: array
+                              escapeCharacters:
+                                type: boolean
                               extractors:
                                 additionalProperties:
                                   properties:

@@ -295,6 +295,7 @@ Defines a transformation template.
 "parseBodyBehavior": .envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse
 "ignoreErrorOnParse": bool
 "dynamicMetadataValues": []envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue
+"escapeCharacters": bool
 
 ```
 
@@ -311,6 +312,7 @@ Defines a transformation template.
 | `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) | Determines how the body will be parsed. Defaults to ParseAsJson. |
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |
 | `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |
+| `escapeCharacters` | `bool` | Use this field to set Inja behavior when rendering strings which contain characters that would need to be escaped to be valid JSON. |
 
 
 

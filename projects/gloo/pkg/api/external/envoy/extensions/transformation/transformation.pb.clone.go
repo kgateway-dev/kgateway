@@ -346,6 +346,8 @@ func (m *TransformationTemplate) Clone() proto.Message {
 		}
 	}
 
+	target.EscapeCharacters = m.GetEscapeCharacters()
+
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:
