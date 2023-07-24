@@ -43,9 +43,11 @@ var _ = FDescribe("Connection Limit", func() {
 
 	Context("Filter not defined", func() {
 
-		It("Should not drop any connections", func() {
-			injectFaultDelay(testContext)
+		BeforeEach(func() {
+			injectRouteFaultDelay(testContext)
+		})
 
+		It("Should not drop any connections", func() {
 			var wg sync.WaitGroup
 			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
 			requestBuilder := testContext.GetHttpRequestBuilder()
@@ -77,15 +79,14 @@ var _ = FDescribe("Connection Limit", func() {
 					},
 				},
 			}
-
 			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
 				gw,
 			}
+
+			injectRouteFaultDelay(testContext)
 		})
 
 		It("Should drop connections after limit is reached", func() {
-			injectFaultDelay(testContext)
-
 			var wg sync.WaitGroup
 			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
 			requestBuilder := testContext.GetHttpRequestBuilder()
@@ -107,6 +108,9 @@ var _ = FDescribe("Connection Limit", func() {
 			wg.Add(2)
 
 			go expectSuccess()
+			// Since we're sending requests concurrently to test the limits on active connections,
+			// it is sometimes flaky and the second request gets served first.
+			// That's why we're adding a delay between the first and second one
 			time.Sleep(1 * time.Second)
 			go expectTimeout()
 
@@ -115,24 +119,18 @@ var _ = FDescribe("Connection Limit", func() {
 	})
 })
 
-func injectFaultDelay(testContext *e2e.TestContext) {
+func injectRouteFaultDelay(testContext *e2e.TestContext) {
 	// Since we are testing concurrent connections, introducing a delay to ensure that a connection remains open while we attempt to open another one
-	testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-		vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
-			Faults: &fault.RouteFaults{
-				Delay: &fault.RouteDelay{
-					FixedDelay: prototime.DurationToProto(1 * time.Second),
-					Percentage: float32(100),
-				},
+	vs := gatewaydefaults.DefaultVirtualService(writeNamespace, "vs")
+	vs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{
+		Faults: &fault.RouteFaults{
+			Delay: &fault.RouteDelay{
+				FixedDelay: prototime.DurationToProto(1 * time.Second),
+				Percentage: float32(100),
 			},
-		}
-		return vs
-	})
-
-	Eventually(func(g Gomega) {
-		cfg, err := testContext.EnvoyInstance().ConfigDump()
-		g.Expect(err).NotTo(HaveOccurred())
-
-		g.Expect(cfg).To(ContainSubstring("fixed_delay"))
-	}, "5s", ".5s").Should(Succeed())
+		},
+	}
+	testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
+		vs,
+	}
 }
