@@ -23,5 +23,5 @@ It may be useful to search for the name of the particular test you're investigat
 
 Note that the `helpers` package's `Measure` and `MeasureIgnore0s` functions have different implementations for Mac and Linux machines.
 The Linux implementation leverages the go-utils `benchmarking` package and gets more reliable measurements. 
-Compiling and running on Mac can be useful to ensure that tests function as intended, but targets should be based on performance in the Nightly GHA, which uses a Linux runner.
+Compiling and running on Mac can be useful to ensure that tests using these functions behave as intended, but targets should be based on performance in the Nightly GHA, which uses a Linux runner.
 When developing performance tests it will likely be helpful to manually trigger runs of the Nightly job from the development branch to determine/validate performance targets.
