@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8404
+    resolvesIssue: false
+    description: Fix typo in helm template when rendering multiple Gateways.
+  - type: NON_USER_FACING
+    description: Refactor helm tests to more thoroughly check that Gateways are rendered correctly.
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.1.10
+    description: Pick up manifest test utils update.

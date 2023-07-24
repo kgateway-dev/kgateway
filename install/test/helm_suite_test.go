@@ -44,6 +44,9 @@ const (
 	releaseName    = "gloo"
 	chartDir       = "../helm/gloo"
 	debugOutputDir = "../../_output/helm/charts"
+
+	// the Gateway CR helm templates are stored as yaml in a configmap with this name
+	customResourceConfigMapName = "gloo-custom-resource-config"
 )
 
 var (
