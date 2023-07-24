@@ -1180,8 +1180,8 @@ github.com/solo-io/go-list-licenses v0.1.4/go.mod h1:x6LSp/NrYgVXwNum7ZOiaAYTpg6
 github.com/solo-io/go-utils v0.20.2/go.mod h1:6e8K1spnMWwlnJRSNp/J84GEyJbrcK4Gm7i+ehzCi8c=
 github.com/solo-io/go-utils v0.24.3 h1:Thf0NPda2QDcJoqeB/BfP6MRei0d+5yC0HuycR0IWC4=
 github.com/solo-io/go-utils v0.24.3/go.mod h1:2ds5++iv1FGox0/aWz/DAiRYTIb6r4yiM+VSF7sAyL4=
-github.com/solo-io/k8s-utils v0.4.0 h1:V6tNm4lvFJnwGP54Uq9Y+RFNLi+cfmaD1Ic7qmMYdy4=
-github.com/solo-io/k8s-utils v0.4.0/go.mod h1:3WqFrZl+xGuzxXGcyaEiBiAXiBB8ab8FJ48CoikzBFo=
+github.com/solo-io/k8s-utils v0.4.1 h1:6JAvxwj35U3BxaxzUm91D9xsiog0P36iLUBXIT4JE6M=
+github.com/solo-io/k8s-utils v0.4.1/go.mod h1:3WqFrZl+xGuzxXGcyaEiBiAXiBB8ab8FJ48CoikzBFo=
 github.com/solo-io/protoc-gen-ext v0.0.18 h1:zSAL8NzWpJUGYoA5IyjHiKASNyHjR0uxBQ7eQS94i3A=
 github.com/solo-io/protoc-gen-ext v0.0.18/go.mod h1:iGyCvmKmhJNXs5MgBcYFBF0om7LDnCVD2WwhOZGnqeA=
 github.com/solo-io/protoc-gen-openapi v0.1.0 h1:XBx0yAdjxoWxGQ+CiGcb29r+KAgyIkhdaB63uBvKzKY=
