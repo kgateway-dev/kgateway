@@ -218,10 +218,6 @@ To configure a pod disruption budget for the `rate-limit` deployment when you in
 
 Affinity settings for the `rate-limit` deployment can be overwritten during installation by setting `global.extensions.rateLimit.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the `rate-limit` deployment can be configured by setting `global.extensions.rateLimit.antiAffinity`.
 
-## Horizontally scaling the control plane
-
-*DO NOT* scale the control plane components, such as the Gateway deployment, the Gloo deployment or the Discovery deployment. Scaling these components provides no benefit and can lead to race conditions.
-
 
 ## Enhancing the data-plane reliability
 
