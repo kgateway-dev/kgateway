@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4918
+    resolvesIssue: false
+    description: >-
+      Update test README to reflect current state of performance testing
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
