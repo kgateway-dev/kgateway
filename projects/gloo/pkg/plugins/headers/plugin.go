@@ -96,9 +96,9 @@ func (p *plugin) ProcessVirtualHost(
 	headerSecretOptions := api_conversion.HeaderSecretOptions{
 		EnforceNamespaceMatch: p.enforceMatchingNamespaces,
 	}
-	if p.enforceMatchingNamespaces {
+	if p.enforceMatchingNamespaces && len(in.GetRoutes()) > 0 {
 		usNamespace := getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRoutes()[0].GetRouteAction())
-		if len(in.GetName()) > 1 {
+		if len(in.GetRoutes()) > 1 {
 			for _, r := range in.GetRoutes()[1:] {
 				// in order for the namespace match check to make sense, all the upstreams on the virtual host need to be the same
 				if getUpstreamNamespaceForRouteAction(params.Snapshot, r.GetRouteAction()) != usNamespace {

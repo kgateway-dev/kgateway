@@ -1,6 +1,8 @@
 package headers
 
 import (
+	"os"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -13,7 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"os"
 )
 
 var _ = Describe("Plugin", func() {
