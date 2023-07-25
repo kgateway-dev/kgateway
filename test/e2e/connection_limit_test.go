@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/test/e2e"
+	"github.com/solo-io/gloo/test/gomega/matchers"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -18,7 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Connection Limit", func() {
+var _ = Describe("Connection Limit", func() {
 
 	var (
 		testContext *e2e.TestContext
@@ -55,8 +56,9 @@ var _ = FDescribe("Connection Limit", func() {
 			expectSuccess := func() {
 				defer GinkgoRecover()
 				defer wg.Done()
-				_, err := httpClient.Do(requestBuilder.Build())
-				Expect(err).To(BeNil(), "The connection should not be dropped")
+				response, err := httpClient.Do(requestBuilder.Build())
+				Expect(response).Should(matchers.HaveOkResponse())
+				Expect(err).NotTo(HaveOccurred(), "The connection should not be dropped")
 			}
 
 			wg.Add(2)
@@ -94,8 +96,9 @@ var _ = FDescribe("Connection Limit", func() {
 			expectSuccess := func() {
 				defer GinkgoRecover()
 				defer wg.Done()
-				_, err := httpClient.Do(requestBuilder.Build())
-				Expect(err).ToNot(HaveOccurred(), "The connection should not be dropped")
+				response, err := httpClient.Do(requestBuilder.Build())
+				Expect(response).Should(matchers.HaveOkResponse())
+				Expect(err).NotTo(HaveOccurred(), "The connection should not be dropped")
 			}
 
 			expectTimeout := func() {
@@ -111,7 +114,7 @@ var _ = FDescribe("Connection Limit", func() {
 			// Since we're sending requests concurrently to test the limits on active connections,
 			// it is sometimes flaky and the second request gets served first.
 			// That's why we're adding a delay between the first and second one
-			time.Sleep(1 * time.Second)
+			time.Sleep(10 * time.Millisecond)
 			go expectTimeout()
 
 			wg.Wait()
