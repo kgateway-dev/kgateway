@@ -42,8 +42,9 @@ type plugin struct {
 }
 
 func NewPlugin() *plugin {
+	envVar := strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv))
 	return &plugin{
-		enforceMatchingNamespaces: strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv)) == "true",
+		enforceMatchingNamespaces: envVar == "true" || envVar == "1",
 	}
 }
 
@@ -62,7 +63,9 @@ func (p *plugin) ProcessWeightedDestination(
 	if headerManipulation == nil {
 		return nil
 	}
-	upstreamNamespace := "sometenant"
+	upstreamNamespace := ""
+	// Avoid the performance impact of looking up the upstream namespace if we don't need it
+	// This is more important on routes and virtual hosts.
 	if p.enforceMatchingNamespaces {
 		us, err := upstreams.DestinationToUpstreamRef(in.GetDestination())
 		if err == nil {
@@ -96,6 +99,7 @@ func (p *plugin) ProcessVirtualHost(
 	headerSecretOptions := api_conversion.HeaderSecretOptions{
 		EnforceNamespaceMatch: p.enforceMatchingNamespaces,
 	}
+	// Avoid the performance impact of looking up the upstream namespace if we don't need it
 	if p.enforceMatchingNamespaces && len(in.GetRoutes()) > 0 {
 		usNamespace := getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRoutes()[0].GetRouteAction())
 		if len(in.GetRoutes()) > 1 {
@@ -130,7 +134,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: p.enforceMatchingNamespaces}
-	// If we need to enforce that the namespace of the secret and upstream match, then find the upstream namespace.
+	// Avoid the performance impact of looking up the upstream namespace if we don't need it
 	if p.enforceMatchingNamespaces {
 		headerSecretOptions.UpstreamNamespace = getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRouteAction())
 	}

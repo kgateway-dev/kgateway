@@ -179,8 +179,8 @@ func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*
 		if hc.GetHealthChecker() == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthChecker", i))
 		}
-
-		shouldEnforceNamespaceMatch := strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv)) == "true"
+		envVar := strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv))
+		shouldEnforceNamespaceMatch := envVar == "true" || envVar == "1"
 		options := api_conversion.HeaderSecretOptions{UpstreamNamespace: upstream.GetMetadata().GetNamespace(), EnforceNamespaceMatch: shouldEnforceNamespaceMatch}
 		converted, err := api_conversion.ToEnvoyHealthCheck(hc, secrets, options)
 		if err != nil {

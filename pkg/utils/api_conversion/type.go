@@ -9,9 +9,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+// HeaderSecretOptions is used to pass around information about whether/how to enforce that secrets and upstream namespace must match
 type HeaderSecretOptions struct {
 	EnforceNamespaceMatch bool
-	UpstreamNamespace     string
+	// this will be ignored unless EnforceNamespaceMatch is true
+	UpstreamNamespace string
 }
 
 const MatchingNamespaceEnv = "HEADER_SECRET_REF_NS_MATCHES_US"
