@@ -431,7 +431,9 @@ var _ = Describe("Staged Transformation", func() {
 			BeforeEach(func() {
 				testContext.SetRunSettings(&gloov1.Settings{
 					Gloo: &gloov1.GlooOptions{
-						LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+						TransformationOptions: &gloov1.GlooOptions_TransformationOptions{
+							LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+						},
 					},
 				})
 			})

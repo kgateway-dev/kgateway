@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -71,7 +72,7 @@ var _ = Describe("Transformations", func() {
 			}
 		})
 
-		defaultPostBody := "{\"body\":\"test\"}"
+		defaultPostBody := `{"body":"test"}`
 		defaultOutput := "test"
 
 		// EventuallyResponseTransformed returns an Asynchronous Assertion which
@@ -138,7 +139,6 @@ var _ = Describe("Transformations", func() {
 			})
 
 			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
-
 		})
 
 		When("constructing JSON body", func() {
@@ -147,10 +147,12 @@ var _ = Describe("Transformations", func() {
 			When("using escape_characters", func() {
 
 				BeforeEach(func() {
+
 					transform = &transformation.Transformations{
 						ResponseTransformation: &transformation.Transformation{
 							TransformationType: &transformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoy_transform.TransformationTemplate{
+									// EscapeCharacters: &wrapperspb.BoolValue{Value: true},
 									EscapeCharacters: true,
 									BodyTransformation: &envoy_transform.TransformationTemplate_Body{
 										Body: &envoy_transform.InjaTemplate{
@@ -162,12 +164,13 @@ var _ = Describe("Transformations", func() {
 						},
 					}
 				})
-
 				It("should should transform json to json response on vhost", func() {
 					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 							Transformations: transform,
 						}
+						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						return vs
 					})
 
@@ -176,9 +179,11 @@ var _ = Describe("Transformations", func() {
 
 				It("should should transform json to json response on route", func() {
 					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
 							Transformations: transform,
 						}
+						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						return vs
 					})
 

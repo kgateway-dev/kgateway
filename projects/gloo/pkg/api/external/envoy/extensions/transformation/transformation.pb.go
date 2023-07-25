@@ -722,7 +722,9 @@ type TransformationTemplate struct {
 	// Use this field to set Dynamic Metadata.
 	DynamicMetadataValues []*TransformationTemplate_DynamicMetadataValue `protobuf:"bytes,9,rep,name=dynamic_metadata_values,json=dynamicMetadataValues,proto3" json:"dynamic_metadata_values,omitempty"`
 	// Use this field to set Inja behavior when rendering strings which contain
-	// characters that would need to be escaped to be valid JSON
+	// characters that would need to be escaped to be valid JSON. Note that this
+	// sets the behavior for the entire transformation. Use raw_strings function
+	// for fine-grained control within a template.
 	EscapeCharacters bool `protobuf:"varint,12,opt,name=escape_characters,json=escapeCharacters,proto3" json:"escape_characters,omitempty"`
 }
 

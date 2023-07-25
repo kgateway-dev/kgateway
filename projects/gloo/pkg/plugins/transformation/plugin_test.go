@@ -60,7 +60,7 @@ var _ = Describe("Plugin", func() {
 					HeaderBodyTransform: headerBodyTransform,
 				},
 			}
-			output, err := TranslateTransformation(input)
+			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 		})
@@ -88,7 +88,7 @@ var _ = Describe("Plugin", func() {
 					TransformationTemplate: transformationTemplate,
 				},
 			}
-			output, err := TranslateTransformation(input)
+			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 
@@ -104,7 +104,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			output, err := TranslateTransformation(input)
+			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{})
 			Expect(output).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
@@ -229,7 +229,17 @@ var _ = Describe("Plugin", func() {
 				// override plugin created in BeforeEach
 				p = NewPlugin()
 				// initialize with settings-object-level setting enabled
-				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false},
+							TransformationOptions: &v1.GlooOptions_TransformationOptions{
+								LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+							},
+						},
+					},
+				})
 
 				stagedHttpFilters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, &v1.HttpListener{})
 				Expect(err).NotTo(HaveOccurred())
@@ -263,7 +273,17 @@ var _ = Describe("Plugin", func() {
 				// override plugin created in BeforeEach
 				p = NewPlugin()
 				// initialize with settings-object-level setting enabled
-				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false},
+							TransformationOptions: &v1.GlooOptions_TransformationOptions{
+								LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+							},
+						},
+					},
+				})
 
 				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: false}
 
@@ -276,6 +296,97 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(output).To(Equal(expectedOutput))
 			})
+		})
+
+		Context("EscapeCharacters", func() {
+
+			var (
+				inputTransformationStages *transformation.TransformationStages
+				expectedOutput            *envoytransformation.RouteTransformations
+				inputTransform            *transformation.Transformation
+				outputTransform           *envoytransformation.Transformation
+			)
+
+			type transformationPlugin interface {
+				plugins.Plugin
+				ConvertTransformation(
+					ctx context.Context,
+					t *transformation.Transformations,
+					stagedTransformations *transformation.TransformationStages,
+				) (*envoytransformation.RouteTransformations, error)
+			}
+
+			BeforeEach(func() {
+				inputTransform = &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoytransformation.TransformationTemplate{},
+					},
+				}
+				outputTransform = &envoytransformation.Transformation{
+					TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoytransformation.TransformationTemplate{},
+					},
+				}
+				inputTransformationStages = &transformation.TransformationStages{
+					Regular: &transformation.RequestResponseTransformations{
+						RequestTransforms: []*transformation.RequestMatch{{
+							RequestTransformation: inputTransform,
+						}},
+					},
+				}
+
+				expectedOutput = &envoytransformation.RouteTransformations{
+					Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{{
+						Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+								RequestTransformation: outputTransform,
+							},
+						},
+					}},
+				}
+			})
+
+			It("can set escape_characters on transformation level", func() {
+				inputTransform.GetTransformationTemplate().EscapeCharacters = true
+				outputTransform.GetTransformationTemplate().EscapeCharacters = true
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("sets escape_characters to false if transformation-level setting is false", func() {
+				inputTransform.GetTransformationTemplate().EscapeCharacters = false
+				outputTransform.GetTransformationTemplate().EscapeCharacters = false
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("does not set escape_characters if transformation-level setting is nil", func() {
+				inputTransform.GetTransformationTemplate().EscapeCharacters = false
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
 		})
 
 	})

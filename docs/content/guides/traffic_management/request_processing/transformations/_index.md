@@ -382,7 +382,7 @@ This attribute determines which notation to use when accessing elements in JSON 
 Please note that, if set to `true`, you will need to use the `extraction` function to access extractors in template strings (e.g. `{{ extraction("myExtractor") }}`); if the default value of `false` is used, extractors will simply be available by their name (e.g. `{{ myExtractor }}`).
 
 ##### escapeCharacters
-This attribute is used to set for the entire transformation whether Inja should be configured to preserved escaped characters in strings. This is particularly useful when using context from the request or response body to construct new JSON bodies.
+This attribute is used to set for the entire transformation whether Inja should be configured to preserve escaped characters in strings. This is particularly useful when using context from the request or response body to construct new JSON bodies.
 
 #### Templating language
 {{% notice note %}}
@@ -403,7 +403,7 @@ In addition to the standard functions available in the core _Inja_ library, you 
 - `base64_decode(string)`: decodes the input string from base64.
 - `substring(string, start_pos, substring_len)`: returns a substring of the input string, starting at `start_pos` and extending for `substring_len` characters. If no `substring_len` is provided or `substring_len` is <= 0, the substring extends to the end of the input string.
 - `replace_with_random(string, pattern)`: returns the input string with instances matching the `pattern` replaced with random characters.
-- `raw_string(string)`: returns the input string with escaped characters intact. Useful for constructing JSON response bodies.
+- `raw_string(string)`: returns the input string with escaped characters intact. Useful for constructing JSON request or response bodies.
 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 

@@ -285,7 +285,9 @@ message TransformationTemplate {
   repeated DynamicMetadataValue dynamic_metadata_values = 9;
 
   // Use this field to set Inja behavior when rendering strings which contain
-  // characters that would need to be escaped to be valid JSON
+  // characters that would need to be escaped to be valid JSON. Note that this
+  // sets the behavior for the entire transformation. Use raw_strings function
+  // for fine-grained control within a template.
   bool escape_characters = 12;
 }
 
