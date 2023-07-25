@@ -308,6 +308,74 @@ spec:
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
                           type: object
+                        extProc:
+                          properties:
+                            disabled:
+                              nullable: true
+                              type: boolean
+                            overrides:
+                              properties:
+                                grpcService:
+                                  properties:
+                                    authority:
+                                      type: string
+                                    extProcServerRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    initialMetadata:
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    retryPolicy:
+                                      properties:
+                                        numRetries:
+                                          maximum: 4294967295
+                                          minimum: 0
+                                          nullable: true
+                                          type: integer
+                                        retryBackOff:
+                                          properties:
+                                            baseInterval:
+                                              type: string
+                                            maxInterval:
+                                              type: string
+                                          type: object
+                                      type: object
+                                    timeout:
+                                      type: string
+                                  type: object
+                                processingMode:
+                                  properties:
+                                    requestBodyMode:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    requestHeaderMode:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    requestTrailerMode:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    responseBodyMode:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    responseHeaderMode:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                    responseTrailerMode:
+                                      type: string
+                                      x-kubernetes-int-or-string: true
+                                  type: object
+                              type: object
+                          type: object
                         extauth:
                           properties:
                             configRef:

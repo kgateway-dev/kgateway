@@ -35,6 +35,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -261,6 +263,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.Caching = proto.Clone(m.GetCaching()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching.Settings)
 	}
 
+	if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
+		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+	} else {
+		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+	}
+
 	if h, ok := interface{}(m.GetGzip()).(clone.Cloner); ok {
 		target.Gzip = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_filter_http_gzip_v2.Gzip)
 	} else {
@@ -437,6 +445,12 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 		target.StagedTransformations = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.TransformationStages)
 	} else {
 		target.StagedTransformations = proto.Clone(m.GetStagedTransformations()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_transformation.TransformationStages)
+	}
+
+	if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
+		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+	} else {
+		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
 	}
 
 	switch m.RateLimitEarlyConfigType.(type) {
@@ -724,6 +738,12 @@ func (m *RouteOptions) Clone() proto.Message {
 		target.IdleTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
 		target.IdleTimeout = proto.Clone(m.GetIdleTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
+		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
+	} else {
+		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	}
 
 	switch m.HostRewriteType.(type) {

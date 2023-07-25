@@ -23,6 +23,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extauth_v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_rbac "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
@@ -205,6 +207,12 @@ func (m *Settings) Clone() proto.Message {
 		target.GraphqlOptions = h.Clone().(*GraphqlOptions)
 	} else {
 		target.GraphqlOptions = proto.Clone(m.GetGraphqlOptions()).(*GraphqlOptions)
+	}
+
+	if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
+		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+	} else {
+		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
 	}
 
 	switch m.ConfigSource.(type) {

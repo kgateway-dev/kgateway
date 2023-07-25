@@ -305,6 +305,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetExtProc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExtProc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetExtProc(), target.GetExtProc()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetGzip()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetGzip()) {
 			return false
@@ -609,6 +619,16 @@ func (m *VirtualHostOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetStagedTransformations(), target.GetStagedTransformations()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetExtProc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExtProc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetExtProc(), target.GetExtProc()) {
 			return false
 		}
 	}
@@ -1053,6 +1073,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetIdleTimeout(), target.GetIdleTimeout()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetExtProc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExtProc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetExtProc(), target.GetExtProc()) {
 			return false
 		}
 	}
