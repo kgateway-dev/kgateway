@@ -1,0 +1,165 @@
+syntax = "proto3";
+package extproc.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc";
+
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+option (extproto.equal_all) = true;
+import "validate/validate.proto";
+
+import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/filters/stages.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+
+// Enterprise-only: Configuration for Envoy's [External Processing Filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter).
+// The External Processing filter allows for calling out to an external gRPC service at a specified
+// point within a HTTP filter chain. The external service may access and modify various parts of the
+// request or response, and may terminate processing.
+// Envoy's External Processing Filter is considered a work in progress and has an unknown security posture.
+// Only use this if you know what you are doing!
+message Settings {
+  // Required. Configuration for the gRPC service that the filter will communicate with.
+  GrpcService grpc_service = 1;
+
+  // Where in the HTTP filter chain to insert the filter.
+  filters.gloo.solo.io.FilterStage filter_stage = 2;
+
+  // By default, if the gRPC stream cannot be established, or if it is closed
+  // prematurely with an error, the filter will fail. Specifically, if the
+  // response headers have not yet been delivered, then it will return a 500
+  // error downstream. If they have been delivered, then instead the HTTP stream to the
+  // downstream client will be reset.
+  // With this parameter set to true, however, then if the gRPC stream is prematurely closed
+  // or could not be opened, processing continues without error.
+  google.protobuf.BoolValue failure_mode_allow = 3;
+
+  // Specifies default options for how HTTP headers, trailers, and bodies are
+  // sent.
+  solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode processing_mode = 4;
+
+  // Specifies the timeout for each individual message sent on the stream and
+  // when the filter is running in synchronous mode. Whenever the proxy sends
+  // a message on the stream that requires a response, it will reset this timer,
+  // and will stop processing and return an error (subject to the processing mode)
+  // if the timer expires before a matching response is received. There is no
+  // timeout when the filter is running in asynchronous mode. Zero is a valid
+  // config which means the timer will be triggered immediately. If not
+  // configured, default is 200 milliseconds.
+  google.protobuf.Duration message_timeout = 5 [(validate.rules).duration = {
+    lte {seconds: 3600}
+    gte {}
+  }];
+
+  // Optional additional prefix to use when emitting statistics. This allows to distinguish
+  // emitted statistics between configured *ext_proc* filters in an HTTP filter chain.
+  google.protobuf.StringValue stat_prefix = 6;
+
+  // Rules that determine what modifications an external processing server may
+  // make to message headers. If not set, all headers may be modified except
+  // for "host", ":authority", ":scheme", ":method", and headers that start
+  // with the header prefix set via
+  // [header_prefix](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto#envoy-v3-api-field-config-bootstrap-v3-bootstrap-header-prefix)
+  // (which is usually "x-envoy").
+  // Note that changing headers such as "host" or ":authority" may not in itself
+  // change Envoy's routing decision, as routes can be cached. To also force the
+  // route to be recomputed, set the
+  // [clear_route_cache](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-commonresponse-clear-route-cache)
+  // field to true in the same response.
+  solo.io.envoy.config.common.mutation_rules.v3.HeaderMutationRules mutation_rules = 7;
+
+  // Specify the upper bound of
+  // [override_message_timeout](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-processingresponse-override-message-timeout).
+  // If not specified, by default it is 0, which will effectively disable the `override_message_timeout` API.
+  google.protobuf.Duration max_message_timeout = 8 [(validate.rules).duration = {
+    lte {seconds: 3600}
+    gte {}
+  }];
+
+  // Prevents clearing the route-cache when the
+  // [clear_route_cache](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-commonresponse-clear-route-cache)
+  // field is set in an external processor response.
+  google.protobuf.BoolValue disable_clear_route_cache = 9;
+
+  // Allow headers matching the `forward_rules` to be forwarded to the external processing server.
+  // If not set, all headers are forwarded to the external processing server.
+  HeaderForwardingRules forward_rules = 10;
+
+  // Additional metadata to be added to the filter state for logging purposes. The metadata
+  // will be added to StreamInfo's filter state under the namespace corresponding to the
+  // ext_proc filter name.
+  google.protobuf.Struct filter_metadata = 11;
+
+  // If `allow_mode_override` is set to true, the filter config [processing_mode](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-field-extensions-filters-http-ext-proc-v3-externalprocessor-processing-mode)
+  // can be overridden by the response message from the external processing server
+  // [mode_override](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-processingresponse-mode-override).
+  // If not set, `mode_override` API in the response message will be ignored.
+  google.protobuf.BoolValue allow_mode_override = 12;
+}
+
+// External processor settings that can be configured on a per-route basis.
+message RouteSettings {
+  oneof override {
+    // Set to true to disable the External Processing filter for this route.
+    google.protobuf.BoolValue disabled = 1;
+
+    // Override specific configuration for this route.
+    Overrides overrides = 2;
+  }
+}
+
+message GrpcService {
+  // A reference to the Upstream representing the external processor gRPC server.
+  // See https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto
+  // for details.
+  core.solo.io.ResourceRef ext_proc_server_ref = 1;
+
+  // The `:authority` header in the grpc request. If this field is not set, the authority header value will be the
+  // cluster name.
+  // Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
+  string authority = 2;
+
+  // Indicates the retry policy for re-establishing the gRPC stream
+  // This field is optional. If max interval is not provided, it will be set to ten times the provided base interval.
+  // Currently only supported for xDS gRPC streams.
+  // If not set, xDS gRPC streams default base interval:500ms, maximum interval:30s will be applied.
+  solo.io.envoy.config.core.v3.RetryPolicy retry_policy = 3;
+
+  // The timeout for the gRPC request. This is the timeout for a specific request.
+  google.protobuf.Duration timeout = 4;
+
+  // Additional metadata to include in streams initiated to the GrpcService. This can be used for
+  // scenarios in which additional ad hoc authorization headers (e.g. `x-foo-bar: baz-key`) are to
+  // be injected. For more information, including details on header value syntax, see the
+  // documentation on [custom request headers](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers).
+  repeated solo.io.envoy.config.core.v3.HeaderValue initial_metadata = 5;
+}
+
+message Overrides {
+  // Set a different processing mode for this route than the default.
+  solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode processing_mode = 1;
+
+  // Set a different gRPC service for this route than the default.
+  GrpcService grpc_service = 2;
+}
+
+// The HeaderForwardingRules structure specifies what headers are
+// allowed to be forwarded to the external processing server.
+// See https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#extensions-filters-http-ext-proc-v3-headerforwardingrules
+// for details.
+message HeaderForwardingRules {
+  // If set, specifically allow any header in this list to be forwarded to the external
+  // processing server. This can be overridden by the below `disallowed_headers`.
+  solo.io.envoy.type.matcher.v3.ListStringMatcher allowed_headers = 1;
+
+  // If set, specifically disallow any header in this list to be forwarded to the external
+  // processing server. This overrides the above `allowed_headers` if a header matches both.
+  solo.io.envoy.type.matcher.v3.ListStringMatcher disallowed_headers = 2;
+}
