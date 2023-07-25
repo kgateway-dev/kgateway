@@ -16,8 +16,9 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/string.proto";
 
-import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
 
 // Enterprise-only: Configuration for Envoy's [External Processing Filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/ext_proc_filter).
 // The External Processing filter allows for calling out to an external gRPC service at a specified
