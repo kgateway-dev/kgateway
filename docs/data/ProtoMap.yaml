@@ -575,6 +575,21 @@ apis:
   envoy.extensions.cache.grpc.v2.GrpcCacheConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/cache/grpc/config.proto.sk/#GrpcCacheConfig
     package: envoy.extensions.cache.grpc.v2
+  extproc.options.gloo.solo.io.GrpcService:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto.sk/#GrpcService
+    package: extproc.options.gloo.solo.io
+  extproc.options.gloo.solo.io.HeaderForwardingRules:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto.sk/#HeaderForwardingRules
+    package: extproc.options.gloo.solo.io
+  extproc.options.gloo.solo.io.Overrides:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto.sk/#Overrides
+    package: extproc.options.gloo.solo.io
+  extproc.options.gloo.solo.io.RouteSettings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto.sk/#RouteSettings
+    package: extproc.options.gloo.solo.io
+  extproc.options.gloo.solo.io.Settings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto.sk/#Settings
+    package: extproc.options.gloo.solo.io
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
     package: fault.options.gloo.solo.io
@@ -596,6 +611,9 @@ apis:
   fed.solo.io.GlooInstanceStatus:
     relativepath: reference/api/github.com/solo-io/solo-apis/api/gloo-fed/fed/v1/instance.proto.sk/#GlooInstanceStatus
     package: fed.solo.io
+  filters.gloo.solo.io.FilterStage:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/filters/stages.proto.sk/#FilterStage
+    package: filters.gloo.solo.io
   gateway.solo.io.DelegateAction:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#DelegateAction
     package: gateway.solo.io
@@ -1511,6 +1529,12 @@ apis:
   solo.io.envoy.api.v2.route.WeightedCluster:
     relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#WeightedCluster
     package: solo.io.envoy.api.v2.route
+  solo.io.envoy.config.common.mutation_rules.v3.HeaderMutation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto.sk/#HeaderMutation
+    package: solo.io.envoy.config.common.mutation_rules.v3
+  solo.io.envoy.config.common.mutation_rules.v3.HeaderMutationRules:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto.sk/#HeaderMutationRules
+    package: solo.io.envoy.config.common.mutation_rules.v3
   solo.io.envoy.config.core.v3.Address:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#Address
     package: solo.io.envoy.config.core.v3
@@ -1700,6 +1724,9 @@ apis:
   solo.io.envoy.extensions.filters.http.csrf.v3.CsrfPolicy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/csrf/v3/csrf.proto.sk/#CsrfPolicy
     package: solo.io.envoy.extensions.filters.http.csrf.v3
+  solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto.sk/#ProcessingMode
+    package: solo.io.envoy.extensions.filters.http.ext_proc.v3
   solo.io.envoy.extensions.filters.http.jwt_authn.v3.FilterStateRule:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/jwt_authn/v3/config.proto.sk/#FilterStateRule
     package: solo.io.envoy.extensions.filters.http.jwt_authn.v3
