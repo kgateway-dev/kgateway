@@ -238,6 +238,7 @@ var _ = Describe("Plugin", func() {
 		})
 		AfterEach(func() {
 			os.Clearenv()
+			p = NewPlugin()
 		})
 	})
 })
