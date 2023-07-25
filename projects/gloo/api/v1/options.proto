@@ -40,6 +40,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/h
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/matcher/v3/regex.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/v1/extproc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
@@ -136,6 +137,10 @@ message HttpListenerOptions {
     ratelimit.options.gloo.solo.io.Settings ratelimit_server = 11;
     // Enterprise-only: Settings for the cache server itself
     caching.options.gloo.solo.io.Settings caching = 17;
+    // Enterprise-only: External Processing filter settings. The HttpListenerOptions settings
+    // can override the defaults from the global settings, or be overridden by the settings on
+    // VirtualHostOptions (via shallow merge).
+    extproc.options.gloo.solo.io.Settings ext_proc = 29;
 
     // Gzip is an HTTP option which enables Gloo to compress
     // data returned from an upstream service upon client request.
@@ -316,6 +321,10 @@ message VirtualHostOptions {
     // If the `regular` field is set in here, the `transformations` field is ignored.
     transformation.options.gloo.solo.io.TransformationStages staged_transformations = 17;
 
+    // Enterprise-only: External Processing filter settings. The VirtualHostOptions settings
+    // can override both the global settings and HttpListenerOptions settings (via shallow
+    // merge). RouteOptions settings can override certain VirtualHostOptions settings.
+    extproc.options.gloo.solo.io.Settings ext_proc = 30;
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -511,6 +520,10 @@ message RouteOptions {
     // wide stream_idle_timeout will still apply. A value of 0 will completely disable the route’s idle timeout, even if a connection manager stream idle timeout is configured.
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#envoy-v3-api-field-config-route-v3-routeaction-idle-timeout)
     google.protobuf.Duration idle_timeout = 29;
+
+    // Enterprise-only: Per-route External Processing filter settings. This can be used to
+    // override certain external processor settings on the virtual host or listener.
+    extproc.options.gloo.solo.io.RouteSettings ext_proc = 30;
 }
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
 message DestinationSpec {
