@@ -46,7 +46,7 @@ message Settings {
   // sent.
   .solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode processing_mode = 4;
 
-  // Specifies the timeout for each individual message sent on the stream and
+  // Specifies the timeout for each individual message sent on the stream
   // when the filter is running in synchronous mode. Whenever the proxy sends
   // a message on the stream that requires a response, it will reset this timer,
   // and will stop processing and return an error (subject to the processing mode)
@@ -59,8 +59,8 @@ message Settings {
     gte {}
   }];
 
-  // Optional additional prefix to use when emitting statistics. This allows to distinguish
-  // emitted statistics between configured *ext_proc* filters in an HTTP filter chain.
+  // Optional additional prefix to use when emitting statistics. This allows distinguishing
+  // between statistics emitted by multiple *ext_proc* filters in an HTTP filter chain.
   google.protobuf.StringValue stat_prefix = 6;
 
   // Rules that determine what modifications an external processing server may

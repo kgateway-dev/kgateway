@@ -58,7 +58,7 @@ type Settings struct {
 	// Specifies default options for how HTTP headers, trailers, and bodies are
 	// sent.
 	ProcessingMode *v3.ProcessingMode `protobuf:"bytes,4,opt,name=processing_mode,json=processingMode,proto3" json:"processing_mode,omitempty"`
-	// Specifies the timeout for each individual message sent on the stream and
+	// Specifies the timeout for each individual message sent on the stream
 	// when the filter is running in synchronous mode. Whenever the proxy sends
 	// a message on the stream that requires a response, it will reset this timer,
 	// and will stop processing and return an error (subject to the processing mode)
@@ -67,8 +67,8 @@ type Settings struct {
 	// config which means the timer will be triggered immediately. If not
 	// configured, default is 200 milliseconds.
 	MessageTimeout *duration.Duration `protobuf:"bytes,5,opt,name=message_timeout,json=messageTimeout,proto3" json:"message_timeout,omitempty"`
-	// Optional additional prefix to use when emitting statistics. This allows to distinguish
-	// emitted statistics between configured *ext_proc* filters in an HTTP filter chain.
+	// Optional additional prefix to use when emitting statistics. This allows distinguishing
+	// between statistics emitted by multiple *ext_proc* filters in an HTTP filter chain.
 	StatPrefix *wrappers.StringValue `protobuf:"bytes,6,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
 	// Rules that determine what modifications an external processing server may
 	// make to message headers. If not set, all headers may be modified except
