@@ -75,7 +75,7 @@ Only use this if you know what you are doing!
 ### RouteSettings
 
  
-External processor settings that can be configured on a per-route basis.
+External processor settings that can be configured on a virtual host or route.
 
 ```yaml
 "disabled": .google.protobuf.BoolValue
@@ -85,8 +85,8 @@ External processor settings that can be configured on a per-route basis.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `disabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to true to disable the External Processing filter for this route. Only one of `disabled` or `overrides` can be set. |
-| `overrides` | [.extproc.options.gloo.solo.io.Overrides](../extproc.proto.sk/#overrides) | Override specific configuration for this route. Only one of `overrides` or `disabled` can be set. |
+| `disabled` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set to true to disable the External Processing filter for this virtual host or route. The disabled value of a virtual host can be overridden by a child route. Only one of `disabled` or `overrides` can be set. |
+| `overrides` | [.extproc.options.gloo.solo.io.Overrides](../extproc.proto.sk/#overrides) | Override specific configuration for this virtual host or route. If a route specifies overrides, it will override the disabled flag of its parent virtual host. Only one of `overrides` or `disabled` can be set. |
 
 
 
@@ -129,8 +129,8 @@ External processor settings that can be configured on a per-route basis.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `processingMode` | [.solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode](../../../../../external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto.sk/#processingmode) | Set a different processing mode for this route than the default. |
-| `grpcService` | [.extproc.options.gloo.solo.io.GrpcService](../extproc.proto.sk/#grpcservice) | Set a different gRPC service for this route than the default. |
+| `processingMode` | [.solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode](../../../../../external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto.sk/#processingmode) | Set a different processing mode for this virtual host or route than the default. |
+| `grpcService` | [.extproc.options.gloo.solo.io.GrpcService](../extproc.proto.sk/#grpcservice) | Set a different gRPC service for this virtual host or route than the default. |
 
 
 

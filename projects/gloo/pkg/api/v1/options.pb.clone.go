@@ -263,12 +263,6 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.Caching = proto.Clone(m.GetCaching()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_caching.Settings)
 	}
 
-	if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
-		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
-	} else {
-		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
-	}
-
 	if h, ok := interface{}(m.GetGzip()).(clone.Cloner); ok {
 		target.Gzip = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_filter_http_gzip_v2.Gzip)
 	} else {
@@ -321,6 +315,34 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.Router = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
 	} else {
 		target.Router = proto.Clone(m.GetRouter()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
+	}
+
+	switch m.ExtProcConfig.(type) {
+
+	case *HttpListenerOptions_DisableExtProc:
+
+		if h, ok := interface{}(m.GetDisableExtProc()).(clone.Cloner); ok {
+			target.ExtProcConfig = &HttpListenerOptions_DisableExtProc{
+				DisableExtProc: h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+			}
+		} else {
+			target.ExtProcConfig = &HttpListenerOptions_DisableExtProc{
+				DisableExtProc: proto.Clone(m.GetDisableExtProc()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue),
+			}
+		}
+
+	case *HttpListenerOptions_ExtProc:
+
+		if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
+			target.ExtProcConfig = &HttpListenerOptions_ExtProc{
+				ExtProc: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings),
+			}
+		} else {
+			target.ExtProcConfig = &HttpListenerOptions_ExtProc{
+				ExtProc: proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings),
+			}
+		}
+
 	}
 
 	return target
@@ -448,9 +470,9 @@ func (m *VirtualHostOptions) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetExtProc()).(clone.Cloner); ok {
-		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	} else {
-		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.RouteSettings)
 	}
 
 	switch m.RateLimitEarlyConfigType.(type) {

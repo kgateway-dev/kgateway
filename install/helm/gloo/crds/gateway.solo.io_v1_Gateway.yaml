@@ -142,6 +142,9 @@ spec:
                                 type: string
                             type: object
                         type: object
+                      disableExtProc:
+                        nullable: true
+                        type: boolean
                       dlp:
                         properties:
                           dlpRules:
@@ -1925,6 +1928,9 @@ spec:
                                           type: string
                                       type: object
                                   type: object
+                                disableExtProc:
+                                  nullable: true
+                                  type: boolean
                                 dlp:
                                   properties:
                                     dlpRules:

@@ -220,7 +220,7 @@ func (x *Settings) GetAllowModeOverride() *wrappers.BoolValue {
 	return nil
 }
 
-// External processor settings that can be configured on a per-route basis.
+// External processor settings that can be configured on a virtual host or route.
 type RouteSettings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -291,12 +291,14 @@ type isRouteSettings_Override interface {
 }
 
 type RouteSettings_Disabled struct {
-	// Set to true to disable the External Processing filter for this route.
+	// Set to true to disable the External Processing filter for this virtual host or route.
+	// The disabled value of a virtual host can be overridden by a child route.
 	Disabled *wrappers.BoolValue `protobuf:"bytes,1,opt,name=disabled,proto3,oneof"`
 }
 
 type RouteSettings_Overrides struct {
-	// Override specific configuration for this route.
+	// Override specific configuration for this virtual host or route.
+	// If a route specifies overrides, it will override the disabled flag of its parent virtual host.
 	Overrides *Overrides `protobuf:"bytes,2,opt,name=overrides,proto3,oneof"`
 }
 
@@ -403,9 +405,9 @@ type Overrides struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Set a different processing mode for this route than the default.
+	// Set a different processing mode for this virtual host or route than the default.
 	ProcessingMode *v3.ProcessingMode `protobuf:"bytes,1,opt,name=processing_mode,json=processingMode,proto3" json:"processing_mode,omitempty"`
-	// Set a different gRPC service for this route than the default.
+	// Set a different gRPC service for this virtual host or route than the default.
 	GrpcService *GrpcService `protobuf:"bytes,2,opt,name=grpc_service,json=grpcService,proto3" json:"grpc_service,omitempty"`
 }
 
