@@ -3,33 +3,43 @@ description: Suggest an idea for this project
 labels: ["Type: Enhancement"]
 body:
   - type: dropdown
+    id: product
+    attributes:
+      label: Gloo Edge Product
+      description: Which Edge product are you using?
+      options:
+        - Open Source
+        - Enterprise
+    validations:
+      required: true
+  - type: input
     id: version
     attributes:
-      label: Version
-      description: What version of Gloo Edge are you using?
-      options:
-        - 1.15.x (beta)
-        - 1.14.x (latest stable)
-        - 1.13.x
-        - 1.12.x
-        - 1.11.x
+      label: Gloo Edge Version
+      description: What version of your product are you using? Please specify a specific patch version
+      placeholder: eg v1.14.2
+    validations:
+      required: true
   - type: textarea
     id: problem-details
     attributes:
       label: Is your feature request related to a problem? Please describe.
-      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+      description: A clear and concise description of what the problem is
+      placeholder: Ex. I'm always frustrated when [...]
   - type: textarea
     id: solution-details
     attributes:
       label: Describe the solution you'd like
-      placeholder: A clear and concise description of what you want to happen.
+      description: A clear and concise description of what you want to happen
+      placeholder: Ex. Gloo should automatically [...]
   - type: textarea
     id: alternatives-details
     attributes:
       label: Describe alternatives you've considered
-      placeholder: A clear and concise description of any alternative solutions or features you've considered.
+      description: A clear and concise description of any alternative solutions or features you've considered
+      placeholder: Ex. X feature can be used as a workaround but is inconvenient
   - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
-      placeholder: Add any other context or screenshots about the feature request here.
+      description: Add any other context, links, screenshots etc. related to the feature request
