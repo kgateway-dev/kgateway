@@ -21,7 +21,7 @@ body:
     validations:
       required: false
   - type: textarea
-    id: Additional Information
+    id: additional-information
     attributes:
       label: Additional Information
       placeholder: |
