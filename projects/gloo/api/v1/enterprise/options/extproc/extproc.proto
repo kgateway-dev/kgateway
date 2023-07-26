@@ -105,13 +105,15 @@ message Settings {
   google.protobuf.BoolValue allow_mode_override = 12;
 }
 
-// External processor settings that can be configured on a per-route basis.
+// External processor settings that can be configured on a virtual host or route.
 message RouteSettings {
   oneof override {
-    // Set to true to disable the External Processing filter for this route.
+    // Set to true to disable the External Processing filter for this virtual host or route.
+    // The disabled value of a virtual host can be overridden by a child route.
     google.protobuf.BoolValue disabled = 1;
 
-    // Override specific configuration for this route.
+    // Override specific configuration for this virtual host or route.
+    // If a route specifies overrides, it will override the disabled flag of its parent virtual host.
     Overrides overrides = 2;
   }
 }
@@ -144,10 +146,10 @@ message GrpcService {
 }
 
 message Overrides {
-  // Set a different processing mode for this route than the default.
+  // Set a different processing mode for this virtual host or route than the default.
   .solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode processing_mode = 1;
 
-  // Set a different gRPC service for this route than the default.
+  // Set a different gRPC service for this virtual host or route than the default.
   GrpcService grpc_service = 2;
 }
 
