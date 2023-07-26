@@ -229,7 +229,7 @@
 |gloo.service.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gloo.logLevel|string||Level at which the pod should log. Options include "info", "debug", "warn", "error", "panic" and "fatal". Default level is info|
 |gloo.disableLeaderElection|bool||Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo|
-|gloo.headerSecretRefNsMatchesUs|bool||Set to true to require that secrets sent in headers via headerSecretRefs come from the same namespace as the destination upstream|
+|gloo.headerSecretRefNsMatchesUs|bool||Set to true to require that secrets sent in headers via headerSecretRefs come from the same namespace as the destination upstream. Default: false|
 |discovery.deployment.image.tag|string|<release_version, ex: 1.2.3>|The image tag for the container.|
 |discovery.deployment.image.repository|string|discovery|The image repository (name) for the container.|
 |discovery.deployment.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|

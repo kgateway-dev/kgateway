@@ -2,6 +2,7 @@ package headers
 
 import (
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -42,9 +43,9 @@ type plugin struct {
 }
 
 func NewPlugin() *plugin {
-	envVar := strings.ToLower(os.Getenv(api_conversion.MatchingNamespaceEnv))
+	enforceMatch, _ := strconv.ParseBool(os.Getenv(api_conversion.MatchingNamespaceEnv))
 	return &plugin{
-		enforceMatchingNamespaces: envVar == "true" || envVar == "1",
+		enforceMatchingNamespaces: enforceMatch,
 	}
 }
 
@@ -158,6 +159,8 @@ type envoyHeaderManipulation struct {
 	ResponseHeadersToRemove []string
 }
 
+// getUpstreamNamespaceForRouteAction finds the destination upstreams for a route action and if there's only one namespace
+// between them, returns that namespace, otherwise returns an empty string.
 func getUpstreamNamespaceForRouteAction(snapshot *v1snap.ApiSnapshot, action *v1.RouteAction) string {
 	usRefs, err := pluginutils.DestinationUpstreams(snapshot, action)
 	if err != nil || len(usRefs) == 0 {
