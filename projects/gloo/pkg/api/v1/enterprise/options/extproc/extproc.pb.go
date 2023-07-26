@@ -37,7 +37,7 @@ const (
 // point within a HTTP filter chain. The external service may access and modify various parts of the
 // request or response, and may terminate processing.
 // Envoy's External Processing Filter is considered a work in progress and has an unknown security posture.
-// Only use this if you know what you are doing!
+// Users should take care to understand the risks of using this extension before proceeding.
 type Settings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
