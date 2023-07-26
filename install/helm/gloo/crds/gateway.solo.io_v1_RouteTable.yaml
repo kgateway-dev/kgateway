@@ -1232,6 +1232,7 @@ spec:
                                                   type: object
                                                 type: array
                                               escapeCharacters:
+                                                nullable: true
                                                 type: boolean
                                               extractors:
                                                 additionalProperties:
@@ -1324,6 +1325,7 @@ spec:
                                                   type: object
                                                 type: array
                                               escapeCharacters:
+                                                nullable: true
                                                 type: boolean
                                               extractors:
                                                 additionalProperties:
@@ -1436,6 +1438,7 @@ spec:
                                                   type: object
                                                 type: array
                                               escapeCharacters:
+                                                nullable: true
                                                 type: boolean
                                               extractors:
                                                 additionalProperties:
@@ -1585,6 +1588,7 @@ spec:
                                                   type: object
                                                 type: array
                                               escapeCharacters:
+                                                nullable: true
                                                 type: boolean
                                               extractors:
                                                 additionalProperties:
@@ -1677,6 +1681,7 @@ spec:
                                                   type: object
                                                 type: array
                                               escapeCharacters:
+                                                nullable: true
                                                 type: boolean
                                               extractors:
                                                 additionalProperties:
@@ -1789,6 +1794,7 @@ spec:
                                                   type: object
                                                 type: array
                                               escapeCharacters:
+                                                nullable: true
                                                 type: boolean
                                               extractors:
                                                 additionalProperties:
@@ -1911,6 +1917,7 @@ spec:
                                         type: object
                                       type: array
                                     escapeCharacters:
+                                      nullable: true
                                       type: boolean
                                     extractors:
                                       additionalProperties:
@@ -2003,6 +2010,7 @@ spec:
                                         type: object
                                       type: array
                                     escapeCharacters:
+                                      nullable: true
                                       type: boolean
                                     extractors:
                                       additionalProperties:
@@ -2608,6 +2616,7 @@ spec:
                                                                 type: object
                                                               type: array
                                                             escapeCharacters:
+                                                              nullable: true
                                                               type: boolean
                                                             extractors:
                                                               additionalProperties:
@@ -2700,6 +2709,7 @@ spec:
                                                                 type: object
                                                               type: array
                                                             escapeCharacters:
+                                                              nullable: true
                                                               type: boolean
                                                             extractors:
                                                               additionalProperties:
@@ -2812,6 +2822,7 @@ spec:
                                                                 type: object
                                                               type: array
                                                             escapeCharacters:
+                                                              nullable: true
                                                               type: boolean
                                                             extractors:
                                                               additionalProperties:
@@ -2961,6 +2972,7 @@ spec:
                                                                 type: object
                                                               type: array
                                                             escapeCharacters:
+                                                              nullable: true
                                                               type: boolean
                                                             extractors:
                                                               additionalProperties:
@@ -3053,6 +3065,7 @@ spec:
                                                                 type: object
                                                               type: array
                                                             escapeCharacters:
+                                                              nullable: true
                                                               type: boolean
                                                             extractors:
                                                               additionalProperties:
@@ -3165,6 +3178,7 @@ spec:
                                                                 type: object
                                                               type: array
                                                             escapeCharacters:
+                                                              nullable: true
                                                               type: boolean
                                                             extractors:
                                                               additionalProperties:
@@ -3265,6 +3279,7 @@ spec:
                                                       type: object
                                                     type: array
                                                   escapeCharacters:
+                                                    nullable: true
                                                     type: boolean
                                                   extractors:
                                                     additionalProperties:
@@ -3357,6 +3372,7 @@ spec:
                                                       type: object
                                                     type: array
                                                   escapeCharacters:
+                                                    nullable: true
                                                     type: boolean
                                                   extractors:
                                                     additionalProperties:

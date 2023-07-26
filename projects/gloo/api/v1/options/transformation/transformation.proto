@@ -3,9 +3,9 @@ package transformation.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation";
 
+import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto";
 
 import "extproto/ext.proto";
@@ -13,7 +13,7 @@ option (extproto.hash_all) = true;
 option (extproto.clone_all) = true;
 option (extproto.equal_all) = true;
 
-message ResponseMatch { 
+message ResponseMatch {
     // Response headers to match on.
     repeated matchers.core.gloo.solo.io.HeaderMatcher matchers = 1;
     // Response code detail to match on. To see the response code details for your usecase,
@@ -66,7 +66,7 @@ message TransformationStages {
     // only one transformation will run per stage.
     // Defaults to false.
     bool inherit_transformation = 3;
-    
+
     // When enabled, log request/response body and headers before and after all transformations defined here are applied.\
     // This overrides the log_request_response_info field in the Transformation message.
     google.protobuf.BoolValue log_request_response_info = 4;
@@ -77,16 +77,193 @@ message Transformation {
     // The type of transformation to apply.
     oneof transformation_type {
         // Apply transformation templates.
-        envoy.api.v2.filter.http.TransformationTemplate transformation_template = 1;
+        TransformationTemplate transformation_template = 1;
         // This type of transformation will make all the headers available in the
         // response body. The resulting JSON body will consist of two attributes:
         // 'headers', containing the headers, and 'body', containing the original
         // body.
-        envoy.api.v2.filter.http.HeaderBodyTransform header_body_transform = 2;
+        HeaderBodyTransform header_body_transform = 2;
         // (Enterprise Only): Xslt Transformation
         envoy.config.transformer.xslt.v2.XsltTransformation xslt_transformation = 3;
 
     }
     // When enabled, log request/response body and headers before and after this transformation is applied.
     bool log_request_response_info = 4;
+}
+
+// Extractions can be used to extract information from the request/response.
+// The extracted information can then be referenced in template fields.
+message Extraction {
+
+  // The source of the extraction
+  oneof source {
+    // Extract information from headers
+    string header = 1;
+    // Extract information from the request/response body
+    google.protobuf.Empty body = 4;
+  }
+
+  // Only strings matching this regular expression will be part of the
+  // extraction. This regex **must match the entire source** in order for a value to be extracted.
+  // The most simple value for this field is '.*', which matches the
+  // whole source. The field is required. If extraction fails the result is an
+  // empty value.
+  string regex = 2;
+
+  // If your regex contains capturing groups, use this field to determine which
+  // group should be selected.
+  uint32 subgroup = 3;
+}
+
+// Defines a transformation template.
+message TransformationTemplate {
+
+  // If set to true, use JSON pointer notation (e.g. "time/start") instead of
+  // dot notation (e.g. "time.start") to access JSON elements. Defaults to
+  // false.
+  //
+  // Please note that, if set to 'true', you will need to use the `extraction`
+  // function to access extractors in the template (e.g. '{{
+  // extraction("my_extractor") }}'); if the default value of 'false' is used,
+  // extractors will simply be available by their name (e.g. '{{ my_extractor
+  // }}').
+  bool advanced_templates = 1;
+
+  // Use this attribute to extract information from the request. It consists of
+  // a map of strings to extractors. The extractor will defines which
+  // information will be extracted, while the string key will provide the
+  // extractor with a name. You can reference extractors by their name in
+  // templates, e.g. "{{ my-extractor }}" will render to the value of the
+  // "my-extractor" extractor.
+  map<string, Extraction> extractors = 2;
+  // Use this attribute to transform request/response headers. It consists of a
+  // map of strings to templates. The string key determines the name of the
+  // resulting header, the rendered template will determine the value. Any existing
+  // headers with the same header name will be replaced by the transformed header.
+  // If a header name is included in `headers` and `headers_to_append`, it will first
+  // be replaced the template in `headers`, then additional header values will be appended
+  // by the templates defined in `headers_to_append`.
+  // For example, the following header transformation configuration:
+  //
+  // ```yaml
+  //    headers:
+  //      x-header-one: {"text": "first {{inja}} template"}
+  //      x-header-one: {"text": "second {{inja}} template"}
+  //    headersToAppend:
+  //      - key: x-header-one
+  //        value: {"text": "first appended {{inja}} template"}
+  //      - key: x-header-one
+  //        value: {"text": "second appended {{inja}} template"}
+  // ```
+  // will result in the following headers on the HTTP message:
+  //
+  // ```
+  // x-header-one: first inja template
+  // x-header-one: first appended inja template
+  // x-header-one: second appended inja template
+  // ```
+  map<string, InjaTemplate> headers = 3;
+
+  // Defines a header-template pair to be used in `headers_to_append`
+  message HeaderToAppend {
+    // Header name
+    string key = 1;
+    // Apply a template to the header value
+    InjaTemplate value = 2;
+  }
+
+  // Use this attribute to transform request/response headers. It consists of
+  // an array of string/template objects. Use this attribute to define multiple
+  // templates for a single header. Header template(s) defined here will be appended to any
+  // existing headers with the same header name, not replace existing ones.
+  // See `headers` documentation to see an example of usage.
+  repeated HeaderToAppend headers_to_append = 10;
+
+  // Attribute to remove headers from requests. If a header is present multiple
+  // times, all instances of the header will be removed.
+  repeated string headers_to_remove = 11;
+
+  // Determines the type of transformation to apply to the request/response body
+  oneof body_transformation {
+    // Apply a template to the body
+    InjaTemplate body = 4;
+    // This will cause the transformation filter not to buffer the body.
+    // Use this setting if the response body is large and you don't need to
+    // transform nor extract information from it.
+    Passthrough passthrough = 5;
+    // Merge all defined extractors to the request/response body.
+    // If you want to nest elements inside the body, use dot separator in the
+    // extractor name.
+    MergeExtractorsToBody merge_extractors_to_body = 6;
+  }
+
+  // Determines how the body will be parsed.
+  enum RequestBodyParse {
+    // Will attempt to parse the request/response body as JSON
+    ParseAsJson = 0;
+    // The request/response body will be treated as plain text
+    DontParse = 1;
+  }
+  // Determines how the body will be parsed. Defaults to ParseAsJson
+  RequestBodyParse parse_body_behavior = 7;
+
+  // If set to true, Envoy will not throw an exception in case the body parsing
+  // fails.
+  bool ignore_error_on_parse = 8;
+
+  // Defines an [Envoy Dynamic
+  // Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata)
+  // entry.
+  message DynamicMetadataValue {
+
+    // The metadata namespace. Defaults to the filter namespace.
+    string metadata_namespace = 1;
+
+    // The metadata key.
+    string key = 2;
+
+    // A template that determines the metadata value.
+    InjaTemplate value = 3;
+  }
+  // Use this field to set Dynamic Metadata.
+  repeated DynamicMetadataValue dynamic_metadata_values = 9;
+
+  // Use this field to set Inja behavior when rendering strings which contain
+  // characters that would need to be escaped to be valid JSON. Note that this
+  // sets the behavior for the entire transformation. Use raw_strings function
+  // for fine-grained control within a template.
+  google.protobuf.BoolValue escape_characters = 12;
+}
+
+// Defines an [Inja template](https://github.com/pantor/inja) that will be
+// rendered by Gloo. In addition to the core template functions, the Gloo
+// transformation filter defines the following custom functions:
+// - header(header_name): returns the value of the header with the given name.
+// - extraction(extractor_name): returns the value of the extractor with the
+// given name.
+// - env(env_var_name): returns the value of the environment variable with the
+// given name.
+// - body(): returns the request/response body.
+// - context(): returns the base JSON context (allowing for example to range on
+// a JSON body that is an array).
+// - request_header(header_name): returns the value of the request header with
+// the given name. Use this option when you want to include request header values in response
+// transformations.
+// - base64_encode(string): encodes the input string to base64.
+// - base64_decode(string): decodes the input string from base64.
+// - substring(string, start_pos, substring_len): returns a substring of the
+// input string, starting at `start_pos` and extending for `substring_len`
+// characters. If no `substring_len` is provided or `substring_len` is <= 0, the
+// substring extends to the end of the input string.
+message InjaTemplate { string text = 1; }
+
+message Passthrough {}
+
+message MergeExtractorsToBody {}
+
+message HeaderBodyTransform {
+  // When transforming a request, setting this to true will additionally add "queryString",
+  // "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path",
+  // and "multiValueHeaders" to the body
+  bool add_request_metadata = 1;
 }

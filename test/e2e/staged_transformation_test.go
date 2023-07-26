@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/test/e2e"
 
-	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
@@ -70,10 +69,10 @@ var _ = Describe("Staged Transformation", func() {
 								},
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-												Body: &envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{
 													Text: "early-transformed",
 												},
 											},
@@ -93,10 +92,10 @@ var _ = Describe("Staged Transformation", func() {
 								},
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-												Body: &envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{
 													Text: "regular-transformed",
 												},
 											},
@@ -128,19 +127,19 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											Headers: map[string]*envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											Headers: map[string]*transformation.InjaTemplate{
 												"x-custom-header": {Text: "original header"},
 											},
-											HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
+											HeadersToAppend: []*transformation.TransformationTemplate_HeaderToAppend{
 												{
 													Key:   "x-custom-header",
-													Value: &envoytransformation.InjaTemplate{Text: "{{upper(\"appended header 1\")}}"},
+													Value: &transformation.InjaTemplate{Text: "{{upper(\"appended header 1\")}}"},
 												},
 												{
 													Key:   "x-custom-header",
-													Value: &envoytransformation.InjaTemplate{Text: "{{upper(\"appended header 2\")}}"},
+													Value: &transformation.InjaTemplate{Text: "{{upper(\"appended header 2\")}}"},
 												},
 											},
 										},
@@ -175,10 +174,10 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-												Body: &envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{
 													Text: "{{base64_encode(body())}}",
 												},
 											},
@@ -211,10 +210,10 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-												Body: &envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{
 													Text: "{{base64_decode(body())}}",
 												},
 											},
@@ -249,10 +248,10 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-												Body: &envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{
 													Text: "{{substring(body(), 0, 4)}}",
 												},
 											},
@@ -286,9 +285,9 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											Headers: map[string]*envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											Headers: map[string]*transformation.InjaTemplate{
 												// decode the x-custom-header header and then extract a substring
 												"x-new-custom-header": {Text: `{{substring(base64_decode(request_header("x-custom-header")), 6, 5)}}`},
 											},
@@ -367,10 +366,10 @@ var _ = Describe("Staged Transformation", func() {
 									ResponseTransformation: &transformation.Transformation{
 										LogRequestResponseInfo: logRequestResponseInfoIndividual,
 										TransformationType: &transformation.Transformation_TransformationTemplate{
-											TransformationTemplate: &envoytransformation.TransformationTemplate{
-												ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-												BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-													Body: &envoytransformation.InjaTemplate{
+											TransformationTemplate: &transformation.TransformationTemplate{
+												ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+												BodyTransformation: &transformation.TransformationTemplate_Body{
+													Body: &transformation.InjaTemplate{
 														Text: "{{body()}}-early-transformed",
 													},
 												},
@@ -390,10 +389,10 @@ var _ = Describe("Staged Transformation", func() {
 									},
 									ResponseTransformation: &transformation.Transformation{
 										TransformationType: &transformation.Transformation_TransformationTemplate{
-											TransformationTemplate: &envoytransformation.TransformationTemplate{
-												ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-												BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-													Body: &envoytransformation.InjaTemplate{
+											TransformationTemplate: &transformation.TransformationTemplate{
+												ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+												BodyTransformation: &transformation.TransformationTemplate_Body{
+													Body: &transformation.InjaTemplate{
 														Text: "regular-transformed",
 													},
 												},
@@ -454,10 +453,10 @@ var _ = Describe("Staged Transformation", func() {
 										},
 										ResponseTransformation: &transformation.Transformation{
 											TransformationType: &transformation.Transformation_TransformationTemplate{
-												TransformationTemplate: &envoytransformation.TransformationTemplate{
-													ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-													BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-														Body: &envoytransformation.InjaTemplate{
+												TransformationTemplate: &transformation.TransformationTemplate{
+													ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+													BodyTransformation: &transformation.TransformationTemplate_Body{
+														Body: &transformation.InjaTemplate{
 															Text: "{{body()}}-early-transformed",
 														},
 													},
@@ -477,10 +476,10 @@ var _ = Describe("Staged Transformation", func() {
 										},
 										ResponseTransformation: &transformation.Transformation{
 											TransformationType: &transformation.Transformation_TransformationTemplate{
-												TransformationTemplate: &envoytransformation.TransformationTemplate{
-													ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-													BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-														Body: &envoytransformation.InjaTemplate{
+												TransformationTemplate: &transformation.TransformationTemplate{
+													ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+													BodyTransformation: &transformation.TransformationTemplate_Body{
+														Body: &transformation.InjaTemplate{
 															Text: "regular-transformed",
 														},
 													},
@@ -519,9 +518,9 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											Headers: map[string]*envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											Headers: map[string]*transformation.InjaTemplate{
 												"x-solo-1": {Text: "vhost header"},
 											},
 										},
@@ -537,9 +536,9 @@ var _ = Describe("Staged Transformation", func() {
 							ResponseTransforms: []*transformation.ResponseMatch{{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											Headers: map[string]*envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											Headers: map[string]*transformation.InjaTemplate{
 												"x-solo-2": {Text: "route header"},
 											},
 										},
@@ -603,10 +602,10 @@ var _ = Describe("Staged Transformation", func() {
 								ResponseCodeDetails: "ext_authz_error",
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											BodyTransformation: &envoytransformation.TransformationTemplate_Body{
-												Body: &envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											BodyTransformation: &transformation.TransformationTemplate_Body{
+												Body: &transformation.InjaTemplate{
 													Text: "early-transformed",
 												},
 											},

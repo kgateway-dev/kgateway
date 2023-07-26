@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
@@ -19,7 +20,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
@@ -55,13 +55,13 @@ var _ = Describe("Transformations", func() {
 			transform = &transformation.Transformations{
 				ResponseTransformation: &transformation.Transformation{
 					TransformationType: &transformation.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-								Body: &envoy_transform.InjaTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							BodyTransformation: &transformation.TransformationTemplate_Body{
+								Body: &transformation.InjaTemplate{
 									Text: "{{body}}",
 								},
 							},
-							Headers: map[string]*envoy_transform.InjaTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
 								"content-type": {
 									Text: "text/html",
 								},
@@ -151,11 +151,10 @@ var _ = Describe("Transformations", func() {
 					transform = &transformation.Transformations{
 						ResponseTransformation: &transformation.Transformation{
 							TransformationType: &transformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &envoy_transform.TransformationTemplate{
-									// EscapeCharacters: &wrapperspb.BoolValue{Value: true},
-									EscapeCharacters: true,
-									BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-										Body: &envoy_transform.InjaTemplate{
+								TransformationTemplate: &transformation.TransformationTemplate{
+									EscapeCharacters: &wrapperspb.BoolValue{Value: true},
+									BodyTransformation: &transformation.TransformationTemplate_Body{
+										Body: &transformation.InjaTemplate{
 											Text: `{"FOO":"{{foo}}","BARBAS":["{{bar}}","{{bas}}"]}`,
 										},
 									},
@@ -198,9 +197,9 @@ var _ = Describe("Transformations", func() {
 					transform = &transformation.Transformations{
 						ResponseTransformation: &transformation.Transformation{
 							TransformationType: &transformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &envoy_transform.TransformationTemplate{
-									BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-										Body: &envoy_transform.InjaTemplate{
+								TransformationTemplate: &transformation.TransformationTemplate{
+									BodyTransformation: &transformation.TransformationTemplate_Body{
+										Body: &transformation.InjaTemplate{
 											Text: `{"FOO":"{{raw_string(foo)}}","BARBAS":["{{raw_string(bar)}}","{{raw_string(bas)}}"]}`,
 										},
 									},
@@ -260,8 +259,8 @@ var _ = Describe("Transformations", func() {
 			transform = &transformation.Transformations{
 				ResponseTransformation: &transformation.Transformation{
 					TransformationType: &transformation.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							Headers: map[string]*envoy_transform.InjaTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
 								"x-solo-resp-hdr1": {
 									Text: "{{ request_header(\"x-solo-hdr-1\") }}",
 								},
@@ -328,7 +327,7 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should transform response with non-json body when ParseBodyBehavior is set to DontParse", func() {
-			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = envoy_transform.TransformationTemplate_DontParse
+			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = transformation.TransformationTemplate_DontParse
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 					Transformations: transform,
@@ -340,8 +339,8 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should transform response with non-json body when passthrough is enabled", func() {
-			transform.ResponseTransformation.GetTransformationTemplate().BodyTransformation = &envoy_transform.TransformationTemplate_Passthrough{
-				Passthrough: &envoy_transform.Passthrough{},
+			transform.ResponseTransformation.GetTransformationTemplate().BodyTransformation = &transformation.TransformationTemplate_Passthrough{
+				Passthrough: &transformation.Passthrough{},
 			}
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
@@ -378,7 +377,7 @@ var _ = Describe("Transformations", func() {
 								{
 									RequestTransformation: &transformation.Transformation{
 										TransformationType: &transformation.Transformation_HeaderBodyTransform{
-											HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+											HeaderBodyTransform: &transformation.HeaderBodyTransform{
 												AddRequestMetadata: true,
 											},
 										},

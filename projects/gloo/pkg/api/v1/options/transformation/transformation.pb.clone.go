@@ -13,9 +13,9 @@ import (
 	"github.com/solo-io/protoc-gen-ext/pkg/clone"
 	"google.golang.org/protobuf/proto"
 
-	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+	github_com_golang_protobuf_ptypes_empty "github.com/golang/protobuf/ptypes/empty"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformers_xslt "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformers/xslt"
 
@@ -205,11 +205,11 @@ func (m *Transformation) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetTransformationTemplate()).(clone.Cloner); ok {
 			target.TransformationType = &Transformation_TransformationTemplate{
-				TransformationTemplate: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate),
+				TransformationTemplate: h.Clone().(*TransformationTemplate),
 			}
 		} else {
 			target.TransformationType = &Transformation_TransformationTemplate{
-				TransformationTemplate: proto.Clone(m.GetTransformationTemplate()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.TransformationTemplate),
+				TransformationTemplate: proto.Clone(m.GetTransformationTemplate()).(*TransformationTemplate),
 			}
 		}
 
@@ -217,11 +217,11 @@ func (m *Transformation) Clone() proto.Message {
 
 		if h, ok := interface{}(m.GetHeaderBodyTransform()).(clone.Cloner); ok {
 			target.TransformationType = &Transformation_HeaderBodyTransform{
-				HeaderBodyTransform: h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.HeaderBodyTransform),
+				HeaderBodyTransform: h.Clone().(*HeaderBodyTransform),
 			}
 		} else {
 			target.TransformationType = &Transformation_HeaderBodyTransform{
-				HeaderBodyTransform: proto.Clone(m.GetHeaderBodyTransform()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_transformation.HeaderBodyTransform),
+				HeaderBodyTransform: proto.Clone(m.GetHeaderBodyTransform()).(*HeaderBodyTransform),
 			}
 		}
 
@@ -237,6 +237,255 @@ func (m *Transformation) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *Extraction) Clone() proto.Message {
+	var target *Extraction
+	if m == nil {
+		return target
+	}
+	target = &Extraction{}
+
+	target.Regex = m.GetRegex()
+
+	target.Subgroup = m.GetSubgroup()
+
+	switch m.Source.(type) {
+
+	case *Extraction_Header:
+
+		target.Source = &Extraction_Header{
+			Header: m.GetHeader(),
+		}
+
+	case *Extraction_Body:
+
+		if h, ok := interface{}(m.GetBody()).(clone.Cloner); ok {
+			target.Source = &Extraction_Body{
+				Body: h.Clone().(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		} else {
+			target.Source = &Extraction_Body{
+				Body: proto.Clone(m.GetBody()).(*github_com_golang_protobuf_ptypes_empty.Empty),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *TransformationTemplate) Clone() proto.Message {
+	var target *TransformationTemplate
+	if m == nil {
+		return target
+	}
+	target = &TransformationTemplate{}
+
+	target.AdvancedTemplates = m.GetAdvancedTemplates()
+
+	if m.GetExtractors() != nil {
+		target.Extractors = make(map[string]*Extraction, len(m.GetExtractors()))
+		for k, v := range m.GetExtractors() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Extractors[k] = h.Clone().(*Extraction)
+			} else {
+				target.Extractors[k] = proto.Clone(v).(*Extraction)
+			}
+
+		}
+	}
+
+	if m.GetHeaders() != nil {
+		target.Headers = make(map[string]*InjaTemplate, len(m.GetHeaders()))
+		for k, v := range m.GetHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Headers[k] = h.Clone().(*InjaTemplate)
+			} else {
+				target.Headers[k] = proto.Clone(v).(*InjaTemplate)
+			}
+
+		}
+	}
+
+	if m.GetHeadersToAppend() != nil {
+		target.HeadersToAppend = make([]*TransformationTemplate_HeaderToAppend, len(m.GetHeadersToAppend()))
+		for idx, v := range m.GetHeadersToAppend() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.HeadersToAppend[idx] = h.Clone().(*TransformationTemplate_HeaderToAppend)
+			} else {
+				target.HeadersToAppend[idx] = proto.Clone(v).(*TransformationTemplate_HeaderToAppend)
+			}
+
+		}
+	}
+
+	if m.GetHeadersToRemove() != nil {
+		target.HeadersToRemove = make([]string, len(m.GetHeadersToRemove()))
+		for idx, v := range m.GetHeadersToRemove() {
+
+			target.HeadersToRemove[idx] = v
+
+		}
+	}
+
+	target.ParseBodyBehavior = m.GetParseBodyBehavior()
+
+	target.IgnoreErrorOnParse = m.GetIgnoreErrorOnParse()
+
+	if m.GetDynamicMetadataValues() != nil {
+		target.DynamicMetadataValues = make([]*TransformationTemplate_DynamicMetadataValue, len(m.GetDynamicMetadataValues()))
+		for idx, v := range m.GetDynamicMetadataValues() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.DynamicMetadataValues[idx] = h.Clone().(*TransformationTemplate_DynamicMetadataValue)
+			} else {
+				target.DynamicMetadataValues[idx] = proto.Clone(v).(*TransformationTemplate_DynamicMetadataValue)
+			}
+
+		}
+	}
+
+	if h, ok := interface{}(m.GetEscapeCharacters()).(clone.Cloner); ok {
+		target.EscapeCharacters = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.EscapeCharacters = proto.Clone(m.GetEscapeCharacters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	switch m.BodyTransformation.(type) {
+
+	case *TransformationTemplate_Body:
+
+		if h, ok := interface{}(m.GetBody()).(clone.Cloner); ok {
+			target.BodyTransformation = &TransformationTemplate_Body{
+				Body: h.Clone().(*InjaTemplate),
+			}
+		} else {
+			target.BodyTransformation = &TransformationTemplate_Body{
+				Body: proto.Clone(m.GetBody()).(*InjaTemplate),
+			}
+		}
+
+	case *TransformationTemplate_Passthrough:
+
+		if h, ok := interface{}(m.GetPassthrough()).(clone.Cloner); ok {
+			target.BodyTransformation = &TransformationTemplate_Passthrough{
+				Passthrough: h.Clone().(*Passthrough),
+			}
+		} else {
+			target.BodyTransformation = &TransformationTemplate_Passthrough{
+				Passthrough: proto.Clone(m.GetPassthrough()).(*Passthrough),
+			}
+		}
+
+	case *TransformationTemplate_MergeExtractorsToBody:
+
+		if h, ok := interface{}(m.GetMergeExtractorsToBody()).(clone.Cloner); ok {
+			target.BodyTransformation = &TransformationTemplate_MergeExtractorsToBody{
+				MergeExtractorsToBody: h.Clone().(*MergeExtractorsToBody),
+			}
+		} else {
+			target.BodyTransformation = &TransformationTemplate_MergeExtractorsToBody{
+				MergeExtractorsToBody: proto.Clone(m.GetMergeExtractorsToBody()).(*MergeExtractorsToBody),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *InjaTemplate) Clone() proto.Message {
+	var target *InjaTemplate
+	if m == nil {
+		return target
+	}
+	target = &InjaTemplate{}
+
+	target.Text = m.GetText()
+
+	return target
+}
+
+// Clone function
+func (m *Passthrough) Clone() proto.Message {
+	var target *Passthrough
+	if m == nil {
+		return target
+	}
+	target = &Passthrough{}
+
+	return target
+}
+
+// Clone function
+func (m *MergeExtractorsToBody) Clone() proto.Message {
+	var target *MergeExtractorsToBody
+	if m == nil {
+		return target
+	}
+	target = &MergeExtractorsToBody{}
+
+	return target
+}
+
+// Clone function
+func (m *HeaderBodyTransform) Clone() proto.Message {
+	var target *HeaderBodyTransform
+	if m == nil {
+		return target
+	}
+	target = &HeaderBodyTransform{}
+
+	target.AddRequestMetadata = m.GetAddRequestMetadata()
+
+	return target
+}
+
+// Clone function
+func (m *TransformationTemplate_HeaderToAppend) Clone() proto.Message {
+	var target *TransformationTemplate_HeaderToAppend
+	if m == nil {
+		return target
+	}
+	target = &TransformationTemplate_HeaderToAppend{}
+
+	target.Key = m.GetKey()
+
+	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
+		target.Value = h.Clone().(*InjaTemplate)
+	} else {
+		target.Value = proto.Clone(m.GetValue()).(*InjaTemplate)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *TransformationTemplate_DynamicMetadataValue) Clone() proto.Message {
+	var target *TransformationTemplate_DynamicMetadataValue
+	if m == nil {
+		return target
+	}
+	target = &TransformationTemplate_DynamicMetadataValue{}
+
+	target.MetadataNamespace = m.GetMetadataNamespace()
+
+	target.Key = m.GetKey()
+
+	if h, ok := interface{}(m.GetValue()).(clone.Cloner); ok {
+		target.Value = h.Clone().(*InjaTemplate)
+	} else {
+		target.Value = proto.Clone(m.GetValue()).(*InjaTemplate)
 	}
 
 	return target

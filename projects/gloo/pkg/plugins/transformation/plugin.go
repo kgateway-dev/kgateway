@@ -283,31 +283,20 @@ func (p *Plugin) ConvertTransformation(
 			if requestMatch := t.GetRequestMatch(); requestMatch != nil {
 				if requestTransformation := requestMatch.GetRequestTransformation(); requestTransformation != nil {
 					requestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: logReqRespInfo}
-					p.setEscapeCharacters(requestTransformation)
 				}
 				if responseTransformation := requestMatch.GetResponseTransformation(); responseTransformation != nil {
 					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: logReqRespInfo}
-					p.setEscapeCharacters(responseTransformation)
 				}
 			}
 			if responseMatch := t.GetResponseMatch(); responseMatch != nil {
 				if responseTransformation := responseMatch.GetResponseTransformation(); responseTransformation != nil {
 					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: logReqRespInfo}
-					p.setEscapeCharacters(responseTransformation)
 				}
 			}
 		}
 	}
 
 	return ret, nil
-}
-
-func (p Plugin) setEscapeCharacters(t *envoytransformation.Transformation) {
-	t.GetTransformationTemplate().EscapeCharacters = true
-	// template := t.GetTransformationTemplate()
-	// if template.GetEscapeCharacters() != nil {
-	// 	template.EscapeCharacters = p.transformationOptions.GetEscapeCharacters()
-	// }
 }
 
 func (p *Plugin) translateOSSTransformations(
@@ -332,19 +321,14 @@ func TranslateTransformation(glooTransform *transformation.Transformation, trans
 	switch typedTransformation := glooTransform.GetTransformationType().(type) {
 	case *transformation.Transformation_HeaderBodyTransform:
 		{
-			out.TransformationType = &envoytransformation.Transformation_HeaderBodyTransform{
-				HeaderBodyTransform: typedTransformation.HeaderBodyTransform,
-			}
+			out.TransformationType = translateHeaderBodyTransform(typedTransformation)
 		}
 	case *transformation.Transformation_TransformationTemplate:
 		{
-			// if typedTransformation.TransformationTemplate.GetEscapeCharacters() == nil {
-			// 	typedTransformation.TransformationTemplate.EscapeCharacters = transformationOpts.GetEscapeCharacters()
-			// }
-			typedTransformation.TransformationTemplate.EscapeCharacters = true
-			out.TransformationType = &envoytransformation.Transformation_TransformationTemplate{
-				TransformationTemplate: typedTransformation.TransformationTemplate,
+			if typedTransformation.TransformationTemplate.GetEscapeCharacters() == nil {
+				typedTransformation.TransformationTemplate.EscapeCharacters = transformationOpts.GetEscapeCharacters()
 			}
+			out.TransformationType = translateTransformationTemplate(typedTransformation)
 		}
 	default:
 		return nil, UnknownTransformationType(typedTransformation)
@@ -356,6 +340,93 @@ func TranslateTransformation(glooTransform *transformation.Transformation, trans
 	}
 
 	return out, nil
+}
+
+func translateHeaderBodyTransform(in *transformation.Transformation_HeaderBodyTransform) *envoytransformation.Transformation_HeaderBodyTransform {
+	out := &envoytransformation.Transformation_HeaderBodyTransform{}
+	out.HeaderBodyTransform = &envoytransformation.HeaderBodyTransform{
+		AddRequestMetadata: in.HeaderBodyTransform.GetAddRequestMetadata(),
+	}
+	return out
+}
+
+func translateTransformationTemplate(in *transformation.Transformation_TransformationTemplate) *envoytransformation.Transformation_TransformationTemplate {
+	out := &envoytransformation.Transformation_TransformationTemplate{}
+	inTemplate := in.TransformationTemplate
+	outTemplate := &envoytransformation.TransformationTemplate{
+		AdvancedTemplates:  inTemplate.GetAdvancedTemplates(),
+		HeadersToRemove:    inTemplate.GetHeadersToRemove(),
+		IgnoreErrorOnParse: inTemplate.GetIgnoreErrorOnParse(),
+		ParseBodyBehavior:  envoytransformation.TransformationTemplate_RequestBodyParse(inTemplate.GetParseBodyBehavior()),
+		EscapeCharacters:   inTemplate.GetEscapeCharacters().GetValue(), // the inheritance is handled in TranslateTransformation
+		// initialize maps and arrays for use in looping translation below
+		Extractors:            make(map[string]*envoytransformation.Extraction),
+		Headers:               make(map[string]*envoytransformation.InjaTemplate),
+		HeadersToAppend:       make([]*envoytransformation.TransformationTemplate_HeaderToAppend, len(inTemplate.GetHeadersToAppend())),
+		DynamicMetadataValues: make([]*envoytransformation.TransformationTemplate_DynamicMetadataValue, len(inTemplate.GetDynamicMetadataValues())),
+	}
+	for k, v := range inTemplate.GetExtractors() {
+		outExtraction := &envoytransformation.Extraction{
+			Regex:    v.GetRegex(),
+			Subgroup: v.GetSubgroup(),
+		}
+		switch src := v.GetSource().(type) {
+		case *transformation.Extraction_Body:
+			outExtraction.Source = &envoytransformation.Extraction_Body{
+				Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
+			}
+		case *transformation.Extraction_Header:
+			outExtraction.Source = &envoytransformation.Extraction_Header{
+				Header: src.Header,
+			}
+		}
+		outTemplate.GetExtractors()[k] = outExtraction
+	}
+
+	for k, v := range inTemplate.GetHeaders() {
+		outTemplate.GetHeaders()[k] = &envoytransformation.InjaTemplate{Text: v.GetText()}
+	}
+
+	for i, hdr := range inTemplate.GetHeadersToAppend() {
+		outTemplate.GetHeadersToAppend()[i] = &envoytransformation.TransformationTemplate_HeaderToAppend{
+			Key:   hdr.GetKey(),
+			Value: &envoytransformation.InjaTemplate{Text: hdr.GetValue().GetText()},
+		}
+
+	}
+
+	switch bodyTransformation := inTemplate.GetBodyTransformation().(type) {
+	case *transformation.TransformationTemplate_Body:
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_Body{
+			Body: &envoytransformation.InjaTemplate{
+				Text: bodyTransformation.Body.GetText(),
+			},
+		}
+	case *transformation.TransformationTemplate_Passthrough:
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_Passthrough{
+			Passthrough: &envoytransformation.Passthrough{},
+		}
+	case *transformation.TransformationTemplate_MergeExtractorsToBody:
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_MergeExtractorsToBody{
+			MergeExtractorsToBody: &envoytransformation.MergeExtractorsToBody{},
+		}
+	}
+
+	for i, v := range inTemplate.GetDynamicMetadataValues() {
+		outTemplate.GetDynamicMetadataValues()[i] = &envoytransformation.TransformationTemplate_DynamicMetadataValue{
+			MetadataNamespace: v.GetMetadataNamespace(),
+			Key:               v.GetKey(),
+			Value: &envoytransformation.InjaTemplate{
+				Text: v.GetValue().GetText(),
+			},
+		}
+	}
+
+	out.TransformationTemplate = &envoytransformation.TransformationTemplate{
+		EscapeCharacters: false,
+	}
+	out.TransformationTemplate = outTemplate
+	return out
 }
 
 func (p *Plugin) validateTransformation(

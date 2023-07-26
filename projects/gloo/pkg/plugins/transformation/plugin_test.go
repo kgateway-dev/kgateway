@@ -47,11 +47,12 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("translates header body transform", func() {
+			headerBodyTransformIn := &transformation.HeaderBodyTransform{}
 			headerBodyTransform := &envoytransformation.HeaderBodyTransform{}
 
 			input := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_HeaderBodyTransform{
-					HeaderBodyTransform: headerBodyTransform,
+					HeaderBodyTransform: headerBodyTransformIn,
 				},
 			}
 
@@ -66,6 +67,16 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("translates transformation template repeatedly", func() {
+			transformationTemplateIn := &transformation.TransformationTemplate{
+				HeadersToAppend: []*transformation.TransformationTemplate_HeaderToAppend{
+					{
+						Key: "some-header",
+						Value: &transformation.InjaTemplate{
+							Text: "some text",
+						},
+					},
+				},
+			}
 			transformationTemplate := &envoytransformation.TransformationTemplate{
 				HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
 					{
@@ -79,7 +90,7 @@ var _ = Describe("Plugin", func() {
 
 			input := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: transformationTemplate,
+					TransformationTemplate: transformationTemplateIn,
 				},
 			}
 
@@ -133,7 +144,7 @@ var _ = Describe("Plugin", func() {
 						RequestTransforms: []*transformation.RequestMatch{{
 							RequestTransformation: &transformation.Transformation{
 								TransformationType: &transformation.Transformation_HeaderBodyTransform{
-									HeaderBodyTransform: &envoytransformation.HeaderBodyTransform{},
+									HeaderBodyTransform: &transformation.HeaderBodyTransform{},
 								},
 							},
 						}},
@@ -319,7 +330,7 @@ var _ = Describe("Plugin", func() {
 			BeforeEach(func() {
 				inputTransform = &transformation.Transformation{
 					TransformationType: &transformation.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoytransformation.TransformationTemplate{},
+						TransformationTemplate: &transformation.TransformationTemplate{},
 					},
 				}
 				outputTransform = &envoytransformation.Transformation{
@@ -347,7 +358,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("can set escape_characters on transformation level", func() {
-				inputTransform.GetTransformationTemplate().EscapeCharacters = true
+				inputTransform.GetTransformationTemplate().EscapeCharacters = &wrapperspb.BoolValue{Value: true}
 				outputTransform.GetTransformationTemplate().EscapeCharacters = true
 
 				output, err := p.(transformationPlugin).ConvertTransformation(
@@ -361,7 +372,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("sets escape_characters to false if transformation-level setting is false", func() {
-				inputTransform.GetTransformationTemplate().EscapeCharacters = false
+				inputTransform.GetTransformationTemplate().EscapeCharacters = &wrapperspb.BoolValue{Value: false}
 				outputTransform.GetTransformationTemplate().EscapeCharacters = false
 
 				output, err := p.(transformationPlugin).ConvertTransformation(
@@ -375,7 +386,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("does not set escape_characters if transformation-level setting is nil", func() {
-				inputTransform.GetTransformationTemplate().EscapeCharacters = false
+				inputTransform.GetTransformationTemplate().EscapeCharacters = &wrapperspb.BoolValue{Value: false}
 
 				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
@@ -501,6 +512,12 @@ var _ = Describe("Plugin", func() {
 				Stage: EarlyStageNumber,
 			})
 			Expect(err).NotTo(HaveOccurred())
+			earlyRequestTransformationTemplateIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "1"},
+				},
+			}
 			earlyRequestTransformationTemplate := &envoytransformation.TransformationTemplate{
 				AdvancedTemplates: true,
 				BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -510,12 +527,18 @@ var _ = Describe("Plugin", func() {
 			// construct transformation with all the options, to make sure translation is correct
 			earlyRequestTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: earlyRequestTransformationTemplate,
+					TransformationTemplate: earlyRequestTransformationTemplateIn,
 				},
 			}
 			envoyEarlyRequestTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: earlyRequestTransformationTemplate,
+				},
+			}
+			earlyResponseTransformationTemplateIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "2"},
 				},
 			}
 			earlyResponseTransformationTemplate := &envoytransformation.TransformationTemplate{
@@ -526,12 +549,18 @@ var _ = Describe("Plugin", func() {
 			}
 			earlyResponseTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: earlyResponseTransformationTemplate,
+					TransformationTemplate: earlyResponseTransformationTemplateIn,
 				},
 			}
 			envoyEarlyResponseTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: earlyResponseTransformationTemplate,
+				},
+			}
+			requestTransformationIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "11"},
 				},
 			}
 			requestTransformation := &envoytransformation.TransformationTemplate{
@@ -542,12 +571,18 @@ var _ = Describe("Plugin", func() {
 			}
 			requestTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: requestTransformation,
+					TransformationTemplate: requestTransformationIn,
 				},
 			}
 			envoyRequestTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: requestTransformation,
+				},
+			}
+			responseTransformationIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "12"},
 				},
 			}
 			responseTransformation := &envoytransformation.TransformationTemplate{
@@ -558,7 +593,7 @@ var _ = Describe("Plugin", func() {
 			}
 			responseTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: responseTransformation,
+					TransformationTemplate: responseTransformationIn,
 				},
 			}
 			envoyResponseTransform := &envoytransformation.Transformation{
