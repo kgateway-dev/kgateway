@@ -91,7 +91,7 @@ Review the following summary of important new, deprecated, or removed Helm field
 
 **New and updated Helm fields**:
 
-* (Enterprise only) The following fields are added to the `redis` Helm settings:
+* Enterprise only: The following fields are added to the `redis` Helm settings:
   * When you use a Redis solution other than the default deployment installed by Gloo, you can specify a database other than `0` by setting the `redis.service.db` field. Note that this is field is ignored for clustered Redis or when `ClientSideShardingEnabled` is set to true.
   * The `redis.tlsEnabled` field is added to enabled a Redis TLS connection for the rate limit server. The default value is false.
   * When you set both `redis.disabled` and `global.extensions.glooRedis.enableAcl` to true, a Redis secret is not created.
