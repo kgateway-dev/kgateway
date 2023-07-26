@@ -75,6 +75,30 @@ func (m *Settings) Clone() proto.Message {
 		target.ProcessingMode = proto.Clone(m.GetProcessingMode()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
 	}
 
+	if h, ok := interface{}(m.GetAsyncMode()).(clone.Cloner); ok {
+		target.AsyncMode = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AsyncMode = proto.Clone(m.GetAsyncMode()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if m.GetRequestAttributes() != nil {
+		target.RequestAttributes = make([]string, len(m.GetRequestAttributes()))
+		for idx, v := range m.GetRequestAttributes() {
+
+			target.RequestAttributes[idx] = v
+
+		}
+	}
+
+	if m.GetResponseAttributes() != nil {
+		target.ResponseAttributes = make([]string, len(m.GetResponseAttributes()))
+		for idx, v := range m.GetResponseAttributes() {
+
+			target.ResponseAttributes[idx] = v
+
+		}
+	}
+
 	if h, ok := interface{}(m.GetMessageTimeout()).(clone.Cloner); ok {
 		target.MessageTimeout = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
@@ -179,7 +203,11 @@ func (m *GrpcService) Clone() proto.Message {
 		target.ExtProcServerRef = proto.Clone(m.GetExtProcServerRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
 	}
 
-	target.Authority = m.GetAuthority()
+	if h, ok := interface{}(m.GetAuthority()).(clone.Cloner); ok {
+		target.Authority = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	} else {
+		target.Authority = proto.Clone(m.GetAuthority()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
+	}
 
 	if h, ok := interface{}(m.GetRetryPolicy()).(clone.Cloner); ok {
 		target.RetryPolicy = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_config_core_v3.RetryPolicy)
@@ -221,6 +249,30 @@ func (m *Overrides) Clone() proto.Message {
 		target.ProcessingMode = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
 	} else {
 		target.ProcessingMode = proto.Clone(m.GetProcessingMode()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_external_envoy_extensions_filters_http_ext_proc_v3.ProcessingMode)
+	}
+
+	if h, ok := interface{}(m.GetAsyncMode()).(clone.Cloner); ok {
+		target.AsyncMode = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.AsyncMode = proto.Clone(m.GetAsyncMode()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if m.GetRequestAttributes() != nil {
+		target.RequestAttributes = make([]string, len(m.GetRequestAttributes()))
+		for idx, v := range m.GetRequestAttributes() {
+
+			target.RequestAttributes[idx] = v
+
+		}
+	}
+
+	if m.GetResponseAttributes() != nil {
+		target.ResponseAttributes = make([]string, len(m.GetResponseAttributes()))
+		for idx, v := range m.GetResponseAttributes() {
+
+			target.ResponseAttributes[idx] = v
+
+		}
 	}
 
 	if h, ok := interface{}(m.GetGrpcService()).(clone.Cloner); ok {

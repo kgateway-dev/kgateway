@@ -86,6 +86,38 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAsyncMode()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAsyncMode()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAsyncMode(), target.GetAsyncMode()) {
+			return false
+		}
+	}
+
+	if len(m.GetRequestAttributes()) != len(target.GetRequestAttributes()) {
+		return false
+	}
+	for idx, v := range m.GetRequestAttributes() {
+
+		if strings.Compare(v, target.GetRequestAttributes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetResponseAttributes()) != len(target.GetResponseAttributes()) {
+		return false
+	}
+	for idx, v := range m.GetResponseAttributes() {
+
+		if strings.Compare(v, target.GetResponseAttributes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetMessageTimeout()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetMessageTimeout()) {
 			return false
@@ -263,8 +295,14 @@ func (m *GrpcService) Equal(that interface{}) bool {
 		}
 	}
 
-	if strings.Compare(m.GetAuthority(), target.GetAuthority()) != 0 {
-		return false
+	if h, ok := interface{}(m.GetAuthority()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAuthority()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAuthority(), target.GetAuthority()) {
+			return false
+		}
 	}
 
 	if h, ok := interface{}(m.GetRetryPolicy()).(equality.Equalizer); ok {
@@ -336,6 +374,38 @@ func (m *Overrides) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetProcessingMode(), target.GetProcessingMode()) {
 			return false
 		}
+	}
+
+	if h, ok := interface{}(m.GetAsyncMode()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAsyncMode()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAsyncMode(), target.GetAsyncMode()) {
+			return false
+		}
+	}
+
+	if len(m.GetRequestAttributes()) != len(target.GetRequestAttributes()) {
+		return false
+	}
+	for idx, v := range m.GetRequestAttributes() {
+
+		if strings.Compare(v, target.GetRequestAttributes()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetResponseAttributes()) != len(target.GetResponseAttributes()) {
+		return false
+	}
+	for idx, v := range m.GetResponseAttributes() {
+
+		if strings.Compare(v, target.GetResponseAttributes()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	if h, ok := interface{}(m.GetGrpcService()).(equality.Equalizer); ok {

@@ -42,6 +42,9 @@ Users should take care to understand the risks of using this extension before pr
 "filterStage": .filters.gloo.solo.io.FilterStage
 "failureModeAllow": .google.protobuf.BoolValue
 "processingMode": .solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode
+"asyncMode": .google.protobuf.BoolValue
+"requestAttributes": []string
+"responseAttributes": []string
 "messageTimeout": .google.protobuf.Duration
 "statPrefix": .google.protobuf.StringValue
 "mutationRules": .solo.io.envoy.config.common.mutation_rules.v3.HeaderMutationRules
@@ -56,9 +59,12 @@ Users should take care to understand the risks of using this extension before pr
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `grpcService` | [.extproc.options.gloo.solo.io.GrpcService](../extproc.proto.sk/#grpcservice) | Required. Configuration for the gRPC service that the filter will communicate with. |
-| `filterStage` | [.filters.gloo.solo.io.FilterStage](../../../../filters/stages.proto.sk/#filterstage) | Where in the HTTP filter chain to insert the filter. |
+| `filterStage` | [.filters.gloo.solo.io.FilterStage](../../../../filters/stages.proto.sk/#filterstage) | Required. Where in the HTTP filter chain to insert the filter. |
 | `failureModeAllow` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | By default, if the gRPC stream cannot be established, or if it is closed prematurely with an error, the filter will fail. Specifically, if the response headers have not yet been delivered, then it will return a 500 error downstream. If they have been delivered, then instead the HTTP stream to the downstream client will be reset. With this parameter set to true, however, then if the gRPC stream is prematurely closed or could not be opened, processing continues without error. |
 | `processingMode` | [.solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode](../../../../../external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto.sk/#processingmode) | Specifies default options for how HTTP headers, trailers, and bodies are sent. |
+| `asyncMode` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | NOT CURRENTLY IMPLEMENTED. If true, send each part of the HTTP request or response specified by ProcessingMode asynchronously -- in other words, send the message on the gRPC stream and then continue filter processing. If false, which is the default, suspend filter execution after each message is sent to the remote service and wait up to "message_timeout" for a reply. |
+| `requestAttributes` | `[]string` | NOT CURRENTLY IMPLEMENTED. Envoy provides a number of [attributes](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#arch-overview-attributes) for expressive policies. Each attribute name provided in this field will be matched against that list and populated in the request_headers message. See the [request attribute documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#request-attributes) for the list of supported attributes and their types. |
+| `responseAttributes` | `[]string` | NOT CURRENTLY IMPLEMENTED. Envoy provides a number of [attributes](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#arch-overview-attributes) for expressive policies. Each attribute name provided in this field will be matched against that list and populated in the response_headers message. See the [response attribute documentation](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/attributes#response-attributes) for the list of supported attributes and their types. |
 | `messageTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Specifies the timeout for each individual message sent on the stream when the filter is running in synchronous mode. Whenever the proxy sends a message on the stream that requires a response, it will reset this timer, and will stop processing and return an error (subject to the processing mode) if the timer expires before a matching response is received. There is no timeout when the filter is running in asynchronous mode. Zero is a valid config which means the timer will be triggered immediately. If not configured, default is 200 milliseconds. |
 | `statPrefix` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Optional additional prefix to use when emitting statistics. This allows distinguishing between statistics emitted by multiple *ext_proc* filters in an HTTP filter chain. |
 | `mutationRules` | [.solo.io.envoy.config.common.mutation_rules.v3.HeaderMutationRules](../../../../../external/envoy/config/common/mutation_rules/v3/mutation_rules.proto.sk/#headermutationrules) | Rules that determine what modifications an external processing server may make to message headers. If not set, all headers may be modified except for "host", ":authority", ":scheme", ":method", and headers that start with the header prefix set via [header_prefix](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/bootstrap/v3/bootstrap.proto#envoy-v3-api-field-config-bootstrap-v3-bootstrap-header-prefix) (which is usually "x-envoy"). Note that changing headers such as "host" or ":authority" may not in itself change Envoy's routing decision, as routes can be cached. To also force the route to be recomputed, set the [clear_route_cache](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-commonresponse-clear-route-cache) field to true in the same response. |
@@ -98,7 +104,7 @@ External processor settings that can be configured on a virtual host or route.
 
 ```yaml
 "extProcServerRef": .core.solo.io.ResourceRef
-"authority": string
+"authority": .google.protobuf.StringValue
 "retryPolicy": .solo.io.envoy.config.core.v3.RetryPolicy
 "timeout": .google.protobuf.Duration
 "initialMetadata": []solo.io.envoy.config.core.v3.HeaderValue
@@ -108,7 +114,7 @@ External processor settings that can be configured on a virtual host or route.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `extProcServerRef` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A reference to the Upstream representing the external processor gRPC server. See https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto for details. |
-| `authority` | `string` | The `:authority` header in the grpc request. If this field is not set, the authority header value will be the cluster name. Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster. |
+| `authority` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | The `:authority` header in the grpc request. If this field is not set, the authority header value will be the cluster name. Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster. |
 | `retryPolicy` | [.solo.io.envoy.config.core.v3.RetryPolicy](../../../../../external/envoy/config/core/v3/base.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream This field is optional. If max interval is not provided, it will be set to ten times the provided base interval. Currently only supported for xDS gRPC streams. If not set, xDS gRPC streams default base interval:500ms, maximum interval:30s will be applied. |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for the gRPC request. This is the timeout for a specific request. |
 | `initialMetadata` | [[]solo.io.envoy.config.core.v3.HeaderValue](../../../../../external/envoy/config/core/v3/base.proto.sk/#headervalue) | Additional metadata to include in streams initiated to the GrpcService. This can be used for scenarios in which additional ad hoc authorization headers (e.g. `x-foo-bar: baz-key`) are to be injected. For more information, including details on header value syntax, see the documentation on [custom request headers](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#config-http-conn-man-headers-custom-request-headers). |
@@ -123,6 +129,9 @@ External processor settings that can be configured on a virtual host or route.
 
 ```yaml
 "processingMode": .solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode
+"asyncMode": .google.protobuf.BoolValue
+"requestAttributes": []string
+"responseAttributes": []string
 "grpcService": .extproc.options.gloo.solo.io.GrpcService
 
 ```
@@ -130,6 +139,9 @@ External processor settings that can be configured on a virtual host or route.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `processingMode` | [.solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode](../../../../../external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto.sk/#processingmode) | Set a different processing mode for this virtual host or route than the default. |
+| `asyncMode` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | NOT CURRENTLY IMPLEMENTED. Set a different asynchronous processing option than the default. |
+| `requestAttributes` | `[]string` | NOT CURRENTLY IMPLEMENTED. Set different optional attributes than the default setting of the `request_attributes` field. |
+| `responseAttributes` | `[]string` | NOT CURRENTLY IMPLEMENTED. Set different optional properties than the default setting of the `response_attributes` field. |
 | `grpcService` | [.extproc.options.gloo.solo.io.GrpcService](../extproc.proto.sk/#grpcservice) | Set a different gRPC service for this virtual host or route than the default. |
 
 

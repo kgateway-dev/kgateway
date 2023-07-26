@@ -418,6 +418,9 @@ spec:
                           allowModeOverride:
                             nullable: true
                             type: boolean
+                          asyncMode:
+                            nullable: true
+                            type: boolean
                           disableClearRouteCache:
                             nullable: true
                             type: boolean
@@ -500,6 +503,7 @@ spec:
                           grpcService:
                             properties:
                               authority:
+                                nullable: true
                                 type: string
                               extProcServerRef:
                                 properties:
@@ -604,6 +608,14 @@ spec:
                                 type: string
                                 x-kubernetes-int-or-string: true
                             type: object
+                          requestAttributes:
+                            items:
+                              type: string
+                            type: array
+                          responseAttributes:
+                            items:
+                              type: string
+                            type: array
                           statPrefix:
                             nullable: true
                             type: string

@@ -118,6 +118,42 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetAsyncMode()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("AsyncMode")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAsyncMode(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("AsyncMode")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetRequestAttributes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetResponseAttributes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
 	if h, ok := interface{}(m.GetMessageTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = hasher.Write([]byte("MessageTimeout")); err != nil {
 			return 0, err
@@ -378,8 +414,24 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if _, err = hasher.Write([]byte(m.GetAuthority())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetAuthority()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Authority")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAuthority(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Authority")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if h, ok := interface{}(m.GetRetryPolicy()).(safe_hasher.SafeHasher); ok {
@@ -480,6 +532,42 @@ func (m *Overrides) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
+	}
+
+	if h, ok := interface{}(m.GetAsyncMode()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("AsyncMode")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetAsyncMode(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("AsyncMode")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	for _, v := range m.GetRequestAttributes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetResponseAttributes() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
 	}
 
 	if h, ok := interface{}(m.GetGrpcService()).(safe_hasher.SafeHasher); ok {

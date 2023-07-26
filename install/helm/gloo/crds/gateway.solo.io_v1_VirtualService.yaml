@@ -285,9 +285,13 @@ spec:
                             type: boolean
                           overrides:
                             properties:
+                              asyncMode:
+                                nullable: true
+                                type: boolean
                               grpcService:
                                 properties:
                                   authority:
+                                    nullable: true
                                     type: string
                                   extProcServerRef:
                                     properties:
@@ -344,6 +348,14 @@ spec:
                                     type: string
                                     x-kubernetes-int-or-string: true
                                 type: object
+                              requestAttributes:
+                                items:
+                                  type: string
+                                type: array
+                              responseAttributes:
+                                items:
+                                  type: string
+                                type: array
                             type: object
                         type: object
                       extauth:
@@ -2541,9 +2553,13 @@ spec:
                                   type: boolean
                                 overrides:
                                   properties:
+                                    asyncMode:
+                                      nullable: true
+                                      type: boolean
                                     grpcService:
                                       properties:
                                         authority:
+                                          nullable: true
                                           type: string
                                         extProcServerRef:
                                           properties:
@@ -2600,6 +2616,14 @@ spec:
                                           type: string
                                           x-kubernetes-int-or-string: true
                                       type: object
+                                    requestAttributes:
+                                      items:
+                                        type: string
+                                      type: array
+                                    responseAttributes:
+                                      items:
+                                        type: string
+                                      type: array
                                   type: object
                               type: object
                             extauth:
