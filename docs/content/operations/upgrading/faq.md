@@ -75,19 +75,26 @@ Review the following summary of important new, deprecated, or removed features. 
 * **Access log flushing**: You can now flush the access log on a periodic basis by setting the [`tcpProxySettings.accessLogFlushInterval` field in the `tcp` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#tcpproxysettings" %}}). Because the default behaviour is to write to the access log only when a connection is closed, it might take a long time to write long-running TCP connections to the access log. If you flush periodically, you ensure that access logs can be written on a regular interval.
 * **Proxy protocol support for upstreams**: You can now set the [`proxyProtocolVersion` field in your `upstream` Gloo resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/" %}}).
 * **Debug logging on transformations**: If you apply transformations in your `VirtualService` resources, you can now [enable debug logging with the `logRequestResponseInfo` field]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/debug_logging/" %}}).
+* **Symmetric encryption**: In the [`UserSession` section of the `ExtAuthConfig` resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#usersession" %}}), you can now apply symmetric encryption to cookie session tokens and values by using the `cipherConfig` field.
+* **Timeouts for GraphQL resolutions** (Enterprise only): In the `GraphQLApi` resource, you can now define a [`timeout` for the REST or gRPC resolver]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#restresolver" %}}).
+* **Redis databases** (Enterprise only): When you use a Redis solution other than the default deployment installed by Gloo, you can specify a database other than `0` by setting the `redis.service.db` field. Note that this is field is ignored for clustered Redis or when `ClientSideShardingEnabled` is set to true.
 
-**Deprecated features**:
+<!--**Deprecated features**:
 
 
-**Removed features**:
+**Removed features**:-->
 
 
 ### Helm changes {#helm}
 
 Review the following summary of important new, deprecated, or removed Helm fields. For full details, see the [changelogs](#changelogs).
 
-**New Helm fields**:
+**New and updated Helm fields**:
 
+* (Enterprise only) The following fields are added to the `redis` Helm settings:
+  * When you use a Redis solution other than the default deployment installed by Gloo, you can specify a database other than `0` by setting the `redis.service.db` field. Note that this is field is ignored for clustered Redis or when `ClientSideShardingEnabled` is set to true.
+  * The `redis.tlsEnabled` field is added to enabled a Redis TLS connection for the rate limit server. The default value is false.
+  * When you set both `redis.disabled` and `global.extensions.glooRedis.enableAcl` to true, a Redis secret is not created.
 * In non-production environments, you can set the new [`settings.devMode` field]({{% versioned_link_path fromRoot="/operations/debugging_gloo/#dev-mode-and-gloo-debug-endpoint" %}}) to `true` to enable a debug endpoint on the Gloo deployment on port `10010`.
 * The following fields are added to the `gloo-fed` Helm settings:
   * Custom securityContexts for pods: `gloo-fed.glooFed.podSecurityContext`
@@ -98,11 +105,13 @@ Review the following summary of important new, deprecated, or removed Helm field
 * The `settings.ratelimitServer` field adds the ability to specify your [external rate limit server configuration]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/" %}}) in your Helm installation file.
 * The default value for the `settings.regexMaxProgramSize` field is changed to `1024`. Envoy has a default of 100, which is often not large enough for regex patterns.
 * Skip using the validation webhook when you delete certain resources by specifying the resource types in the `gateway.validation.webhook.skipDeleteValidationResources` field. This allows you to delete resources that were valid when created but are now invalid, such as short-lived upstreams.
+* You can now specify override settings for the rate limit server in the `gloo.settings.ratelimitServer` section.
+* The `global.extensions.extAuth.namedExtAuth.NAME.name` and `.namespace` fields are added to specify [additional extauth servers]({{% versioned_link_path fromRoot="/guides/security/auth/multi_authz/#option-b---using-namedextauth" %}}) in your Helm values.
 
-**Deprecated Helm fields**:
+<!--**Deprecated Helm fields**:
 
 
-**Removed Helm fields**:
+**Removed Helm fields**:-->
 
 
 ### CRD changes {#crd}
@@ -114,16 +123,16 @@ Review the following summary of important new, deprecated, or removed CRD update
 **New and updated CRDs**:
 
 * Enterprise only: In the `GraphQLApi` resource, you can now define a [`timeout` for the REST or gRPC resolver]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#restresolver" %}}).
+* In the [`UserSession` section of the `ExtAuthConfig` resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#usersession" %}}), you can now apply symmetric encryption to cookie session tokens and values by using the `cipherConfig` field.
 * In the `Gateway` CRD, you can now use the [`hybridGateway.delegatedTcpGateways` field]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" %}}) to configure multiple TCP gateways.
 * Enterprise only: In the `Gateway` CRD, you can now use the [`hybridGateway.matchedGateway.matcher.passthroughCipherSuites` field]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" %}}) to specify passthrough cipher suites.
 * You can now set x-fowarded-host and x-forwarded-post headers by using the `appendXForwardedPort` field in the [`hcm` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/" %}}) and the `appendXForwardedHost` field in the [`options` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/" %}})
 
 **Deprecated CRDs**:
 
-* In the [`UserSession` section of the `ExtAuthConfig` resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#usersession" %}}), you can now apply symmetric encryption to cookie session tokens and values by using the `cipherConfig` field.
 * In the [`oidcAuthorizationCode` and `oauth2Config` sections of the `ExtAuthConfig` resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#oidcauthorizationcodeconfig" %}}), the `session` field is now deprecated. Use the `UserSession` field instead.
 
-**Removed CRDs**:
+<!--**Removed CRDs**:-->
 
 
 ### CLI changes {#cli}
@@ -136,7 +145,7 @@ Review the following summary of important new, deprecated, or removed CLI option
 
 * You can use the new [`glooctl create secret encryptionkey` command]({{% versioned_link_path fromRoot="/reference/cli/glooctl_create_secret_encryptionkey/" %}}) to create encryption secrets, such as to use in the `cipherConfig` field of the `ExtAuthConfig` resource.
 
-**Changed behavior**:
+<!--**Changed behavior**:-->
 
 
 
