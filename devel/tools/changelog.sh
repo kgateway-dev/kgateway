@@ -16,7 +16,7 @@ changelog:
   - type: NON_USER_FACING
     issueLink:
     resolvesIssue: false
-    description: >
+    description: >-
       "${DESCRIPTION}"
 EOF
 echo Created "changelog/$NEXT_VERSION/$BRANCH_NAME.yaml"
