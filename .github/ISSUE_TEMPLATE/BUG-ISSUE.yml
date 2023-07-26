@@ -3,55 +3,34 @@ description: Create a report to help us improve
 labels: ["Type: Bug"]
 body:
   - type: dropdown
+    id: product
+    attributes:
+      label: Gloo Edge Product
+      description: Which Edge product are you using?
+      options:
+        - Open Source
+        - Enterprise
+    validations:
+      required: true
+  - type: input
     id: version
     attributes:
       label: Gloo Edge Version
-      description: What version of Gloo Edge are you using?
-      options:
-        - 1.15.x (beta)
-        - 1.14.x (latest stable)
-        - 1.13.x
-        - 1.12.x
-        - 1.11.x
+      description: What version of your product are you using?
+      placeholder: please specify a specific patch version, eg v1.14.2
     validations:
       required: true
-  - type: dropdown
+  - type: input
     id: kube-version
     attributes:
       label: Kubernetes Version
       description: What version of Kubernetes are you using with Gloo Edge?
-      options:
-        - 1.27.x
-        - 1.26.x
-        - 1.25.x
-        - 1.24.x
-        - 1.23.x
-        - 1.22.x 
-        - 1.21.x
-        - 1.20.x
-        - 1.19.x
-        - 1.18.x
-        - 1.17.x 
-        - 1.16.x
-        - 1.15.x
-        - 1.14.x
-        - 1.13.x
-        - 1.12.x
+      placeholder: eg v1.26.6
   - type: textarea
     id: describe-bug
     attributes:
       label: Describe the bug
       placeholder: Add a clear and concise description of what the bug is
-    validations:
-      required: true
-  - type: textarea
-    id: reproduce-steps
-    attributes:
-      label: Steps to reproduce the bug
-      placeholder: |
-        1. kube apply '...'
-        2. curl '....'
-        3. See error
     validations:
       required: true
   - type: textarea
@@ -62,8 +41,45 @@ body:
     validations:
       required: true
   - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior
+      placeholder: When I performed x, y actually happened
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce-steps
+    attributes:
+      label: Steps to reproduce the bug
+      placeholder: |
+        eg:
+        1. kube apply '...'
+        2. curl '....'
+        3. See error
+        
+        Please be as detailed as possible
+    validations:
+      required: true
+  - type: textarea
+    id: additional-environment-detail
+    attributes:
+      label: Additional Environment Detail
+      description: Please include details about any other tools or integrations that may be relevant and their versions
+      placeholder: |
+        eg:
+        Using keycloak v21.1.0 as IDP
+        Using argo CD v2.7.5 to manage cluster
+  - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
+      description: Please include any additional context in the form of logs, screenshots, links, etc.
       placeholder: |
-        Additional information specific to this issue
+        eg:
+        Logs can be found at my-logs.com?runid=123
+        Relevant section:
+        ```
+        line 1
+        line 2
+        ...
+        ```
