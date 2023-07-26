@@ -11,6 +11,7 @@ import (
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/gomega/matchers"
+	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/testutils"
 	"github.com/solo-io/solo-kit/pkg/utils/prototime"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -114,7 +115,7 @@ var _ = Describe("Connection Limit", func() {
 			// Since we're sending requests concurrently to test the limits on active connections,
 			// it is sometimes flaky and the second request gets served first.
 			// That's why we're adding a delay between the first and second one
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			go expectTimeout()
 
 			wg.Wait()
@@ -124,15 +125,21 @@ var _ = Describe("Connection Limit", func() {
 
 func injectRouteFaultDelay(testContext *e2e.TestContext) {
 	// Since we are testing concurrent connections, introducing a delay to ensure that a connection remains open while we attempt to open another one
-	vs := gatewaydefaults.DefaultVirtualService(writeNamespace, "vs")
-	vs.VirtualHost.Routes[0].Options = &gloov1.RouteOptions{
-		Faults: &fault.RouteFaults{
-			Delay: &fault.RouteDelay{
-				FixedDelay: prototime.DurationToProto(1 * time.Second),
-				Percentage: float32(100),
+	vs := gloohelpers.NewVirtualServiceBuilder().
+		WithNamespace(writeNamespace).
+		WithName(e2e.DefaultVirtualServiceName).
+		WithDomain(e2e.DefaultHost).
+		WithRoutePrefixMatcher("route", "/").
+		WithRouteActionToUpstream("route", testContext.TestUpstream().Upstream).
+		WithRouteOptions("route", &gloov1.RouteOptions{
+			Faults: &fault.RouteFaults{
+				Delay: &fault.RouteDelay{
+					FixedDelay: prototime.DurationToProto(time.Second * 1),
+					Percentage: float32(100),
+				},
 			},
-		},
-	}
+		}).
+		Build()
 	testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{
 		vs,
 	}
