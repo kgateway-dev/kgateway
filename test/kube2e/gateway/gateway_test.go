@@ -398,7 +398,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					DestinationType: &gloov1.Destination_Upstream{
 						Upstream: &core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
-							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
+							Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
 						},
 					},
 				}
@@ -1132,7 +1132,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		getUpstream := func(svcname string) (*gloov1.Upstream, error) {
-			upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
+			upstreamName := kubernetes2.UpstreamName(testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
 			return resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 		}
 
@@ -1165,7 +1165,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					ctx,
 					&core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svc, helper.TestRunnerPort),
+						Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, svc, helper.TestRunnerPort),
 					},
 					func(resource resources.Resource) resources.Resource {
 						upstream := resource.(*gloov1.Upstream)
@@ -2254,7 +2254,7 @@ spec:
 						WithRoutePrefixMatcher("route", "/").
 						WithRouteActionToUpstreamRef("route",
 							&core.ResourceRef{
-								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+								Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
 								Namespace: testHelper.InstallNamespace,
 							}).
 						Build()
@@ -2361,7 +2361,7 @@ spec:
 					)
 
 					BeforeEach(func() {
-						petstoreUpstreamName = fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, petstoreName, 8080)
+						petstoreUpstreamName = kubernetes2.UpstreamName(testHelper.InstallNamespace, petstoreName, 8080)
 						petstoreDeployment, petstoreSvc = petstore(testHelper.InstallNamespace)
 
 						// disable FDS for the petstore, create it without functions

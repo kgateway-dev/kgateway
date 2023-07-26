@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -104,7 +107,7 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 
 			// the upstream should be created by discovery service
 			upstreamRef = core.ResourceRef{
-				Name:      fmt.Sprintf("%s-%s-%d", "gloo-system", helper.TestrunnerName, port),
+				Name:      kubernetes2.UpstreamName(defaults.GlooSystem, helper.TestrunnerName, port),
 				Namespace: "gloo-system",
 			}
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
@@ -206,8 +209,8 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 
 			// the upstream should be created by discovery service
 			upstreamRef = core.ResourceRef{
-				Name:      fmt.Sprintf("%s-%s-%d", serviceRef.Namespace, serviceRef.Name, helper.TestRunnerPort),
-				Namespace: "gloo-system",
+				Name:      kubernetes2.UpstreamName(serviceRef.Namespace, serviceRef.Name, helper.TestRunnerPort),
+				Namespace: defaults.GlooSystem,
 			}
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
