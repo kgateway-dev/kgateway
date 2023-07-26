@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/avast/retry-go"
@@ -280,7 +279,7 @@ func (s *SnapshotWriterImpl) doDeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot
 		}
 	}
 
-	return nil
+	return s.waitForProxiesToBeDeleted(deleteOptions)
 }
 
 func (s *SnapshotWriterImpl) isContinuableDeleteError(deleteError error) bool {
@@ -291,4 +290,33 @@ func (s *SnapshotWriterImpl) isContinuableDeleteError(deleteError error) bool {
 	// Since we delete resources in bulk, with retries, we may hit a case where a resource doesn't exist
 	// We can ignore that error and continue to try to delete other resources in the Snapshot
 	return errors.IsNotExist(deleteError)
+}
+
+func (s *SnapshotWriterImpl) waitForProxiesToBeDeleted(deleteOptions clients.DeleteOpts) error {
+	return retry.Do(func() error {
+		if deleteOptions.Ctx.Err() != nil {
+			// intentionally return early if context is already done
+			// this is a backoff loop; by the time we get here ctx may be done
+			return nil
+		}
+		proxies, err := s.ProxyClient().List(s.writeNamespace, clients.ListOpts{
+			Ctx:     deleteOptions.Ctx,
+			Cluster: deleteOptions.Cluster,
+		})
+		if err != nil {
+			return err
+		}
+		if len(proxies) > 0 {
+			return errors.Errorf("expected proxies to be deleted, but found %d", len(proxies))
+		}
+		return nil
+	},
+		retry.RetryIf(func(err error) bool {
+			return err != nil
+		}),
+		retry.LastErrorOnly(true),
+		retry.Attempts(5),
+		retry.Delay(time.Millisecond*500),
+		retry.DelayType(retry.FixedDelay),
+	)
 }

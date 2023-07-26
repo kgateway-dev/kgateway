@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
@@ -99,6 +101,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		testRunnerVs = helpers.NewVirtualServiceBuilder().
 			WithName(helper.TestrunnerName).
 			WithNamespace(testHelper.InstallNamespace).
+			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
 			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
