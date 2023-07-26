@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/test/matchers"
 )
 
-var _ = FDescribe("VirtualServiceBuilder", func() {
+var _ = Describe("VirtualServiceBuilder", func() {
 
 	It("will fail if the virtual service builder has a new top level field", func() {
 		// This test is important as it checks whether the virtual service builder has a new top level field.
