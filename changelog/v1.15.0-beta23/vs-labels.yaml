@@ -1,5 +1,5 @@
 changelog:
-  type: NON_USER_FACING
+- type: NON_USER_FACING
   issueLink: https://github.com/solo-io/solo-projects/issues/5232
   resolvesIssue: false
   description: >-
