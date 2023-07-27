@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/7831
+    description: >- 
+      Add prod recommendations, such as leader election and creating secrets in the same ns as referencing upstreams. 
+      skipCI-kube-tests:true
