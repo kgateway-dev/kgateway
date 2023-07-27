@@ -56,37 +56,35 @@ var _ = Describe("Test Secrets in HeaderManipulation", func() {
 				Namespace: testContext.TestUpstream().Upstream.GetMetadata().GetNamespace(),
 			},
 		}
-		goodVS := helpers.NewVirtualServiceBuilder().
+		headerManipVsBuilder := helpers.NewVirtualServiceBuilder().
+			WithNamespace(writeNamespace).
+			WithRoutePrefixMatcher(e2e.DefaultRouteName, "/endpoint").
+			WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream)
+
+		goodVS := headerManipVsBuilder.Clone().
 			WithName("good").
-			WithNamespace(writeNamespace).
 			WithDomain("custom-domain.com").
-			WithRoutePrefixMatcher(e2e.DefaultRouteName, "/endpoint").
-			WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+			WithVirtualHostOptions(&gloov1.VirtualHostOptions{HeaderManipulation: &headers.HeaderManipulation{
+				RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{HeaderSecretRef: allowedSecret.GetMetadata().Ref()},
+					Append: &wrappers.BoolValue{Value: true}}},
+			}}).
 			Build()
-		goodVS.GetVirtualHost().Options = &gloov1.VirtualHostOptions{HeaderManipulation: &headers.HeaderManipulation{
-			RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{HeaderSecretRef: &coreV1.ResourceRef{Name: allowedSecret.GetMetadata().GetName(), Namespace: allowedSecret.GetMetadata().GetNamespace()}},
-				Append: &wrappers.BoolValue{Value: true}}},
-			RequestHeadersToRemove: []string{"a"},
-		}}
-		badVS := helpers.NewVirtualServiceBuilder().
+		badVS := headerManipVsBuilder.Clone().
 			WithName("bad").
-			WithNamespace(writeNamespace).
 			WithDomain("another-domain.com").
-			WithRoutePrefixMatcher(e2e.DefaultRouteName, "/endpoint").
-			WithRouteActionToUpstream(e2e.DefaultRouteName, testContext.TestUpstream().Upstream).
+			WithVirtualHostOptions(
+				&gloov1.VirtualHostOptions{HeaderManipulation: &headers.HeaderManipulation{
+					RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{HeaderSecretRef: forbiddenSecret.GetMetadata().Ref()},
+						Append: &wrappers.BoolValue{Value: true}}},
+				}}).
 			Build()
-		badVS.GetVirtualHost().Options = &gloov1.VirtualHostOptions{HeaderManipulation: &headers.HeaderManipulation{
-			RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{HeaderSecretRef: &coreV1.ResourceRef{Name: forbiddenSecret.GetMetadata().GetName(), Namespace: forbiddenSecret.GetMetadata().GetNamespace()}},
-				Append: &wrappers.BoolValue{Value: true}}},
-			RequestHeadersToRemove: []string{"a"},
-		}}
 
 		testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{goodVS, badVS}
 		testContext.ResourcesToCreate().Secrets = gloov1.SecretList{forbiddenSecret, allowedSecret}
 	})
 
 	AfterEach(func() {
-		os.Setenv(api_conversion.MatchingNamespaceEnv, "")
+		os.Unsetenv(api_conversion.MatchingNamespaceEnv)
 		testContext.AfterEach()
 	})
 
