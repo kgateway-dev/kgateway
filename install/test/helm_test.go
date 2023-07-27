@@ -4620,6 +4620,18 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
+					It("can set secret namespace match env var", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							glooDeployment.Spec.Template.Spec.Containers[0].Env,
+							v1.EnvVar{
+								Name:  "HEADER_SECRET_REF_NS_MATCHES_US",
+								Value: "true",
+							})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.headerSecretRefNsMatchesUs=true"},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 					It("can disable validation", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = []v1.EnvVar{GetPodNamespaceEnvVar(), GetPodNamespaceStats()}
 						glooDeployment.Spec.Template.Spec.Volumes = []v1.Volume{{
