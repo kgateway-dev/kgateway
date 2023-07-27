@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -14,23 +13,22 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/gloo/test/testutils"
-
 	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
 )
 
-var _ = Describe("Test", Label(), func() {
+var _ = Describe("Test Secrets in HeaderManipulation", func() {
 
 	var (
 		testContext *e2e.TestContext
 	)
 
 	BeforeEach(func() {
-		var testRequirements []testutils.Requirement
-		testContext = testContextFactory.NewTestContext(testRequirements...)
+		testContext = testContextFactory.NewTestContext()
 		testContext.BeforeEach()
+		// put a secret in `writeNamespace` so we have it in the snapshot
+		// The upstream is in `default` so when we enforce that secrets + upstream namespaces match, it should not be allowed
 		forbiddenSecret := &gloov1.Secret{
 			Kind: &gloov1.Secret_Header{
 				Header: &gloov1.HeaderSecret{
@@ -44,7 +42,7 @@ var _ = Describe("Test", Label(), func() {
 				Namespace: writeNamespace,
 			},
 		}
-
+		// Create a secret in the same namespace as the upstream
 		allowedSecret := &gloov1.Secret{
 			Kind: &gloov1.Secret_Header{
 				Header: &gloov1.HeaderSecret{
@@ -109,7 +107,6 @@ var _ = Describe("Test", Label(), func() {
 		It("Accepts all virtual services", func() {
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, "bad", clients.ReadOpts{})
-				fmt.Printf("status: %v", vs.GetNamespacedStatuses())
 				return vs, err
 			})
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
