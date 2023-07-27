@@ -1155,7 +1155,14 @@ var _ = Describe("Kube2e: gateway", func() {
 			setWatchLabels(nil)
 		})
 
-		It("should preserve discovery", func() {
+		It("should preserve discovery", FlakeAttempts(5), func() {
+			// This test has flaked before with the following error:
+			// 	Failed to validate Proxy [namespace: gloo-system, name: gateway-proxy] with gloo validation:
+			//	Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret gloo-system.secret-native-ssl\n\n",
+			// This seems to be the result of test pollution since the secret is created in a separate test
+			// This has only caused this test, which depends on discovery to flake, so in the meantime, we are adding
+			// a flake decorator
+
 			createServicesForPod(helper.TestrunnerName, helper.TestRunnerPort)
 
 			for _, svc := range createdServices {
