@@ -434,10 +434,16 @@ func (m *GlooOptions) Clone() proto.Message {
 
 	target.ProxyDebugBindAddr = m.GetProxyDebugBindAddr()
 
-	if h, ok := interface{}(m.GetTransformationOptions()).(clone.Cloner); ok {
-		target.TransformationOptions = h.Clone().(*GlooOptions_TransformationOptions)
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(clone.Cloner); ok {
+		target.LogTransformationRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
-		target.TransformationOptions = proto.Clone(m.GetTransformationOptions()).(*GlooOptions_TransformationOptions)
+		target.LogTransformationRequestResponseInfo = proto.Clone(m.GetLogTransformationRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetTransformationEscapeCharacters()).(clone.Cloner); ok {
+		target.TransformationEscapeCharacters = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.TransformationEscapeCharacters = proto.Clone(m.GetTransformationEscapeCharacters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
 	return target
@@ -1169,29 +1175,6 @@ func (m *GlooOptions_InvalidConfigPolicy) Clone() proto.Message {
 	target.InvalidRouteResponseCode = m.GetInvalidRouteResponseCode()
 
 	target.InvalidRouteResponseBody = m.GetInvalidRouteResponseBody()
-
-	return target
-}
-
-// Clone function
-func (m *GlooOptions_TransformationOptions) Clone() proto.Message {
-	var target *GlooOptions_TransformationOptions
-	if m == nil {
-		return target
-	}
-	target = &GlooOptions_TransformationOptions{}
-
-	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(clone.Cloner); ok {
-		target.LogTransformationRequestResponseInfo = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	} else {
-		target.LogTransformationRequestResponseInfo = proto.Clone(m.GetLogTransformationRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	}
-
-	if h, ok := interface{}(m.GetEscapeCharacters()).(clone.Cloner); ok {
-		target.EscapeCharacters = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	} else {
-		target.EscapeCharacters = proto.Clone(m.GetEscapeCharacters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	}
 
 	return target
 }

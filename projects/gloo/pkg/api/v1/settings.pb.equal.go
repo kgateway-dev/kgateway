@@ -651,12 +651,22 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetTransformationOptions()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetTransformationOptions()) {
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLogTransformationRequestResponseInfo()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetTransformationOptions(), target.GetTransformationOptions()) {
+		if !proto.Equal(m.GetLogTransformationRequestResponseInfo(), target.GetLogTransformationRequestResponseInfo()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetTransformationEscapeCharacters()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTransformationEscapeCharacters()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTransformationEscapeCharacters(), target.GetTransformationEscapeCharacters()) {
 			return false
 		}
 	}
@@ -2023,50 +2033,6 @@ func (m *GlooOptions_InvalidConfigPolicy) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetInvalidRouteResponseBody(), target.GetInvalidRouteResponseBody()) != 0 {
 		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *GlooOptions_TransformationOptions) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*GlooOptions_TransformationOptions)
-	if !ok {
-		that2, ok := that.(GlooOptions_TransformationOptions)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetLogTransformationRequestResponseInfo()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetLogTransformationRequestResponseInfo(), target.GetLogTransformationRequestResponseInfo()) {
-			return false
-		}
-	}
-
-	if h, ok := interface{}(m.GetEscapeCharacters()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetEscapeCharacters()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetEscapeCharacters(), target.GetEscapeCharacters()) {
-			return false
-		}
 	}
 
 	return true

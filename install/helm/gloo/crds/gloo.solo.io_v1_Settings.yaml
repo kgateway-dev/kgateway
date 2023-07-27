@@ -413,6 +413,9 @@ spec:
                       replaceInvalidRoutes:
                         type: boolean
                     type: object
+                  logTransformationRequestResponseInfo:
+                    nullable: true
+                    type: boolean
                   proxyDebugBindAddr:
                     type: string
                   regexMaxProgramSize:
@@ -425,15 +428,9 @@ spec:
                     type: boolean
                   restXdsBindAddr:
                     type: string
-                  transformationOptions:
-                    properties:
-                      escapeCharacters:
-                        nullable: true
-                        type: boolean
-                      logTransformationRequestResponseInfo:
-                        nullable: true
-                        type: boolean
-                    type: object
+                  transformationEscapeCharacters:
+                    nullable: true
+                    type: boolean
                   validationBindAddr:
                     type: string
                   xdsBindAddr:

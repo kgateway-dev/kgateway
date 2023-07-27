@@ -53,7 +53,7 @@ var (
 	mCacheMisses = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
 )
 
-type TranslateTransformationFn func(*transformation.Transformation, *v1.GlooOptions_TransformationOptions, *wrapperspb.BoolValue) (*envoytransformation.Transformation, error)
+type TranslateTransformationFn func(*transformation.Transformation, *wrapperspb.BoolValue, *wrapperspb.BoolValue) (*envoytransformation.Transformation, error)
 
 // This Plugin is exported only because it is utilized by the enterprise implementation
 // We would prefer if the plugin were not exported and instead the required translation
@@ -68,8 +68,8 @@ type Plugin struct {
 	logRequestResponseInfo     bool
 	// validationLruCache is a map of: (transformation hash) -> error state
 	// this is usually a typed error but may be an untyped nil interface
-	validationLruCache    *lru.Cache
-	transformationOptions *v1.GlooOptions_TransformationOptions
+	validationLruCache *lru.Cache
+	escapeCharacters   *wrapperspb.BoolValue
 }
 
 func NewPlugin() *Plugin {
@@ -89,8 +89,8 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
-	p.transformationOptions = params.Settings.GetGloo().GetTransformationOptions()
-	p.logRequestResponseInfo = p.transformationOptions.GetLogTransformationRequestResponseInfo().GetValue()
+	p.escapeCharacters = params.Settings.GetGloo().GetTransformationEscapeCharacters()
+	p.logRequestResponseInfo = params.Settings.GetGloo().GetLogTransformationRequestResponseInfo().GetValue()
 }
 
 func mergeFunc(tx *envoytransformation.RouteTransformations) pluginutils.ModifyFunc {
@@ -228,11 +228,11 @@ func (p *Plugin) ConvertTransformation(
 	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.transformationOptions, nil)
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.escapeCharacters, nil)
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions, nil)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +299,7 @@ func (p *Plugin) ConvertTransformation(
 func (p *Plugin) translateOSSTransformations(
 	glooTransform *transformation.Transformation,
 ) (*envoytransformation.Transformation, error) {
-	transform, err := p.TranslateTransformation(glooTransform, p.transformationOptions, nil)
+	transform, err := p.TranslateTransformation(glooTransform, p.escapeCharacters, nil)
 	if err != nil {
 		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
 	}
@@ -307,7 +307,7 @@ func (p *Plugin) translateOSSTransformations(
 }
 
 func TranslateTransformation(glooTransform *transformation.Transformation,
-	transformationOpts *v1.GlooOptions_TransformationOptions,
+	settingsEscapeCharacters *wrapperspb.BoolValue,
 	stagedEscapeCharacters *wrapperspb.BoolValue) (*envoytransformation.Transformation, error) {
 
 	if glooTransform == nil {
@@ -327,7 +327,7 @@ func TranslateTransformation(glooTransform *transformation.Transformation,
 				escapeCharacters = stagedEscapeCharacters
 			}
 			if escapeCharacters == nil {
-				escapeCharacters = transformationOpts.GetEscapeCharacters()
+				escapeCharacters = settingsEscapeCharacters
 			}
 			typedTransformation.TransformationTemplate.EscapeCharacters = escapeCharacters
 
@@ -484,7 +484,7 @@ func (p *Plugin) getTransformations(
 ) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, t := range transformations.GetResponseTransforms() {
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions, stagedEscapeCharacters)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
@@ -500,11 +500,11 @@ func (p *Plugin) getTransformations(
 	}
 
 	for _, t := range transformations.GetRequestTransforms() {
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.transformationOptions, stagedEscapeCharacters)
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions, stagedEscapeCharacters)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}

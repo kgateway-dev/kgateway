@@ -165,9 +165,7 @@ var _ = Describe("Transformations", func() {
 					BeforeEach(func() {
 						testContext.SetRunSettings(&gloov1.Settings{
 							Gloo: &gloov1.GlooOptions{
-								TransformationOptions: &gloov1.GlooOptions_TransformationOptions{
-									EscapeCharacters: &wrapperspb.BoolValue{Value: true},
-								},
+								TransformationEscapeCharacters: &wrapperspb.BoolValue{Value: true},
 							},
 						})
 

@@ -61,7 +61,7 @@ var _ = Describe("Plugin", func() {
 					HeaderBodyTransform: headerBodyTransform,
 				},
 			}
-			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{}, nil)
+			output, err := TranslateTransformation(input, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 		})
@@ -99,7 +99,7 @@ var _ = Describe("Plugin", func() {
 					TransformationTemplate: transformationTemplate,
 				},
 			}
-			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{}, nil)
+			output, err := TranslateTransformation(input, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 
@@ -115,7 +115,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{}, nil)
+			output, err := TranslateTransformation(input, nil, nil)
 			Expect(output).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
@@ -244,10 +244,8 @@ var _ = Describe("Plugin", func() {
 					Ctx: ctx,
 					Settings: &v1.Settings{
 						Gloo: &v1.GlooOptions{
-							RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false},
-							TransformationOptions: &v1.GlooOptions_TransformationOptions{
-								LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
-							},
+							RemoveUnusedFilters:            &wrapperspb.BoolValue{Value: false},
+							TransformationEscapeCharacters: &wrapperspb.BoolValue{Value: true},
 						},
 					},
 				})
@@ -288,10 +286,8 @@ var _ = Describe("Plugin", func() {
 					Ctx: ctx,
 					Settings: &v1.Settings{
 						Gloo: &v1.GlooOptions{
-							RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false},
-							TransformationOptions: &v1.GlooOptions_TransformationOptions{
-								LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
-							},
+							RemoveUnusedFilters:            &wrapperspb.BoolValue{Value: false},
+							TransformationEscapeCharacters: &wrapperspb.BoolValue{Value: true},
 						},
 					},
 				})
@@ -420,10 +416,8 @@ var _ = Describe("Plugin", func() {
 					Ctx: ctx,
 					Settings: &v1.Settings{
 						Gloo: &v1.GlooOptions{
-							RemoveUnusedFilters: False,
-							TransformationOptions: &v1.GlooOptions_TransformationOptions{
-								EscapeCharacters: True,
-							},
+							RemoveUnusedFilters:            False,
+							TransformationEscapeCharacters: True,
 						},
 					},
 				})
@@ -447,10 +441,8 @@ var _ = Describe("Plugin", func() {
 					Ctx: ctx,
 					Settings: &v1.Settings{
 						Gloo: &v1.GlooOptions{
-							RemoveUnusedFilters: False,
-							TransformationOptions: &v1.GlooOptions_TransformationOptions{
-								EscapeCharacters: False,
-							},
+							RemoveUnusedFilters:            False,
+							TransformationEscapeCharacters: False,
 						},
 					},
 				})

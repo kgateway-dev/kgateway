@@ -1009,18 +1009,38 @@ func (m *GlooOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetTransformationOptions()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("TransformationOptions")); err != nil {
+	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LogTransformationRequestResponseInfo")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetTransformationOptions(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetLogTransformationRequestResponseInfo(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("TransformationOptions")); err != nil {
+			if _, err = hasher.Write([]byte("LogTransformationRequestResponseInfo")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetTransformationEscapeCharacters()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("TransformationEscapeCharacters")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetTransformationEscapeCharacters(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("TransformationEscapeCharacters")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -2530,62 +2550,6 @@ func (m *GlooOptions_InvalidConfigPolicy) Hash(hasher hash.Hash64) (uint64, erro
 
 	if _, err = hasher.Write([]byte(m.GetInvalidRouteResponseBody())); err != nil {
 		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *GlooOptions_TransformationOptions) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GlooOptions_TransformationOptions")); err != nil {
-		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetLogTransformationRequestResponseInfo()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("LogTransformationRequestResponseInfo")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetLogTransformationRequestResponseInfo(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("LogTransformationRequestResponseInfo")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	if h, ok := interface{}(m.GetEscapeCharacters()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("EscapeCharacters")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetEscapeCharacters(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("EscapeCharacters")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	return hasher.Sum64(), nil

@@ -693,20 +693,15 @@ message GlooOptions {
     // Where the `gloo` proxy debug server should bind. Defaults to `gloo:9966`
     string proxy_debug_bind_addr = 15;
 
+    // When enabled, log the request/response body and headers before and after
+    // any transformations are applied. May be useful in the case where many
+    // transformations are applied and it is difficult to determine which are
+    // causing issues. Defaults to false.
+    google.protobuf.BoolValue log_transformation_request_response_info = 16;
 
-    message TransformationOptions {
-        // When enabled, log the request/response body and headers before and after
-        // any transformations are applied. May be useful in the case where many
-        // transformations are applied and it is difficult to determine which are
-        // causing issues. Defaults to false.
-        google.protobuf.BoolValue log_transformation_request_response_info = 1;
-        // Set escapeCharacters for all TransformationTemplates on all vhosts and routes.
-        // This setting can be overridden in individual TransformationTemplates
-        google.protobuf.BoolValue escape_characters = 2;
-    }
-
-    // Transformation options for entire Gloo instance
-    TransformationOptions transformation_options = 16;
+    // Set escapeCharacters for all TransformationTemplates on all vhosts and routes.
+    // This setting can be overridden in individual TransformationTemplates
+    google.protobuf.BoolValue transformation_escape_characters = 17;
 }
 
 
