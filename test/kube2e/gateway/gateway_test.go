@@ -59,7 +59,7 @@ import (
 	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/test/helpers"
@@ -401,7 +401,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					DestinationType: &gloov1.Destination_Upstream{
 						Upstream: &core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
-							Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
+							Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
 						},
 					},
 				}
@@ -1135,7 +1135,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		getUpstream := func(svcname string) (*gloov1.Upstream, error) {
-			upstreamName := kubernetes2.UpstreamName(testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
+			upstreamName := kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
 			return resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 		}
 
@@ -1168,7 +1168,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					ctx,
 					&core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, svc, helper.TestRunnerPort),
+						Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svc, helper.TestRunnerPort),
 					},
 					func(resource resources.Resource) resources.Resource {
 						upstream := resource.(*gloov1.Upstream)
@@ -1285,7 +1285,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			httpEchoClusterName = translator.UpstreamToClusterName(&core.ResourceRef{
 				Namespace: testHelper.InstallNamespace,
-				Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
+				Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
 			})
 		})
 
@@ -1465,7 +1465,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			service, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Create(ctx, service, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			upstreamName = kubernetes2.UpstreamName(testHelper.InstallNamespace, service.Name, 5678)
+			upstreamName = kubernetesplugin.UpstreamName(testHelper.InstallNamespace, service.Name, 5678)
 			upstreamRef := &core.ResourceRef{
 				Name:      upstreamName,
 				Namespace: testHelper.InstallNamespace,
@@ -2257,7 +2257,7 @@ spec:
 						WithRoutePrefixMatcher("route", "/").
 						WithRouteActionToUpstreamRef("route",
 							&core.ResourceRef{
-								Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+								Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
 								Namespace: testHelper.InstallNamespace,
 							}).
 						Build()
@@ -2364,7 +2364,7 @@ spec:
 					)
 
 					BeforeEach(func() {
-						petstoreUpstreamName = kubernetes2.UpstreamName(testHelper.InstallNamespace, petstoreName, 8080)
+						petstoreUpstreamName = kubernetesplugin.UpstreamName(testHelper.InstallNamespace, petstoreName, 8080)
 						petstoreDeployment, petstoreSvc = petstore(testHelper.InstallNamespace)
 
 						// disable FDS for the petstore, create it without functions
