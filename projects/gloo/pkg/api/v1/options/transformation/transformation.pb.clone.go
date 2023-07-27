@@ -186,6 +186,12 @@ func (m *TransformationStages) Clone() proto.Message {
 		target.LogRequestResponseInfo = proto.Clone(m.GetLogRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetEscapeCharacters()).(clone.Cloner); ok {
+		target.EscapeCharacters = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.EscapeCharacters = proto.Clone(m.GetEscapeCharacters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

@@ -299,6 +299,16 @@ func (m *TransformationStages) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetEscapeCharacters()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEscapeCharacters()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEscapeCharacters(), target.GetEscapeCharacters()) {
+			return false
+		}
+	}
+
 	return true
 }
 

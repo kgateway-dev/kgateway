@@ -61,7 +61,7 @@ var _ = Describe("Plugin", func() {
 					HeaderBodyTransform: headerBodyTransform,
 				},
 			}
-			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{})
+			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 		})
@@ -99,7 +99,7 @@ var _ = Describe("Plugin", func() {
 					TransformationTemplate: transformationTemplate,
 				},
 			}
-			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{})
+			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 
@@ -115,7 +115,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{})
+			output, err := TranslateTransformation(input, &v1.GlooOptions_TransformationOptions{}, nil)
 			Expect(output).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
@@ -310,12 +310,13 @@ var _ = Describe("Plugin", func() {
 		})
 
 		Context("EscapeCharacters", func() {
-
 			var (
 				inputTransformationStages *transformation.TransformationStages
 				expectedOutput            *envoytransformation.RouteTransformations
 				inputTransform            *transformation.Transformation
 				outputTransform           *envoytransformation.Transformation
+				True                      = &wrapperspb.BoolValue{Value: true}
+				False                     = &wrapperspb.BoolValue{Value: false}
 			)
 
 			type transformationPlugin interface {
@@ -358,7 +359,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("can set escape_characters on transformation level", func() {
-				inputTransform.GetTransformationTemplate().EscapeCharacters = &wrapperspb.BoolValue{Value: true}
+				inputTransform.GetTransformationTemplate().EscapeCharacters = True
 				outputTransform.GetTransformationTemplate().EscapeCharacters = true
 
 				output, err := p.(transformationPlugin).ConvertTransformation(
@@ -372,7 +373,7 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("sets escape_characters to false if transformation-level setting is false", func() {
-				inputTransform.GetTransformationTemplate().EscapeCharacters = &wrapperspb.BoolValue{Value: false}
+				inputTransform.GetTransformationTemplate().EscapeCharacters = False
 				outputTransform.GetTransformationTemplate().EscapeCharacters = false
 
 				output, err := p.(transformationPlugin).ConvertTransformation(
@@ -386,8 +387,77 @@ var _ = Describe("Plugin", func() {
 			})
 
 			It("does not set escape_characters if transformation-level setting is nil", func() {
-				inputTransform.GetTransformationTemplate().EscapeCharacters = &wrapperspb.BoolValue{Value: false}
+				inputTransform.GetTransformationTemplate().EscapeCharacters = False
 
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can override transformation-stages level escape_characters with transformation level", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.GetTransformationTemplate().EscapeCharacters = False
+				inputTransformationStages.EscapeCharacters = True
+				expectedOutput.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation().GetTransformationTemplate().EscapeCharacters = false
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can enable settings-object-level setting", func() {
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters: False,
+							TransformationOptions: &v1.GlooOptions_TransformationOptions{
+								EscapeCharacters: True,
+							},
+						},
+					},
+				})
+
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.GetTransformationTemplate().EscapeCharacters = nil
+				inputTransformationStages.EscapeCharacters = nil
+				expectedOutput.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation().GetTransformationTemplate().EscapeCharacters = true
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			FIt("can override settings-object-level setting with transformation-stages level", func() {
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters: False,
+							TransformationOptions: &v1.GlooOptions_TransformationOptions{
+								EscapeCharacters: False,
+							},
+						},
+					},
+				})
+
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.GetTransformationTemplate().EscapeCharacters = True
+				inputTransformationStages.EscapeCharacters = nil
+				expectedOutput.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation().GetTransformationTemplate().EscapeCharacters = true
 				output, err := p.(transformationPlugin).ConvertTransformation(
 					ctx,
 					&transformation.Transformations{},

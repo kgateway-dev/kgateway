@@ -53,7 +53,7 @@ var (
 	mCacheMisses = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
 )
 
-type TranslateTransformationFn func(*transformation.Transformation, *v1.GlooOptions_TransformationOptions) (*envoytransformation.Transformation, error)
+type TranslateTransformationFn func(*transformation.Transformation, *v1.GlooOptions_TransformationOptions, *wrapperspb.BoolValue) (*envoytransformation.Transformation, error)
 
 // This Plugin is exported only because it is utilized by the enterprise implementation
 // We would prefer if the plugin were not exported and instead the required translation
@@ -228,11 +228,11 @@ func (p *Plugin) ConvertTransformation(
 	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.transformationOptions)
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.transformationOptions, nil)
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -255,42 +255,39 @@ func (p *Plugin) ConvertTransformation(
 			})
 	}
 
+	stagedEscapeCharacters := stagedTransformations.GetEscapeCharacters()
 	if early := stagedTransformations.GetEarly(); early != nil {
 		p.RequireEarlyTransformation = true
-		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early)
+		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 	if regular := stagedTransformations.GetRegular(); regular != nil {
-		transformations, err := p.getTransformations(ctx, 0, regular)
+		transformations, err := p.getTransformations(ctx, 0, regular, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 
-	stagedLogReqRespInfo := stagedTransformations.GetLogRequestResponseInfo().GetValue()
-	settingsLogReqRespInfo := stagedTransformations.GetLogRequestResponseInfo() == nil && p.logRequestResponseInfo
-	logReqRespInfo := stagedLogReqRespInfo || settingsLogReqRespInfo
-	settingsEscapeCharacters := p.transformationOptions.GetEscapeCharacters() != nil
-
 	// if the global settings or the route/vhost settings are set to true, set all transformation-level settings to true
 	// note that the route/vhost settings take precedence over the global settings
-	if logReqRespInfo || settingsEscapeCharacters {
+	if stagedTransformations.GetLogRequestResponseInfo().GetValue() ||
+		(stagedTransformations.GetLogRequestResponseInfo() == nil && p.logRequestResponseInfo) {
 		for _, t := range ret.GetTransformations() {
 			if requestMatch := t.GetRequestMatch(); requestMatch != nil {
 				if requestTransformation := requestMatch.GetRequestTransformation(); requestTransformation != nil {
-					requestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: logReqRespInfo}
+					requestTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 				}
 				if responseTransformation := requestMatch.GetResponseTransformation(); responseTransformation != nil {
-					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: logReqRespInfo}
+					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 				}
 			}
 			if responseMatch := t.GetResponseMatch(); responseMatch != nil {
 				if responseTransformation := responseMatch.GetResponseTransformation(); responseTransformation != nil {
-					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: logReqRespInfo}
+					responseTransformation.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: true}
 				}
 			}
 		}
@@ -302,17 +299,17 @@ func (p *Plugin) ConvertTransformation(
 func (p *Plugin) translateOSSTransformations(
 	glooTransform *transformation.Transformation,
 ) (*envoytransformation.Transformation, error) {
-	transform, err := p.TranslateTransformation(glooTransform, p.transformationOptions)
+	transform, err := p.TranslateTransformation(glooTransform, p.transformationOptions, nil)
 	if err != nil {
 		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
 	}
 	return transform, nil
 }
 
-func TranslateTransformation(glooTransform *transformation.Transformation, transformationOpts *v1.GlooOptions_TransformationOptions) (
-	*envoytransformation.Transformation,
-	error,
-) {
+func TranslateTransformation(glooTransform *transformation.Transformation,
+	transformationOpts *v1.GlooOptions_TransformationOptions,
+	stagedEscapeCharacters *wrapperspb.BoolValue) (*envoytransformation.Transformation, error) {
+
 	if glooTransform == nil {
 		return nil, nil
 	}
@@ -325,9 +322,15 @@ func TranslateTransformation(glooTransform *transformation.Transformation, trans
 		}
 	case *transformation.Transformation_TransformationTemplate:
 		{
-			if typedTransformation.TransformationTemplate.GetEscapeCharacters() == nil {
-				typedTransformation.TransformationTemplate.EscapeCharacters = transformationOpts.GetEscapeCharacters()
+			escapeCharacters := typedTransformation.TransformationTemplate.GetEscapeCharacters()
+			if escapeCharacters == nil {
+				escapeCharacters = stagedEscapeCharacters
 			}
+			if escapeCharacters == nil {
+				escapeCharacters = transformationOpts.GetEscapeCharacters()
+			}
+			typedTransformation.TransformationTemplate.EscapeCharacters = escapeCharacters
+
 			out.TransformationType = translateTransformationTemplate(typedTransformation)
 		}
 	default:
@@ -359,11 +362,10 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 		IgnoreErrorOnParse: inTemplate.GetIgnoreErrorOnParse(),
 		ParseBodyBehavior:  envoytransformation.TransformationTemplate_RequestBodyParse(inTemplate.GetParseBodyBehavior()),
 		EscapeCharacters:   inTemplate.GetEscapeCharacters().GetValue(), // the inheritance is handled in TranslateTransformation
-		// initialize maps and arrays for use in looping translation below
-		Extractors:            make(map[string]*envoytransformation.Extraction),
-		Headers:               make(map[string]*envoytransformation.InjaTemplate),
-		HeadersToAppend:       make([]*envoytransformation.TransformationTemplate_HeaderToAppend, len(inTemplate.GetHeadersToAppend())),
-		DynamicMetadataValues: make([]*envoytransformation.TransformationTemplate_DynamicMetadataValue, len(inTemplate.GetDynamicMetadataValues())),
+	}
+
+	if len(inTemplate.GetExtractors()) > 0 {
+		outTemplate.Extractors = make(map[string]*envoytransformation.Extraction)
 	}
 	for k, v := range inTemplate.GetExtractors() {
 		outExtraction := &envoytransformation.Extraction{
@@ -383,10 +385,16 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 		outTemplate.GetExtractors()[k] = outExtraction
 	}
 
+	if len(inTemplate.GetHeaders()) > 0 {
+		outTemplate.Headers = make(map[string]*envoytransformation.InjaTemplate)
+	}
 	for k, v := range inTemplate.GetHeaders() {
 		outTemplate.GetHeaders()[k] = &envoytransformation.InjaTemplate{Text: v.GetText()}
 	}
 
+	if len(inTemplate.GetHeadersToAppend()) > 0 {
+		outTemplate.HeadersToAppend = make([]*envoytransformation.TransformationTemplate_HeaderToAppend, len(inTemplate.GetHeadersToAppend()))
+	}
 	for i, hdr := range inTemplate.GetHeadersToAppend() {
 		outTemplate.GetHeadersToAppend()[i] = &envoytransformation.TransformationTemplate_HeaderToAppend{
 			Key:   hdr.GetKey(),
@@ -410,6 +418,10 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_MergeExtractorsToBody{
 			MergeExtractorsToBody: &envoytransformation.MergeExtractorsToBody{},
 		}
+	}
+
+	if len(inTemplate.GetDynamicMetadataValues()) > 0 {
+		outTemplate.DynamicMetadataValues = make([]*envoytransformation.TransformationTemplate_DynamicMetadataValue, len(inTemplate.GetDynamicMetadataValues()))
 	}
 
 	for i, v := range inTemplate.GetDynamicMetadataValues() {
@@ -469,10 +481,11 @@ func (p *Plugin) getTransformations(
 	ctx context.Context,
 	stage uint32,
 	transformations *transformation.RequestResponseTransformations,
+	stagedEscapeCharacters *wrapperspb.BoolValue,
 ) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, t := range transformations.GetResponseTransforms() {
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
@@ -488,11 +501,11 @@ func (p *Plugin) getTransformations(
 	}
 
 	for _, t := range transformations.GetRequestTransforms() {
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.transformationOptions)
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.transformationOptions, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions)
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.transformationOptions, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}

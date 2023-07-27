@@ -1582,6 +1582,9 @@ spec:
                                   type: object
                                 type: array
                             type: object
+                          escapeCharacters:
+                            nullable: true
+                            type: boolean
                           inheritTransformation:
                             type: boolean
                           logRequestResponseInfo:
@@ -3683,6 +3686,9 @@ spec:
                                         type: object
                                       type: array
                                   type: object
+                                escapeCharacters:
+                                  nullable: true
+                                  type: boolean
                                 inheritTransformation:
                                   type: boolean
                                 logRequestResponseInfo:
@@ -5067,6 +5073,9 @@ spec:
                                                       type: object
                                                     type: array
                                                 type: object
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               inheritTransformation:
                                                 type: boolean
                                               logRequestResponseInfo:
