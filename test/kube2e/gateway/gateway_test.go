@@ -46,7 +46,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -810,8 +809,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Transformations: &glootransformation.Transformations{
 						RequestTransformation: &glootransformation.Transformation{
 							TransformationType: &glootransformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &transformation.TransformationTemplate{
-									Headers: map[string]*transformation.InjaTemplate{
+								TransformationTemplate: &glootransformation.TransformationTemplate{
+									Headers: map[string]*glootransformation.InjaTemplate{
 										"x-header-added-in-opt2": {
 											Text: "this header was added in the VirtualHostOption object vhOpt2",
 										},
@@ -897,8 +896,8 @@ var _ = Describe("Kube2e: gateway", func() {
 						vhost2Transformations := &glootransformation.Transformations{
 							RequestTransformation: &glootransformation.Transformation{
 								TransformationType: &glootransformation.Transformation_TransformationTemplate{
-									TransformationTemplate: &transformation.TransformationTemplate{
-										Headers: map[string]*transformation.InjaTemplate{
+									TransformationTemplate: &glootransformation.TransformationTemplate{
+										Headers: map[string]*glootransformation.InjaTemplate{
 											"x-header-added-in-opt2": {
 												Text: "this header was added in the VirtualHostOption object vhOpt2",
 											},
@@ -954,8 +953,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Transformations: &glootransformation.Transformations{
 						RequestTransformation: &glootransformation.Transformation{
 							TransformationType: &glootransformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &transformation.TransformationTemplate{
-									Headers: map[string]*transformation.InjaTemplate{
+								TransformationTemplate: &glootransformation.TransformationTemplate{
+									Headers: map[string]*glootransformation.InjaTemplate{
 										"x-header-added-in-opt2": {
 											Text: "this header was added in the VirtualHostOption object vhOpt2",
 										},
@@ -1057,8 +1056,8 @@ var _ = Describe("Kube2e: gateway", func() {
 							rt2Transformation := &glootransformation.Transformations{
 								RequestTransformation: &glootransformation.Transformation{
 									TransformationType: &glootransformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &transformation.TransformationTemplate{
-											Headers: map[string]*transformation.InjaTemplate{
+										TransformationTemplate: &glootransformation.TransformationTemplate{
+											Headers: map[string]*glootransformation.InjaTemplate{
 												"x-header-added-in-opt2": {
 													Text: "this header was added in the VirtualHostOption object vhOpt2",
 												},
@@ -2147,8 +2146,8 @@ spec:
 					ClearRouteCache: true,
 					ResponseTransformation: &glootransformation.Transformation{
 						TransformationType: &glootransformation.Transformation_TransformationTemplate{
-							TransformationTemplate: &transformation.TransformationTemplate{
-								Headers: map[string]*transformation.InjaTemplate{
+							TransformationTemplate: &glootransformation.TransformationTemplate{
+								Headers: map[string]*glootransformation.InjaTemplate{
 									":status": {Text: strings.TrimSuffix(validInjaTransform, "}")},
 								},
 							},
