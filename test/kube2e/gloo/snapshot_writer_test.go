@@ -1,9 +1,11 @@
 package gloo_test
 
 import (
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -38,6 +40,7 @@ var _ = Describe("SnapshotWriter Test", func() {
 		testRunnerVs := helpers.NewVirtualServiceBuilder().
 			WithName(helper.TestrunnerName).
 			WithNamespace(testHelper.InstallNamespace).
+			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
 			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
