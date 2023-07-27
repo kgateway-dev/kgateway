@@ -54,6 +54,7 @@ This is a complex PR and may require a huddle to discuss ...
 
 # Author reminders (delete before opening)
 - Include a concise, user-facing changelog (for details, see https://github.com/solo-io/go-utils/tree/main/changelogutils) referencing the issue that is resolved
+  - Include `resolvesIssue: false` unless the issue does not require a release to be resolved 
 - Run codegen via `make -B install-go-tools generated-code`
 - Follow guidelines laid out in the Gloo Edge [contribution guide](https://docs.solo.io/gloo-edge/latest/contributing/)
 - If not ready for review open a draft PR or apply the work in progress label
