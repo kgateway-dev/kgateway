@@ -2,6 +2,11 @@ name: Test Flake
 description: Track non-deterministic test behavior
 labels: ["Type: Bug", "Type: CI Test Flake"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Note: Internal developers should consider opening a private issue if there are sensitive details that would be helpful to include
+        Links to private resources (ie logs, slack conversations, etc.) can be shared in public issues
   - type: textarea
     id: failing-tests
     attributes:
