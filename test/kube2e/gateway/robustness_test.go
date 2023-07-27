@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -107,6 +109,7 @@ var _ = Describe("Robustness tests", func() {
 		appVs = helpers.NewVirtualServiceBuilder().
 			WithName(appName).
 			WithNamespace(testHelper.InstallNamespace).
+			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
 			WithDomain("app").
 			WithRoutePrefixMatcher("route", "/1").
 			WithRouteActionToSingleDestination("route",
