@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
@@ -77,7 +76,7 @@ var _ = Describe("Transformations", func() {
 
 		// EventuallyResponseTransformed returns an Asynchronous Assertion which
 		// validates that a request with a body will return the requested content.
-		// This will only work if the above transformation is applied to the request
+		// This will only work if a transformation is applied to the response
 		EventuallyResponseTransformed := func(postBody, expectedOutput string) AsyncAssertion {
 			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(postBody)
 			return Eventually(func(g Gomega) {
@@ -145,9 +144,7 @@ var _ = Describe("Transformations", func() {
 			complexPostBody := `{"foo":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","bar":"\"bie\"","bas":"[\"eball\",\"ketball\"]"}`
 			complexOutput := `{"FOO":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","BARBAS":["\"bie\"","[\"eball\",\"ketball\"]"]}`
 			When("using escape_characters", func() {
-
 				BeforeEach(func() {
-
 					transform = &transformation.Transformations{
 						ResponseTransformation: &transformation.Transformation{
 							TransformationType: &transformation.Transformation_TransformationTemplate{
@@ -163,13 +160,47 @@ var _ = Describe("Transformations", func() {
 						},
 					}
 				})
+
+				When("setting escape_characters globally on settings", func() {
+					BeforeEach(func() {
+						testContext.SetRunSettings(&gloov1.Settings{
+							Gloo: &gloov1.GlooOptions{
+								TransformationOptions: &gloov1.GlooOptions_TransformationOptions{
+									EscapeCharacters: &wrapperspb.BoolValue{Value: true},
+								},
+							},
+						})
+
+						transform.GetResponseTransformation().GetTransformationTemplate().EscapeCharacters = nil
+					})
+
+					It("should should transform json to json response on vhost", func() {
+						testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+							vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+								Transformations: transform,
+							}
+							return vs
+						})
+
+						EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+					})
+
+					It("should should transform json to json response on route", func() {
+						testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+							vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+								Transformations: transform,
+							}
+							return vs
+						})
+
+						EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+					})
+				})
 				It("should should transform json to json response on vhost", func() {
 					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 							Transformations: transform,
 						}
-						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						return vs
 					})
 
@@ -178,11 +209,9 @@ var _ = Describe("Transformations", func() {
 
 				It("should should transform json to json response on route", func() {
 					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
-						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
 							Transformations: transform,
 						}
-						log.Printf("[[----------------------------]]\n%s\n", vs.GetVirtualHost().String())
 						return vs
 					})
 
