@@ -244,8 +244,8 @@ var _ = Describe("Plugin", func() {
 					Ctx: ctx,
 					Settings: &v1.Settings{
 						Gloo: &v1.GlooOptions{
-							RemoveUnusedFilters:            &wrapperspb.BoolValue{Value: false},
-							TransformationEscapeCharacters: &wrapperspb.BoolValue{Value: true},
+							RemoveUnusedFilters:                  &wrapperspb.BoolValue{Value: false},
+							LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
 						},
 					},
 				})
@@ -286,8 +286,8 @@ var _ = Describe("Plugin", func() {
 					Ctx: ctx,
 					Settings: &v1.Settings{
 						Gloo: &v1.GlooOptions{
-							RemoveUnusedFilters:            &wrapperspb.BoolValue{Value: false},
-							TransformationEscapeCharacters: &wrapperspb.BoolValue{Value: true},
+							RemoveUnusedFilters:                  &wrapperspb.BoolValue{Value: false},
+							LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
 						},
 					},
 				})
@@ -435,7 +435,7 @@ var _ = Describe("Plugin", func() {
 				Expect(output).To(Equal(expectedOutput))
 			})
 
-			FIt("can override settings-object-level setting with transformation-stages level", func() {
+			It("can override settings-object-level setting with transformation-stages level", func() {
 				// initialize with settings-object-level setting enabled
 				p.Init(plugins.InitParams{
 					Ctx: ctx,
