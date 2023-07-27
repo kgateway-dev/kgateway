@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Note: Internal developers should consider opening a private issue if there are sensitive details that would be helpful to include
-        Links to private resources (ie logs, slack conversations, etc.) can be shared in public issues
+        **Note for internal Solo folks**: You can share links to private resources that require login in public issues, like logs, Slack conversations, etc. 
+        If you have more sensitive details that would be helpful to include, consider opening a [private issue instead](https://github.com/solo-io/solo-projects/issues/new/choose).
   - type: dropdown
     id: version
     attributes:
