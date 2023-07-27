@@ -5,7 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Note: Internal developers should consider opening an internal issue if there are sensitive details that would be helpful to include
+        Note: Internal developers should consider opening a private issue if there are sensitive details that would be helpful to include
+        Links to private resources (ie logs, slack conversations, etc.) can be shared in public issues
   - type: dropdown
     id: product
     attributes:
