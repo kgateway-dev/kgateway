@@ -51,7 +51,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		})
-		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError(ContainSubstring("MaxActiveConnections must be greater than or equal to 1")))
 	})
 
 	It("Does nothing when fields are not specified", func() {
