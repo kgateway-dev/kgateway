@@ -60,7 +60,7 @@ body:
     id: additional-environment-detail
     attributes:
       label: Additional Environment Detail
-      description: Please include details about any other tools or integrations that may be relevant and their versions
+      description: Please include details about any other tools or integrations that may be relevant, and their versions
       placeholder: |
         eg:
         Using keycloak v21.1.0 as IDP
