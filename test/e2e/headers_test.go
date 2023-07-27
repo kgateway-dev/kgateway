@@ -2,6 +2,8 @@ package e2e_test
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -11,7 +13,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"os"
 
 	"github.com/solo-io/gloo/test/testutils"
 
@@ -87,7 +88,7 @@ var _ = Describe("Test", Label(), func() {
 	})
 
 	AfterEach(func() {
-		os.Clearenv()
+		os.Setenv(api_conversion.MatchingNamespaceEnv, "")
 		testContext.AfterEach()
 	})
 
