@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
@@ -55,6 +57,7 @@ var _ = Describe("GlooResourcesTest", func() {
 		testRunnerVs = helpers.NewVirtualServiceBuilder().
 			WithName(helper.TestrunnerName).
 			WithNamespace(testHelper.InstallNamespace).
+			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
 			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
