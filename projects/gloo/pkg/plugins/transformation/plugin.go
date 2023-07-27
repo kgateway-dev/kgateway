@@ -393,11 +393,14 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 	}
 
 	if len(inTemplate.GetHeadersToAppend()) > 0 {
-		outTemplate.HeadersToAppend = make([]*envoytransformation.TransformationTemplate_HeaderToAppend, len(inTemplate.GetHeadersToAppend()))
-		for i, hdr := range inTemplate.GetHeadersToAppend() {
+		outTemplate.HeadersToAppend = make(
+			[]*envoytransformation.TransformationTemplate_HeaderToAppend,
+			len(inTemplate.GetHeadersToAppend()))
+		headers := inTemplate.GetHeadersToAppend()
+		for i := range headers {
 			outTemplate.GetHeadersToAppend()[i] = &envoytransformation.TransformationTemplate_HeaderToAppend{
-				Key:   hdr.GetKey(),
-				Value: &envoytransformation.InjaTemplate{Text: hdr.GetValue().GetText()},
+				Key:   headers[i].GetKey(),
+				Value: &envoytransformation.InjaTemplate{Text: headers[i].GetValue().GetText()},
 			}
 
 		}
@@ -422,20 +425,18 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 
 	if len(inTemplate.GetDynamicMetadataValues()) > 0 {
 		outTemplate.DynamicMetadataValues = make([]*envoytransformation.TransformationTemplate_DynamicMetadataValue, len(inTemplate.GetDynamicMetadataValues()))
-		for i, v := range inTemplate.GetDynamicMetadataValues() {
+		values := inTemplate.GetDynamicMetadataValues()
+		for i := range values {
 			outTemplate.GetDynamicMetadataValues()[i] = &envoytransformation.TransformationTemplate_DynamicMetadataValue{
-				MetadataNamespace: v.GetMetadataNamespace(),
-				Key:               v.GetKey(),
+				MetadataNamespace: values[i].GetMetadataNamespace(),
+				Key:               values[i].GetKey(),
 				Value: &envoytransformation.InjaTemplate{
-					Text: v.GetValue().GetText(),
+					Text: values[i].GetValue().GetText(),
 				},
 			}
 		}
 	}
 
-	out.TransformationTemplate = &envoytransformation.TransformationTemplate{
-		EscapeCharacters: false,
-	}
 	out.TransformationTemplate = outTemplate
 	return out
 }
