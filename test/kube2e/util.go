@@ -33,6 +33,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	// UniqueTestResourceLabel can be assigned to the resources used by kube2e tests
+	// This unique label per test run ensures that the generated snapshot is different on subsequent runs
+	// We have previously seen flakes where a resource is deleted and re-created with the same hash and thus
+	// the emitter can miss the update
+	UniqueTestResourceLabel = "gloo-kube2e-test-id"
+)
+
 func GetHttpEchoImage() string {
 	httpEchoImage := "hashicorp/http-echo"
 	if runtime.GOARCH == "arm64" {
