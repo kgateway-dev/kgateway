@@ -70,7 +70,11 @@ func (b *VirtualServiceBuilder) WithLabel(key, value string) *VirtualServiceBuil
 }
 
 func (b *VirtualServiceBuilder) WithDomain(domain string) *VirtualServiceBuilder {
-	b.domains = []string{domain}
+	return b.WithDomains([]string{domain})
+}
+
+func (b *VirtualServiceBuilder) WithDomains(domains []string) *VirtualServiceBuilder {
+	b.domains = domains
 	return b
 }
 
