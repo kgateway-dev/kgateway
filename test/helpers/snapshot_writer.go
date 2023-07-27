@@ -311,12 +311,14 @@ func (s *SnapshotWriterImpl) waitForProxiesToBeDeleted(deleteOptions clients.Del
 		}
 		return nil
 	},
+		// Proxies should be deleted almost instantly, so we can use a short backoff (we retry every 200ms for 5s total)
+		// If the proxies are not deleted by then, something else is wrong and we should fail the test
 		retry.RetryIf(func(err error) bool {
 			return err != nil
 		}),
 		retry.LastErrorOnly(true),
-		retry.Attempts(5),
-		retry.Delay(time.Millisecond*500),
+		retry.Attempts(10),
+		retry.Delay(time.Millisecond*200),
 		retry.DelayType(retry.FixedDelay),
 	)
 }
