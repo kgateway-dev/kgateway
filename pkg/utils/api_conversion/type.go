@@ -9,6 +9,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+// HeaderSecretOptions is used to pass around information about whether/how to enforce that secrets and upstream namespace must match
+type HeaderSecretOptions struct {
+	EnforceNamespaceMatch bool
+	// this will be ignored unless EnforceNamespaceMatch is true
+	UpstreamNamespace string
+}
+
+const MatchingNamespaceEnv = "HEADER_SECRET_REF_NS_MATCHES_US"
+
 // Converts between Envoy and Gloo/solokit versions of envoy protos
 // This is required because go-control-plane dropped gogoproto in favor of goproto
 // in v0.9.0, but solokit depends on gogoproto (and the generated deep equals it creates).
@@ -46,12 +55,12 @@ func ToEnvoyInt64Range(int64Range *envoytype_gloo.Int64Range) *envoy_type_v3.Int
 	}
 }
 
-func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	result := make([]*envoy_config_core_v3.HeaderValueOption, 0)
 	var err error
 	var opts []*envoy_config_core_v3.HeaderValueOption
 	for _, v := range option {
-		opts, err = ToEnvoyHeaderValueOptions(v, secrets)
+		opts, err = ToEnvoyHeaderValueOptions(v, secrets, secretOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -60,7 +69,7 @@ func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secr
 	return result, nil
 }
 
-func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	switch typedOption := option.GetHeaderOption().(type) {
 	case *envoycore_sk.HeaderValueOption_Header:
 		return []*envoy_config_core_v3.HeaderValueOption{
@@ -73,6 +82,10 @@ func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *
 			},
 		}, nil
 	case *envoycore_sk.HeaderValueOption_HeaderSecretRef:
+		if secretOptions.EnforceNamespaceMatch && secretOptions.UpstreamNamespace != typedOption.HeaderSecretRef.GetNamespace() {
+			// The secrets sent to the upstream must come from the same namespace. The error message is copied from secretList.Find() to avoid exposing new information about this setting.
+			return nil, errors.Errorf("list did not find secret %v.%v", typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
+		}
 		secret, err := secrets.Find(typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
 		if err != nil {
 			return nil, err

@@ -233,12 +233,13 @@ type InvalidConfigPolicy struct {
 }
 
 type Gloo struct {
-	Deployment            *GlooDeployment `json:"deployment,omitempty"`
-	ServiceAccount        `json:"serviceAccount,omitempty"`
-	SplitLogOutput        *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
-	GlooService           *KubeResourceOverride `json:"service,omitempty"`
-	LogLevel              *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
-	DisableLeaderElection *bool                 `json:"disableLeaderElection,omitempty" desc:"Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo"`
+	Deployment                 *GlooDeployment `json:"deployment,omitempty"`
+	ServiceAccount             `json:"serviceAccount,omitempty"`
+	SplitLogOutput             *bool                 `json:"splitLogOutput,omitempty" desc:"Set to true to send debug/info/warning logs to stdout, error/fatal/panic to stderr. Set to false to send all logs to stdout"`
+	GlooService                *KubeResourceOverride `json:"service,omitempty"`
+	LogLevel                   *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
+	DisableLeaderElection      *bool                 `json:"disableLeaderElection,omitempty" desc:"Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo"`
+	HeaderSecretRefNsMatchesUs *bool                 `json:"headerSecretRefNsMatchesUs,omitempty" desc:"Set to true to require that secrets sent in headers via headerSecretRefs come from the same namespace as the destination upstream. Default: false"`
 }
 
 type SecurityOpts struct {
