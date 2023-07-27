@@ -87,14 +87,14 @@ func ToEnvoyOutlierDetection(detection *envoycluster_gloo.OutlierDetection) *env
 	}
 }
 
-func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
+func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
 	result := make([]*envoy_config_core_v3.HealthCheck, len(check))
 	for i, v := range check {
 		var err error
-		result[i], err = ToEnvoyHealthCheck(v, secrets)
+		result[i], err = ToEnvoyHealthCheck(v, secrets, secretOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.Sec
 	return result, nil
 }
 
-func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretList) (*envoy_config_core_v3.HealthCheck, error) {
+func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretList, secretOptions HeaderSecretOptions) (*envoy_config_core_v3.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
@@ -131,7 +131,7 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 			},
 		}
 	case *envoycore_gloo.HealthCheck_HttpHealthCheck_:
-		var requestHeadersToAdd, err = ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd(), secrets)
+		var requestHeadersToAdd, err = ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd(), secrets, secretOptions)
 		if err != nil {
 			return nil, err
 		}
