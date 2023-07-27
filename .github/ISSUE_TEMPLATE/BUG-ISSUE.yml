@@ -58,8 +58,8 @@ body:
         Enumerate steps one might take to reproduce the bug from scratch, with as much detail as possible
       placeholder: |
         eg:
-        1. kube apply '...'
-        2. curl '....'
+        1. kubectl apply '...'
+        2. kubectl get -oyaml '....'
         3. See error
     validations:
       required: true
