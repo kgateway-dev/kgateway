@@ -2,6 +2,10 @@ name: Bug Report
 description: Create a report to help us improve
 labels: ["Type: Bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Note: Internal developers should consider opening an internal issue if there are sensitive details that would be helpful to include
   - type: dropdown
     id: product
     attributes:
