@@ -366,41 +366,41 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 
 	if len(inTemplate.GetExtractors()) > 0 {
 		outTemplate.Extractors = make(map[string]*envoytransformation.Extraction)
-	}
-	for k, v := range inTemplate.GetExtractors() {
-		outExtraction := &envoytransformation.Extraction{
-			Regex:    v.GetRegex(),
-			Subgroup: v.GetSubgroup(),
-		}
-		switch src := v.GetSource().(type) {
-		case *transformation.Extraction_Body:
-			outExtraction.Source = &envoytransformation.Extraction_Body{
-				Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
+		for k, v := range inTemplate.GetExtractors() {
+			outExtraction := &envoytransformation.Extraction{
+				Regex:    v.GetRegex(),
+				Subgroup: v.GetSubgroup(),
 			}
-		case *transformation.Extraction_Header:
-			outExtraction.Source = &envoytransformation.Extraction_Header{
-				Header: src.Header,
+			switch src := v.GetSource().(type) {
+			case *transformation.Extraction_Body:
+				outExtraction.Source = &envoytransformation.Extraction_Body{
+					Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
+				}
+			case *transformation.Extraction_Header:
+				outExtraction.Source = &envoytransformation.Extraction_Header{
+					Header: src.Header,
+				}
 			}
+			outTemplate.GetExtractors()[k] = outExtraction
 		}
-		outTemplate.GetExtractors()[k] = outExtraction
 	}
 
 	if len(inTemplate.GetHeaders()) > 0 {
 		outTemplate.Headers = make(map[string]*envoytransformation.InjaTemplate)
-	}
-	for k, v := range inTemplate.GetHeaders() {
-		outTemplate.GetHeaders()[k] = &envoytransformation.InjaTemplate{Text: v.GetText()}
+		for k, v := range inTemplate.GetHeaders() {
+			outTemplate.GetHeaders()[k] = &envoytransformation.InjaTemplate{Text: v.GetText()}
+		}
 	}
 
 	if len(inTemplate.GetHeadersToAppend()) > 0 {
 		outTemplate.HeadersToAppend = make([]*envoytransformation.TransformationTemplate_HeaderToAppend, len(inTemplate.GetHeadersToAppend()))
-	}
-	for i, hdr := range inTemplate.GetHeadersToAppend() {
-		outTemplate.GetHeadersToAppend()[i] = &envoytransformation.TransformationTemplate_HeaderToAppend{
-			Key:   hdr.GetKey(),
-			Value: &envoytransformation.InjaTemplate{Text: hdr.GetValue().GetText()},
-		}
+		for i, hdr := range inTemplate.GetHeadersToAppend() {
+			outTemplate.GetHeadersToAppend()[i] = &envoytransformation.TransformationTemplate_HeaderToAppend{
+				Key:   hdr.GetKey(),
+				Value: &envoytransformation.InjaTemplate{Text: hdr.GetValue().GetText()},
+			}
 
+		}
 	}
 
 	switch bodyTransformation := inTemplate.GetBodyTransformation().(type) {
@@ -422,15 +422,14 @@ func translateTransformationTemplate(in *transformation.Transformation_Transform
 
 	if len(inTemplate.GetDynamicMetadataValues()) > 0 {
 		outTemplate.DynamicMetadataValues = make([]*envoytransformation.TransformationTemplate_DynamicMetadataValue, len(inTemplate.GetDynamicMetadataValues()))
-	}
-
-	for i, v := range inTemplate.GetDynamicMetadataValues() {
-		outTemplate.GetDynamicMetadataValues()[i] = &envoytransformation.TransformationTemplate_DynamicMetadataValue{
-			MetadataNamespace: v.GetMetadataNamespace(),
-			Key:               v.GetKey(),
-			Value: &envoytransformation.InjaTemplate{
-				Text: v.GetValue().GetText(),
-			},
+		for i, v := range inTemplate.GetDynamicMetadataValues() {
+			outTemplate.GetDynamicMetadataValues()[i] = &envoytransformation.TransformationTemplate_DynamicMetadataValue{
+				MetadataNamespace: v.GetMetadataNamespace(),
+				Key:               v.GetKey(),
+				Value: &envoytransformation.InjaTemplate{
+					Text: v.GetValue().GetText(),
+				},
+			}
 		}
 	}
 
