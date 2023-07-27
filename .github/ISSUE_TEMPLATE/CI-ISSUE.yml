@@ -12,7 +12,7 @@ body:
     attributes:
       label: Which tests failed?
       description: |
-                   Include the test name/description and error to make this issue easier to find in searches.
+                   Include the test name/description and error to make this issue easier to find in searches
                    Check whether an issue already exists for the same failure
     validations:
       required: true
@@ -22,7 +22,7 @@ body:
       label: Initial Investigation
       description: |
         Does this look like test pollution? Resources not fully ready?
-        Ideally you should spend a few minutes trying to track down the cause of the flake.
+        Ideally you should spend a few minutes trying to track down the cause of the flake
     validations:
       required: false
   - type: textarea
@@ -31,5 +31,6 @@ body:
       label: Additional Information
       description: |
         Include links to full logs of failed runs, copy relevant sections of logs, etc.
+        Also link the branch or PR the failure occurred on
     validations:
       required: false

@@ -24,7 +24,7 @@ body:
     id: change-details
     attributes:
       label: Describe the requested changes
-      description: List the desired changes to be made to the Gloo Edge docs.
+      description: List the desired changes to be made to the Gloo Edge docs
   - type: textarea
     id: docs-links
     attributes:
@@ -38,9 +38,9 @@ body:
       label: Browser Information
       description:
         If the change isn't related to content, please include your browser version and any other relevant information 
-        (e.g., browser zoom) to help us reproduce docs-related bugs.
+        (e.g., browser zoom) to help us reproduce docs-related bugs
   - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
-      description: Add any other context or screenshots about the feature request here.
+      description: Add any other context or screenshots about the feature request here
