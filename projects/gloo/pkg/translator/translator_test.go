@@ -1117,8 +1117,9 @@ var _ = Describe("Translator", func() {
 					UnhealthyThreshold: DefaultThreshold,
 					HealthChecker: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
 						GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
-							ServiceName: "svc",
-							Authority:   "authority",
+							ServiceName:     "svc",
+							Authority:       "authority",
+							InitialMetadata: []*envoy_config_core_v3.HeaderValueOption{},
 						},
 					},
 				},
@@ -1174,10 +1175,11 @@ var _ = Describe("Translator", func() {
 		})
 
 		Context("Health checks with secret header", func() {
-			AfterEach(os.Clearenv)
-			DescribeTable("can translate health check with secret header", func(enforceMatch, secretNamespace string, expectError bool) {
-				err := os.Setenv(api_conversion.MatchingNamespaceEnv, enforceMatch)
-				Expect(err).NotTo(HaveOccurred())
+			var expectedResult []*envoy_config_core_v3.HealthCheck
+			var expectedHeaders []*envoy_config_core_v3.HeaderValueOption
+			var upstreamHeaders []*envoycore_sk.HeaderValueOption
+
+			BeforeEach(func() {
 				params.Snapshot.Secrets = v1.SecretList{
 					{
 						Kind: &v1.Secret_Header{
@@ -1188,40 +1190,12 @@ var _ = Describe("Translator", func() {
 							},
 						},
 						Metadata: &core.Metadata{
-							Name:      "foo",
-							Namespace: secretNamespace,
+							Name: "foo",
 						},
 					},
 				}
 
-				expectedResult := []*envoy_config_core_v3.HealthCheck{
-					{
-						Timeout:            DefaultHealthCheckTimeout,
-						Interval:           DefaultHealthCheckInterval,
-						HealthyThreshold:   DefaultThreshold,
-						UnhealthyThreshold: DefaultThreshold,
-						HealthChecker: &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
-							HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
-								Host: "host",
-								Path: "path",
-								ServiceNameMatcher: &envoy_type_matcher_v3.StringMatcher{
-									MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
-										Prefix: "svc",
-									},
-								},
-								RequestHeadersToAdd:    []*envoy_config_core_v3.HeaderValueOption{},
-								RequestHeadersToRemove: []string{},
-								CodecClientType:        envoy_type_v3.CodecClientType_HTTP2,
-								ExpectedStatuses:       []*envoy_type_v3.Int64Range{},
-							},
-						},
-					},
-				}
-
-				upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
-				Expect(err).NotTo(HaveOccurred())
-
-				expectedResult[0].GetHttpHealthCheck().RequestHeadersToAdd = []*envoy_config_core_v3.HeaderValueOption{
+				expectedHeaders = []*envoy_config_core_v3.HeaderValueOption{
 					{
 						Header: &envoy_config_core_v3.HeaderValue{
 							Key:   "Authorization",
@@ -1233,12 +1207,11 @@ var _ = Describe("Translator", func() {
 					},
 				}
 
-				upstream.GetHealthChecks()[0].GetHttpHealthCheck().RequestHeadersToAdd = []*envoycore_sk.HeaderValueOption{
+				upstreamHeaders = []*envoycore_sk.HeaderValueOption{
 					{
 						HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{
 							HeaderSecretRef: &core.ResourceRef{
-								Name:      "foo",
-								Namespace: secretNamespace,
+								Name: "foo",
 							},
 						},
 						Append: &wrappers.BoolValue{
@@ -1247,6 +1220,20 @@ var _ = Describe("Translator", func() {
 					},
 				}
 
+				expectedResult = []*envoy_config_core_v3.HealthCheck{
+					{
+						Timeout:            DefaultHealthCheckTimeout,
+						Interval:           DefaultHealthCheckInterval,
+						HealthyThreshold:   DefaultThreshold,
+						UnhealthyThreshold: DefaultThreshold,
+					},
+				}
+				Expect(expectedResult[0].HealthChecker).To(BeNil())
+			})
+
+			AfterEach(os.Clearenv)
+
+			translate := func(expectError bool) {
 				snap, errs, report := translator.Translate(params, proxy)
 				if expectError {
 					Expect(errs.Validate()).To(MatchError(ContainSubstring("list did not find secret bar.foo")))
@@ -1265,6 +1252,64 @@ var _ = Describe("Translator", func() {
 					msgList = append(msgList, v)
 				}
 				Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
+			}
+
+			DescribeTable("http health check", func(enforceMatch, secretNamespace string, expectError bool) {
+				err := os.Setenv(api_conversion.MatchingNamespaceEnv, enforceMatch)
+				Expect(err).NotTo(HaveOccurred())
+
+				params.Snapshot.Secrets[0].Metadata.Namespace = secretNamespace
+				expectedResult[0].HealthChecker = &envoy_config_core_v3.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &envoy_config_core_v3.HealthCheck_HttpHealthCheck{
+						Host: "host",
+						Path: "path",
+						ServiceNameMatcher: &envoy_type_matcher_v3.StringMatcher{
+							MatchPattern: &envoy_type_matcher_v3.StringMatcher_Prefix{
+								Prefix: "svc",
+							},
+						},
+						RequestHeadersToAdd:    []*envoy_config_core_v3.HeaderValueOption{},
+						RequestHeadersToRemove: []string{},
+						CodecClientType:        envoy_type_v3.CodecClientType_HTTP2,
+						ExpectedStatuses:       []*envoy_type_v3.Int64Range{},
+					},
+				}
+
+				upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedResult[0].GetHttpHealthCheck().RequestHeadersToAdd = expectedHeaders
+				upstream.GetHealthChecks()[0].GetHttpHealthCheck().RequestHeadersToAdd = upstreamHeaders
+				upstream.GetHealthChecks()[0].GetHttpHealthCheck().RequestHeadersToAdd[0].GetHeaderSecretRef().Namespace = secretNamespace
+
+				translate(expectError)
+			},
+				Entry("Matching enforced and namespaces match", "true", "gloo-system", false),
+				Entry("Matching not enforced and namespaces match", "false", "gloo-system", false),
+				Entry("Matching not enforced and namespaces don't match", "false", "bar", false),
+				Entry("Matching enforced and namespaces don't match", "true", "bar", true))
+
+			DescribeTable("grpc health check", func(enforceMatch, secretNamespace string, expectError bool) {
+				err := os.Setenv(api_conversion.MatchingNamespaceEnv, enforceMatch)
+				Expect(err).NotTo(HaveOccurred())
+
+				params.Snapshot.Secrets[0].Metadata.Namespace = secretNamespace
+				expectedResult[0].HealthChecker = &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
+					GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
+						ServiceName:     "svc",
+						Authority:       "authority",
+						InitialMetadata: []*envoy_config_core_v3.HeaderValueOption{},
+					},
+				}
+
+				upstream.HealthChecks, err = api_conversion.ToGlooHealthCheckList(expectedResult)
+				Expect(err).NotTo(HaveOccurred())
+
+				expectedResult[0].GetGrpcHealthCheck().InitialMetadata = expectedHeaders
+				upstream.GetHealthChecks()[0].GetGrpcHealthCheck().InitialMetadata = upstreamHeaders
+				upstream.GetHealthChecks()[0].GetGrpcHealthCheck().InitialMetadata[0].GetHeaderSecretRef().Namespace = secretNamespace
+
+				translate(expectError)
 			},
 				Entry("Matching enforced and namespaces match", "true", "gloo-system", false),
 				Entry("Matching not enforced and namespaces match", "false", "gloo-system", false),

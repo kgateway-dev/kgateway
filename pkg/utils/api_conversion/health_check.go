@@ -161,10 +161,15 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 		}
 
 	case *envoycore_gloo.HealthCheck_GrpcHealthCheck_:
+		var initialMetadata, err = ToEnvoyHeaderValueOptionList(typed.GrpcHealthCheck.GetInitialMetadata(), secrets, secretOptions)
+		if err != nil {
+			return nil, err
+		}
 		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
-				ServiceName: typed.GrpcHealthCheck.GetServiceName(),
-				Authority:   typed.GrpcHealthCheck.GetAuthority(),
+				ServiceName:     typed.GrpcHealthCheck.GetServiceName(),
+				Authority:       typed.GrpcHealthCheck.GetAuthority(),
+				InitialMetadata: initialMetadata,
 			},
 		}
 	case *envoycore_gloo.HealthCheck_CustomHealthCheck_:
@@ -253,8 +258,9 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 	case *envoy_config_core_v3.HealthCheck_GrpcHealthCheck_:
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoycore_gloo.HealthCheck_GrpcHealthCheck{
-				ServiceName: typed.GrpcHealthCheck.GetServiceName(),
-				Authority:   typed.GrpcHealthCheck.GetAuthority(),
+				ServiceName:     typed.GrpcHealthCheck.GetServiceName(),
+				Authority:       typed.GrpcHealthCheck.GetAuthority(),
+				InitialMetadata: ToGlooHeaderValueOptionList(typed.GrpcHealthCheck.GetInitialMetadata()),
 			},
 		}
 	case *envoy_config_core_v3.HealthCheck_CustomHealthCheck_:
