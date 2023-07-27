@@ -16,6 +16,7 @@ import (
 type VirtualServiceBuilder struct {
 	name      string
 	namespace string
+	labels    map[string]string
 
 	domains            []string
 	virtualHostOptions *gloov1.VirtualHostOptions
@@ -23,14 +24,16 @@ type VirtualServiceBuilder struct {
 	sslConfig          *ssl.SslConfig
 }
 
+// BuilderFromVirtualService creates a new VirtualServiceBuilder from an existing VirtualService
 func BuilderFromVirtualService(vs *v1.VirtualService) *VirtualServiceBuilder {
 	builder := &VirtualServiceBuilder{
 		name:               vs.GetMetadata().GetName(),
 		namespace:          vs.GetMetadata().GetNamespace(),
+		labels:             vs.GetMetadata().GetLabels(),
 		domains:            vs.GetVirtualHost().GetDomains(),
 		virtualHostOptions: vs.GetVirtualHost().GetOptions(),
 		sslConfig:          vs.GetSslConfig(),
-		routesByName:       make(map[string]*v1.Route, 10),
+		routesByName:       make(map[string]*v1.Route, len(vs.GetVirtualHost().GetRoutes())),
 	}
 	for _, r := range vs.GetVirtualHost().GetRoutes() {
 		builder.WithRoute(r.GetName(), r)
@@ -38,8 +41,10 @@ func BuilderFromVirtualService(vs *v1.VirtualService) *VirtualServiceBuilder {
 	return builder
 }
 
+// NewVirtualServiceBuilder creates an empty VirtualServiceBuilder
 func NewVirtualServiceBuilder() *VirtualServiceBuilder {
 	return &VirtualServiceBuilder{
+		labels:       make(map[string]string, 2),
 		routesByName: make(map[string]*v1.Route, 10),
 	}
 }
@@ -59,8 +64,17 @@ func (b *VirtualServiceBuilder) WithNamespace(namespace string) *VirtualServiceB
 	return b
 }
 
+func (b *VirtualServiceBuilder) WithLabel(key, value string) *VirtualServiceBuilder {
+	b.labels[key] = value
+	return b
+}
+
 func (b *VirtualServiceBuilder) WithDomain(domain string) *VirtualServiceBuilder {
-	b.domains = []string{domain}
+	return b.WithDomains([]string{domain})
+}
+
+func (b *VirtualServiceBuilder) WithDomains(domains []string) *VirtualServiceBuilder {
+	b.domains = domains
 	return b
 }
 
@@ -216,10 +230,15 @@ func (b *VirtualServiceBuilder) Clone() *VirtualServiceBuilder {
 
 	clone.name = b.name
 	clone.namespace = b.namespace
+	clone.labels = make(map[string]string, len(b.labels))
+	for key, value := range b.labels {
+		clone.labels[key] = value
+	}
+
 	clone.domains = nil
 	clone.domains = append(clone.domains, b.domains...)
 	clone.virtualHostOptions = b.virtualHostOptions.Clone().(*gloov1.VirtualHostOptions)
-	clone.routesByName = make(map[string]*v1.Route)
+	clone.routesByName = make(map[string]*v1.Route, len(b.routesByName))
 	for key, value := range b.routesByName {
 		clone.routesByName[key] = value.Clone().(*v1.Route)
 	}
@@ -244,6 +263,7 @@ func (b *VirtualServiceBuilder) Build() *v1.VirtualService {
 		Metadata: &core.Metadata{
 			Name:      b.name,
 			Namespace: b.namespace,
+			Labels:    b.labels,
 		},
 		VirtualHost: &v1.VirtualHost{
 			Domains: b.domains,
