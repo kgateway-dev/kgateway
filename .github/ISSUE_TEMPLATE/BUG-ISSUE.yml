@@ -45,7 +45,9 @@ body:
     attributes:
       label: Expected Behavior
       description: A clear and concise description of what is expected to happen
-      placeholder: When I performed x, I expected y to happen
+      placeholder: |
+        Resource x should be accepted. 
+        Or, if "bar" is not a valid possible value for field "foo", then an error message should say so.
     validations:
       required: true
   - type: textarea
