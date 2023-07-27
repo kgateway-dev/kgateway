@@ -5,3 +5,9 @@ changelog:
     description: >- 
       Summarizes 1.15 changes in the upgrade overview. 
       skipCI-kube-tests:true
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8481
+    resolvesIssue: false
+    description: >- 
+      Updates k8s support table.
+      skipCI-kube-tests:true
