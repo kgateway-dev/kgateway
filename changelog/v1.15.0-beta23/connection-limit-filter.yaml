@@ -1,0 +1,8 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/7428
+  resolvesIssue: false
+  description: >-
+    Gloo now supports connection limiting. This restricts the number of active connections per gateway. Useful to protect resources, ensure fair share of resources across gateways, and prevent DoS attacks.
+    Both HTTP and TCP Gateways can now be configured via the `options.ConnectionLimit` parameter to restrict the number of active connections and wait for an optional delay before closing them.
+    This is based off the envoy Connection Limit Filter (https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/connection_limit_filter)
