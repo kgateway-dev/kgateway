@@ -2,12 +2,16 @@ name: Test Flake
 description: Track non-deterministic test behavior
 labels: ["Type: Bug", "Type: CI Test Flake"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        **Note**: This is a public repo. Be sure to obscure or redact any sensitive information.
   - type: textarea
     id: failing-tests
     attributes:
       label: Which tests failed?
-      placeholder: |
-                   Include the test name/description and error to make this issue easier to find in searches.
+      description: |
+                   Include the test name/description and error to make this issue easier to find in searches
                    Check whether an issue already exists for the same failure
     validations:
       required: true
@@ -15,16 +19,17 @@ body:
     id: initial-investigation
     attributes:
       label: Initial Investigation
-      placeholder: |
+      description: |
         Does this look like test pollution? Resources not fully ready?
-        Ideally you should spend a few minutes trying to track down the cause of the flake.
+        Ideally you should spend a few minutes trying to track down the cause of the flake
     validations:
       required: false
   - type: textarea
-    id: Additional Information
+    id: additional-information
     attributes:
       label: Additional Information
-      placeholder: |
-        Include links to full logs of failed runs, etc.
+      description: |
+        Include links to full logs of failed runs, copy relevant sections of logs, etc.
+        Also link the branch or PR the failure occurred on
     validations:
       required: false
