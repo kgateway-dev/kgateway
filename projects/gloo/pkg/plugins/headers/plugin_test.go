@@ -260,6 +260,14 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessRoute(routeParamsWithSecret, singleRouteToGoodUpstream, out)
 			Expect(err).NotTo(HaveOccurred())
 		})
+		It("Errors with a malformed value for setting", func() {
+			os.Setenv(api_conversion.MatchingNamespaceEnv, "tr")
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.Route{}
+			singleRouteToGoodUpstream.Options = &v1.RouteOptions{HeaderManipulation: testHeaderManipWithSecrets}
+			err := p.ProcessRoute(routeParamsWithSecret, singleRouteToGoodUpstream, out)
+			Expect(err).Should(MatchError("strconv.ParseBool: parsing \"tr\": invalid syntax"))
+		})
 		AfterEach(func() {
 			os.Clearenv()
 			p = NewPlugin()
