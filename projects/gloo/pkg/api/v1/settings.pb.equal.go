@@ -671,6 +671,16 @@ func (m *GlooOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTransformationEscapeCharacters()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTransformationEscapeCharacters()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTransformationEscapeCharacters(), target.GetTransformationEscapeCharacters()) {
+			return false
+		}
+	}
+
 	return true
 }
 

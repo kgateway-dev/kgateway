@@ -704,6 +704,10 @@ message GlooOptions {
     // transformations are applied and it is difficult to determine which are
     // causing issues. Defaults to false.
     google.protobuf.BoolValue log_transformation_request_response_info = 16;
+
+    // Set escapeCharacters for all TransformationTemplates on all vhosts and routes.
+    // This setting can be overridden in individual TransformationTemplates
+    google.protobuf.BoolValue transformation_escape_characters = 17;
 }
 
 

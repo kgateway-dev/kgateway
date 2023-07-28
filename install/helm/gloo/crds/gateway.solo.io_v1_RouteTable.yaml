@@ -1311,6 +1311,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 type: array
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               extractors:
                                                 additionalProperties:
                                                   properties:
@@ -1401,6 +1404,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 type: array
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               extractors:
                                                 additionalProperties:
                                                   properties:
@@ -1511,6 +1517,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 type: array
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               extractors:
                                                 additionalProperties:
                                                   properties:
@@ -1572,6 +1581,9 @@ spec:
                                     type: object
                                   type: array
                               type: object
+                            escapeCharacters:
+                              nullable: true
+                              type: boolean
                             inheritTransformation:
                               type: boolean
                             logRequestResponseInfo:
@@ -1658,6 +1670,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 type: array
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               extractors:
                                                 additionalProperties:
                                                   properties:
@@ -1748,6 +1763,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 type: array
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               extractors:
                                                 additionalProperties:
                                                   properties:
@@ -1858,6 +1876,9 @@ spec:
                                                       type: object
                                                   type: object
                                                 type: array
+                                              escapeCharacters:
+                                                nullable: true
+                                                type: boolean
                                               extractors:
                                                 additionalProperties:
                                                   properties:
@@ -1978,6 +1999,9 @@ spec:
                                             type: object
                                         type: object
                                       type: array
+                                    escapeCharacters:
+                                      nullable: true
+                                      type: boolean
                                     extractors:
                                       additionalProperties:
                                         properties:
@@ -2068,6 +2092,9 @@ spec:
                                             type: object
                                         type: object
                                       type: array
+                                    escapeCharacters:
+                                      nullable: true
+                                      type: boolean
                                     extractors:
                                       additionalProperties:
                                         properties:
@@ -2359,6 +2386,8 @@ spec:
                                                           type: object
                                                       type: object
                                                     type: array
+                                                  escapeCharacters:
+                                                    type: boolean
                                                   extractors:
                                                     additionalProperties:
                                                       properties:
@@ -2669,6 +2698,9 @@ spec:
                                                                     type: object
                                                                 type: object
                                                               type: array
+                                                            escapeCharacters:
+                                                              nullable: true
+                                                              type: boolean
                                                             extractors:
                                                               additionalProperties:
                                                                 properties:
@@ -2759,6 +2791,9 @@ spec:
                                                                     type: object
                                                                 type: object
                                                               type: array
+                                                            escapeCharacters:
+                                                              nullable: true
+                                                              type: boolean
                                                             extractors:
                                                               additionalProperties:
                                                                 properties:
@@ -2869,6 +2904,9 @@ spec:
                                                                     type: object
                                                                 type: object
                                                               type: array
+                                                            escapeCharacters:
+                                                              nullable: true
+                                                              type: boolean
                                                             extractors:
                                                               additionalProperties:
                                                                 properties:
@@ -2930,6 +2968,9 @@ spec:
                                                   type: object
                                                 type: array
                                             type: object
+                                          escapeCharacters:
+                                            nullable: true
+                                            type: boolean
                                           inheritTransformation:
                                             type: boolean
                                           logRequestResponseInfo:
@@ -3016,6 +3057,9 @@ spec:
                                                                     type: object
                                                                 type: object
                                                               type: array
+                                                            escapeCharacters:
+                                                              nullable: true
+                                                              type: boolean
                                                             extractors:
                                                               additionalProperties:
                                                                 properties:
@@ -3106,6 +3150,9 @@ spec:
                                                                     type: object
                                                                 type: object
                                                               type: array
+                                                            escapeCharacters:
+                                                              nullable: true
+                                                              type: boolean
                                                             extractors:
                                                               additionalProperties:
                                                                 properties:
@@ -3216,6 +3263,9 @@ spec:
                                                                     type: object
                                                                 type: object
                                                               type: array
+                                                            escapeCharacters:
+                                                              nullable: true
+                                                              type: boolean
                                                             extractors:
                                                               additionalProperties:
                                                                 properties:
@@ -3314,6 +3364,9 @@ spec:
                                                           type: object
                                                       type: object
                                                     type: array
+                                                  escapeCharacters:
+                                                    nullable: true
+                                                    type: boolean
                                                   extractors:
                                                     additionalProperties:
                                                       properties:
@@ -3404,6 +3457,9 @@ spec:
                                                           type: object
                                                       type: object
                                                     type: array
+                                                  escapeCharacters:
+                                                    nullable: true
+                                                    type: boolean
                                                   extractors:
                                                     additionalProperties:
                                                       properties:
@@ -3568,6 +3624,8 @@ spec:
                                                 type: object
                                             type: object
                                           type: array
+                                        escapeCharacters:
+                                          type: boolean
                                         extractors:
                                           additionalProperties:
                                             properties:

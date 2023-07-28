@@ -40,7 +40,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	transformationext "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -430,8 +429,8 @@ var _ = Describe("AWS Lambda", func() {
 							Transformations: &transformation.Transformations{
 								ResponseTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &transformationext.TransformationTemplate{
-											Headers: map[string]*transformationext.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											Headers: map[string]*transformation.InjaTemplate{
 												"foo": {
 													Text: "bar",
 												},
