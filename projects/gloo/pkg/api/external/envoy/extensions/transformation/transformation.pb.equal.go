@@ -543,6 +543,10 @@ func (m *TransformationTemplate) Equal(that interface{}) bool {
 
 	}
 
+	if m.GetEscapeCharacters() != target.GetEscapeCharacters() {
+		return false
+	}
+
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:

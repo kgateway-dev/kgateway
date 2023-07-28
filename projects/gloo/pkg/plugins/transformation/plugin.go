@@ -53,12 +53,11 @@ var (
 	mCacheMisses = utils.MakeSumCounter("gloo.solo.io/transformation_validation_cache_misses", "The number of cache misses while validating transformation config")
 )
 
-type TranslateTransformationFn func(*transformation.Transformation) (*envoytransformation.Transformation, error)
+type TranslateTransformationFn func(*transformation.Transformation, *wrapperspb.BoolValue, *wrapperspb.BoolValue) (*envoytransformation.Transformation, error)
 
 // This Plugin is exported only because it is utilized by the enterprise implementation
 // We would prefer if the plugin were not exported and instead the required translation
 // methods were exported.
-// Other plugins may
 type Plugin struct {
 	removeUnused              bool
 	filterRequiredForListener map[*v1.HttpListener]struct{}
@@ -70,6 +69,7 @@ type Plugin struct {
 	// validationLruCache is a map of: (transformation hash) -> error state
 	// this is usually a typed error but may be an untyped nil interface
 	validationLruCache *lru.Cache
+	escapeCharacters   *wrapperspb.BoolValue
 }
 
 func NewPlugin() *Plugin {
@@ -89,6 +89,7 @@ func (p *Plugin) Init(params plugins.InitParams) {
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 	p.settings = params.Settings
 	p.TranslateTransformation = TranslateTransformation
+	p.escapeCharacters = params.Settings.GetGloo().GetTransformationEscapeCharacters()
 	p.logRequestResponseInfo = params.Settings.GetGloo().GetLogTransformationRequestResponseInfo().GetValue()
 }
 
@@ -227,11 +228,11 @@ func (p *Plugin) ConvertTransformation(
 	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation())
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.escapeCharacters, nil)
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -254,16 +255,17 @@ func (p *Plugin) ConvertTransformation(
 			})
 	}
 
+	stagedEscapeCharacters := stagedTransformations.GetEscapeCharacters()
 	if early := stagedTransformations.GetEarly(); early != nil {
 		p.RequireEarlyTransformation = true
-		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early)
+		transformations, err := p.getTransformations(ctx, EarlyStageNumber, early, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
 		ret.Transformations = append(ret.GetTransformations(), transformations...)
 	}
 	if regular := stagedTransformations.GetRegular(); regular != nil {
-		transformations, err := p.getTransformations(ctx, 0, regular)
+		transformations, err := p.getTransformations(ctx, 0, regular, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
@@ -297,17 +299,17 @@ func (p *Plugin) ConvertTransformation(
 func (p *Plugin) translateOSSTransformations(
 	glooTransform *transformation.Transformation,
 ) (*envoytransformation.Transformation, error) {
-	transform, err := p.TranslateTransformation(glooTransform)
+	transform, err := p.TranslateTransformation(glooTransform, p.escapeCharacters, nil)
 	if err != nil {
 		return nil, eris.Wrap(err, "this transformation type is not supported in open source Gloo Edge")
 	}
 	return transform, nil
 }
 
-func TranslateTransformation(glooTransform *transformation.Transformation) (
-	*envoytransformation.Transformation,
-	error,
-) {
+func TranslateTransformation(glooTransform *transformation.Transformation,
+	settingsEscapeCharacters *wrapperspb.BoolValue,
+	stagedEscapeCharacters *wrapperspb.BoolValue) (*envoytransformation.Transformation, error) {
+
 	if glooTransform == nil {
 		return nil, nil
 	}
@@ -316,15 +318,20 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (
 	switch typedTransformation := glooTransform.GetTransformationType().(type) {
 	case *transformation.Transformation_HeaderBodyTransform:
 		{
-			out.TransformationType = &envoytransformation.Transformation_HeaderBodyTransform{
-				HeaderBodyTransform: typedTransformation.HeaderBodyTransform,
-			}
+			out.TransformationType = translateHeaderBodyTransform(typedTransformation)
 		}
 	case *transformation.Transformation_TransformationTemplate:
 		{
-			out.TransformationType = &envoytransformation.Transformation_TransformationTemplate{
-				TransformationTemplate: typedTransformation.TransformationTemplate,
+			escapeCharacters := typedTransformation.TransformationTemplate.GetEscapeCharacters()
+			if escapeCharacters == nil {
+				escapeCharacters = stagedEscapeCharacters
 			}
+			if escapeCharacters == nil {
+				escapeCharacters = settingsEscapeCharacters
+			}
+			typedTransformation.TransformationTemplate.EscapeCharacters = escapeCharacters
+
+			out.TransformationType = translateTransformationTemplate(typedTransformation)
 		}
 	default:
 		return nil, UnknownTransformationType(typedTransformation)
@@ -336,6 +343,102 @@ func TranslateTransformation(glooTransform *transformation.Transformation) (
 	}
 
 	return out, nil
+}
+
+func translateHeaderBodyTransform(in *transformation.Transformation_HeaderBodyTransform) *envoytransformation.Transformation_HeaderBodyTransform {
+	out := &envoytransformation.Transformation_HeaderBodyTransform{}
+	out.HeaderBodyTransform = &envoytransformation.HeaderBodyTransform{
+		AddRequestMetadata: in.HeaderBodyTransform.GetAddRequestMetadata(),
+	}
+	return out
+}
+
+func translateTransformationTemplate(in *transformation.Transformation_TransformationTemplate) *envoytransformation.Transformation_TransformationTemplate {
+	out := &envoytransformation.Transformation_TransformationTemplate{}
+	inTemplate := in.TransformationTemplate
+	outTemplate := &envoytransformation.TransformationTemplate{
+		AdvancedTemplates:  inTemplate.GetAdvancedTemplates(),
+		HeadersToRemove:    inTemplate.GetHeadersToRemove(),
+		IgnoreErrorOnParse: inTemplate.GetIgnoreErrorOnParse(),
+		ParseBodyBehavior:  envoytransformation.TransformationTemplate_RequestBodyParse(inTemplate.GetParseBodyBehavior()),
+		EscapeCharacters:   inTemplate.GetEscapeCharacters().GetValue(), // the inheritance is handled in TranslateTransformation
+	}
+
+	if len(inTemplate.GetExtractors()) > 0 {
+		outTemplate.Extractors = make(map[string]*envoytransformation.Extraction)
+		for k, v := range inTemplate.GetExtractors() {
+			outExtraction := &envoytransformation.Extraction{
+				Regex:    v.GetRegex(),
+				Subgroup: v.GetSubgroup(),
+			}
+			switch src := v.GetSource().(type) {
+			case *transformation.Extraction_Body:
+				outExtraction.Source = &envoytransformation.Extraction_Body{
+					Body: src.Body, // this is *empty.Empty but better to translate it now to avoid future confusion
+				}
+			case *transformation.Extraction_Header:
+				outExtraction.Source = &envoytransformation.Extraction_Header{
+					Header: src.Header,
+				}
+			}
+			outTemplate.GetExtractors()[k] = outExtraction
+		}
+	}
+
+	if len(inTemplate.GetHeaders()) > 0 {
+		outTemplate.Headers = make(map[string]*envoytransformation.InjaTemplate)
+		for k, v := range inTemplate.GetHeaders() {
+			outTemplate.GetHeaders()[k] = &envoytransformation.InjaTemplate{Text: v.GetText()}
+		}
+	}
+
+	if len(inTemplate.GetHeadersToAppend()) > 0 {
+		outTemplate.HeadersToAppend = make(
+			[]*envoytransformation.TransformationTemplate_HeaderToAppend,
+			len(inTemplate.GetHeadersToAppend()))
+		headers := inTemplate.GetHeadersToAppend()
+		for i := range headers {
+			outTemplate.GetHeadersToAppend()[i] = &envoytransformation.TransformationTemplate_HeaderToAppend{
+				Key:   headers[i].GetKey(),
+				Value: &envoytransformation.InjaTemplate{Text: headers[i].GetValue().GetText()},
+			}
+
+		}
+	}
+
+	switch bodyTransformation := inTemplate.GetBodyTransformation().(type) {
+	case *transformation.TransformationTemplate_Body:
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_Body{
+			Body: &envoytransformation.InjaTemplate{
+				Text: bodyTransformation.Body.GetText(),
+			},
+		}
+	case *transformation.TransformationTemplate_Passthrough:
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_Passthrough{
+			Passthrough: &envoytransformation.Passthrough{},
+		}
+	case *transformation.TransformationTemplate_MergeExtractorsToBody:
+		outTemplate.BodyTransformation = &envoytransformation.TransformationTemplate_MergeExtractorsToBody{
+			MergeExtractorsToBody: &envoytransformation.MergeExtractorsToBody{},
+		}
+	}
+
+	if len(inTemplate.GetDynamicMetadataValues()) > 0 {
+		outTemplate.DynamicMetadataValues = make([]*envoytransformation.TransformationTemplate_DynamicMetadataValue, len(inTemplate.GetDynamicMetadataValues()))
+		values := inTemplate.GetDynamicMetadataValues()
+		for i := range values {
+			outTemplate.GetDynamicMetadataValues()[i] = &envoytransformation.TransformationTemplate_DynamicMetadataValue{
+				MetadataNamespace: values[i].GetMetadataNamespace(),
+				Key:               values[i].GetKey(),
+				Value: &envoytransformation.InjaTemplate{
+					Text: values[i].GetValue().GetText(),
+				},
+			}
+		}
+	}
+
+	out.TransformationTemplate = outTemplate
+	return out
 }
 
 func (p *Plugin) validateTransformation(
@@ -378,10 +481,11 @@ func (p *Plugin) getTransformations(
 	ctx context.Context,
 	stage uint32,
 	transformations *transformation.RequestResponseTransformations,
+	stagedEscapeCharacters *wrapperspb.BoolValue,
 ) ([]*envoytransformation.RouteTransformations_RouteTransformation, error) {
 	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
 	for _, t := range transformations.GetResponseTransforms() {
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
@@ -397,11 +501,11 @@ func (p *Plugin) getTransformations(
 	}
 
 	for _, t := range transformations.GetRequestTransforms() {
-		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation())
+		requestTransform, err := p.TranslateTransformation(t.GetRequestTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
-		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation())
+		responseTransform, err := p.TranslateTransformation(t.GetResponseTransformation(), p.escapeCharacters, stagedEscapeCharacters)
 		if err != nil {
 			return nil, err
 		}
