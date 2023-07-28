@@ -182,7 +182,7 @@ message HealthCheck {
         string authority = 2;
 
         // Specifies a list of key-value pairs that should be added to the metadata of each GRPC call
-	    // that is sent to the health checked cluster.
+        // that is sent to the health checked cluster.
         repeated .solo.io.envoy.api.v2.core.HeaderValueOption initial_metadata = 3
         [(validate.rules).repeated .max_items = 1000];
     }
