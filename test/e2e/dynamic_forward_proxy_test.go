@@ -14,7 +14,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
 
-	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -122,9 +121,9 @@ var _ = Describe("dynamic forward proxy", func() {
 							RequestTransforms: []*transformation.RequestMatch{{
 								RequestTransformation: &transformation.Transformation{
 									TransformationType: &transformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &envoytransformation.TransformationTemplate{
-											ParseBodyBehavior: envoytransformation.TransformationTemplate_DontParse,
-											Headers: map[string]*envoytransformation.InjaTemplate{
+										TransformationTemplate: &transformation.TransformationTemplate{
+											ParseBodyBehavior: transformation.TransformationTemplate_DontParse,
+											Headers: map[string]*transformation.InjaTemplate{
 												"x-rewrite-me": {Text: "postman-echo.com"},
 											},
 										},

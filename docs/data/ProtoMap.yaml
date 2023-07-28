@@ -1853,8 +1853,23 @@ apis:
   tracing.options.gloo.solo.io.TracingTagLiteral:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracingTagLiteral
     package: tracing.options.gloo.solo.io
+  transformation.options.gloo.solo.io.Extraction:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Extraction
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.HeaderBodyTransform:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#HeaderBodyTransform
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.InjaTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#InjaTemplate
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.MergeExtractorsToBody:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#MergeExtractorsToBody
+    package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.Passthrough:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Passthrough
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.RequestMatch:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#RequestMatch
@@ -1870,6 +1885,9 @@ apis:
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.TransformationStages:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#TransformationStages
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.TransformationTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#TransformationTemplate
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Transformations:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Transformations
