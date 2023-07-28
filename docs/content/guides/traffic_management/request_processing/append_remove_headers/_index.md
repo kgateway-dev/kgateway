@@ -12,7 +12,7 @@ Header Manipulation is configured via the
 
 This struct can be added to {{< protobuf name="gloo.solo.io.RouteOptions" display="Route Options">}}, {{< protobuf name="gloo.solo.io.VirtualHostOptions" display="Virtual Host Options">}}, and {{< protobuf name="gloo.solo.io.WeightedDestinationOptions" display="Weighted Destination Options" >}}.
 
-The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove`. The key and value for the header can be specified directly in the manifest, or in the case of `requestHeadersToAdd` it can be a reference to a secret of the type `gloo.solo.io/header` or `Opaque`.
+The `headerManipulation` struct contains four optional fields: `requestHeadersToAdd`, `requestHeadersToRemove`, `responseHeadersToAdd`, and `responseHeadersToRemove`. You can specify the key and value for the header directly in the manifest, or for `requestHeadersToAdd`, you can reference a secret of the type `gloo.solo.io/header` or `Opaque`.
 
 ```yaml
 headerManipulation:
@@ -34,8 +34,11 @@ headerManipulation:
   - headerSecretRef:
       name: SECRET_NAME
       namespace: SECRET_NAMESPACE
-    # The type of the secret must be gloo.solo.io/header or Opaque
-    # Each key/value pair in the secret will be added
+    # The type of the secret must be gloo.solo.io/header or Opaque.
+    # Each key/value pair in the secret is added to the header.
+    # NOTE: Referencing a secret in a different namespace than the
+    # upstream is not recommended. Instead, ensure secrets are in the
+    # same namespace as the upstream.
 
   # remove headers from request
   requestHeadersToRemove:
@@ -86,6 +89,10 @@ glooctl create secret header my-headers --headers x-header-1=one,x-header-2=two
 ```
 
 The secret will be created in the same namespace as the Gloo Edge installation by default. Inspecting the secret will show that the type is set to `gloo.solo.io/header`. Each key/value pair in the secret will be added as a header to the request.
+
+{{% notice note %}}
+Referencing a secret in a different namespace than the upstream is not recommended. Instead, ensure secrets are in the same namespace as the upstream. You can additionally set the `gloo.headerSecretRefNsMatchesUs` Helm field to true, which requires any secrets that are sent in headers to come from the same namespace as the destination upstream.
+{{% /notice %}}
 
 ## Example: Manipulating Headers on a Route
 
