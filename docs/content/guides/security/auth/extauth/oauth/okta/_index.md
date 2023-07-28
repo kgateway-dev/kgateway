@@ -171,7 +171,7 @@ Generating a 2048 bit RSA private key
 writing new private key to 'tls.key'
 ```
 
-Second, we'll create a Kubernetes secret containing this certificate.{{% notice note %}}In Gloo Edge versions 1.11 and later, specify a secret of `type: extauth.solo.io/oauth`.{{% /notice %}}
+Second, we'll create a Kubernetes secret containing this certificate.
 
 {{< tabs >}}
 {{< tab name="kubectl create secret" codelang="shell">}}

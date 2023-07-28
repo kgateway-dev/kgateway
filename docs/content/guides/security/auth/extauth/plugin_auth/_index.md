@@ -213,7 +213,7 @@ returns
 Let's deploy a sample application that we will route requests to when testing our auth plugin:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ### Create a Virtual Service
@@ -393,7 +393,7 @@ plugin.
 You can cleanup the resources created while following this guide by running:
 ```bash
 glooctl uninstall --all
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ## Next steps

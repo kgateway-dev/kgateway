@@ -780,7 +780,7 @@ metadata:
 Cool. Let's leave our controller running and watch it dynamically respond when we add a service to our cluster:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 See the service and pod:
