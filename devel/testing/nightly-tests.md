@@ -1,3 +1,10 @@
 # Nightly Tests
 
-Tests are also run on a schedule via a [GitHub action](/.github/workflows/nightly-tests.yaml). The nightly tests use the latest release - specified with the RELEASED_VERSION environment variable.
+Tests are also run on a schedule via a [GitHub action](/.github/workflows/nightly-tests.yaml).
+
+## Kubernetes End-to-End Tests
+Our [kube-e2e-tests](kube-e2e-tests.md) are run using the earlier and latest supported k8s versions. These tests use the latest release - specified with the `RELEASED_VERSION` environment variable.
+
+
+## Performance Tests
+See [performance-tests](performance-tests.md) for more details about performance tests
