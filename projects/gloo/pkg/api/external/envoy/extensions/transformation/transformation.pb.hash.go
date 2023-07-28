@@ -657,6 +657,11 @@ func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
+	err = binary.Write(hasher, binary.LittleEndian, m.GetEscapeCharacters())
+	if err != nil {
+		return 0, err
+	}
+
 	switch m.BodyTransformation.(type) {
 
 	case *TransformationTemplate_Body:

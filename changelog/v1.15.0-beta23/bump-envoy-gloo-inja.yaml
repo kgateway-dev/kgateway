@@ -1,0 +1,13 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.26.3-patch2
+  description: >-
+    Bump to access newest Inja and our new custom callback `raw_string`
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/solo-projects/issues/5155
+  resolvesIssue: false
+  description: >-
+    Add option to preserve escaped characters within an entire TransformationTemplate
+    and a new Inja function for fine-grained control within a template.

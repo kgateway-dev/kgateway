@@ -440,6 +440,12 @@ func (m *GlooOptions) Clone() proto.Message {
 		target.LogTransformationRequestResponseInfo = proto.Clone(m.GetLogTransformationRequestResponseInfo()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if h, ok := interface{}(m.GetTransformationEscapeCharacters()).(clone.Cloner); ok {
+		target.TransformationEscapeCharacters = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.TransformationEscapeCharacters = proto.Clone(m.GetTransformationEscapeCharacters()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
 	return target
 }
 

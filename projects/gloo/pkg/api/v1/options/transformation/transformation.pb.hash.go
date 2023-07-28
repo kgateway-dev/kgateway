@@ -373,6 +373,26 @@ func (m *TransformationStages) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if h, ok := interface{}(m.GetEscapeCharacters()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EscapeCharacters")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEscapeCharacters(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("EscapeCharacters")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -462,6 +482,475 @@ func (m *Transformation) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Extraction) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.Extraction")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRegex())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetSubgroup())
+	if err != nil {
+		return 0, err
+	}
+
+	switch m.Source.(type) {
+
+	case *Extraction_Header:
+
+		if _, err = hasher.Write([]byte(m.GetHeader())); err != nil {
+			return 0, err
+		}
+
+	case *Extraction_Body:
+
+		if h, ok := interface{}(m.GetBody()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Body")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetBody(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Body")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TransformationTemplate) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.TransformationTemplate")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAdvancedTemplates())
+	if err != nil {
+		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetExtractors() {
+			innerHash.Reset()
+
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetHeaders() {
+			innerHash.Reset()
+
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+				if _, err = innerHash.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if _, err = h.Hash(innerHash); err != nil {
+					return 0, err
+				}
+			} else {
+				if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+					return 0, err
+				} else {
+					if _, err = innerHash.Write([]byte("")); err != nil {
+						return 0, err
+					}
+					if err := binary.Write(innerHash, binary.LittleEndian, fieldValue); err != nil {
+						return 0, err
+					}
+				}
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetHeadersToAppend() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	for _, v := range m.GetHeadersToRemove() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetParseBodyBehavior())
+	if err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetIgnoreErrorOnParse())
+	if err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetDynamicMetadataValues() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	if h, ok := interface{}(m.GetEscapeCharacters()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EscapeCharacters")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEscapeCharacters(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("EscapeCharacters")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	switch m.BodyTransformation.(type) {
+
+	case *TransformationTemplate_Body:
+
+		if h, ok := interface{}(m.GetBody()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Body")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetBody(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Body")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *TransformationTemplate_Passthrough:
+
+		if h, ok := interface{}(m.GetPassthrough()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("Passthrough")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetPassthrough(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("Passthrough")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	case *TransformationTemplate_MergeExtractorsToBody:
+
+		if h, ok := interface{}(m.GetMergeExtractorsToBody()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("MergeExtractorsToBody")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetMergeExtractorsToBody(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("MergeExtractorsToBody")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *InjaTemplate) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.InjaTemplate")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetText())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *Passthrough) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.Passthrough")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *MergeExtractorsToBody) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.MergeExtractorsToBody")); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *HeaderBodyTransform) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.HeaderBodyTransform")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetAddRequestMetadata())
+	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TransformationTemplate_HeaderToAppend) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.TransformationTemplate_HeaderToAppend")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetValue()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Value")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetValue(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Value")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TransformationTemplate_DynamicMetadataValue) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.TransformationTemplate_DynamicMetadataValue")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetMetadataNamespace())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetValue()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("Value")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetValue(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("Value")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
