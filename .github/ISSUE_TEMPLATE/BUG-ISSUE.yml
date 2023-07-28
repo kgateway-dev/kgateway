@@ -31,6 +31,8 @@ body:
       label: Kubernetes Version
       description: What version of Kubernetes are you using with Gloo Edge?
       placeholder: eg v1.26.6
+    validations:
+      required: true
   - type: textarea
     id: describe-bug
     attributes:
