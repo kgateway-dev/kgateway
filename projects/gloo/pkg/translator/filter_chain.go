@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/log"
 
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -35,7 +36,9 @@ var _ FilterChainTranslator = new(httpFilterChainTranslator)
 
 type tcpFilterChainTranslator struct {
 	// List of TcpFilterChainPlugins to process
-	plugins []plugins.TcpFilterChainPlugin
+	tcpPlugins []plugins.TcpFilterChainPlugin
+	// List of TcpFilterChainPlugins to process
+	networkPlugins []plugins.NetworkFilterPlugin
 	// The parent Listener, this is only used to associate errors with the parent resource
 	parentListener *v1.Listener
 	// The TcpListener used to generate the list of FilterChains
@@ -108,8 +111,11 @@ func (t *tcpFilterChainTranslator) reportCreateTcpFilterChainsError(err error) {
 func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []*plugins.ExtendedFilterChain {
 	var filterChains []*envoy_config_listener_v3.FilterChain
 
-	// 1. Run the tcp filter chain plugins
-	for _, plug := range t.plugins {
+	// 1. Generate the network filters
+	networkFilters := sortNetworkFilters(t.computeNetworkFilters(params))
+
+	// 2. Run the tcp filter chain plugins
+	for _, plug := range t.tcpPlugins {
 		pluginFilterChains, err := plug.CreateTcpFilterChains(params, t.parentListener, t.listener)
 		if err != nil {
 			t.reportCreateTcpFilterChainsError(err)
@@ -118,6 +124,9 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 
 		for _, pfc := range pluginFilterChains {
 			pfc := pfc
+
+			// 3. Add the network filters to each filter chain
+			pfc.Filters = append(networkFilters, pfc.GetFilters()...)
 			if t.defaultSslConfig != nil {
 				if pfc.GetFilterChainMatch() == nil {
 					pfc.FilterChainMatch = &envoy_config_listener_v3.FilterChainMatch{}
@@ -141,7 +150,7 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 		extFilterChains = append(extFilterChains, &plugins.ExtendedFilterChain{FilterChain: fc, PassthroughCipherSuites: t.passthroughCipherSuites})
 	}
 
-	// 2. Apply SourcePrefixRange to FilterChainMatch, if defined
+	// 4. Apply SourcePrefixRange to FilterChainMatch, if defined
 	if len(t.sourcePrefixRanges) > 0 {
 		for _, fc := range extFilterChains {
 			applySourcePrefixRangesToFilterChain(fc, t.sourcePrefixRanges)
@@ -149,6 +158,26 @@ func (t *tcpFilterChainTranslator) ComputeFilterChains(params plugins.Params) []
 	}
 
 	return extFilterChains
+}
+
+func (t *tcpFilterChainTranslator) computeNetworkFilters(params plugins.Params) []plugins.StagedNetworkFilter {
+	var networkFilters []plugins.StagedNetworkFilter
+	// Process the network filters.
+	for _, plug := range t.networkPlugins {
+		stagedFilters, err := plug.NetworkFiltersTCP(params, t.listener)
+		if err != nil {
+			validation.AppendTCPListenerError(t.report, validationapi.TcpListenerReport_Error_ProcessingError, err.Error())
+		}
+
+		for _, nf := range stagedFilters {
+			if nf.NetworkFilter == nil {
+				log.Warnf("plugin %v implements NetworkFilters() but returned nil", plug.Name())
+				continue
+			}
+			networkFilters = append(networkFilters, nf)
+		}
+	}
+	return networkFilters
 }
 
 // An httpFilterChainTranslator configures a single set of NetworkFilters
