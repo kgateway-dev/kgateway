@@ -54,7 +54,7 @@ First, we need to install Gloo Edge Enterprise (minimum version `1.6.0-beta9`). 
 Let's also deploy a simple application called petstore:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 Now let's create a simple Virtual Service routing to this application. (It may take a few seconds to be Accepted.)
