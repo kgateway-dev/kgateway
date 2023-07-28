@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >- 
-      Revises admission control docs. 
-      skipCI-kube-tests:true
