@@ -5,8 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Note for internal Solo folks**: You can share links to private resources that require login in public issues, like logs, Slack conversations, etc. 
-        If you have more sensitive details that would be helpful to include, consider opening a [private issue instead](https://github.com/solo-io/solo-projects/issues/new/choose).
+        **Note**: This is a public repo. Be sure to obscure or redact any sensitive information.
   - type: textarea
     id: failing-tests
     attributes:
