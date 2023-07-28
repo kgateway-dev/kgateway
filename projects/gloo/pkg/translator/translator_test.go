@@ -1290,7 +1290,7 @@ var _ = Describe("Translator", func() {
 				translate(expectError)
 			},
 				Entry("Matching enforced and namespaces match", "true", "gloo-system", false),
-				Entry("Matching not enforced and namespaces match", "false", "gloo-system", false),
+				Entry("Matching not enforced and namespaces match", "false", "gloo-system", false))
 
 			DescribeTable("grpc health check", func(enforceMatch, secretNamespace string, expectError bool) {
 				err := os.Setenv(api_conversion.MatchingNamespaceEnv, enforceMatch)
