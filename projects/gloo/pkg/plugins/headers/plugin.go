@@ -39,14 +39,10 @@ var (
 
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
 type plugin struct {
-	enforceMatchingNamespaces bool
 }
 
 func NewPlugin() *plugin {
-	enforceMatch, _ := strconv.ParseBool(os.Getenv(api_conversion.MatchingNamespaceEnv))
-	return &plugin{
-		enforceMatchingNamespaces: enforceMatch,
-	}
+	return &plugin{}
 }
 
 func (p *plugin) Name() string {
@@ -64,16 +60,20 @@ func (p *plugin) ProcessWeightedDestination(
 	if headerManipulation == nil {
 		return nil
 	}
+	enforceMatchingNamespaces, err := getEnforceMatch()
+	if err != nil {
+		return err
+	}
 	upstreamNamespace := ""
 	// Avoid the performance impact of looking up the upstream namespace if we don't need it
 	// This is more important on routes and virtual hosts.
-	if p.enforceMatchingNamespaces {
+	if enforceMatchingNamespaces {
 		us, err := upstreams.DestinationToUpstreamRef(in.GetDestination())
 		if err == nil {
 			upstreamNamespace = us.GetNamespace()
 		}
 	}
-	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: p.enforceMatchingNamespaces, UpstreamNamespace: upstreamNamespace}
+	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: enforceMatchingNamespaces, UpstreamNamespace: upstreamNamespace}
 	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot), headerSecretOptions)
 	if err != nil {
 		return err
@@ -97,11 +97,15 @@ func (p *plugin) ProcessVirtualHost(
 	if headerManipulation == nil {
 		return nil
 	}
+	enforceMatchingNamespaces, err := getEnforceMatch()
+	if err != nil {
+		return err
+	}
 	headerSecretOptions := api_conversion.HeaderSecretOptions{
-		EnforceNamespaceMatch: p.enforceMatchingNamespaces,
+		EnforceNamespaceMatch: enforceMatchingNamespaces,
 	}
 	// Avoid the performance impact of looking up the upstream namespace if we don't need it
-	if p.enforceMatchingNamespaces && len(in.GetRoutes()) > 0 {
+	if enforceMatchingNamespaces && len(in.GetRoutes()) > 0 {
 		usNamespace := getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRoutes()[0].GetRouteAction())
 		if len(in.GetRoutes()) > 1 {
 			for _, r := range in.GetRoutes()[1:] {
@@ -134,9 +138,13 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
-	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: p.enforceMatchingNamespaces}
+	enforceMatchingNamespaces, err := getEnforceMatch()
+	if err != nil {
+		return err
+	}
+	headerSecretOptions := api_conversion.HeaderSecretOptions{EnforceNamespaceMatch: enforceMatchingNamespaces}
 	// Avoid the performance impact of looking up the upstream namespace if we don't need it
-	if p.enforceMatchingNamespaces {
+	if enforceMatchingNamespaces {
 		headerSecretOptions.UpstreamNamespace = getUpstreamNamespaceForRouteAction(params.Snapshot, in.GetRouteAction())
 	}
 	envoyHeader, err := convertHeaderConfig(headerManipulation, getSecretsFromSnapshot(params.Snapshot), headerSecretOptions)
@@ -157,6 +165,16 @@ type envoyHeaderManipulation struct {
 	RequestHeadersToRemove  []string
 	ResponseHeadersToAdd    []*envoy_config_core_v3.HeaderValueOption
 	ResponseHeadersToRemove []string
+}
+
+func getEnforceMatch() (bool, error) {
+
+	enforceMatchStr := os.Getenv(api_conversion.MatchingNamespaceEnv)
+	// ParseBool errors on empty string but we want to treat that as false
+	if enforceMatchStr == "" {
+		return false, nil
+	}
+	return strconv.ParseBool(enforceMatchStr)
 }
 
 // getUpstreamNamespaceForRouteAction finds the destination upstreams for a route action and if there's only one namespace
