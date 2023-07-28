@@ -391,7 +391,7 @@ Now that the server can reach the cert-manager token pod, the HTTP-01 challenge 
 2. Check that you have a sample app, such as pet store.
 
    ```shell
-   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
    ```
 3. Configure the VirtualService to use the newly created TLS secret and to route to the pet store sample app.
    ```shell

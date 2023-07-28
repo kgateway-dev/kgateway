@@ -19,7 +19,7 @@ Before we walk through setting up TLS for our virtual hosts, let's deploy our sa
 To start, let's make sure the `petstore` application is deployed:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 If we query the Gloo Edge Upstreams we should see it:
