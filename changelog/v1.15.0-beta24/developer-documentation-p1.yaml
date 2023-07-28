@@ -12,4 +12,3 @@ changelog:
   - type: NON_USER_FACING
     description: >-
       skipCI-kube-tests:true
-      skipCI-docs-build:true
