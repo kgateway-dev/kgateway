@@ -1,5 +1,20 @@
-# Assertions
-We have a few standards for writing assertions in our tests that are outlined below.
+# Writing Tests
+- [Convention](#conventions)
+- [Matchers](#matchers)
+  - [Gomega Matchers](#gomega-matchers)
+  - [Custom Matchers](#custom-matchers)
+- [Transforms](#transforms)
+  - [Custom Transforms](#custom-transforms)
+- [Assertions](#assertions)
+  - [Prefer Explicit Error Checking](#prefer-explicit-error-checking)
+  - [Prefer Assertion Descriptions](#prefer-assertion-descriptions)
+  - [Prefer Http Response Matcher](#prefer-http-response-matcher)
+
+## Conventions
+- All new packages and most new significant functionality must come with unit tests.
+- Table-driven tests are preferred for testing multiple scenarios/inputs.
+- Significant features should come with [end-to-end (test/e2e) tests](e2e-tests.md) and/or [kubernetes end-to-end (test/kube2e) tests](kube-e2e-tests.md)
+- Tests which are platform dependent, should be marked as such using [test requirements](/test/testutils/requirements.go)
 
 ## Matchers
 ### Gomega Matchers

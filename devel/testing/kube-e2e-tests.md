@@ -4,6 +4,19 @@ end-to-end tests against them.
 
 *Note: All commands should be run from the root directory of the Gloo repository*
 
+- [Background](#background)
+  - [How do the tests work?](#how-do-the-tests-work)
+- [CI](#ci)
+- [Local Development](#local-development)
+  - [Setup](#setup)
+    - [Use the CI Install Script](#use-the-ci-install-script)
+    - [Verify Your Setup](#verify-your-setup)
+    - [Common Setup Errors](#common-setup-errors)
+  - [Run Tests](#run-tests)
+    - [Use the Make Target](#use-the-make-target)
+    - [Test Environment Variables](#test-environment-variables)
+    - [Common Test Errors](#common-test-errors)
+
 ## Background
 Kubernetes may be relied on for scheduling, persistence or security. These tests validate that Gloo Edge can successfully operate within a Kubernetes cluster.
 

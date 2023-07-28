@@ -1,2 +1,2 @@
 # Continuous Integration
-See the [developer CI guide](/devel/contributing/ci-cd.md) for more information on CI/CD.
+See the [developer automation guide](/devel/contributing/automation.md) for more information on CI/CD.

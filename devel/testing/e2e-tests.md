@@ -3,6 +3,25 @@ These end-to-end tests do not require Kubernetes, and persist configuration in m
 
 *Note: All commands should be run from the root directory of the Gloo repository*
 
+- [Background](#background)
+  - [Where are the tests?](#where-are-the-tests)
+  - [How do the tests work?](#how-do-the-tests-work)
+  - [Example Test](#example-test)
+- [CI](#ci)
+- [Local Development](#local-development)
+  - [Setup](#setup)
+    - [Use the CI Install Script](#use-the-ci-install-script)
+    - [Verify Your Setup](#verify-your-setup)
+    - [Common Setup Errors](#common-setup-errors)
+  - [Run Tests](#run-tests)
+    - [Using Recently Published Image (Most Common)](#using-recently-published-image-most-common)
+    - [Using Previously Published Image](#using-previously-published-image)
+    - [Using Locally Built Image](#using-locally-built-image)
+    - [Running Tests in Parallel](#running-tests-in-parallel)
+  - [Debugging Tests](#debugging-tests)
+    - [Use WAIT_ON_FAIL](#use-wait_on_fail)
+    - [Use INVALID_TEST_REQS](#use-invalid_test_reqs)
+
 ## Background
 This is the most common type of end-to-end test, since it is the quickest to set up and easiest to debug. Additionally, since Gloo Edge may be run using various backing stores, these tests provide a single space to validate the translation of Gloo resources into Envoy resources, independent of where Gloo Edge is deployed. As a result, these test do not rely on Kubernetes, so if there is any Kubernetes behavior that needs to be tested, write a [kubernetes end-to-end test](../kube2e) instead.
 

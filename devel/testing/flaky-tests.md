@@ -19,3 +19,7 @@ If a test failure is deemed to be a flake, we take the following steps:
 1. If a solution can not be determined within the timebox, create a GitHub issue to track it
 1. If no issue exists, create one and include the `Type: CI Test Flake` [label](https://github.com/solo-io/gloo/labels/Type%3A%20CI%20Test%20Flake). If an issue already exists, add a comment with the logs for the failed run. We use comment frequency as a mechanism for determining frequency of flakes
 1. Retry the test (specific steps can be found in a README of each test suite) and comment on the Pull Request with a link to the GitHub issue tracking the flake
+
+
+## Identifying the cause of a flake
+- Add highly verbose, even excessive, debug logging, run the test repeatedly until the flake occurs, use the logging to trace back the buggy behavior
