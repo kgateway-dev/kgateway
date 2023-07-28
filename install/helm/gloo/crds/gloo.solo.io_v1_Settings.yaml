@@ -428,6 +428,9 @@ spec:
                     type: boolean
                   restXdsBindAddr:
                     type: string
+                  transformationEscapeCharacters:
+                    nullable: true
+                    type: boolean
                   validationBindAddr:
                     type: string
                   xdsBindAddr:
