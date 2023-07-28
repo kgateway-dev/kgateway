@@ -27,7 +27,7 @@ To follow along with this guide, you will need to have a [Kubernetes cluster dep
 To demonstrate the configuration for the HTTP/2, we will deploy the Pet Store application to the `default` namespace of our cluster using the following command:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ```console
