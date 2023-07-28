@@ -47,11 +47,12 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("translates header body transform", func() {
+			headerBodyTransformIn := &transformation.HeaderBodyTransform{}
 			headerBodyTransform := &envoytransformation.HeaderBodyTransform{}
 
 			input := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_HeaderBodyTransform{
-					HeaderBodyTransform: headerBodyTransform,
+					HeaderBodyTransform: headerBodyTransformIn,
 				},
 			}
 
@@ -60,12 +61,22 @@ var _ = Describe("Plugin", func() {
 					HeaderBodyTransform: headerBodyTransform,
 				},
 			}
-			output, err := TranslateTransformation(input)
+			output, err := TranslateTransformation(input, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 		})
 
 		It("translates transformation template repeatedly", func() {
+			transformationTemplateIn := &transformation.TransformationTemplate{
+				HeadersToAppend: []*transformation.TransformationTemplate_HeaderToAppend{
+					{
+						Key: "some-header",
+						Value: &transformation.InjaTemplate{
+							Text: "some text",
+						},
+					},
+				},
+			}
 			transformationTemplate := &envoytransformation.TransformationTemplate{
 				HeadersToAppend: []*envoytransformation.TransformationTemplate_HeaderToAppend{
 					{
@@ -79,7 +90,7 @@ var _ = Describe("Plugin", func() {
 
 			input := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: transformationTemplate,
+					TransformationTemplate: transformationTemplateIn,
 				},
 			}
 
@@ -88,7 +99,7 @@ var _ = Describe("Plugin", func() {
 					TransformationTemplate: transformationTemplate,
 				},
 			}
-			output, err := TranslateTransformation(input)
+			output, err := TranslateTransformation(input, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal(expectedOutput))
 
@@ -104,7 +115,7 @@ var _ = Describe("Plugin", func() {
 				},
 			}
 
-			output, err := TranslateTransformation(input)
+			output, err := TranslateTransformation(input, nil, nil)
 			Expect(output).To(BeNil())
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(UnknownTransformationType(&transformation.Transformation_XsltTransformation{})))
@@ -133,7 +144,7 @@ var _ = Describe("Plugin", func() {
 						RequestTransforms: []*transformation.RequestMatch{{
 							RequestTransformation: &transformation.Transformation{
 								TransformationType: &transformation.Transformation_HeaderBodyTransform{
-									HeaderBodyTransform: &envoytransformation.HeaderBodyTransform{},
+									HeaderBodyTransform: &transformation.HeaderBodyTransform{},
 								},
 							},
 						}},
@@ -229,7 +240,15 @@ var _ = Describe("Plugin", func() {
 				// override plugin created in BeforeEach
 				p = NewPlugin()
 				// initialize with settings-object-level setting enabled
-				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters:                  &wrapperspb.BoolValue{Value: false},
+							LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+						},
+					},
+				})
 
 				stagedHttpFilters, err := p.(plugins.HttpFilterPlugin).HttpFilters(plugins.Params{}, &v1.HttpListener{})
 				Expect(err).NotTo(HaveOccurred())
@@ -263,7 +282,15 @@ var _ = Describe("Plugin", func() {
 				// override plugin created in BeforeEach
 				p = NewPlugin()
 				// initialize with settings-object-level setting enabled
-				p.Init(plugins.InitParams{Ctx: ctx, Settings: &v1.Settings{Gloo: &v1.GlooOptions{RemoveUnusedFilters: &wrapperspb.BoolValue{Value: false}, LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true}}}})
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters:                  &wrapperspb.BoolValue{Value: false},
+							LogTransformationRequestResponseInfo: &wrapperspb.BoolValue{Value: true},
+						},
+					},
+				})
 
 				inputTransformationStages.LogRequestResponseInfo = &wrapperspb.BoolValue{Value: false}
 
@@ -276,6 +303,163 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(output).To(Equal(expectedOutput))
 			})
+		})
+
+		Context("EscapeCharacters", func() {
+			var (
+				inputTransformationStages *transformation.TransformationStages
+				expectedOutput            *envoytransformation.RouteTransformations
+				inputTransform            *transformation.Transformation
+				outputTransform           *envoytransformation.Transformation
+				True                      = &wrapperspb.BoolValue{Value: true}
+				False                     = &wrapperspb.BoolValue{Value: false}
+			)
+
+			type transformationPlugin interface {
+				plugins.Plugin
+				ConvertTransformation(
+					ctx context.Context,
+					t *transformation.Transformations,
+					stagedTransformations *transformation.TransformationStages,
+				) (*envoytransformation.RouteTransformations, error)
+			}
+
+			BeforeEach(func() {
+				inputTransform = &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{},
+					},
+				}
+				outputTransform = &envoytransformation.Transformation{
+					TransformationType: &envoytransformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &envoytransformation.TransformationTemplate{},
+					},
+				}
+				inputTransformationStages = &transformation.TransformationStages{
+					Regular: &transformation.RequestResponseTransformations{
+						RequestTransforms: []*transformation.RequestMatch{{
+							RequestTransformation: inputTransform,
+						}},
+					},
+				}
+
+				expectedOutput = &envoytransformation.RouteTransformations{
+					Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{{
+						Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+							RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+								RequestTransformation: outputTransform,
+							},
+						},
+					}},
+				}
+			})
+
+			It("can set escape_characters on transformation level", func() {
+				inputTransform.GetTransformationTemplate().EscapeCharacters = True
+				outputTransform.GetTransformationTemplate().EscapeCharacters = true
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("sets escape_characters to false if transformation-level setting is false", func() {
+				inputTransform.GetTransformationTemplate().EscapeCharacters = False
+				outputTransform.GetTransformationTemplate().EscapeCharacters = false
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("does not set escape_characters if transformation-level setting is nil", func() {
+				inputTransform.GetTransformationTemplate().EscapeCharacters = False
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can override transformation-stages level escape_characters with transformation level", func() {
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.GetTransformationTemplate().EscapeCharacters = False
+				inputTransformationStages.EscapeCharacters = True
+				expectedOutput.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation().GetTransformationTemplate().EscapeCharacters = false
+
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can enable settings-object-level setting", func() {
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters:            False,
+							TransformationEscapeCharacters: True,
+						},
+					},
+				})
+
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.GetTransformationTemplate().EscapeCharacters = nil
+				inputTransformationStages.EscapeCharacters = nil
+				expectedOutput.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation().GetTransformationTemplate().EscapeCharacters = true
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
+			It("can override settings-object-level setting with transformation-stages level", func() {
+				// initialize with settings-object-level setting enabled
+				p.Init(plugins.InitParams{
+					Ctx: ctx,
+					Settings: &v1.Settings{
+						Gloo: &v1.GlooOptions{
+							RemoveUnusedFilters:            False,
+							TransformationEscapeCharacters: False,
+						},
+					},
+				})
+
+				inputTransformationStages.Regular.RequestTransforms[0].RequestTransformation.GetTransformationTemplate().EscapeCharacters = True
+				inputTransformationStages.EscapeCharacters = nil
+				expectedOutput.GetTransformations()[0].GetMatch().(*envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_).RequestMatch.GetRequestTransformation().GetTransformationTemplate().EscapeCharacters = true
+				output, err := p.(transformationPlugin).ConvertTransformation(
+					ctx,
+					&transformation.Transformations{},
+					inputTransformationStages,
+				)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(output).To(Equal(expectedOutput))
+			})
+
 		})
 
 	})
@@ -390,6 +574,12 @@ var _ = Describe("Plugin", func() {
 				Stage: EarlyStageNumber,
 			})
 			Expect(err).NotTo(HaveOccurred())
+			earlyRequestTransformationTemplateIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "1"},
+				},
+			}
 			earlyRequestTransformationTemplate := &envoytransformation.TransformationTemplate{
 				AdvancedTemplates: true,
 				BodyTransformation: &envoytransformation.TransformationTemplate_Body{
@@ -399,12 +589,18 @@ var _ = Describe("Plugin", func() {
 			// construct transformation with all the options, to make sure translation is correct
 			earlyRequestTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: earlyRequestTransformationTemplate,
+					TransformationTemplate: earlyRequestTransformationTemplateIn,
 				},
 			}
 			envoyEarlyRequestTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: earlyRequestTransformationTemplate,
+				},
+			}
+			earlyResponseTransformationTemplateIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "2"},
 				},
 			}
 			earlyResponseTransformationTemplate := &envoytransformation.TransformationTemplate{
@@ -415,12 +611,18 @@ var _ = Describe("Plugin", func() {
 			}
 			earlyResponseTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: earlyResponseTransformationTemplate,
+					TransformationTemplate: earlyResponseTransformationTemplateIn,
 				},
 			}
 			envoyEarlyResponseTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: earlyResponseTransformationTemplate,
+				},
+			}
+			requestTransformationIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "11"},
 				},
 			}
 			requestTransformation := &envoytransformation.TransformationTemplate{
@@ -431,12 +633,18 @@ var _ = Describe("Plugin", func() {
 			}
 			requestTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: requestTransformation,
+					TransformationTemplate: requestTransformationIn,
 				},
 			}
 			envoyRequestTransform := &envoytransformation.Transformation{
 				TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 					TransformationTemplate: requestTransformation,
+				},
+			}
+			responseTransformationIn := &transformation.TransformationTemplate{
+				AdvancedTemplates: true,
+				BodyTransformation: &transformation.TransformationTemplate_Body{
+					Body: &transformation.InjaTemplate{Text: "12"},
 				},
 			}
 			responseTransformation := &envoytransformation.TransformationTemplate{
@@ -447,7 +655,7 @@ var _ = Describe("Plugin", func() {
 			}
 			responseTransform := &transformation.Transformation{
 				TransformationType: &transformation.Transformation_TransformationTemplate{
-					TransformationTemplate: responseTransformation,
+					TransformationTemplate: responseTransformationIn,
 				},
 			}
 			envoyResponseTransform := &envoytransformation.Transformation{
