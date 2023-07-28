@@ -17,20 +17,26 @@
 Gloo Edge relies on the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. As outlined in the documentation, it pairs with the [Gomega](https://onsi.github.io/gomega/) matcher library to provide a BDD-style testing framework. For more details about how to write tests, check out the [writing tests docs](writing-tests.md).
 
 ## Common Make Targets
+There are a few common make targets that can be used to run tests
+
 ### test
 The `test` target provides a wrapper around invoking `ginkgo` with a set of useful flags. This is the base target that is used by all other test targets.
 
 ### test-with-coverage
+Run tests with coverage reporting
 
 ### run-tests
+Run unit tests (non e2e)
 
 ### run-e2e-tests
+Run [in memory end-to-end tests](e2e-tests.md)
 
 ### run-kube-e2e-tests
+Run [kubernetes end-to-end tests](kube-e2e-tests.md)
 
 ### run-benchmark-tests
+Run [performance tests](performance-tests.md)
 
-There are a few common make targets that can be used to run tests:
 
 ## Environment Variables
 Shared environment variables that can be used to control the behavior of the tests are defined in [env.go](/test/testutils/env.go). Below are a few that are commonly used:
