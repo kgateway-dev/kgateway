@@ -1254,6 +1254,11 @@ var _ = Describe("Translator", func() {
 				Expect(cluster.HealthChecks).To(ConsistOfProtos(msgList...))
 			}
 
+			// Checks to ensure that https://github.com/solo-io/gloo/pull/8505 works as expected.
+			// It checks whether headerSecretRef and the upstream that the secret is sent to have matching namespaces
+			// if configured to do so and the code to do so is shared across both the http && grpc healt check.
+			// The test cases have been split between the http and grpc health checks as it relies on shared code,
+			// avoids test duplication and to ensure they both work as expected.
 			DescribeTable("http health check", func(enforceMatch, secretNamespace string, expectError bool) {
 				err := os.Setenv(api_conversion.MatchingNamespaceEnv, enforceMatch)
 				Expect(err).NotTo(HaveOccurred())
@@ -1286,8 +1291,6 @@ var _ = Describe("Translator", func() {
 			},
 				Entry("Matching enforced and namespaces match", "true", "gloo-system", false),
 				Entry("Matching not enforced and namespaces match", "false", "gloo-system", false),
-				Entry("Matching not enforced and namespaces don't match", "false", "bar", false),
-				Entry("Matching enforced and namespaces don't match", "true", "bar", true))
 
 			DescribeTable("grpc health check", func(enforceMatch, secretNamespace string, expectError bool) {
 				err := os.Setenv(api_conversion.MatchingNamespaceEnv, enforceMatch)
@@ -1311,8 +1314,6 @@ var _ = Describe("Translator", func() {
 
 				translate(expectError)
 			},
-				Entry("Matching enforced and namespaces match", "true", "gloo-system", false),
-				Entry("Matching not enforced and namespaces match", "false", "gloo-system", false),
 				Entry("Matching not enforced and namespaces don't match", "false", "bar", false),
 				Entry("Matching enforced and namespaces don't match", "true", "bar", true))
 		})
