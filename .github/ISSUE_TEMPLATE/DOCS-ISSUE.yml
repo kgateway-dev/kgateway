@@ -2,13 +2,17 @@ name: Docs Issue
 description: Fix our docs or add new information
 labels: ["Type: Docs"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        **Note**: This is a public repo. Be sure to obscure or redact any sensitive information.
   - type: dropdown
     id: version
     attributes:
       label: Version
       description: Which version of the Gloo Edge docs does this affect?
       options:
-        - main
+        - main (1.15.x beta)
         - 1.14.x (latest)
         - 1.13.x 
         - 1.12.x
@@ -19,7 +23,7 @@ body:
     id: change-details
     attributes:
       label: Describe the requested changes
-      placeholder: List the desired changes to be made to the Gloo Edge docs.
+      description: List the desired changes to be made to the Gloo Edge docs
   - type: textarea
     id: docs-links
     attributes:
@@ -31,11 +35,11 @@ body:
     id: browser-details
     attributes:
       label: Browser Information
-      placeholder: 
+      description:
         If the change isn't related to content, please include your browser version and any other relevant information 
-        (e.g., browser zoom) to help us reproduce docs-related bugs.
+        (e.g., browser zoom) to help us reproduce docs-related bugs
   - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
-      placeholder: Add any other context or screenshots about the feature request here.
+      description: Add any other context, screenshots, links to related issues or PRs, etc. about the docs request here
