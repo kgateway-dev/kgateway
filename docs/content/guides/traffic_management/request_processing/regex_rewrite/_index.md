@@ -18,7 +18,7 @@ glooctl install gateway
 
 Install the petstore demo
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 Create a virtual service with routes for `/foo` and `/bar`
@@ -89,7 +89,7 @@ We have successfully shown how you can change the external API of your services 
 
 ```shell script
 glooctl uninstall
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ### Regex Engine

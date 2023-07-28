@@ -31,7 +31,7 @@ minikube start --docker-opt="default-ulimit=nofile=102400:102400"
 
 Let's deploy a sample web application that we will use to demonstrate these features:
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ### Creating a Virtual Service
@@ -228,5 +228,5 @@ kill $portForwardPid
 kubectl delete virtualservice -n gloo-system default
 kubectl delete authconfig -n gloo-system google-oidc
 kubectl delete secret -n gloo-system google
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
