@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.26.4-patch1
+  description: >-    
+    Bump envoy-gloo to v1.26.4-patch1 to pull in fixes for
+    CVE-2023-35941, CVE-2023-35942, CVE-2023-35944, and CVE-2023-35945
