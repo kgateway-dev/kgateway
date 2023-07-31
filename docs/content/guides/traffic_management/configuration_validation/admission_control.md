@@ -126,12 +126,6 @@ forwarding is directed towards the Gloo pod, the `default-petstore-8080` upstrea
 validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
 ```
 
-If the port forwarding is switched to the gateway pod, you can see the metrics defined for virtual services by
-revisiting the metrics endpoint: `[http://localhost:9091/metrics](http://localhost:9091/metrics)`.
-```
-validation_gateway_solo_io_virtual_service_config_status{name="default",namespace="gloo-system"} 0
-```
-
 ## Disable resource validation in Gloo Edge
 
 Because the validation admission webhook is set up automatically in Gloo Edge, a `ValidationWebhookConfiguration` resource is created in your cluster. You can disable the webhook, which prevents the `ValidationWebhookConfiguration` resource from being created. When validation is disabled, any Gloo resources that you create in your cluster are translated to Envoy proxy config, even if the config has errors or warnings. 
