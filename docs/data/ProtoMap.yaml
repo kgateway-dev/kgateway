@@ -83,6 +83,9 @@ apis:
   caching.options.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto.sk/#Settings
     package: caching.options.gloo.solo.io
+  connection_limit.options.gloo.solo.io.ConnectionLimit:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/connection_limit/connection_limit.proto.sk/#ConnectionLimit
+    package: connection_limit.options.gloo.solo.io
   consul.options.gloo.solo.io.QueryOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/query_options.proto.sk/#QueryOptions
     package: consul.options.gloo.solo.io

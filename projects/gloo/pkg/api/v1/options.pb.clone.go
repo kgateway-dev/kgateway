@@ -51,6 +51,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_azure "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_cors "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/dynamic_forward_proxy"
@@ -311,6 +313,12 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.DynamicForwardProxy = proto.Clone(m.GetDynamicForwardProxy()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_dynamic_forward_proxy.FilterConfig)
 	}
 
+	if h, ok := interface{}(m.GetConnectionLimit()).(clone.Cloner); ok {
+		target.ConnectionLimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
+	} else {
+		target.ConnectionLimit = proto.Clone(m.GetConnectionLimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
+	}
+
 	if h, ok := interface{}(m.GetRouter()).(clone.Cloner); ok {
 		target.Router = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
 	} else {
@@ -360,6 +368,12 @@ func (m *TcpListenerOptions) Clone() proto.Message {
 		target.TcpProxySettings = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tcp.TcpProxySettings)
 	} else {
 		target.TcpProxySettings = proto.Clone(m.GetTcpProxySettings()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tcp.TcpProxySettings)
+	}
+
+	if h, ok := interface{}(m.GetConnectionLimit()).(clone.Cloner); ok {
+		target.ConnectionLimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
+	} else {
+		target.ConnectionLimit = proto.Clone(m.GetConnectionLimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
 	}
 
 	return target

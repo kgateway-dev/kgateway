@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package connection_limit.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+
+// These options provide the ability to limit the active connections in envoy.
+// Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/connection_limit_filter
+message ConnectionLimit {
+    // The maximum number of active connections for this gateway. When this limit is reached, any incoming connection
+    // will be closed after delay duration.
+    // Must be greater than one.
+    google.protobuf.UInt64Value max_active_connections = 1;
+
+    // The time to wait before a connection is dropped. Useful for DoS prevention.
+    // Defaults to zero and the connection will be closed immediately.
+    google.protobuf.Duration  delay_before_close = 2;
+}
