@@ -5,7 +5,7 @@ weight: 60
 description: (Kubernetes Only) Gloo Edge can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
-Learn how to prevent invalid Gloo resource configuration from being propagated to the gateway proxies in your cluster to prevent bugs, service outages, or security vulnerabilities.
+Learn how to prevent the gateway proxies from getting invalid Gloo resource configuration. This way, you reduce the likelihood of bugs, service outages, or security vulnerabilities.
 
 ## Resource validation in Gloo Edge
 
