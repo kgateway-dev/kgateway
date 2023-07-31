@@ -134,7 +134,9 @@ validation_gateway_solo_io_virtual_service_config_status{name="default",namespac
 
 ## Disable resource validation in Gloo Edge
 
-Because the validation admission webhook is set up automatically in Gloo Edge, a `ValidationWebhookConfiguration` resource is created in your cluster. To disable the webhook and prevent the `ValidationWebhookConfiguration` resource from being created, set the following values in your Helm values file:
+Because the validation admission webhook is set up automatically in Gloo Edge, a `ValidationWebhookConfiguration` resource is created in your cluster. You can disable the webhook, which prevents the `ValidationWebhookConfiguration` resource from being created. When validation is disabled, any Gloo resources that you create in your cluster are translated to Envoy proxy config, even if the config has errors or warnings. 
+
+To disable validation, use the following `--set` options during installation, or configure your Helm values file accordingly.
 
 ```sh
 --set gateway.enabled=false
