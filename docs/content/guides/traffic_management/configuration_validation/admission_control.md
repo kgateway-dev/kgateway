@@ -120,7 +120,7 @@ observabilityOptions:
 ```
 
 After you complete the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) 
-to generate some resources, you can see the metrics that you defined at <http://localhost:9091/metrics>. If the port
+to generate some resources, you can see the metrics that you defined at `[http://localhost:9091/metrics](http://localhost:9091/metrics)`. If the port
 forwarding is directed towards the Gloo pod, the `default-petstore-8080` upstream reports a healthy state:
 ```
 validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
