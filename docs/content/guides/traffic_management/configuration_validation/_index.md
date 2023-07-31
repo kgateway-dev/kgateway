@@ -11,7 +11,7 @@ Learn how to prevent the gateway proxies from getting invalid Gloo resource conf
 
 Kubernetes provides dynamic admission control capabilities that intercept requests to the Kubernetes API server and validate or mutate objects before they are persisted in etcd. Gloo Edge leverages this capability and provides a [validation admission webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) that ensures that only valid Envoy configuration is written to etcd.
 
-The following image shows how Gloo Edge validates resource configuration with the validating admission webhook before it is applied in the cluster. 
+The following image shows how Gloo Edge validates resource configuration with the validating admission webhook before applying the configuration in the cluster.
 
 <figure><img src="{{% versioned_link_path fromRoot="/img/admission-control.svg" %}}"/>
 <figcaption style="text-align:center;font-style:italic">Resource validation in Gloo Edge</figcaption></figure>
