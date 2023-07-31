@@ -134,7 +134,7 @@ ifeq ($(GOOS),)
 endif
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
-GOLANG_VERSION := golang:1.18.6-alpine
+GOLANG_VERSION := golang:1.20-alpine
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)

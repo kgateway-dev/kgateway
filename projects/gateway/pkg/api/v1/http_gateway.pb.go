@@ -200,9 +200,9 @@ func (x *HttpGateway) GetOptions() *v1.HttpListenerOptions {
 // Expressions to define which virtual services to select
 // Example:
 // expressions:
-//    - key: domain
-//      operator: in
-//      values: example.com
+//   - key: domain
+//     operator: in
+//     values: example.com
 type VirtualServiceSelectorExpressions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

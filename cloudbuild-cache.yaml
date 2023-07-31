@@ -8,17 +8,17 @@ steps:
     path: '/go/pkg'
   id: 'untar-mod-cache'
 
-- name: 'golang:1.18.6'
+- name: 'golang:1.20'
   args: ['go', 'mod', 'download']
   volumes: *vol
   id: 'download'
 
-- name: 'golang:1.18.6'
+- name: 'golang:1.20'
   args: ['go', 'mod', 'tidy']
   volumes: *vol
   id: 'tidy'
 
-- name: 'golang:1.18.6'
+- name: 'golang:1.20'
   entrypoint: 'bash'
   volumes: *vol
   args: ['-c', ' cd /go/pkg && tar -zvcf gloo-mod.tar.gz mod']

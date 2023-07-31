@@ -208,6 +208,7 @@ type ResponseMatch struct {
 	// The source of the extraction
 	//
 	// Types that are assignable to Source:
+	//
 	//	*ResponseMatch_Header
 	//	*ResponseMatch_Body
 	Source isResponseMatch_Source `protobuf_oneof:"source"`
@@ -364,6 +365,7 @@ type JsonKey_PathSegment struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Segment:
+	//
 	//	*JsonKey_PathSegment_Key
 	Segment isJsonKey_PathSegment_Segment `protobuf_oneof:"segment"`
 }

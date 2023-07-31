@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: Updated go to 1.20
+    dependencyOwner: golang
+    dependencyRepo: go
+  - type: FIX
+    description: Bump golang to 1.20. This requires all plugins to be rebuilt.
