@@ -1174,6 +1174,82 @@ var _ = Describe("Translator", func() {
 			translateWithBuggyHasher()
 		})
 
+		Context("Healthcheck with Forbidden headers", func() {
+			var healthChecks []*gloo_envoy_core.HealthCheck
+
+			BeforeEach(func() {
+				healthChecks = []*gloo_envoy_core.HealthCheck{
+					{
+						Timeout:            DefaultHealthCheckTimeout,
+						Interval:           DefaultHealthCheckInterval,
+						HealthyThreshold:   DefaultThreshold,
+						UnhealthyThreshold: DefaultThreshold,
+					},
+				}
+				Expect(healthChecks[0].HealthChecker).To(BeNil())
+			})
+
+			DescribeTable("http health check", func(key string, expectError bool) {
+				upstream.HealthChecks = healthChecks
+				healthChecks[0].HealthChecker = &gloo_envoy_core.HealthCheck_HttpHealthCheck_{
+					HttpHealthCheck: &gloo_envoy_core.HealthCheck_HttpHealthCheck{
+						RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{
+							{
+								HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+									Header: &envoycore_sk.HeaderValue{
+										Key:   key,
+										Value: "value",
+									},
+								},
+								Append: &wrappers.BoolValue{
+									Value: true,
+								},
+							},
+						},
+					},
+				}
+				_, errs, _ := translator.Translate(params, proxy)
+
+				if expectError {
+					Expect(errs.Validate()).To(MatchError(ContainSubstring(": -prefixed or host headers may not be modified")))
+					return
+				}
+				Expect(errs.Validate()).NotTo(HaveOccurred())
+			},
+				Entry("Allowed header", "some-header", false),
+				Entry(":-prefixed header", ":path", true))
+
+			DescribeTable("grpc health check", func(key string, expectError bool) {
+				upstream.HealthChecks = healthChecks
+				healthChecks[0].HealthChecker = &gloo_envoy_core.HealthCheck_GrpcHealthCheck_{
+					GrpcHealthCheck: &gloo_envoy_core.HealthCheck_GrpcHealthCheck{
+						InitialMetadata: []*envoycore_sk.HeaderValueOption{
+							{
+								HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+									Header: &envoycore_sk.HeaderValue{
+										Key:   key,
+										Value: "value",
+									},
+								},
+								Append: &wrappers.BoolValue{
+									Value: true,
+								},
+							},
+						},
+					},
+				}
+				_, errs, _ := translator.Translate(params, proxy)
+
+				if expectError {
+					Expect(errs.Validate()).To(MatchError(ContainSubstring(": -prefixed or host headers may not be modified")))
+					return
+				}
+				Expect(errs.Validate()).NotTo(HaveOccurred())
+			},
+				Entry("Allowed header", "some-header", false),
+				Entry("host header", "host", true))
+		})
+
 		Context("Health checks with secret header", func() {
 			var expectedResult []*envoy_config_core_v3.HealthCheck
 			var expectedHeaders []*envoy_config_core_v3.HeaderValueOption
