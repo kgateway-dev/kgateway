@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-##### Source File: [github.com/solo-io/protoc-gen-ext/external/google/protobuf/duration.proto](https://github.com/solo-io/protoc-gen-ext/blob/master/external/google/protobuf/duration.proto)
+##### Source File: [github.com/solo-io/protoc-gen-ext/external/google/protobuf/duration.proto](https://github.com/solo-io/protoc-gen-ext/blob/main/external/google/protobuf/duration.proto)
 
 
 

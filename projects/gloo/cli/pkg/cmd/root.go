@@ -78,7 +78,7 @@ func App(opts *options.Options, preRunFuncs []RunnableCommand, postRunFuncs []Ru
 
 		// If the given subcommand does not exist, look for a suitable plugin executable
 		if _, _, err := app.Find(cmdPathPieces); err != nil {
-			if err := cmd.HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
+			if err := cmd.HandlePluginCommand(pluginHandler, cmdPathPieces, false); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}

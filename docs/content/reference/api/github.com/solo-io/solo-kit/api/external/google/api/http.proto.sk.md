@@ -34,7 +34,7 @@ limitations under the License.
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/google/api/http.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/google/api/http.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/external/google/api/http.proto](https://github.com/solo-io/solo-kit/blob/main/api/external/google/api/http.proto)
 
 
 
