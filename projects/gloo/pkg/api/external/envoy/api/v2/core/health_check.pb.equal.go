@@ -493,6 +493,23 @@ func (m *HealthCheck_GrpcHealthCheck) Equal(that interface{}) bool {
 		return false
 	}
 
+	if len(m.GetInitialMetadata()) != len(target.GetInitialMetadata()) {
+		return false
+	}
+	for idx, v := range m.GetInitialMetadata() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetInitialMetadata()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetInitialMetadata()[idx]) {
+				return false
+			}
+		}
+
+	}
+
 	return true
 }
 
