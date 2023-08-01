@@ -9,12 +9,12 @@ If you encounter a bug or have a feature request, please take the following appr
 
 ## Bug Report
 - Issues should not contain any sensitive information.
-- Issues can include links to private resources, such as Slack conversations or private code
-- Private Enterprise issues can be used to track Open Source work
-- The more details about the issue, the better. Please include:
+- Issues can include links to private resources, such as Slack conversations or private code. 
+- Private Enterprise issues can be used to track Open Source work. 
+- The more details about the issue, the better. Please include the following information:
   - Gloo Edge version
   - Kubernetes version
-  - Operating System
+  - Operating system
   - Steps to reproduce
   - Expected behavior
   - Actual behavior
@@ -23,12 +23,13 @@ If you encounter a bug or have a feature request, please take the following appr
   - Any other relevant information
 
 ## Feature Request
-- In addition to the request, include a detailed description of the use case for the feature
-- If possible, include a description of how the feature is implemented in other tools
+Include the following information in addition to your feature request: 
+- Detailed description of the use case for the feature
+- If possible, a description of how the feature is implemented in other tools
 
 ## CI Failure
-- Include a link to the failed CI job
-- Copy the error message from the failed job (logs will be discarded after a few months)
+- Include a link to the failed CI job.
+- Copy the error message from the failed job (logs are discarded after a few months). 
 
 ## Security Issues
 We take Gloo Edge's security very seriously. If you've found a security issue or a potential security issue in Gloo Edge, please **DO NOT** file a public Github issue.
