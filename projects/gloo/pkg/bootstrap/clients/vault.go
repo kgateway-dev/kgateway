@@ -51,6 +51,9 @@ func NewVaultSecretClientFactory(clientInit VaultClientInitFunc, pathPrefix, roo
 
 func VaultClientForSettings(vaultSettings *v1.Settings_VaultSecrets) (*api.Client, error) {
 	cfg, err := parseVaultSettings(vaultSettings)
+	if err != nil {
+		return nil, err
+	}
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		return nil, err
