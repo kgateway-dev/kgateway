@@ -284,7 +284,7 @@ Another common requirement is to have the HTTP traffic redirected to HTTPS. You 
 
 ![HTTPS redirect with NLB doing TLS offloading]({{< versioned_link_path fromRoot="/img/https-redirect-tls-offloading.png" >}})
 
-If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out this guide: https://docs.solo.io/gloo-edge/master/installation/advanced_configuration/multi-gw-deployment/
+If you want to know more about the purpose of a `Gateway` _Custom Resource_, check out [Multi-gateway deployment]({{% versioned_link_path fromRoot="/installation/advanced_configuration/multi-gw-deployment/" %}}).
 
 Below is a configuration example:
 
