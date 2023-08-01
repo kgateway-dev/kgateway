@@ -1,6 +1,6 @@
 ---
 menuTitle: Processing Partially Valid Config
-title: Replacing Invalid Routes
+title: Replace Invalid Routes
 weight: 20
 description: (Kubernetes Only) Gloo Edge can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---

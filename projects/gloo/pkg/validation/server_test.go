@@ -232,8 +232,8 @@ var _ = Describe("Validation Server", func() {
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
 				warnings := validation.GetProxyWarning(proxyReport)
 				errors := validation.GetProxyError(proxyReport)
-				Expect(warnings).To(HaveLen(3))
-				Expect(errors).To(HaveOccurred())
+				Expect(warnings).To(HaveLen(4))
+				Expect(errors).NotTo(HaveOccurred())
 			}
 
 			JustBeforeEach(func() {
@@ -327,8 +327,8 @@ var _ = Describe("Validation Server", func() {
 			validateProxyReport := func(proxyReport *validationgrpc.ProxyReport) {
 				warnings := validation.GetProxyWarning(proxyReport)
 				errors := validation.GetProxyError(proxyReport)
-				Expect(warnings).To(HaveLen(3))
-				Expect(errors).To(HaveOccurred())
+				Expect(warnings).To(HaveLen(4))
+				Expect(errors).NotTo(HaveOccurred())
 			}
 
 			It("works with Validate", func() {

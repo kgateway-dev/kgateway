@@ -1,6 +1,9 @@
 package helpers_test
 
 import (
+	"hash"
+	"reflect"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -9,8 +12,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/test/matchers"
-
-	"reflect"
 )
 
 var _ = Describe("VirtualServiceBuilder", func() {
@@ -21,7 +22,7 @@ var _ = Describe("VirtualServiceBuilder", func() {
 		// most likely needs to change to support this new field
 
 		Expect(reflect.TypeOf(helpers.VirtualServiceBuilder{}).NumField()).To(
-			Equal(6),
+			Equal(7),
 			"wrong number of fields found",
 		)
 	})
@@ -30,6 +31,7 @@ var _ = Describe("VirtualServiceBuilder", func() {
 		originalBuilder := helpers.NewVirtualServiceBuilder().
 			WithName("original-name").
 			WithNamespace("original-namespace").
+			WithLabel("original-label", "original-value").
 			WithDomain("original.com").
 			WithVirtualHostOptions(&gloov1.VirtualHostOptions{
 				Cors: &cors.CorsPolicy{
@@ -46,6 +48,7 @@ var _ = Describe("VirtualServiceBuilder", func() {
 		clonedBuilder := originalBuilder.Clone().
 			WithName("cloned-name").
 			WithNamespace("cloned-namespace").
+			WithLabel("original-label", "cloned-value").
 			WithDomain("cloned.com").
 			WithVirtualHostOptions(&gloov1.VirtualHostOptions{
 				Cors: &cors.CorsPolicy{
@@ -71,6 +74,9 @@ var _ = Describe("VirtualServiceBuilder", func() {
 		Expect(originalVirtualService.GetMetadata().GetNamespace()).To(Equal("original-namespace"))
 		Expect(clonedVirtualService.GetMetadata().GetNamespace()).To(Equal("cloned-namespace"))
 
+		Expect(originalVirtualService.GetMetadata().GetLabels()["original-label"]).To(Equal("original-value"))
+		Expect(clonedVirtualService.GetMetadata().GetLabels()["original-label"]).To(Equal("cloned-value"))
+
 		Expect(originalVirtualService.GetSslConfig().GetSniDomains()).To(Equal([]string{"original.com"}))
 		Expect(clonedVirtualService.GetSslConfig().GetSniDomains()).To(Equal([]string{"cloned.com"}))
 
@@ -90,6 +96,26 @@ var _ = Describe("VirtualServiceBuilder", func() {
 		Expect(clonedVirtualHost.GetRoutes()[0]).To(matchers.MatchProto(&gatewayv1.Route{
 			Name: "cloned-route",
 		}))
+	})
+
+	It("hashes virtual services with different labels to different values", func() {
+		var hasher hash.Hash64
+
+		originalBuilder := helpers.NewVirtualServiceBuilder().
+			WithName("original-name").
+			WithNamespace("original-namespace").
+			WithLabel("original-label", "original-value").
+			WithDomain("original.com")
+		modifiedLabelBuilder := originalBuilder.Clone().
+			WithLabel("original-label", "modified-value")
+
+		originalVsHash, err := originalBuilder.Build().Hash(hasher)
+		Expect(err).NotTo(HaveOccurred())
+
+		vsWithModifiedLabelHash, err := modifiedLabelBuilder.Build().Hash(hasher)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(originalVsHash).NotTo(Equal(vsWithModifiedLabelHash), "Hashes should be different, due to label differences")
 	})
 
 })

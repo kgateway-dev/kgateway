@@ -1,6 +1,10 @@
 package headers
 
 import (
+	"os"
+
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -98,7 +102,6 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-
 		out := &envoy_config_route_v3.VirtualHost{}
 		err := p.ProcessVirtualHost(paramsWithSecret, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
@@ -111,7 +114,6 @@ var _ = Describe("Plugin", func() {
 		Expect(out.ResponseHeadersToAdd).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToAdd))
 		Expect(out.ResponseHeadersToRemove).To(Equal(expectedHeadersWithSecrets.ResponseHeadersToRemove))
 	})
-
 	DescribeTable("Invalid headers", func(key string, value string, expectedErr error) {
 		params := plugins.VirtualHostParams{}
 		schemeHeader := headers.HeaderManipulation{
@@ -141,6 +143,136 @@ var _ = Describe("Plugin", func() {
 		Entry("Can't set Host header (HOST)", "HOST", "value", CantSetHostHeaderError),
 		Entry("Can't set Host header (hOST)", "hOST", "value", CantSetHostHeaderError),
 	)
+	Context("Require secrets to match upstream namespace ", func() {
+		var (
+			paramsWithSecret = plugins.Params{
+				Snapshot: &v1snap.ApiSnapshot{
+					Secrets: v1.SecretList{
+						{
+							Kind: &v1.Secret_Header{
+								Header: &v1.HeaderSecret{
+									Headers: map[string]string{
+										"Authorization": "basic dXNlcjpwYXNzd29yZA==",
+									},
+								},
+							},
+							Metadata: &coreV1.Metadata{
+								Name:      "foo",
+								Namespace: "bar",
+							},
+						},
+					},
+				},
+			}
+
+			singleRouteToBadUpstream  *v1.Route
+			singleRouteToGoodUpstream *v1.Route
+			weightedDestinationBadUs  *v1.Destination
+			weightedDestinationGoodUs *v1.Destination
+		)
+		BeforeEach(func() {
+			err := os.Setenv(api_conversion.MatchingNamespaceEnv, "true")
+			Expect(err).NotTo(HaveOccurred(), "Error setting matching namespace environment variable")
+			p = NewPlugin()
+			singleRouteToBadUpstream = &v1.Route{Action: &v1.Route_RouteAction{RouteAction: &v1.RouteAction{
+				Destination: &v1.RouteAction_Single{Single: &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bad-tenant"}}}}}}}
+			singleRouteToGoodUpstream = &v1.Route{Action: &v1.Route_RouteAction{RouteAction: &v1.RouteAction{
+				Destination: &v1.RouteAction_Single{Single: &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bar"}}}}}}}
+			weightedDestinationBadUs = &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bad-tenant"}}}
+			weightedDestinationGoodUs = &v1.Destination{DestinationType: &v1.Destination_Upstream{Upstream: &coreV1.ResourceRef{Name: "some-us", Namespace: "bar"}}}
+		})
+		It("Errors with a WeightedDestination where the upstream namespace doesn't match the secret", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
+			in := &v1.WeightedDestination{
+				Options:     &v1.WeightedDestinationOptions{HeaderManipulation: testHeaderManipWithSecrets},
+				Destination: weightedDestinationBadUs,
+			}
+
+			err := p.ProcessWeightedDestination(routeParamsWithSecret, in, out)
+			Expect(err).To(MatchError("list did not find secret bar.foo"))
+		})
+		It("Does not error with a good WeightedDestination", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.WeightedCluster_ClusterWeight{}
+			in := &v1.WeightedDestination{
+				Options:     &v1.WeightedDestinationOptions{HeaderManipulation: testHeaderManipWithSecrets},
+				Destination: weightedDestinationGoodUs,
+			}
+
+			err := p.ProcessWeightedDestination(routeParamsWithSecret, in, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Errors with a VirtualHost with routes to one upstream that matches the secret and one that doesn't", func() {
+			vhostParamsWithSecret := plugins.VirtualHostParams{
+				Params: paramsWithSecret,
+			}
+
+			out := &envoy_config_route_v3.VirtualHost{}
+			err := p.ProcessVirtualHost(vhostParamsWithSecret, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					HeaderManipulation: testHeaderManipWithSecrets,
+				},
+				Routes: []*v1.Route{singleRouteToBadUpstream, singleRouteToGoodUpstream},
+			}, out)
+			Expect(err).To(HaveOccurred())
+			Expect(err).Should(MatchError("list did not find secret bar.foo"))
+		})
+		It("Does not error with a VirtualHost with routes to multiple upstreams when secrets are not added to headers", func() {
+			vhostParamsWithSecret := plugins.VirtualHostParams{
+				Params: paramsWithSecret,
+			}
+
+			out := &envoy_config_route_v3.VirtualHost{}
+			err := p.ProcessVirtualHost(vhostParamsWithSecret, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					HeaderManipulation: testHeaderManip,
+				},
+				Routes: []*v1.Route{singleRouteToGoodUpstream, singleRouteToBadUpstream},
+			}, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Does not error with a VirtualHost with a route to an upstream that matches the secret", func() {
+			vhostParamsWithSecret := plugins.VirtualHostParams{
+				Params: paramsWithSecret,
+			}
+
+			out := &envoy_config_route_v3.VirtualHost{}
+			err := p.ProcessVirtualHost(vhostParamsWithSecret, &v1.VirtualHost{
+				Options: &v1.VirtualHostOptions{
+					HeaderManipulation: testHeaderManipWithSecrets,
+				},
+				Routes: []*v1.Route{singleRouteToGoodUpstream},
+			}, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Errors with a Route to an upstream that does not match the secret", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.Route{}
+			singleRouteToBadUpstream.Options = &v1.RouteOptions{HeaderManipulation: testHeaderManipWithSecrets}
+			err := p.ProcessRoute(routeParamsWithSecret, singleRouteToBadUpstream, out)
+			Expect(err).To(MatchError("list did not find secret bar.foo"))
+		})
+		It("Does not error when Route destination matches secret", func() {
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.Route{}
+			singleRouteToGoodUpstream.Options = &v1.RouteOptions{HeaderManipulation: testHeaderManipWithSecrets}
+			err := p.ProcessRoute(routeParamsWithSecret, singleRouteToGoodUpstream, out)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("Errors with a malformed value for setting", func() {
+			os.Setenv(api_conversion.MatchingNamespaceEnv, "tr")
+			routeParamsWithSecret := plugins.RouteParams{VirtualHostParams: plugins.VirtualHostParams{Params: paramsWithSecret}}
+			out := &envoy_config_route_v3.Route{}
+			singleRouteToGoodUpstream.Options = &v1.RouteOptions{HeaderManipulation: testHeaderManipWithSecrets}
+			err := p.ProcessRoute(routeParamsWithSecret, singleRouteToGoodUpstream, out)
+			Expect(err).Should(MatchError("strconv.ParseBool: parsing \"tr\": invalid syntax"))
+		})
+		AfterEach(func() {
+			os.Clearenv()
+			p = NewPlugin()
+		})
+	})
 })
 
 var testBrokenConfigNoRequestHeader = &headers.HeaderManipulation{

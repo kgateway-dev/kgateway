@@ -21,5 +21,7 @@ These are located next to the code that they test and are denoted with the `Perf
 To find the results of these, navigate to the "Actions" tab in the Github UI, click on the ["Nightly" workflow](https://github.com/solo-io/gloo/actions/workflows/nightly-tests.yaml), and select the latest run.
 It may be useful to search for the name of the particular test you're investigating in order to quickly find the results.
 
-Note that tests which use the go-utils benchmarking package only compile and run on Linux machines.
-When developing performance tests it may be helpful to manually trigger runs of the Nightly job from the development branch.
+Note that the `helpers` package's `Measure` and `MeasureIgnore0s` functions have different implementations for Mac and Linux machines.
+The Linux implementation leverages the go-utils `benchmarking` package and gets more reliable measurements. 
+Compiling and running on Mac can be useful to ensure that tests using these functions behave as intended, but targets should be based on performance in the Nightly GHA, which uses a Linux runner.
+When developing performance tests it will likely be helpful to manually trigger runs of the Nightly job from the development branch to determine/validate performance targets.

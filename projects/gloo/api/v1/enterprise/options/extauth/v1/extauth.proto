@@ -1078,6 +1078,14 @@ message OpaAuthOptions {
     // are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine.
     // By default, this is set to false and all fields are evaluated by OPA.
     bool fast_input_conversion = 1;
+
+    // Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second
+    // parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure 
+    // will be
+    // envoy.filters.http.ext_authz:
+    //   -> name of the auth step, i.e. spec.configs[i].name
+    //       -> reason
+    bool return_decision_reason = 2;
 }
 
 // Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:

@@ -11,7 +11,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -64,7 +63,7 @@ func StartTestHelper() {
 	resourceClientset, err = kube2e.NewDefaultKubeResourceClientSet(ctx)
 	Expect(err).NotTo(HaveOccurred(), "can create kube resource client set")
 
-	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset, []retry.Option{}).WithWriteNamespace(testHelper.InstallNamespace)
+	snapshotWriter = helpers.NewSnapshotWriter(resourceClientset).WithWriteNamespace(testHelper.InstallNamespace)
 }
 
 func TearDownTestHelper() {

@@ -260,6 +260,7 @@ message TransformationTemplate {
     // The request/response body will be treated as plain text
     DontParse = 1;
   }
+  // Determines how the body will be parsed. Defaults to ParseAsJson
   RequestBodyParse parse_body_behavior = 7;
 
   // If set to true, Envoy will not throw an exception in case the body parsing
@@ -282,6 +283,12 @@ message TransformationTemplate {
   }
   // Use this field to set Dynamic Metadata.
   repeated DynamicMetadataValue dynamic_metadata_values = 9;
+
+  // Use this field to set Inja behavior when rendering strings which contain
+  // characters that would need to be escaped to be valid JSON. Note that this
+  // sets the behavior for the entire transformation. Use raw_strings function
+  // for fine-grained control within a template.
+  bool escape_characters = 12;
 }
 
 // Defines an [Inja template](https://github.com/pantor/inja) that will be
@@ -311,7 +318,7 @@ message Passthrough {}
 message MergeExtractorsToBody {}
 
 message HeaderBodyTransform {
-  // When transforming a request, setting this to true will additionally add "queryString", 
+  // When transforming a request, setting this to true will additionally add "queryString",
   // "queryStringParameters", "multiValueQueryStringParameters", "httpMethod", "path",
   // and "multiValueHeaders" to the body
   bool add_request_metadata = 1;

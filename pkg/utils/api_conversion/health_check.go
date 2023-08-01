@@ -87,14 +87,14 @@ func ToEnvoyOutlierDetection(detection *envoycluster_gloo.OutlierDetection) *env
 	}
 }
 
-func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.SecretList) ([]*envoy_config_core_v3.HealthCheck, error) {
+func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
 	result := make([]*envoy_config_core_v3.HealthCheck, len(check))
 	for i, v := range check {
 		var err error
-		result[i], err = ToEnvoyHealthCheck(v, secrets)
+		result[i], err = ToEnvoyHealthCheck(v, secrets, secretOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func ToEnvoyHealthCheckList(check []*envoycore_gloo.HealthCheck, secrets *v1.Sec
 	return result, nil
 }
 
-func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretList) (*envoy_config_core_v3.HealthCheck, error) {
+func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretList, secretOptions HeaderSecretOptions) (*envoy_config_core_v3.HealthCheck, error) {
 	if check == nil {
 		return nil, nil
 	}
@@ -131,7 +131,7 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 			},
 		}
 	case *envoycore_gloo.HealthCheck_HttpHealthCheck_:
-		var requestHeadersToAdd, err = ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd(), secrets)
+		var requestHeadersToAdd, err = ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd(), secrets, secretOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -161,10 +161,15 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck, secrets *v1.SecretLis
 		}
 
 	case *envoycore_gloo.HealthCheck_GrpcHealthCheck_:
+		var initialMetadata, err = ToEnvoyHeaderValueOptionList(typed.GrpcHealthCheck.GetInitialMetadata(), secrets, secretOptions)
+		if err != nil {
+			return nil, err
+		}
 		hc.HealthChecker = &envoy_config_core_v3.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoy_config_core_v3.HealthCheck_GrpcHealthCheck{
-				ServiceName: typed.GrpcHealthCheck.GetServiceName(),
-				Authority:   typed.GrpcHealthCheck.GetAuthority(),
+				ServiceName:     typed.GrpcHealthCheck.GetServiceName(),
+				Authority:       typed.GrpcHealthCheck.GetAuthority(),
+				InitialMetadata: initialMetadata,
 			},
 		}
 	case *envoycore_gloo.HealthCheck_CustomHealthCheck_:
@@ -253,8 +258,9 @@ func ToGlooHealthCheck(check *envoy_config_core_v3.HealthCheck) (*envoycore_gloo
 	case *envoy_config_core_v3.HealthCheck_GrpcHealthCheck_:
 		hc.HealthChecker = &envoycore_gloo.HealthCheck_GrpcHealthCheck_{
 			GrpcHealthCheck: &envoycore_gloo.HealthCheck_GrpcHealthCheck{
-				ServiceName: typed.GrpcHealthCheck.GetServiceName(),
-				Authority:   typed.GrpcHealthCheck.GetAuthority(),
+				ServiceName:     typed.GrpcHealthCheck.GetServiceName(),
+				Authority:       typed.GrpcHealthCheck.GetAuthority(),
+				InitialMetadata: ToGlooHeaderValueOptionList(typed.GrpcHealthCheck.GetInitialMetadata()),
 			},
 		}
 	case *envoy_config_core_v3.HealthCheck_CustomHealthCheck_:

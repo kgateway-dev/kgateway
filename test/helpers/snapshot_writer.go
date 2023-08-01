@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/avast/retry-go"
@@ -22,6 +21,12 @@ type SnapshotWriter interface {
 
 type SnapshotWriterImpl struct {
 	ResourceClientSet
+
+	// retryOptions is the criteria for retrying a Snapshot Write or Delete operation.
+	// Due to the eventually consistent nature of Gloo Edge, when applying changes in bulk,
+	// parent resources may be rejected by the validation webhook, if the Gloo hasn't processed the child
+	// resources. A more thorough solution would be to support bulk applies of resources.
+	// In the interim however, we retry the operation
 	retryOptions []retry.Option
 
 	// writeNamespace is the namespace that the SnapshotWriter expects resources to be written to by Gloo
@@ -30,7 +35,7 @@ type SnapshotWriterImpl struct {
 	writeNamespace string
 }
 
-func NewSnapshotWriter(clientSet ResourceClientSet, retryOptions []retry.Option) *SnapshotWriterImpl {
+func NewSnapshotWriter(clientSet ResourceClientSet) *SnapshotWriterImpl {
 	defaultRetryOptions := []retry.Option{
 		retry.Attempts(3),
 		retry.RetryIf(func(err error) bool {
@@ -43,7 +48,7 @@ func NewSnapshotWriter(clientSet ResourceClientSet, retryOptions []retry.Option)
 
 	return &SnapshotWriterImpl{
 		ResourceClientSet: clientSet,
-		retryOptions:      append(defaultRetryOptions, retryOptions...),
+		retryOptions:      defaultRetryOptions,
 		// By default, Gloo will write resources to the gloo-system namespace
 		// This can be overridden by setting the WithNamespace option on the SnapshotWriter
 		writeNamespace: defaults.GlooSystem,
@@ -57,7 +62,13 @@ func (s *SnapshotWriterImpl) WithWriteNamespace(writeNamespace string) *Snapshot
 	return s
 }
 
-// WriteSnapshot writes all resources in the ApiSnapshot to the cache
+// WithRetryOptions appends the retryOptions that the SnapshotWriter relies on to the default retry options
+func (s *SnapshotWriterImpl) WithRetryOptions(retryOptions []retry.Option) *SnapshotWriterImpl {
+	s.retryOptions = append(s.retryOptions, retryOptions...)
+	return s
+}
+
+// WriteSnapshot writes all resources in the ApiSnapshot to the cache, retrying the operation based on the retryOptions
 func (s *SnapshotWriterImpl) WriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, writeOptions clients.WriteOpts) error {
 	return retry.Do(func() error {
 		if writeOptions.Ctx.Err() != nil {
@@ -69,7 +80,7 @@ func (s *SnapshotWriterImpl) WriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, w
 	}, s.retryOptions...)
 }
 
-// WriteSnapshot writes all resources in the ApiSnapshot to the cache
+// doWriteSnapshot attempts to write all resources in the ApiSnapshot to the cache once, or returns an error
 func (s *SnapshotWriterImpl) doWriteSnapshot(snapshot *gloosnapshot.ApiSnapshot, writeOptions clients.WriteOpts) error {
 	// We intentionally create child resources first to avoid having the validation webhook reject
 	// the parent resource
@@ -156,86 +167,98 @@ func (s *SnapshotWriterImpl) isContinuableWriteError(writeError error) bool {
 	return errors.IsExist(writeError)
 }
 
-// DeleteSnapshot deletes all resources in the ApiSnapshot from the cache
+// DeleteSnapshot deletes all resources in the ApiSnapshot from the cache, retrying the operation based on the retryOptions
 func (s *SnapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, deleteOptions clients.DeleteOpts) error {
+	return retry.Do(func() error {
+		if deleteOptions.Ctx.Err() != nil {
+			// intentionally return early if context is already done
+			// this is a backoff loop; by the time we get here ctx may be done
+			return nil
+		}
+		return s.doDeleteSnapshot(snapshot, deleteOptions)
+	}, s.retryOptions...)
+}
+
+// doDeleteSnapshot attempts to delete all resources in the ApiSnapshot from the cache once, or returns an error
+func (s *SnapshotWriterImpl) doDeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, deleteOptions clients.DeleteOpts) error {
 	// We intentionally delete resources in the reverse order that we create resources
 	// If we delete child resources first, the validation webhook may reject the change
 
 	for _, gw := range snapshot.Gateways {
 		gwNamespace, gwName := gw.GetMetadata().Ref().Strings()
-		if deleteErr := s.GatewayClient().Delete(gwNamespace, gwName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.GatewayClient().Delete(gwNamespace, gwName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, hgw := range snapshot.HttpGateways {
 		hgwNamespace, hgwName := hgw.GetMetadata().Ref().Strings()
-		if deleteErr := s.HttpGatewayClient().Delete(hgwNamespace, hgwName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.HttpGatewayClient().Delete(hgwNamespace, hgwName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, tgw := range snapshot.TcpGateways {
 		tgwNamespace, tgwName := tgw.GetMetadata().Ref().Strings()
-		if deleteErr := s.TcpGatewayClient().Delete(tgwNamespace, tgwName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.TcpGatewayClient().Delete(tgwNamespace, tgwName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, vs := range snapshot.VirtualServices {
 		vsNamespace, vsName := vs.GetMetadata().Ref().Strings()
-		if deleteErr := s.VirtualServiceClient().Delete(vsNamespace, vsName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.VirtualServiceClient().Delete(vsNamespace, vsName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, rt := range snapshot.RouteTables {
 		rtNamespace, rtName := rt.GetMetadata().Ref().Strings()
-		if deleteErr := s.RouteTableClient().Delete(rtNamespace, rtName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.RouteTableClient().Delete(rtNamespace, rtName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, ac := range snapshot.AuthConfigs {
 		acNamespace, acName := ac.GetMetadata().Ref().Strings()
-		if deleteErr := s.AuthConfigClient().Delete(acNamespace, acName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.AuthConfigClient().Delete(acNamespace, acName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, rlc := range snapshot.Ratelimitconfigs {
 		rlcNamespace, rlcName := rlc.GetMetadata().Ref().Strings()
-		if deleteErr := s.RateLimitConfigClient().Delete(rlcNamespace, rlcName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.RateLimitConfigClient().Delete(rlcNamespace, rlcName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, vhOpt := range snapshot.VirtualHostOptions {
 		vhOptNamespace, vhOptName := vhOpt.GetMetadata().Ref().Strings()
-		if deleteErr := s.VirtualHostOptionClient().Delete(vhOptNamespace, vhOptName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.VirtualHostOptionClient().Delete(vhOptNamespace, vhOptName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, rtOpt := range snapshot.RouteOptions {
 		rtOptNamespace, rtOptName := rtOpt.GetMetadata().Ref().Strings()
-		if deleteErr := s.RouteOptionClient().Delete(rtOptNamespace, rtOptName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.RouteOptionClient().Delete(rtOptNamespace, rtOptName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, usGroup := range snapshot.UpstreamGroups {
 		usGroupNamespace, usGroupName := usGroup.GetMetadata().Ref().Strings()
-		if deleteErr := s.UpstreamGroupClient().Delete(usGroupNamespace, usGroupName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.UpstreamGroupClient().Delete(usGroupNamespace, usGroupName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, us := range snapshot.Upstreams {
 		usNamespace, usName := us.GetMetadata().Ref().Strings()
-		if deleteErr := s.UpstreamClient().Delete(usNamespace, usName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.UpstreamClient().Delete(usNamespace, usName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, secret := range snapshot.Secrets {
 		secretNamespace, secretName := secret.GetMetadata().Ref().Strings()
-		if deleteErr := s.SecretClient().Delete(secretNamespace, secretName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.SecretClient().Delete(secretNamespace, secretName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 	for _, artifact := range snapshot.Artifacts {
 		artifactNamespace, artifactName := artifact.GetMetadata().Ref().Strings()
-		if deleteErr := s.ArtifactClient().Delete(artifactNamespace, artifactName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.ArtifactClient().Delete(artifactNamespace, artifactName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
@@ -251,10 +274,51 @@ func (s *SnapshotWriterImpl) DeleteSnapshot(snapshot *gloosnapshot.ApiSnapshot, 
 	}
 	for _, proxy := range proxies {
 		proxyNamespace, proxyName := proxy.GetMetadata().Ref().Strings()
-		if deleteErr := s.ProxyClient().Delete(proxyNamespace, proxyName, deleteOptions); deleteErr != nil {
+		if deleteErr := s.ProxyClient().Delete(proxyNamespace, proxyName, deleteOptions); !s.isContinuableDeleteError(deleteErr) {
 			return deleteErr
 		}
 	}
 
-	return nil
+	return s.waitForProxiesToBeDeleted(deleteOptions)
+}
+
+func (s *SnapshotWriterImpl) isContinuableDeleteError(deleteError error) bool {
+	if deleteError == nil {
+		return true
+	}
+
+	// Since we delete resources in bulk, with retries, we may hit a case where a resource doesn't exist
+	// We can ignore that error and continue to try to delete other resources in the Snapshot
+	return errors.IsNotExist(deleteError)
+}
+
+func (s *SnapshotWriterImpl) waitForProxiesToBeDeleted(deleteOptions clients.DeleteOpts) error {
+	return retry.Do(func() error {
+		if deleteOptions.Ctx.Err() != nil {
+			// intentionally return early if context is already done
+			// this is a backoff loop; by the time we get here ctx may be done
+			return nil
+		}
+		proxies, err := s.ProxyClient().List(s.writeNamespace, clients.ListOpts{
+			Ctx:     deleteOptions.Ctx,
+			Cluster: deleteOptions.Cluster,
+		})
+		if err != nil {
+			return err
+		}
+		if len(proxies) > 0 {
+			return errors.Errorf("expected proxies to be deleted, but found %d", len(proxies))
+		}
+		return nil
+	},
+		// Proxies should be deleted almost instantly, so we can use a short backoff (we retry every 200ms for 5s total)
+		// If the proxies are not deleted by then, something else is wrong and we should fail the test
+		retry.RetryIf(func(err error) bool {
+			return err != nil
+		}),
+		retry.LastErrorOnly(true),
+		retry.Attempts(10),
+		retry.Delay(time.Millisecond*200),
+		retry.DelayType(retry.FixedDelay),
+	)
 }

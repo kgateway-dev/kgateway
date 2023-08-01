@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 
 	"github.com/solo-io/gloo/test/ginkgo/parallel"
@@ -46,7 +48,6 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -57,7 +58,7 @@ import (
 	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	defaults2 "github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/test/helpers"
@@ -99,6 +100,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		testRunnerVs = helpers.NewVirtualServiceBuilder().
 			WithName(helper.TestrunnerName).
 			WithNamespace(testHelper.InstallNamespace).
+			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
 			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).
@@ -398,7 +400,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					DestinationType: &gloov1.Destination_Upstream{
 						Upstream: &core.ResourceRef{
 							Namespace: testHelper.InstallNamespace,
-							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
+							Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
 						},
 					},
 				}
@@ -810,8 +812,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Transformations: &glootransformation.Transformations{
 						RequestTransformation: &glootransformation.Transformation{
 							TransformationType: &glootransformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &transformation.TransformationTemplate{
-									Headers: map[string]*transformation.InjaTemplate{
+								TransformationTemplate: &glootransformation.TransformationTemplate{
+									Headers: map[string]*glootransformation.InjaTemplate{
 										"x-header-added-in-opt2": {
 											Text: "this header was added in the VirtualHostOption object vhOpt2",
 										},
@@ -897,8 +899,8 @@ var _ = Describe("Kube2e: gateway", func() {
 						vhost2Transformations := &glootransformation.Transformations{
 							RequestTransformation: &glootransformation.Transformation{
 								TransformationType: &glootransformation.Transformation_TransformationTemplate{
-									TransformationTemplate: &transformation.TransformationTemplate{
-										Headers: map[string]*transformation.InjaTemplate{
+									TransformationTemplate: &glootransformation.TransformationTemplate{
+										Headers: map[string]*glootransformation.InjaTemplate{
 											"x-header-added-in-opt2": {
 												Text: "this header was added in the VirtualHostOption object vhOpt2",
 											},
@@ -954,8 +956,8 @@ var _ = Describe("Kube2e: gateway", func() {
 					Transformations: &glootransformation.Transformations{
 						RequestTransformation: &glootransformation.Transformation{
 							TransformationType: &glootransformation.Transformation_TransformationTemplate{
-								TransformationTemplate: &transformation.TransformationTemplate{
-									Headers: map[string]*transformation.InjaTemplate{
+								TransformationTemplate: &glootransformation.TransformationTemplate{
+									Headers: map[string]*glootransformation.InjaTemplate{
 										"x-header-added-in-opt2": {
 											Text: "this header was added in the VirtualHostOption object vhOpt2",
 										},
@@ -1057,8 +1059,8 @@ var _ = Describe("Kube2e: gateway", func() {
 							rt2Transformation := &glootransformation.Transformations{
 								RequestTransformation: &glootransformation.Transformation{
 									TransformationType: &glootransformation.Transformation_TransformationTemplate{
-										TransformationTemplate: &transformation.TransformationTemplate{
-											Headers: map[string]*transformation.InjaTemplate{
+										TransformationTemplate: &glootransformation.TransformationTemplate{
+											Headers: map[string]*glootransformation.InjaTemplate{
 												"x-header-added-in-opt2": {
 													Text: "this header was added in the VirtualHostOption object vhOpt2",
 												},
@@ -1132,7 +1134,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		}
 
 		getUpstream := func(svcname string) (*gloov1.Upstream, error) {
-			upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
+			upstreamName := kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svcname, helper.TestRunnerPort)
 			return resourceClientset.UpstreamClient().Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 		}
 
@@ -1152,7 +1154,14 @@ var _ = Describe("Kube2e: gateway", func() {
 			setWatchLabels(nil)
 		})
 
-		It("should preserve discovery", func() {
+		It("should preserve discovery", FlakeAttempts(5), func() {
+			// This test has flaked before with the following error:
+			// 	Failed to validate Proxy [namespace: gloo-system, name: gateway-proxy] with gloo validation:
+			//	Listener Error: SSLConfigError. Reason: SSL secret not found: list did not find secret gloo-system.secret-native-ssl\n\n",
+			// This seems to be the result of test pollution since the secret is created in a separate test
+			// This has only caused this test, which depends on discovery to flake, so in the meantime, we are adding
+			// a flake decorator
+
 			createServicesForPod(helper.TestrunnerName, helper.TestRunnerPort)
 
 			for _, svc := range createdServices {
@@ -1165,7 +1174,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					ctx,
 					&core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, svc, helper.TestRunnerPort),
+						Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, svc, helper.TestRunnerPort),
 					},
 					func(resource resources.Resource) resources.Resource {
 						upstream := resource.(*gloov1.Upstream)
@@ -1282,7 +1291,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			httpEchoClusterName = translator.UpstreamToClusterName(&core.ResourceRef{
 				Namespace: testHelper.InstallNamespace,
-				Name:      kubernetes2.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
+				Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort),
 			})
 		})
 
@@ -1462,7 +1471,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			service, err = resourceClientset.KubeClients().CoreV1().Services(testHelper.InstallNamespace).Create(ctx, service, metav1.CreateOptions{})
 			Expect(err).NotTo(HaveOccurred())
 
-			upstreamName = kubernetes2.UpstreamName(testHelper.InstallNamespace, service.Name, 5678)
+			upstreamName = kubernetesplugin.UpstreamName(testHelper.InstallNamespace, service.Name, 5678)
 			upstreamRef := &core.ResourceRef{
 				Name:      upstreamName,
 				Namespace: testHelper.InstallNamespace,
@@ -2147,8 +2156,8 @@ spec:
 					ClearRouteCache: true,
 					ResponseTransformation: &glootransformation.Transformation{
 						TransformationType: &glootransformation.Transformation_TransformationTemplate{
-							TransformationTemplate: &transformation.TransformationTemplate{
-								Headers: map[string]*transformation.InjaTemplate{
+							TransformationTemplate: &glootransformation.TransformationTemplate{
+								Headers: map[string]*glootransformation.InjaTemplate{
 									":status": {Text: strings.TrimSuffix(validInjaTransform, "}")},
 								},
 							},
@@ -2173,7 +2182,7 @@ spec:
 					resourceClientset.VirtualServiceClient().BaseClient(),
 				)
 				Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
-					"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
+					"header template ':status': [inja.exception.parser_error] (at 1:92) expected statement close, got '%'")))
 			})
 
 			Context("disable_transformation_validation is set", Ordered, func() {
@@ -2254,7 +2263,7 @@ spec:
 						WithRoutePrefixMatcher("route", "/").
 						WithRouteActionToUpstreamRef("route",
 							&core.ResourceRef{
-								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+								Name:      kubernetesplugin.UpstreamName(testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
 								Namespace: testHelper.InstallNamespace,
 							}).
 						Build()
@@ -2361,7 +2370,7 @@ spec:
 					)
 
 					BeforeEach(func() {
-						petstoreUpstreamName = fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, petstoreName, 8080)
+						petstoreUpstreamName = kubernetesplugin.UpstreamName(testHelper.InstallNamespace, petstoreName, 8080)
 						petstoreDeployment, petstoreSvc = petstore(testHelper.InstallNamespace)
 
 						// disable FDS for the petstore, create it without functions

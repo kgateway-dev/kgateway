@@ -332,6 +332,8 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                escapeCharacters:
+                                  type: boolean
                                 extractors:
                                   additionalProperties:
                                     properties:
@@ -557,6 +559,28 @@ spec:
                       properties:
                         authority:
                           type: string
+                        initialMetadata:
+                          items:
+                            properties:
+                              append:
+                                nullable: true
+                                type: boolean
+                              header:
+                                properties:
+                                  key:
+                                    type: string
+                                  value:
+                                    type: string
+                                type: object
+                              headerSecretRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
                         serviceName:
                           type: string
                       type: object
@@ -917,6 +941,8 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                escapeCharacters:
+                                  type: boolean
                                 extractors:
                                   additionalProperties:
                                     properties:
@@ -1251,6 +1277,8 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                escapeCharacters:
+                                  type: boolean
                                 extractors:
                                   additionalProperties:
                                     properties:
@@ -1522,6 +1550,8 @@ spec:
                                         type: object
                                     type: object
                                   type: array
+                                escapeCharacters:
+                                  type: boolean
                                 extractors:
                                   additionalProperties:
                                     properties:

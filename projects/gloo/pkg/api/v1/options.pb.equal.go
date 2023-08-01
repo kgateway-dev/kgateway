@@ -385,6 +385,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetConnectionLimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConnectionLimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConnectionLimit(), target.GetConnectionLimit()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetRouter()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRouter()) {
 			return false
@@ -425,6 +435,16 @@ func (m *TcpListenerOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetTcpProxySettings(), target.GetTcpProxySettings()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetConnectionLimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetConnectionLimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetConnectionLimit(), target.GetConnectionLimit()) {
 			return false
 		}
 	}
@@ -879,6 +899,16 @@ func (m *RouteOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetHeaderManipulation(), target.GetHeaderManipulation()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAppendXForwardedHost()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAppendXForwardedHost()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAppendXForwardedHost(), target.GetAppendXForwardedHost()) {
 			return false
 		}
 	}

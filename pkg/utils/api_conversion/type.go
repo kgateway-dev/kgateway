@@ -1,6 +1,8 @@
 package api_conversion
 
 import (
+	"strings"
+
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
@@ -8,6 +10,15 @@ import (
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
+
+// HeaderSecretOptions is used to pass around information about whether/how to enforce that secrets and upstream namespace must match
+type HeaderSecretOptions struct {
+	EnforceNamespaceMatch bool
+	// this will be ignored unless EnforceNamespaceMatch is true
+	UpstreamNamespace string
+}
+
+const MatchingNamespaceEnv = "HEADER_SECRET_REF_NS_MATCHES_US"
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
 // This is required because go-control-plane dropped gogoproto in favor of goproto
@@ -46,12 +57,12 @@ func ToEnvoyInt64Range(int64Range *envoytype_gloo.Int64Range) *envoy_type_v3.Int
 	}
 }
 
-func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	result := make([]*envoy_config_core_v3.HeaderValueOption, 0)
 	var err error
 	var opts []*envoy_config_core_v3.HeaderValueOption
 	for _, v := range option {
-		opts, err = ToEnvoyHeaderValueOptions(v, secrets)
+		opts, err = ToEnvoyHeaderValueOptions(v, secrets, secretOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -60,9 +71,21 @@ func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secr
 	return result, nil
 }
 
-func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoy_config_core_v3.HeaderValueOption, error) {
+// CheckForbiddenCustomHeaders checks whether the custom header is allowed to be modified as per https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers
+func CheckForbiddenCustomHeaders(header envoycore_sk.HeaderValue) error {
+	key := header.GetKey()
+	if strings.HasPrefix(key, ":") || strings.ToLower(key) == "host" {
+		return errors.Errorf(": -prefixed or host headers may not be modified. Received '%s' header", key)
+	}
+	return nil
+}
+
+func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HeaderValueOption, error) {
 	switch typedOption := option.GetHeaderOption().(type) {
 	case *envoycore_sk.HeaderValueOption_Header:
+		if err := CheckForbiddenCustomHeaders(*typedOption.Header); err != nil {
+			return nil, err
+		}
 		return []*envoy_config_core_v3.HeaderValueOption{
 			{
 				Header: &envoy_config_core_v3.HeaderValue{
@@ -73,6 +96,10 @@ func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *
 			},
 		}, nil
 	case *envoycore_sk.HeaderValueOption_HeaderSecretRef:
+		if secretOptions.EnforceNamespaceMatch && secretOptions.UpstreamNamespace != typedOption.HeaderSecretRef.GetNamespace() {
+			// The secrets sent to the upstream must come from the same namespace. The error message is copied from secretList.Find() to avoid exposing new information about this setting.
+			return nil, errors.Errorf("list did not find secret %v.%v", typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
+		}
 		secret, err := secrets.Find(typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
 		if err != nil {
 			return nil, err

@@ -521,6 +521,19 @@ func (m *TcpHostReport) Clone() proto.Message {
 		}
 	}
 
+	if m.GetWarnings() != nil {
+		target.Warnings = make([]*TcpHostReport_Warning, len(m.GetWarnings()))
+		for idx, v := range m.GetWarnings() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Warnings[idx] = h.Clone().(*TcpHostReport_Warning)
+			} else {
+				target.Warnings[idx] = proto.Clone(v).(*TcpHostReport_Warning)
+			}
+
+		}
+	}
+
 	return target
 }
 
@@ -721,6 +734,21 @@ func (m *TcpHostReport_Error) Clone() proto.Message {
 		return target
 	}
 	target = &TcpHostReport_Error{}
+
+	target.Type = m.GetType()
+
+	target.Reason = m.GetReason()
+
+	return target
+}
+
+// Clone function
+func (m *TcpHostReport_Warning) Clone() proto.Message {
+	var target *TcpHostReport_Warning
+	if m == nil {
+		return target
+	}
+	target = &TcpHostReport_Warning{}
 
 	target.Type = m.GetType()
 

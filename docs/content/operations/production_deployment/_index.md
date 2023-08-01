@@ -43,6 +43,12 @@ gloo:
       failurePolicy: Fail # failure policy mode for the validation webhook (default is "Ignore")
 ```
 
+## Safeguarding the data plane configuration
+
+### Create secrets in the same namespace as upstreams
+
+When you use header manipulation to add headers to or from requests and responses, you might use the `headerSecretRef` field. However, referencing a secret in a different namespace than the upstream is not recommended. Instead, ensure secrets are in the same namespace as the upstream. You can additionally set the `gloo.headerSecretRefNsMatchesUs` Helm field to true, which requires any secrets that are sent in headers to come from the same namespace as the destination upstream.
+
 ## Performance tips
 
 ### Disable Kubernetes destinations
@@ -218,6 +224,9 @@ To configure a pod disruption budget for the `rate-limit` deployment when you in
 
 Affinity settings for the `rate-limit` deployment can be overwritten during installation by setting `global.extensions.rateLimit.affinity` in your Helm configuration file. Additionally, anti-affinity rules for the `rate-limit` deployment can be configured by setting `global.extensions.rateLimit.antiAffinity`.
 
+## Horizontally scaling the control plane
+
+You can increase the number of pods that the `gloo` deployment runs in the `gloo.deployment.replicas` Helm setting. Leave the `gloo.disableLeaderElection` Helm field set to the default value of `false` when you have multiple replicas of the `gloo` deployment. Gloo Edge elects a leader from the replicas, while the other replicas remain on standby to become the leader if the elected leader pod fails or restarts.
 
 ## Enhancing the data-plane reliability
 
@@ -251,6 +260,10 @@ Also, consider using `retries` on your _routes_. The default value for this attr
 
 
 ## Metrics and monitoring
+
+### Proxy latency filter
+
+In the `httpGateway.options` section of your Gateway resource, you can enable the proxy latency filter. This Envoy filter measures the request and response latency incurred by the filter chain in additional histograms and access log parameters. For more information about the `proxyLatency` section, see the [API reference]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency" %}}).
 
 ### Grafana dashboards
 

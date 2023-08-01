@@ -144,6 +144,7 @@ Optional, feature-specific configuration that lives on http listeners
 "sanitizeClusterHeader": .google.protobuf.BoolValue
 "leftmostXffAddress": .google.protobuf.BoolValue
 "dynamicForwardProxy": .dfp.options.gloo.solo.io.FilterConfig
+"connectionLimit": .connection_limit.options.gloo.solo.io.ConnectionLimit
 "router": .gloo.solo.io.Router
 
 ```
@@ -168,6 +169,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `sanitizeClusterHeader` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: If using the HTTP header specified by cluster_header to direct traffic to a cluster, this option will sanitize that header from downstream traffic. Defaults to false. |
 | `leftmostXffAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: Setting this value to true will grab the leftmost IP address from the x-forwarded-for header and set it as the downstream address. It is worth noting that the x-forwarded-for header can be tampered with by clients and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used. |
 | `dynamicForwardProxy` | [.dfp.options.gloo.solo.io.FilterConfig](../options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#filterconfig) |  |
+| `connectionLimit` | [.connection_limit.options.gloo.solo.io.ConnectionLimit](../options/connection_limit/connection_limit.proto.sk/#connectionlimit) | ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention. |
 | `router` | [.gloo.solo.io.Router](../options/router/router.proto.sk/#router) | Router is an extension of the envoy http filters Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto. |
 
 
@@ -181,12 +183,14 @@ Optional, feature-specific configuration that lives on tcp listeners
 
 ```yaml
 "tcpProxySettings": .tcp.options.gloo.solo.io.TcpProxySettings
+"connectionLimit": .connection_limit.options.gloo.solo.io.ConnectionLimit
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `tcpProxySettings` | [.tcp.options.gloo.solo.io.TcpProxySettings](../options/tcp/tcp.proto.sk/#tcpproxysettings) |  |
+| `connectionLimit` | [.connection_limit.options.gloo.solo.io.ConnectionLimit](../options/connection_limit/connection_limit.proto.sk/#connectionlimit) | ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention. |
 
 
 
@@ -280,6 +284,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "hostRewrite": string
 "autoHostRewrite": .google.protobuf.BoolValue
 "hostRewritePathRegex": .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute
+"appendXForwardedHost": .google.protobuf.BoolValue
 "cors": .cors.options.gloo.solo.io.CorsPolicy
 "lbHash": .lbhash.options.gloo.solo.io.RouteActionHashConfig
 "upgrades": []protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
@@ -320,6 +325,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `hostRewrite` | `string` | Indicates that during forwarding, the host header will be swapped with this value. Only one of `hostRewrite`, `autoHostRewrite`, or `hostRewritePathRegex` can be set. |
 | `autoHostRewrite` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable/Disable auto host re-write. Indicates that the host header will be swapped with the hostname of the upstream host. This setting is only honored for upstreams that use DNS resolution (i.e., their generated Envoy cluster is of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames). Only one of `autoHostRewrite`, `hostRewrite`, or `hostRewritePathRegex` can be set. |
 | `hostRewritePathRegex` | [.solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute](../../external/envoy/type/matcher/v3/regex.proto.sk/#regexmatchandsubstitute) | Indicates that during forwarding, the host header will be swapped with the result of the regex substitution executed on path value with query and fragment removed. Only one of `hostRewritePathRegex`, `hostRewrite`, or `autoHostRewrite` can be set. |
+| `appendXForwardedHost` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true and there is a host rewrite, appends the x-forwarded-host header to requests. |
 | `cors` | [.cors.options.gloo.solo.io.CorsPolicy](../options/cors/cors.proto.sk/#corspolicy) | Defines a CORS policy for the route If a CORS policy is also defined on the route's virtual host, the policies are merged. |
 | `lbHash` | [.lbhash.options.gloo.solo.io.RouteActionHashConfig](../options/lbhash/lbhash.proto.sk/#routeactionhashconfig) | For routes served by a hashing load balancer, this defines the input to the hash key Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers: - route, upstream, virtual service. |
 | `upgrades` | [[]protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig](../options/protocol_upgrade/protocol_upgrade.proto.sk/#protocolupgradeconfig) | Route configuration for protocol upgrade requests. |

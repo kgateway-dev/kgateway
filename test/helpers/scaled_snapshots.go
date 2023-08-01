@@ -104,6 +104,15 @@ func (b *ScaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 	}
 }
 
+func (b *ScaledSnapshotBuilder) description() string {
+	if b.HasInjectedSnapshot() {
+		return "injected snapshot"
+	}
+
+	// If/when additional Snapshot fields are included in testing, the description should be updated accordingly
+	return fmt.Sprintf("%d endpoint(s), %d upstream(s)", b.EndpointCount(), b.UpstreamCount())
+}
+
 func upMeta(i int) *core.Metadata {
 	return &core.Metadata{
 		Name:      fmt.Sprintf("test-%06d", i),

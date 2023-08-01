@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/connection_limit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/csrf"
@@ -78,6 +79,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		tls_inspector.NewPlugin(),
 		pipe.NewPlugin(),
 		tcp.NewPlugin(utils.NewSslConfigTranslator()),
+		connection_limit.NewPlugin(),
 		static.NewPlugin(),
 		transformation.NewPlugin(),
 		grpcweb.NewPlugin(),
@@ -136,6 +138,7 @@ type pluginRegistry struct {
 	plugins                      []plugins.Plugin
 	listenerPlugins              []plugins.ListenerPlugin
 	tcpFilterChainPlugins        []plugins.TcpFilterChainPlugin
+	networkFilterPlugins         []plugins.NetworkFilterPlugin
 	httpFilterPlugins            []plugins.HttpFilterPlugin
 	httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
 	virtualHostPlugins           []plugins.VirtualHostPlugin
@@ -155,6 +158,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 	var listenerPlugins []plugins.ListenerPlugin
 	var tcpFilterChainPlugins []plugins.TcpFilterChainPlugin
 	var httpFilterPlugins []plugins.HttpFilterPlugin
+	var networkFilterPlugins []plugins.NetworkFilterPlugin
 	var httpConnectionManagerPlugins []plugins.HttpConnectionManagerPlugin
 	var virtualHostPlugins []plugins.VirtualHostPlugin
 	var resourceGeneratorPlugins []plugins.ResourceGeneratorPlugin
@@ -184,6 +188,11 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		httpFilterPlugin, ok := plugin.(plugins.HttpFilterPlugin)
 		if ok {
 			httpFilterPlugins = append(httpFilterPlugins, httpFilterPlugin)
+		}
+
+		networkFilterPlugin, ok := plugin.(plugins.NetworkFilterPlugin)
+		if ok {
+			networkFilterPlugins = append(networkFilterPlugins, networkFilterPlugin)
 		}
 
 		httpConnectionManagerPlugin, ok := plugin.(plugins.HttpConnectionManagerPlugin)
@@ -231,6 +240,7 @@ func NewPluginRegistry(registeredPlugins []plugins.Plugin) *pluginRegistry {
 		plugins:                      allPlugins,
 		listenerPlugins:              listenerPlugins,
 		tcpFilterChainPlugins:        tcpFilterChainPlugins,
+		networkFilterPlugins:         networkFilterPlugins,
 		httpFilterPlugins:            httpFilterPlugins,
 		httpConnectionManagerPlugins: httpConnectionManagerPlugins,
 		virtualHostPlugins:           virtualHostPlugins,
@@ -256,6 +266,11 @@ func (p *pluginRegistry) GetListenerPlugins() []plugins.ListenerPlugin {
 // GetTcpFilterChainPlugins returns the plugins that were registered which act on TcpFilterChain.
 func (p *pluginRegistry) GetTcpFilterChainPlugins() []plugins.TcpFilterChainPlugin {
 	return p.tcpFilterChainPlugins
+}
+
+// GetNetworkFilterPlugins returns the plugins that were registered which act on NetworkFilter.
+func (p *pluginRegistry) GetNetworkFilterPlugins() []plugins.NetworkFilterPlugin {
+	return p.networkFilterPlugins
 }
 
 // GetHttpFilterPlugins returns the plugins that were registered which act on HttpFilter.

@@ -1,0 +1,12 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5177
+    resolvesIssue: true
+    description: >-
+      Do not require the EnvoyFactory to clean up Envoy Instances at the end of the tests.
+      EnvoyInstances clean themselves up, when the running context is cancelled, so having
+      the factory also clean them up is both a no-op most of the time, but also exposes us
+      to a data race
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

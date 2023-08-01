@@ -77,6 +77,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHttpListenerTranslators(ctx cont
 		listener,
 		listener.GetHttpListener(),
 		httpListenerReport,
+		l.pluginRegistry.GetNetworkFilterPlugins(),
 		l.pluginRegistry.GetHttpFilterPlugins(),
 		l.pluginRegistry.GetHttpConnectionManagerPlugins(),
 		routeConfigurationName)
@@ -135,7 +136,8 @@ func (l *ListenerSubsystemTranslatorFactory) GetTcpListenerTranslators(ctx conte
 	// Our current TcpFilterChainPlugins have a 1-many relationship,
 	// meaning that a single TcpListener produces many FilterChains
 	filterChainTranslator := &tcpFilterChainTranslator{
-		plugins:            l.pluginRegistry.GetTcpFilterChainPlugins(),
+		tcpPlugins:         l.pluginRegistry.GetTcpFilterChainPlugins(),
+		networkPlugins:     l.pluginRegistry.GetNetworkFilterPlugins(),
 		parentListener:     listener,
 		listener:           listener.GetTcpListener(),
 		report:             tcpListenerReport,
@@ -195,6 +197,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 				listener,
 				listenerType.HttpListener,
 				httpListenerReport,
+				l.pluginRegistry.GetNetworkFilterPlugins(),
 				l.pluginRegistry.GetHttpFilterPlugins(),
 				l.pluginRegistry.GetHttpConnectionManagerPlugins(),
 				routeConfigurationName)
@@ -231,7 +234,8 @@ func (l *ListenerSubsystemTranslatorFactory) GetHybridListenerTranslators(ctx co
 			// Our current TcpFilterChainPlugins have a 1-many relationship,
 			// meaning that a single TcpListener produces many FilterChains
 			filterChainTranslator = &tcpFilterChainTranslator{
-				plugins:                 l.pluginRegistry.GetTcpFilterChainPlugins(),
+				tcpPlugins:              l.pluginRegistry.GetTcpFilterChainPlugins(),
+				networkPlugins:          l.pluginRegistry.GetNetworkFilterPlugins(),
 				parentListener:          listener,
 				listener:                listenerType.TcpListener,
 				report:                  hybridListenerReport.GetMatchedListenerReports()[utils.MatchedRouteConfigName(listener, matcher)].GetTcpListenerReport(),
@@ -318,6 +322,7 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 			listener,
 			httpListener,
 			httpListenerReport,
+			l.pluginRegistry.GetNetworkFilterPlugins(),
 			l.pluginRegistry.GetHttpFilterPlugins(),
 			l.pluginRegistry.GetHttpConnectionManagerPlugins(),
 			routeConfigurationName)
@@ -369,7 +374,8 @@ func (l *ListenerSubsystemTranslatorFactory) GetAggregateListenerTranslators(ctx
 		// Our current TcpFilterChainPlugins have a 1-many relationship,
 		// meaning that a single TcpListener produces many FilterChains
 		filterChainTranslator = &tcpFilterChainTranslator{
-			plugins:                 l.pluginRegistry.GetTcpFilterChainPlugins(),
+			tcpPlugins:              l.pluginRegistry.GetTcpFilterChainPlugins(),
+			networkPlugins:          l.pluginRegistry.GetNetworkFilterPlugins(),
 			parentListener:          listener,
 			listener:                tcpL,
 			report:                  aggregateListenerReport.GetTcpListenerReports()[utils.MatchedRouteConfigName(listener, matcher)],

@@ -3,6 +3,8 @@ package gloomtls_test
 import (
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -24,8 +26,6 @@ import (
 var _ = Describe("Kube2e: mTLS", func() {
 
 	var (
-		testRunnerVs *gatewayv1.VirtualService
-
 		glooResources *gloosnapshot.ApiSnapshot
 	)
 
@@ -42,9 +42,10 @@ var _ = Describe("Kube2e: mTLS", func() {
 				},
 			},
 		}
-		testRunnerVs = helpers.NewVirtualServiceBuilder().
+		testRunnerVs := helpers.NewVirtualServiceBuilder().
 			WithName(helper.TestrunnerName).
 			WithNamespace(testHelper.InstallNamespace).
+			WithLabel(kube2e.UniqueTestResourceLabel, uuid.New().String()).
 			WithDomain(helper.TestrunnerName).
 			WithRoutePrefixMatcher(helper.TestrunnerName, "/").
 			WithRouteActionToSingleDestination(helper.TestrunnerName, testRunnerDestination).

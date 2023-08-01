@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5038
+    resolvesIssue: false
+    description: >-
+      Add Measure function to gloohelpers for cases where we do not care about the 0ns error
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

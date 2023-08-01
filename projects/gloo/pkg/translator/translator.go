@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"os"
+	"strconv"
 	"sync"
+
+	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -140,7 +144,16 @@ func (t *translatorInstance) translateClusterSubsystemComponents(params plugins.
 
 	// endpoints and listeners are shared between listeners
 	logger.Debugf("computing envoy clusters for proxy: %v", proxy.GetMetadata().GetName())
-	clusters, clusterToUpstreamMap := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy)
+	shouldEnforceStr := os.Getenv(api_conversion.MatchingNamespaceEnv)
+	shouldEnforceNamespaceMatch := false
+	if shouldEnforceStr != "" {
+		var err error
+		shouldEnforceNamespaceMatch, err = strconv.ParseBool(shouldEnforceStr)
+		if err != nil {
+			reports.AddError(proxy, err)
+		}
+	}
+	clusters, clusterToUpstreamMap := t.computeClusters(params, reports, upstreamRefKeyToEndpoints, proxy, shouldEnforceNamespaceMatch)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.GetMetadata().GetName())
 
 	endpoints := t.computeClusterEndpoints(params, upstreamRefKeyToEndpoints, reports)

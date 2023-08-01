@@ -32,6 +32,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/connection_limit/connection_limit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
@@ -181,6 +182,9 @@ message HttpListenerOptions {
 
     dfp.options.gloo.solo.io.FilterConfig dynamic_forward_proxy = 28;
 
+    // ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
+    connection_limit.options.gloo.solo.io.ConnectionLimit connection_limit = 29;
+
     // Router is an extension of the envoy http filters
     // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
     Router router = 18;
@@ -189,6 +193,9 @@ message HttpListenerOptions {
 // Optional, feature-specific configuration that lives on tcp listeners
 message TcpListenerOptions {
     tcp.options.gloo.solo.io.TcpProxySettings tcp_proxy_settings = 3;
+
+    // ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
+    connection_limit.options.gloo.solo.io.ConnectionLimit connection_limit = 4;
 }
 
 // Optional, feature-specific configuration that lives on virtual hosts.
@@ -361,10 +368,12 @@ message RouteOptions {
         // of type STRICT_DNS or LOGICAL_DNS -- think aws, azure, or static upstreams with hostnames)
         google.protobuf.BoolValue auto_host_rewrite = 19;
 
-        // Indicates that during forwarding, the host header will be swapped with the result of the regex 
+        // Indicates that during forwarding, the host header will be swapped with the result of the regex
         // substitution executed on path value with query and fragment removed.
         .solo.io.envoy.type.matcher.v3.RegexMatchAndSubstitute host_rewrite_path_regex = 101;
     };
+    // If true and there is a host rewrite, appends the x-forwarded-host header to requests.
+    google.protobuf.BoolValue append_x_forwarded_host = 146;
     // Defines a CORS policy for the route
     // If a CORS policy is also defined on the route's virtual host, the policies are merged.
     cors.options.gloo.solo.io.CorsPolicy cors = 11;

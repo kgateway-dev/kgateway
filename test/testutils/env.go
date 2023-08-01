@@ -54,6 +54,10 @@ const (
 	// ServiceLogLevel is used to set the log level for the test services. See services/logging.go for more details
 	ServiceLogLevel = "SERVICE_LOG_LEVEL"
 
+	// GithubAction is used by Github Actions and is the name of the currently running action or ID of a step
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	GithubAction = "GITHUB_ACTION"
+
 	// GcloudBuildId is used by Cloudbuild to identify the build id
 	// This is set when running tests in Cloudbuild
 	GcloudBuildId = "GCLOUD_BUILD_ID"

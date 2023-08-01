@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/solo-io/gloo/test/testutils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/onsi/gomega/gstruct"
@@ -18,7 +19,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 )
@@ -54,13 +54,13 @@ var _ = Describe("Transformations", func() {
 			transform = &transformation.Transformations{
 				ResponseTransformation: &transformation.Transformation{
 					TransformationType: &transformation.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							BodyTransformation: &envoy_transform.TransformationTemplate_Body{
-								Body: &envoy_transform.InjaTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							BodyTransformation: &transformation.TransformationTemplate_Body{
+								Body: &transformation.InjaTemplate{
 									Text: "{{body}}",
 								},
 							},
-							Headers: map[string]*envoy_transform.InjaTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
 								"content-type": {
 									Text: "text/html",
 								},
@@ -71,13 +71,16 @@ var _ = Describe("Transformations", func() {
 			}
 		})
 
+		defaultPostBody := `{"body":"test"}`
+		defaultOutput := "test"
+
 		// EventuallyResponseTransformed returns an Asynchronous Assertion which
 		// validates that a request with a body will return the requested content.
-		// This will only work if the above transformation is applied to the request
-		EventuallyResponseTransformed := func() AsyncAssertion {
-			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody("{\"body\":\"test\"}")
+		// This will only work if a transformation is applied to the response
+		EventuallyResponseTransformed := func(postBody, expectedOutput string) AsyncAssertion {
+			requestBuilder := testContext.GetHttpRequestBuilder().WithPostBody(postBody)
 			return Eventually(func(g Gomega) {
-				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(testmatchers.HaveExactResponseBody("test"))
+				g.Expect(testutils.DefaultHttpClient.Do(requestBuilder.Build())).To(testmatchers.HaveExactResponseBody(expectedOutput))
 			}, "5s", ".5s")
 		}
 
@@ -89,7 +92,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			EventuallyResponseTransformed().Should(HaveOccurred())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(HaveOccurred())
 		})
 
 		It("should should transform json to html response on vhost", func() {
@@ -100,7 +103,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			EventuallyResponseTransformed().Should(Succeed())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
 		})
 
 		It("should should transform json to html response on route", func() {
@@ -111,7 +114,7 @@ var _ = Describe("Transformations", func() {
 				return vs
 			})
 
-			EventuallyResponseTransformed().Should(Succeed())
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
 		})
 
 		It("should should transform json to html response on route", func() {
@@ -134,10 +137,128 @@ var _ = Describe("Transformations", func() {
 				return vsBuilder.Build()
 			})
 
-			EventuallyResponseTransformed().Should(Succeed())
-
+			EventuallyResponseTransformed(defaultPostBody, defaultOutput).Should(Succeed())
 		})
 
+		When("constructing JSON body", func() {
+			complexPostBody := `{"foo":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","bar":"\"bie\"","bas":"[\"eball\",\"ketball\"]"}`
+			complexOutput := `{"FOO":"{\"nestedbar\":\"{\\\"deeply\\\":\\\"nested\\\"}\"}","BARBAS":["\"bie\"","[\"eball\",\"ketball\"]"]}`
+			When("using escape_characters", func() {
+				BeforeEach(func() {
+					transform = &transformation.Transformations{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &transformation.TransformationTemplate{
+									EscapeCharacters: &wrapperspb.BoolValue{Value: true},
+									BodyTransformation: &transformation.TransformationTemplate_Body{
+										Body: &transformation.InjaTemplate{
+											Text: `{"FOO":"{{foo}}","BARBAS":["{{bar}}","{{bas}}"]}`,
+										},
+									},
+								},
+							},
+						},
+					}
+				})
+
+				When("setting escape_characters globally on settings", func() {
+					BeforeEach(func() {
+						testContext.SetRunSettings(&gloov1.Settings{
+							Gloo: &gloov1.GlooOptions{
+								TransformationEscapeCharacters: &wrapperspb.BoolValue{Value: true},
+							},
+						})
+
+						transform.GetResponseTransformation().GetTransformationTemplate().EscapeCharacters = nil
+					})
+
+					It("should should transform json to json response on vhost", func() {
+						testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+							vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+								Transformations: transform,
+							}
+							return vs
+						})
+
+						EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+					})
+
+					It("should should transform json to json response on route", func() {
+						testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+							vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+								Transformations: transform,
+							}
+							return vs
+						})
+
+						EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+					})
+				})
+				It("should should transform json to json response on vhost", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
+				It("should should transform json to json response on route", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
+			})
+
+			When("using raw_string", func() {
+
+				BeforeEach(func() {
+					transform = &transformation.Transformations{
+						ResponseTransformation: &transformation.Transformation{
+							TransformationType: &transformation.Transformation_TransformationTemplate{
+								TransformationTemplate: &transformation.TransformationTemplate{
+									BodyTransformation: &transformation.TransformationTemplate_Body{
+										Body: &transformation.InjaTemplate{
+											Text: `{"FOO":"{{raw_string(foo)}}","BARBAS":["{{raw_string(bar)}}","{{raw_string(bas)}}"]}`,
+										},
+									},
+								},
+							},
+						},
+					}
+				})
+				It("should should transform json to json response on vhost", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
+				It("should should transform json to json response on route", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						vs.GetVirtualHost().GetRoutes()[0].Options = &gloov1.RouteOptions{
+							Transformations: transform,
+						}
+						return vs
+					})
+
+					EventuallyResponseTransformed(complexPostBody, complexOutput).Should(Succeed())
+				})
+
+			})
+		})
 	})
 
 	Context("parsing non-valid JSON", func() {
@@ -165,8 +286,8 @@ var _ = Describe("Transformations", func() {
 			transform = &transformation.Transformations{
 				ResponseTransformation: &transformation.Transformation{
 					TransformationType: &transformation.Transformation_TransformationTemplate{
-						TransformationTemplate: &envoy_transform.TransformationTemplate{
-							Headers: map[string]*envoy_transform.InjaTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
 								"x-solo-resp-hdr1": {
 									Text: "{{ request_header(\"x-solo-hdr-1\") }}",
 								},
@@ -233,7 +354,7 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should transform response with non-json body when ParseBodyBehavior is set to DontParse", func() {
-			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = envoy_transform.TransformationTemplate_DontParse
+			transform.ResponseTransformation.GetTransformationTemplate().ParseBodyBehavior = transformation.TransformationTemplate_DontParse
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
 					Transformations: transform,
@@ -245,8 +366,8 @@ var _ = Describe("Transformations", func() {
 		})
 
 		It("should transform response with non-json body when passthrough is enabled", func() {
-			transform.ResponseTransformation.GetTransformationTemplate().BodyTransformation = &envoy_transform.TransformationTemplate_Passthrough{
-				Passthrough: &envoy_transform.Passthrough{},
+			transform.ResponseTransformation.GetTransformationTemplate().BodyTransformation = &transformation.TransformationTemplate_Passthrough{
+				Passthrough: &transformation.Passthrough{},
 			}
 			testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
 				vs.GetVirtualHost().Options = &gloov1.VirtualHostOptions{
@@ -283,7 +404,7 @@ var _ = Describe("Transformations", func() {
 								{
 									RequestTransformation: &transformation.Transformation{
 										TransformationType: &transformation.Transformation_HeaderBodyTransform{
-											HeaderBodyTransform: &envoy_transform.HeaderBodyTransform{
+											HeaderBodyTransform: &transformation.HeaderBodyTransform{
 												AddRequestMetadata: true,
 											},
 										},
