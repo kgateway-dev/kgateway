@@ -1,6 +1,6 @@
 Name|Version|License
 ---|---|---
-[semver/v3](https://github.com/Masterminds/semver)|v3.2.0|MIT License
+[semver/v3](https://github.com/Masterminds/semver)|v3.2.1|MIT License
 [Netflix/go-expect](https://github.com/Netflix/go-expect)|v0.0.0-20180928190340-9d1f4485533b|Apache License 2.0
 [avast/retry-go](https://github.com/avast/retry-go)|v2.4.3+incompatible|MIT License
 [aws/aws-sdk-go](https://github.com/aws/aws-sdk-go)|v1.34.9|Apache License 2.0
@@ -14,7 +14,7 @@ Name|Version|License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
 [go-openapi/loads](https://github.com/go-openapi/loads)|v0.19.4|Apache License 2.0
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
-[go-openapi/swag](https://github.com/go-openapi/swag)|v0.19.15|Apache License 2.0
+[go-openapi/swag](https://github.com/go-openapi/swag)|v0.22.3|Apache License 2.0
 [go-swagger/go-swagger](https://github.com/go-swagger/go-swagger)|v0.21.0|Apache License 2.0
 [gogo/googleapis](https://github.com/gogo/googleapis)|v1.4.0|Apache License 2.0
 [gogo/protobuf](https://github.com/gogo/protobuf)|v1.3.2|BSD 3-clause "New" or "Revised" License
@@ -30,42 +30,42 @@ Name|Version|License
 [jhump/protoreflect](https://github.com/jhump/protoreflect)|v1.6.0|Apache License 2.0
 [kelseyhightower/envconfig](https://github.com/kelseyhightower/envconfig)|v1.4.0|MIT License
 [olekukonko/tablewriter](https://github.com/olekukonko/tablewriter)|v0.0.5|MIT License
-[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.8.1|MIT License
-[onsi/gomega](https://github.com/onsi/gomega)|v1.26.0|MIT License
+[ginkgo/v2](https://github.com/onsi/ginkgo)|v2.9.5|MIT License
+[onsi/gomega](https://github.com/onsi/gomega)|v1.27.7|MIT License
 [pkg/browser](https://github.com/pkg/browser)|v0.0.0-20180916011732-0a3d74bf9ce4|BSD 2-clause "Simplified" License
 [pkg/errors](https://github.com/pkg/errors)|v0.9.1|BSD 2-clause "Simplified" License
 [rotisserie/eris](https://github.com/rotisserie/eris)|v0.4.0|MIT License
 [saiskee/gettercheck](https://github.com/saiskee/gettercheck)|v0.0.0-20210820204958-38443d06ebe0|MIT License
 [sergi/go-diff](https://github.com/sergi/go-diff)|v1.1.0|MIT License
 [spf13/afero](https://github.com/spf13/afero)|v1.9.2|Apache License 2.0
-[spf13/cobra](https://github.com/spf13/cobra)|v1.6.1|Apache License 2.0
+[spf13/cobra](https://github.com/spf13/cobra)|v1.7.0|Apache License 2.0
 [spf13/pflag](https://github.com/spf13/pflag)|v1.0.5|BSD 3-clause "New" or "Revised" License
 [spf13/viper](https://github.com/spf13/viper)|v1.8.1|MIT License
 [go.opencensus.io](https://go.opencensus.io)|v0.24.0|Apache License 2.0
-[go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.0|MIT License
+[go.uber.org/goleak](https://go.uber.org/goleak)|v1.2.1|MIT License
 [go.uber.org/multierr](https://go.uber.org/multierr)|v1.6.0|MIT License
 [go.uber.org/zap](https://go.uber.org/zap)|v1.24.0|MIT License
-[x/crypto](https://golang.org/x/crypto)|v0.5.0|BSD 3-clause "New" or "Revised" License
+[x/crypto](https://golang.org/x/crypto)|v0.11.0|BSD 3-clause "New" or "Revised" License
 [x/exp](https://golang.org/x/exp)|v0.0.0-20220921164117-439092de6870|BSD 3-clause "New" or "Revised" License
-[x/sync](https://golang.org/x/sync)|v0.1.0|BSD 3-clause "New" or "Revised" License
-[x/tools](https://golang.org/x/tools)|v0.8.0|BSD 3-clause "New" or "Revised" License
+[x/sync](https://golang.org/x/sync)|v0.3.0|BSD 3-clause "New" or "Revised" License
+[x/tools](https://golang.org/x/tools)|v0.9.1|BSD 3-clause "New" or "Revised" License
 [googleapis/api](https://google.golang.org/genproto/googleapis/api)|v0.0.0-20230526203410-71b5a4ffd15e|Apache License 2.0
 [googleapis/rpc](https://google.golang.org/genproto/googleapis/rpc)|v0.0.0-20230526203410-71b5a4ffd15e|Apache License 2.0
 [google.golang.org/grpc](https://google.golang.org/grpc)|v1.40.0|Apache License 2.0
 [google.golang.org/protobuf](https://google.golang.org/protobuf)|v1.30.0|BSD 3-clause "New" or "Revised" License
 [AlecAivazis/survey.v1](https://gopkg.in/AlecAivazis/survey.v1)|v1.8.7|MIT License
-[helm/v3](https://helm.sh/helm/v3)|v3.11.2|Apache License 2.0
-[k8s.io/api](https://k8s.io/api)|v0.26.4|Apache License 2.0
-[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.26.4|Apache License 2.0
-[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.26.4|Apache License 2.0
-[k8s.io/client-go](https://k8s.io/client-go)|v0.26.4|Apache License 2.0
-[k8s.io/code-generator](https://k8s.io/code-generator)|v0.26.4|Apache License 2.0
-[k8s.io/component-base](https://k8s.io/component-base)|v0.26.4|Apache License 2.0
-[k8s.io/kubectl](https://k8s.io/kubectl)|v0.26.4|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20221128185143-99ec85e7a448|Apache License 2.0
+[helm/v3](https://helm.sh/helm/v3)|v3.12.2|Apache License 2.0
+[k8s.io/api](https://k8s.io/api)|v0.27.3|Apache License 2.0
+[k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver)|v0.27.3|Apache License 2.0
+[k8s.io/apimachinery](https://k8s.io/apimachinery)|v0.27.3|Apache License 2.0
+[k8s.io/client-go](https://k8s.io/client-go)|v0.27.3|Apache License 2.0
+[k8s.io/code-generator](https://k8s.io/code-generator)|v0.27.3|Apache License 2.0
+[k8s.io/component-base](https://k8s.io/component-base)|v0.27.3|Apache License 2.0
+[k8s.io/kubectl](https://k8s.io/kubectl)|v0.27.3|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20230220204549-a5ecb0141aa5|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.14.6|Apache License 2.0
+[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.15.0|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.3.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License
