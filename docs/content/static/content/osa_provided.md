@@ -62,7 +62,7 @@ Name|Version|License
 [k8s.io/code-generator](https://k8s.io/code-generator)|v0.27.3|Apache License 2.0
 [k8s.io/component-base](https://k8s.io/component-base)|v0.27.3|Apache License 2.0
 [k8s.io/kubectl](https://k8s.io/kubectl)|v0.27.3|Apache License 2.0
-[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20221128185143-99ec85e7a448|Apache License 2.0
+[k8s.io/utils](https://k8s.io/utils)|v0.0.0-20230220204549-a5ecb0141aa5|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
 [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.15.0|Apache License 2.0
