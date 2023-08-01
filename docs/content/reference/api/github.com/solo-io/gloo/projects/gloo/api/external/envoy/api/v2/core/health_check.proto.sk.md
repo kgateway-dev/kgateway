@@ -186,6 +186,7 @@ for details.
 ```yaml
 "serviceName": string
 "authority": string
+"initialMetadata": []solo.io.envoy.api.v2.core.HeaderValueOption
 
 ```
 
@@ -193,6 +194,7 @@ for details.
 | ----- | ---- | ----------- | 
 | `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in `grpc.health.v1.HealthCheckRequest <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_. message. See `gRPC health-checking overview <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information. |
 | `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. |
+| `initialMetadata` | [[]solo.io.envoy.api.v2.core.HeaderValueOption](../../../../../../../../../../solo-kit/api/external/envoy/api/v2/core/base.proto.sk/#headervalueoption) | Specifies a list of key-value pairs that should be added to the metadata of each GRPC call that is sent to the health checked cluster. |
 
 
 
