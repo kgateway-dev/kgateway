@@ -9,7 +9,7 @@ weight: 5
 
 ### Package: `solo.io.xds`
 
-##### Source File: [github.com/solo-io/solo-kit/api/xds/solo-discovery-service.proto](https://github.com/solo-io/solo-kit/blob/master/api/xds/solo-discovery-service.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/xds/solo-discovery-service.proto](https://github.com/solo-io/solo-kit/blob/main/api/xds/solo-discovery-service.proto)
 
 
 

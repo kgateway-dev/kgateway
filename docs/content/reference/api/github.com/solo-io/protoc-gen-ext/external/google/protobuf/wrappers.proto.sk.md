@@ -60,7 +60,7 @@ typed field and its default value.
 
 
 
-##### Source File: [github.com/solo-io/protoc-gen-ext/external/google/protobuf/wrappers.proto](https://github.com/solo-io/protoc-gen-ext/blob/master/external/google/protobuf/wrappers.proto)
+##### Source File: [github.com/solo-io/protoc-gen-ext/external/google/protobuf/wrappers.proto](https://github.com/solo-io/protoc-gen-ext/blob/main/external/google/protobuf/wrappers.proto)
 
 
 
