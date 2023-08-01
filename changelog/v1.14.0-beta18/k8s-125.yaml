@@ -18,7 +18,7 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: helm
     dependencyRepo: helm
-    dependencyTag: v3.12.2
+    dependencyTag: v3.11.2
   - type: DEPENDENCY_BUMP
     dependencyOwner: k8s.io
     dependencyRepo: api
