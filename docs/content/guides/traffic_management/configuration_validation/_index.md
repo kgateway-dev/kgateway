@@ -1,148 +1,54 @@
 ---
 menuTitle: Configuration Validation
-title: Config Reporting & Validation
+title: Configuration Validation
 weight: 60
 description: (Kubernetes Only) Gloo Edge can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
-## Motivation
+Learn how to prevent the gateway proxies from getting invalid Gloo resource configuration. This way, you reduce the likelihood of bugs, service outages, or security vulnerabilities.
 
-When configuring an API gateway or edge proxy, invalid configuration can quickly lead to bugs, service outages, and 
-security vulnerabilities. 
+## Resource validation in Gloo Edge
 
-This document explains features in Gloo Edge designed to prevent invalid configuration from propagating to the 
-data plane (the Gateway Proxies).
+Kubernetes provides dynamic admission control capabilities that intercept requests to the Kubernetes API server and validate or mutate objects before they are persisted in etcd. Gloo Edge leverages this capability and provides a [validation admission webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) that ensures that only Gloo resources with valid Envoy configuration are written to etcd.
 
-## How Gloo Edge Validates Configuration
+The following image shows how Gloo Edge validates resource configuration with the validating admission webhook before applying the configuration in the cluster.
 
-Gloo Edge's configuration takes the form of **Virtual Services** written by users.
-Users may also  write {{< protobuf name="gateway.solo.io.Gateway" display="Gateway resources">}} (to configure [listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) 
-and {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTables">}} (to decentralize routing configurations from Virtual Services).
+<figure><img src="{{% versioned_link_path fromRoot="/img/admission-control.svg" %}}"/>
+<figcaption style="text-align:center;font-style:italic">Resource validation in Gloo Edge</figcaption></figure>
 
-Whenever Gloo Edge configuration objects are updated, Gloo Edge validates and processes the new configuration.
+1. The user performs an action on a Gloo custom resource that invokes the validating addmission webhook, such as to create a Gloo virtual service. To find the rules for when the webhook is being invoked, see the [validating webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml). 
+2. An API request is sent to the Kubernetes API server that contains the new Gloo resource configuration. After being successfully authenticated, authorized, and processed by any mutating admission webhooks that are configured in the cluster, the configuration is sent to the object schema validation component. This component performs an OpenAPI schema validation to verify that the provided YAML or JSON configuration is valid. If the configuration is not written in valid YAML or JSON format, it is rejected by the Kubernetes API server. For example, if you upgraded your Gloo version, but did not apply the matching Gloo custom resources, you might see errors similar to the following when fields in the custom resource configuration are unknown. 
+   ```
+   Error: UPGRADE FAILED: error validating "": error validating data: ValidationError(Settings.spec.gateway.validation): unknown field "validationServerGrpcMaxSizeBytes" in io.solo.gloo.v1.Settings.spec.gateway.validation
+   ```
 
-Validation in Gloo Edge is comprised of a four step process:
+3. If the resource configuration passes the schema validation, the configuration is sent to the validation webhook server that is configured with the Gloo Edge validating admission webhook for semantic validation. 
+4. The webhook kicks off the processes within the translation engine component to simulate the translation and xDS snapshot creation in Gloo Edge. 
+5. The translation engine retrieves the current Gloo Edge snapshot and compares it with the changes in the new Gloo resource configuration. 
+6. Gloo Edge tries to translate the resource into valid Envoy configuration. 
+7. Gloo Edge tries to process the Envoy configuration along with service discovery data to create the final xDS snapshot. 
+8. If the configuration was succesfully processed, Gloo Edge creates the xDS snapshot. 
+9. The validation result is returned to the validation admission server. 
+10. The validating admission webhook accepts or rejects the configuration, depending on the following modes. For more information about how to configure and test the webhook, see the [admission control]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/admission_control/" %}}) guide.
+    * Permissive mode (default): By default, the validating admission webhook is set up in permissive mode and only logs invalid resource configurations without rejecting them. 
+    * Strict mode: You can [enable strict validation]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/admission_control/#enable-strict-resource-validation" %}}) to reject invalid resource configuration before it is stored in etcd.
+    * Strict mode with warnings: You can also configure the webhook to reject resource configuration that resulted in a `warning` status. 
+11. If the resource configuration is found to be schematically and semantically correct, it is admitted by the validation webhook server and persisted in the etcd data store.
+12. Gloo Edge monitors the status of custom resources and picks up the latest Gloo custom resource changes from the etcd data store. 
+13. The resource configuration runs through the translation engine processes as described in steps 5-8. The results depend on the translation and settings as follows.
+    * Successful translation: The resource's status is changed to `Accepted` and the configuration is admitted to be part of the xDS snapshot. 
+    * Unsuccessful translation: If errors are detected during the translation process, Gloo Edge sets the resource's {{< protobuf name="core.solo.io.Status" display="Status">}} to `Rejected` and omits the resource from the final xDS snapshot. 
+    * Last valid config: For previously admitted resources that become invalid due to an update, the last valid configuration of that resource is persisted in etcd. 
+    * Warnings: If the resource configuration is considered valid, but references missing or misconfigured resources, the validation status is set to `Warning` and the resource is prepared to be added to the xDS snapshot. 
+14. Gloo Edge processes the resource configuration along with service discovery data to create the final [Envoy xDS Snapshot](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol). The xDS snapshot is sent to the Gloo xDS server component. 
+15. Proxies in the cluster can pull the latest Envoy configuration from the Gloo xDS server. 
 
-1. First, resources are admitted (or rejected) via a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/). Configuration options for the webhook live
-in the `settings.gloo.solo.io` custom resource.
-
-2. Once a resource is admitted, Gloo Edge processes it in a batch with all other admitted resources. If any errors are detected 
-in the admitted objects, Gloo Edge will report the errors on the `status` of those objects. At this point, Envoy configuration will 
-not be updated until the errors are resolved.
-
-    * If any admitted virtual service has invalid configuration, it will be omitted from the **Proxy**.
-    
-    * If an admitted virtual service becomes invalid due to an update, the last valid configuration of that virtual service will be persisted.
-
-3. Gloo Edge will report a `status` on the admitted resources indicating whether they were accepted as part of the snapshot and stored on the **Proxy**.
-
-4. Gloo Edge processes the **Proxy** along with service discovery data to produce the final 
-[Envoy xDS Snapshot](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol). 
-If configuration errors are encountered at this point, Gloo Edge will report them to the Proxy as
- well as the user-facing config objects which produced the Proxy. At this point, Envoy
-configuration will not be updated until the errors are resolved.
-
-Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
-The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
-  the {{< protobuf name="gateway.solo.io.Gateway" display="Gateway resource">}}.
-
-{{% notice note %}}
-
-- You can run `glooctl check` locally to easily spot any configuration errors on resources that have been admitted to your cluster.
-
-{{% /notice %}}
-
-## Monitoring the configuration status of Gloo resources
-
-When Gloo Edge fails to process a resource, the failure is reflected in the resource's {{< protobuf name="core.solo.io.Status" display="Status">}}.
-You can configure Gloo Edge to publish metrics that record the configuration status of resources.
-
-In the `observabilityOptions` of the Settings CRD, you can enable status metrics by specifying the resource type and any labels to apply
-to the metric. The following example adds metrics for virtual services and
-upstreams, which both have labels that include the namespace and name of each individual resource:
-
-```yaml
-observabilityOptions:
-  configStatusMetricLabels:
-    Upstream.v1.gloo.solo.io:
-      labelToPath:
-        name: '{.metadata.name}'
-        namespace: '{.metadata.namespace}'
-    VirtualService.v1.gateway.solo.io:
-      labelToPath:
-        name: '{.metadata.name}'
-        namespace: '{.metadata.namespace}'
-```
-
-After you complete the [Hello World guide]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) 
-to generate some resources, you can see the metrics that you defined at <http://localhost:9091/metrics>. If the port
-forwarding is directed towards the Gloo pod, the `default-petstore-8080` upstream reports a healthy state:
-```
-validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
-```
-
-If the port forwarding is switched to the gateway pod, you can see the metrics defined for virtual services by
-revisiting the metrics endpoint: <http://localhost:9091/metrics>.
-```
-validation_gateway_solo_io_virtual_service_config_status{name="default",namespace="gloo-system"} 0
-```
+For more information about the validating admission webhook configuration, see the [admission control]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/admission_control/" %}}) guide. 
 
 
-## Warnings and Errors
+## Sanitize resource configuration
 
-Gloo Edge processes an admitted config resource, it can report one of three status types on the resource:
+Gloo Edge can be configured to pass partially-valid configuration to Envoy by admitting it through an internal process referred to as *sanitizing*. Rather than refusing to update Envoy with invalid configuration, Gloo Edge can replace invalid configuration with preconfigured defaults.
 
-- *Accepted*: The resource has been accepted and applied to the system.
-- *Rejected*: The resource has invalid configuration and has not been applied to the system.
-- *Warning*: The resource has valid config but points to a missing/misconfigured resource.
+For more information about how to configure and use the Gloo Edge sanitization feature, see the [Route Replacement]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}}) guide. 
 
-When a resource is in *Rejected* or *Warning* state, its configuration is not propagated to the proxy.
-
-## Using the Validating Webhook
-
-Admission Validation provides a safeguard to ensure Gloo Edge does not halt processing of configuration. If a resource 
-would be written or modified in such a way to cause Gloo Edge to report an error, it is instead rejected by the Kubernetes 
-API Server before it is written to persistent storage.
-
-Gloo Edge runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
-which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
-{{< protobuf name="gateway.solo.io.Gateway" display="Gateways">}},
-{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}},
-and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
-
-The [validating webhook configuration](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo Edge's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
-by removing the `ValidatingWebhookConfiguration`.
-
-The webhook can be configured to perform strict or permissive validation, depending on the `gateway.validation.alwaysAccept` setting in the 
-{{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
-
-When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo Edge fails to 
-deserialize them (due to invalid JSON/YAML).
-
-To enable "strict" admission control (rejection of resources with invalid config), set `alwaysAccept` to false.
-
-When strict admission control is enabled, any resource that would produce a `Rejected` status will be rejected on admission.
-Resources that would produce a `Warning` status are still admitted.
-
-## Enabling Strict Validation Webhook 
- 
- 
-By default, the Validation Webhook only logs the validation result, but always admits resources with valid YAML (even if the 
-configuration options are inconsistent/invalid).
-
-The webhook can be configured to reject invalid resources via the 
-{{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
-
-See [the Admission Controller Guide]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/admission_control/" %}})
-to learn how to configure and use Gloo Edge's admission control feature.
-
-# Sanitizing Config
-
-Gloo Edge can be configured to pass partially-valid config to Envoy by admitting it through an internal process referred to as *sanitizing*.
-
-Rather than refuse to update Envoy with invalid config, Gloo Edge can replace the invalid pieces of configuration with preconfigured 
-defaults.
-
-See [the Route Replacement Guide]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/invalid_route_replacement/" %}}) to learn how to configure and use Gloo Edge's sanitization feature.
-
-We appreciate questions and feedback on Gloo Edge validation or any other feature on [the solo.io slack channel](https://slack.solo.io/) as well as our [GitHub issues page](https://github.com/solo-io/gloo).
