@@ -8,7 +8,7 @@ For a backport to be appropriate it must fit the following criteria:
 - The change must have a clear rationale for why it is needed on a previous version of Gloo Edge.
 - The change must be a bug fix or a non-breaking change.
 - The proposed change is targeted to a [supported, stable release branch](https://docs.solo.io/gloo-edge/latest/reference/support/).
-- If the change is a feature request, you must have explicit approval from the product and engineering teams. 
+- If the change is a feature request, you must have explicit approval from the product and engineering teams. This approval can also be solicited on the backport prs themselves
 
 ## How to identify a backport
 On the issue that tracks the desired functionality, apply a `release/1.N` label to indicate the version of Gloo Edge you wish the request to be supported on.
