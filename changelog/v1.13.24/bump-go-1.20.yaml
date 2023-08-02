@@ -4,5 +4,7 @@ changelog:
     dependencyOwner: golang
     dependencyRepo: go
     dependencyTag: go1.20
+    issueLink: https://github.com/solo-io/solo-projects/issues/5215
+    resolvesIssue: false
   - type: FIX
     description: Bump golang to 1.20. This requires all plugins to be rebuilt.
