@@ -21,7 +21,7 @@ copied from https://github.com/envoyproxy/envoy/blob/ad89a587aa0177bfdad6b5c968a
 
 
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/envoy/config/common/mutation_rules/v3/mutation_rules.proto)
 
 
 
