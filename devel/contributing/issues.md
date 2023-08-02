@@ -7,8 +7,9 @@ If you encounter a bug or have a feature request, please take the following appr
 2. If you find a similar issue, add a comment with additional information or add a 👍 reaction to indicate your agreement.
 3. If there are no similar issues, [file a new one](https://github.com/solo-io/gloo/issues/new/choose)
 
+**Issues should not contain any sensitive information.**
+
 ## Bug Report
-- Issues should not contain any sensitive information.
 - Issues can include links to private resources, such as Slack conversations or private code. 
 - Private Enterprise issues can be used to track Open Source work. 
 - The more details about the issue, the better. Please include the following information:
@@ -23,7 +24,6 @@ If you encounter a bug or have a feature request, please take the following appr
   - Any other relevant information
 
 ## Feature Request
-Include the following information in addition to your feature request: 
 - Detailed description of the use case for the feature
 - If possible, a description of how the feature is implemented in other tools
 
