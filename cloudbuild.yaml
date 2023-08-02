@@ -5,7 +5,7 @@ steps:
 
 # $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
 # gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo,_PR_NUM=<<insert PR Number here>> --project solo-public
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.6.4'
   args:
     - "--repo-name"
     - "$REPO_NAME"
@@ -35,7 +35,7 @@ steps:
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
 # This requires setting up envoy, AWS, helm, and docker
 # The e2e-go-mod-ginkgo container provides everything else needed for running tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.4'
   entrypoint: 'bash'
   args:
   - '-c'
@@ -47,7 +47,7 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'get-envoy'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.4'
   entrypoint: 'bash'
   args: ['-c', 'make proxycontroller']
   dir: '/workspace/gloo/example/proxycontroller'
@@ -68,7 +68,7 @@ steps:
 
 # Docker related setup
 # grab this container immediately in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.4'
   entrypoint: ls
   waitFor: ['-']
   id: 'grab-ginkgo-container'
@@ -82,12 +82,12 @@ steps:
   waitFor: ['set-gcr-zone']
   id: 'get-test-credentials'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.4'
   args: ['install-go-tools']
   dir: *dir
   id: 'install-go-tools'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.4'
   entrypoint: make
   env:
   - 'ACK_GINKGO_RC=true'
@@ -117,7 +117,7 @@ steps:
   id: 'docker-login'
 
   # 1) Run make targets to push docker images to quay.io
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.4'
   args: ['docker-push-extended']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
@@ -138,7 +138,7 @@ steps:
   waitFor: ['docker-push-extended']
   id: 'gcr-auth'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.4'
   args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'push-chart-to-registry', '-B']
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
@@ -152,7 +152,7 @@ steps:
   id: 'release-chart'
 
 # Run make targets to retag and push docker images to GCR
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.3'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.6.4'
   args: ['docker-push-retag']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
