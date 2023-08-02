@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extproc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
@@ -320,6 +321,70 @@ var _ = Describe("enterprise_warning plugin", func() {
 				Name: "route1",
 				Options: &v1.RouteOptions{
 					Waf: &waf.Settings{},
+				},
+			}
+
+			err := p.ProcessRoute(plugins.RouteParams{}, virtualHost, &envoy_config_route.Route{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+	})
+
+	Context("extproc", func() {
+
+		It("should not add filter if extproc config is nil", func() {
+			p := NewPlugin()
+			f, err := p.HttpFilters(plugins.Params{}, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(f).To(BeNil())
+		})
+
+		It("should error if disable extproc is configured on listener", func() {
+			p := NewPlugin()
+			hl := &v1.HttpListener{
+				Options: &v1.HttpListenerOptions{
+					ExtProcConfig: &v1.HttpListenerOptions_DisableExtProc{DisableExtProc: &wrappers.BoolValue{Value: false}},
+				},
+			}
+
+			f, err := p.HttpFilters(plugins.Params{}, hl)
+			ExpectEnterpriseOnlyErr(err)
+			Expect(f).To(BeNil())
+		})
+
+		It("should error if extproc is configured on listener", func() {
+			p := NewPlugin()
+			hl := &v1.HttpListener{
+				Options: &v1.HttpListenerOptions{
+					ExtProcConfig: &v1.HttpListenerOptions_ExtProc{ExtProc: &extproc.Settings{}},
+				},
+			}
+
+			f, err := p.HttpFilters(plugins.Params{}, hl)
+			ExpectEnterpriseOnlyErr(err)
+			Expect(f).To(BeNil())
+		})
+
+		It("should error if extproc is configured on vhost", func() {
+			p := NewPlugin()
+			virtualHost := &v1.VirtualHost{
+				Name:    "virt1",
+				Domains: []string{"*"},
+				Options: &v1.VirtualHostOptions{
+					ExtProc: &extproc.RouteSettings{},
+				},
+			}
+
+			err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, virtualHost, &envoy_config_route.VirtualHost{})
+			ExpectEnterpriseOnlyErr(err)
+		})
+
+		It("should error if extproc is configured on route", func() {
+			p := NewPlugin()
+			virtualHost := &v1.Route{
+				Name: "route1",
+				Options: &v1.RouteOptions{
+					ExtProc: &extproc.RouteSettings{},
 				},
 			}
 

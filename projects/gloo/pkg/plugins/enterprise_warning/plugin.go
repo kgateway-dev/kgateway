@@ -41,6 +41,7 @@ const (
 	WafExtensionName                   = "waf"
 	WasmExtensionName                  = "wasm"
 	Aws                                = "aws"
+	ExtProcExtensionName               = "extproc"
 )
 
 type plugin struct{}
@@ -82,6 +83,10 @@ func (p *plugin) ProcessVirtualHost(
 		enterpriseExtensions = append(enterpriseExtensions, WafExtensionName)
 	}
 
+	if isExtProcConfiguredOnVirtualHost(in) {
+		enterpriseExtensions = append(enterpriseExtensions, ExtProcExtensionName)
+	}
+
 	return GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
 }
 
@@ -102,6 +107,10 @@ func (p *plugin) ProcessRoute(_ plugins.RouteParams, in *v1.Route, _ *envoy_conf
 
 	if isEnterpriseAWSConfiguredOnRoute(in) {
 		enterpriseExtensions = append(enterpriseExtensions, Aws)
+	}
+
+	if isExtProcConfiguredOnRoute(in) {
+		enterpriseExtensions = append(enterpriseExtensions, ExtProcExtensionName)
 	}
 
 	return GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
@@ -150,6 +159,10 @@ func (p *plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 
 	if isWasmConfiguredOnListener(listener) {
 		enterpriseExtensions = append(enterpriseExtensions, WasmExtensionName)
+	}
+
+	if isExtProcConfiguredOnListener(listener) {
+		enterpriseExtensions = append(enterpriseExtensions, ExtProcExtensionName)
 	}
 
 	return nil, GetErrorForEnterpriseOnlyExtensions(enterpriseExtensions)
@@ -263,4 +276,17 @@ func isEnterpriseAWSConfiguredOnRoute(in *v1.Route) bool {
 	}
 
 	return false
+}
+
+// extproc
+func isExtProcConfiguredOnVirtualHost(in *v1.VirtualHost) bool {
+	return in.GetOptions().GetExtProc() != nil
+}
+
+func isExtProcConfiguredOnRoute(in *v1.Route) bool {
+	return in.GetOptions().GetExtProc() != nil
+}
+
+func isExtProcConfiguredOnListener(in *v1.HttpListener) bool {
+	return in.GetOptions().GetExtProc() != nil || in.GetOptions().GetDisableExtProc() != nil
 }
