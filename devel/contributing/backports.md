@@ -21,3 +21,5 @@ First, create a PR to introduce the change on the main branch. Doing so ensures 
 Once the change has been merged into the main branch, create a PR to backport the change to the desired release branch. The PR should be titled `[BRANCH NAME]: <PR title>` (ie `[1.14]: Original PR Title`). To open the PR you likely need to do the following:
 - We use [cherry-pick](https://git-scm.com/docs/git-cherry-pick) to apply changes to a previous version of Gloo Edge.
 - Modify the changelog to be in the proper directory
+- Validate that Proto fields have the same numbers as in main
+- Title your pr to start with the major.minor version that you are backporting to (e.g. 1.13 for 1.13.x branch)
