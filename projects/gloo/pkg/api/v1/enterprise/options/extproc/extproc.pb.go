@@ -84,8 +84,9 @@ type Settings struct {
 	// a message on the stream that requires a response, it will reset this timer,
 	// and will stop processing and return an error (subject to the processing mode)
 	// if the timer expires before a matching response is received. There is no
-	// timeout when the filter is running in asynchronous mode. Zero is a valid
-	// config which means the timer will be triggered immediately. If not
+	// timeout when the filter is running in asynchronous mode. Value must be at
+	// least 0 seconds, and less than or equal to 3600 seconds. Zero is a valid
+	// value which means the timer will be triggered immediately. If not
 	// configured, default is 200 milliseconds.
 	MessageTimeout *duration.Duration `protobuf:"bytes,8,opt,name=message_timeout,json=messageTimeout,proto3" json:"message_timeout,omitempty"`
 	// Optional additional prefix to use when emitting statistics. This allows distinguishing
@@ -106,6 +107,7 @@ type Settings struct {
 	// Specify the upper bound of
 	// [override_message_timeout](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-processingresponse-override-message-timeout).
 	// If not specified, by default it is 0, which will effectively disable the `override_message_timeout` API.
+	// Value must be greater than or equal to the `messageTimeout` and less than or equal to 3600 seconds.
 	MaxMessageTimeout *duration.Duration `protobuf:"bytes,11,opt,name=max_message_timeout,json=maxMessageTimeout,proto3" json:"max_message_timeout,omitempty"`
 	// Prevents clearing the route-cache when the
 	// [clear_route_cache](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-commonresponse-clear-route-cache)
@@ -334,7 +336,7 @@ type isRouteSettings_Override interface {
 
 type RouteSettings_Disabled struct {
 	// Set to true to disable the External Processing filter for this virtual host or route.
-	// The disabled value of a virtual host can be overridden by a child route.
+	// Setting this value to false is not supported.
 	Disabled *wrappers.BoolValue `protobuf:"bytes,1,opt,name=disabled,proto3,oneof"`
 }
 
@@ -545,6 +547,7 @@ type HeaderForwardingRules struct {
 	AllowedHeaders *v33.ListStringMatcher `protobuf:"bytes,1,opt,name=allowed_headers,json=allowedHeaders,proto3" json:"allowed_headers,omitempty"`
 	// If set, specifically disallow any header in this list to be forwarded to the external
 	// processing server. This overrides the above `allowed_headers` if a header matches both.
+	// NOT CURRENTLY IMPLEMENTED.
 	DisallowedHeaders *v33.ListStringMatcher `protobuf:"bytes,2,opt,name=disallowed_headers,json=disallowedHeaders,proto3" json:"disallowed_headers,omitempty"`
 }
 

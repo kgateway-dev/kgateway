@@ -75,8 +75,9 @@ message Settings {
   // a message on the stream that requires a response, it will reset this timer,
   // and will stop processing and return an error (subject to the processing mode)
   // if the timer expires before a matching response is received. There is no
-  // timeout when the filter is running in asynchronous mode. Zero is a valid
-  // config which means the timer will be triggered immediately. If not
+  // timeout when the filter is running in asynchronous mode. Value must be at
+  // least 0 seconds, and less than or equal to 3600 seconds. Zero is a valid
+  // value which means the timer will be triggered immediately. If not
   // configured, default is 200 milliseconds.
   google.protobuf.Duration message_timeout = 8 [(validate.rules).duration = {
     lte {seconds: 3600}
@@ -103,6 +104,7 @@ message Settings {
   // Specify the upper bound of
   // [override_message_timeout](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-processingresponse-override-message-timeout).
   // If not specified, by default it is 0, which will effectively disable the `override_message_timeout` API.
+  // Value must be greater than or equal to the `messageTimeout` and less than or equal to 3600 seconds.
   google.protobuf.Duration max_message_timeout = 11 [(validate.rules).duration = {
     lte {seconds: 3600}
     gte {}
@@ -133,7 +135,7 @@ message Settings {
 message RouteSettings {
   oneof override {
     // Set to true to disable the External Processing filter for this virtual host or route.
-    // The disabled value of a virtual host can be overridden by a child route.
+    // Setting this value to false is not supported.
     google.protobuf.BoolValue disabled = 1;
 
     // Override specific configuration for this virtual host or route.
@@ -202,5 +204,6 @@ message HeaderForwardingRules {
 
   // If set, specifically disallow any header in this list to be forwarded to the external
   // processing server. This overrides the above `allowed_headers` if a header matches both.
+  // NOT CURRENTLY IMPLEMENTED.
   .solo.io.envoy.type.matcher.v3.ListStringMatcher disallowed_headers = 2;
 }
