@@ -59,11 +59,11 @@ runs:
           ${{ steps.go-cache-paths.outputs.go-mod }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
     - name: Install Dependencies
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.restore-cache.outputs.cache-hit != 'true'
       shell: bash
       run: make mod-download mod-tidy
     - name: Cache Go Modules
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: steps.restore-cache.outputs.cache-hit != 'true'
       id: save-cache
       uses: actions/cache/save@v3
       with:
