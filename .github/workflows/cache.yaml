@@ -6,7 +6,7 @@ on:
     branches:
       - 'main'
       - 'v1.**.x'
-      - 'gha-cache-**' # for testing
+      - 'gha-cache-**'
 
 jobs:
   go-modules:
