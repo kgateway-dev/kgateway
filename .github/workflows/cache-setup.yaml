@@ -6,7 +6,8 @@ on:
     branches:
       - 'main'
       - 'v1.**.x'
-      - 'gha-cache-**'
+
+  pull_request: {}
 
 jobs:
   go-modules-setup:
