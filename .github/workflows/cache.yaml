@@ -10,12 +10,12 @@ on:
 
 jobs:
   go-modules:
-  - name: Check out code into the Go module directory
-    uses: actions/checkout@v3
-    with:
-      fetch-depth: 0
-  - name: Cache Go Modules
+    name: Cache Go Modules
     runs-on: ubuntu-22.04
     steps:
-      - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Prep Go Runner
+      uses: ./.github/workflows/composite-actions/prep-go-runner
