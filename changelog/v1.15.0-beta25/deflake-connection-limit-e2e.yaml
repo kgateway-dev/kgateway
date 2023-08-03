@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8531
+    resolvesIssue: true
+    description: >-
+      Adds FlakeAttempts to the connection limit e2e test to retry if it hits an envoy bug. The bug doesn't break functionality so have added FalkeAttempts instead of patching envoy.
