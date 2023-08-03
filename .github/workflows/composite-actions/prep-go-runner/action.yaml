@@ -47,8 +47,8 @@ runs:
       id: go-cache-paths
       shell: bash
       run: |
-        echo "::set-output name=go-build::$(go env GOCACHE)"
-        echo "::set-output name=go-mod::$(go env GOMODCACHE)"
+        echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+        echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
     - name: Cache Go Modules
       id: cache-go
       uses: actions/cache@v3
