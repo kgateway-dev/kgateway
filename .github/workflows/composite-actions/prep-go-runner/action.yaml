@@ -54,7 +54,7 @@ runs:
       uses: actions/cache@v3
       with:
         # https://github.com/actions/cache/blob/main/examples.md#go---modules
-        path:
-        - ${{ steps.go-cache-paths.outputs.go-build }}
-        - ${{ steps.go-cache-paths.outputs.go-mod }}
+        path: |
+          ${{ steps.go-cache-paths.outputs.go-build }}
+          ${{ steps.go-cache-paths.outputs.go-mod }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
