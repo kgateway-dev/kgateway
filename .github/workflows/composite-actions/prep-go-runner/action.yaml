@@ -1,5 +1,6 @@
 name: Prep Go Runner
-description: common setup steps for Gloo actions
+
+description: Common setup steps for Gloo actions
 
 inputs:
   working-directory:
