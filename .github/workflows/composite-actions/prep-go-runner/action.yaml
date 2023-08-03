@@ -49,13 +49,22 @@ runs:
       run: |
         echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
         echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-    - name: Cache Go Modules
-      id: cache-go
-      uses: actions/cache@v3
+    - name: Restore Cache
+      uses: actions/cache/restore@v3
+      id: restore-cache
       with:
         # https://github.com/actions/cache/blob/main/examples.md#go---modules
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
           ${{ steps.go-cache-paths.outputs.go-mod }}
-          ${{ github.workspace }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
+    - name: Install Dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: make mod-download mod-tidy
+    - name: Cache Go Modules
+      if: steps.cache.outputs.cache-hit != 'true'
+      id: save-cache
+      uses: actions/cache/save@v3
+      with:
+        key: ${{ steps.restore-cache.outputs.cache-primary-key }}
