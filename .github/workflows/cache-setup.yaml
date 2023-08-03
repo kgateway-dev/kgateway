@@ -6,7 +6,6 @@ on:
     branches:
       - 'main'
       - 'v1.**.x'
-      - 'gha-cache-**'
 
 jobs:
   go-modules-setup:
