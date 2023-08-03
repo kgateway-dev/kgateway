@@ -50,6 +50,6 @@ runs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ go version }}-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-${{ env.GOVERSION }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
