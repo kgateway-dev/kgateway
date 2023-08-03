@@ -67,4 +67,7 @@ runs:
       id: save-cache
       uses: actions/cache/save@v3
       with:
+        path: |
+          ${{ steps.go-cache-paths.outputs.go-build }}
+          ${{ steps.go-cache-paths.outputs.go-mod }}
         key: ${{ steps.restore-cache.outputs.cache-primary-key }}
