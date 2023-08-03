@@ -57,11 +57,16 @@ runs:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
           ${{ steps.go-cache-paths.outputs.go-mod }}
+          ${{ github.workspace }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
     - name: Install Dependencies
       if: steps.restore-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: make mod-download mod-tidy
+      run: |
+        make mod-download
+        make mod-tidy
+        make install-go-tools
+        make install-test-tools
     - name: Cache Go Modules
       if: steps.restore-cache.outputs.cache-hit != 'true'
       id: save-cache
@@ -70,4 +75,5 @@ runs:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
           ${{ steps.go-cache-paths.outputs.go-mod }}
+          ${{ github.workspace }}
         key: ${{ steps.restore-cache.outputs.cache-primary-key }}
