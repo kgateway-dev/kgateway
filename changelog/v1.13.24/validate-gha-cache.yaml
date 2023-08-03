@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Introduce a no-op change to explore how the setup-go action caches work on LTS branches.
