@@ -4,8 +4,6 @@ description: configuration to enable make targets
 runs:
   using: "composite"
   steps:
-  - name: Check out code into the Go module directory
-    uses: actions/checkout@v3
   - name: Prep Go Runner
     uses: ./.github/workflows/composite-actions/prep-go-runner
   - name: Install kind

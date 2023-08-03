@@ -84,6 +84,8 @@ jobs:
           ref: ${{ env.RELEASE_TAG_NAME }}
       - name: Prep Go Runner
         uses: ./.github/workflows/composite-actions/prep-go-runner
+        with:
+          working-directory: gloo
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:

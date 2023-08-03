@@ -17,3 +17,5 @@ jobs:
       - name: Generate Code
         run: |
           ./ci/check-generated-code.sh
+      - name: Tidy Dependencies
+        run: make mod-tidy
