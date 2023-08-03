@@ -42,14 +42,20 @@ runs:
         check-latest: true
         # Caching in setup-go is limited, so we opt to use the more configurable https://github.com/actions/cache
         cache: false
+    - name: Go Cache Paths
+      id: go-cache-paths
+      shell: bash
+      run: |
+        echo "::set-output name=go-build::$(go env GOCACHE)"
+        echo "::set-output name=go-mod::$(go env GOMODCACHE)"
     - name: Cache Go Modules
       id: cache-go
       uses: actions/cache@v3
       with:
         # https://github.com/actions/cache/blob/main/examples.md#go---modules
         path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
+          ${{ steps.go-cache-paths.outputs.go-build }}
+          ${{ steps.go-cache-paths.outputs.go-mod }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
