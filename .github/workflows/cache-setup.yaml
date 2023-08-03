@@ -18,4 +18,4 @@ jobs:
     - name: Prep Go Runner
       uses: ./.github/workflows/composite-actions/prep-go-runner
     - name: Download Go Modules
-      run: make mod-download
+      run: make mod-download mod-tidy
