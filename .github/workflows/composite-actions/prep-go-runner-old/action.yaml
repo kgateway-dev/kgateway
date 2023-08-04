@@ -61,5 +61,5 @@ runs:
     - name: Print Cache
       shell: bash
       run: |
-        du -h --max-depth=2 ${{ steps.go-cache-paths.outputs.go-build }}
-        du -h --max-depth=2 ${{ steps.go-cache-paths.outputs.go-mod }}
+        du -h --max-depth=1 ${{ steps.go-cache-paths.outputs.go-build }}
+        du -h --max-depth=1 ${{ steps.go-cache-paths.outputs.go-mod }} || true
