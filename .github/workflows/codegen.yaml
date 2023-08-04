@@ -8,7 +8,7 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v3
       - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner-old
+        uses: ./.github/workflows/composite-actions/prep-go-runner
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
