@@ -57,11 +57,9 @@ runs:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
           ${{ steps.go-cache-paths.outputs.go-mod }}
-          ${{ github.workspace }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
     - name: Print Cache
       shell: bash
       run: |
-        ls -R ${{ steps.go-cache-paths.outputs.go-build }}
-        ls -R ${{ steps.go-cache-paths.outputs.go-mod }}
-        ls -R ${{ github.workspace }}
+        du -h --max-depth=2 ${{ steps.go-cache-paths.outputs.go-build }}
+        du -h --max-depth=2 ${{ steps.go-cache-paths.outputs.go-mod }}

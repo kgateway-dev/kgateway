@@ -57,7 +57,6 @@ runs:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
           ${{ steps.go-cache-paths.outputs.go-mod }}
-          ${{ github.workspace }}
         key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
     - name: Install Dependencies
       if: steps.restore-cache.outputs.cache-hit != 'true'
@@ -75,5 +74,4 @@ runs:
         path: |
           ${{ steps.go-cache-paths.outputs.go-build }}
           ${{ steps.go-cache-paths.outputs.go-mod }}
-          ${{ github.workspace }}
         key: ${{ steps.restore-cache.outputs.cache-primary-key }}
