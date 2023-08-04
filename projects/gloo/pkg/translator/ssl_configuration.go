@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 func ConsolidateSslConfigurations(sslConfigurations []*ssl.SslConfig) []*ssl.SslConfig {
@@ -55,7 +56,6 @@ func merge(values []string, newValues ...string) []string {
 }
 
 // Inspired by: https://github.com/solo-io/gloo/blob/0ad2a02a816be2b4a8b6ce27ff9db01206ce6ceb/projects/gateway/pkg/translator/merge_options.go#L10
-// Copied from the other project to reduce dependency.
 
 // Merges the fields of src into dst.
 // The fields in dst that have non-zero values will not be overwritten.
@@ -72,47 +72,8 @@ func MergeSslConfig(dst, src *ssl.SslConfig) *ssl.SslConfig {
 
 	for i := 0; i < dstValue.NumField(); i++ {
 		dstField, srcField := dstValue.Field(i), srcValue.Field(i)
-		shallowMerge(dstField, srcField, false)
+		utils.ShallowMerge(dstField, srcField, false)
 	}
 
 	return dst
-}
-
-// Sets dst to the value of src, if src is non-zero and dest is zero-valued or overwrite=true.
-func shallowMerge(dst, src reflect.Value, overwrite bool) {
-	if !src.IsValid() {
-		return
-	}
-
-	if dst.CanSet() && !isEmptyValue(src) && (overwrite || isEmptyValue(dst)) {
-		dst.Set(src)
-	}
-
-	return
-}
-
-// From src/pkg/encoding/json/encode.go.
-func isEmptyValue(v reflect.Value) bool {
-	switch v.Kind() {
-	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
-		return v.Len() == 0
-	case reflect.Bool:
-		return !v.Bool()
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return v.Int() == 0
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return v.Uint() == 0
-	case reflect.Float32, reflect.Float64:
-		return v.Float() == 0
-	case reflect.Interface, reflect.Ptr:
-		if v.IsNil() {
-			return true
-		}
-		return isEmptyValue(v.Elem())
-	case reflect.Func:
-		return v.IsNil()
-	case reflect.Invalid:
-		return true
-	}
-	return false
 }

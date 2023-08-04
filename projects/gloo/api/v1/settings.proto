@@ -16,6 +16,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/caching.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extproc/extproc.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl/ssl.proto";
@@ -541,6 +542,11 @@ message Settings {
 
     // Enterprise-only: GraphQL settings
     GraphqlOptions graphql_options = 37;
+
+    // Enterprise-only: External Processing filter settings. These settings are used as
+    // defaults globally, and can be overridden by HttpListenerOptions, VirtualHostOptions,
+    // or RouteOptions.
+    extproc.options.gloo.solo.io.Settings ext_proc = 39;
 }
 
 // Default configuration to use for upstreams, when not provided by a specific upstream
