@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4903
+    resolvesIssue: false
+    description: >-
+      Update the cache to only track the mod cache and use the go.sum to determine if the cache is valid.
+      Remove the existing build cache. It wasn't clear if this cache was functioning properly, and it's
+      more important that we have clear cache behaviors, than CI that runs quickly but caches improperly.
