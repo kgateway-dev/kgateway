@@ -7,10 +7,8 @@ on:
       - 'main'
       - 'v1.**.x'
 
-  pull_request: {}
-
 jobs:
-  go-modules-setup:
+  setup-mod-cache:
     name: Setup Go Modules Cache
     runs-on: ubuntu-22.04
     steps:

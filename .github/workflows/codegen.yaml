@@ -17,14 +17,3 @@ jobs:
       - name: Generate Code
         run: |
           ./ci/check-generated-code.sh
-      - name: Go Cache Paths
-        id: go-cache-paths
-        shell: bash
-        run: |
-          echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-          echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-      - name: Print Cache
-        shell: bash
-        run: |
-          du -h --max-depth=1 ${{ steps.go-cache-paths.outputs.go-build }}
-          du -h --max-depth=1 ${{ steps.go-cache-paths.outputs.go-mod }} || true
