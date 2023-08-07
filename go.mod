@@ -333,7 +333,7 @@ replace (
 	github.com/renstrom/dedent => github.com/lithammer/dedent v1.0.0
 	// version upgrade to 1.40.2 fails a specific unit test
 	// see https://github.com/solo-io/gloo/issues/5719
-	google.golang.org/grpc => google.golang.org/grpc v1.40.0
+	// google.golang.org/grpc => google.golang.org/grpc v1.40.0
 
 	// Pin Kube libraries to v0.25
 	// These should be upgraded collectively
