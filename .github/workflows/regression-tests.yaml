@@ -59,17 +59,17 @@ jobs:
         kube-version: [{ node: 'v1.24.7@sha256:5c015142d9b60a0f6c45573f809957076514e38ec973565e2b2fe828b91597f5', kubectl: 'v1.24.7', kind: 'v0.17.0'}]
     steps:
     - uses: actions/checkout@v3
-    - uses: ./.github/actions/regression-tests
+    - uses: ./.github/workflows/composite-actions/regression-tests
 
   notify_slack:
     runs-on: ubuntu-22.04
     if: ${{ github.event_name == 'pull_request' && failure() }}
     needs: [ regression_tests ]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+      - name: Prep Go Runner
+        uses: ./.github/workflows/composite-actions/prep-go-runner
       - uses: actions/download-artifact@v3
       - name: Set pull_request_url
         run: echo "pull_request_url=$(cat ${{ github.event_path }} | jq --raw-output .pull_request._links.html.href)" >> $GITHUB_ENV

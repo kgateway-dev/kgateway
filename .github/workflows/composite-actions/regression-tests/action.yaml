@@ -4,33 +4,8 @@ description: configuration to enable make targets
 runs:
   using: "composite"
   steps:
-  - name: Cancel Previous Actions
-    uses: styfle/cancel-workflow-action@0.11.0
-    with:
-      access_token: ${{ github.token }}
-  - name: Free disk space
-    shell: bash
-    run: |
-      echo "Before clearing disk space:"
-      df -h
-
-      # https://github.com/actions/virtual-environments/issues/709
-      sudo apt-get clean
-
-      # Clean up pre-installed tools
-      # https://github.com/actions/virtual-environments/issues/1918
-      sudo rm -rf /usr/share/dotnet
-      sudo rm -rf /opt/ghc
-      sudo rm -rf /usr/local/share/boost
-      sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-      echo "After clearing disk space:"
-      df -h
-  - name: Set up Go
-    uses: actions/setup-go@v4
-    with:
-      go-version-file: "go.mod"
-    id: go
+  - name: Prep Go Runner
+    uses: ./.github/workflows/composite-actions/prep-go-runner
   - name: Install kind
     uses: helm/kind-action@v1.5.0
     with:

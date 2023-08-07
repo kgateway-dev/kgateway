@@ -82,11 +82,10 @@ jobs:
           repository: solo-io/gloo
           path: gloo
           ref: ${{ env.RELEASE_TAG_NAME }}
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - name: Prep Go Runner
+        uses: ./.github/workflows/composite-actions/prep-go-runner
         with:
-          go-version-file: gloo/go.mod
-        id: go
+          working-directory: gloo
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:

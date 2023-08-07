@@ -165,12 +165,16 @@ init:
 fmt-changed:
 	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
 
-# must be a seperate target so that make waits for it to complete before moving on
+# must be a separate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
 	go mod download all
 
 DEPSGOBIN=$(shell pwd)/_output/.bin
+
+.PHONY: mod-tidy
+mod-tidy:
+	go mod tidy
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
