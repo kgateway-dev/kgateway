@@ -16,6 +16,9 @@ import (
 	"go.uber.org/zap"
 )
 
+// DO_NOT_SUBMIT:
+// no-op change to test go-mod cache
+
 var (
 	mSetupsRun = utils.MakeSumCounter("gloo.solo.io/setups_run", "The number of times the main setup loop has run")
 )
