@@ -54,6 +54,16 @@ git checkout <BRANCHNAME>
 After pulling down the code, you should try running the tests locally to ensure you understand the changes and that they work as expected.
 
 ## Approving Pull Requests
+
+### Code Maintainers
+Solo.io has a dedicated team maintaining the Gloo Edge project. When you submit a PR for Gloo Edge, one of these maintainers will initiate the automation on your PR, and provide a review.
+
+If there are particular areas of the codebase that are being modified, it is important to identify subject matter experts for those changes. If you can explicitly identify the domains that are being affected, it is easier to identify the relevant parties to review the code.
+
+### Requirements
+Each PR requires 2 maintainers to approve the changes. The intention here is to distribute knowledge across more people, and provide an opportunity for broader perspective when reviewing the changes.
+
+### Shared Ownership
 By approving a pull request, you are indicating that you have reviewed the changes and are confident that they are correct and to your understanding will not cause any issues. You are signing on as a co-author of the changes, and we expect that if you are comfortable approving a PR, you are also comfortable with this responsibility.
 
-If the changes look good to you, but you recognize that you are not the best person to review the changes, instead of approving the PR, comment that the changes look good to you and clarify why you aren't comfortable approving.
+*If the changes look good to you, but you recognize that you are not the best person to review the changes, instead of approving the PR, comment that the changes look good to you and clarify why you aren't comfortable approving.*
