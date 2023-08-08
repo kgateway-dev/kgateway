@@ -1,37 +1,62 @@
 name: Prep Go Runner
-description: common setup steps for gloo actions
+
+description: Common setup steps for Gloo actions
+
 inputs:
   working-directory:
     description: 'directory to run setup steps in'
     required: false
     default: '.'
+
 runs:
   using: "composite"
   steps:
-  - name: Cancel Previous Actions
-    uses: styfle/cancel-workflow-action@0.11.0
-    with:
-      access_token: ${{ github.token }}
-  - name: Free disk space
-    shell: bash
-    run: |
-      echo "Before clearing disk space:"
-      df -h
-
-      # https://github.com/actions/virtual-environments/issues/709
-      sudo apt-get clean
-
-      # Clean up pre-installed tools
-      # https://github.com/actions/virtual-environments/issues/1918
-      sudo rm -rf /usr/share/dotnet
-      sudo rm -rf /opt/ghc
-      sudo rm -rf /usr/local/share/boost
-      sudo rm -rf $AGENT_TOOLSDIRECTORY
-
-      echo "After clearing disk space:"
-      df -h
-  - name: Set up Go
-    uses: actions/setup-go@v4
-    with:
-      go-version-file: ${{ inputs.working-directory }}/go.mod
-    id: go
+    - name: Cancel Previous Actions
+      uses: styfle/cancel-workflow-action@0.11.0
+      with:
+        access_token: ${{ github.token }}
+    - name: Free disk space
+      shell: bash
+      run: |
+        echo "Before clearing disk space:"
+        df -h
+        
+        # https://github.com/actions/virtual-environments/issues/709
+        sudo apt-get clean
+        
+        # Clean up pre-installed tools
+        # https://github.com/actions/virtual-environments/issues/1918
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf /usr/local/share/boost
+        sudo rm -rf $AGENT_TOOLSDIRECTORY
+        
+        echo "After clearing disk space:"
+        df -h
+    - name: Set up Go
+      id: setup-go
+      uses: actions/setup-go@v4
+      with:
+        # https://github.com/actions/setup-go/blob/main/action.yml
+        go-version-file: ${{ inputs.working-directory }}/go.mod
+        # Using the go-version-file, we will build with the latest go patch version
+        check-latest: true
+        # Caching in setup-go is limited, so we opt to use the more configurable https://github.com/actions/cache
+        cache: false
+    - name: Go Cache Paths
+      id: go-cache-paths
+      shell: bash
+      run: |
+        echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+    - name: Cache
+      uses: actions/cache@v3
+      id: cache
+      with:
+        # https://github.com/actions/cache/blob/main/examples.md#go---modules
+        path: |
+          ${{ steps.go-cache-paths.outputs.go-mod }}
+        key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
+    - name: Install Dependencies
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: make mod-download

@@ -1,0 +1,21 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4903
+  resolvesIssue: false
+  description: >-
+    Introduce a job to run on merge to main that will cache the go modules for the main branch.
+    This will ensure that there exists a go cache entry for the main branch, which future PRs can utilize.
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4903
+  resolvesIssue: false
+  description: >-
+    Update the cache to only track the mod cache and use the go.sum to determine if the cache is valid.
+    Remove the existing build cache. It wasn't clear if this cache was functioning properly, and it's
+    more important that we have clear cache behaviors, than CI that runs quickly but caches improperly.
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/solo-projects/issues/4903
+  resolvesIssue: false
+  description: >-
+    Validate that a cache hit occurs when opening a PR with no dependency changes.
+    Cleanup the prep-go-runner action to not call `mod-download` on a cache hit. The impact is minimal,
+    since there is nothing to download, but the syntax was wrong and needed to be fixed.
