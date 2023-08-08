@@ -82,7 +82,7 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
       ```
 
       {{< notice tip >}}
-      You can also use the validating admission webhook by running the <code>kubectl apply --server-dry-run</code> command to test your Gloo configuration before you apply it to your cluster.
+      You can also use the validating admission webhook by running the <code>kubectl apply --dry-run=server</code> command to test your Gloo configuration before you apply it to your cluster or send requests directly to the validation API. For more information, see <a href="#test-resource-configurations">Test resource configurations</a>. 
       {{< /notice >}}
 
 
@@ -126,46 +126,24 @@ forwarding is directed towards the Gloo pod, the `default-petstore-8080` upstrea
 validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",namespace="gloo-system"} 0
 ```
 
-## Test resource validation 
+## Test resource configurations
 
-You can use the Gloo Edge validation API to test if a resource configuration is valid before applying it. 
+You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration or [send requests directly to the Gloo Edge validation API](#validation-api). 
 
-### Use the `--server-dry-run` capability
+{{% notice note %}}
+The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, run `kubectl edit settings default -n gloo-system` and set `alwaysAccept: false` and `allowWarnings: false` in the `spec.gateway.validation` section. 
+{{% /notice %}}
 
-To test whether a YAML file is accepted by the validation webhook, you can use the `kubectl apply --server-dry-run` command.
+### Use the dry run capability in Kubernetes {#dry-run}
+
+To test whether a YAML file is accepted by the validation webhook, you can use the `kubectl apply --dry-run=server` command as shown in the following examples.  
 
 {{< tabs >}}
 {{% tab name="Upstream" %}}
 
-1. Create a valid upstream resource.
+1. Try to create an upstream without a valid host address and verify that your resource is denied by the validation API. 
    ```yaml
-   kubectl apply --server-dry-run -f- <<EOF
-   apiVersion: gloo.solo.io/v1
-   kind: Upstream
-   metadata:
-     labels:
-       app: petstore
-       discovered_by: kubernetesplugin
-     name: default-petstore-8080
-     namespace: gloo-system
-   spec:
-     discoveryMetadata: {}
-     kube:
-       selector:
-         app: petstore
-       serviceName: petstore
-       serviceNamespace: default
-       servicePort: 8080
-   EOF
-   ```
-
-   Example output:
-   ```
-   ```
-
-2. Try to create an upstream without a valid host address and verify that your resource is denied by the validation API. 
-   ```yaml
-   kubectl apply --server-dry-run -f- <<EOF
+   kubectl apply --dry-run=server -f- <<EOF
    apiVersion: gloo.solo.io/v1
    kind: Upstream
    metadata:
@@ -176,19 +154,51 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
        hosts:
          - addr: ~
    EOF
-   ```
+   ``` 
+   
+   </br>
 
    Example output:
    ```
+   Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.Upstream failed: 1 error occurred:
+	   * Validating *v1.Upstream failed: validating *v1.Upstream name:"invalid-upstream"  namespace:"gloo-system": failed gloo validation resource reports: 2 errors occurred:
+	* invalid resource gloo-system.invalid-upstream
+	   * WARN: 
+     [2 errors occurred:
+	   * addr cannot be empty for host
+	   * cluster was configured improperly by one or more plugins: name:"invalid-upstream_gloo-system"  type:STATIC  connect_timeout:{seconds:5}  metadata:{}: cluster type STATIC specified but LoadAssignment was empty
    ```
 
 {{% /tab %}}
 {{% tab name="Gateway" %}}
 
-1. Create a valid gateway resource.
+1. Try to create a gateway resource without a gateway type and verify that your resource is denied by the validation API. 
    ```yaml
-   kubectl apply --server-dry-run -n gloo-system -f - <<EOF
-   apiVersion: gloo.solo.io/v1
+   kubectl apply --dry-run=server -f- <<EOF 
+   apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     name: gateway-without-type
+     namespace: gloo-system
+   spec:
+     bindAddress: '::'
+   EOF
+   ```
+   
+   </br>
+
+   Example output:
+   ```
+   Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.Gateway failed: 1 error occurred:
+	   * Validating *v1.Gateway failed: validating *v1.Gateway name:"gateway-without-type"  namespace:"gloo-system": could not render proxy: 2 errors occurred:
+	   * invalid resource gloo-system.gateway-without-type
+	   * invalid gateway: gateway must contain gatewayType
+   ```
+
+2. Create another gateway resource that references an upstream that does not exist and verify that the resource is denied by the validation API. 
+   ```yaml
+   kubectl apply --dry-run=server -f - <<EOF
+   apiVersion: gateway.solo.io/v1
    kind: Gateway
    metadata:
      name: tcp
@@ -208,36 +218,21 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
    EOF
    ```
 
-   Example output:
-   ```
-   ```
+   </br>
 
-2. Try to create a gateway resource without a gateway type and verify that your resource is denied by the validation API. 
-   ```yaml
-   kubectl apply -f- <<EOF 
-   apiVersion: gateway.solo.io/v1
-   kind: Gateway
-   metadata:
-     name: gateway-without-type
-     namespace: gloo-system
-   spec:
-     bindAddress: '::'
-   EOF
-   ```
-
-   Example output:
+   Example output: 
    ```
    Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.Gateway failed: 1 error occurred:
-	   * Validating *v1.Gateway failed: validating *v1.Gateway name:"gateway-without-type"  namespace:"gloo-system": could not render proxy: 2 errors occurred:
-	   * invalid resource gloo-system.gateway-without-type
-	   * invalid gateway: gateway must contain gatewayType
+	   * Validating *v1.Gateway failed: validating *v1.Gateway name:"tcp"  namespace:"gloo-system": TcpHost Warning: InvalidDestinationWarning. Reason: listener listener-::-8000: TcpHost error: *v1.Upstream { gloo-system.gloo-system-tcp-echo-1025 } not found
    ```
+
+
 
 {{% /tab %}}
 {{% tab name="Virtual service" %}}  
-1. Create a valid virtual gateway resource. Note that if you followed the [Hello world]() guide, the virtual service already exists and is denied by the validation API because you cannot 
+1. Create a valid virtual gateway resource. Note that if you followed the [Hello world]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) guide, the virtual service already exists and is denied by the validation API because you cannot use the same domain in multiple virtual services. 
    ```yaml
-   kubectl apply -f- <<EOF
+   kubectl apply --dry-run=server -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -261,8 +256,11 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
    EOF
    ```
 
+   </br>
+
    Example output if the virtual service does not exist:
    ```
+   virtualservice.gateway.solo.io/default created
    ```
 
    Example output if the virtual service already exists:
@@ -277,7 +275,7 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 
 3. Try to create a virtual service that points to an upstream that does not exist and verify that your resource is denied by the validation API. 
    ```yaml
-   kubectl apply -f- <<EOF
+   kubectl apply --dry-run=server -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -300,15 +298,17 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
    EOF
    ```
 
+   </br>
+
    Example output:
    ```
    Error from server: error when creating "STDIN": admission webhook "gloo.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Validating *v1.VirtualService failed: 1 error occurred:
 	   * Validating *v1.VirtualService failed: validating *v1.VirtualService name:"missing-upstream"  namespace:"default": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { anywhere.does-not-exist } not found
    ```
 
-4. Try to create another virtual service that does not specify any
+4. Try to create another virtual service that does not specify any prefix matchers and verify that the resource is denied by the validation API.
    ```yaml
-   kubectl apply -f- <<EOF
+   kubectl apply --dry-run=server -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
@@ -321,11 +321,13 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
        routes:
          - matchers:
            - exact: /delegated-nonprefix  # not allowed
-          delegateAction:
-            name: does-not-exist # also not allowed, but caught later
-            namespace: anywhere
+           delegateAction:
+             name: does-not-exist # also not allowed, but caught later
+             namespace: anywhere
    EOF
    ```
+
+   </br>
 
    Example output:
    ```
@@ -337,7 +339,13 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 {{% /tab %}}
 {{< /tabs >}}
 
-### Send requests to the validation API directly
+### Send requests to the validation API directly {#validation-api}
+
+Send a curl request to the validation API to test your resource configurations. 
+
+{{< notice tip >}}
+If an empty response <code>{}</code> is from the validation API, you might need to add or remove a bracket from your request. This response is returned also if the wrong bracket type is used, such as when you used <code>{}</code> instead of <code>[]</code>. 
+{{< /notice >}}
 
 1. Port-forward the gloo service on port 8443. 
    ```sh
@@ -361,6 +369,8 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
          - addr: jsonplaceholder.typicode.com
            port: 80
    ```
+
+   </br>
    
    1. Send a request to the validation API.
       ```sh
@@ -372,9 +382,14 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
       {"response":{"uid":"1234","allowed":true}}
       ```
 
-   1. Change the `port` value from `80` to `"80"`.
+   2. Set the `hosts.addr` field to null and verify that your resource is denied by the validation API.
       ```sh
-      curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gloo.solo.io","version":"v1","kind":"Upstream"},"resource":{"group":"","version":"","resource":""},"name":"upstream","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object": { "apiVersion": "gloo.solo.io/v1", "kind": "Upstream", "metadata": { "name": "upstream", "namespace": "gloo-system" }, "spec": { "static": { "hosts": [ { "addr": jsonplaceholder.typicode.com, "port": 80 } ]}}} }}' -H 'Content-Type: application/json' https://localhost:8443/validation
+      curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gloo.solo.io","version":"v1","kind":"Upstream"},"resource":{"group":"","version":"","resource":""},"name":"upstream","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object": { "apiVersion": "gloo.solo.io/v1", "kind": "Upstream", "metadata": { "name": "upstream", "namespace": "gloo-system" }, "spec": { "static": { "hosts": [ { "addr": null, "port": 80 } ]}}} }}' -H 'Content-Type: application/json' https://localhost:8443/validation
+      ```
+
+      Example output: 
+      ```
+      {"response":{"uid":"1234","allowed":false,"status":{"metadata":{},"message":"resource incompatible with current Gloo snapshot: [Validating *v1.Upstream failed: 1 error occurred:\n\t* Validating *v1.Upstream failed: validating *v1.Upstream name:\"upstream\"  namespace:\"gloo-system\": failed gloo validation resource reports: 2 errors occurred:\n\t* invalid resource gloo-system.upstream\n\t* WARN: \n  [2 errors occurred:\n\t* addr cannot be empty for host\n\t* cluster was configured improperly by one or more plugins: name:\"upstream_gloo-system\"  type:STATIC  connect_timeout:{seconds:5}  metadata:{}: cluster type STATIC specified but LoadAssignment was empty\n\n]\n\n\n\n]","details":{"name":"upstream","group":"gloo.solo.io","kind":"Upstream","causes":[{"message":"Error Validating *v1.Upstream failed: 1 error occurred:\n\t* Validating *v1.Upstream failed: validating *v1.Upstream name:\"upstream\"  namespace:\"gloo-system\": failed gloo validation resource reports: 2 errors occurred:\n\t* invalid resource gloo-system.upstream\n\t* WARN: \n  [2 errors occurred:\n\t* addr cannot be empty for host\n\t* cluster was configured improperly by one or more plugins: name:\"upstream_gloo-system\"  type:STATIC  connect_timeout:{seconds:5}  metadata:{}: cluster type STATIC specified but LoadAssignment was empty\n\n]\n\n\n\n"}]}}}}%         
       ```
 
    {{% /tab %}}
@@ -400,18 +415,20 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
                namespace: gloo-system
      useProxyProto: false
    ```
+
+   </br>
    
-   1. Send a request to the validation API.
+   1. Send a request to the validation API to create the gateway resource. Note that because the resource references an upstream that does not exist, the validation API returns a validation error. 
       ```sh
-      curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"Gateway"},"resource":{"group":"","version":"","resource":""},"name":"tcp","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "Gateway", "metadata": { "name": "tcp", "namespace": "gloo-system" }, "spec": { "bindAddress": "::", "bindPort": 8000, "tcpGateway": { "tcpHosts": [ { "name": "one", "destination": { "single": {  "upstream": { "name": "gloo-system-tcp-echo-1025", "namespace": "gloo-system" }} }}]}, "useProxyProto": false }} }}' -H 'Content-Type: application/json' https://localhost:8443/validation  
+      curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"Gateway"},"resource":{"group":"","version":"","resource":""},"name":"tcp","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "Gateway", "metadata": { "name": "tcp", "namespace": "gloo-system" }, "spec": { "bindAddress": "::", "bindPort": 8000, "tcpGateway": { "tcpHosts": [ { "name": "one", "destination": { "single": {  "upstream": { "name": "gloo-system-tcp-echo-1025", "namespace": "gloo-system" }} }}]}, "useProxyProto": false }} }}' -H 'Content-Type: application/json' https://localhost:8443/validation
       ```
 
-      Example output for successful validation:
+      Example output:
       ```
-      {"response":{"uid":"1234","allowed":true}}
+      {"response":{"uid":"1234","allowed":false,"status":{"metadata":{},"message":"resource incompatible with current Gloo snapshot: [Validating *v1.Gateway failed: 1 error occurred:\n\t* Validating *v1.Gateway failed: validating *v1.Gateway name:\"tcp\"  namespace:\"gloo-system\": TcpHost Warning: InvalidDestinationWarning. Reason: listener listener-::-8000: TcpHost error: *v1.Upstream { gloo-system.gloo-system-tcp-echo-1025 } not found\n\n]","details":{"name":"tcp","group":"gateway.solo.io","kind":"Gateway","causes":[{"message":"Error Validating *v1.Gateway failed: 1 error occurred:\n\t* Validating *v1.Gateway failed: validating *v1.Gateway name:\"tcp\"  namespace:\"gloo-system\": TcpHost Warning: InvalidDestinationWarning. Reason: listener listener-::-8000: TcpHost error: *v1.Upstream { gloo-system.gloo-system-tcp-echo-1025 } not found\n\n"}]}}}}
       ```
 
-   2. Change the boolean value in `useProxyProto` from `false` to `"false"`. 
+   2. Change the boolean value in `useProxyProto` from `false` to `"false"` and verify that your resource configuration is denied by the validation API. 
       ```sh
       curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"Gateway"},"resource":{"group":"","version":"","resource":""},"name":"tcp","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "Gateway", "metadata": { "name": "tcp", "namespace": "gloo-system" }, "spec": { "bindAddress": "::", "bindPort": 8000, "tcpGateway": { "tcpHosts": [ { "name": "one", "destination": { "single": {  "upstream": { "name": "gloo-system-tcp-echo-1025", "namespace": "gloo-system" }} }}]}, "useProxyProto": "false" }} }}' -H 'Content-Type: application/json' https://localhost:8443/validation  
       ```
@@ -421,9 +438,9 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
       {"response":{"uid":"1234","allowed":false,"status":{"metadata":{},"message":"resource incompatible with current Gloo snapshot: [1 error occurred:\n\t* could not unmarshal raw object: parsing resource from crd spec tcp in namespace gloo-system into *v1.Gateway: json: cannot unmarshal string into Go value of type bool\n\n]","details":{"name":"tcp","group":"gateway.solo.io","kind":"Gateway","causes":[{"message":"Error 1 error occurred:\n\t* could not unmarshal raw object: parsing resource from crd spec tcp in namespace gloo-system into *v1.Gateway: json: cannot unmarshal string into Go value of type bool\n\n"}]}}}}
       ```
 
-   3. Remove an opening bracket from the request to send a request that is symantically incorrect. 
+   3. Remove the `tcpGateway` section and verify that the validation API returns an error because no gateway type is provided. 
       ```sh
-      curl -k -XPOST -d '{"request":"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"Gateway"},"resource":{"group":"","version":"","resource":""},"name":"tcp","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "Gateway", "metadata": { "name": "tcp", "namespace": "gloo-system" }, "spec": { "bindAddress": "::", "bindPort": 8000, "tcpGateway": { "tcpHosts": [ { "name": "one", "destination": { "single": {  "upstream": { "name": "gloo-system-tcp-echo-1025", "namespace": "gloo-system" }} }}]}, "useProxyProto": "false" }} }}' -H 'Content-Type: application/json' https://localhost:8443/validation
+      curl -k -XPOST -d '{"request":"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"Gateway"},"resource":{"group":"","version":"","resource":""},"name":"tcp","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "Gateway", "metadata": { "name": "tcp", "namespace": "gloo-system" }, "spec": { "bindAddress": "::", "bindPort": 8000, "useProxyProto": "false" }} }}' -H 'Content-Type: application/json' https://localhost:8443/validation
       ```
 
       Example output for invalid validation: 
@@ -465,15 +482,17 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
                      {% if default(data.error.message, "") != "" %}400{% else %}{{
                      header(":status") }}{% endif %}
    ```
+
+   </br>
    
-   1. Send a request to the validation API.
+   1. Send a request to the validation API and verify that your resource is denied because you reference an upstream that does not exist. 
       ```sh
       curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"VirtualService"},"resource":{"group":"","version":"","resource":""},"name":"update-response-code","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "VirtualService", "metadata": { "name": "update-response-code", "namespace": "gloo-system" }, "spec": { "virtualHost": { "domains": [ "foo.com" ], "routes": [ { "matchers": [ { "prefix": "/" } ], "routeAction": { "single": { "upstream": { "name": "postman-echo", "namespace": "gloo-system" } } }, "options": { "autoHostRewrite": true } } ], "options": { "transformations": { "responseTransformation": { "transformationTemplate": { "headers": { ":status": { "text": "{% if default(data.error.message, \"\") != \"\" %}400{% else %}{{ header(\":status\") }}{% endif %}" } } } } } } } } }}}' -H 'Content-Type: application/json' https://localhost:8443/validation
       ```
 
-      Example output for successful validation:
+      Example output:
       ```
-      {"response":{"uid":"1234","allowed":true}}
+      {"response":{"uid":"1234","allowed":false,"status":{"metadata":{},"message":"resource incompatible with current Gloo snapshot: [Validating *v1.VirtualService failed: 1 error occurred:\n\t* Validating *v1.VirtualService failed: validating *v1.VirtualService name:\"update-response-code\"  namespace:\"gloo-system\": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.postman-echo } not found\n\n]","details":{"name":"update-response-code","group":"gateway.solo.io","kind":"VirtualService","causes":[{"message":"Error Validating *v1.VirtualService failed: 1 error occurred:\n\t* Validating *v1.VirtualService failed: validating *v1.VirtualService name:\"update-response-code\"  namespace:\"gloo-system\": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { gloo-system.postman-echo } not found\n\n"}]}}}}%    
       ```
 
    2. Change the `options` field to `optional` to force a validation error. 
@@ -481,19 +500,9 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
       curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"VirtualService"},"resource":{"group":"","version":"","resource":""},"name":"update-response-code","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "VirtualService", "metadata": { "name": "update-response-code", "namespace": "gloo-system" }, "spec": { "virtualHost": { "domains": [ "foo.com" ], "routes": [ { "matchers": [ { "prefix": "/" } ], "routeAction": { "single": { "upstream": { "name": "postman-echo", "namespace": "gloo-system" } } }, "options": { "autoHostRewrite": true } } ], "optional": { "transformations": { "responseTransformation": { "transformationTemplate": { "headers": { ":status": { "text": "{% if default(data.error.message, \"\") != \"\" %}400{% else %}{{ header(\":status\") }}{% endif %}" } } } } } } } } }}}' -H 'Content-Type: application/json' https://localhost:8443/validation
       ```
 
-      Example output for failed validation:
+      Example output:
       ```
       {"response":{"uid":"1234","allowed":false,"status":{"metadata":{},"message":"resource incompatible with current Gloo snapshot: [1 error occurred:\n\t* could not unmarshal raw object: parsing resource from crd spec update-response-code in namespace gloo-system into *v1.VirtualService: unknown field \"optional\" in gateway.solo.io.Route\n\n]","details":{"name":"update-response-code","group":"gateway.solo.io","kind":"VirtualService","causes":[{"message":"Error 1 error occurred:\n\t* could not unmarshal raw object: parsing resource from crd spec update-response-code in namespace gloo-system into *v1.VirtualService: unknown field \"optional\" in gateway.solo.io.Route\n\n"}]}}}}
-      ```
-
-   3. Remove a closing bracket from the request to send a request that is symantically incorrect. 
-      ```sh
-      curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"VirtualService"},"resource":{"group":"","version":"","resource":""},"name":"update-response-code","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "VirtualService", "metadata": { "name": "update-response-code", "namespace": "gloo-system" }, "spec": { "virtualHost": { "domains": [ "foo.com" ], "routes": [ { "matchers": [ { "prefix": "/" } ], "routeAction": { "single": { "upstream": { "name": "postman-echo", "namespace": "gloo-system" } } }, "options": { "autoHostRewrite": true } } ], "options": { "transformations": { "responseTransformation": { "transformationTemplate": { "headers": { ":status": { "text": "{% if default(data.error.message, \"\") != \"\" %}400{% else %}{{ header(\":status\") }}{% endif %}" } } } } } } } } }}' -H 'Content-Type: application/json' https://localhost:8443/validation
-      ```
-
-      Example output for invalid validation: 
-      ```
-      {}
       ```
 
    {{% /tab %}}
