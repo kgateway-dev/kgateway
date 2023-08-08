@@ -53,6 +53,7 @@ var (
 var _ = BeforeSuite(func() {
 	var err error
 
+	// This line prevents controller-runtime from complaining about log.SetLogger never being called
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 	ctx, cancel = context.WithCancel(context.Background())
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
