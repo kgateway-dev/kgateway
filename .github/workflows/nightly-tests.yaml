@@ -11,9 +11,9 @@ on:
   # Month of the year [1,12]
   # Day of the week ([0,6] with 0=Sunday)
   schedule:
-    - cron: "0 5 * * 1-5" # weekdays @ 23:00 EST, run tests against latest main
-    - cron: "0 6 * * 1"   # monday   @ 00:00 EST, run expanded tests against v1.15.x
-    - cron: "0 7 * * 1"   # monday   @ 01:00 EST, run expanded tests against v1.14.x
+    - cron: "0 5 * * 1-5" # weekdays @ 01:00 EST, run tests against latest main
+    - cron: "0 6 * * 1"   # monday   @ 02:00 EST, run expanded tests against v1.15.x
+    - cron: "0 7 * * 1"   # monday   @ 03:00 EST, run expanded tests against v1.14.x
   workflow_dispatch:
     inputs:
       run-regression-branch:
