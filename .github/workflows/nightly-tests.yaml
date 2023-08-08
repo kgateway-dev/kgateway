@@ -108,6 +108,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - run: echo "v1.14.x performance tests do not exist"
+        shell: bash
 
   publish_results:
     runs-on: ubuntu-22.04
