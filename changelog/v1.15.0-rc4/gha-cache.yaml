@@ -3,8 +3,8 @@ changelog:
   issueLink: https://github.com/solo-io/solo-projects/issues/4903
   resolvesIssue: false
   description: >-
-    Introduce a job to run on merge to v1.13.x that will cache the go modules for the v1.13.x branch.
-    This will ensure that there exists a go cache entry for the v1.13.x branch, which future PRs can utilize.
+    Introduce a job to run on merge to v1.15.x that will cache the go modules for the v1.15.x branch.
+    This will ensure that there exists a go cache entry for the v1.15.x branch, which future PRs can utilize.
 - type: NON_USER_FACING
   issueLink: https://github.com/solo-io/solo-projects/issues/4903
   resolvesIssue: false
