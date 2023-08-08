@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8548
+    resolvesIssue: true
+    description: Fix to remove "log.SetLogger(...) was never called, logs will not be displayed:" error message in gloo kubes e2e test
