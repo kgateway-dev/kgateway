@@ -64,7 +64,7 @@ jobs:
         with:
           repository: solo-io/gloo
           path: gloo
-          ref: ${{ env.RELEASE_TAG_NAME }}
+          ref: ${{ env.SOURCE_COMMIT }}
       - name: Prep Go Runner
         uses: ./.github/workflows/composite-actions/prep-go-runner
         with:
