@@ -22,7 +22,7 @@ on:
         default: "main"
       run-regression:
         description: "Run regression tests"
-        type: string
+        type: boolean
       run-performance:
         description: "Run performance tests"
         type: boolean
