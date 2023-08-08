@@ -11,22 +11,26 @@ on:
   # Month of the year [1,12]
   # Day of the week ([0,6] with 0=Sunday)
   schedule:
-    - cron: "0 5 * * 1-5" # weekdays @ 01:00 EST, run tests against latest main
-    - cron: "0 6 * * 1"   # monday   @ 02:00 EST, run expanded tests against v1.15.x
-    - cron: "0 7 * * 1"   # monday   @ 03:00 EST, run expanded tests against v1.14.x
+    - cron: "0 5 * * 1-5" # weekdays @ 05:00 UTC, run tests against latest main
+    - cron: "0 6 * * 1"   # monday   @ 06:00 UTC, run expanded tests against v1.15.x
+    - cron: "0 7 * * 1"   # monday   @ 07:00 UTC, run expanded tests against v1.14.x
   workflow_dispatch:
     inputs:
-      run-regression-branch:
-        description: "Run regression tests for a branch (main, v1.15.x, ..etc)"
+      branch:
+        description: "The branch to run tests against (main, v1.15.x, ..etc)"
+        type: string
+        default: "main"
+      run-regression:
+        description: "Run regression tests"
         type: string
       run-performance:
         description: "Run performance tests"
         type: boolean
 
 jobs:
-  regression_tests_latest_main:
-    name: latest main regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression-branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+  regression_tests_main:
+    name: main regression tests
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
     # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
     #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
@@ -43,18 +47,9 @@ jobs:
     - uses: actions/checkout@v3
     - uses: ./.github/workflows/composite-actions/regression-tests
 
-  performance_tests_latest_main:
-    name: latest performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance) || github.event.schedule == '0 5 * * 1-5' }}
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
-      - uses: ./.github/workflows/composite-actions/performance-tests
-
   regression_tests_15:
     name: v1.15.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression-branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -70,7 +65,7 @@ jobs:
 
   regression_tests_14:
     name: v1.14.x regression tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression-branch == 'v1.14.x') || github.event.schedule == '0 7 * * 1' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.14.x') || github.event.schedule == '0 7 * * 1' }}
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -83,6 +78,15 @@ jobs:
       with:
         ref: v1.14.x
     - uses: ./.github/workflows/composite-actions/regression-tests
+
+  performance_tests_main:
+    name: main performance tests
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./.github/workflows/composite-actions/performance-tests
 
   publish_results:
     runs-on: ubuntu-22.04
