@@ -17,9 +17,12 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "The branch to run tests against (main, v1.15.x, ..etc)"
-        type: string
-        default: "main"
+        description: "The branch to run tests against"
+        type: choice
+        options:
+          - main
+          - v1.15.x
+          - v1.14.x
       run-regression:
         description: "Run regression tests"
         type: boolean
@@ -88,10 +91,34 @@ jobs:
       - uses: ./.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/performance-tests
 
+  performance_tests_15:
+    name: v1.15.x performance tests
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1-5' }}
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: v1.15.x
+      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./.github/workflows/composite-actions/performance-tests
+
+  performance_tests_14:
+    name: v1.14.x performance tests
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.14.x'}}
+    runs-on: ubuntu-22.04
+    steps:
+      - runs: echo "v1.14.x performance tests do not exist"
+
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_main, regression_tests_15, regression_tests_14, performance_tests_main ]
+    needs:
+      - regression_tests_main
+      - regression_tests_15
+      - regression_tests_14
+      - performance_tests_main
+      - performance_tests_15
+      - performance_tests_14
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
