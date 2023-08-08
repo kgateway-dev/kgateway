@@ -48,6 +48,8 @@ jobs:
                         { node: 'v1.27.3@sha256:3966ac761ae0136263ffdb6cfd4db23ef8a83cba8a463690e98317add2c9ba72', kubectl: 'v1.27.3', kind: 'v0.20.0', helm: 'v3.12.2' }]
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: main
     - uses: ./.github/workflows/composite-actions/regression-tests
 
   regression_tests_15:
@@ -88,6 +90,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: main
       - uses: ./.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/performance-tests
 
