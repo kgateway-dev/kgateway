@@ -107,7 +107,7 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.14.x'}}
     runs-on: ubuntu-22.04
     steps:
-      - runs: echo "v1.14.x performance tests do not exist"
+      - run: echo "v1.14.x performance tests do not exist"
 
   publish_results:
     runs-on: ubuntu-22.04
