@@ -1,7 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  issueLink: https://github.com/solo-io/solo-projects/issues/4903
-  resolvesIssue: false
-  description: >-
-    Introduce a job to run on merge to v1.14.x that will cache the go modules for the v1.14.x branch.
-    This will ensure that there exists a go cache entry for the v1.14.x branch, which future PRs can utilize.
