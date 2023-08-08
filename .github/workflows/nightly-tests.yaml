@@ -91,7 +91,7 @@ jobs:
   publish_results:
     runs-on: ubuntu-22.04
     if: ${{ always() }}
-    needs: [ regression_tests_latest_main, performance_tests_latest_main, regression_tests_15, regression_tests_14 ]
+    needs: [ regression_tests_main, regression_tests_15, regression_tests_14, performance_tests_main ]
     steps:
       - uses: actions/checkout@v3
       - name: compute-preamble
