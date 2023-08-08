@@ -142,6 +142,11 @@ jobs:
           echo "preamble=$preamble" >> $GITHUB_OUTPUT
       - uses: actions/setup-go@v4
         with:
+          # Caching in setup-go is on by default
+          # In our prep-go-runner we use a more configurable cache https://github.com/actions/cache
+          # In this step, we don't need to store a new cache entry because it runs infrequently and
+          # will pollute the cache entries
+          cache: false
           go-version-file: go.mod
       - uses: actions/download-artifact@v3
       - name: send slack message
