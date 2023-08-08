@@ -115,11 +115,6 @@ fmt-changed:
 mod-download: check-go-version
 	go mod download all
 
-
-.PHONY: mod-tidy
-mod-tidy:
-	go mod tidy
-
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
 .PHONY: install-go-tools
 install-go-tools: mod-download ## Download and install Go dependencies
