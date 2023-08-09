@@ -2,11 +2,7 @@ name: Cache Eviction
 
 on:
   pull_request:
-    types:
-      - 'closed'
-  push:
     branches:
-      - 'main'
       - 'gha-cache-**'
 
 env:
@@ -34,6 +30,7 @@ jobs:
           echo "Deleting caches..."
           for cacheKey in $cacheKeysForPR
           do
+              echo "Deleting cache key $cacheKey for branch $BRANCH"
               gh actions-cache delete $cacheKey -R $REPO -B $BRANCH --confirm
           done
           echo "Done"
