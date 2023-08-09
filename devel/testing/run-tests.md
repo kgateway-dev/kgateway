@@ -14,7 +14,7 @@
   - [INVALID_TEST_REQS](#invalid_test_reqs)
 
 ## Background
-Gloo Edge relies on the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. As outlined in the documentation, it pairs with the [Gomega](https://onsi.github.io/gomega/) matcher library to provide a BDD-style testing framework. For more details about how to write tests, check out the [writing tests docs](writing-tests.md).
+Gloo Edge testing leverages the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. As outlined in the linked documentation, Ginkgo pairs with the [Gomega](https://onsi.github.io/gomega/) matcher library to provide a BDD-style testing framework. For more details about how to write tests, check out our [writing tests docs](writing-tests.md).
 
 ## Common Make Targets
 There are a few common make targets that can be used to run tests
@@ -26,7 +26,7 @@ The `test` target provides a wrapper around invoking `ginkgo` with a set of usef
 Run tests with coverage reporting
 
 ### run-tests
-Run unit tests (non e2e)
+Run unit tests (ie non e2e)
 
 ### run-e2e-tests
 Run [in memory end-to-end tests](e2e-tests.md)

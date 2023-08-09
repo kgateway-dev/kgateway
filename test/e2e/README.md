@@ -106,6 +106,6 @@ To avoid this clean up, run the test(s) with `WAIT_ON_FAIL=1`. When the test fai
 Once halted, use `docker ps` to determine the admin port for the Envoy instance, and follow the recommendations for [debugging Envoy](https://github.com/solo-io/gloo/tree/main/projects/envoyinit#debug), specifically the parts around interacting with the Administration interface.
 
 #### Use INVALID_TEST_REQS
-Certain test require environmental conditions to be true for them to succeed. For example, certain tests will only run on a Linux machine.
+Certain tests require environmental conditions to be true for them to succeed. For example, there are tests that only run on Linux machines.
 
 By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.

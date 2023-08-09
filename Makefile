@@ -271,7 +271,7 @@ getter-check:
 mod-tidy:
 	go mod tidy
 
-# Validates that protos used in EE but not OSS are valid
+# Validates that protos used exclusively in EE are valid
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...

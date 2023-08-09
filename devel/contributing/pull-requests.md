@@ -14,8 +14,8 @@ Merging a pull request requires the following steps to be completed before the p
 If you want to solicit reviews before the implementation of your pull request is complete, there are a few methods to achieve this:
 
 1. Open a Draft PR. This will run the minimum set of tests, but not the Kubernetes e2e tests
-2. Remove the `Keep PR Updated` label. PRs will attempt to stay up to date with the target branch, but removing this label will prevent that and avoid CI running unnecessarily.
-3. Add a `Work In Progress` label. This will allow all tests to run, but even with approvals will prevent the PR from merging
+2. Remove the `Keep PR Updated` label. Automation on PRs will attempt to keep feature branches up to date with the target branch. Removing this label will prevent that and avoid CI running unnecessarily on branches that we know are not ready to merge.
+3. Add the `Work In Progress` label. This will allow all tests to run will prevent the PR from merging automatically, even when all tests are passing and there are two approving reviews.
 
 Even if you have followed these steps, it is good practice to add a `# WORK IN PROGRESS` section to the PR and outline the work that is still to be done.
 
@@ -26,17 +26,17 @@ Below are some best practices we have found to help PRs get reviewed quickly
 * [Coding conventions](conventions.md)
 
 ### Include a Changelog Entry
-All PRs are required to contain a changelog entry. This is enforced by the [changelog bot](automation.md). If you do not include one, the first reviewer will ask for this.
+All PRs are required to contain a changelog entry. This is enforced by the [changelog bot](automation.md). If you do not include one, the first reviewer should ask for this.
 
 ### Smaller Is Better
-Small PRs are more likely to be reviewed quickly and thoroughly. If the PR takes **>45 minutes** to review, the review will be less thorough and more likely to miss something.
+Small PRs are more likely to be reviewed quickly and thoroughly. If the PR takes **>45 minutes** to review, the review may be less thorough and more likely to miss something important.
 
 #### Use Commits to Tell the Story
 Having a series of discrete commits makes it easier to understand the idea of the PR, and break up the review into smaller chunks
 
 When PRs merge in Gloo Edge, they are squashed into a single commit, so it is not necessary to squash your commits before merging.
 
-#### Avoid Squashing Previous Commits
+#### Avoid Squashing Previous Commits and Using Force Pushes
 This can make it difficult to understand the history of the PR, and can make it difficult to understand the changes in the future.
 
 #### Separate Features and Generic Fixes

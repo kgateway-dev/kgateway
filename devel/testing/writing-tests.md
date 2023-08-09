@@ -11,22 +11,22 @@
   - [Prefer Http Response Matcher](#prefer-http-response-matcher)
 
 ## Conventions
-- All new packages and most new significant functionality must come with unit tests.
-- Table-driven tests are preferred for testing multiple scenarios/inputs.
+- All new packages and most new significant functionality must come with unit tests
+- Table-driven tests are preferred for testing multiple scenarios/inputs
 - Significant features should come with [end-to-end (test/e2e) tests](e2e-tests.md) and/or [kubernetes end-to-end (test/kube2e) tests](kube-e2e-tests.md)
-- Tests which are platform dependent, should be marked as such using [test requirements](/test/testutils/requirements.go)
+- Tests which are platform-dependent, should be marked as such using [test requirements](/test/testutils/requirements.go)
 
 ## Matchers
 ### Gomega Matchers
 Gomega has a powerful set of built-in matchers. We recommend using these matchers whenever possible. You can find the full list of matchers [here](https://github.com/onsi/gomega/tree/master/matchers).
 
 ### Custom Matchers
-We have a few custom matchers that we use in our tests. These are defined in a [matchers package](/test/gomega/matchers/). If you find yourself writing a custom matcher, consider adding it to this package.
+We have a number of custom matchers that we use in our tests. These are defined in a [matchers package](/test/gomega/matchers/). If you find yourself writing a custom matcher, consider adding it to this package.
 
 ## Transforms
 It is possible to [compose matchers using transforms](https://onsi.github.io/gomega/#composing-matchers). Transforms are either:
 - functions which accept one parameter that returns one value
-- functions which accept one parameter that returns two values, where the second value must be of the error type.
+- functions which accept one parameter that returns two values, where the second value must be of the error type
 
 Transforms allow us to re-use matchers, and convert the data that we want to compare into a format that the matcher can understand. Let's say we want to compare the data returned by an http.Response to a key/value pair:
 ```go
@@ -56,6 +56,14 @@ Expect(err).To(HaveOccurred())
 A more explict way to perfrom this assertion is:
 ```go
 Expect(err).To(MatchError("expected error"))
+```
+or
+```go
+Expect(err).To(MatchError(GlobalError))
+```
+or
+```go
+Expect(err).To(MatchError(ErrorFunc("expected error"))
 ```
 
 ### Prefer Assertion Descriptions

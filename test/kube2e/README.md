@@ -22,9 +22,9 @@ There is no setup required for this option, as the test suite will download the 
 ### Setup (Locally Build Assets)
 
 For these tests to run, we require the following conditions:
-- Gloo Edge Helm chart archive be present in the `_test` folder,
-- `glooctl` be built in the`_output` folder
-- kind cluster set up and loaded with the images to be installed by the helm chart
+- Gloo Edge Helm chart archive is present in the `_test` folder,
+- `glooctl` is built in the `_output` folder
+- A KinD cluster is set up and loaded with the images to be installed by the helm chart
 
 #### Use the CI Install Script
 [ci/kind/setup-kind.sh](/ci/kind/setup-kind.sh) gets run in CI to setup the test environment for the above requirements.

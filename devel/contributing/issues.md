@@ -7,7 +7,7 @@ If you encounter a bug or have a feature request, please take the following appr
 2. If you find a similar issue, add a comment with additional information or add a 👍 reaction to indicate your agreement.
 3. If there are no similar issues, [file a new one](https://github.com/solo-io/gloo/issues/new/choose)
 
-**Issues should not contain any sensitive information.**
+**Issues in this repo should not contain any sensitive information. If sensitive information is critical to the issue, please reach out to Solo.io support to open a ticket.**
 
 ## Bug Report
 - Issues can include links to private resources, such as Slack conversations or private code. 

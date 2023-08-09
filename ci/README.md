@@ -37,9 +37,9 @@ This is enabled as a GitHub App on the project, and if changes are required, ple
 ### Special Directives to Skip CI
 *If you use any of these directives, you must explain in the PR body, why this is safe*
 
-**Skip Changelog**: Following the [special comment directives](https://github.com/solo-io/changelog-bot#issue-comment-directives), comment `skip-changelog` on the PR. **This should rarely be used, even small changes should be documented in the changelog.**
+**Skip Changelog**: Following the [special comment directives](https://github.com/solo-io/changelog-bot#issue-comment-directives), comment `/skip-changelog` on the PR. **This should rarely be used, even small changes should be documented in the changelog.**
 
-**Skip Build-Bot**: Following the [special comment directives](https://github.com/solo-io/build-bot#issue-comment-directives), comment `skip-ci` on the PR.
+**Skip Build-Bot**: Following the [special comment directives](https://github.com/solo-io/build-bot#issue-comment-directives), comment `/skip-ci` on the PR.
 
 **Skip Docs Build**: Include `skipCI-docs-build:true` in the changelog entry of the PR.
 
