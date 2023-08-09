@@ -26,7 +26,7 @@ If you have not made local changes to the component, you can rely on a previousl
 However, if you have made changes to the component, refer to the [Envoyinit README](https://github.com/solo-io/gloo/blob/main/projects/envoyinit) for build instructions.
 
 ### Run Tests
-The `test` make target runs ginkgo with a set of useful flags. See [run-tests](/devel/testing/run-tests.md) for more details about common techniques for running tests.  The following environment variables can be configured for this target:
+The `test` make target runs ginkgo with a set of useful flags. See [run-tests](/devel/testing/run-tests.md) for more details about common techniques and common environment variables used when running tests.  The following environment variables can also be configured for this target:
 
 | Name              | Default | Description                                                                                                                                                                                                                                        |
 |-------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
