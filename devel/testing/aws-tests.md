@@ -4,6 +4,8 @@
 See [e2e-tests](./e2e-tests.md) for more details about e2e tests in general
 
 ### Lambda Tests
+**These steps can only be taken if you are a Gloo Edge maintainer**
+
 You will need to do the following to run the [AWS Lambda Tests](/test/e2e/aws_test.go) locally:
 1. Obtain an AWS IAM User account that is part of the Solo.io organization
 2. Create an AWS access key
@@ -19,17 +21,3 @@ You will need to do the following to run the [AWS Lambda Tests](/test/e2e/aws_te
     - You will be asked to provide your Access Key ID and Secret Key from step 2, as well as the default region name and default output format
         - It is critical that you set the default region to `us-east-1`
     - This will create a credentials file at `~/.aws/credentials` on Linux or macOS, or at `C:\Users\USERNAME\.aws\credentials` on Windows. The tests read this file in order to interact with lambdas that have been created in the Solo.io organization
-
-### EC2 tests
-*Note: these instructions are out of date, and require updating*
-
-- set up your ec2 instance
-    - download a simple echo app
-    - make the app executable
-    - run it in the background
-
-```bash
-wget https://mitch-solo-public.s3.amazonaws.com/echoapp2
-chmod +x echoapp2
-sudo ./echoapp2 --port 80 &
-```
