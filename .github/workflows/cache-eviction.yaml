@@ -3,7 +3,11 @@ name: Cache Eviction
 on:
   pull_request:
     types:
-      - closed
+      - 'closed'
+  push:
+    branches:
+      - 'main'
+      - 'gha-cache-**'
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
