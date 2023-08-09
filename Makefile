@@ -117,7 +117,6 @@ mod-download: check-go-version
 	go mod download all
 
 # https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
-# Invokes `mod-download` and `go install`s a number of tools used by `generated-code`
 .PHONY: install-go-tools
 install-go-tools: mod-download ## Download and install Go dependencies
 	mkdir -p $(DEPSGOBIN)
