@@ -45,7 +45,7 @@ Gloo Edge is a feature-rich, Kubernetes-native ingress controller and next-gener
 - Join us on our Slack channel: [https://slack.solo.io/](https://slack.solo.io/)
 - Follow us on Twitter: [https://twitter.com/soloio_inc](https://twitter.com/soloio_inc)
 - Check out the docs: [https://gloo.solo.io](https://gloo.solo.io)
-- Check out the code and contribute: [Contribution Guide](CONTRIBUTING.md)
+- Check out the code and contribute: [Contribution Guides](/devel/contributing)
 - Contribute to the [Docs](docs/)
 
 ### Thanks
