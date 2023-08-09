@@ -13,7 +13,7 @@ mkdir -p "changelog/$NEXT_VERSION"
 
 cat <<EOF > "changelog/$NEXT_VERSION/$BRANCH_NAME.yaml"
 changelog:
-  - type: NON_USER_FACING
+  - type: FIX
     issueLink:
     resolvesIssue: false
     description: >-

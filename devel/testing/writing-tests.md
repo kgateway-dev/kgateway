@@ -28,7 +28,27 @@ It is possible to [compose matchers using transforms](https://onsi.github.io/gom
 - functions which accept one parameter that returns one value
 - functions which accept one parameter that returns two values, where the second value must be of the error type
 
-Transforms allow us to re-use matchers, and convert the data that we want to compare into a format that the matcher can understand. Let's say we want to compare the data returned by an http.Response to a key/value pair:
+Transforms allow us to re-use matchers, and convert the data that we want to compare into a format that the matcher can understand. Below are a few example that illustrate this concept.
+
+### Example: Compare String to Integers
+Let's say you want to compare that an integer value contains a specific substring:
+```go
+Expect(12345).To(ContainSubstring("234"))
+```
+
+You can't use the `ContainSubstring` matcher, because it only works on strings. You can use a transform to convert the integer to a string:
+```go
+WithTransform(strconv.Itoa, {MATCHER})
+```
+
+Now we can rewrite our assertion as:
+```go
+Expect(12345).To(WithTransform(strconv.Itoa, ContainSubstring("234")))
+```
+
+### Example: Compare Key/Value Pairs in http.Response
+
+Let's say we want to compare the data returned by an http.Response to a key/value pair:
 ```go
 Expect(response).To(HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")))
 ```
