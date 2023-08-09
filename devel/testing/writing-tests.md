@@ -50,7 +50,7 @@ Expect(12345).To(WithTransform(strconv.Itoa, ContainSubstring("234")))
 
 Let's say we want to compare the data returned by an http.Response to a key/value pair:
 ```go
-Expect(response).To(HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar")))
+Expect(response).To(HaveKeyWithValue("status", 200))
 ```
 
 This doesn't work, because the response (*http.Response) is not a map[string]interface{}, so we can't use the standard `HaveKeyWithValue` matcher. We can use a transform to convert the response into a map[string]interface{}:
@@ -60,8 +60,8 @@ WithTransform(transforms.WithJsonBody(), {MATCHER})
 
 Now we can rewrite our assertion as:
 ```go
-Expect(response).To(WithTransform(transforms.WithJsonBody(), HaveKeyWithValue("queryStringParameters", HaveKeyWithValue("foo", "bar"))))
-````
+Expect(response).To(WithTransform(transforms.WithJsonBody(), HaveKeyWithValue("status", 200)))
+```
 
 ### Custom Transforms
 We have a few custom matchers that we use in our tests. These are defined in a [transforms package](/test/gomega/transforms/). If you find yourself writing a custom transform, consider adding it to this package.
