@@ -2,8 +2,6 @@ name: Cache Eviction
 
 on:
   pull_request:
-    branches:
-      - 'gha-cache-**'
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
