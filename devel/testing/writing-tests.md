@@ -28,7 +28,7 @@ It is possible to [compose matchers using transforms](https://onsi.github.io/gom
 - functions which accept one parameter that returns one value
 - functions which accept one parameter that returns two values, where the second value must be of the error type
 
-Transforms allow us to re-use matchers, and convert the data that we want to compare into a format that the matcher can understand. Below are a few example that illustrate this concept.
+Transforms allow us to re-use matchers, and convert the data that we want to compare into a format that the matcher can understand. Below are a couple examples that illustrate this concept.
 
 ### Example: Compare String to Integers
 Let's say you want to compare that an integer value contains a specific substring:
