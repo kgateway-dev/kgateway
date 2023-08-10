@@ -96,7 +96,7 @@ jobs:
     - name: Override main checkout if deploying PR test
       if: ${{ github.event_name == 'pull_request' }}
       uses: actions/checkout@v3
-    - uses: ./.github/workflows/composite-actions/prep-go-runner
+    - uses: ./gloo/.github/workflows/composite-actions/prep-go-runner
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v2
       with:

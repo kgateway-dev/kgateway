@@ -92,7 +92,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: main
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./gloo/.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/performance-tests
 
   performance_tests_15:
@@ -103,7 +103,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: v1.15.x
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - uses: ./gloo/.github/workflows/composite-actions/prep-go-runner
       - uses: ./.github/workflows/composite-actions/performance-tests
 
   performance_tests_14:
