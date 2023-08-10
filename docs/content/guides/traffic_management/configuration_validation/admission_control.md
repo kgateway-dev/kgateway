@@ -82,7 +82,7 @@ Configure the validating admission webhook to reject invalid Gloo custom resourc
       ```
 
       {{< notice tip >}}
-      You can also use the validating admission webhook by running the <code>kubectl apply --dry-run=server</code> command to test your Gloo configuration before you apply it to your cluster or send requests directly to the validation API. For more information, see <a href="#test-resource-configurations">Test resource configurations</a>. 
+      You can also use the validating admission webhook by running the <code>kubectl apply --dry-run=server</code> command to test your Gloo configuration before you apply it to your cluster. For more information, see <a href="#test-resource-configurations">Test resource configurations</a>. 
       {{< /notice >}}
 
 
