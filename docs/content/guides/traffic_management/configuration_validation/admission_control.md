@@ -128,7 +128,7 @@ validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",n
 
 ## Test resource configurations
 
-You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration or [send requests directly to the Gloo Edge validation API](#validation-api). 
+You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration<!-- or [send requests directly to the Gloo Edge validation API](#validation-api)-->. 
 
 {{% notice note %}}
 The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, run `kubectl edit settings default -n gloo-system` and set `alwaysAccept: false` and `allowWarnings: false` in the `spec.gateway.validation` section. 
@@ -260,8 +260,10 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 
    Example output if the virtual service does not exist:
    ```
-   virtualservice.gateway.solo.io/default created
+   virtualservice.gateway.solo.io/default created (server dry run)
    ```
+
+   </br>
 
    Example output if the virtual service already exists:
    ```
@@ -306,7 +308,7 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 	   * Validating *v1.VirtualService failed: validating *v1.VirtualService name:"missing-upstream"  namespace:"default": Route Warning: InvalidDestinationWarning. Reason: *v1.Upstream { anywhere.does-not-exist } not found
    ```
 
-4. Try to create another virtual service that does not specify any prefix matchers and verify that the resource is denied by the validation API.
+4. Try to create another virtual service that does not specify any prefix matchers in the `delegateAction` section and verify that the resource is denied by the validation API.
    ```yaml
    kubectl apply --dry-run=server -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -339,6 +341,7 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 {{% /tab %}}
 {{< /tabs >}}
 
+<!--
 ### Send requests to the validation API directly {#validation-api}
 
 Send a curl request to the validation API to test your resource configurations. 
@@ -508,6 +511,7 @@ If an empty response <code>{}</code> is from the validation API, you might need 
    {{% /tab %}}
    {{< /tabs >}}
 
+-->
    
 ## Disable resource validation in Gloo Edge
 
