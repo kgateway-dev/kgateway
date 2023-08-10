@@ -66,7 +66,7 @@ jobs:
           path: gloo
           ref: ${{ env.SOURCE_COMMIT }}
       - name: Prep Go Runner
-        uses: ./.github/workflows/composite-actions/prep-go-runner
+        uses: ./gloo/.github/workflows/composite-actions/prep-go-runner
         with:
           working-directory: gloo
       - name: Install Protoc
