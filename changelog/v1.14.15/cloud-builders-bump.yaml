@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: cloud-builders
+  dependencyTag: v0.6.4
+  issueLink: https://github.com/solo-io/solo-projects/issues/5215
+  resolvesIssue: false
+  description: >-
+    Use the latest cloud builders to match go version of builder to that of enterprise
