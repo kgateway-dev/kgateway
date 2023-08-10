@@ -1646,6 +1646,7 @@ JSON marshalling.
 "allowedUpstreamHeaders": []string
 "allowedClientHeadersOnDenied": []string
 "readStateFromResponse": bool
+"overwriteUpstreamHeaders": []string
 
 ```
 
@@ -1654,6 +1655,7 @@ JSON marshalling.
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream when the auth request is successful. These will be appended to any request headers that already exist. If this is empty, by default, no authorization response headers will be added to the upstream request. |
 | `allowedClientHeadersOnDenied` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. If the response header already exists, it will replace the response header. If this is empty, by default, no authorization response headers will be added to the client response. |
 | `readStateFromResponse` | `bool` | If this is set to true, the body of the response from the http passthrough auth server is expected to have shape { "state": object (map[string]interface{}) } The state will be marshalled from the response body and this is the state that will be passed on to other auth configs. Because of the marshalling from JSON to Go map, this will add some latency to the request. If the marshalling fails, the authorization check will fail and the request will be unauthorized after the ext-auth-service pod logs the marshal error. |
+| `overwriteUpstreamHeaders` | `[]string` |  |
 
 
 

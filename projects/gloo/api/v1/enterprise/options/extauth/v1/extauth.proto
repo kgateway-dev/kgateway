@@ -1264,6 +1264,8 @@ message PassThroughHttp {
         // If the marshalling fails, the authorization check will fail and the request will be unauthorized after the ext-auth-service pod
         // logs the marshal error.
         bool read_state_from_response = 3;
+
+        repeated string overwrite_upstream_headers = 4;
     }
     Response response = 4;
 
