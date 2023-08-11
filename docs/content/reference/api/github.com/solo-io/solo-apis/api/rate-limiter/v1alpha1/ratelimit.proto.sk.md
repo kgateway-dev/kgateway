@@ -39,7 +39,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto](https://github.com/solo-io/solo-apis/blob/master/api/rate-limiter/v1alpha1/ratelimit.proto)
+##### Source File: [github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto](https://github.com/solo-io/solo-apis/blob/main/api/rate-limiter/v1alpha1/ratelimit.proto)
 
 
 

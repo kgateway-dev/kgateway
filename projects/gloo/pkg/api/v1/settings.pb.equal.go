@@ -300,6 +300,16 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetExtProc()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetExtProc()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetExtProc(), target.GetExtProc()) {
+			return false
+		}
+	}
+
 	switch m.ConfigSource.(type) {
 
 	case *Settings_KubernetesConfigSource:

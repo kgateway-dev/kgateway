@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package filters.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/filters";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+
+// FilterStage allows configuration of where in a filter chain a given HTTP filter is inserted,
+// relative to one of the pre-defined stages.
+message FilterStage {
+  // List of filter stages which can be selected for a HTTP filter.
+  enum Stage {
+      FaultStage = 0;
+      CorsStage = 1;
+      WafStage = 2;
+      AuthNStage = 3;
+      AuthZStage = 4;
+      RateLimitStage = 5;
+      AcceptedStage = 6;
+      OutAuthStage = 7;
+      RouteStage = 8;
+  }
+
+  // Desired placement of the HTTP filter relative to the stage. The default is `During`.
+  enum Predicate {
+      During = 0;
+      Before = 1;
+      After = 2;
+  }
+
+  // Stage of the filter chain in which the selected filter should be added.
+  Stage stage = 1;
+  // How this filter should be placed relative to the stage.
+  Predicate predicate = 2;
+}

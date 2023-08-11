@@ -9,7 +9,7 @@ weight: 5
 
 ### Package: `xds.annotations.v3`
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/sensitive.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/xds/annotations/v3/sensitive.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/xds/annotations/v3/sensitive.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/external/xds/annotations/v3/sensitive.proto)
 
 
 

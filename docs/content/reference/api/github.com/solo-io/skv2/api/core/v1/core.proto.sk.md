@@ -25,7 +25,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/skv2/api/core/v1/core.proto](https://github.com/solo-io/skv2/blob/master/api/core/v1/core.proto)
+##### Source File: [github.com/solo-io/skv2/api/core/v1/core.proto](https://github.com/solo-io/skv2/blob/main/api/core/v1/core.proto)
 
 
 

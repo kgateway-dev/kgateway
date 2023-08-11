@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Update nightly tests to not run 1.13.x tests. These were noisy and not providing value.
+      Include 1.15 branch in nightly tests.
+      Update the syntax of LTS branches to use the new composite-actions.
+
+      skipCI-kube-tests:true
+      skipCI-docs-build:true

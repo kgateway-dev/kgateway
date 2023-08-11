@@ -9,7 +9,7 @@ weight: 5
 
 ### Package: `gloosnapshot.gloo.solo.io`
 
-##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/gloosnapshot/snap.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/gloosnapshot/snap.proto)
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/gloosnapshot/snap.proto](https://github.com/solo-io/gloo/blob/main/projects/gloo/api/v1/gloosnapshot/snap.proto)
 
 
 

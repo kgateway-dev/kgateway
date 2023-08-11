@@ -89,7 +89,12 @@ var _ = Describe("Connection Limit", func() {
 			injectRouteFaultDelay(testContext)
 		})
 
-		It("Should drop connections after limit is reached", func() {
+		// This test has flaked before with the following envoy error :
+		// [error][envoy_bug] [external/envoy/source/common/http/conn_manager_impl.cc:527] envoy bug failure: !local_close_reason.empty(). Details: Local Close Reason was not set!
+		// This has been fixed in envoy v1.27.0 but since we still use v1.26.x, this issue intermittently occurs.
+		// Since this bug doesn't affect the functionally of the ConnectionLimit filter (requests still do not cross the limit), we're adding FlakeAttempts until we move to a version of envoy with this fix.
+		// More info can be found here : https://github.com/solo-io/gloo/issues/8531
+		It("Should drop connections after limit is reached", FlakeAttempts(5), func() {
 			var wg sync.WaitGroup
 			httpClient := testutils.DefaultClientBuilder().WithTimeout(time.Second * 10).Build()
 			requestBuilder := testContext.GetHttpRequestBuilder()
