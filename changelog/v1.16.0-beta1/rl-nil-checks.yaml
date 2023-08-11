@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8573
+    resolvesIssue: false
+    description: Check for empty values in fields that are required by Envoy for RateLimitActions.
