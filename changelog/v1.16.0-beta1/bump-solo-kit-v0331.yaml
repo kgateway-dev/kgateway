@@ -1,6 +1,6 @@
 changelog:
   - type: FIX
-    description: Fix incorrect CRD generation of proto fileds of type `google.protobuf.UInt64Value`
+    description: Fix incorrect CRD generation of proto fileds of type `google.protobuf.UInt64Value`. Previously fields of this type had an incorrect schema which led to them failing being unmarshalled, which is now resolved. Affected protos include gateway specs `httpGateway.options.caching.maxPayloadSize` and `httpGateway.options.connectionLimit.maxActiveConnections`
     issueLink: https://github.com/solo-io/gloo/issues/8568
     resolvesIssue: false
   - type: DEPENDENCY_BUMP
