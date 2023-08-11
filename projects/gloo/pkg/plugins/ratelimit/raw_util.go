@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"context"
+
 	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 
