@@ -33,7 +33,7 @@ When we say Gloo Edge is a "next-generation" gateway, we mean that it was purpos
 ## Blogs & Demos
 
 * [Blog Articles](https://www.solo.io/blog/announcing-gloo-the-function-gateway/)
-* [Watch Gloo Edge Videos and Demos](https://www.youtube.com/playlist?list=PLBOtlFtGznBiN5dZmaYsP-VxoVxOdxsVq)
+* [Watch Gloo Edge Videos and Demos](https://www.youtube.com/watch?v=HEN8IHCOqSo&list=PLBOtlFtGznBgrbLwyrPNIsdXLuq-mqa6U)
 
 ## Community
 
