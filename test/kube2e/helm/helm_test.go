@@ -628,6 +628,9 @@ gatewayProxies:
                 keyValueAction:
                   keyToMask: test
                   name: test
+          # This checks the proper parsing of wrappers.UInt64Value
+          connectionLimit:
+            maxActiveConnections: 5
 `))
 	Expect(err).NotTo(HaveOccurred())
 
