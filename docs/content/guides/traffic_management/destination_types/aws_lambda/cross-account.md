@@ -50,7 +50,7 @@ Create roles in your authentication and Lambda AWS accounts. In the account that
               {
                   "Effect": "Allow",
                   "Principal": {
-                      "AWS": <ARN of authentication account role>,
+                      "AWS": "<ARN of authentication account role>"
                   },
                   "Action": "sts:AssumeRole",
                   "Condition": {}
