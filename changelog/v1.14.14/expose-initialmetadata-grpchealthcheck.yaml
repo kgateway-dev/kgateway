@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/8490
+  resolvesIssue: true
+  description: >-
+    Adds the ability to pass `initial_metadata` while configuring a GrpcHealthCheck. It specifies a list of key-value pairs that should be added to the metadata of each GRPC call that is sent to the health checked cluster.

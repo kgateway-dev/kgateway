@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/4903
+    resolvesIssue: false
+    description: >-
+      Validate that a cache hit occurs when opening a PR with no dependency changes.
+      Cleanup the prep-go-runner action to not call `mod-download` on a cache hit. The impact is minimal,
+      since there is nothing to download, but the syntax was wrong and needed to be fixed.
