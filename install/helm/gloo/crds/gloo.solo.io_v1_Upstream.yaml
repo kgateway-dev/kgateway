@@ -559,6 +559,28 @@ spec:
                       properties:
                         authority:
                           type: string
+                        initialMetadata:
+                          items:
+                            properties:
+                              append:
+                                nullable: true
+                                type: boolean
+                              header:
+                                properties:
+                                  key:
+                                    type: string
+                                  value:
+                                    type: string
+                                type: object
+                              headerSecretRef:
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
                         serviceName:
                           type: string
                       type: object

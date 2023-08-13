@@ -7,8 +7,10 @@ jobs:
     name: codegen check
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: ./.github/workflows/composite-actions/prep-go-runner
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
+      - name: Prep Go Runner
+        uses: ./.github/workflows/composite-actions/prep-go-runner
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:

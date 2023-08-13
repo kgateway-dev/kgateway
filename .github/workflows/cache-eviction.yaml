@@ -1,0 +1,40 @@
+name: Cache Eviction
+
+on:
+  pull_request:
+    types: closed
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  evict-mod-cache-closed-pr:
+    name: Evict Go Modules Cache for Closed PRs
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+      - name: Cleanup Cache for PR
+        # In this step we will delete the cache keys for the PR that was just closed.
+        # We use a GitHub CLI extension (https://github.com/actions/gh-actions-cache).
+        # The default number of cache keys returned by a list query is 30, but the maximum is 100.
+        # It is doubtful that there will be many keys for the given branch, but to be certain
+        # we set the limit to the maximum, 100.
+        run: |
+          gh extension install actions/gh-actions-cache
+
+          REPO=${{ github.repository }}
+          BRANCH="refs/pull/${{ github.event.pull_request.number }}/merge"
+
+          echo "Fetching list of cache keys for branch $BRANCH"
+          cacheKeysForPR=$(gh actions-cache list -R $REPO -B $BRANCH -L 100 | cut -f 1 )
+
+          ## Setting this to not fail the workflow while deleting cache keys.
+          set +e
+          echo "Deleting caches..."
+          for cacheKey in $cacheKeysForPR
+          do
+              echo "Deleting cache key $cacheKey"
+              gh actions-cache delete $cacheKey -R $REPO -B $BRANCH --confirm
+          done
+          echo "Done"

@@ -9,6 +9,7 @@ import (
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/proto"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/filters"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
@@ -206,4 +207,50 @@ func StagedFilterListContainsName(filters StagedHttpFilterList, filterName strin
 	}
 
 	return false
+}
+
+// ConvertFilterStage converts user-specified FilterStage options to the FilterStage representation used for translation.
+func ConvertFilterStage(in *filters.FilterStage) *FilterStage {
+	if in == nil {
+		return nil
+	}
+
+	var outStage WellKnownFilterStage
+	switch in.GetStage() {
+	case filters.FilterStage_CorsStage:
+		outStage = CorsStage
+	case filters.FilterStage_WafStage:
+		outStage = WafStage
+	case filters.FilterStage_AuthNStage:
+		outStage = AuthNStage
+	case filters.FilterStage_AuthZStage:
+		outStage = AuthZStage
+	case filters.FilterStage_RateLimitStage:
+		outStage = RateLimitStage
+	case filters.FilterStage_AcceptedStage:
+		outStage = AcceptedStage
+	case filters.FilterStage_OutAuthStage:
+		outStage = OutAuthStage
+	case filters.FilterStage_RouteStage:
+		outStage = RouteStage
+	case filters.FilterStage_FaultStage:
+		fallthrough
+	default:
+		// default to Fault stage
+		outStage = FaultStage
+	}
+
+	var out FilterStage
+	switch in.GetPredicate() {
+	case filters.FilterStage_Before:
+		out = BeforeStage(outStage)
+	case filters.FilterStage_After:
+		out = AfterStage(outStage)
+	case filters.FilterStage_During:
+		fallthrough
+	default:
+		// default to During
+		out = DuringStage(outStage)
+	}
+	return &out
 }

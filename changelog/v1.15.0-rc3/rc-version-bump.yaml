@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    resolvesIssue: false
+    description: Changelog to allow us to release a new RC for the purposes of generating a new solo-apis tag that pulls in manual changes

@@ -60,7 +60,11 @@ You can use the changelogs' built-in [comparison tool]({{< versioned_link_path f
 {{% /notice %}}
 
 ### Feature changes {#features}
-Review the following summary of important new, deprecated, or removed features. For full details, see the [changelogs](#changelogs). 
+Review the following summary of important new, deprecated, or removed features.
+
+{{% notice note %}}
+The following lists consist of the changes that were initially introduced with the 1.15.0 release. These changes might be backported to earlier versions of Gloo Edge. Additionally, there might be other changes that are introduced in later 1.15 patch releases. For patch release changes, check the [changelogs](#changelogs).
+{{% /notice %}}
 
 **New or improved features**:
 

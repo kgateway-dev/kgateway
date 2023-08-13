@@ -47,7 +47,7 @@ limitations under the License.
 
 
 
-##### Source File: [github.com/solo-io/solo-kit/api/external/metrics.proto](https://github.com/solo-io/solo-kit/blob/master/api/external/metrics.proto)
+##### Source File: [github.com/solo-io/solo-kit/api/external/metrics.proto](https://github.com/solo-io/solo-kit/blob/main/api/external/metrics.proto)
 
 
 
