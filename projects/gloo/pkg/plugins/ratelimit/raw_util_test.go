@@ -57,8 +57,8 @@ var _ = Describe("RawUtil", func() {
 	DescribeTable(
 		"should convert protos to the same thing till we properly vendor them",
 		func(actions []*gloorl.Action) {
-			out := ConvertActions(nil, actions)
-
+			out, err := ConvertActions(nil, actions)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(len(actions)).To(Equal(len(out)))
 			for i := range actions {
 				golangjson := golangjsonpb.Marshaler{}
@@ -168,7 +168,87 @@ var _ = Describe("RawUtil", func() {
 			},
 		),
 	)
-
+	DescribeTable("Errors on missing required fields", func(actions []*gloorl.Action) {
+		envoyActions, err := ConvertActions(nil, actions)
+		Expect(envoyActions).To(HaveLen(0))
+		Expect(err).To(MatchError(ContainSubstring("Missing required field in ratelimit action")))
+	},
+		Entry("Missing descriptorValue in genericKey",
+			[]*gloorl.Action{{
+				ActionSpecifier: &gloorl.Action_GenericKey_{
+					GenericKey: &gloorl.Action_GenericKey{},
+				},
+			}},
+		),
+		Entry("Missing headername in request headers",
+			[]*gloorl.Action{{
+				ActionSpecifier: &gloorl.Action_RequestHeaders_{
+					RequestHeaders: &gloorl.Action_RequestHeaders{
+						DescriptorKey: "key",
+					},
+				},
+			}},
+		),
+		Entry("Missing descriptor key in request headers",
+			[]*gloorl.Action{{
+				ActionSpecifier: &gloorl.Action_RequestHeaders_{
+					RequestHeaders: &gloorl.Action_RequestHeaders{
+						HeaderName: "header",
+					},
+				},
+			}},
+		),
+		Entry("Missing descriptorValue in headerValueMatch",
+			[]*gloorl.Action{
+				{
+					ActionSpecifier: &gloorl.Action_HeaderValueMatch_{
+						HeaderValueMatch: &gloorl.Action_HeaderValueMatch{
+							ExpectMatch: &wrappers.BoolValue{Value: true},
+							Headers:     hm,
+						},
+					},
+				}},
+		),
+		Entry("Missing DescriptorKey in ActionMetadata",
+			[]*gloorl.Action{{
+				ActionSpecifier: &gloorl.Action_Metadata{
+					Metadata: &gloorl.Action_MetaData{
+						MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+							Key: "io.solo.some.filter",
+							Path: []*gloorl.Action_MetaData_MetadataKey_PathSegment{
+								{
+									Segment: &gloorl.Action_MetaData_MetadataKey_PathSegment_Key{
+										Key: "foo",
+									},
+								},
+							},
+						},
+						DefaultValue: "nothing",
+						Source:       gloorl.Action_MetaData_ROUTE_ENTRY,
+					},
+				},
+			}},
+		),
+		Entry("Missing metadataKey_key in ActionMetadata",
+			[]*gloorl.Action{{
+				ActionSpecifier: &gloorl.Action_Metadata{
+					Metadata: &gloorl.Action_MetaData{
+						DescriptorKey: "some-key",
+						MetadataKey: &gloorl.Action_MetaData_MetadataKey{
+							Path: []*gloorl.Action_MetaData_MetadataKey_PathSegment{
+								{
+									Segment: &gloorl.Action_MetaData_MetadataKey_PathSegment_Key{
+										Key: "foo",
+									},
+								},
+							},
+						},
+						DefaultValue: "nothing",
+						Source:       gloorl.Action_MetaData_ROUTE_ENTRY,
+					},
+				},
+			}}),
+	)
 	// Needs to be separate because the yaml is no longer compatible
 	Context("special cases - not a straight conversion", func() {
 
@@ -192,8 +272,8 @@ var _ = Describe("RawUtil", func() {
 				},
 			}
 
-			out := ConvertActions(nil, actions)
-
+			out, err := ConvertActions(nil, actions)
+			Expect(err).NotTo(HaveOccurred())
 			expected := []*envoy_config_route_v3.RateLimit_Action{
 				{
 					ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_HeaderValueMatch_{
@@ -253,8 +333,8 @@ var _ = Describe("RawUtil", func() {
 				},
 			}
 
-			out := ConvertActions(nil, actions)
-
+			out, err := ConvertActions(nil, actions)
+			Expect(err).NotTo(HaveOccurred())
 			expected := []*envoy_config_route_v3.RateLimit_Action{
 				{
 					ActionSpecifier: &envoy_config_route_v3.RateLimit_Action_GenericKey_{
