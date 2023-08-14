@@ -11,4 +11,4 @@ Each PR requires a changelog, but creating the format for the changelog and iden
 bash devel/tools/changelog.sh
 ```
 
-**The directory where this is placed is based on the previous release. As a result, if you are crossing minor release boundaries, this may be innacurate**
+**The directory where this is placed is based on the previous release. As a result, if you are crossing minor release boundaries, this may be inaccurate and need to be manually adjusted.**
