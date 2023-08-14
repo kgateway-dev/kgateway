@@ -60,7 +60,7 @@ spec:
                         type: string
                     type: object
                   maxPayloadSize:
-                    maximum: 9223372036854776000
+                    maximum: 4294967295
                     minimum: 0
                     nullable: true
                     type: integer

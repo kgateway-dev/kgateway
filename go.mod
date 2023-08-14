@@ -52,7 +52,7 @@ require (
 	github.com/solo-io/go-utils v0.24.6
 	github.com/solo-io/k8s-utils v0.5.0
 	github.com/solo-io/protoc-gen-ext v0.0.18
-	github.com/solo-io/protoc-gen-openapi v0.1.1
+	github.com/solo-io/protoc-gen-openapi v0.1.1-0.20230814210702-cc9a7b5ccbc7
 	github.com/solo-io/skv2 v0.32.0
 
 	// Pinned to the latest `gloo-repo-branch` tag of solo-apis (`sa-k8s-1.27-bump`)
