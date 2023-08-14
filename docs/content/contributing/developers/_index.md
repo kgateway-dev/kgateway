@@ -39,7 +39,7 @@ For significant changes to the Gloo Edge project, get input on the design before
 1. Refer to [Filing issues](#filing-issues) to find or open an issue with your idea.
 2. Message the [Solo team on Slack](https://slack.solo.io) to discuss your proposed changes and come up with an implementation plan.
 3. Refer to the [`devel` directory](https://github.com/solo-io/gloo/tree/main/devel) in the Gloo Edge project for tools and helpful information to contribute, debug, and test your code.
-4. Open a draft PR with the `wip` label to get feedback on your work.
+4. Open a draft PR with the `work in progress` label to get feedback on your work.
 5. Address any review comments that a Solo team member leaves.
 
 **The Solo team will merge and release your code changes!**
