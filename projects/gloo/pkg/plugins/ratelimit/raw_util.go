@@ -20,6 +20,7 @@ import (
 const SetDescriptorValue = "solo.setDescriptor.uniqueValue"
 
 // TODO: this error and handling around it can be removed if we eventually generate CRDs with required values from the ratelimit proto.
+// Issue: https://github.com/solo-io/gloo/issues/8580
 func missingFieldError(field string) error {
 	return eris.Errorf("Missing required field in ratelimit action %s", field)
 }
@@ -47,6 +48,7 @@ func toEnvoyRateLimits(
 	return ret, allErrors
 }
 
+// ConvertActions generates Envoy RateLimit_Actions from the solo-apis API. It checks that all required fields are set.
 func ConvertActions(ctx context.Context, actions []*solo_rl.Action) ([]*envoy_config_route_v3.RateLimit_Action, error) {
 	var retActions []*envoy_config_route_v3.RateLimit_Action
 
@@ -56,6 +58,7 @@ func ConvertActions(ctx context.Context, actions []*solo_rl.Action) ([]*envoy_co
 		convertedAction, err := convertAction(ctx, action)
 		if err != nil {
 			allErrors = multierror.Append(allErrors, err)
+			continue
 		}
 		if convertedAction.GetGenericKey().GetDescriptorValue() == SetDescriptorValue {
 			isSetStyle = true
