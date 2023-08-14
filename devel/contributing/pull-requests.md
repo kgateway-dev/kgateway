@@ -28,7 +28,7 @@ Below are some best practices we have found to help PRs get reviewed quickly
 ### Include a Changelog Entry
 All PRs are required to contain a changelog entry. This is enforced by the [changelog bot](automation.md). If you do not include one, the first reviewer should ask for this.
 
-You can use the [changelog.sh script](/devel/tools#changelog-creation) to generate a changelog template for submission.
+You can use the [changelog.sh script](/devel/tools#changelog-creation-tool) to generate a changelog template for submission.
 
 ### Smaller Is Better
 Small PRs are more likely to be reviewed quickly and thoroughly. If the PR takes **>45 minutes** to review, the review may be less thorough and more likely to miss something important.
