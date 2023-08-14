@@ -4,4 +4,4 @@ changelog:
       Update weekly runs of performance tests to be properly triggered
       Update the `devel` folder to have a README which outlines the available tools
 
-      skipCI-kube-tests
+      skipCI-kube-tests:true
