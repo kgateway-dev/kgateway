@@ -22,4 +22,4 @@ Each PR requires a changelog. However, creating the changelog file in the right 
 bash devel/tools/changelog.sh
 ```
 
-_**Note**: The changelog file is placed in a directory based on the previous release. As a result, the file might be in the wrong directory when you are adding code in between minor release boundaries.**_
+_**Note**: The changelog file is automatically placed in a directory based on the previous release. In between minor releases, the directory might be wrong and require you to manually adjust where the changelog is placed.**_
