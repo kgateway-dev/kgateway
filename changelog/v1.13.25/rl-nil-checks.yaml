@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8573
+    resolvesIssue: false
+    description: > 
+       Check for empty values in fields that are required by Envoy for RateLimitActions. Previously invalid config would be passed to Envoy.
+       API reference: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route_components.proto#config-route-v3-ratelimit-action.
+  - type: NON_USER_FACING
+    description: Provide correct path for sub-actions in the action to create solo-apis PRs.
