@@ -97,7 +97,7 @@ jobs:
 
   performance_tests_15:
     name: v1.15.x performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1-5' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
