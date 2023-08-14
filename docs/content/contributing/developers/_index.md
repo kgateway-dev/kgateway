@@ -1,67 +1,62 @@
 ---
-title: Developers
-menuTitle: Developers
-description: Ways to contribute to Gloo Edge.
+title: Contribute to the Gloo Edge code
+menuTitle: Development
+description: Contribute to the codebase for the Gloo Edge project.
 weight: 10
 ---
 
-Excited about Gloo Edge and want to help make it better? 
+As a developer, you can contribute code to the [Gloo Edge project](https://github.com/solo-io/gloo).
 
-At Solo we strive to make the world of microservices, serverless and service mesh available to everyone. If you want to help but don't know where to start, let us know, and we'll find something for you.
-
-If you haven't already, make sure you sign up for the [Solo Slack](https://slack.solo.io).
-
-Here are some of the ways you can contribute: 
+## Ways to contribute
 
 * [Filing issues](#filing-issues)
-* [Improving the documentation](#improving-the-documentation)
 * [Small bug fixes](#small-bug-fixes)
 * [Big pull requests](#big-prs)
-* [Code review guidelines](#code-review-guidelines)
-
+* [Documentation]({{< versioned_link_path fromRoot="/contributing/documentation/" >}})
+* [Extending plug-in functionality]({{< versioned_link_path fromRoot="/contributing/extend-edge/" >}})
 
 ### Filing issues
 
-If you encounter a bug, please file an issue on GitHub. If an issue you have is already reported, please add additional information or add a 👍 reaction to indicate your agreement.
+If you encounter a bug, you can report the issue on GitHub.
 
+1. Review [existing issues](https://github.com/solo-io/gloo/issues). If you find a similar issue, add a comment with more context or a 👍 reaction to indicate your agreement.
+2. If you don't find a similar issue, [open an issue](https://github.com/solo-io/gloo/issues/new/choose) using the appropriate template, such as a **Bug Report**.
 
-### Improving the documentation
-
-[Improving the documentation]({{< versioned_link_path fromRoot="/contributing/documentation/" >}}), adding examples or use cases can be the easiest way to contribute to Gloo Edge. If you see a piece of content that can be better, open a PR with an improvement, it doesn't matter how small!
 
 ### Small bug fixes
 
-If your bug fix is small (around 20 lines of code) just open a pull request. We will try to merge it as soon as possible, just make sure that you include a test that verifies the bug you are fixing.
+If your bug fix is small (around 20 lines of code), just open a pull request. The PR template walks you through providing context and tests that verify your fix works. Solo's engineering team will try to merge the fix as soon as possible.
 
-## Big PRs
+### Big PRs
 
-This includes:
+Sometimes, you might need to open a larger PR, such as for:
 
 - Big bug fixes
 - New features
 
-For significant changes to the repository, it’s important to settle on a design before starting on the implementation. Reaching out to us early will help minimize the amount of possible wasted effort and will ensure that major improvements are given enough attention.
+For significant changes to the Gloo Edge project, get input on the design before starting on the implementation.
 
-1. **Open an issue.** Open an issue about your bug in this repo.
-2. **Message us on Slack.** Reach out to us to discuss your proposed changes.
-3. **Agree on implementation plan.** Write a plan for how this feature or bug fix should be implemented. Should this be one pull request or multiple incremental improvements? Who is going to do each part?
-4. **Submit a work-in-progress PR** It's important to get feedback as early as possible to ensure that any big improvements end up being merged. Submit a pull request and label it `wip` to start getting feedback.
-5. **Review.** At least one Solo team member should sign off on the change before it’s merged. Look at the “code review” section below to learn about what we're looking for.
-6. **A Solo team member will merge and release!**
+1. Refer to [Filing issues](#filing-issues) to find or open an issue with your idea.
+2. Message the [Solo team on Slack](https://slack.solo.io) to discuss your proposed changes and come up with an implementation plan.
+3. Refer to the [`devel` directory](https://github.com/solo-io/gloo/tree/main/devel) in the Gloo Edge project for tools and helpful information to contribute, debug, and test your code.
+4. Open a draft PR with the `wip` label to get feedback on your work.
+5. Address any review comments that a Solo team member leaves.
 
-### Code review guidelines
+**The Solo team will merge and release your code changes!**
 
-It’s important that every piece of code in Gloo Edge is reviewed by at least one Solo team member familiar with that codebase.
+## Code review guidelines
+
+Every piece of code in Gloo Edge is reviewed by at least one Solo team member familiar with that codebase.
 
 1. **Changelog** Every PR in Gloo Edge needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/main/changelogutils). 
 2. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
 3. **Testing** Please write tests for your changes. Bias towards fast / unit testing. 
 4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`.
 
-### Testing with coverage:
+## Testing with coverage
 
-To see coverage, run your tests in the package like so
+To check coverage, run your tests in the package, such as:
 
-```
+```shell
 ginkgo -cover && go tool cover -html *.coverprofile
 ```
