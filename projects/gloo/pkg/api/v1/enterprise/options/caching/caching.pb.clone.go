@@ -67,9 +67,9 @@ func (m *Settings) Clone() proto.Message {
 	}
 
 	if h, ok := interface{}(m.GetMaxPayloadSize()).(clone.Cloner); ok {
-		target.MaxPayloadSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt64Value)
+		target.MaxPayloadSize = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	} else {
-		target.MaxPayloadSize = proto.Clone(m.GetMaxPayloadSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt64Value)
+		target.MaxPayloadSize = proto.Clone(m.GetMaxPayloadSize()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	return target

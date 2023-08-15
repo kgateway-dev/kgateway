@@ -25,7 +25,7 @@ message Settings {
    // Max payload size to cache. If unset defaults to a reasonable value.
    // If explicitly set to 0 will prevent anything with a body from
    // being cached.
-   google.protobuf.UInt64Value max_payload_size = 4;
+   google.protobuf.UInt32Value max_payload_size = 4;
 
 
 }
