@@ -41,7 +41,7 @@ type Settings struct {
 	// Max payload size to cache. If unset defaults to a reasonable value.
 	// If explicitly set to 0 will prevent anything with a body from
 	// being cached.
-	MaxPayloadSize *wrappers.UInt64Value `protobuf:"bytes,4,opt,name=max_payload_size,json=maxPayloadSize,proto3" json:"max_payload_size,omitempty"`
+	MaxPayloadSize *wrappers.UInt32Value `protobuf:"bytes,4,opt,name=max_payload_size,json=maxPayloadSize,proto3" json:"max_payload_size,omitempty"`
 }
 
 func (x *Settings) Reset() {
@@ -97,7 +97,7 @@ func (x *Settings) GetTimeout() *duration.Duration {
 	return nil
 }
 
-func (x *Settings) GetMaxPayloadSize() *wrappers.UInt64Value {
+func (x *Settings) GetMaxPayloadSize() *wrappers.UInt32Value {
 	if x != nil {
 		return x.MaxPayloadSize
 	}
@@ -145,7 +145,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_caching
 	0x6f, 0x6e, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x12, 0x46, 0x0a, 0x10, 0x6d,
 	0x61, 0x78, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5f, 0x73, 0x69, 0x7a, 0x65, 0x18,
 	0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x56, 0x61,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x56, 0x61,
 	0x6c, 0x75, 0x65, 0x52, 0x0e, 0x6d, 0x61, 0x78, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x53,
 	0x69, 0x7a, 0x65, 0x42, 0x59, 0x5a, 0x4b, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
 	0x6d, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2d, 0x69, 0x6f, 0x2f, 0x67, 0x6c, 0x6f, 0x6f, 0x2f, 0x70,
@@ -174,13 +174,13 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_caching
 	(*core.ResourceRef)(nil),     // 1: core.solo.io.ResourceRef
 	(*v3.StringMatcher)(nil),     // 2: solo.io.envoy.type.matcher.v3.StringMatcher
 	(*duration.Duration)(nil),    // 3: google.protobuf.Duration
-	(*wrappers.UInt64Value)(nil), // 4: google.protobuf.UInt64Value
+	(*wrappers.UInt32Value)(nil), // 4: google.protobuf.UInt32Value
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_caching_caching_proto_depIdxs = []int32{
 	1, // 0: caching.options.gloo.solo.io.Settings.caching_service_ref:type_name -> core.solo.io.ResourceRef
 	2, // 1: caching.options.gloo.solo.io.Settings.allowed_vary_headers:type_name -> solo.io.envoy.type.matcher.v3.StringMatcher
 	3, // 2: caching.options.gloo.solo.io.Settings.timeout:type_name -> google.protobuf.Duration
-	4, // 3: caching.options.gloo.solo.io.Settings.max_payload_size:type_name -> google.protobuf.UInt64Value
+	4, // 3: caching.options.gloo.solo.io.Settings.max_payload_size:type_name -> google.protobuf.UInt32Value
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
