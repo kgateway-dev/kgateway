@@ -18,7 +18,7 @@ var _ = Describe("Plugin", func() {
 		filters, err := NewPlugin().NetworkFiltersHTTP(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
-					MaxActiveConnections: &wrappers.UInt64Value{Value: 9},
+					MaxActiveConnections: &wrappers.UInt32Value{Value: 9},
 					DelayBeforeClose:     &durationpb.Duration{Seconds: 10},
 				},
 			},
@@ -47,7 +47,7 @@ var _ = Describe("Plugin", func() {
 		_, err := NewPlugin().NetworkFiltersTCP(plugins.Params{}, &v1.TcpListener{
 			Options: &v1.TcpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
-					MaxActiveConnections: &wrappers.UInt64Value{Value: 0},
+					MaxActiveConnections: &wrappers.UInt32Value{Value: 0},
 				},
 			},
 		})

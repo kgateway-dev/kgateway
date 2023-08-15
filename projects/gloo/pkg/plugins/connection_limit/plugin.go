@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/connection_limit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 var (
@@ -49,9 +50,11 @@ func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) ([]plugin
 	}
 
 	config := &envoy_config_connection_limit_v3.ConnectionLimit{
-		StatPrefix:     StatPrefix,
-		MaxConnections: connectionLimit.GetMaxActiveConnections(),
-		Delay:          connectionLimit.GetDelayBeforeClose(),
+		StatPrefix: StatPrefix,
+		MaxConnections: &wrapperspb.UInt64Value{
+			Value: uint64(connectionLimit.GetMaxActiveConnections().GetValue()),
+		},
+		Delay: connectionLimit.GetDelayBeforeClose(),
 	}
 	marshalledConf, err := utils.MessageToAny(config)
 	if err != nil {
