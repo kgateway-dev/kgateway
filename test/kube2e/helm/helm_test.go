@@ -628,7 +628,7 @@ gatewayProxies:
                 keyValueAction:
                   keyToMask: test
                   name: test
-          # This checks the proper parsing of wrappers.UInt64Value
+          # This checks the proper parsing of wrappers.UInt32Value
           caching:
             maxPayloadSize: 5
 `))
