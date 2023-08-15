@@ -704,9 +704,51 @@ spec:
                                   items:
                                     type: string
                                   type: array
-                                overwriteUpstreamHeaders:
+                                passthroughUpstreamHeaders:
                                   items:
-                                    type: string
+                                    properties:
+                                      append:
+                                        nullable: true
+                                        type: boolean
+                                      appendAction:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
+                                      header:
+                                        properties:
+                                          key:
+                                            type: string
+                                          rawValue:
+                                            format: byte
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      keepEmptyValue:
+                                        type: boolean
+                                    type: object
+                                  type: array
+                                passthroughUpstreamHeadersOnDenied:
+                                  items:
+                                    properties:
+                                      append:
+                                        nullable: true
+                                        type: boolean
+                                      appendAction:
+                                        type: string
+                                        x-kubernetes-int-or-string: true
+                                      header:
+                                        properties:
+                                          key:
+                                            type: string
+                                          rawValue:
+                                            format: byte
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      keepEmptyValue:
+                                        type: boolean
+                                    type: object
                                   type: array
                                 readStateFromResponse:
                                   type: boolean

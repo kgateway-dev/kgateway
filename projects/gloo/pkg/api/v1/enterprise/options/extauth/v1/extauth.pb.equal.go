@@ -290,6 +290,94 @@ func (m *Settings) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *HeaderValue) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HeaderValue)
+	if !ok {
+		that2, ok := that.(HeaderValue)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetValue(), target.GetValue()) != 0 {
+		return false
+	}
+
+	if bytes.Compare(m.GetRawValue(), target.GetRawValue()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *HeaderValueOption) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*HeaderValueOption)
+	if !ok {
+		that2, ok := that.(HeaderValueOption)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHeader()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHeader(), target.GetHeader()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAppend()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAppend()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAppend(), target.GetAppend()) {
+			return false
+		}
+	}
+
+	if m.GetAppendAction() != target.GetAppendAction() {
+		return false
+	}
+
+	if m.GetKeepEmptyValue() != target.GetKeepEmptyValue() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *GrpcService) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -4142,13 +4230,36 @@ func (m *PassThroughHttp_Response) Equal(that interface{}) bool {
 		return false
 	}
 
-	if len(m.GetOverwriteUpstreamHeaders()) != len(target.GetOverwriteUpstreamHeaders()) {
+	if len(m.GetPassthroughUpstreamHeaders()) != len(target.GetPassthroughUpstreamHeaders()) {
 		return false
 	}
-	for idx, v := range m.GetOverwriteUpstreamHeaders() {
+	for idx, v := range m.GetPassthroughUpstreamHeaders() {
 
-		if strings.Compare(v, target.GetOverwriteUpstreamHeaders()[idx]) != 0 {
-			return false
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassthroughUpstreamHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPassthroughUpstreamHeaders()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	if len(m.GetPassthroughUpstreamHeadersOnDenied()) != len(target.GetPassthroughUpstreamHeadersOnDenied()) {
+		return false
+	}
+	for idx, v := range m.GetPassthroughUpstreamHeadersOnDenied() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetPassthroughUpstreamHeadersOnDenied()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetPassthroughUpstreamHeadersOnDenied()[idx]) {
+				return false
+			}
 		}
 
 	}

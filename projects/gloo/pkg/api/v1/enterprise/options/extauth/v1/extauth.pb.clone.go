@@ -194,6 +194,53 @@ func (m *Settings) Clone() proto.Message {
 }
 
 // Clone function
+func (m *HeaderValue) Clone() proto.Message {
+	var target *HeaderValue
+	if m == nil {
+		return target
+	}
+	target = &HeaderValue{}
+
+	target.Key = m.GetKey()
+
+	target.Value = m.GetValue()
+
+	if m.GetRawValue() != nil {
+		target.RawValue = make([]byte, len(m.GetRawValue()))
+		copy(target.RawValue, m.GetRawValue())
+	}
+
+	return target
+}
+
+// Clone function
+func (m *HeaderValueOption) Clone() proto.Message {
+	var target *HeaderValueOption
+	if m == nil {
+		return target
+	}
+	target = &HeaderValueOption{}
+
+	if h, ok := interface{}(m.GetHeader()).(clone.Cloner); ok {
+		target.Header = h.Clone().(*HeaderValue)
+	} else {
+		target.Header = proto.Clone(m.GetHeader()).(*HeaderValue)
+	}
+
+	if h, ok := interface{}(m.GetAppend()).(clone.Cloner); ok {
+		target.Append = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.Append = proto.Clone(m.GetAppend()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	target.AppendAction = m.GetAppendAction()
+
+	target.KeepEmptyValue = m.GetKeepEmptyValue()
+
+	return target
+}
+
+// Clone function
 func (m *GrpcService) Clone() proto.Message {
 	var target *GrpcService
 	if m == nil {
@@ -2449,11 +2496,28 @@ func (m *PassThroughHttp_Response) Clone() proto.Message {
 
 	target.ReadStateFromResponse = m.GetReadStateFromResponse()
 
-	if m.GetOverwriteUpstreamHeaders() != nil {
-		target.OverwriteUpstreamHeaders = make([]string, len(m.GetOverwriteUpstreamHeaders()))
-		for idx, v := range m.GetOverwriteUpstreamHeaders() {
+	if m.GetPassthroughUpstreamHeaders() != nil {
+		target.PassthroughUpstreamHeaders = make([]*HeaderValueOption, len(m.GetPassthroughUpstreamHeaders()))
+		for idx, v := range m.GetPassthroughUpstreamHeaders() {
 
-			target.OverwriteUpstreamHeaders[idx] = v
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.PassthroughUpstreamHeaders[idx] = h.Clone().(*HeaderValueOption)
+			} else {
+				target.PassthroughUpstreamHeaders[idx] = proto.Clone(v).(*HeaderValueOption)
+			}
+
+		}
+	}
+
+	if m.GetPassthroughUpstreamHeadersOnDenied() != nil {
+		target.PassthroughUpstreamHeadersOnDenied = make([]*HeaderValueOption, len(m.GetPassthroughUpstreamHeadersOnDenied()))
+		for idx, v := range m.GetPassthroughUpstreamHeadersOnDenied() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.PassthroughUpstreamHeadersOnDenied[idx] = h.Clone().(*HeaderValueOption)
+			} else {
+				target.PassthroughUpstreamHeadersOnDenied[idx] = proto.Clone(v).(*HeaderValueOption)
+			}
 
 		}
 	}
