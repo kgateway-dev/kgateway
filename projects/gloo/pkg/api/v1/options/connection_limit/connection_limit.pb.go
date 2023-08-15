@@ -35,7 +35,7 @@ type ConnectionLimit struct {
 	// The maximum number of active connections for this gateway. When this limit is reached, any incoming connection
 	// will be closed after delay duration.
 	// Must be greater than one.
-	MaxActiveConnections *wrappers.UInt64Value `protobuf:"bytes,1,opt,name=max_active_connections,json=maxActiveConnections,proto3" json:"max_active_connections,omitempty"`
+	MaxActiveConnections *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_active_connections,json=maxActiveConnections,proto3" json:"max_active_connections,omitempty"`
 	// The time to wait before a connection is dropped. Useful for DoS prevention.
 	// Defaults to zero and the connection will be closed immediately.
 	DelayBeforeClose *duration.Duration `protobuf:"bytes,2,opt,name=delay_before_close,json=delayBeforeClose,proto3" json:"delay_before_close,omitempty"`
@@ -73,7 +73,7 @@ func (*ConnectionLimit) Descriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_options_connection_limit_connection_limit_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ConnectionLimit) GetMaxActiveConnections() *wrappers.UInt64Value {
+func (x *ConnectionLimit) GetMaxActiveConnections() *wrappers.UInt32Value {
 	if x != nil {
 		return x.MaxActiveConnections
 	}
@@ -112,7 +112,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_connection_limit_c
 	0x69, 0x6d, 0x69, 0x74, 0x12, 0x52, 0x0a, 0x16, 0x6d, 0x61, 0x78, 0x5f, 0x61, 0x63, 0x74, 0x69,
 	0x76, 0x65, 0x5f, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34, 0x56, 0x61, 0x6c,
+	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x33, 0x32, 0x56, 0x61, 0x6c,
 	0x75, 0x65, 0x52, 0x14, 0x6d, 0x61, 0x78, 0x41, 0x63, 0x74, 0x69, 0x76, 0x65, 0x43, 0x6f, 0x6e,
 	0x6e, 0x65, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x47, 0x0a, 0x12, 0x64, 0x65, 0x6c, 0x61,
 	0x79, 0x5f, 0x62, 0x65, 0x66, 0x6f, 0x72, 0x65, 0x5f, 0x63, 0x6c, 0x6f, 0x73, 0x65, 0x18, 0x02,
@@ -143,11 +143,11 @@ func file_github_com_solo_io_gloo_projects_gloo_api_v1_options_connection_limit_
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_connection_limit_connection_limit_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_connection_limit_connection_limit_proto_goTypes = []interface{}{
 	(*ConnectionLimit)(nil),      // 0: connection_limit.options.gloo.solo.io.ConnectionLimit
-	(*wrappers.UInt64Value)(nil), // 1: google.protobuf.UInt64Value
+	(*wrappers.UInt32Value)(nil), // 1: google.protobuf.UInt32Value
 	(*duration.Duration)(nil),    // 2: google.protobuf.Duration
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_v1_options_connection_limit_connection_limit_proto_depIdxs = []int32{
-	1, // 0: connection_limit.options.gloo.solo.io.ConnectionLimit.max_active_connections:type_name -> google.protobuf.UInt64Value
+	1, // 0: connection_limit.options.gloo.solo.io.ConnectionLimit.max_active_connections:type_name -> google.protobuf.UInt32Value
 	2, // 1: connection_limit.options.gloo.solo.io.ConnectionLimit.delay_before_close:type_name -> google.protobuf.Duration
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
