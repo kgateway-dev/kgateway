@@ -166,6 +166,8 @@ func convertAction(ctx context.Context, action *solo_rl.Action) (*envoy_config_r
 				Source:       envoy_config_route_v3.RateLimit_Action_MetaData_Source(specificAction.Metadata.GetSource()),
 			},
 		}
+	default:
+		return nil, eris.Errorf("Unknown action type")
 	}
 
 	return &retAction, nil
