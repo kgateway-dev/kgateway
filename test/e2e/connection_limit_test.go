@@ -77,7 +77,7 @@ var _ = Describe("Connection Limit", func() {
 			gw := gatewaydefaults.DefaultGateway(writeNamespace)
 			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 				ConnectionLimit: &connection_limit.ConnectionLimit{
-					MaxActiveConnections: &wrapperspb.UInt64Value{
+					MaxActiveConnections: &wrapperspb.UInt32Value{
 						Value: 1,
 					},
 				},
