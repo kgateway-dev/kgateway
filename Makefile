@@ -122,7 +122,7 @@ install-go-tools: mod-download ## Download and install Go dependencies
 	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	go install github.com/solo-io/protoc-gen-ext
-	go install github.com/solo-io/protoc-gen-openapi@cc9a7b5ccbc7613f3dd6c279cda84f50b1f41874
+	go install github.com/solo-io/protoc-gen-openapi
 	go install github.com/envoyproxy/protoc-gen-validate
 	go install github.com/golang/protobuf/protoc-gen-go
 	go install golang.org/x/tools/cmd/goimports
