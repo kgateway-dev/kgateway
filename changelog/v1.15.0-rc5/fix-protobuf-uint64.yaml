@@ -3,4 +3,7 @@ changelog:
     description: Fix incorrect CRD generation and overflow caused of proto fileds of type `google.protobuf.UInt64Value`. Previously fields of this type had an incorrect schema as well as led to overflows which led to them failing being unmarshalled, which is now resolved by changing the type to `google.protobuf.UInt32Value`, which is backward-forward compatible. Ref. https://protobuf.dev/programming-guides/proto2/#updating point 5. Affected protos include gateway specs `httpGateway.options.caching.maxPayloadSize` and `httpGateway.options.connectionLimit.maxActiveConnections`
     issueLink: https://github.com/solo-io/gloo/issues/8568
     resolvesIssue: false
+  - type: NON_USER_FACING
+    description: >-
+      Fix process-skip-directive script that checks against main instead of the base branch.
 
