@@ -704,7 +704,7 @@ spec:
                                   items:
                                     type: string
                                   type: array
-                                overwriteUpstreamHeaders:
+                                allowedUpstreamHeadersToOverride:
                                   items:
                                     type: string
                                   type: array
