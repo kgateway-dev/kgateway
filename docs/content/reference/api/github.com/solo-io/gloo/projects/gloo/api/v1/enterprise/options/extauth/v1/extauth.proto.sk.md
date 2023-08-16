@@ -16,8 +16,7 @@ weight: 5
 - [ExtAuthExtension](#extauthextension)
 - [Settings](#settings)
 - [ApiVersion](#apiversion)
-- [HeaderValue](#headervalue)
-- [HeaderValueOption](#headervalueoption)
+- [HeaderValueOptionTemplate](#headervalueoptiontemplate)
 - [HeaderAppendAction](#headerappendaction)
 - [GrpcService](#grpcservice)
 - [HttpService](#httpservice)
@@ -256,46 +255,24 @@ Describes the transport protocol version to use when connecting to the ext auth 
 
 
 ---
-### HeaderValue
-
- 
-Header name/value pair.
-
-```yaml
-"key": string
-"value": string
-"rawValue": bytes
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `key` | `string` | Header name. |
-| `value` | `string` | Header value. The same :ref:`format specifier <config_access_log_format>` as used for :ref:`HTTP access logging <config_access_log>` applies here, however unknown header values are replaced with the empty string instead of ``-``. Header value is encoded as string. This does not work for non-utf8 characters. Only one of ``value`` or ``raw_value`` can be set. |
-| `rawValue` | `bytes` | Header value is encoded as bytes which can support non-utf8 characters. Only one of ``value`` or ``raw_value`` can be set. |
-
-
-
-
----
-### HeaderValueOption
+### HeaderValueOptionTemplate
 
  
 // Header name/value pair plus option to control append behavior.
 
 ```yaml
-"header": .enterprise.gloo.solo.io.HeaderValue
+"headerName": string
 "append": .google.protobuf.BoolValue
-"appendAction": .enterprise.gloo.solo.io.HeaderValueOption.HeaderAppendAction
+"appendAction": .enterprise.gloo.solo.io.HeaderValueOptionTemplate.HeaderAppendAction
 "keepEmptyValue": bool
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `header` | [.enterprise.gloo.solo.io.HeaderValue](../extauth.proto.sk/#headervalue) | Header name/value pair that this option applies to. |
+| `headerName` | `string` | Header name/value pair that this option applies to. |
 | `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should the value be appended? If true (default), the value is appended to existing values. Otherwise it replaces any existing values. This field is deprecated and please use :ref:`append_action <envoy_v3_api_field_config.core.v3.HeaderValueOption.append_action>` as replacement. .. note:: The :ref:`external authorization service <envoy_v3_api_msg_service.auth.v3.CheckResponse>` and :ref:`external processor service <envoy_v3_api_msg_service.ext_proc.v3.ProcessingResponse>` have default value (``false``) for this field. |
-| `appendAction` | [.enterprise.gloo.solo.io.HeaderValueOption.HeaderAppendAction](../extauth.proto.sk/#headerappendaction) | Describes the action taken to append/overwrite the given value for an existing header or to only add this header if it's absent. Value defaults to :ref:`APPEND_IF_EXISTS_OR_ADD <envoy_v3_api_enum_value_config.core.v3.HeaderValueOption.HeaderAppendAction.APPEND_IF_EXISTS_OR_ADD>`. |
+| `appendAction` | [.enterprise.gloo.solo.io.HeaderValueOptionTemplate.HeaderAppendAction](../extauth.proto.sk/#headerappendaction) | Describes the action taken to append/overwrite the given value for an existing header or to only add this header if it's absent. Value defaults to :ref:`APPEND_IF_EXISTS_OR_ADD <envoy_v3_api_enum_value_config.core.v3.HeaderValueOption.HeaderAppendAction.APPEND_IF_EXISTS_OR_ADD>`. |
 | `keepEmptyValue` | `bool` | Is the header value allowed to be empty? If false (default), custom headers with empty values are dropped, otherwise they are added. |
 
 
@@ -1711,8 +1688,8 @@ JSON marshalling.
 "allowedUpstreamHeaders": []string
 "allowedClientHeadersOnDenied": []string
 "readStateFromResponse": bool
-"passthroughUpstreamHeaders": []enterprise.gloo.solo.io.HeaderValueOption
-"passthroughUpstreamHeadersOnDenied": []enterprise.gloo.solo.io.HeaderValueOption
+"passthroughUpstreamHeaders": []enterprise.gloo.solo.io.HeaderValueOptionTemplate
+"passthroughUpstreamHeadersOnDenied": []enterprise.gloo.solo.io.HeaderValueOptionTemplate
 
 ```
 
@@ -1721,8 +1698,8 @@ JSON marshalling.
 | `allowedUpstreamHeaders` | `[]string` | When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream when the auth request is successful. These will be appended to any request headers that already exist. If this is empty, by default, no authorization response headers will be added to the upstream request. |
 | `allowedClientHeadersOnDenied` | `[]string` | When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied. If the response header already exists, it will replace the response header. If this is empty, by default, no authorization response headers will be added to the client response. |
 | `readStateFromResponse` | `bool` | If this is set to true, the body of the response from the http passthrough auth server is expected to have shape { "state": object (map[string]interface{}) } The state will be marshalled from the response body and this is the state that will be passed on to other auth configs. Because of the marshalling from JSON to Go map, this will add some latency to the request. If the marshalling fails, the authorization check will fail and the request will be unauthorized after the ext-auth-service pod logs the marshal error. |
-| `passthroughUpstreamHeaders` | [[]enterprise.gloo.solo.io.HeaderValueOption](../extauth.proto.sk/#headervalueoption) | repeated string overwrite_upstream_headers = 4;. |
-| `passthroughUpstreamHeadersOnDenied` | [[]enterprise.gloo.solo.io.HeaderValueOption](../extauth.proto.sk/#headervalueoption) |  |
+| `passthroughUpstreamHeaders` | [[]enterprise.gloo.solo.io.HeaderValueOptionTemplate](../extauth.proto.sk/#headervalueoptiontemplate) | repeated string overwrite_upstream_headers = 4;. |
+| `passthroughUpstreamHeadersOnDenied` | [[]enterprise.gloo.solo.io.HeaderValueOptionTemplate](../extauth.proto.sk/#headervalueoptiontemplate) |  |
 
 
 

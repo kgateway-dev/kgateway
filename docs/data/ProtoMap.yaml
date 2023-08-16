@@ -254,11 +254,8 @@ apis:
   enterprise.gloo.solo.io.HeaderConfiguration:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderConfiguration
     package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.HeaderValue:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderValue
-    package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.HeaderValueOption:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderValueOption
+  enterprise.gloo.solo.io.HeaderValueOptionTemplate:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderValueOptionTemplate
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.HmacAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HmacAuth

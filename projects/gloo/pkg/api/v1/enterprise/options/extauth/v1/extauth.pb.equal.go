@@ -290,14 +290,14 @@ func (m *Settings) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *HeaderValue) Equal(that interface{}) bool {
+func (m *HeaderValueOptionTemplate) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*HeaderValue)
+	target, ok := that.(*HeaderValueOptionTemplate)
 	if !ok {
-		that2, ok := that.(HeaderValue)
+		that2, ok := that.(HeaderValueOptionTemplate)
 		if ok {
 			target = &that2
 		} else {
@@ -310,50 +310,8 @@ func (m *HeaderValue) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetKey(), target.GetKey()) != 0 {
+	if strings.Compare(m.GetHeaderName(), target.GetHeaderName()) != 0 {
 		return false
-	}
-
-	if strings.Compare(m.GetValue(), target.GetValue()) != 0 {
-		return false
-	}
-
-	if bytes.Compare(m.GetRawValue(), target.GetRawValue()) != 0 {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
-func (m *HeaderValueOption) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*HeaderValueOption)
-	if !ok {
-		that2, ok := that.(HeaderValueOption)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetHeader()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetHeader()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetHeader(), target.GetHeader()) {
-			return false
-		}
 	}
 
 	if h, ok := interface{}(m.GetAppend()).(equality.Equalizer); ok {
