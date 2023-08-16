@@ -160,7 +160,7 @@ message Settings {
 }
 
 // // Header name/value pair plus option to control append behavior.
-message HeaderValueOptionDef {  
+message HeaderValueOptionTemplate {  
 //     // Describes the supported actions types for header append action.
     enum HeaderAppendAction {
       // This action will append the specified value to the existing values if the header
@@ -183,7 +183,7 @@ message HeaderValueOptionDef {
     }
   
     // Header name/value pair that this option applies to.
-    HeaderValue headerName = 1;
+    string headerName = 1;
   
     // Should the value be appended? If true (default), the value is appended to
     // existing values. Otherwise it replaces any existing values.
@@ -1318,8 +1318,8 @@ message PassThroughHttp {
         bool read_state_from_response = 3;
 
         //repeated string overwrite_upstream_headers = 4;
-        repeated HeaderValueOptionDef passthrough_upstream_headers = 4;
-        repeated HeaderValueOptionDef passthrough_upstream_headers_on_denied = 5;
+        repeated HeaderValueOptionTemplate passthrough_upstream_headers = 4;
+        repeated HeaderValueOptionTemplate passthrough_upstream_headers_on_denied = 5;
 
     }
     Response response = 4;
