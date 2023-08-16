@@ -159,27 +159,8 @@ message Settings {
     string stat_prefix = 10;
 }
 
-// Header name/value pair.
-message HeaderValue {
-    // Header name.
-    string key = 1;
-  
-    // Header value.
-    //
-    // The same :ref:`format specifier <config_access_log_format>` as used for
-    // :ref:`HTTP access logging <config_access_log>` applies here, however
-    // unknown header values are replaced with the empty string instead of ``-``.
-    // Header value is encoded as string. This does not work for non-utf8 characters.
-    // Only one of ``value`` or ``raw_value`` can be set.
-    string value = 2;
-  
-    // Header value is encoded as bytes which can support non-utf8 characters.
-    // Only one of ``value`` or ``raw_value`` can be set.
-    bytes raw_value = 3;
-}
-
 // // Header name/value pair plus option to control append behavior.
-message HeaderValueOption {  
+message HeaderValueOptionDef {  
 //     // Describes the supported actions types for header append action.
     enum HeaderAppendAction {
       // This action will append the specified value to the existing values if the header
@@ -202,7 +183,7 @@ message HeaderValueOption {
     }
   
     // Header name/value pair that this option applies to.
-    HeaderValue header = 1;
+    HeaderValue headerName = 1;
   
     // Should the value be appended? If true (default), the value is appended to
     // existing values. Otherwise it replaces any existing values.
@@ -1337,8 +1318,8 @@ message PassThroughHttp {
         bool read_state_from_response = 3;
 
         //repeated string overwrite_upstream_headers = 4;
-        repeated HeaderValueOption passthrough_upstream_headers = 4;
-        repeated HeaderValueOption passthrough_upstream_headers_on_denied = 5;
+        repeated HeaderValueOptionDef passthrough_upstream_headers = 4;
+        repeated HeaderValueOptionDef passthrough_upstream_headers_on_denied = 5;
 
     }
     Response response = 4;
