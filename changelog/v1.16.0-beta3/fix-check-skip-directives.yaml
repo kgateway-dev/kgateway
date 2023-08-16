@@ -1,4 +1,7 @@
 changelog:
   - type: NON_USER_FACING
-    description: Fix process-skip-directive script that checks against main instead of the base branch.
+    description: >-
+      Fix process-skip-directive script that checks against main instead of the base branch.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
 
