@@ -23,14 +23,14 @@ shouldSkipDocsBuild=false
 
 githubBaseRef=$1
 
-if [[ $(git diff origin/$githubBaseRef HEAD --name-only | grep "changelog/" | wc -l) = "1" ]]; then
+changelog=$(git diff origin/$githubBaseRef HEAD --name-only | grep "changelog/")
+if [[ $(echo $changelog | wc -l | tr -d ' ') = "1" ]]; then
     echo "exactly one changelog added since main"
-    changelogFileName=$(git diff origin/main HEAD --name-only | grep "changelog/")
-    echo "changelog file name == $changelogFileName"
-    if [[ $(cat $changelogFileName | grep $skipKubeTestsDirective) ]]; then
+    echo "changelog file name == $changelog"
+    if [[ $(cat $changelog | grep $skipKubeTestsDirective) ]]; then
         shouldSkipKubeTests=true
     fi
-    if [[ $(cat $changelogFileName | grep $skipDocsBuildDirective) ]]; then
+    if [[ $(cat $changelog | grep $skipDocsBuildDirective) ]]; then
         shouldSkipDocsBuild=true
     fi
 else
