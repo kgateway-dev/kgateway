@@ -314,16 +314,6 @@ func (m *HeaderValueOptionTemplate) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetAppend()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetAppend()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetAppend(), target.GetAppend()) {
-			return false
-		}
-	}
-
 	if m.GetAppendAction() != target.GetAppendAction() {
 		return false
 	}

@@ -707,9 +707,6 @@ spec:
                                 passthroughUpstreamHeaders:
                                   items:
                                     properties:
-                                      append:
-                                        nullable: true
-                                        type: boolean
                                       appendAction:
                                         type: string
                                         x-kubernetes-int-or-string: true
@@ -722,9 +719,6 @@ spec:
                                 passthroughUpstreamHeadersOnDenied:
                                   items:
                                     properties:
-                                      append:
-                                        nullable: true
-                                        type: boolean
                                       appendAction:
                                         type: string
                                         x-kubernetes-int-or-string: true

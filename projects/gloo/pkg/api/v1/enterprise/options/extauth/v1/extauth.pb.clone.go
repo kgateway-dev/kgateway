@@ -203,12 +203,6 @@ func (m *HeaderValueOptionTemplate) Clone() proto.Message {
 
 	target.HeaderName = m.GetHeaderName()
 
-	if h, ok := interface{}(m.GetAppend()).(clone.Cloner); ok {
-		target.Append = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	} else {
-		target.Append = proto.Clone(m.GetAppend()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
-	}
-
 	target.AppendAction = m.GetAppendAction()
 
 	target.KeepEmptyValue = m.GetKeepEmptyValue()

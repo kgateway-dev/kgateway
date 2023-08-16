@@ -350,26 +350,6 @@ func (m *HeaderValueOptionTemplate) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetAppend()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Append")); err != nil {
-			return 0, err
-		}
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetAppend(), nil); err != nil {
-			return 0, err
-		} else {
-			if _, err = hasher.Write([]byte("Append")); err != nil {
-				return 0, err
-			}
-			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
-				return 0, err
-			}
-		}
-	}
-
 	err = binary.Write(hasher, binary.LittleEndian, m.GetAppendAction())
 	if err != nil {
 		return 0, err
