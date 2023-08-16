@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/8477
+    resolvesIssue: false
+    description: >-
+      Add support to overwrite headers sent to upstreams with headers from the passthrough/external auth response via the use of the OverwriteUpstreamHeaders option.
