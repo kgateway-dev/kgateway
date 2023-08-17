@@ -1807,7 +1807,6 @@ Deprecated, prefer OAuth2Config
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "userSession": .enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig
-"claimsToHeaders": .enterprise.gloo.solo.io.ClaimsToHeaders
 
 ```
 
@@ -1833,7 +1832,6 @@ Deprecated, prefer OAuth2Config
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `userSession` | [.enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig](../extauth.proto.sk/#usersessionconfig) | Configuration related to the user session. |
-| `claimsToHeaders` | [.enterprise.gloo.solo.io.ClaimsToHeaders](../extauth.proto.sk/#claimstoheaders) | Optional: What claims should be copied to upstream headers. |
 
 
 

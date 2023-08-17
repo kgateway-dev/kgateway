@@ -1457,9 +1457,6 @@ message ExtAuthConfig {
 
         // Configuration related to the user session.
         UserSessionConfig user_session = 20;
-
-        // Optional: What claims should be copied to upstream headers.
-        ClaimsToHeaders claims_to_headers = 21;
     }
 
     message AccessTokenValidationConfig {

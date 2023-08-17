@@ -2668,12 +2668,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
 	}
 
-	if h, ok := interface{}(m.GetClaimsToHeaders()).(clone.Cloner); ok {
-		target.ClaimsToHeaders = h.Clone().(*ClaimsToHeaders)
-	} else {
-		target.ClaimsToHeaders = proto.Clone(m.GetClaimsToHeaders()).(*ClaimsToHeaders)
-	}
-
 	return target
 }
 

@@ -4514,16 +4514,6 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	}
 
-	if h, ok := interface{}(m.GetClaimsToHeaders()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetClaimsToHeaders()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetClaimsToHeaders(), target.GetClaimsToHeaders()) {
-			return false
-		}
-	}
-
 	return true
 }
 
