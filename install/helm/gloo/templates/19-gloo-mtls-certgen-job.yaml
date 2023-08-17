@@ -19,7 +19,11 @@ metadata:
     "helm.sh/hook": pre-install
     {{- end }}
     "helm.sh/hook-weight": "10"
-    "helm.sh/hook-delete-policy": hook-succeeded
+    {{- if .Values.gateway.certGenJob.runOnUpdate }}
+    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.certGenJob | nindent 4 -}}
+    {{- else }}
+    {{- include "gloo.jobHelmDeletePolicy" .Values.gateway.certGenJob | nindent 4 -}}
+    {{- end }}
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.certGenJob | nindent 2 -}}
   template:

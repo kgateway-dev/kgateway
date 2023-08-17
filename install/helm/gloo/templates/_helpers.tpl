@@ -66,6 +66,23 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{ end -}}
 {{- end -}}
 
+
+{{- define "gloo.jobHelmDeletePolicySucceeded" -}}
+{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
+      The 'kindIs' comparision is how we can check for undefined */ -}}
+{{- if not (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished) -}}
+"helm.sh/hook-delete-policy": hook-succeeded
+{{ end -}}
+
+{{- define "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" -}}
+{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
+      The 'kindIs' comparision is how we can check for undefined */ -}}
+{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
+"helm.sh/hook-delete-policy": before-hook-creation
+{{- else -}}
+"helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+{{ end -}}
+
 {{- define "gloo.jobSpecStandardFields" -}}
 {{- with .activeDeadlineSeconds -}}
 activeDeadlineSeconds: {{ . }}
