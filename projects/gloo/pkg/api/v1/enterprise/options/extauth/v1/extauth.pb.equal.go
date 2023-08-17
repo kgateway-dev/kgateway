@@ -1223,6 +1223,42 @@ func (m *EndSessionProperties) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ClaimsToHeaders) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ClaimsToHeaders)
+	if !ok {
+		that2, ok := that.(ClaimsToHeaders)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
+		return false
+	}
+
+	if m.GetAppend() != target.GetAppend() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1405,6 +1441,16 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetDisableClientSecret(), target.GetDisableClientSecret()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetClaimsToHeaders()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsToHeaders()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsToHeaders(), target.GetClaimsToHeaders()) {
 			return false
 		}
 	}
@@ -4464,6 +4510,16 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Equal(that interface{}) bool
 		}
 	} else {
 		if !proto.Equal(m.GetUserSession(), target.GetUserSession()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetClaimsToHeaders()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetClaimsToHeaders()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetClaimsToHeaders(), target.GetClaimsToHeaders()) {
 			return false
 		}
 	}

@@ -45,6 +45,7 @@ weight: 5
 - [AutoMapFromMetadata](#automapfrommetadata)
 - [EndSessionProperties](#endsessionproperties)
 - [MethodType](#methodtype)
+- [ClaimsToHeaders](#claimstoheaders)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
@@ -872,6 +873,28 @@ The Method used to make the request.
 
 
 ---
+### ClaimsToHeaders
+
+ 
+Allows copying verified claims to headers sent upstream
+
+```yaml
+"claim": string
+"header": string
+"append": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claim` | `string` | Claim name. for example, “sub”. |
+| `header` | `string` | The header the claim will be copied to. for example, “x-sub”. |
+| `append` | `bool` | If the header exists, append to it (true), or overwrite it (false). |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -898,6 +921,7 @@ The Method used to make the request.
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "dynamicMetadataFromClaims": map<string, string>
 "disableClientSecret": .google.protobuf.BoolValue
+"claimsToHeaders": .enterprise.gloo.solo.io.ClaimsToHeaders
 
 ```
 
@@ -924,6 +948,7 @@ The Method used to make the request.
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the ID token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
+| `claimsToHeaders` | [.enterprise.gloo.solo.io.ClaimsToHeaders](../extauth.proto.sk/#claimstoheaders) | Optional: What claims should be copied to upstream headers. |
 
 
 
@@ -1782,6 +1807,7 @@ Deprecated, prefer OAuth2Config
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "userSession": .enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig
+"claimsToHeaders": .enterprise.gloo.solo.io.ClaimsToHeaders
 
 ```
 
@@ -1807,6 +1833,7 @@ Deprecated, prefer OAuth2Config
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `userSession` | [.enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig](../extauth.proto.sk/#usersessionconfig) | Configuration related to the user session. |
+| `claimsToHeaders` | [.enterprise.gloo.solo.io.ClaimsToHeaders](../extauth.proto.sk/#claimstoheaders) | Optional: What claims should be copied to upstream headers. |
 
 
 
