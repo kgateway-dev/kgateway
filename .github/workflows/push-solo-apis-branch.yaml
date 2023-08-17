@@ -83,10 +83,10 @@ jobs:
           path: gloo
           ref: ${{ env.RELEASE_TAG_NAME }}
       - name: Set up Go
-          uses: actions/setup-go@v4
-          with:
-            go-version-file: gloo/go.mod
-          id: go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: gloo/go.mod
+        id: go
       - name: Install Protoc
         uses: arduino/setup-protoc@v1
         with:
