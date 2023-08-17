@@ -2449,11 +2449,11 @@ func (m *PassThroughHttp_Response) Clone() proto.Message {
 
 	target.ReadStateFromResponse = m.GetReadStateFromResponse()
 
-	if m.GetAllowedUpstreamHeadersToOverride() != nil {
-		target.AllowedUpstreamHeadersToOverride = make([]string, len(m.GetAllowedUpstreamHeadersToOverride()))
-		for idx, v := range m.GetAllowedUpstreamHeadersToOverride() {
+	if m.GetAllowedUpstreamHeadersToOverwrite() != nil {
+		target.AllowedUpstreamHeadersToOverwrite = make([]string, len(m.GetAllowedUpstreamHeadersToOverwrite()))
+		for idx, v := range m.GetAllowedUpstreamHeadersToOverwrite() {
 
-			target.AllowedUpstreamHeadersToOverride[idx] = v
+			target.AllowedUpstreamHeadersToOverwrite[idx] = v
 
 		}
 	}

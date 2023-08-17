@@ -1247,8 +1247,8 @@ message PassThroughHttp {
     message Response {
         // When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream
         // when the auth request is successful. These will be appended to any request headers that already exist.
-        // If this and allowed_upstream_headers_to_override are empty, by default, no authorization response headers will be added to the upstream request.
-        // Header names may not be included in both allowed_upstream_headers and allowed_upstream_headers_to_override.
+        // If this and allowed_upstream_headers_to_overwrite are empty, by default, no authorization response headers will be added to the upstream request.
+        // Header names may not be included in both allowed_upstream_headers and allowed_upstream_headers_to_overwrite.
         repeated string allowed_upstream_headers = 1;
 
         // When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied.
@@ -1269,8 +1269,8 @@ message PassThroughHttp {
         // When this is set, authorization response headers that have a header in this list will be added to the original client request and sent to the upstream
         // when the auth request is successful. These will overwrite to any request headers that already exist.
         // If this and allowed_upstream_headers are empty, by default, no authorization response headers will be added to the upstream request.
-        // Header names may not be included in both allowed_upstream_headers and allowed_upstream_headers_to_override.
-        repeated string allowed_upstream_headers_to_override = 4;
+        // Header names may not be included in both allowed_upstream_headers and allowed_upstream_headers_to_overwrite.
+        repeated string allowed_upstream_headers_to_overwrite = 4;
     }
     Response response = 4;
 

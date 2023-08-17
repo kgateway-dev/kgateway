@@ -4479,7 +4479,7 @@ func (m *PassThroughHttp_Response) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	for _, v := range m.GetAllowedUpstreamHeadersToOverride() {
+	for _, v := range m.GetAllowedUpstreamHeadersToOverwrite() {
 
 		if _, err = hasher.Write([]byte(v)); err != nil {
 			return 0, err
