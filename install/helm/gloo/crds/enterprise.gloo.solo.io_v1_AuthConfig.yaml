@@ -457,6 +457,15 @@ spec:
                               type: object
                             callbackPath:
                               type: string
+                            claimsToHeaders:
+                              properties:
+                                append:
+                                  type: boolean
+                                claim:
+                                  type: string
+                                header:
+                                  type: string
+                              type: object
                             clientId:
                               type: string
                             clientSecretRef:
