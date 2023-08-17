@@ -141,12 +141,10 @@ spec:
                           delayBeforeClose:
                             type: string
                           maxActiveConnections:
-                            properties:
-                              value:
-                                format: int64
-                                type: integer
-                                x-kubernetes-int-or-string: true
-                            type: object
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
                         type: object
                       tcpProxySettings:
                         properties:
