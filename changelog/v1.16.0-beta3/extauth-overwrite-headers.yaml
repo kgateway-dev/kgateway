@@ -1,6 +1,4 @@
 changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Placeholder for 1.16.0-beta1
-      skipCI-kube-tests:true
-      skipCI-docs-build:true
+  - type: NEW_FEATURE
+    description: Expose the ability to overwrite headers in HTTP Passthrough Auth with the added allowedUpstreamHeaderToOverwrite field.
+    issueLink: https://github.com/solo-io/gloo/issues/8477
