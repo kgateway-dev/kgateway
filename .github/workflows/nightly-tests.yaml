@@ -97,7 +97,7 @@ jobs:
 
   performance_tests_15:
     name: v1.15.x performance tests
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1-5' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -107,6 +107,8 @@ jobs:
       - uses: ./.github/workflows/composite-actions/performance-tests
 
   performance_tests_14:
+    # There are no performance tests for v1.14.x.
+    # As a result, we don't use an 8core runner and don't include a schedule trigger
     name: v1.14.x performance tests
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.14.x'}}
     runs-on: ubuntu-22.04
@@ -132,16 +134,20 @@ jobs:
         run: |
           echo "SLACK_CHANNEL=C04CJMXAH7A" >> $GITHUB_ENV     #edge-nightly-results by default
           if [[ ${{github.event_name == 'workflow_dispatch'}} = true ]]; then
-            preamble="Gloo OSS nightlies (manual run)"
+            trigger="Gloo OSS Manual run"
+            branch=${{ inputs.branch }}
             echo "SLACK_CHANNEL=C0314KESVNV" >> $GITHUB_ENV   #slack-integration-testing if manually run
           elif [[ ${{github.event.schedule == '0 7 * * 1'}} = true ]]; then
-              preamble="Gloo OSS weeklies (v1.14.x)"
+            trigger="Gloo OSS weeklies"
+            branch="v1.14.x"
           elif [[ ${{github.event.schedule == '0 6 * * 1'}} = true ]]; then
-              preamble="Gloo OSS weeklies (v1.15.x)"
+            trigger="Gloo OSS weeklies"
+            branch="v1.15.x"
           elif [[ ${{github.event.schedule == '0 5 * * 1-5'}} = true ]]; then
-              preamble="Gloo OSS nightlies (main)"
+            trigger="Gloo OSS nightlies"
+            branch="main"
           fi
-
+          preamble="$trigger ($branch)"
           echo "Setting PREAMBLE as $preamble"
           echo "preamble=$preamble" >> $GITHUB_OUTPUT
       - uses: actions/setup-go@v4

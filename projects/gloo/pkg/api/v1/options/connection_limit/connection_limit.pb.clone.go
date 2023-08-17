@@ -38,9 +38,9 @@ func (m *ConnectionLimit) Clone() proto.Message {
 	target = &ConnectionLimit{}
 
 	if h, ok := interface{}(m.GetMaxActiveConnections()).(clone.Cloner); ok {
-		target.MaxActiveConnections = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt64Value)
+		target.MaxActiveConnections = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	} else {
-		target.MaxActiveConnections = proto.Clone(m.GetMaxActiveConnections()).(*github_com_golang_protobuf_ptypes_wrappers.UInt64Value)
+		target.MaxActiveConnections = proto.Clone(m.GetMaxActiveConnections()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
 	if h, ok := interface{}(m.GetDelayBeforeClose()).(clone.Cloner); ok {

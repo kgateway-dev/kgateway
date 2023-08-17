@@ -20,7 +20,7 @@ message ConnectionLimit {
     // The maximum number of active connections for this gateway. When this limit is reached, any incoming connection
     // will be closed after delay duration.
     // Must be greater than one.
-    google.protobuf.UInt64Value max_active_connections = 1;
+    google.protobuf.UInt32Value max_active_connections = 1;
 
     // The time to wait before a connection is dropped. Useful for DoS prevention.
     // Defaults to zero and the connection will be closed immediately.
