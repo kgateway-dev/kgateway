@@ -458,14 +458,19 @@ spec:
                             callbackPath:
                               type: string
                             claimsToHeaders:
-                              properties:
-                                append:
-                                  type: boolean
-                                claim:
-                                  type: string
-                                header:
-                                  type: string
-                              type: object
+                              items:
+                                properties:
+                                  append:
+                                    type: boolean
+                                  claim:
+                                    type: string
+                                  header:
+                                    type: string
+                                  source:
+                                    type: string
+                                    x-kubernetes-int-or-string: true
+                                type: object
+                              type: array
                             clientId:
                               type: string
                             clientSecretRef:

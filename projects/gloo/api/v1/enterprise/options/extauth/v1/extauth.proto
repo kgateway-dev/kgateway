@@ -551,6 +551,14 @@ message EndSessionProperties {
 
 // Allows copying verified claims to headers sent upstream
 message ClaimToHeader {
+    enum Source {
+        // Source the value from the OAuth2 access token
+        AccessToken = 0;
+
+        // Source the value from the OIDC identity token
+        IdToken = 1;
+    }
+
     // Claim name. for example, “sub”
     string claim = 1;
 
@@ -559,6 +567,9 @@ message ClaimToHeader {
 
     // If the header exists, append to it (true), or overwrite it (false).
     bool append = 3;
+
+    // Which token to source the value from. Defaults to OAuth2 access token
+    Source source = 4;
 }
 
 
