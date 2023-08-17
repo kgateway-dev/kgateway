@@ -550,7 +550,7 @@ message EndSessionProperties {
 }
 
 // Allows copying verified claims to headers sent upstream
-message ClaimsToHeaders {
+message ClaimToHeader {
     // Claim name. for example, “sub”
     string claim = 1;
 
@@ -685,7 +685,7 @@ message OidcAuthorizationCode {
     google.protobuf.BoolValue disable_client_secret = 21;
 
     // Optional: What claims should be copied to upstream headers.
-    ClaimsToHeaders claims_to_headers = 22;
+    repeated ClaimToHeader claims_to_headers = 22;
 }
 
 message PlainOAuth2 {
