@@ -877,7 +877,7 @@ The Method used to make the request.
 ### ClaimToHeader
 
  
-Allows copying verified claims to headers sent upstream
+Specifies how to map a single claim
 
 ```yaml
 "claim": string
@@ -892,7 +892,7 @@ Allows copying verified claims to headers sent upstream
 | `claim` | `string` | Claim name. for example, “sub”. |
 | `header` | `string` | The header the claim will be copied to. for example, “x-sub”. |
 | `append` | `bool` | If the header exists, append to it (true), or overwrite it (false). |
-| `source` | [.enterprise.gloo.solo.io.ClaimToHeader.Source](../extauth.proto.sk/#source) | Which token to source the value from. Defaults to OAuth2 access token. |
+| `source` | [.enterprise.gloo.solo.io.ClaimToHeader.Source](../extauth.proto.sk/#source) | Which token to retrieve the information from. |
 
 
 
@@ -900,12 +900,13 @@ Allows copying verified claims to headers sent upstream
 ---
 ### Source
 
-
+ 
+Where to retrieve information for the mapping
 
 | Name | Description |
 | ----- | ----------- | 
-| `AccessToken` | Source the value from the OAuth2 access token |
-| `IdToken` | Source the value from the OIDC identity token |
+| `AccessToken` | Retrieve the value fom the OAuth2 access token |
+| `IdentityToken` | Retrieve the value from the OIDC identity token |
 
 
 

@@ -551,6 +551,16 @@ message EndSessionProperties {
 
 // Specifies how to map a single claim
 message ClaimToHeader {
+
+    // Where to retrieve information for the mapping
+    enum Source {
+        // Retrieve the value fom the OAuth2 access token
+        AccessToken = 0;
+
+        // Retrieve the value from the OIDC identity token
+        IdentityToken = 1;
+    }
+
     // Claim name. for example, “sub”
     string claim = 1;
 
@@ -559,6 +569,9 @@ message ClaimToHeader {
 
     // If the header exists, append to it (true), or overwrite it (false).
     bool append = 3;
+
+    // Which token to retrieve the information from
+    Source source = 4;
 }
 
 
@@ -685,16 +698,7 @@ message OidcAuthorizationCode {
     google.protobuf.BoolValue disable_client_secret = 21;
 
     // Optional: What claims should be copied to upstream headers.
-    OidcClaimsToHeaders claims_to_headers = 22;
-
-    // Defines how OIDC tokens are mapped to headers
-    message OidcClaimsToHeaders {
-        // When specified, we will map access token claims to specific headers
-        repeated ClaimToHeader access_token = 1;
-
-        // When specified, we will map identity token claims to specific headers
-        repeated ClaimToHeader id_token = 2;
-    }
+    repeated ClaimToHeader claims_to_headers = 22;
 }
 
 message PlainOAuth2 {
