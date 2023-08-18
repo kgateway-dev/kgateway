@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Fix process-skip-directive script that breaks when run after  merge.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
+

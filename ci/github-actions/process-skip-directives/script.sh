@@ -13,7 +13,7 @@
 # by other steps in our CI pipeline
 ################################################################
 
-set -ex
+set -x
 
 skipKubeTestsDirective="skipCI-kube-tests:true"
 shouldSkipKubeTests=false
@@ -22,19 +22,21 @@ skipDocsBuildDirective="skipCI-docs-build:true"
 shouldSkipDocsBuild=false
 
 githubBaseRef=$1
-
-changelog=$(git diff origin/$githubBaseRef HEAD --name-only | grep "changelog/")
-if [[ $(echo $changelog | wc -l | tr -d ' ') = "1" ]]; then
-    echo "exactly one changelog added since main"
-    echo "changelog file name == $changelog"
-    if [[ $(cat $changelog | grep $skipKubeTestsDirective) ]]; then
-        shouldSkipKubeTests=true
+if [ ! -z "$githubBaseRef" ]; then
+    changelog=$(git diff origin/$githubBaseRef HEAD --name-only | grep "changelog/")
+    # An empty string is also one line in bash. Hence adding the first check
+    if [ ! -z "$changelog" ] && [[ $(echo $changelog | wc -l | tr -d ' ') = "1" ]]; then
+        echo "exactly one changelog added since main"
+        echo "changelog file name == $changelog"
+        if [[ $(cat $changelog | grep $skipKubeTestsDirective) ]]; then
+            shouldSkipKubeTests=true
+        fi
+        if [[ $(cat $changelog | grep $skipDocsBuildDirective) ]]; then
+            shouldSkipDocsBuild=true
+        fi
+    else
+        echo "no changelog found (or more than one changelog found) - not skipping CI"
     fi
-    if [[ $(cat $changelog | grep $skipDocsBuildDirective) ]]; then
-        shouldSkipDocsBuild=true
-    fi
-else
-    echo "no changelog found (or more than one changelog found) - not skipping CI"
 fi
 
 echo "skip-kube-tests=${shouldSkipKubeTests}" >> $GITHUB_OUTPUT
