@@ -22,6 +22,8 @@ skipDocsBuildDirective="skipCI-docs-build:true"
 shouldSkipDocsBuild=false
 
 githubBaseRef=$1
+# If `githubBaseRef` is not present, it means that this script is not running as part of a PR (probably running on a push to main or an LTS branch).
+# In that case we ignore the skip directives since we need to run CI
 if [ ! -z "$githubBaseRef" ]; then
     # If there is no changelog found, the grep command fails and in turn the entire script exits since the error on exit flag has been set
     # To avoid that, we are using `|| true` to ensure that even if there is no changelog, it doesn't exit
