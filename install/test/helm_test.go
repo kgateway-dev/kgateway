@@ -205,6 +205,60 @@ var _ = Describe("Helm Test", func() {
 				}
 			})
 
+			It("gloo pdb disabled by default", func() {
+				prepareMakefile(namespace, helmValues{})
+
+				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeNil())
+			})
+
+			It("can create gloo pdb with minAvailable", func() {
+
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{
+						"gloo.podDisruptionBudget.minAvailable=2",
+					},
+				})
+
+				pdb := makeUnstructured(`
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gloo-pdb
+  namespace: gloo-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      gloo: gloo
+`)
+
+				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeEquivalentTo(pdb))
+			})
+
+			It("can create gloo pdb with maxUnavailable", func() {
+
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{
+						"gloo.podDisruptionBudget.maxUnavailable=2",
+					},
+				})
+
+				pdb := makeUnstructured(`
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gloo-pdb
+  namespace: gloo-system
+spec:
+  maxUnavailable: 2
+  selector:
+    matchLabels:
+      gloo: gloo
+`)
+
+				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeEquivalentTo(pdb))
+			})
+
 			Context("stats server settings", func() {
 				var (
 					normalPromAnnotations = map[string]string{
