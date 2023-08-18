@@ -13,7 +13,7 @@
 # by other steps in our CI pipeline
 ################################################################
 
-set -x
+set -ex
 
 skipKubeTestsDirective="skipCI-kube-tests:true"
 shouldSkipKubeTests=false
@@ -23,7 +23,11 @@ shouldSkipDocsBuild=false
 
 githubBaseRef=$1
 if [ ! -z "$githubBaseRef" ]; then
+    # If there is no changelog found, the grep command fails and in turn the entire script exits since the error on exit flag has been set
+    # To avoid that, unsetting it before this command and setting it after
+    set +e
     changelog=$(git diff origin/$githubBaseRef HEAD --name-only | grep "changelog/")
+    set -e
     # An empty string is also one line in bash. Hence adding the first check
     if [ ! -z "$changelog" ] && [[ $(echo $changelog | wc -l | tr -d ' ') = "1" ]]; then
         echo "exactly one changelog added since main"
