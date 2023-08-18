@@ -1,0 +1,17 @@
+{{- if .Values.gloo.podDisruptionBudget }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gloo-pdb
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if .Values.gloo.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.gloo.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.gloo.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.gloo.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      gloo: gloo
+{{- end }}

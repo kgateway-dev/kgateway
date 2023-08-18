@@ -240,6 +240,7 @@ type Gloo struct {
 	LogLevel                   *string               `json:"logLevel,omitempty" desc:"Level at which the pod should log. Options include \"info\", \"debug\", \"warn\", \"error\", \"panic\" and \"fatal\". Default level is info"`
 	DisableLeaderElection      *bool                 `json:"disableLeaderElection,omitempty" desc:"Set to true to disable leader election, and ensure all running replicas are considered the leader. Do not enable this with multiple replicas of Gloo"`
 	HeaderSecretRefNsMatchesUs *bool                 `json:"headerSecretRefNsMatchesUs,omitempty" desc:"Set to true to require that secrets sent in headers via headerSecretRefs come from the same namespace as the destination upstream. Default: false"`
+	PodDisruptionBudget        *PodDisruptionBudget  `json:"podDisruptionBudget,omitempty"`
 }
 
 type SecurityOpts struct {
