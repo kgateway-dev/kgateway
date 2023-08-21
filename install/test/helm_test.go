@@ -205,7 +205,7 @@ var _ = Describe("Helm Test", func() {
 				}
 			})
 
-			It("gloo pdb disabled by default", func() {
+			It("does not create the gloo pdb by default", func() {
 				prepareMakefile(namespace, helmValues{})
 
 				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeNil())
