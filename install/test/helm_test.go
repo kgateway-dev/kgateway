@@ -93,6 +93,7 @@ var _ = Describe("Helm Test", func() {
 			}
 			selector         map[string]string
 			testManifest     TestManifest
+			renderErr        error
 			statsAnnotations map[string]string
 		)
 
@@ -114,8 +115,9 @@ var _ = Describe("Helm Test", func() {
 		}
 
 		BeforeEach(func() {
-			// Ensure that tests do not share manifests by accident
+			// Ensure that tests do not share manifests or renderErrs by accident
 			testManifest = nil
+			renderErr = nil
 		})
 
 		Describe(rendererTestCase.rendererName, func() {
@@ -124,6 +126,12 @@ var _ = Describe("Helm Test", func() {
 				tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 				testManifest = tm
+			}
+
+			expectRenderError := func(namespace string, values helmValues) {
+				_, err := rendererTestCase.renderer.RenderManifest(namespace, values)
+				ExpectWithOffset(1, err).To(HaveOccurred())
+				renderErr = err
 			}
 
 			// helper for passing a values file
@@ -257,6 +265,19 @@ spec:
 `)
 
 				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeEquivalentTo(pdb))
+			})
+
+			It("errors rendering when gloo pdb has both maxUnavailable and minAvailable set", func() {
+
+				expectRenderError(namespace, helmValues{
+					valuesArgs: []string{
+						"gloo.podDisruptionBudget.maxUnavailable=2",
+						"gloo.podDisruptionBudget.minAvailable=2",
+					},
+				})
+
+				Expect(renderErr).NotTo(BeNil())
+				Expect(renderErr.Error()).To(ContainSubstring("gloo PDB values minAvailable and maxUnavailable are mutually exclusive"))
 			})
 
 			Context("stats server settings", func() {
