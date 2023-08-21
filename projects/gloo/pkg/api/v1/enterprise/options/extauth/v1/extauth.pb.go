@@ -6221,9 +6221,9 @@ type PassThroughHttp_Response struct {
 	// If this and allowed_upstream_headers_to_overwrite are empty, by default, no authorization response headers will be added to the upstream request.
 	// Header names may not be included in both allowed_upstream_headers and allowed_upstream_headers_to_overwrite.
 	AllowedUpstreamHeaders []string `protobuf:"bytes,1,rep,name=allowed_upstream_headers,json=allowedUpstreamHeaders,proto3" json:"allowed_upstream_headers,omitempty"`
-	// When this is set, authorization response headers in this list will be added to the client's response when the auth request is denied.
+	// When this is set, authorization response headers in this list will be added to the response to the downstream client when the auth request is denied.
 	// If the response header already exists, it will replace the response header.
-	// If this is empty, by default, no authorization response headers will be added to the client response.
+	// If this is empty, by default, no authorization response headers will be added to the response to the downstream client.
 	AllowedClientHeadersOnDenied []string `protobuf:"bytes,2,rep,name=allowed_client_headers_on_denied,json=allowedClientHeadersOnDenied,proto3" json:"allowed_client_headers_on_denied,omitempty"`
 	// If this is set to true, the body of the response from the http passthrough auth server is expected to have shape
 	//
