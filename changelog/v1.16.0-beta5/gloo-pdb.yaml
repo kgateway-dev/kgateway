@@ -2,3 +2,4 @@ changelog:
   - type: HELM
     description: Added PodDisruptionBudget helm values for the gloo deployment
     issueLink: https://github.com/solo-io/gloo/issues/8445
+    resolvesIssue: false
