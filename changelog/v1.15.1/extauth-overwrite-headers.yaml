@@ -2,3 +2,4 @@ changelog:
   - type: NEW_FEATURE
     description: Expose the ability to overwrite headers in HTTP Passthrough Auth with the added allowedUpstreamHeaderToOverwrite field.
     issueLink: https://github.com/solo-io/gloo/issues/8477
+    resolvesIssue: false
