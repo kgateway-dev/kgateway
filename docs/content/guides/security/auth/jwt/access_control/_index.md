@@ -42,7 +42,7 @@ control the resources service accounts are allowed to access.
 Let's deploy a sample application that we will route requests to during this guide:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ### Create a Virtual Service
@@ -388,7 +388,7 @@ rm public-key.pem
 kubectl delete pod test-pod
 kubectl delete virtualservice -n gloo-system petstore
 # Don't remove the sample application if you want to run through the appendix to this guide
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ## Appendix - Use a remote JSON Web Key Set (JWKS) server
@@ -671,5 +671,5 @@ kubectl -n gloo-system delete svc jwks-server
 kubectl -n gloo-system delete deployment jwks-server
 kubectl -n gloo-system delete configmap jwks
 kubectl delete virtualservice -n gloo-system petstore
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```

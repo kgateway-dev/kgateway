@@ -154,7 +154,7 @@ the predefined regular expressions.
 Let's start by creating our typical petstore microservice:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 Apply the following virtual service to route to the Gloo Edge discovered petstore upstream:
@@ -248,7 +248,7 @@ Predefined and Custom actions will only match based on header value in access lo
 
 1. Get started by creating the petstore microservice.
    ```shell
-   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+   kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
    ```
 
 2. Apply the following virtual service to route to the Gloo Edge discovered upstream for petstore.

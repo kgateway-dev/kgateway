@@ -16,7 +16,7 @@ Let's deploy a simple example application called `petstore`:
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 {{< /tab >}}
 {{< /tabs >}}
 

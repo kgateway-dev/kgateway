@@ -54,7 +54,7 @@ Gloo Edge's OPA integration will populate an `input` document which can be used 
 Let's deploy a sample application that we will route requests to during this guide:
 
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 ### Creating a Virtual Service
@@ -215,7 +215,7 @@ You can clean up the resources created in this guide by running:
 ```
 kubectl delete vs -n gloo-system petstore
 kubectl delete ac -n gloo-system opa
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 rm policy.rego
 ```
 
