@@ -446,7 +446,7 @@ nip-io   True    nip-io-tls   10m
 First, let's make sure we have the petstore application installed on our cluster:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.11.x/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.14.x/example/petstore/petstore.yaml
 ```
 
 Then, we configure our Virtual Service to use our newly created TLS secret and route to the petstore application:
