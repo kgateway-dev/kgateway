@@ -494,8 +494,8 @@ type HorizontalPodAutoscaler struct {
 }
 
 type PodDisruptionBudget struct {
-	MinAvailable   *string `json:"minAvailable,omitempty" desc:"Corresponds directly with the _minAvailable_ field in the [PodDisruptionBudgetSpec](https://kubernetes.io/docs/reference/kubernetes-api/policy-resources/pod-disruption-budget-v1/#PodDisruptionBudgetSpec). This value is mutually exclusive with _minAvailable_."`
-	MaxUnavailable *string `json:"maxUnavailable,omitempty" desc:"Corresponds directly with the _maxUnavailable_ field in the [PodDisruptionBudgetSpec](https://kubernetes.io/docs/reference/kubernetes-api/policy-resources/pod-disruption-budget-v1/#PodDisruptionBudgetSpec). This value is mutually exclusive with _maxUnavailable_."`
+	MinAvailable   *string `json:"minAvailable,omitempty" desc:"Corresponds directly with the _minAvailable_ field in the [PodDisruptionBudgetSpec](https://kubernetes.io/docs/reference/kubernetes-api/policy-resources/pod-disruption-budget-v1/#PodDisruptionBudgetSpec). This value is mutually exclusive with _maxUnavailable_."`
+	MaxUnavailable *string `json:"maxUnavailable,omitempty" desc:"Corresponds directly with the _maxUnavailable_ field in the [PodDisruptionBudgetSpec](https://kubernetes.io/docs/reference/kubernetes-api/policy-resources/pod-disruption-budget-v1/#PodDisruptionBudgetSpec). This value is mutually exclusive with _minAvailable_."`
 	*KubeResourceOverride
 }
 
