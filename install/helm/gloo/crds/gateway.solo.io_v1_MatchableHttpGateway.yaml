@@ -1148,6 +1148,39 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      httpLocalRatelimit:
+                        properties:
+                          defaults:
+                            properties:
+                              fillInterval:
+                                type: string
+                              maxTokens:
+                                format: int32
+                                type: integer
+                              tokensPerFill:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                            type: object
+                          enableXRatelimitHeaders:
+                            type: boolean
+                          localRateLimitPerDownstreamConnection:
+                            type: boolean
+                        type: object
+                      l4LocalRatelimit:
+                        properties:
+                          fillInterval:
+                            type: string
+                          maxTokens:
+                            format: int32
+                            type: integer
+                          tokensPerFill:
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
+                        type: object
                       leftmostXffAddress:
                         nullable: true
                         type: boolean

@@ -33,6 +33,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthc
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/router/router.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/connection_limit/connection_limit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/local_ratelimit/local_ratelimit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
@@ -197,6 +198,9 @@ message HttpListenerOptions {
     // ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
     connection_limit.options.gloo.solo.io.ConnectionLimit connection_limit = 29;
 
+    local_ratelimit.options.gloo.solo.io.TokenBucket l4_local_ratelimit = 32;
+    local_ratelimit.options.gloo.solo.io.Settings http_local_ratelimit = 33;
+
     // Router is an extension of the envoy http filters
     // Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
     Router router = 18;
@@ -208,6 +212,8 @@ message TcpListenerOptions {
 
     // ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
     connection_limit.options.gloo.solo.io.ConnectionLimit connection_limit = 4;
+
+    local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 5;
 }
 
 // Optional, feature-specific configuration that lives on virtual hosts.

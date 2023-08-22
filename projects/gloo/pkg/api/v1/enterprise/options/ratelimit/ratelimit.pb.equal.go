@@ -294,6 +294,16 @@ func (m *RateLimitVhostExtension) Equal(that interface{}) bool {
 
 	}
 
+	if h, ok := interface{}(m.GetLocalRatelimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLocalRatelimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLocalRatelimit(), target.GetLocalRatelimit()) {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -337,6 +347,16 @@ func (m *RateLimitRouteExtension) Equal(that interface{}) bool {
 			}
 		}
 
+	}
+
+	if h, ok := interface{}(m.GetLocalRatelimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLocalRatelimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLocalRatelimit(), target.GetLocalRatelimit()) {
+			return false
+		}
 	}
 
 	return true

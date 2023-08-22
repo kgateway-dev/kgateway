@@ -35,6 +35,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/listener"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/local_ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/metadata"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/protocoloptions"
@@ -107,6 +108,7 @@ func Plugins(opts bootstrap.Opts) []plugins.Plugin {
 		tunneling.NewPlugin(),
 		dynamic_forward_proxy.NewPlugin(),
 		deprecated_cipher_passthrough.NewPlugin(),
+		local_ratelimit.NewPlugin(),
 	)
 
 	if opts.KubeClient != nil {

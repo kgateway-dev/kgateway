@@ -158,12 +158,14 @@ running a custom rate limit server you need to configure it yourself.
 
 ```yaml
 "rateLimits": []ratelimit.api.solo.io.RateLimitActions
+"localRatelimit": .local_ratelimit.options.gloo.solo.io.TokenBucket
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
+| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../../../../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) |  |
 
 
 
@@ -180,6 +182,7 @@ running a custom rate limit server you need to configure it yourself.
 ```yaml
 "includeVhRateLimits": bool
 "rateLimits": []ratelimit.api.solo.io.RateLimitActions
+"localRatelimit": .local_ratelimit.options.gloo.solo.io.TokenBucket
 
 ```
 
@@ -187,6 +190,7 @@ running a custom rate limit server you need to configure it yourself.
 | ----- | ---- | ----------- | 
 | `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |
 | `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
+| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../../../../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) |  |
 
 
 

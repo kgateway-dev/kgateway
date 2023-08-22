@@ -3,6 +3,7 @@ package ratelimit.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit";
 
 import "github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/local_ratelimit/local_ratelimit.proto";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";
@@ -76,6 +77,7 @@ message RateLimitVhostExtension {
   // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
   // would be throttled, the entire request returns a 429 (gets throttled)
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
+  local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 2;
 }
 
 // Use this field if you want to inline the Envoy rate limits for this Route.
@@ -90,4 +92,5 @@ message RateLimitRouteExtension {
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
+    local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 3;
 }

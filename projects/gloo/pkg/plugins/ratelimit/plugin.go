@@ -76,7 +76,7 @@ func (p *plugin) ProcessVirtualHost(
 		serverSettings := p.getServerSettingsForListener(params.HttpListener)
 		rateLimitStage := GetRateLimitStageForServerSettings(serverSettings)
 		var err error
-		out.RateLimits, err = toEnvoyRateLimits(params.Ctx, newRateLimits, rateLimitStage)
+		out.RateLimits, err = ToEnvoyRateLimits(params.Ctx, newRateLimits, rateLimitStage)
 		return err
 	}
 	return nil
@@ -88,7 +88,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			serverSettings := p.getServerSettingsForListener(params.HttpListener)
 			rateLimitStage := GetRateLimitStageForServerSettings(serverSettings)
 			var err error
-			ra.RateLimits, err = toEnvoyRateLimits(params.Ctx, rateLimits.GetRateLimits(), rateLimitStage)
+			ra.RateLimits, err = ToEnvoyRateLimits(params.Ctx, rateLimits.GetRateLimits(), rateLimitStage)
 			ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimits.GetIncludeVhRateLimits()}
 			return err
 		} else {

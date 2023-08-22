@@ -395,6 +395,26 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetL4LocalRatelimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetL4LocalRatelimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetL4LocalRatelimit(), target.GetL4LocalRatelimit()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetHttpLocalRatelimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetHttpLocalRatelimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetHttpLocalRatelimit(), target.GetHttpLocalRatelimit()) {
+			return false
+		}
+	}
+
 	if h, ok := interface{}(m.GetRouter()).(equality.Equalizer); ok {
 		if !h.Equal(target.GetRouter()) {
 			return false
@@ -484,6 +504,16 @@ func (m *TcpListenerOptions) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetConnectionLimit(), target.GetConnectionLimit()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetLocalRatelimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLocalRatelimit()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLocalRatelimit(), target.GetLocalRatelimit()) {
 			return false
 		}
 	}

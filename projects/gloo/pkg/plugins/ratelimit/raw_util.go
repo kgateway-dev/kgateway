@@ -25,7 +25,7 @@ func missingFieldError(field string) error {
 	return eris.Errorf("Missing required field in ratelimit action %s", field)
 }
 
-func toEnvoyRateLimits(
+func ToEnvoyRateLimits(
 	ctx context.Context,
 	actions []*solo_rl.RateLimitActions,
 	stage uint32,

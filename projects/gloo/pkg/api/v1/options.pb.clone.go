@@ -73,6 +73,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_lbhash "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/local_ratelimit"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_proxy_protocol "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/proxy_protocol"
@@ -319,6 +321,18 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.ConnectionLimit = proto.Clone(m.GetConnectionLimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
 	}
 
+	if h, ok := interface{}(m.GetL4LocalRatelimit()).(clone.Cloner); ok {
+		target.L4LocalRatelimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
+	} else {
+		target.L4LocalRatelimit = proto.Clone(m.GetL4LocalRatelimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
+	}
+
+	if h, ok := interface{}(m.GetHttpLocalRatelimit()).(clone.Cloner); ok {
+		target.HttpLocalRatelimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.Settings)
+	} else {
+		target.HttpLocalRatelimit = proto.Clone(m.GetHttpLocalRatelimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.Settings)
+	}
+
 	if h, ok := interface{}(m.GetRouter()).(clone.Cloner); ok {
 		target.Router = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_router.Router)
 	} else {
@@ -374,6 +388,12 @@ func (m *TcpListenerOptions) Clone() proto.Message {
 		target.ConnectionLimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
 	} else {
 		target.ConnectionLimit = proto.Clone(m.GetConnectionLimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
+	}
+
+	if h, ok := interface{}(m.GetLocalRatelimit()).(clone.Cloner); ok {
+		target.LocalRatelimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
+	} else {
+		target.LocalRatelimit = proto.Clone(m.GetLocalRatelimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
 	}
 
 	return target
