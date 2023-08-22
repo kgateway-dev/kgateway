@@ -1,5 +1,5 @@
 changelog:
-  - type: NON_USER_FACING
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/7683
     resolvesIssue: false
     description: Add fields to the API to allow Envoy to set x-fowarded-host and x-forwarded-post headers.
