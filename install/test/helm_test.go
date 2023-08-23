@@ -5768,8 +5768,9 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(BeNil())
-								helmHookDeletePolicy := u.GetAnnotations()["helm.sh/hook-delete-policy"]
-								Expect(helmHookDeletePolicy).To(ContainSubstring("hook-succeeded"))
+								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]; ok {
+									Expect(helmHookDeletePolicy).To(ContainSubstring("hook-succeeded"))
+								}
 								return true
 							}
 							return false
@@ -5786,6 +5787,35 @@ metadata:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: append([]string{
 								jobValuesPrefix + ".setTtlAfterFinished=true",
+								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
+							}, extraArgs...),
+						})
+						resources := testManifest.SelectResources(func(u *unstructured.Unstructured) bool {
+							var prefixPath []string
+							if kind == "CronJob" {
+								prefixPath = []string{"spec", "jobTemplate"}
+							}
+							if u.GetKind() == kind && u.GetName() == resourceName {
+								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
+								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]; ok {
+									Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+								}
+								return true
+							}
+							return false
+						})
+						Expect(resources.NumResources()).To(Equal(1))
+					},
+					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
+					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
+					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+				)
+
+				DescribeTable("When setTtlAfterFinished is unset, includes ttlSecondsAfterFinished on Jobs",
+					func(kind string, resourceName string, jobValuesPrefix string, extraArgs ...string) {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: append([]string{
 								jobValuesPrefix + ".ttlSecondsAfterFinished=" + strconv.Itoa(TTL_SECONDS_AFTER_FINISHED),
 							}, extraArgs...),
 						})
