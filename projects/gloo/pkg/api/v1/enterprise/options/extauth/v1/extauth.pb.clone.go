@@ -1358,10 +1358,6 @@ func (m *OpaAuth) Clone() proto.Message {
 
 	target.Query = m.GetQuery()
 
-	target.Package = m.GetPackage()
-
-	target.RuleName = m.GetRuleName()
-
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
 		target.Options = h.Clone().(*OpaAuthOptions)
 	} else {
@@ -1382,6 +1378,29 @@ func (m *OpaAuthOptions) Clone() proto.Message {
 	target.FastInputConversion = m.GetFastInputConversion()
 
 	target.ReturnDecisionReason = m.GetReturnDecisionReason()
+
+	return target
+}
+
+// Clone function
+func (m *OpaServerAuth) Clone() proto.Message {
+	var target *OpaServerAuth
+	if m == nil {
+		return target
+	}
+	target = &OpaServerAuth{}
+
+	target.Package = m.GetPackage()
+
+	target.RuleName = m.GetRuleName()
+
+	target.ServerAddr = m.GetServerAddr()
+
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*OpaAuthOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*OpaAuthOptions)
+	}
 
 	return target
 }

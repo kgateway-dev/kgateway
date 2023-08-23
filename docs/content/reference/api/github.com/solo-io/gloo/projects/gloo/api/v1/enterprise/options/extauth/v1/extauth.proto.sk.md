@@ -66,6 +66,7 @@ weight: 5
 - [ApiKeySecret](#apikeysecret)
 - [OpaAuth](#opaauth)
 - [OpaAuthOptions](#opaauthoptions)
+- [OpaServerAuth](#opaserverauth)
 - [Ldap](#ldap)
 - [ConnectionPool](#connectionpool)
 - [LdapServiceAccount](#ldapserviceaccount)
@@ -1400,8 +1401,6 @@ DEPRECATED: use ApiKey
 ```yaml
 "modules": []core.solo.io.ResourceRef
 "query": string
-"package": string
-"ruleName": string
 "options": .enterprise.gloo.solo.io.OpaAuthOptions
 
 ```
@@ -1410,8 +1409,6 @@ DEPRECATED: use ApiKey
 | ----- | ---- | ----------- | 
 | `modules` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | An optional resource reference to config maps containing modules to assist in the resolution of `query`. |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
-| `package` | `string` | If you are using sidecar-based OPA auth (recommended), this will be the package used to query the OPA API. |
-| `ruleName` | `string` | If you are using sidecar-based OPA auth (recommended), this will be the rule name used to query the OPA API. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
 
 
@@ -1432,6 +1429,29 @@ DEPRECATED: use ApiKey
 | ----- | ---- | ----------- | 
 | `fastInputConversion` | `bool` | Decreases OPA latency by speeding up conversion of input to the OPA engine. If this is set to true, only http_request and state fields which are a scalar, map, or string array are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. By default, this is set to false and all fields are evaluated by OPA. |
 | `returnDecisionReason` | `bool` | Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure will be envoy.filters.http.ext_authz: -> name of the auth step, i.e. spec.configs[i].name -> reason. |
+
+
+
+
+---
+### OpaServerAuth
+
+
+
+```yaml
+"package": string
+"ruleName": string
+"serverAddr": string
+"options": .enterprise.gloo.solo.io.OpaAuthOptions
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `package` | `string` | The package used to query the OPA data API. |
+| `ruleName` | `string` | The rule used to query the OPA data API. Supports querying subfields with a /, see https://www.openpolicyagent.org/docs/latest/rest-api/#data-api. |
+| `serverAddr` | `string` | The address of the OPA server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:8181`. If you are not using your own OPA server instance, you should leave this field empty. The OPA server sidecar will be used. |
+| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional options for OPA Auth configuration. |
 
 
 

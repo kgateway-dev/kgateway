@@ -1068,12 +1068,6 @@ message OpaAuth {
     // the request will be authorized. Any other value, or error, means that the request will be denied.
     string query = 2;
 
-    // If you are using sidecar-based OPA auth (recommended), this will be the package used to query the OPA API.
-    string package = 4;
-
-    // If you are using sidecar-based OPA auth (recommended), this will be the rule name used to query the OPA API.
-    string rule_name = 5;
-
     // Additional Options for Opa Auth configuration.
     OpaAuthOptions options = 3;
 }
@@ -1092,6 +1086,21 @@ message OpaAuthOptions {
     //   -> name of the auth step, i.e. spec.configs[i].name
     //       -> reason
     bool return_decision_reason = 2;
+}
+
+message OpaServerAuth {
+    // The package used to query the OPA data API
+    string package = 1;
+
+    // The rule used to query the OPA data API. Supports querying subfields with a /, see https://www.openpolicyagent.org/docs/latest/rest-api/#data-api
+    string rule_name = 2;
+
+    // The address of the OPA server to query. Should be in the form ADDRESS:PORT, e.g. `default.svc.cluster.local:8181`. If you are not using
+    // your own OPA server instance, you should leave this field empty. The OPA server sidecar will be used.
+    string server_addr = 3;
+
+    // Additional options for OPA Auth configuration.
+    OpaAuthOptions options = 4;
 }
 
 // Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
