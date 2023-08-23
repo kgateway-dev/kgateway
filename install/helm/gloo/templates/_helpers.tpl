@@ -73,6 +73,7 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{- if not (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished) -}}
 "helm.sh/hook-delete-policy": hook-succeeded
 {{ end -}}
+{{ end -}}
 
 {{- define "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" -}}
 {{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
@@ -81,6 +82,7 @@ initContainers: {{ toYaml . | nindent 2 }}
 "helm.sh/hook-delete-policy": before-hook-creation
 {{- else -}}
 "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+{{ end -}}
 {{ end -}}
 
 {{- define "gloo.jobSpecStandardFields" -}}
