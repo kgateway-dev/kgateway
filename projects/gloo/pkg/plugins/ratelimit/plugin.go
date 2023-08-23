@@ -75,7 +75,9 @@ func (p *plugin) ProcessVirtualHost(
 	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
 		serverSettings := p.getServerSettingsForListener(params.HttpListener)
 		rateLimitStage := GetRateLimitStageForServerSettings(serverSettings)
-		out.RateLimits = toEnvoyRateLimits(params.Ctx, newRateLimits, rateLimitStage)
+		var err error
+		out.RateLimits, err = toEnvoyRateLimits(params.Ctx, newRateLimits, rateLimitStage)
+		return err
 	}
 	return nil
 }
@@ -85,8 +87,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if ra := out.GetRoute(); ra != nil {
 			serverSettings := p.getServerSettingsForListener(params.HttpListener)
 			rateLimitStage := GetRateLimitStageForServerSettings(serverSettings)
-			ra.RateLimits = toEnvoyRateLimits(params.Ctx, rateLimits.GetRateLimits(), rateLimitStage)
+			var err error
+			ra.RateLimits, err = toEnvoyRateLimits(params.Ctx, rateLimits.GetRateLimits(), rateLimitStage)
 			ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimits.GetIncludeVhRateLimits()}
+			return err
 		} else {
 			// TODO(yuval-k): maybe return nil here instead and just log a warning?
 			return fmt.Errorf("cannot apply rate limits without a route action")

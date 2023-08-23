@@ -1,23 +1,18 @@
 ---
-title: "Contributing"
+title: Contribution Guide
 menuTitle: Contributing
-description: How to contribute to Gloo Edge.
+description: How to contribute to the Gloo Edge project.
 weight: 150
 ---
 
-There are several ways to get involved with Gloo Edge as a developer.
+Welcome to the Gloo Edge contribution guide! Thank you for your interest in making the project even better.
 
-## Working on Gloo Edge OSS
+You can help in several ways:
 
-You can help us improve and extend Gloo Edge itself by helping with bug fixes and open issues. You can also assist with feature development and major changes. Please take a moment and read through the [development contributing doc]({{< versioned_link_path fromRoot="/contributing/developers/" >}}) for more information on how to get started.
+{{% children description="true" %}}
 
-* Help with bug fixes and open issues
-* Assist with feature development
+## More resources
 
-## Extend Gloo Edge's functionality
+Don’t know where to start? Join the [Solo Slack](https://slack.solo.io) and share what you're interested in doing with Gloo Edge.
 
-We have put together a set of development guides to get started on extending and improving Gloo Edge through the addition of new plugins. Checkout out the [introductory doc]({{< versioned_link_path fromRoot="/guides/dev/" >}}) in the developer guides for more information on getting going.
-
-## Improve the documentation
-
-You can also help us improve the quality, accuracy, and readability of our documentation. Changes small and large are welcome! Please take a moment to read through the our [documentation guide]({{< versioned_link_path fromRoot="/contributing/documentation/" >}}) before submitting any changes.
+Looking for for tools and helpful information to contribute, debug, and test your code? Check out the [`devel` directory](https://github.com/solo-io/gloo/tree/main/devel) in the Gloo Edge project.
