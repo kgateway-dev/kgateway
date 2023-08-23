@@ -5768,6 +5768,8 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(BeNil())
+								helmHookDeletePolicy := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+								Expect(helmHookDeletePolicy).To(ContainSubstring("hook-succeeded"))
 								return true
 							}
 							return false
@@ -5795,6 +5797,9 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
+								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]; ok {
+									Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+								}
 								return true
 							}
 							return false
