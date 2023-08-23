@@ -1,0 +1,24 @@
+{{- if .Values.gloo.podDisruptionBudget }}
+
+{{- if .Values.gloo.podDisruptionBudget.minAvailable }}
+{{- if .Values.gloo.podDisruptionBudget.maxUnavailable }}
+{{- fail "gloo PDB values minAvailable and maxUnavailable are mutually exclusive" }}
+{{- end }}
+{{- end }}
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gloo-pdb
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if .Values.gloo.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.gloo.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if .Values.gloo.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.gloo.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      gloo: gloo
+{{- end }}
