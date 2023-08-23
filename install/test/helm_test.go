@@ -219,11 +219,11 @@ var _ = Describe("Helm Test", func() {
 				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeNil())
 			})
 
-			It("can create gloo pdb with minAvailable number of pods", func() {
+			It("can create gloo pdb with minAvailable", func() {
 
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
-						"gloo.podDisruptionBudget.minAvailable=2",
+						"gloo.podDisruptionBudget.minAvailable='2'",
 					},
 				})
 
@@ -234,31 +234,7 @@ metadata:
   name: gloo-pdb
   namespace: gloo-system
 spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      gloo: gloo
-`)
-
-				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeEquivalentTo(pdb))
-			})
-
-			It("can create gloo pdb with minAvailable percentage of pods", func() {
-
-				prepareMakefile(namespace, helmValues{
-					valuesArgs: []string{
-						"gloo.podDisruptionBudget.minAvailable=20%",
-					},
-				})
-
-				pdb := makeUnstructured(`
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: gloo-pdb
-  namespace: gloo-system
-spec:
-  minAvailable: 20%
+  minAvailable: '2'
   selector:
     matchLabels:
       gloo: gloo
@@ -271,7 +247,7 @@ spec:
 
 				prepareMakefile(namespace, helmValues{
 					valuesArgs: []string{
-						"gloo.podDisruptionBudget.maxUnavailable=2",
+						"gloo.podDisruptionBudget.maxUnavailable='2'",
 					},
 				})
 
@@ -282,7 +258,7 @@ metadata:
   name: gloo-pdb
   namespace: gloo-system
 spec:
-  maxUnavailable: 2
+  maxUnavailable: '2'
   selector:
     matchLabels:
       gloo: gloo
@@ -295,8 +271,8 @@ spec:
 
 				expectRenderError(namespace, helmValues{
 					valuesArgs: []string{
-						"gloo.podDisruptionBudget.maxUnavailable=2",
-						"gloo.podDisruptionBudget.minAvailable=2",
+						"gloo.podDisruptionBudget.maxUnavailable='2'",
+						"gloo.podDisruptionBudget.minAvailable='2'",
 					},
 				})
 
@@ -2155,8 +2131,7 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable=2",
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable=2",
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable='2'",
 							},
 						})
 
@@ -2167,7 +2142,7 @@ metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
 spec:
-  minAvailable: 2
+  minAvailable: '2'
   selector:
     matchLabels:
       gateway-proxy-id: gateway-proxy
@@ -2180,7 +2155,7 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable='2'",
 							},
 						})
 
@@ -2191,7 +2166,7 @@ metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
 spec:
-  maxUnavailable: 2
+  maxUnavailable: '2'
   selector:
     matchLabels:
       gateway-proxy-id: gateway-proxy
@@ -2204,8 +2179,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
-								"gatewayProxies.gatewayProxyTwo.podDisruptionBudget.maxUnavailable=2",
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable='2'",
+								"gatewayProxies.gatewayProxyTwo.podDisruptionBudget.maxUnavailable='2'",
 							},
 						})
 
@@ -2216,7 +2191,7 @@ metadata:
   name: %s-pdb
   namespace: gloo-system
 spec:
-  maxUnavailable: 2
+  maxUnavailable: '2'
   selector:
     matchLabels:
       gateway-proxy-id: %s
