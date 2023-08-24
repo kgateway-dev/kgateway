@@ -176,7 +176,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `leftmostXffAddress` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enterprise-only: Setting this value to true will grab the leftmost IP address from the x-forwarded-for header and set it as the downstream address. It is worth noting that the x-forwarded-for header can be tampered with by clients and should therefore be sanitized by any preceding proxies / load balancers if this option is to be used. |
 | `dynamicForwardProxy` | [.dfp.options.gloo.solo.io.FilterConfig](../options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#filterconfig) |  |
 | `connectionLimit` | [.connection_limit.options.gloo.solo.io.ConnectionLimit](../options/connection_limit/connection_limit.proto.sk/#connectionlimit) | ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention. |
-| `l4LocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) |  |
+| `l4LocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | L4LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer. It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up. |
 | `httpLocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.Settings](../options/local_ratelimit/local_ratelimit.proto.sk/#settings) |  |
 | `router` | [.gloo.solo.io.Router](../options/router/router.proto.sk/#router) | Router is an extension of the envoy http filters Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto. |
 
@@ -200,7 +200,7 @@ Optional, feature-specific configuration that lives on tcp listeners
 | ----- | ---- | ----------- | 
 | `tcpProxySettings` | [.tcp.options.gloo.solo.io.TcpProxySettings](../options/tcp/tcp.proto.sk/#tcpproxysettings) |  |
 | `connectionLimit` | [.connection_limit.options.gloo.solo.io.ConnectionLimit](../options/connection_limit/connection_limit.proto.sk/#connectionlimit) | ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention. |
-| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) |  |
+| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer. It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up. |
 
 
 
