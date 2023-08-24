@@ -1,0 +1,94 @@
+{{- if .Values.gateway.rolloutJob.enabled }}
+{{- if .Values.global.glooRbac.create }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+  name: gloo-resource-migration
+  namespace: {{ .Release.Namespace }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-migration
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+rules:
+- apiGroups: ["gloo.solo.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "update", "patch"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-migration
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+roleRef:
+  kind: Role
+  name: gloo-resource-migration
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: gloo-resource-migration
+  namespace: {{ .Release.Namespace }}
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-migration{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+rules:
+- apiGroups: ["gateway.solo.io"]
+  resources: ["*"]
+  verbs: ["get", "list", "update", "patch"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-migration{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before job
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+roleRef:
+  kind: ClusterRole
+  name: gloo-resource-migration{{ include "gloo.rbacNameSuffix" . }}
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: gloo-resource-migration
+  namespace: {{ .Release.Namespace }}
+{{- end }}{{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}
