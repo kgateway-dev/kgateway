@@ -23,11 +23,15 @@ import (
 
 var _ = Describe("Plugin", func() {
 	Context("Copies the local rate limit config from the CR to the filter", func() {
+		var p *plugin
 		var httpListener *v1.HttpListener
 		var tokenBucket *local_ratelimit.TokenBucket
 		var expectedFilter *envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit
 
 		BeforeEach(func() {
+			p = NewPlugin()
+			p.Init(plugins.InitParams{})
+
 			httpListener = &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
 					HttpLocalRatelimit: &local_ratelimit.Settings{
@@ -86,7 +90,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("Copies the l4 local rate limit config from the listener to the filter", func() {
-			filters, err := NewPlugin().NetworkFiltersHTTP(plugins.Params{}, &v1.HttpListener{
+			filters, err := p.NetworkFiltersHTTP(plugins.Params{}, &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
 					L4LocalRatelimit: tokenBucket,
 				},
@@ -119,7 +123,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("Copies the http local rate limit config from the HTTP Listener to the filter", func() {
-			filters, err := NewPlugin().HttpFilters(plugins.Params{}, httpListener)
+			filters, err := p.HttpFilters(plugins.Params{}, httpListener)
 			Expect(err).NotTo(HaveOccurred())
 			typedConfig, err := utils.MessageToAny(expectedFilter)
 			Expect(err).NotTo(HaveOccurred())
@@ -138,7 +142,7 @@ var _ = Describe("Plugin", func() {
 
 		It("Copies the http local rate limit config from the virtual host to the filter", func() {
 			out := &envoy_config_route_v3.VirtualHost{}
-			err := NewPlugin().ProcessVirtualHost(plugins.VirtualHostParams{
+			err := p.ProcessVirtualHost(plugins.VirtualHostParams{
 				HttpListener: httpListener,
 			}, &v1.VirtualHost{
 				Options: &v1.VirtualHostOptions{
@@ -161,7 +165,7 @@ var _ = Describe("Plugin", func() {
 
 		It("Copies the http local rate limit config from the route to the filter", func() {
 			out := &envoy_config_route_v3.Route{}
-			err := NewPlugin().ProcessRoute(plugins.RouteParams{
+			err := p.ProcessRoute(plugins.RouteParams{
 				VirtualHostParams: plugins.VirtualHostParams{
 					HttpListener: httpListener,
 				},
