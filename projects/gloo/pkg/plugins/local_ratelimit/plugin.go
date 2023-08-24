@@ -121,18 +121,15 @@ func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListen
 	return generateNetworkFilter(listener.GetOptions().GetLocalRatelimit())
 }
 
-func generateHTTPFilter(localRatelimit *local_ratelimit.TokenBucket) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
+func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
 	tokenBucket, err := createTokenBucket(localRatelimit)
 	if err != nil {
 		return nil, err
 	}
-	return &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
+	filter := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
 		StatPrefix:  HTTPFilterStatPrefix,
 		TokenBucket: tokenBucket,
 		Stage:       CustomStageBeforeAuth,
-		Status: &envoy_type_v3.HttpStatus{
-			Code: envoy_type_v3.StatusCode_TooManyRequests,
-		},
 		FilterEnabled: &corev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
 				Numerator:   100,
@@ -145,7 +142,13 @@ func generateHTTPFilter(localRatelimit *local_ratelimit.TokenBucket) (*envoy_ext
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 			},
 		},
-	}, nil
+	}
+	// This needs to be set on every virtual service or route that has custom local RL as they default to false and override the HCM level config
+	filter.LocalRateLimitPerDownstreamConnection = settings.GetLocalRateLimitPerDownstreamConnection()
+	if settings.GetEnableXRatelimitHeaders() {
+		filter.EnableXRatelimitHeaders = envoyratelimit.XRateLimitHeadersRFCVersion_DRAFT_VERSION_03
+	}
+	return filter, nil
 }
 
 func (p *plugin) ProcessVirtualHost(
@@ -154,13 +157,10 @@ func (p *plugin) ProcessVirtualHost(
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		filter, err := generateHTTPFilter(limits)
+		filter, err := generateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits)
 		if err != nil {
 			return err
 		}
-		// filter.Status = &envoy_type_v3.HttpStatus{
-		// 	Code: envoy_type_v3.StatusCode_NotFound,
-		// }
 		err = pluginutils.SetVhostPerFilterConfig(out, HTTPFilterName, filter)
 		return err
 	}
@@ -169,7 +169,7 @@ func (p *plugin) ProcessVirtualHost(
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		filter, err := generateHTTPFilter(limits)
+		filter, err := generateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits)
 		// filter.VhRateLimits =
 		if err != nil {
 			return err
@@ -183,32 +183,19 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	settings := listener.GetOptions().GetHttpLocalRatelimit()
 
-	filter := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
-		StatPrefix:                            HTTPFilterStatPrefix,
-		Stage:                                 CustomStageBeforeAuth,
-		LocalRateLimitPerDownstreamConnection: settings.GetLocalRateLimitPerDownstreamConnection(),
-	}
-	if settings.GetEnableXRatelimitHeaders() {
-		filter.EnableXRatelimitHeaders = envoyratelimit.XRateLimitHeadersRFCVersion_DRAFT_VERSION_03
-	}
-	localRatelimit := settings.GetDefaults()
-	if localRatelimit != nil {
-		tokenBucket, err := createTokenBucket(localRatelimit)
-		if err != nil {
-			return nil, err
-		}
-		filter.TokenBucket = tokenBucket
+	filter, err := generateHTTPFilter(settings, settings.GetDefaults())
+	if err != nil {
+		return nil, err
 	}
 
 	stagedRateLimitFilter, err := plugins.NewStagedFilter(
 		HTTPFilterName,
 		filter,
-		plugins.BeforeStage(plugins.AuthNStage),
+		pluginStage,
 	)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(stagedRateLimitFilter)
 
 	return []plugins.StagedHttpFilter{
 		stagedRateLimitFilter,
