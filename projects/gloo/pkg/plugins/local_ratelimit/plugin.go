@@ -42,7 +42,10 @@ var (
 	pluginStage = plugins.BeforeStage(plugins.AuthNStage)
 )
 
-type plugin struct{}
+type plugin struct {
+	removeUnused              bool
+	filterRequiredForListener map[*v1.HttpListener]struct{}
+}
 
 func NewPlugin() *plugin {
 	return &plugin{}
@@ -52,7 +55,10 @@ func (p *plugin) Name() string {
 	return ExtensionName
 }
 
-func (p *plugin) Init(params plugins.InitParams) {}
+func (p *plugin) Init(params plugins.InitParams) {
+	p.removeUnused = params.Settings.GetGloo().GetRemoveUnusedFilters().GetValue()
+	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
+}
 
 func createTokenBucket(localRatelimit *local_ratelimit.TokenBucket) (*envoy_type_v3.TokenBucket, error) {
 	if localRatelimit == nil {
@@ -161,6 +167,7 @@ func (p *plugin) ProcessVirtualHost(
 		if err != nil {
 			return err
 		}
+		p.filterRequiredForListener[params.HttpListener] = struct{}{}
 		err = pluginutils.SetVhostPerFilterConfig(out, HTTPFilterName, filter)
 		return err
 	}
@@ -174,6 +181,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return err
 		}
+		p.filterRequiredForListener[params.HttpListener] = struct{}{}
 		err = pluginutils.SetRoutePerFilterConfig(out, HTTPFilterName, filter)
 		return err
 	}
@@ -182,10 +190,13 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	settings := listener.GetOptions().GetHttpLocalRatelimit()
-
 	filter, err := generateHTTPFilter(settings, settings.GetDefaults())
 	if err != nil {
 		return nil, err
+	}
+	_, ok := p.filterRequiredForListener[listener]
+	if !ok && p.removeUnused && filter.TokenBucket == nil {
+		return []plugins.StagedHttpFilter{}, nil
 	}
 
 	stagedRateLimitFilter, err := plugins.NewStagedFilter(
