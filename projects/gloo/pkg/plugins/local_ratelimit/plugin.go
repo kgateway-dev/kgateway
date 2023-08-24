@@ -199,7 +199,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, err
 	}
 	_, ok := p.filterRequiredForListener[listener]
-	if !ok && p.removeUnused && filter.TokenBucket == nil {
+	if !ok && p.removeUnused && filter.GetTokenBucket() == nil {
 		return []plugins.StagedHttpFilter{}, nil
 	}
 

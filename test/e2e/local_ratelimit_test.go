@@ -7,6 +7,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloo_matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/local_ratelimit"
 	local_ratelimit_plugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/local_ratelimit"
@@ -87,7 +88,6 @@ var _ = Describe("Local Rate Limit", func() {
 			Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.HTTPFilterStatPrefix))
 
 			expectSuccess()
-			expectSuccess()
 		})
 	})
 
@@ -146,13 +146,12 @@ var _ = Describe("Local Rate Limit", func() {
 	})
 
 	Context("HTTP Local Rate Limit", func() {
-		Context("Overrides", func() {
+		Context("Overrides the default", func() {
 			BeforeEach(func() {
 				gw := gatewaydefaults.DefaultGateway(writeNamespace)
 				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 					HttpLocalRatelimit: &local_ratelimit.Settings{
-						LocalRateLimitPerDownstreamConnection: true,
-						EnableXRatelimitHeaders:               true,
+						EnableXRatelimitHeaders: true,
 						Defaults: &local_ratelimit.TokenBucket{
 							MaxTokens: defaultLimit,
 							TokensPerFill: &wrapperspb.UInt32Value{
@@ -171,7 +170,7 @@ var _ = Describe("Local Rate Limit", func() {
 			})
 
 			It("Should rate limit the default value config when nothing else overrides it", func() {
-				// The default rate limit is 3
+				// The gateway level rate limit is 3
 				expectSuccess()
 				expectSuccess()
 				expectSuccess()
@@ -256,14 +255,12 @@ var _ = Describe("Local Rate Limit", func() {
 				expectRateLimitedWithXRateLimitHeader(routeLimit)
 			})
 
-			// TODO : Ensure that the token bucket is not defined and not rl
-			Context("No token bucket set", func() {
+			Context("No defaults set", func() {
 				BeforeEach(func() {
 					gw := gatewaydefaults.DefaultGateway(writeNamespace)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpLocalRatelimit: &local_ratelimit.Settings{
-							LocalRateLimitPerDownstreamConnection: true,
-							EnableXRatelimitHeaders:               true,
+							EnableXRatelimitHeaders: true,
 						},
 					}
 
@@ -272,12 +269,70 @@ var _ = Describe("Local Rate Limit", func() {
 					}
 				})
 
-				It("Should not rate limit", func() {
+				It("Should not rate limit if there is no override", func() {
 					// If the default is not specified and neither the vHost or Route are RL, the filter should not be applied
 					cfg, err := testContext.EnvoyInstance().ConfigDump()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.HTTPFilterStatPrefix))
 
+					expectSuccess()
+				})
+
+				It("Should rate limit only the route that has an override", func() {
+					testContext.PatchDefaultVirtualService(func(vs *v1.VirtualService) *v1.VirtualService {
+						routes := vs.GetVirtualHost().GetRoutes()
+						routes[0].Options = &gloov1.RouteOptions{
+							RateLimitConfigType: &gloov1.RouteOptions_Ratelimit{
+								Ratelimit: &ratelimit.RateLimitRouteExtension{
+									LocalRatelimit: &local_ratelimit.TokenBucket{
+										MaxTokens: routeLimit,
+										TokensPerFill: &wrapperspb.UInt32Value{
+											Value: routeLimit,
+										},
+										FillInterval: &durationpb.Duration{
+											Seconds: 100,
+										},
+									},
+								},
+							},
+						}
+						unlimitedRoute := &v1.Route{
+							Matchers: []*gloo_matchers.Matcher{
+								{
+									PathSpecifier: &gloo_matchers.Matcher_Prefix{
+										Prefix: "/unlimited",
+									},
+								},
+							},
+							Action: &v1.Route_DirectResponseAction{
+								DirectResponseAction: &gloov1.DirectResponseAction{
+									Status: 200,
+									Body:   "unlimited",
+								},
+							},
+						}
+						routes = append([]*v1.Route{
+							unlimitedRoute,
+						}, routes...)
+						vs.VirtualHost.Routes = routes
+						return vs
+					})
+
+					// The default is not specified and only the Route is RL
+					Eventually(func(g Gomega) {
+						cfg, err := testContext.EnvoyInstance().ConfigDump()
+						g.Expect(err).NotTo(HaveOccurred())
+						g.Expect(cfg).To(ContainSubstring("enable_x_ratelimit_headers"))
+					}, "5s", ".5s").Should(Succeed())
+
+					expectSuccess()
+					expectRateLimitedWithXRateLimitHeader(1)
+
+					// It should not rate limit the /unlimited route
+					requestBuilder = requestBuilder.WithPath("unlimited")
+					expectSuccess()
+					expectSuccess()
+					expectSuccess()
 					expectSuccess()
 				})
 
