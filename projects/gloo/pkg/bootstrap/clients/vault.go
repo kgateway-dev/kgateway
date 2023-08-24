@@ -155,15 +155,14 @@ func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.C
 }
 
 func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
-	if accessKeyId := aws.GetAccessKeyId(); accessKeyId == "" {
-		return nil, errors.New("access key id must be defined for AWS IAM auth")
-	} else {
+	// The AccessKeyID and SecretAccessKey are not required in the case of using temporary credentials from assumed roles with AWS STS or IRSA.
+	// STS: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html
+	// IRSA: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
+	if accessKeyId := aws.GetAccessKeyId(); accessKeyId != "" {
 		os.Setenv("AWS_ACCESS_KEY_ID", accessKeyId)
 	}
 
-	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey == "" {
-		return nil, errors.New("secret access key must be defined for AWS IAM auth")
-	} else {
+	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey != "" {
 		os.Setenv("AWS_SECRET_ACCESS_KEY", secretAccessKey)
 	}
 
