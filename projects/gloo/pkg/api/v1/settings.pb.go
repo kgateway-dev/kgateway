@@ -1560,12 +1560,12 @@ type Settings_VaultAwsAuth struct {
 	IamServerIdHeader string `protobuf:"bytes,3,opt,name=iam_server_id_header,json=iamServerIdHeader,proto3" json:"iam_server_id_header,omitempty"`
 	// The Vault path on which the AWS auth is mounted
 	MountPath string `protobuf:"bytes,4,opt,name=mount_path,json=mountPath,proto3" json:"mount_path,omitempty"`
-	// The Access Key ID as provided by the security credentials on the AWS IAM resource
+	// The Access Key ID as provided by the security credentials on the AWS IAM resource.
 	// Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted.
 	// https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences
 	AccessKeyId string `protobuf:"bytes,5,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
-	// The Secret Access Key as provided by the security credentials on the AWS IAM resource
-	// Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service or IAM Roles for Service Accounts, this field can be omitted.
+	// The Secret Access Key as provided by the security credentials on the AWS IAM resource.
+	// Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted.
 	// https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences
 	SecretAccessKey string `protobuf:"bytes,6,opt,name=secret_access_key,json=secretAccessKey,proto3" json:"secret_access_key,omitempty"`
 	// The Session Token as provided by the security credentials on the AWS IAM resource
