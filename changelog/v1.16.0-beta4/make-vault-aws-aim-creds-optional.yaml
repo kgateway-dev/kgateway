@@ -8,3 +8,5 @@ changelog:
     resolvesIssue: false
   - type: HELM
     description: Expose `secretOptions` in `Settings` Helm chart.
+    issueLink: https://github.com/solo-io/gloo/issues/8533
+    resolvesIssue: false
