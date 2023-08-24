@@ -177,7 +177,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `dynamicForwardProxy` | [.dfp.options.gloo.solo.io.FilterConfig](../options/dynamic_forward_proxy/dynamic_forward_proxy.proto.sk/#filterconfig) |  |
 | `connectionLimit` | [.connection_limit.options.gloo.solo.io.ConnectionLimit](../options/connection_limit/connection_limit.proto.sk/#connectionlimit) | ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention. |
 | `l4LocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | L4LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer. It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up. |
-| `httpLocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.Settings](../options/local_ratelimit/local_ratelimit.proto.sk/#settings) |  |
+| `httpLocalRatelimit` | [.local_ratelimit.options.gloo.solo.io.Settings](../options/local_ratelimit/local_ratelimit.proto.sk/#settings) | HttpLocalRatelimit can be used to rate limit the number of requests per gateway. Unlike the L4LocalRatelimit, this works as part of the HCM and limits requests pre-auth. It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up. |
 | `router` | [.gloo.solo.io.Router](../options/router/router.proto.sk/#router) | Router is an extension of the envoy http filters Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto. |
 
 

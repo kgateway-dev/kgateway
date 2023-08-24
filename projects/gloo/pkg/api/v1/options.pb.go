@@ -345,8 +345,11 @@ type HttpListenerOptions struct {
 	ConnectionLimit *connection_limit.ConnectionLimit `protobuf:"bytes,29,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
 	// L4LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer.
 	// It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up
-	L4LocalRatelimit   *local_ratelimit.TokenBucket `protobuf:"bytes,32,opt,name=l4_local_ratelimit,json=l4LocalRatelimit,proto3" json:"l4_local_ratelimit,omitempty"`
-	HttpLocalRatelimit *local_ratelimit.Settings    `protobuf:"bytes,33,opt,name=http_local_ratelimit,json=httpLocalRatelimit,proto3" json:"http_local_ratelimit,omitempty"`
+	L4LocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,32,opt,name=l4_local_ratelimit,json=l4LocalRatelimit,proto3" json:"l4_local_ratelimit,omitempty"`
+	// HttpLocalRatelimit can be used to rate limit the number of requests per gateway.
+	// Unlike the L4LocalRatelimit, this works as part of the HCM and limits requests pre-auth.
+	// It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up
+	HttpLocalRatelimit *local_ratelimit.Settings `protobuf:"bytes,33,opt,name=http_local_ratelimit,json=httpLocalRatelimit,proto3" json:"http_local_ratelimit,omitempty"`
 	// Router is an extension of the envoy http filters
 	// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
 	Router *router.Router `protobuf:"bytes,18,opt,name=router,proto3" json:"router,omitempty"`
