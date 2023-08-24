@@ -28,7 +28,7 @@ var (
 
 const (
 	ExtensionName           = "local_ratelimit"
-	NetworkFilterStatPrefix = "network_local_ratelimit"
+	NetworkFilterStatPrefix = "l4_local_ratelimit"
 	HTTPFilterStatPrefix    = "http_local_ratelimit"
 	NetworkFilterName       = "envoy.filters.network.local_ratelimit"
 	HTTPFilterName          = "envoy.filters.http.local_ratelimit"
@@ -60,7 +60,7 @@ func (p *plugin) Init(params plugins.InitParams) {
 	p.filterRequiredForListener = make(map[*v1.HttpListener]struct{})
 }
 
-func createTokenBucket(localRatelimit *local_ratelimit.TokenBucket) (*envoy_type_v3.TokenBucket, error) {
+func toEnvoyTokenBucket(localRatelimit *local_ratelimit.TokenBucket) (*envoy_type_v3.TokenBucket, error) {
 	if localRatelimit == nil {
 		return nil, nil
 	}
@@ -93,7 +93,7 @@ func generateNetworkFilter(localRatelimit *local_ratelimit.TokenBucket) ([]plugi
 	if localRatelimit == nil {
 		return []plugins.StagedNetworkFilter{}, nil
 	}
-	tokenBucket, err := createTokenBucket(localRatelimit)
+	tokenBucket, err := toEnvoyTokenBucket(localRatelimit)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListen
 }
 
 func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
-	tokenBucket, err := createTokenBucket(localRatelimit)
+	tokenBucket, err := toEnvoyTokenBucket(localRatelimit)
 	if err != nil {
 		return nil, err
 	}
@@ -136,18 +136,22 @@ func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *loca
 		StatPrefix:  HTTPFilterStatPrefix,
 		TokenBucket: tokenBucket,
 		Stage:       CustomStageBeforeAuth,
-		FilterEnabled: &corev3.RuntimeFractionalPercent{
+	}
+
+	// Do NOT set filter enabled and enforced if the token bucket is not found. This causes it to rate limit all requests to zero
+	if tokenBucket != nil {
+		filter.FilterEnabled = &corev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
 				Numerator:   100,
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 			},
-		},
-		FilterEnforced: &corev3.RuntimeFractionalPercent{
+		}
+		filter.FilterEnforced = &corev3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{
 				Numerator:   100,
 				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
 			},
-		},
+		}
 	}
 	// This needs to be set on every virtual service or route that has custom local RL as they default to false and override the HCM level config
 	filter.LocalRateLimitPerDownstreamConnection = settings.GetLocalRateLimitPerDownstreamConnection()

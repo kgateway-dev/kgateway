@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Local Rate Limit", func() {
+var _ = Describe("Local Rate Limit", func() {
 
 	const (
 		defaultLimit = 3
@@ -78,82 +78,75 @@ var _ = FDescribe("Local Rate Limit", func() {
 		testContext.JustAfterEach()
 	})
 
-	Context("L4 Local Rate Limit", func() {
-		Context("Filter not defined", func() {
-			It("Should not rate limit", func() {
-				// Since the filter is not defined, the stat prefix should not be present, and requests should not be rate limited
-				cfg, err := testContext.EnvoyInstance().ConfigDump()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
+	Context("Filter not defined", func() {
+		It("Should not rate limit", func() {
+			// Since the filter is not defined, the filter should not be present, and requests should not be rate limited
+			cfg, err := testContext.EnvoyInstance().ConfigDump()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
+			Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.HTTPFilterStatPrefix))
 
-				expectSuccess()
-				expectSuccess()
-			})
-		})
-
-		Context("Filter defined", func() {
-			BeforeEach(func() {
-				gw := gatewaydefaults.DefaultGateway(writeNamespace)
-				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-					L4LocalRatelimit: &local_ratelimit.TokenBucket{
-						MaxTokens: defaultLimit,
-						TokensPerFill: &wrapperspb.UInt32Value{
-							Value: defaultLimit,
-						},
-						FillInterval: &durationpb.Duration{
-							Seconds: 100,
-						},
-					},
-				}
-
-				testContext.ResourcesToCreate().Gateways = v1.GatewayList{
-					gw,
-				}
-			})
-
-			// TODO : Investigate this failure - either the test or the filter itself
-			It("Should rate limit at the l4 layer", func() {
-				expectRateLimited := func() {
-					defer GinkgoRecover()
-					response, err := httpClient.Do(requestBuilder.Build())
-					fmt.Println(response)
-					fmt.Println(err)
-					ExpectWithOffset(1, response).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
-						StatusCode: http.StatusTooManyRequests,
-						Body:       "local_rate_limited",
-					}))
-				}
-
-				// The default rate limit is 3
-				cfg, _ := testContext.EnvoyInstance().ConfigDump()
-				fmt.Println(cfg)
-
-				expectSuccess()
-				expectSuccess()
-				expectSuccess()
-				expectSuccess()
-				expectSuccess()
-				expectRateLimited()
-			})
-
+			expectSuccess()
+			expectSuccess()
 		})
 	})
 
-	Context("HTTP Local Rate Limit", func() {
+	FContext("L4 Local Rate Limit", func() {
+		BeforeEach(func() {
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				L4LocalRatelimit: &local_ratelimit.TokenBucket{
+					MaxTokens: 1,
+					TokensPerFill: &wrapperspb.UInt32Value{
+						Value: 1,
+					},
+					FillInterval: &durationpb.Duration{
+						Seconds: 100,
+					},
+				},
+			}
 
-		Context("Filter not defined", func() {
-			It("Should not rate limit", func() {
-				// Since the filter is not defined, the stat prefix should not be present, and requests should not be rate limited
-				cfg, err := testContext.EnvoyInstance().ConfigDump()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.HTTPFilterStatPrefix))
-
-				expectSuccess()
-				expectSuccess()
-			})
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
+			}
 		})
 
-		Context("Filter defined", func() {
+		// TODO : Investigate this failure - either the test or the filter itself
+		It("Should rate limit at the l4 layer", func() {
+			expectRateLimited := func() {
+				defer GinkgoRecover()
+				response, err := httpClient.Do(requestBuilder.Build())
+				fmt.Println(response)
+				fmt.Println(err)
+				ExpectWithOffset(1, response).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+					StatusCode: http.StatusTooManyRequests,
+					Body:       "local_rate_limited",
+				}))
+			}
+
+			// The default rate limit is 3
+			cfg, _ := testContext.EnvoyInstance().ConfigDump()
+			fmt.Println(cfg)
+			Expect(cfg).To(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
+
+			fmt.Println(1)
+			expectSuccess()
+			fmt.Println(2)
+			expectSuccess()
+			fmt.Println(3)
+			expectSuccess()
+			fmt.Println(4)
+			expectSuccess()
+			fmt.Println(5)
+			expectSuccess()
+			fmt.Println(6)
+			expectRateLimited()
+		})
+
+	})
+
+	Context("HTTP Local Rate Limit", func() {
+		Context("Overrides", func() {
 			BeforeEach(func() {
 				gw := gatewaydefaults.DefaultGateway(writeNamespace)
 				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
@@ -177,7 +170,7 @@ var _ = FDescribe("Local Rate Limit", func() {
 				}
 			})
 
-			It("Should rate limit the default value config", func() {
+			It("Should rate limit the default value config when nothing else overrides it", func() {
 				// The default rate limit is 3
 				expectSuccess()
 				expectSuccess()
@@ -261,6 +254,33 @@ var _ = FDescribe("Local Rate Limit", func() {
 				// The rate limit of the route is 1
 				expectSuccess()
 				expectRateLimitedWithXRateLimitHeader(routeLimit)
+			})
+
+			// TODO : Ensure that the token bucket is not defined and not rl
+			Context("No token bucket set", func() {
+				BeforeEach(func() {
+					gw := gatewaydefaults.DefaultGateway(writeNamespace)
+					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+						HttpLocalRatelimit: &local_ratelimit.Settings{
+							LocalRateLimitPerDownstreamConnection: true,
+							EnableXRatelimitHeaders:               true,
+						},
+					}
+
+					testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+						gw,
+					}
+				})
+
+				It("Should not rate limit", func() {
+					// If the default is not specified and neither the vHost or Route are RL, the filter should not be applied
+					cfg, err := testContext.EnvoyInstance().ConfigDump()
+					Expect(err).NotTo(HaveOccurred())
+					Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.HTTPFilterStatPrefix))
+
+					expectSuccess()
+				})
+
 			})
 		})
 	})
