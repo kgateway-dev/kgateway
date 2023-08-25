@@ -220,15 +220,11 @@ type AwsSettings struct {
 	FallbackToFirstFunction         *bool     `json:"fallbackToFirstFunction,omitempty" desc:"It will use the first function which if discovery is enabled the first function is the first function name alphabetically from the last discovery run. Defaults to false."`
 }
 
-// do i need to manually set here? or can i get from a generated file such as settings.proto.sk.md?
 type SecretOptions struct {
 	Sources []*SecretOptionsSource `json:"sources,omitempty" desc:"List of sources to use for secrets."`
 }
 
 type SecretOptionsSource struct {
-	// The Kubernetes secret is set as `kubernetes: {}` since it has no fields. will it work here, or will omit empty impact it?
-	// for some reason the generated values.txt does not include `settings.secretOptions.sources[].kubernetes`.
-	// it is because it is empty, but hopefully we can still set it. maybe this needs to be an `interface{}`? but clarify
 	Kubernetes KubernetesSecrets `json:"kubernetes,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
 	Vault      VaultSecrets      `json:"vault,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
 	Directory  Directory         `json:"directory,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
