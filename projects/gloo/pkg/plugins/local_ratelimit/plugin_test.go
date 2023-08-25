@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-var _ = Describe("Plugin", func() {
+var _ = Describe("Local Rate Limit Plugin", func() {
 	Context("Copies the local rate limit config from the CR to the filter", func() {
 		var p *plugin
 		var httpListener *v1.HttpListener

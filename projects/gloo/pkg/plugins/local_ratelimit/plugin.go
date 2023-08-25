@@ -181,7 +181,6 @@ func (p *plugin) ProcessVirtualHost(
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
 		filter, err := generateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits)
-		// filter.VhRateLimits =
 		if err != nil {
 			return err
 		}
@@ -198,6 +197,11 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if err != nil {
 		return nil, err
 	}
+
+	// Do NOT add this filter if all of the following are met :
+	// - It is not used on this listener either at the vhost, route level &&
+	// - The token bucket is not defined at the gateway level &&
+	// - params.Settings.GetGloo().GetRemoveUnusedFilters() is set
 	_, ok := p.filterRequiredForListener[listener]
 	if !ok && p.removeUnused && filter.GetTokenBucket() == nil {
 		return []plugins.StagedHttpFilter{}, nil
