@@ -4,7 +4,7 @@ weight: 35
 description: Restrict the number of active TCP connections for a gateway. 
 ---
 
-You can restrict the number of active TCP connections for a gateway and optionally instruct the gateway to wait before closing a connection by using the `optionsConnectionLimit` parameter in the gateway resource. Similar to the [rate limit filter]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}) where requests are limited based on connection rate, the connection limit filter limits traffic based on active connections which greatly reduces the risk of malicious attacks and makes sure that each gateway has its fair share of compute resources to process incoming requests. 
+You can restrict the number of active TCP connections for a gateway and optionally instruct the gateway to wait before closing a connection by using the `options.ConnectionLimit` parameters in the gateway resource. Similar to the [rate limit filter]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}) where requests are limited based on connection rate, the connection limit filter limits traffic based on active connections which greatly reduces the risk of malicious attacks and makes sure that each gateway has its fair share of compute resources to process incoming requests. 
 
 {{% notice note %}}
 The TCP connection filter is a Layer 4 filter and is executed before the HTTP Connection Manager plug-in and related filters. 
@@ -14,34 +14,171 @@ For more information about the connection limit settings, see the [Envoy documen
 
 ## Before you begin
 
-Follow the [Hello World guide]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/" >}}) to deploy the petstore app as an upstream and configure routing to the upstream. 
+Install the `telnet` CLI to establish TCP connections to the gateway. 
 
 ## Configure connection limits
 
-1. Verify that you can send requests to the petstore app. 
-   ```sh
-   curl $(glooctl proxy url)/all-pets
-   ```
-
-2. Create a gateway resource with connection limit settings. In this example, the gatewy accepts only one active connection at any given time. 
+1. Deploy the TCP echo service in your cluster.
    ```yaml
    kubectl apply -f- <<EOF
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     labels:
+       gloo: tcp-echo
+     name: tcp-echo
+   spec:
+     containers:
+     - image: soloio/tcp-echo:latest
+       imagePullPolicy: IfNotPresent
+       name: tcp-echo
+     restartPolicy: Always
+  ---
+  apiVersion: v1
+   kind: Service
+   metadata:
+     labels:
+       app: gloo
+     name: tcp-echo
+   spec:
+     ports:
+     - name: http
+       port: 1025
+       protocol: TCP
+       targetPort: 1025
+     selector:
+       gloo: tcp-echo
+   EOF
+   ```
+
+   Example output:
+   ```
+   pod/tcp-echo created
+   service/tcp-echo created
+   ```
+
+2. Verify that an upstream was automatically created for the echo service.
+   ```sh
+   kubectl get upstreams default-tcp-echo-1025 -n gloo-system
+   ```
+
+3. Create a TCP gateway with connection limit settings. The following gateway accepts only one active connection at any given time. Before closing a new connection, the gateway waits 2 seconds. 
+   ```
+   kubectl apply -n gloo-system -f - <<EOF
    apiVersion: gateway.solo.io/v1
    kind: Gateway
-   metadata: 
-     name: tcp-limit
+   metadata:
+     name: tcp
      namespace: gloo-system
    spec:
      bindAddress: '::'
-     bindPort: 8080
-     httpGateway:
+     bindPort: 8000
+     tcpGateway:
        options:
          connectionLimit:
-           delayBeforeClose: 3s
            maxActiveConnections: 1
+           delayBeforeClose: 2s
+       tcpHosts:
+       - name: one
+         destination:
+           single:
+            upstream:
+               name: default-tcp-echo-1025
+               namespace: gloo-system
      useProxyProto: false
    EOF
    ```
 
-3. To do
+4. Open a TCP port on the `gateway-proxy` service in your cluster and bind it to the gateway port 8000.
+   1. Edit the `gateway-proxy` service. 
+      ```sh
+      kubectl edit service gateway-proxy -n gloo-system
+      ```
+   2. In the `spec.ports` section, add the TCP port.
+      ```yaml
+      ...
+      - name: tcp
+        nodePort: 30197
+        port: 8000
+        protocol: TCP
+        targetPort: 8000
+      ```
+
+      Your `spec.ports` section looks similar to the following:
+      ```
+      ports:
+      - name: http
+        nodePort: 32653
+        port: 80
+        protocol: TCP
+        targetPort: 8080
+      - name: https
+        nodePort: 30550
+        port: 443
+        protocol: TCP
+        targetPort: 8443
+      - name: tcp
+        nodePort: 30197
+        port: 8000
+        protocol: TCP
+      ```
+
+5. Get the public IP address of your gateway proxy. Note that the following commands returns the IP address and the default port. 
+   ```sh
+   glooctl proxy address
+   ```
+
+6. Open a telnet session to the public IP address of the gateway and port 8000.
+   ```sh
+   telnet <public-gateway-IP> 8000
+   ```
+
+   Example output:
+   ```
+   Connected to 113.21.184.35.bc.googleusercontent.com.
+   Escape character is '^]'.
+   ```
+
+8. Enter any string and verify that the echo service returns the same string. For example, you can type in `hello`.
+   ```sh
+   hello
+   ```
+
+   Example output:
+   ```
+   hello
+   hello
+   ```
+
+9. Open another terminal window and try to establish another connection to the gateway on port 8000. Because the gateway is configured to allow only one connection at a time, the connection is terminated after the 2 second delay. 
+   ```sh
+   telnet <public-gateway-IP> 8000
+   ```
+
+   Example output:
+   ```
+   Connected to 113.21.184.35.bc.googleusercontent.com.
+   Escape character is '^]'.
+   Connection closed by foreign host.
+   ```
+
+## Cleanup
+
+You can optionally clean up the resources that you created as part of this guide. 
+
+1. Remove the TCP gateway.
+   ```sh
+   kubectl delete gateway tcp -n gloo-system
+   ```
+
+2. Remove the echo pod and service.
+   ```sh
+   kubectl delete service tcp-echo
+   kubectl delete pod tcp-echo
+   ```
+
+3. Edit the `gateway-proxy` service and remove the TCP port settings.
+   ```sh
+   kubectl edit service gateway-proxy -n gloo-system
+   ```
 
