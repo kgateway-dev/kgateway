@@ -14,11 +14,13 @@ For more information about the connection limit settings, see the [Envoy documen
 
 ## Before you begin
 
-Install the `telnet` CLI to establish TCP connections to the gateway. 
+Install the `telnet` client on your local machine. You use this client to establish TCP connections to the gateway. For example, if you use MacOS, you can run `brew install telnet` to install the client. 
 
 ## Configure connection limits
 
 1. Deploy the TCP echo service in your cluster.
+   {{< tabs >}}
+   {{% tab %}}
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: v1
@@ -56,6 +58,8 @@ Install the `telnet` CLI to establish TCP connections to the gateway.
    pod/tcp-echo created
    service/tcp-echo created
    ```
+   {{% /tab %}}
+   {{< /tabs >}}
 
 2. Verify that an upstream was automatically created for the echo service.
    ```sh
