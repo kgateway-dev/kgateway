@@ -117,26 +117,14 @@ var _ = Describe("Local Rate Limit", func() {
 	// 		gw := gatewaydefaults.DefaultGateway(writeNamespace)
 	// 		gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 	// 			L4LocalRatelimit: &local_ratelimit.TokenBucket{
-	// 				MaxTokens: 2,
+	// 				MaxTokens: 1,
 	// 				TokensPerFill: &wrapperspb.UInt32Value{
-	// 					Value: 2,
+	// 					Value: 1,
 	// 				},
 	// 				FillInterval: &durationpb.Duration{
 	// 					Seconds: 100,
 	// 				},
 	// 			},
-	// 			// HttpLocalRatelimit: &local_ratelimit.Settings{
-	// 			// 	EnableXRatelimitHeaders: true,
-	// 			// 	Defaults: &local_ratelimit.TokenBucket{
-	// 			// 		MaxTokens: 1,
-	// 			// 		TokensPerFill: &wrapperspb.UInt32Value{
-	// 			// 			Value: 1,
-	// 			// 		},
-	// 			// 		FillInterval: &durationpb.Duration{
-	// 			// 			Seconds: 100,
-	// 			// 		},
-	// 			// 	},
-	// 			// },
 	// 		}
 
 	// 		testContext.ResourcesToCreate().Gateways = v1.GatewayList{
@@ -157,13 +145,11 @@ var _ = Describe("Local Rate Limit", func() {
 	// 		// The default rate limit is 3
 	// 		cfg, _ := testContext.EnvoyInstance().ConfigDump()
 	// 		fmt.Println(cfg)
-	// 		// Expect(cfg).To(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
-
-	// 		expectSuccess()
-	// 		expectSuccess()
+	// 		Expect(cfg).To(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
+	// 		expectNotRateLimitedWithOutXRateLimitHeader()
+	// 		expectNotRateLimitedWithOutXRateLimitHeader()
 	// 		expectRateLimited()
 	// 	})
-
 	// })
 
 	Context("HTTP Local Rate Limit", func() {
