@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Provide correct path for sub-actions in the action to create solo-apis PRs.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8573
+    resolvesIssue: false
+    description: Add a default case when converting Solo ratelimit actions to Enovy actions.

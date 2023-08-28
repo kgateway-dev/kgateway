@@ -1,5 +1,5 @@
 ---
-title: Contributing to the Gloo Edge Documentation
+title: Contribute to the Gloo Edge docs
 menuTitle: Documentation
 weight: 20
 description: Read this guide to help make Gloo Edge docs the best they can be!

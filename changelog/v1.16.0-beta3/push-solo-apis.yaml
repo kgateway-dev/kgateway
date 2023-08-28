@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Remove caching from the push-solo-apis-branch action.
+      skipCI-kube-tests:true
+      skipCI-docs-build:true
