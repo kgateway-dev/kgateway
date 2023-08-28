@@ -15,10 +15,10 @@ metadata:
   annotations:
     {{- if .Values.gateway.certGenJob.runOnUpdate }}
     "helm.sh/hook": pre-install, pre-upgrade
-    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.certGenJob | nindent 4 -}}
+    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.certGenJob -}}
     {{- else }}
     "helm.sh/hook": pre-install
-    {{- include "gloo.jobHelmDeletePolicy" .Values.gateway.certGenJob | nindent 4 -}}
+    {{- include "gloo.jobHelmDeletePolicy" .Values.gateway.certGenJob -}}
     {{- end }}
     "helm.sh/hook-weight": "10"
 spec:

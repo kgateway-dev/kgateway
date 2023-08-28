@@ -14,7 +14,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
-    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob | nindent 4 -}}
+    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob -}}
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:

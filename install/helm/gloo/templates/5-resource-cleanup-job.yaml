@@ -14,7 +14,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
-    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.cleanupJob | nindent 4 -}}
+    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.cleanupJob -}}
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.cleanupJob | nindent 2 -}}
   template:
