@@ -120,7 +120,7 @@ func generateNetworkFilter(localRatelimit *local_ratelimit.TokenBucket) ([]plugi
 }
 
 func (p *plugin) NetworkFiltersHTTP(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedNetworkFilter, error) {
-	return generateNetworkFilter(listener.GetOptions().GetL4LocalRatelimit())
+	return generateNetworkFilter(listener.GetOptions().GetNetworkLocalRatelimit())
 }
 
 func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListener) ([]plugins.StagedNetworkFilter, error) {

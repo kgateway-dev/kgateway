@@ -92,7 +92,7 @@ var _ = Describe("Local Rate Limit Plugin", func() {
 		It("Copies the l4 local rate limit config from the listener to the filter", func() {
 			filters, err := p.NetworkFiltersHTTP(plugins.Params{}, &v1.HttpListener{
 				Options: &v1.HttpListenerOptions{
-					L4LocalRatelimit: tokenBucket,
+					NetworkLocalRatelimit: tokenBucket,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())

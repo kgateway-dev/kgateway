@@ -116,7 +116,7 @@ var _ = Describe("Local Rate Limit", func() {
 		BeforeEach(func() {
 			gw := gatewaydefaults.DefaultGateway(writeNamespace)
 			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-				L4LocalRatelimit: &local_ratelimit.TokenBucket{
+				NetworkLocalRatelimit: &local_ratelimit.TokenBucket{
 					MaxTokens: 1,
 					TokensPerFill: &wrapperspb.UInt32Value{
 						Value: 1,

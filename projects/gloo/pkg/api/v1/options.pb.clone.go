@@ -321,10 +321,10 @@ func (m *HttpListenerOptions) Clone() proto.Message {
 		target.ConnectionLimit = proto.Clone(m.GetConnectionLimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_connection_limit.ConnectionLimit)
 	}
 
-	if h, ok := interface{}(m.GetL4LocalRatelimit()).(clone.Cloner); ok {
-		target.L4LocalRatelimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
+	if h, ok := interface{}(m.GetNetworkLocalRatelimit()).(clone.Cloner); ok {
+		target.NetworkLocalRatelimit = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
 	} else {
-		target.L4LocalRatelimit = proto.Clone(m.GetL4LocalRatelimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
+		target.NetworkLocalRatelimit = proto.Clone(m.GetNetworkLocalRatelimit()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_local_ratelimit.TokenBucket)
 	}
 
 	if h, ok := interface{}(m.GetHttpLocalRatelimit()).(clone.Cloner); ok {

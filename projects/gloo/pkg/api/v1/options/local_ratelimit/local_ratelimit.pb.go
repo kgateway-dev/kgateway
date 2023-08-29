@@ -25,7 +25,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// These options provide the ability to locally rate limit the connections in envoy.
+// Configures the token bucket, used for rate limiting.
 // Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
 type TokenBucket struct {
 	state         protoimpl.MessageState
@@ -97,14 +97,23 @@ func (x *TokenBucket) GetFillInterval() *duration.Duration {
 	return nil
 }
 
+// The Local Rate Limit settings define the default local rate limit token bucket to apply as well as other configurations
 type Settings struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Defaults                              *TokenBucket `protobuf:"bytes,1,opt,name=defaults,proto3" json:"defaults,omitempty"`
-	LocalRateLimitPerDownstreamConnection bool         `protobuf:"varint,2,opt,name=local_rate_limit_per_downstream_connection,json=localRateLimitPerDownstreamConnection,proto3" json:"local_rate_limit_per_downstream_connection,omitempty"`
-	EnableXRatelimitHeaders               bool         `protobuf:"varint,3,opt,name=enable_x_ratelimit_headers,json=enableXRatelimitHeaders,proto3" json:"enable_x_ratelimit_headers,omitempty"`
+	// The token bucket configuration to use for rate limiting requests.
+	// These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+	// If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
+	Defaults *TokenBucket `protobuf:"bytes,1,opt,name=defaults,proto3" json:"defaults,omitempty"`
+	// Specifies the scope of the rate limiter’s token bucket. If set to false, the token bucket is shared across all worker threads, thus the rate limits are applied per Envoy process.
+	// If set to true, a token bucket is allocated for each connection, thus the rate limits are applied per connection thereby allowing one to rate limit requests on a per connection basis.
+	// Defaults to false
+	LocalRateLimitPerDownstreamConnection bool `protobuf:"varint,2,opt,name=local_rate_limit_per_downstream_connection,json=localRateLimitPerDownstreamConnection,proto3" json:"local_rate_limit_per_downstream_connection,omitempty"`
+	// Set this to true to return Envoy's X-RateLimit headers to the downstream.
+	// reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/common/ratelimit/v3/ratelimit.proto#envoy-v3-api-enum-extensions-common-ratelimit-v3-xratelimitheadersrfcversion
+	EnableXRatelimitHeaders bool `protobuf:"varint,3,opt,name=enable_x_ratelimit_headers,json=enableXRatelimitHeaders,proto3" json:"enable_x_ratelimit_headers,omitempty"`
 }
 
 func (x *Settings) Reset() {

@@ -395,12 +395,12 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
-	if h, ok := interface{}(m.GetL4LocalRatelimit()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetL4LocalRatelimit()) {
+	if h, ok := interface{}(m.GetNetworkLocalRatelimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetNetworkLocalRatelimit()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetL4LocalRatelimit(), target.GetL4LocalRatelimit()) {
+		if !proto.Equal(m.GetNetworkLocalRatelimit(), target.GetNetworkLocalRatelimit()) {
 			return false
 		}
 	}

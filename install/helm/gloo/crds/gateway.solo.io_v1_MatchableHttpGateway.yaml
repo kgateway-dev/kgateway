@@ -1168,7 +1168,10 @@ spec:
                           localRateLimitPerDownstreamConnection:
                             type: boolean
                         type: object
-                      l4LocalRatelimit:
+                      leftmostXffAddress:
+                        nullable: true
+                        type: boolean
+                      networkLocalRatelimit:
                         properties:
                           fillInterval:
                             type: string
@@ -1181,9 +1184,6 @@ spec:
                             nullable: true
                             type: integer
                         type: object
-                      leftmostXffAddress:
-                        nullable: true
-                        type: boolean
                       proxyLatency:
                         properties:
                           chargeClusterStat:

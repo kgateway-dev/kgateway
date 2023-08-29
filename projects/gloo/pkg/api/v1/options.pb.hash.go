@@ -630,18 +630,18 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetL4LocalRatelimit()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("L4LocalRatelimit")); err != nil {
+	if h, ok := interface{}(m.GetNetworkLocalRatelimit()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("NetworkLocalRatelimit")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetL4LocalRatelimit(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetNetworkLocalRatelimit(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("L4LocalRatelimit")); err != nil {
+			if _, err = hasher.Write([]byte("NetworkLocalRatelimit")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
