@@ -1223,6 +1223,46 @@ func (m *EndSessionProperties) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ClaimToHeader) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ClaimToHeader)
+	if !ok {
+		that2, ok := that.(ClaimToHeader)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
+		return false
+	}
+
+	if m.GetAppend() != target.GetAppend() {
+		return false
+	}
+
+	if m.GetSource() != target.GetSource() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1407,6 +1447,23 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetDisableClientSecret(), target.GetDisableClientSecret()) {
 			return false
 		}
+	}
+
+	if len(m.GetClaimsToHeaders()) != len(target.GetClaimsToHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetClaimsToHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

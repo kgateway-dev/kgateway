@@ -549,6 +549,32 @@ message EndSessionProperties {
     MethodType methodType = 1;
 }
 
+// Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
+message ClaimToHeader {
+
+    // Specify which token to retrieve the information for mapping a claim to a header.
+    enum Source {
+        // Retrieve the value fom the OAuth2 access token.
+        AccessToken = 0;
+
+        // Retrieve the value from the OIDC identity token.
+        IdentityToken = 1;
+    }
+
+    // The claim name from the token, such as `sub`.
+    string claim = 1;
+
+    // The header to copy the claim to, such as `x-sub`.
+    string header = 2;
+
+    // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
+    bool append = 3;
+
+    // Specify which token to retrieve the claim information from.
+    Source source = 4;
+}
+
+
 
 message OidcAuthorizationCode {
     // your client id as registered with the issuer
@@ -671,6 +697,9 @@ message OidcAuthorizationCode {
     // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
     google.protobuf.BoolValue disable_client_secret = 21;
+
+    // Optional: Map a single claim from an OAuth2 token to a header in the request to the upstream destination.
+    repeated ClaimToHeader claims_to_headers = 22;
 }
 
 message PlainOAuth2 {
@@ -1080,7 +1109,7 @@ message OpaAuthOptions {
     bool fast_input_conversion = 1;
 
     // Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second
-    // parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure 
+    // parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure
     // will be
     // envoy.filters.http.ext_authz:
     //   -> name of the auth step, i.e. spec.configs[i].name
