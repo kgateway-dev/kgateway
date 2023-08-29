@@ -718,6 +718,10 @@ spec:
                                   items:
                                     type: string
                                   type: array
+                                allowedUpstreamHeadersToOverwrite:
+                                  items:
+                                    type: string
+                                  type: array
                                 readStateFromResponse:
                                   type: boolean
                               type: object
