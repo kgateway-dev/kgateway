@@ -86,7 +86,7 @@ Install the `telnet` client on your local machine. You use this client to establ
        - name: one
          destination:
            single:
-            upstream:
+             upstream:
                name: default-tcp-echo-1025
                namespace: gloo-system
      useProxyProto: false
