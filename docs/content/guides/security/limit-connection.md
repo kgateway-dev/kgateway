@@ -127,7 +127,7 @@ Install the `telnet` client on your local machine. You use this client to establ
         protocol: TCP
       ```
 
-5. Get the public IP address of your gateway proxy. Note that the following commands returns the IP address and the default port. 
+5. Get the public IP address of your gateway proxy. Note that the following command returns the IP address and the default port. 
    ```sh
    glooctl proxy address
    ```
