@@ -657,6 +657,22 @@ spec:
                         query:
                           type: string
                       type: object
+                    opaServerAuth:
+                      properties:
+                        options:
+                          properties:
+                            fastInputConversion:
+                              type: boolean
+                            returnDecisionReason:
+                              type: boolean
+                          type: object
+                        package:
+                          type: string
+                        ruleName:
+                          type: string
+                        serverAddr:
+                          type: string
+                      type: object
                     passThroughAuth:
                       properties:
                         config:

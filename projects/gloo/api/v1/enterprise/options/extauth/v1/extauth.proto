@@ -58,6 +58,7 @@ message AuthConfig {
             google.protobuf.Empty jwt = 11;
             PassThroughAuth pass_through_auth = 12;
             HmacAuth hmac_auth = 13;
+            OpaServerAuth opa_server_auth = 14;
         }
     }
 
@@ -1063,9 +1064,9 @@ message OpaAuth {
     // An optional resource reference to config maps containing modules to assist in the resolution of `query`.
     repeated core.solo.io.ResourceRef modules = 1;
 
-    // The query that determines the auth decision. The result of this query must be either a boolean
-    // or an array with boolean as the first element. A boolean `true` value means that the request
-    // will be authorized. Any other value, or error, means that the request will be denied.
+    // The query that determines the auth decision. The result of this query
+    // must be either a boolean or an array with boolean as the first element. A boolean `true` value means that
+    // the request will be authorized. Any other value, or error, means that the request will be denied.
     string query = 2;
 
     // Additional Options for Opa Auth configuration.
@@ -1079,13 +1080,40 @@ message OpaAuthOptions {
     // By default, this is set to false and all fields are evaluated by OPA.
     bool fast_input_conversion = 1;
 
-    // Return the reason given from the OPA engine after a decision made on this policy. Reason must be the second
-    // parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure 
+    // Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. 
+    // This way, you can use the reason in subsequent filters, such as transformation policies. This `returnDecisionReason` field must be the second
+    // parameter of the query when using OpaAuth. 
+    // When using this field in OpaServerAuth, the entire document will be returned as metadata and the `allowed` field on 
+    // the document will be used to make the policy decision.
+    // The entry will be in the returned DynamicMetadata in the CheckResponse and the structure 
     // will be
     // envoy.filters.http.ext_authz:
     //   -> name of the auth step, i.e. spec.configs[i].name
     //       -> reason
+    // If set to false, the response is allowed or denied based on the rego rules without returning the reason.
     bool return_decision_reason = 2;
+}
+
+// Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external 
+// auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+message OpaServerAuth {
+    // The package from your rego policy bundle used to query the OPA data API
+    string package = 1;
+
+    // The rule in your rego policy bundle used to query the OPA data API. Supports querying subfields with a /, see https://www.openpolicyagent.org/docs/latest/rest-api/#data-api
+    string rule_name = 2;
+
+    // The address of the OPA server to query, in the format `ADDRESS:PORT`. 
+    //For OPA servers within the cluster, the address is the pod's service address, 
+    // such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster, 
+    // the server must be accessible to the cluster, such as through an ExternalService. 
+    // If you do not have your own OPA server instance, omit this field. 
+    // Deploy the ext auth service with the OPA server sidecare enabled and the OPA server 
+    // sidecar will be used instead.
+    string server_addr = 3;
+
+    // Additional options for OPA Auth configuration.
+    OpaAuthOptions options = 4;
 }
 
 // Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
@@ -1692,15 +1720,45 @@ message ExtAuthConfig {
     message OpaAuthConfig {
         // An optional modules (filename, module content) maps containing modules assist in the resolution of `query`.
         map<string, string> modules = 1;
-
-        // The query that determines the auth decision. The result of this query must be either a boolean
-        // or an array with boolean as the first element. A boolean `true` value means that the request
-        // will be authorized. Any other value, or error, means that the request will be denied.
+    
+        // The query that determines the auth decision. The result of this query
+        // must be either a boolean or an array with boolean as the first element. A boolean `true` value means that
+        // the request will be authorized. Any other value, or error, means that the request will be denied.
         string query = 2;
-
+    
         // Additional Options for Opa Auth configuration.
         OpaAuthOptions options = 3;
     }
+    
+    message OpaAuthOptions {
+        // Decreases OPA latency by speeding up conversion of input to the OPA engine.
+        // If this is set to true, only http_request and state fields which are a scalar, map, or string array
+        // are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine.
+        // By default, this is set to false and all fields are evaluated by OPA.
+        bool fast_input_conversion = 1;
+    
+        // Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. 
+        // This way, you can use the reason in subsequent filters, such as transformation policies. This `returnDecisionReason` field must be the second
+        // parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure 
+        // will be
+        // envoy.filters.http.ext_authz:
+        //   -> name of the auth step, i.e. spec.configs[i].name
+        //       -> reason
+        // If set to false, the response is allowed or denied based on the rego rules without returning the reason.
+        bool return_decision_reason = 2;
+    }
+    
+    // Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
+    message OpaServerAuthConfig {
+        string package = 1;
+    
+        string rule_name = 2;
+    
+        string server_addr = 3;
+    
+        OpaAuthOptions options = 4;
+    }
+    
     message LdapConfig {
 
         // Address of the LDAP server to query. Should be in the form ADDRESS:PORT, e.g. `ldap.default.svc.cluster.local:389`.
@@ -1783,6 +1841,7 @@ message ExtAuthConfig {
             google.protobuf.Empty jwt = 12;
             PassThroughAuth pass_through_auth = 13;
             HmacAuthConfig hmac_auth = 15;
+            OpaServerAuthConfig opa_server_auth = 16;
         }
     }
 
