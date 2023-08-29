@@ -14,7 +14,7 @@ For more information about the connection limit settings, see the [Envoy documen
 
 ## Before you begin
 
-Install the `telnet` client on your local machine. You use this client to establish TCP connections to the gateway. For example, if you use MacOS, you can run `brew install telnet` to install the client. 
+Install the `telnet` client on your local machine. You use this client to establish TCP connections to the gateway. For example, on macOS you can run `brew install telnet` to install the client. 
 
 ## Configure connection limits
 
