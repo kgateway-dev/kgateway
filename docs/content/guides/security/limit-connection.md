@@ -4,7 +4,7 @@ weight: 35
 description: Restrict the number of active TCP connections for a gateway. 
 ---
 
-You can restrict the number of active TCP connections for a gateway and optionally instruct the gateway to wait before closing a connection by using the `options.ConnectionLimit` parameters in the gateway resource. Similar to the [rate limit filter]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}) where requests are limited based on connection rate, the connection limit filter limits traffic based on active connections which greatly reduces the risk of malicious attacks and makes sure that each gateway has its fair share of compute resources to process incoming requests. 
+You can configure the `options.ConnectionLimit` parameters in the gateway resource. These parameters let you restrict the number of active TCP connections for the gateway. You can also optionally make the gateway wait before closing a connection. Similar to the [rate limit filter]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/" >}}) that limits requests based on connection rate, the connection limit filter limits traffic based on active connections. This connection limit reduces the risk of malicious attacks. In turn, the limit helps ensure that each gateway has enough compute resources to process incoming requests.
 
 {{% notice note %}}
 The TCP connection filter is a Layer 4 filter and is executed before the HTTP Connection Manager plug-in and related filters. 
