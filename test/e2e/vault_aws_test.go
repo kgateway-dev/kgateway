@@ -1,17 +1,18 @@
 package e2e_test
 
 import (
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	bootstrap "github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/ginkgo/decorators"
 	"github.com/solo-io/gloo/test/testutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 const (
@@ -34,11 +35,29 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 	var (
 		testContext         *e2e.TestContextWithVault
 		vaultSecretSettings *gloov1.Settings_VaultSecrets
+		oauthSecret         *gloov1.Secret
+		useCredentials      bool
 	)
 
 	BeforeEach(func() {
 		testContext = testContextFactory.NewTestContextWithVault(testutils.AwsCredentials())
 		testContext.BeforeEach()
+
+		oauthSecret = &gloov1.Secret{
+			Metadata: &core.Metadata{
+				Name:      "oauth-secret",
+				Namespace: writeNamespace,
+			},
+			Kind: &gloov1.Secret_Oauth{
+				Oauth: &v1.OauthSecret{
+					ClientSecret: "test",
+				},
+			},
+		}
+
+		testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
+			oauthSecret,
+		}
 	})
 
 	AfterEach(func() {
@@ -50,8 +69,29 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 			SecretSource: &gloov1.Settings_VaultSecretSource{
 				VaultSecretSource: vaultSecretSettings,
 			},
+			//SecretOptions: &gloov1.Settings_SecretOptions{
+			//	Sources: []*gloov1.Settings_SecretOptions_Source{
+			//		{
+			//			Source: &gloov1.Settings_SecretOptions_Source_Vault{
+			//				Vault: vaultSecretSettings,
+			//			},
+			//		},
+			//		{
+			//			Source: &gloov1.Settings_SecretOptions_Source_Kubernetes{},
+			//		},
+			//	},
+			//},
 		})
 		testContext.RunVault()
+
+		// We need to turn on Vault AWS Auth after it has started running
+		var err error
+		if useCredentials {
+			err = testContext.VaultInstance().EnableAWSCredentialsAuthMethod(vaultSecretSettings, vaultAwsRole)
+		} else {
+			err = testContext.VaultInstance().EnableAWSSTSAuthMethod(vaultAwsRole, iamServerIdHeader, vaultAwsRegion)
+		}
+		Expect(err).NotTo(HaveOccurred())
 
 		testContext.JustBeforeEach()
 	})
@@ -60,14 +100,11 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 		testContext.JustAfterEach()
 	})
 
-	Context("with credentials", func() {
-		var (
-			oauthSecret *gloov1.Secret
-		)
-
+	Context("Vault Credentials", func() {
 		BeforeEach(func() {
-			sharedCreds := credentials.NewSharedCredentials("", "")
-			creds, err := sharedCreds.Get()
+			useCredentials = true
+			localAwsCredentials := credentials.NewSharedCredentials("", "aws_e2e")
+			v, err := localAwsCredentials.Get()
 			Expect(err).NotTo(HaveOccurred(), "can load AWS shared credentials")
 
 			vaultSecretSettings = &gloov1.Settings_VaultSecrets{
@@ -76,33 +113,13 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 					Aws: &gloov1.Settings_VaultAwsAuth{
 						VaultRole:       vaultRole,
 						Region:          vaultAwsRegion,
-						AccessKeyId:     creds.AccessKeyID,
-						SecretAccessKey: creds.SecretAccessKey,
+						AccessKeyId:     v.AccessKeyID,
+						SecretAccessKey: v.SecretAccessKey,
 					},
 				},
+				PathPrefix: bootstrap.DefaultPathPrefix,
+				RootKey:    bootstrap.DefaultRootKey,
 			}
-
-			oauthSecret = &gloov1.Secret{
-				Metadata: &core.Metadata{
-					Name:      "oauth-secret",
-					Namespace: writeNamespace,
-				},
-				Kind: &gloov1.Secret_Oauth{
-					Oauth: &v1.OauthSecret{
-						ClientSecret: "test",
-					},
-				},
-			}
-
-			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
-				oauthSecret,
-			}
-		})
-
-		JustBeforeEach(func() {
-			// We need to turn on Vault AWS Auth after it has started running
-			err := testContext.VaultInstance().EnableAWSCredentialsAuthMethod(vaultSecretSettings, vaultAwsRole)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("can read secret using resource client", func() {
@@ -145,47 +162,25 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 				g.Expect(secret.GetOauth().GetClientSecret()).To(Equal("new-secret"))
 			}, "5s", ".5s").Should(Succeed())
 		})
+
 	})
 
-	Context("with sts", func() {
-		var (
-			oauthSecret *gloov1.Secret
-		)
-
+	Context("STS", func() {
 		BeforeEach(func() {
-			// Vault and the AWS role is configured to use AWS STS auth
+			useCredentials = false
 			vaultSecretSettings = &gloov1.Settings_VaultSecrets{
 				Address: testContext.VaultInstance().Address(),
 				AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 					Aws: &gloov1.Settings_VaultAwsAuth{
 						IamServerIdHeader: iamServerIdHeader,
-						VaultRole:         vaultRole,
-						Region:            vaultAwsRegion,
+						//VaultRole: vaultRole,
+						Region:    vaultAwsRegion,
+						MountPath: "aws",
 					},
 				},
+				PathPrefix: bootstrap.DefaultPathPrefix,
+				RootKey:    bootstrap.DefaultRootKey,
 			}
-
-			oauthSecret = &gloov1.Secret{
-				Metadata: &core.Metadata{
-					Name:      "oauth-secret",
-					Namespace: writeNamespace,
-				},
-				Kind: &gloov1.Secret_Oauth{
-					Oauth: &v1.OauthSecret{
-						ClientSecret: "test",
-					},
-				},
-			}
-
-			testContext.ResourcesToCreate().Secrets = gloov1.SecretList{
-				oauthSecret,
-			}
-		})
-
-		JustBeforeEach(func() {
-			stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com", vaultAwsRegion)
-			err := testContext.VaultInstance().EnableAWSSTSAuthMethod(vaultAwsRole, iamServerIdHeader, stsEndpoint, vaultAwsRegion)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("can read secret using resource client", func() {
@@ -229,4 +224,5 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 			}, "5s", ".5s").Should(Succeed())
 		})
 	})
+
 })
