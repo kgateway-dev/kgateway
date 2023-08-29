@@ -10,7 +10,7 @@ You can configure the `options.ConnectionLimit` parameters in the gateway resour
 The TCP connection filter is a Layer 4 filter and is executed before the HTTP Connection Manager plug-in and related filters. 
 {{% /notice %}}
 
-For more information about the connection limit settings, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/connection_limit_filter)
+For more information about the connection limit settings, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/connection_limit_filter).
 
 ## Before you begin
 
