@@ -143,7 +143,7 @@ Install the `telnet` client on your local machine. You use this client to establ
    Escape character is '^]'.
    ```
 
-8. Enter any string and verify that the echo service returns the same string. For example, you can type in `hello`.
+8. Enter any string and verify that the echo service returns the same string. For example, you can enter `hello`.
    ```sh
    hello
    ```
