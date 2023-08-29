@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >-
-      Add field to ExtAuth API's OIDC AuthorizationCode plugin to eventually support mapping claims to headers.
