@@ -103,7 +103,7 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 	Context("Vault Credentials", func() {
 		BeforeEach(func() {
 			useCredentials = true
-			localAwsCredentials := credentials.NewSharedCredentials("", "aws_e2e")
+			localAwsCredentials := credentials.NewSharedCredentials("", "")
 			v, err := localAwsCredentials.Get()
 			Expect(err).NotTo(HaveOccurred(), "can load AWS shared credentials")
 
