@@ -33,7 +33,7 @@ type TokenBucket struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The maximum tokens that the bucket can hold. This is also the number of tokens that the bucket initially contains.
-	// Must be greater than one.
+	// Must be greater than or equal to one.
 	MaxTokens uint32 `protobuf:"varint,1,opt,name=max_tokens,json=maxTokens,proto3" json:"max_tokens,omitempty"`
 	// The number of tokens added to the bucket during each fill interval. If not specified, defaults to a single token.
 	// Must be greater than zero.

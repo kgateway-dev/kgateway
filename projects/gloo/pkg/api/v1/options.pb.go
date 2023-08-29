@@ -344,11 +344,11 @@ type HttpListenerOptions struct {
 	// ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
 	ConnectionLimit *connection_limit.ConnectionLimit `protobuf:"bytes,29,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
 	// L4LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer.
-	// It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up
+	// It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
 	L4LocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,32,opt,name=l4_local_ratelimit,json=l4LocalRatelimit,proto3" json:"l4_local_ratelimit,omitempty"`
 	// HttpLocalRatelimit can be used to rate limit the number of requests per gateway.
 	// Unlike the L4LocalRatelimit, this works as part of the HCM and limits requests pre-auth.
-	// It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up
+	// It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
 	HttpLocalRatelimit *local_ratelimit.Settings `protobuf:"bytes,33,opt,name=http_local_ratelimit,json=httpLocalRatelimit,proto3" json:"http_local_ratelimit,omitempty"`
 	// Router is an extension of the envoy http filters
 	// Maps to https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/router/v3/router.proto
@@ -593,7 +593,7 @@ type TcpListenerOptions struct {
 	// ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
 	ConnectionLimit *connection_limit.ConnectionLimit `protobuf:"bytes,4,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
 	// LocalRatelimit can be used to rate limit the connections per gateway at the L4 layer.
-	// It uses envoy's own local rate limit filter to do so, wihtout the need for an external rate limit server to be set up
+	// It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
 	LocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,5,opt,name=local_ratelimit,json=localRatelimit,proto3" json:"local_ratelimit,omitempty"`
 }
 
