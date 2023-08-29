@@ -67,7 +67,7 @@ Install the `telnet` client on your local machine. You use this client to establ
    ```
 
 3. Create a TCP gateway with connection limit settings. The following gateway accepts only one active connection at any given time. Before closing a new connection, the gateway waits 2 seconds. 
-   ```
+   ```yaml
    kubectl apply -n gloo-system -f - <<EOF
    apiVersion: gateway.solo.io/v1
    kind: Gateway
