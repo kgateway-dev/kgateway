@@ -235,13 +235,13 @@ func (EndSessionProperties_MethodType) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gloo_api_v1_enterprise_options_extauth_v1_extauth_proto_rawDescGZIP(), []int{20, 0}
 }
 
-// Where to retrieve information for the mapping
+// Specify which token to retrieve the information for mapping a claim to a header.
 type ClaimToHeader_Source int32
 
 const (
-	// Retrieve the value fom the OAuth2 access token
+	// Retrieve the value fom the OAuth2 access token.
 	ClaimToHeader_AccessToken ClaimToHeader_Source = 0
-	// Retrieve the value from the OIDC identity token
+	// Retrieve the value from the OIDC identity token.
 	ClaimToHeader_IdentityToken ClaimToHeader_Source = 1
 )
 
@@ -2088,19 +2088,19 @@ func (x *EndSessionProperties) GetMethodType() EndSessionProperties_MethodType {
 	return EndSessionProperties_GetMethod
 }
 
-// Specifies how to map a single claim
+// Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
 type ClaimToHeader struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Claim name. for example, “sub”
+	// The claim name from the token, such as `sub`.
 	Claim string `protobuf:"bytes,1,opt,name=claim,proto3" json:"claim,omitempty"`
-	// The header the claim will be copied to. for example, “x-sub”.
+	// The header to copy the claim to, such as `x-sub`.
 	Header string `protobuf:"bytes,2,opt,name=header,proto3" json:"header,omitempty"`
-	// If the header exists, append to it (true), or overwrite it (false).
+	// If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
 	Append bool `protobuf:"varint,3,opt,name=append,proto3" json:"append,omitempty"`
-	// Which token to retrieve the information from
+	// Specify which token to retrieve the claim information from.
 	Source ClaimToHeader_Source `protobuf:"varint,4,opt,name=source,proto3,enum=enterprise.gloo.solo.io.ClaimToHeader_Source" json:"source,omitempty"`
 }
 
@@ -2270,7 +2270,7 @@ type OidcAuthorizationCode struct {
 	// Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
 	// However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
 	DisableClientSecret *wrappers.BoolValue `protobuf:"bytes,21,opt,name=disable_client_secret,json=disableClientSecret,proto3" json:"disable_client_secret,omitempty"`
-	// Optional: What claims should be copied to upstream headers.
+	// Optional: Map a single claim from an OAuth2 token to a header in the request to the upstream destination.
 	ClaimsToHeaders []*ClaimToHeader `protobuf:"bytes,22,rep,name=claims_to_headers,json=claimsToHeaders,proto3" json:"claims_to_headers,omitempty"`
 }
 

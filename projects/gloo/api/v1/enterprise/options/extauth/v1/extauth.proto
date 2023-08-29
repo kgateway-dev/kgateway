@@ -549,28 +549,28 @@ message EndSessionProperties {
     MethodType methodType = 1;
 }
 
-// Specifies how to map a single claim
+// Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
 message ClaimToHeader {
 
-    // Where to retrieve information for the mapping
+    // Specify which token to retrieve the information for mapping a claim to a header.
     enum Source {
-        // Retrieve the value fom the OAuth2 access token
+        // Retrieve the value fom the OAuth2 access token.
         AccessToken = 0;
 
-        // Retrieve the value from the OIDC identity token
+        // Retrieve the value from the OIDC identity token.
         IdentityToken = 1;
     }
 
-    // Claim name. for example, “sub”
+    // The claim name from the token, such as `sub`.
     string claim = 1;
 
-    // The header the claim will be copied to. for example, “x-sub”.
+    // The header to copy the claim to, such as `x-sub`.
     string header = 2;
 
-    // If the header exists, append to it (true), or overwrite it (false).
+    // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
     bool append = 3;
 
-    // Which token to retrieve the information from
+    // Specify which token to retrieve the claim information from.
     Source source = 4;
 }
 
@@ -697,7 +697,7 @@ message OidcAuthorizationCode {
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
     google.protobuf.BoolValue disable_client_secret = 21;
 
-    // Optional: What claims should be copied to upstream headers.
+    // Optional: Map a single claim from an OAuth2 token to a header in the request to the upstream destination.
     repeated ClaimToHeader claims_to_headers = 22;
 }
 
