@@ -49,7 +49,7 @@ var _ = Describe("Local Rate Limit", func() {
 		expectNotRateLimited := func() *http.Response {
 			defer GinkgoRecover()
 			response, err := httpClient.Do(requestBuilder.Build())
-			ExpectWithOffset(1, response).Should(matchers.HaveOkResponse())
+			ExpectWithOffset(1, response).To(matchers.HaveOkResponse())
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "The connection should not be rate limited")
 			return response
 		}
@@ -112,45 +112,51 @@ var _ = Describe("Local Rate Limit", func() {
 		})
 	})
 
-	// FContext("L4 Local Rate Limit", func() {
-	// 	BeforeEach(func() {
-	// 		gw := gatewaydefaults.DefaultGateway(writeNamespace)
-	// 		gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
-	// 			L4LocalRatelimit: &local_ratelimit.TokenBucket{
-	// 				MaxTokens: 1,
-	// 				TokensPerFill: &wrapperspb.UInt32Value{
-	// 					Value: 1,
-	// 				},
-	// 				FillInterval: &durationpb.Duration{
-	// 					Seconds: 100,
-	// 				},
-	// 			},
-	// 		}
+	Context("L4 Local Rate Limit", func() {
+		BeforeEach(func() {
+			gw := gatewaydefaults.DefaultGateway(writeNamespace)
+			gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				L4LocalRatelimit: &local_ratelimit.TokenBucket{
+					MaxTokens: 1,
+					TokensPerFill: &wrapperspb.UInt32Value{
+						Value: 1,
+					},
+					FillInterval: &durationpb.Duration{
+						Seconds: 100,
+					},
+				},
+			}
 
-	// 		testContext.ResourcesToCreate().Gateways = v1.GatewayList{
-	// 			gw,
-	// 		}
-	// 	})
+			testContext.ResourcesToCreate().Gateways = v1.GatewayList{
+				gw,
+			}
+		})
 
-	// 	// TODO : Investigate this failure - either the test or the filter itself
-	// 	It("Should rate limit at the l4 layer", func() {
-	// 		expectRateLimited := func() {
-	// 			defer GinkgoRecover()
-	// 			response, err := httpClient.Do(requestBuilder.Build())
-	// 			fmt.Println(response)
-	// 			fmt.Println(err)
-	// 			ExpectWithOffset(1, err).ToNot(BeNil())
-	// 		}
+		It("Should rate limit at the l4 layer", func() {
+			expectNotRateLimited := func() {
+				defer GinkgoRecover()
 
-	// 		// The default rate limit is 3
-	// 		cfg, _ := testContext.EnvoyInstance().ConfigDump()
-	// 		fmt.Println(cfg)
-	// 		Expect(cfg).To(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
-	// 		expectNotRateLimitedWithOutXRateLimitHeader()
-	// 		expectNotRateLimitedWithOutXRateLimitHeader()
-	// 		expectRateLimited()
-	// 	})
-	// })
+				// We use a new client every time as TCP connections are cached and this needs to be avoided in order to test L4 rate limiting
+				httpClient := testutils.DefaultClientBuilder().Build()
+				response, err := httpClient.Do(requestBuilder.Build())
+				ExpectWithOffset(1, response).To(matchers.HaveOkResponse())
+				ExpectWithOffset(1, err).NotTo(HaveOccurred(), "The connection should not be rate limited")
+			}
+
+			expectRateLimited := func() {
+				defer GinkgoRecover()
+
+				// We use a new client every time as TCP connections are cached and this needs to be avoided in order to test L4 rate limiting
+				httpClient := testutils.DefaultClientBuilder().Build()
+				_, err := httpClient.Do(requestBuilder.Build())
+				ExpectWithOffset(1, err).Should(MatchError(ContainSubstring("EOF")), "The connection be limited")
+			}
+
+			// The rate limit is 1
+			expectNotRateLimited()
+			expectRateLimited()
+		})
+	})
 
 	Context("HTTP Local Rate Limit", func() {
 		Context("With the gateway level default rate limit set", func() {
