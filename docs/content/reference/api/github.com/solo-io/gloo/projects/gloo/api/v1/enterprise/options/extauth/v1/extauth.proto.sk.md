@@ -889,7 +889,7 @@ Specifies how to map a single claim
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claim` | `string` | Claim name. for example, “sub”. |
+| `claim` | `string` | The claim name from the token, such as `sub`. |
 | `header` | `string` | The header the claim will be copied to. for example, “x-sub”. |
 | `append` | `bool` | If the header exists, append to it (true), or overwrite it (false). |
 | `source` | [.enterprise.gloo.solo.io.ClaimToHeader.Source](../extauth.proto.sk/#source) | Which token to retrieve the information from. |
