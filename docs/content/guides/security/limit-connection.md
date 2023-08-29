@@ -109,7 +109,7 @@ Install the `telnet` client on your local machine. You use this client to establ
       ```
 
       Your `spec.ports` section looks similar to the following:
-      ```
+      ```yaml
       ports:
       - name: http
         nodePort: 32653
