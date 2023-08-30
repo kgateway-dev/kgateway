@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Prevent crash when modifying settings by making sure loggers get initialized.
+    issueLink: https://github.com/solo-io/gloo/issues/8627
+    resolvesIssue: false
