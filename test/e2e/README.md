@@ -112,15 +112,4 @@ By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any test
 
 ### Notes
 ### AWS Tests
-We have a setup guide for configuring the AWS credentials needed for the tests in our [Gloo E2E README](https://github.com/solo-io/gloo/blob/main/test/e2e/README.md).
-
-Solo's AWS security has been tightened, so it _may_ not be possible to generate personal AIM credentials anymore - at least without the proper permissions.
-You can configure your local credentials using the credentials found in our [AWS start page](https://soloio.awsapps.com/start#/) by
-1. Selecting the `developers` AWS account
-2. Click on "Command line or programmatic access" option
-3. Use the credentials shown, _including_ the Session Token
-    - The tests are set up to use the session token automatically when running locally through the `os.Getenv("GCLOUD_BUILD_ID")` check.
-    - _Note: From experience, these credentials update every day, so you may need to update the credentials as necessary._
-
-You will also need to set your `AWS_SHARED_CREDENTIALS_FILE` environment variable to the **absolute path** to your AWS credentials.
-The default location where AWS stores credentials is `~/.aws/credentials`.
+To run AWS tests locally, see our [AWS testing guide](/devel/testing/aws-tests.md).
