@@ -1,14 +1,15 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     description: >
       Make Vault's AWS credentials optional. 
       This allows users to integrate AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA) for temporary credentials.
       https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences
-
-      skipCI-kube-tests:true
     issueLink: https://github.com/solo-io/gloo/issues/8533
     resolvesIssue: false
   - type: HELM
     description: Expose `secretOptions` in `Settings` Helm chart.
     issueLink: https://github.com/solo-io/gloo/issues/8533
     resolvesIssue: false
+  - type: NON_USER_FACING
+    description: >
+      skipCI-kube-tests:true

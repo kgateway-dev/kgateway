@@ -80,7 +80,7 @@ func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource
 	Expect(err).NotTo(HaveOccurred())
 }
 
-var _ = FDescribe("Helm Test", func() {
+var _ = Describe("Helm Test", func() {
 
 	var allTests = func(rendererTestCase renderTestCase) {
 		var (
@@ -4017,9 +4017,6 @@ spec:
 								"settings.secretOptions.sources[0].vault.aws.mountPath=aws",
 								"settings.secretOptions.sources[0].vault.aws.region=us-east-1",
 								"settings.secretOptions.sources[0].vault.pathPrefix=dev",
-								// The kubernetes source is enabled through `kubernetes: {}` in our settings, but JSON fails to unmarshal the empty object below.
-								// json: cannot unmarshal array into Go struct field SecretOptionsSource.settings.secretOptions.sources.kubernetes of type generate.KubernetesSecrets.
-								//"settings.secretOptions.sources[1].kubernetes={}",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))

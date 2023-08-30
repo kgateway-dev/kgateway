@@ -234,19 +234,12 @@ type KubernetesSecrets struct {
 }
 
 type VaultSecrets struct {
-	Token         string         `json:"token,omitempty" desc:"DEPRECATED: Use AccessToken. Vault token to use for authentication."`
-	Address       string         `json:"address,omitempty" desc:"Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200)."`
-	CaCert        string         `json:"caCert,omitempty" desc:"DEPRECATED: Use the tlsConfig field. Path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate."`
-	CaPath        string         `json:"caPath,omitempty" desc:"DEPRECATED: Use the tlsConfig field. Path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate."`
-	ClientCert    string         `json:"clientCert,omitempty" desc:"DEPRECATED: Use the tlsConfig field. Path to the certificate for Vault communication."`
-	ClientKey     string         `json:"clientKey,omitempty" desc:"DEPRECATED: Use the tlsConfig field. Path to the private key for Vault communication."`
-	TlsServerName string         `json:"tlsServerName,omitempty" desc:"DEPRECATED: Use the tlsConfig field. If set, it is used to set the SNI host when connecting via TLS."`
-	Insecure      bool           `json:"insecure,omitempty" desc:"DEPRECATED: Use the tlsConfig field. Disables TLS verification when set to true."`
-	RootKey       string         `json:"rootKey,omitempty" desc:"All keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to gloo."`
-	PathPrefix    string         `json:"pathPrefix,omitempty" desc:"Optional. The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'."`
-	TlsConfig     VaultTlsConfig `json:"tlsConfig,omitempty" desc:"Configure TLS options for client connection to Vault. This is only available when running Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad."`
-	AccessToken   string         `json:"accessToken,omitempty" desc:"Only one of accessToken or aws may be set."`
-	Aws           VaultAwsAuth   `json:"aws,omitempty" desc:"Only one of accessToken or aws may be set."`
+	Address     string         `json:"address,omitempty" desc:"Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200)."`
+	RootKey     string         `json:"rootKey,omitempty" desc:"All keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to gloo."`
+	PathPrefix  string         `json:"pathPrefix,omitempty" desc:"Optional. The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'."`
+	TlsConfig   VaultTlsConfig `json:"tlsConfig,omitempty" desc:"Configure TLS options for client connection to Vault. This is only available when running Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad."`
+	AccessToken string         `json:"accessToken,omitempty" desc:"Vault token to use for authentication. Only one of accessToken or aws may be set."`
+	Aws         VaultAwsAuth   `json:"aws,omitempty" desc:"Only one of accessToken or aws may be set."`
 }
 
 type VaultTlsConfig struct {

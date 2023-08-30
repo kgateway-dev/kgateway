@@ -51,7 +51,7 @@ Options for log levels are:
 For example, to set the log level of the Gloo service to `debug` and the Envoy service to `error`, you would set:
 
 ```bash
-SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error make run-e2e-tests
+SERVICE_LOG_LEVEL=gloo:debug,gateway-proxy:error TEST_PKG=./test/e2e/... make test
 ```
 
 *If the same service has multiple log levels specified, we will log a warning and the last one defined will be used.*
@@ -63,34 +63,34 @@ To control these settings, you must pass the flags using the `GINKGO_USER_FLAGS`
 
 For example, to set the Ginkgo runner to `very verbose` mode, you would set:
 ```bash
-GINKGO_USER_FLAGS=-vv make run-e2e-tests
+GINKGO_USER_FLAGS=-vv TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Recently Published Image (Most Common)
 This is the most common pattern. If you did not make changes to the `gateway-proxy` component, and do not specify an `ENVOY_IMAGE_TAG` our tests will identify the most recently published image (for your LTS branch) and use that version.
 
 ```bash
-make run-e2e-tests
+TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Previously Published Image
 If you want to specify a particular version that was previously published, you can also do that by specifying the `ENVOY_IMAGE_TAG`.
 
 ```bash
-ENVOY_IMAGE_TAG=1.13.0 make run-e2e-tests
+ENVOY_IMAGE_TAG=1.13.0 TEST_PKG=./test/e2e/... make test
 ```
 
 #### Using Locally Built Image
 If you have made changes to the component, you will have had to rebuild the image locally (see [setup tests](#setup)). After you rebuild the image, you need to supply the tag of that image when running the tests:
 
 ```bash
-ENVOY_IMAGE_TAG=0.0.1-local make run-e2e-tests
+ENVOY_IMAGE_TAG=0.0.1-local TEST_PKG=./test/e2e/... make test
 ```
 
 #### Running Tests in Parallel
 It is possible to run tests in parallel locally, however it is not recommended, because debugging failures becomes more difficult. If you do want to run tests in parallel, you can do so by passing in the relevant `GINKGO_USER_FLAGS` values:
 ```bash
-GINKGO_USER_FLAGS=-procs=4 make run-e2e-tests
+GINKGO_USER_FLAGS=-procs=4 TEST_PKG=./test/e2e/... make test
 ```
 
 *Note: When using Docker to run Envoy, we have seen occasional failures: `Error response from daemon: dial unix docker.raw.sock: connect: connection refused`*
@@ -109,12 +109,6 @@ Once halted, use `docker ps` to determine the admin port for the Envoy instance,
 Certain tests require environmental conditions to be true for them to succeed. For example, there are tests that only run on Linux machines.
 
 By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.
-
-#### Focusing on tests
-We provide labels to our `run-e2e-tests` make command. These labels cause an issue with all tests being run, regardless of what is `focused`. To get around this, comment out the label-setting portion of the Makefile command.
-```
-run-e2e-tests: GINKGO_FLAGS += --label-filter="end-to-end && !performance"
-```
 
 ### Notes
 ### AWS Tests
