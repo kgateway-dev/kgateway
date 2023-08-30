@@ -353,7 +353,10 @@ type RateLimitVhostExtension struct {
 
 	// Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
 	// would be throttled, the entire request returns a 429 (gets throttled)
-	RateLimits     []*v1alpha1.RateLimitActions `protobuf:"bytes,1,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
+	RateLimits []*v1alpha1.RateLimitActions `protobuf:"bytes,1,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
+	// The token bucket configuration to use for local rate limiting requests.
+	// These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+	// If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
 	LocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,2,opt,name=local_ratelimit,json=localRatelimit,proto3" json:"local_ratelimit,omitempty"`
 }
 
@@ -416,7 +419,10 @@ type RateLimitRouteExtension struct {
 	IncludeVhRateLimits bool `protobuf:"varint,1,opt,name=include_vh_rate_limits,json=includeVhRateLimits,proto3" json:"include_vh_rate_limits,omitempty"`
 	// Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
 	// would be throttled, the entire request returns a 429 (gets throttled)
-	RateLimits     []*v1alpha1.RateLimitActions `protobuf:"bytes,2,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
+	RateLimits []*v1alpha1.RateLimitActions `protobuf:"bytes,2,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
+	// The token bucket configuration to use for local rate limiting requests.
+	// These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+	// If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
 	LocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,3,opt,name=local_ratelimit,json=localRatelimit,proto3" json:"local_ratelimit,omitempty"`
 }
 

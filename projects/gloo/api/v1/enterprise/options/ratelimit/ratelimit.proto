@@ -77,6 +77,10 @@ message RateLimitVhostExtension {
   // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
   // would be throttled, the entire request returns a 429 (gets throttled)
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
+
+  // The token bucket configuration to use for local rate limiting requests.
+  // These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+  // If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
   local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 2;
 }
 
@@ -92,5 +96,9 @@ message RateLimitRouteExtension {
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
+
+    // The token bucket configuration to use for local rate limiting requests.
+    // These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+    // If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
     local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 3;
 }
