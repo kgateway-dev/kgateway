@@ -592,7 +592,13 @@ package-chart: generate-helm-files
 # TODO: delete this logic block when we have a github actions-managed release
 ifneq (,$(TEST_ASSET_ID))
 PUBLISH_CONTEXT := PULL_REQUEST
-VERSION := $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
+MOST_RECENT_TAG := $(shell git describe --tags --abbrev=0 | cut -c 2-) # example: 1.16.0-beta4
+ifeq (,$(MOST_RECENT_TAG))
+# Forked repos don't have tags by default, so we create a standard tag for them
+# This only impacts the version of the assets in the PR, so it is ok that it is not a real tag
+MOST_RECENT_TAG := 1.0.0
+endif
+VERSION := $(MOST_RECENT_TAG)-$(TEST_ASSET_ID)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 
