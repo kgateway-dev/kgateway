@@ -129,7 +129,7 @@ func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListen
 	return generateNetworkFilter(listener.GetOptions().GetLocalRatelimit())
 }
 
-func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
+func GenerateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
 	tokenBucket, err := toEnvoyTokenBucket(localRatelimit)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ func modIfNoExisting(protoext proto.Message) pluginutils.ModifyFunc {
 }
 
 func ConfigureVirtualHostFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32, out *envoy_config_route_v3.VirtualHost) error {
-	filter, err := generateHTTPFilter(settings, localRatelimit, stage)
+	filter, err := GenerateHTTPFilter(settings, localRatelimit, stage)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (p *plugin) ProcessVirtualHost(
 }
 
 func ConfigureRouteHostFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32, out *envoy_config_route_v3.Route) error {
-	filter, err := generateHTTPFilter(settings, localRatelimit, stage)
+	filter, err := GenerateHTTPFilter(settings, localRatelimit, stage)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	settings := listener.GetOptions().GetHttpLocalRatelimit()
-	filter, err := generateHTTPFilter(settings, settings.GetDefaults(), CustomStageBeforeAuth)
+	filter, err := GenerateHTTPFilter(settings, settings.GetDefaults(), CustomStageBeforeAuth)
 	if err != nil {
 		return nil, err
 	}
