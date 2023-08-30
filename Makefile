@@ -594,7 +594,7 @@ ifneq (,$(TEST_ASSET_ID))
 PUBLISH_CONTEXT := PULL_REQUEST
 # Forked repos don't have tags by default, so we create a standard tag for them
 # This only impacts the version of the assets in the PR, so it is ok that it is not a real tag
-MOST_RECENT_TAG := v1.0.0 || $(shell git describe --tags --abbrev=0) # example: v1.16.0-beta4
+MOST_RECENT_TAG := $(shell git describe --tags --abbrev=0) || v1.0.0 # example: v1.16.0-beta4
 VERSION := $(MOST_RECENT_TAG | cut -c 2-)-$(TEST_ASSET_ID)
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
