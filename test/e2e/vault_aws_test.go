@@ -68,18 +68,6 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 			SecretSource: &gloov1.Settings_VaultSecretSource{
 				VaultSecretSource: vaultSecretSettings,
 			},
-			//SecretOptions: &gloov1.Settings_SecretOptions{
-			//	Sources: []*gloov1.Settings_SecretOptions_Source{
-			//		{
-			//			Source: &gloov1.Settings_SecretOptions_Source_Vault{
-			//				Vault: vaultSecretSettings,
-			//			},
-			//		},
-			//		{
-			//			Source: &gloov1.Settings_SecretOptions_Source_Kubernetes{},
-			//		},
-			//	},
-			//},
 		})
 		testContext.RunVault()
 
