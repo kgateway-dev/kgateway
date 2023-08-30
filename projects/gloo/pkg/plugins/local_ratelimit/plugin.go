@@ -10,6 +10,8 @@ import (
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_extensions_filters_network_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/local_ratelimit/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	local_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/local_ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -127,7 +129,7 @@ func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListen
 	return generateNetworkFilter(listener.GetOptions().GetLocalRatelimit())
 }
 
-func GenerateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
+func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
 	tokenBucket, err := toEnvoyTokenBucket(localRatelimit)
 	if err != nil {
 		return nil, err
@@ -161,39 +163,64 @@ func GenerateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *loca
 	return filter, nil
 }
 
+func modIfNoExisting(protoext proto.Message) pluginutils.ModifyFunc {
+	return func(existing *any.Any) (proto.Message, error) {
+		if existing == nil {
+			return protoext, nil
+		}
+		return nil, fmt.Errorf("configuration already exists")
+	}
+}
+
+func ConfigureVirtualHostFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32, out *envoy_config_route_v3.VirtualHost) error {
+	filter, err := generateHTTPFilter(settings, localRatelimit, stage)
+	if err != nil {
+		return err
+	}
+	// Mark this stage as having user-defined configuration
+	return pluginutils.ModifyVhostPerFilterConfig(out, HTTPFilterName, modIfNoExisting(filter))
+}
+
 func (p *plugin) ProcessVirtualHost(
 	params plugins.VirtualHostParams,
 	in *v1.VirtualHost,
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		filter, err := GenerateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth)
+		err := ConfigureVirtualHostFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth, out)
 		if err != nil {
 			return err
 		}
 		p.filterRequiredForListener[params.HttpListener] = struct{}{}
-		err = pluginutils.SetVhostPerFilterConfig(out, HTTPFilterName, filter)
-		return err
+		return nil
 	}
 	return nil
 }
 
+func ConfigureRouteHostFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32, out *envoy_config_route_v3.Route) error {
+	filter, err := generateHTTPFilter(settings, localRatelimit, stage)
+	if err != nil {
+		return err
+	}
+	// Mark this stage as having user-defined configuration
+	return pluginutils.ModifyRoutePerFilterConfig(out, HTTPFilterName, modIfNoExisting(filter))
+}
+
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		filter, err := GenerateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth)
+		err := ConfigureRouteHostFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth, out)
 		if err != nil {
 			return err
 		}
 		p.filterRequiredForListener[params.HttpListener] = struct{}{}
-		err = pluginutils.SetRoutePerFilterConfig(out, HTTPFilterName, filter)
-		return err
+		return nil
 	}
 	return nil
 }
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	settings := listener.GetOptions().GetHttpLocalRatelimit()
-	filter, err := GenerateHTTPFilter(settings, settings.GetDefaults(), CustomStageBeforeAuth)
+	filter, err := generateHTTPFilter(settings, settings.GetDefaults(), CustomStageBeforeAuth)
 	if err != nil {
 		return nil, err
 	}
