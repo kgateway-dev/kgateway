@@ -127,7 +127,7 @@ func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListen
 	return generateNetworkFilter(listener.GetOptions().GetLocalRatelimit())
 }
 
-func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
+func GenerateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32) (*envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit, error) {
 	tokenBucket, err := toEnvoyTokenBucket(localRatelimit)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func generateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *loca
 	filter := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
 		StatPrefix:  HTTPFilterStatPrefix,
 		TokenBucket: tokenBucket,
-		Stage:       CustomStageBeforeAuth,
+		Stage:       stage,
 	}
 
 	// Do NOT set filter enabled and enforced if the token bucket is not found. This causes it to rate limit all requests to zero
@@ -167,7 +167,7 @@ func (p *plugin) ProcessVirtualHost(
 	out *envoy_config_route_v3.VirtualHost,
 ) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		filter, err := generateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits)
+		filter, err := GenerateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (p *plugin) ProcessVirtualHost(
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		filter, err := generateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits)
+		filter, err := GenerateHTTPFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth)
 		if err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	settings := listener.GetOptions().GetHttpLocalRatelimit()
-	filter, err := generateHTTPFilter(settings, settings.GetDefaults())
+	filter, err := GenerateHTTPFilter(settings, settings.GetDefaults(), CustomStageBeforeAuth)
 	if err != nil {
 		return nil, err
 	}
