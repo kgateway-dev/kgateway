@@ -46,8 +46,9 @@ weight: 5
 - [EndSessionProperties](#endsessionproperties)
 - [MethodType](#methodtype)
 - [ClaimToHeader](#claimtoheader)
-- [Source](#source)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
+- [AccessToken](#accesstoken)
+- [IdentityToken](#identitytoken)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -888,7 +889,6 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 "claim": string
 "header": string
 "append": bool
-"source": .enterprise.gloo.solo.io.ClaimToHeader.Source
 
 ```
 
@@ -897,21 +897,6 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `claim` | `string` | The claim name from the token, such as `sub`. |
 | `header` | `string` | The header to copy the claim to, such as `x-sub`. |
 | `append` | `bool` | If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false). |
-| `source` | [.enterprise.gloo.solo.io.ClaimToHeader.Source](../extauth.proto.sk/#source) | Specify which token to retrieve the claim information from. |
-
-
-
-
----
-### Source
-
- 
-Specify which token to retrieve the information for mapping a claim to a header.
-
-| Name | Description |
-| ----- | ----------- | 
-| `AccessToken` | Retrieve the value fom the OAuth2 access token. |
-| `IdentityToken` | Retrieve the value from the OIDC identity token. |
 
 
 
@@ -943,7 +928,8 @@ Specify which token to retrieve the information for mapping a claim to a header.
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "dynamicMetadataFromClaims": map<string, string>
 "disableClientSecret": .google.protobuf.BoolValue
-"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
+"identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
 
 ```
 
@@ -970,7 +956,44 @@ Specify which token to retrieve the information for mapping a claim to a header.
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the ID token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | Optional: Map a single claim from an OAuth2 token to a header in the request to the upstream destination. |
+| `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
+| `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Configuration specific to the OIDC identity token received and pdocessed by the ext-auth-service. |
+
+
+
+
+---
+### AccessToken
+
+ 
+Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+
+```yaml
+"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+
+
+
+
+---
+### IdentityToken
+
+ 
+Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
+
+```yaml
+"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 

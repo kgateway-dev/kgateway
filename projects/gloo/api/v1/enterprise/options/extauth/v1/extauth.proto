@@ -552,16 +552,6 @@ message EndSessionProperties {
 
 // Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
 message ClaimToHeader {
-
-    // Specify which token to retrieve the information for mapping a claim to a header.
-    enum Source {
-        // Retrieve the value fom the OAuth2 access token.
-        AccessToken = 0;
-
-        // Retrieve the value from the OIDC identity token.
-        IdentityToken = 1;
-    }
-
     // The claim name from the token, such as `sub`.
     string claim = 1;
 
@@ -570,9 +560,6 @@ message ClaimToHeader {
 
     // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
     bool append = 3;
-
-    // Specify which token to retrieve the claim information from.
-    Source source = 4;
 }
 
 
@@ -698,8 +685,25 @@ message OidcAuthorizationCode {
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
     google.protobuf.BoolValue disable_client_secret = 21;
 
-    // Optional: Map a single claim from an OAuth2 token to a header in the request to the upstream destination.
-    repeated ClaimToHeader claims_to_headers = 22;
+    // Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
+    AccessToken access_token = 23;
+
+    // Configuration specific to the OIDC identity token received and pdocessed by the ext-auth-service.
+    IdentityToken identity_token = 24;
+
+    // Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+    message AccessToken {
+
+        // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
+        repeated ClaimToHeader claims_to_headers = 1;
+    }
+
+    // Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
+    message IdentityToken {
+
+        // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
+        repeated ClaimToHeader claimsToHeaders = 1;
+    }
 }
 
 message PlainOAuth2 {

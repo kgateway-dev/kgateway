@@ -739,8 +739,6 @@ func (m *ClaimToHeader) Clone() proto.Message {
 
 	target.Append = m.GetAppend()
 
-	target.Source = m.GetSource()
-
 	return target
 }
 
@@ -858,17 +856,16 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
-	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
-		for idx, v := range m.GetClaimsToHeaders() {
+	if h, ok := interface{}(m.GetAccessToken()).(clone.Cloner); ok {
+		target.AccessToken = h.Clone().(*OidcAuthorizationCode_AccessToken)
+	} else {
+		target.AccessToken = proto.Clone(m.GetAccessToken()).(*OidcAuthorizationCode_AccessToken)
+	}
 
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
-			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
-			}
-
-		}
+	if h, ok := interface{}(m.GetIdentityToken()).(clone.Cloner); ok {
+		target.IdentityToken = h.Clone().(*OidcAuthorizationCode_IdentityToken)
+	} else {
+		target.IdentityToken = proto.Clone(m.GetIdentityToken()).(*OidcAuthorizationCode_IdentityToken)
 	}
 
 	return target
@@ -2238,6 +2235,54 @@ func (m *UserSession_CipherConfig) Clone() proto.Message {
 			}
 		}
 
+	}
+
+	return target
+}
+
+// Clone function
+func (m *OidcAuthorizationCode_AccessToken) Clone() proto.Message {
+	var target *OidcAuthorizationCode_AccessToken
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_AccessToken{}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *OidcAuthorizationCode_IdentityToken) Clone() proto.Message {
+	var target *OidcAuthorizationCode_IdentityToken
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_IdentityToken{}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
 	}
 
 	return target

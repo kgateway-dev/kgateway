@@ -442,6 +442,20 @@ spec:
                           type: object
                         oidcAuthorizationCode:
                           properties:
+                            accessToken:
+                              properties:
+                                claimsToHeaders:
+                                  items:
+                                    properties:
+                                      append:
+                                        type: boolean
+                                      claim:
+                                        type: string
+                                      header:
+                                        type: string
+                                    type: object
+                                  type: array
+                              type: object
                             afterLogoutUrl:
                               type: string
                             appUrl:
@@ -457,20 +471,6 @@ spec:
                               type: object
                             callbackPath:
                               type: string
-                            claimsToHeaders:
-                              items:
-                                properties:
-                                  append:
-                                    type: boolean
-                                  claim:
-                                    type: string
-                                  header:
-                                    type: string
-                                  source:
-                                    type: string
-                                    x-kubernetes-int-or-string: true
-                                type: object
-                              type: array
                             clientId:
                               type: string
                             clientSecretRef:
@@ -541,6 +541,20 @@ spec:
                                 useBearerSchemaForAuthorization:
                                   nullable: true
                                   type: boolean
+                              type: object
+                            identityToken:
+                              properties:
+                                claimsToHeaders:
+                                  items:
+                                    properties:
+                                      append:
+                                        type: boolean
+                                      claim:
+                                        type: string
+                                      header:
+                                        type: string
+                                    type: object
+                                  type: array
                               type: object
                             issuerUrl:
                               type: string
