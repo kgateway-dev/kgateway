@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/10237
+    resolvesIssue: false
+    description: >- 
+      Update AuthConfig protos to support querying OPA sidecar for policy decisions.
