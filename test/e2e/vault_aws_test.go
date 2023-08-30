@@ -173,9 +173,7 @@ var _ = Describe("Vault Secret Store (AWS Auth)", decorators.Vault, func() {
 				AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 					Aws: &gloov1.Settings_VaultAwsAuth{
 						IamServerIdHeader: iamServerIdHeader,
-						// TODO: the example doesn't have this.
-						// without it we get an error: "entry for role gloo-edge-e2e-user not found"
-						// with it...:
+						// TODO: example didn't have this set
 						VaultRole: vaultRole,
 						Region:    vaultAwsRegion,
 						MountPath: "aws",
