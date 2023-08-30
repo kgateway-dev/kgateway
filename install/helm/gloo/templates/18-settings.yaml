@@ -14,12 +14,10 @@ spec:
   devMode:
     {{ .Values.settings.devMode}}
 {{- end }}
-{{- if .Values.settings.secretOptions }}
+{{- if and .Values.settings.secretOptions .Values.settings.secretOptions.sources }}
   secretOptions:
-{{- if .Values.settings.secretOptions.sources }}
     sources:
 {{- toYaml .Values.settings.secretOptions.sources | nindent 6 }}
-{{- end}}
 {{- end }}
   gloo:
 {{- if .Values.global.glooMtls.enabled }}

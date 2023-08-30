@@ -118,14 +118,7 @@
 |settings.circuitBreakers.maxRetries|uint32||Set this field to specify the maximum number of parallel retries that Envoy will allow to the upstream cluster. If not specified, the default is 3.|
 |settings.enableRestEds|bool|false|Whether or not to use rest xds for all EDS by default. Defaults to false.|
 |settings.devMode|bool||Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not recommended for production.|
-|settings.secretOptions.sources[].vault.token|string||DEPRECATED: Use AccessToken. Vault token to use for authentication.|
 |settings.secretOptions.sources[].vault.address|string||Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200).|
-|settings.secretOptions.sources[].vault.caCert|string||DEPRECATED: Use the tlsConfig field. Path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate.|
-|settings.secretOptions.sources[].vault.caPath|string||DEPRECATED: Use the tlsConfig field. Path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate.|
-|settings.secretOptions.sources[].vault.clientCert|string||DEPRECATED: Use the tlsConfig field. Path to the certificate for Vault communication.|
-|settings.secretOptions.sources[].vault.clientKey|string||DEPRECATED: Use the tlsConfig field. Path to the private key for Vault communication.|
-|settings.secretOptions.sources[].vault.tlsServerName|string||DEPRECATED: Use the tlsConfig field. If set, it is used to set the SNI host when connecting via TLS.|
-|settings.secretOptions.sources[].vault.insecure|bool||DEPRECATED: Use the tlsConfig field. Disables TLS verification when set to true.|
 |settings.secretOptions.sources[].vault.rootKey|string||All keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to gloo.|
 |settings.secretOptions.sources[].vault.pathPrefix|string||Optional. The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'.|
 |settings.secretOptions.sources[].vault.tlsConfig.caCert|string||Path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate.|
@@ -134,7 +127,7 @@
 |settings.secretOptions.sources[].vault.tlsConfig.clientKey|string||Path to the private key for Vault communication.|
 |settings.secretOptions.sources[].vault.tlsConfig.tlsServerName|string||If set, it is used to set the SNI host when connecting via TLS.|
 |settings.secretOptions.sources[].vault.tlsConfig.insecure|bool||Disables TLS verification when set to true.|
-|settings.secretOptions.sources[].vault.accessToken|string||Only one of accessToken or aws may be set.|
+|settings.secretOptions.sources[].vault.accessToken|string||Vault token to use for authentication. Only one of accessToken or aws may be set.|
 |settings.secretOptions.sources[].vault.aws.vaultRole|string||The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured.|
 |settings.secretOptions.sources[].vault.aws.region|string||The AWS region to use for the login attempt.|
 |settings.secretOptions.sources[].vault.aws.iamServerIdHeader|string||The IAM Server ID Header required to be included in the request.|
