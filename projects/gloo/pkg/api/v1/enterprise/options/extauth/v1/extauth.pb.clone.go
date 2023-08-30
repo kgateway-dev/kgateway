@@ -1415,6 +1415,29 @@ func (m *OpaAuthOptions) Clone() proto.Message {
 }
 
 // Clone function
+func (m *OpaServerAuth) Clone() proto.Message {
+	var target *OpaServerAuth
+	if m == nil {
+		return target
+	}
+	target = &OpaServerAuth{}
+
+	target.Package = m.GetPackage()
+
+	target.RuleName = m.GetRuleName()
+
+	target.ServerAddr = m.GetServerAddr()
+
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*OpaAuthOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*OpaAuthOptions)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *Ldap) Clone() proto.Message {
 	var target *Ldap
 	if m == nil {
@@ -1965,6 +1988,18 @@ func (m *AuthConfig_Config) Clone() proto.Message {
 		} else {
 			target.AuthConfig = &AuthConfig_Config_HmacAuth{
 				HmacAuth: proto.Clone(m.GetHmacAuth()).(*HmacAuth),
+			}
+		}
+
+	case *AuthConfig_Config_OpaServerAuth:
+
+		if h, ok := interface{}(m.GetOpaServerAuth()).(clone.Cloner); ok {
+			target.AuthConfig = &AuthConfig_Config_OpaServerAuth{
+				OpaServerAuth: h.Clone().(*OpaServerAuth),
+			}
+		} else {
+			target.AuthConfig = &AuthConfig_Config_OpaServerAuth{
+				OpaServerAuth: proto.Clone(m.GetOpaServerAuth()).(*OpaServerAuth),
 			}
 		}
 
@@ -2960,9 +2995,47 @@ func (m *ExtAuthConfig_OpaAuthConfig) Clone() proto.Message {
 	target.Query = m.GetQuery()
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*OpaAuthOptions)
+		target.Options = h.Clone().(*ExtAuthConfig_OpaAuthOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*OpaAuthOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*ExtAuthConfig_OpaAuthOptions)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OpaAuthOptions) Clone() proto.Message {
+	var target *ExtAuthConfig_OpaAuthOptions
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OpaAuthOptions{}
+
+	target.FastInputConversion = m.GetFastInputConversion()
+
+	target.ReturnDecisionReason = m.GetReturnDecisionReason()
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OpaServerAuthConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_OpaServerAuthConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OpaServerAuthConfig{}
+
+	target.Package = m.GetPackage()
+
+	target.RuleName = m.GetRuleName()
+
+	target.ServerAddr = m.GetServerAddr()
+
+	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
+		target.Options = h.Clone().(*ExtAuthConfig_OpaAuthOptions)
+	} else {
+		target.Options = proto.Clone(m.GetOptions()).(*ExtAuthConfig_OpaAuthOptions)
 	}
 
 	return target
@@ -3235,6 +3308,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 		} else {
 			target.AuthConfig = &ExtAuthConfig_Config_HmacAuth{
 				HmacAuth: proto.Clone(m.GetHmacAuth()).(*ExtAuthConfig_HmacAuthConfig),
+			}
+		}
+
+	case *ExtAuthConfig_Config_OpaServerAuth:
+
+		if h, ok := interface{}(m.GetOpaServerAuth()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_OpaServerAuth{
+				OpaServerAuth: h.Clone().(*ExtAuthConfig_OpaServerAuthConfig),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_OpaServerAuth{
+				OpaServerAuth: proto.Clone(m.GetOpaServerAuth()).(*ExtAuthConfig_OpaServerAuthConfig),
 			}
 		}
 

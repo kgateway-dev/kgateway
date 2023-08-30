@@ -302,6 +302,9 @@ apis:
   enterprise.gloo.solo.io.OpaAuthOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OpaAuthOptions
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.OpaServerAuth:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OpaServerAuth
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.PassThroughAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#PassThroughAuth
     package: enterprise.gloo.solo.io
