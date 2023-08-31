@@ -57,31 +57,33 @@ var _ = Describe("Local Rate Limit", func() {
 		expectNotRateLimitedWithOutXRateLimitHeader = func() {
 			defer GinkgoRecover()
 			response := expectNotRateLimited()
-			ExpectWithOffset(2, response).ToNot(matchers.ContainHeaders(http.Header{
-				"x-ratelimit-reset": []string{"100"},
-			}), "x-ratelimit headers should not be present for non rate limited requests")
+			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
+			ExpectWithOffset(2, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
+				"x-ratelimit headers should not be present for non rate limited requests")
 		}
 
 		expectNotRateLimitedWithXRateLimitHeader = func() {
 			defer GinkgoRecover()
 			response := expectNotRateLimited()
-			ExpectWithOffset(2, response).To(matchers.ContainHeaders(http.Header{
-				"x-ratelimit-reset": []string{"100"},
-			}), "x-ratelimit headers should be present")
+			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
+			ExpectWithOffset(2, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
+				"x-ratelimit headers should be present")
 		}
 
 		expectRateLimitedWithXRateLimitHeader = func(limit int) {
 			defer GinkgoRecover()
 			response, err := httpClient.Do(requestBuilder.Build())
-			ExpectWithOffset(1, response).To(matchers.ContainHeaders(http.Header{
-				"x-ratelimit-limit":     []string{fmt.Sprint(limit)},
-				"x-ratelimit-remaining": []string{"0"},
-				"x-ratelimit-reset":     []string{"100"},
-			}), "x-ratelimit headers should be present")
 			ExpectWithOffset(1, response).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusTooManyRequests,
 				Body:       "local_rate_limited",
 			}), "should rate limit")
+			ExpectWithOffset(1, response).To(matchers.ContainHeaders(http.Header{
+				"x-ratelimit-limit":     []string{fmt.Sprint(limit)},
+				"x-ratelimit-remaining": []string{"0"},
+			}), "x-ratelimit headers should be present")
+			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
+			ExpectWithOffset(1, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
+				"x-ratelimit headers should be present")
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "There should be no error when rate limited")
 
 		}

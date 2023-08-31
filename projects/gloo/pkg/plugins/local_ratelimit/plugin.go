@@ -30,7 +30,7 @@ var (
 
 const (
 	ExtensionName           = "local_ratelimit"
-	NetworkFilterStatPrefix = "l4_local_ratelimit"
+	NetworkFilterStatPrefix = "network_local_ratelimit"
 	HTTPFilterStatPrefix    = "http_local_ratelimit"
 	NetworkFilterName       = "envoy.filters.network.local_ratelimit"
 	HTTPFilterName          = "envoy.filters.http.local_ratelimit"
