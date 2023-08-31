@@ -343,11 +343,11 @@ type HttpListenerOptions struct {
 	DynamicForwardProxy *dynamic_forward_proxy.FilterConfig `protobuf:"bytes,28,opt,name=dynamic_forward_proxy,json=dynamicForwardProxy,proto3" json:"dynamic_forward_proxy,omitempty"`
 	// ConnectionLimit can be used to limit the number of active connections per gateway. Useful for resource protection as well as DoS prevention.
 	ConnectionLimit *connection_limit.ConnectionLimit `protobuf:"bytes,29,opt,name=connection_limit,json=connectionLimit,proto3" json:"connection_limit,omitempty"`
-	// NetworkLocalRatelimit can be used to rate limit the connections per gateway at the L4 layer.
+	// NetworkLocalRatelimit can be used to rate limit the connections per gateway at the L4 layer and works pre-auth.
 	// It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
 	NetworkLocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,32,opt,name=network_local_ratelimit,json=networkLocalRatelimit,proto3" json:"network_local_ratelimit,omitempty"`
-	// HttpLocalRatelimit can be used to rate limit the number of requests per gateway.
-	// Unlike the NetworkLocalRatelimit, this works as part of the HCM and limits requests pre-auth.
+	// HttpLocalRatelimit can be used to rate limit the number of requests per gateway and works pre-auth.
+	// Unlike the NetworkLocalRatelimit, this works as part of the HCM (ie: L7 layer).
 	// It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
 	HttpLocalRatelimit *local_ratelimit.Settings `protobuf:"bytes,33,opt,name=http_local_ratelimit,json=httpLocalRatelimit,proto3" json:"http_local_ratelimit,omitempty"`
 	// Router is an extension of the envoy http filters
