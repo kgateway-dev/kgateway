@@ -57,8 +57,8 @@ var _ = Describe("Local Rate Limit", func() {
 		expectNotRateLimitedWithOutXRateLimitHeader = func() {
 			defer GinkgoRecover()
 			response := expectNotRateLimited()
-			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
-			ExpectWithOffset(2, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
+			// Since the values of the x-rate-limit headers change with time, we only check the presence of these header keys and not match their value
+			ExpectWithOffset(2, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
 				"x-ratelimit headers should not be present for non rate limited requests")
 		}
 
@@ -66,7 +66,7 @@ var _ = Describe("Local Rate Limit", func() {
 			defer GinkgoRecover()
 			response := expectNotRateLimited()
 			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
-			ExpectWithOffset(2, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
+			ExpectWithOffset(2, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
 				"x-ratelimit headers should be present")
 		}
 
@@ -77,6 +77,7 @@ var _ = Describe("Local Rate Limit", func() {
 				StatusCode: http.StatusTooManyRequests,
 				Body:       "local_rate_limited",
 			}), "should rate limit")
+			// Since the request should be rate limited at this point, the values of the following x-rate-limit headers should be consistent
 			ExpectWithOffset(1, response).To(matchers.ContainHeaders(http.Header{
 				"x-ratelimit-limit":     []string{fmt.Sprint(limit)},
 				"x-ratelimit-remaining": []string{"0"},
