@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/solo-io/gloo/test/services/envoy"
 
@@ -24,7 +23,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func TestGloo(t *testing.T) {
@@ -53,8 +51,6 @@ var (
 var _ = BeforeSuite(func() {
 	var err error
 
-	// This line prevents controller-runtime from complaining about log.SetLogger never being called
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 	ctx, cancel = context.WithCancel(context.Background())
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
