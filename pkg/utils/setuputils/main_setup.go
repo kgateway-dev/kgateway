@@ -3,15 +3,12 @@ package setuputils
 import (
 	"context"
 	"flag"
-	"os"
 	"sync"
 	"time"
 
-	"github.com/go-logr/zapr"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
-	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -20,10 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 type SetupOpts struct {
@@ -46,10 +40,6 @@ type SetupOpts struct {
 
 var once sync.Once
 
-const (
-	LOG_LEVEL = "LOG_LEVEL"
-)
-
 // Main is the main entrypoint for running Gloo Edge components
 // It works by performing the following:
 //  1. Initialize a SettingsClient backed either by Kubernetes or a File
@@ -71,33 +61,6 @@ func Main(opts SetupOpts) error {
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
 	loggingContext := append([]interface{}{"version", opts.Version}, opts.LoggingPrefixVals...)
 	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
-
-	// set up controller-runtime logging
-	level := zapcore.InfoLevel
-	// if log level is set in env, use that
-	if envLogLevel := os.Getenv(LOG_LEVEL); envLogLevel != "" {
-		if err := (&level).Set(envLogLevel); err != nil {
-			contextutils.LoggerFrom(ctx).Infof("Could not set log level from env %s=%s, available levels "+
-				"can be found here: https://pkg.go.dev/go.uber.org/zap/zapcore?tab=doc#Level",
-				LOG_LEVEL,
-				envLogLevel,
-				zap.Error(err),
-			)
-		}
-	}
-	atomicLevel := zap.NewAtomicLevelAt(level)
-
-	baseLogger := zaputil.NewRaw(
-		zaputil.Level(&atomicLevel),
-		zaputil.RawZapOpts(zap.Fields(zap.String("version", version.Version))),
-	).Named(opts.LoggerName)
-
-	// klog
-	zap.ReplaceGlobals(baseLogger)
-	// controller-runtime
-	log.SetLogger(zapr.NewLogger(baseLogger))
-	// go-utils
-	contextutils.SetFallbackLogger(baseLogger.Sugar())
 
 	settingsClient, err := fileOrKubeSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
