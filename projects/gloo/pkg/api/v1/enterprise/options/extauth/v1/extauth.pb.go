@@ -3525,6 +3525,8 @@ func (x *ApiKeySecret) GetMetadata() map[string]string {
 	return nil
 }
 
+// Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+// For Gloo Platform environments, use OpaServerAuth instead.
 type OpaAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3604,18 +3606,17 @@ type OpaAuthOptions struct {
 	// By default, this is set to false and all fields are evaluated by OPA.
 	FastInputConversion bool `protobuf:"varint,1,opt,name=fast_input_conversion,json=fastInputConversion,proto3" json:"fast_input_conversion,omitempty"`
 	// Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules.
-	// This way, you can use the reason in subsequent filters, such as transformation policies. This `returnDecisionReason` field must be the second
-	// parameter of the query when using OpaAuth.
-	// When using this field in OpaServerAuth, the entire document will be returned as metadata and the `allowed` field on
-	// the document will be used to make the policy decision.
-	// The entry will be in the returned DynamicMetadata in the CheckResponse and the structure
-	// will be
-	// envoy.filters.http.ext_authz:
+	// This way, you can use the reason in subsequent filters, such as transformation policies.
+	// When using OpaAuth, this `returnDecisionReason` field must be the second parameter of the query.
+	// When using OpaServerAuth, the entire document will be returned as metadata.
+	// The `allowed` field on the document is used to make the policy decision.
+	// The entry will be in the returned DynamicMetadata in the CheckResponse with the structure
+	// `envoy.filters.http.ext_authz:
 	//
-	//	-> name of the auth step, i.e. spec.configs[i].name
-	//	    -> reason
+	//	-> name of the auth step`, such as `spec.configs[i].name
+	//	    -> reason`.
 	//
-	// If set to false, the response is allowed or denied based on the rego rules without returning the reason.
+	// If set to false, the response is allowed or denied based on the Rego rules without returning the reason.
 	ReturnDecisionReason bool `protobuf:"varint,2,opt,name=return_decision_reason,json=returnDecisionReason,proto3" json:"return_decision_reason,omitempty"`
 }
 
@@ -3672,16 +3673,16 @@ type OpaServerAuth struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The package from your rego policy bundle used to query the OPA data API
+	// The package from your Rego policy bundle used to query the OPA data API.
 	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
-	// The rule in your rego policy bundle used to query the OPA data API. Supports querying subfields with a /, see https://www.openpolicyagent.org/docs/latest/rest-api/#data-api
+	// The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api).
 	RuleName string `protobuf:"bytes,2,opt,name=rule_name,json=ruleName,proto3" json:"rule_name,omitempty"`
 	// The address of the OPA server to query, in the format `ADDRESS:PORT`.
 	// For OPA servers within the cluster, the address is the pod's service address,
 	// such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster,
 	// the server must be accessible to the cluster, such as through an ExternalService.
 	// If you do not have your own OPA server instance, omit this field.
-	// Deploy the ext auth service with the OPA server sidecare enabled and the OPA server
+	// When the external auth service has the OPA server sidecar enabled, the OPA server
 	// sidecar will be used instead.
 	ServerAddr string `protobuf:"bytes,3,opt,name=server_addr,json=serverAddr,proto3" json:"server_addr,omitempty"`
 	// Additional options for OPA Auth configuration.

@@ -1400,7 +1400,9 @@ DEPRECATED: use ApiKey
 ---
 ### OpaAuth
 
-
+ 
+Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+For Gloo Platform environments, use OpaServerAuth instead.
 
 ```yaml
 "modules": []core.solo.io.ResourceRef
@@ -1432,7 +1434,7 @@ DEPRECATED: use ApiKey
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `fastInputConversion` | `bool` | Decreases OPA latency by speeding up conversion of input to the OPA engine. If this is set to true, only http_request and state fields which are a scalar, map, or string array are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. By default, this is set to false and all fields are evaluated by OPA. |
-| `returnDecisionReason` | `bool` | Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. This way, you can use the reason in subsequent filters, such as transformation policies. This `returnDecisionReason` field must be the second parameter of the query when using OpaAuth. When using this field in OpaServerAuth, the entire document will be returned as metadata and the `allowed` field on the document will be used to make the policy decision. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure will be envoy.filters.http.ext_authz: -> name of the auth step, i.e. spec.configs[i].name -> reason If set to false, the response is allowed or denied based on the rego rules without returning the reason. |
+| `returnDecisionReason` | `bool` | Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. This way, you can use the reason in subsequent filters, such as transformation policies. When using OpaAuth, this `returnDecisionReason` field must be the second parameter of the query. When using OpaServerAuth, the entire document will be returned as metadata. The `allowed` field on the document is used to make the policy decision. The entry will be in the returned DynamicMetadata in the CheckResponse with the structure `envoy.filters.http.ext_authz: -> name of the auth step`, such as `spec.configs[i].name -> reason`. If set to false, the response is allowed or denied based on the Rego rules without returning the reason. |
 
 
 
@@ -1454,9 +1456,9 @@ auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAu
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `package` | `string` | The package from your rego policy bundle used to query the OPA data API. |
-| `ruleName` | `string` | The rule in your rego policy bundle used to query the OPA data API. Supports querying subfields with a /, see https://www.openpolicyagent.org/docs/latest/rest-api/#data-api. |
-| `serverAddr` | `string` | The address of the OPA server to query, in the format `ADDRESS:PORT`. For OPA servers within the cluster, the address is the pod's service address, such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster, the server must be accessible to the cluster, such as through an ExternalService. If you do not have your own OPA server instance, omit this field. Deploy the ext auth service with the OPA server sidecare enabled and the OPA server sidecar will be used instead. |
+| `package` | `string` | The package from your Rego policy bundle used to query the OPA data API. |
+| `ruleName` | `string` | The rule in your Rego policy bundle used to query the OPA data API. Supports querying subfields with a `/`. For more information, see the [OPA docs for the Data API](https://www.openpolicyagent.org/docs/latest/rest-api/#data-api). |
+| `serverAddr` | `string` | The address of the OPA server to query, in the format `ADDRESS:PORT`. For OPA servers within the cluster, the address is the pod's service address, such as `default.svc.cluster.local:8181`. For OPA servers outside the cluster, the server must be accessible to the cluster, such as through an ExternalService. If you do not have your own OPA server instance, omit this field. When the external auth service has the OPA server sidecar enabled, the OPA server sidecar will be used instead. |
 | `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional options for OPA Auth configuration. |
 
 
