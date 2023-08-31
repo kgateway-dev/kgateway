@@ -3,13 +3,15 @@ package setuputils
 import (
 	"context"
 	"flag"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/go-logr/zapr"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	kube2 "github.com/solo-io/gloo/pkg/bootstrap/leaderelector/kube"
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector/singlereplica"
-
+	"github.com/solo-io/gloo/pkg/version"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/k8s-utils/kubeutils"
@@ -18,7 +20,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 type SetupOpts struct {
@@ -132,4 +137,29 @@ func startLeaderElection(ctx context.Context, settingsDir string, electionConfig
 		return nil, err
 	}
 	return kube2.NewElectionFactory(cfg).StartElection(ctx, electionConfig)
+}
+
+// SetupLogging sets up controller-runtime logging
+func SetupLogging(ctx context.Context, loggerName string) {
+	level := zapcore.InfoLevel
+	// if log level is set in env, use that
+	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
+		if err := (&level).Set(envLogLevel); err != nil {
+			contextutils.LoggerFrom(ctx).Infof("Could not set log level from env %s=%s, available levels "+
+				"can be found here: https://pkg.go.dev/go.uber.org/zap/zapcore?tab=doc#Level",
+				contextutils.LogLevelEnvName,
+				envLogLevel,
+				zap.Error(err),
+			)
+		}
+	}
+	atomicLevel := zap.NewAtomicLevelAt(level)
+
+	baseLogger := zaputil.NewRaw(
+		zaputil.Level(&atomicLevel),
+		zaputil.RawZapOpts(zap.Fields(zap.String("version", version.Version))),
+	).Named(loggerName)
+
+	// controller-runtime
+	log.SetLogger(zapr.NewLogger(baseLogger))
 }
