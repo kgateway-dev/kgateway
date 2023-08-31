@@ -79,10 +79,6 @@ func setupLogging(ctx context.Context) {
 		zaputil.RawZapOpts(zap.Fields(zap.String("version", version.Version))),
 	).Named(glooComponentName)
 
-	// klog
-	zap.ReplaceGlobals(baseLogger)
 	// controller-runtime
 	log.SetLogger(zapr.NewLogger(baseLogger))
-	// go-utils
-	contextutils.SetFallbackLogger(baseLogger.Sugar())
 }
