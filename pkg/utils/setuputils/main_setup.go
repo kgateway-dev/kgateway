@@ -26,10 +26,6 @@ import (
 	zaputil "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-const (
-	logLevelEnv = "LOG_LEVEL"
-)
-
 type SetupOpts struct {
 	LoggerName string
 	// logged as the version of Gloo currently executing
@@ -147,11 +143,11 @@ func startLeaderElection(ctx context.Context, settingsDir string, electionConfig
 func SetupLogging(ctx context.Context, loggerName string) {
 	level := zapcore.InfoLevel
 	// if log level is set in env, use that
-	if envLogLevel := os.Getenv(logLevelEnv); envLogLevel != "" {
+	if envLogLevel := os.Getenv(contextutils.LogLevelEnvName); envLogLevel != "" {
 		if err := (&level).Set(envLogLevel); err != nil {
 			contextutils.LoggerFrom(ctx).Infof("Could not set log level from env %s=%s, available levels "+
 				"can be found here: https://pkg.go.dev/go.uber.org/zap/zapcore?tab=doc#Level",
-				logLevelEnv,
+				contextutils.LogLevelEnvName,
 				envLogLevel,
 				zap.Error(err),
 			)
