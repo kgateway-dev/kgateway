@@ -442,6 +442,20 @@ spec:
                           type: object
                         oidcAuthorizationCode:
                           properties:
+                            accessToken:
+                              properties:
+                                claimsToHeaders:
+                                  items:
+                                    properties:
+                                      append:
+                                        type: boolean
+                                      claim:
+                                        type: string
+                                      header:
+                                        type: string
+                                    type: object
+                                  type: array
+                              type: object
                             afterLogoutUrl:
                               type: string
                             appUrl:
@@ -527,6 +541,20 @@ spec:
                                 useBearerSchemaForAuthorization:
                                   nullable: true
                                   type: boolean
+                              type: object
+                            identityToken:
+                              properties:
+                                claimsToHeaders:
+                                  items:
+                                    properties:
+                                      append:
+                                        type: boolean
+                                      claim:
+                                        type: string
+                                      header:
+                                        type: string
+                                    type: object
+                                  type: array
                               type: object
                             issuerUrl:
                               type: string
