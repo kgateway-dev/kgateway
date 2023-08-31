@@ -2212,9 +2212,9 @@ type OidcAuthorizationCode struct {
 	// Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
 	// However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
 	DisableClientSecret *wrappers.BoolValue `protobuf:"bytes,21,opt,name=disable_client_secret,json=disableClientSecret,proto3" json:"disable_client_secret,omitempty"`
-	// Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
+	// Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
 	AccessToken *OidcAuthorizationCode_AccessToken `protobuf:"bytes,23,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	// Configuration specific to the OIDC identity token received and pdocessed by the ext-auth-service.
+	// Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service.
 	IdentityToken *OidcAuthorizationCode_IdentityToken `protobuf:"bytes,24,opt,name=identity_token,json=identityToken,proto3" json:"identity_token,omitempty"`
 }
 

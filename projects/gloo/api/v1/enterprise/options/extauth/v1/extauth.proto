@@ -685,10 +685,10 @@ message OidcAuthorizationCode {
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
     google.protobuf.BoolValue disable_client_secret = 21;
 
-    // Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
+    // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
     AccessToken access_token = 23;
 
-    // Configuration specific to the OIDC identity token received and pdocessed by the ext-auth-service.
+    // Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service.
     IdentityToken identity_token = 24;
 
     // Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
