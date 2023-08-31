@@ -2,4 +2,3 @@ changelog:
   - type: NON_USER_FACING
     description: >- 
       Adds docs for new TCP connection limit capability. 
-      skipCI-kube-tests:true
