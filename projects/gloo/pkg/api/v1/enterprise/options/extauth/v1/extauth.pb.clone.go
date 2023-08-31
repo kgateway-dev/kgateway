@@ -21,8 +21,6 @@ import (
 
 	github_com_golang_protobuf_ptypes_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
-	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/jwt"
-
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -723,6 +721,23 @@ func (m *EndSessionProperties) Clone() proto.Message {
 	target = &EndSessionProperties{}
 
 	target.MethodType = m.GetMethodType()
+
+	return target
+}
+
+// Clone function
+func (m *ClaimToHeader) Clone() proto.Message {
+	var target *ClaimToHeader
+	if m == nil {
+		return target
+	}
+	target = &ClaimToHeader{}
+
+	target.Claim = m.GetClaim()
+
+	target.Header = m.GetHeader()
+
+	target.Append = m.GetAppend()
 
 	return target
 }
@@ -2234,13 +2249,13 @@ func (m *OidcAuthorizationCode_AccessToken) Clone() proto.Message {
 	target = &OidcAuthorizationCode_AccessToken{}
 
 	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.ClaimToHeader, len(m.GetClaimsToHeaders()))
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
 		for idx, v := range m.GetClaimsToHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.ClaimToHeader)
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
 			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.ClaimToHeader)
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
 			}
 
 		}
@@ -2258,13 +2273,13 @@ func (m *OidcAuthorizationCode_IdentityToken) Clone() proto.Message {
 	target = &OidcAuthorizationCode_IdentityToken{}
 
 	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.ClaimToHeader, len(m.GetClaimsToHeaders()))
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
 		for idx, v := range m.GetClaimsToHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.ClaimToHeader)
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
 			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_jwt.ClaimToHeader)
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
 			}
 
 		}

@@ -14,7 +14,6 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/discovery.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
@@ -551,6 +550,19 @@ message EndSessionProperties {
     MethodType methodType = 1;
 }
 
+// Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
+message ClaimToHeader {
+    // The claim name from the token, such as `sub`.
+    string claim = 1;
+
+    // The header to copy the claim to, such as `x-sub`.
+    string header = 2;
+
+    // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
+    bool append = 3;
+}
+
+
 message OidcAuthorizationCode {
     // your client id as registered with the issuer
     string client_id = 1;
@@ -683,14 +695,14 @@ message OidcAuthorizationCode {
     message AccessToken {
 
         // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
-        repeated jwt.options.gloo.solo.io.ClaimToHeader claims_to_headers = 1;
+        repeated ClaimToHeader claims_to_headers = 1;
     }
 
     // Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
     message IdentityToken {
 
         // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
-        repeated jwt.options.gloo.solo.io.ClaimToHeader claims_to_headers = 1;
+        repeated ClaimToHeader claims_to_headers = 1;
     }
 }
 
