@@ -93,11 +93,11 @@ func Main(opts SetupOpts) error {
 	).Named(opts.LoggerName)
 
 	// klog
-	// zap.ReplaceGlobals(baseLogger)
+	zap.ReplaceGlobals(baseLogger)
 	// controller-runtime
 	log.SetLogger(zapr.NewLogger(baseLogger))
 	// go-utils
-	// contextutils.SetFallbackLogger(baseLogger.Sugar())
+	contextutils.SetFallbackLogger(baseLogger.Sugar())
 
 	settingsClient, err := fileOrKubeSettingsClient(ctx, setupNamespace, setupDir)
 	if err != nil {
