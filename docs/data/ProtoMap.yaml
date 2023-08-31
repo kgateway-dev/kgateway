@@ -233,9 +233,6 @@ apis:
   enterprise.gloo.solo.io.BufferSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#BufferSettings
     package: enterprise.gloo.solo.io
-  enterprise.gloo.solo.io.ClaimToHeader:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ClaimToHeader
-    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.CustomAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#CustomAuth
     package: enterprise.gloo.solo.io

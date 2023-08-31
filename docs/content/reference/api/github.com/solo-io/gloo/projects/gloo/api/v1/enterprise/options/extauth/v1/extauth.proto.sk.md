@@ -45,7 +45,6 @@ weight: 5
 - [AutoMapFromMetadata](#automapfrommetadata)
 - [EndSessionProperties](#endsessionproperties)
 - [MethodType](#methodtype)
-- [ClaimToHeader](#claimtoheader)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
@@ -880,28 +879,6 @@ The Method used to make the request.
 
 
 ---
-### ClaimToHeader
-
- 
-Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
-
-```yaml
-"claim": string
-"header": string
-"append": bool
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `claim` | `string` | The claim name from the token, such as `sub`. |
-| `header` | `string` | The header to copy the claim to, such as `x-sub`. |
-| `append` | `bool` | If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false). |
-
-
-
-
----
 ### OidcAuthorizationCode
 
 
@@ -969,13 +946,13 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
 
 ```yaml
-"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"claimsToHeaders": []jwt.options.gloo.solo.io.ClaimToHeader
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+| `claimsToHeaders` | [[]jwt.options.gloo.solo.io.ClaimToHeader](../../../jwt/jwt.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
@@ -987,13 +964,13 @@ Optional: Map a single claim from an OAuth2 access token to a header in the requ
 Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
 
 ```yaml
-"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+"claimsToHeaders": []jwt.options.gloo.solo.io.ClaimToHeader
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+| `claimsToHeaders` | [[]jwt.options.gloo.solo.io.ClaimToHeader](../../../jwt/jwt.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
