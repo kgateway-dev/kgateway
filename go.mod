@@ -84,11 +84,12 @@ require (
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5
 	knative.dev/networking v0.0.0-20211210083629-bace06e98aee
 	knative.dev/pkg v0.0.0-20211206113427-18589ac7627e
-	sigs.k8s.io/controller-runtime v0.15.0
+	sigs.k8s.io/controller-runtime v0.15.2
 	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
+	github.com/go-logr/zapr v1.2.4
 	github.com/google/uuid v1.3.0
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
@@ -155,7 +156,6 @@ require (
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
-	github.com/go-logr/zapr v1.2.4 // indirect
 	github.com/go-openapi/analysis v0.19.5 // indirect
 	github.com/go-openapi/errors v0.19.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect

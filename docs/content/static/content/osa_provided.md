@@ -12,6 +12,7 @@ Name|Version|License
 [form3tech-oss/jwt-go](https://github.com/form3tech-oss/jwt-go)|v3.2.3+incompatible|MIT License
 [fsnotify/fsnotify](https://github.com/fsnotify/fsnotify)|v1.6.0|BSD 3-clause "New" or "Revised" License
 [ghodss/yaml](https://github.com/ghodss/yaml)|v1.0.1-0.20190212211648-25d852aebe32|MIT License
+[go-logr/zapr](https://github.com/go-logr/zapr)|v1.2.4|Apache License 2.0
 [go-openapi/loads](https://github.com/go-openapi/loads)|v0.19.4|Apache License 2.0
 [go-openapi/spec](https://github.com/go-openapi/spec)|v0.19.6|Apache License 2.0
 [go-openapi/swag](https://github.com/go-openapi/swag)|v0.22.3|Apache License 2.0
@@ -65,7 +66,7 @@ Name|Version|License
 [k8s.io/utils](https://k8s.io/utils)|v0.0.0-20230220204549-a5ecb0141aa5|Apache License 2.0
 [knative.dev/networking](https://knative.dev/networking)|v0.0.0-20211210083629-bace06e98aee|Apache License 2.0
 [knative.dev/pkg](https://knative.dev/pkg)|v0.0.0-20211206113427-18589ac7627e|Apache License 2.0
-[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.15.0|Apache License 2.0
+[sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime)|v0.15.2|Apache License 2.0
 [sigs.k8s.io/yaml](https://sigs.k8s.io/yaml)|v1.3.0|MIT License
 [cmd/goimports](https://golang.org/x/tools/cmd/goimports)|latest|MIT License
 [gogo/protobuf](https://github.com/gogo/protobuf)|latest|MIT License

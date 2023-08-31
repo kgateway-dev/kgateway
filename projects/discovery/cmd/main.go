@@ -1,14 +1,23 @@
 package main
 
 import (
-	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/go-utils/stats"
+	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	uds "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
+	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/stats"
+)
+
+const (
+	discoveryComponentName = "discovery"
 )
 
 func main() {
+	ctx := context.Background()
+	setuputils.SetupLogging(ctx, discoveryComponentName)
+
 	stats.ConditionallyStartStatsServer()
 	if err := run(); err != nil {
 		log.Fatalf("err in main: %v", err.Error())

@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: Prevent error when modifying settings by making sure loggers get initialized.
+    issueLink: https://github.com/solo-io/gloo/issues/8627
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: sigs.k8s.io
+    dependencyRepo: controller-runtime
+    dependencyTag: v0.15.2
