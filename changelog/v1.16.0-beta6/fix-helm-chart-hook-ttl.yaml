@@ -1,7 +1,6 @@
 changelog:
-  - type: HELM
+  - type: NON_USER_FACING
     description: >-
-      Fix TTL not being respected on Helm hook jobs due to deletion policy.
       skipCI-docs-build:true
     issueLink: https://github.com/solo-io/gloo/issues/8500
     resolvesIssue: true
