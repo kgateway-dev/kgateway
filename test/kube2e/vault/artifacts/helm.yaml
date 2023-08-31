@@ -1,0 +1,5 @@
+gloo:
+  gloo:
+    serviceAccount:
+      extraAnnotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::802411188784:role/vault-role
