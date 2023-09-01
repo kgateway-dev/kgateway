@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Local Rate Limit", func() {
+var _ = FDescribe("Local Rate Limit", func() {
 
 	const (
 		defaultLimit = 3

@@ -34,6 +34,11 @@ func toEnvoyTokenBucket(localRatelimit *local_ratelimit.TokenBucket) (*envoy_typ
 		fillInterval = &durationpb.Duration{
 			Seconds: 1,
 		}
+	} else {
+		// It should be a valid time >= 50ms
+		if fillInterval.GetSeconds() == 0 && fillInterval.GetNanos() < 50000000 {
+			return nil, fmt.Errorf("FillInterval must be >= 50ms. Current value : %vms", fillInterval.GetNanos()/1000000)
+		}
 	}
 
 	maxTokens := localRatelimit.GetMaxTokens()
