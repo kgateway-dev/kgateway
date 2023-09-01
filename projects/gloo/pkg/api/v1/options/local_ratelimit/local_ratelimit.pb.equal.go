@@ -94,22 +94,34 @@ func (m *Settings) Equal(that interface{}) bool {
 		return false
 	}
 
-	if h, ok := interface{}(m.GetDefaults()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetDefaults()) {
+	if h, ok := interface{}(m.GetDefaultLimit()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetDefaultLimit()) {
 			return false
 		}
 	} else {
-		if !proto.Equal(m.GetDefaults(), target.GetDefaults()) {
+		if !proto.Equal(m.GetDefaultLimit(), target.GetDefaultLimit()) {
 			return false
 		}
 	}
 
-	if m.GetLocalRateLimitPerDownstreamConnection() != target.GetLocalRateLimitPerDownstreamConnection() {
-		return false
+	if h, ok := interface{}(m.GetLocalRateLimitPerDownstreamConnection()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetLocalRateLimitPerDownstreamConnection()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetLocalRateLimitPerDownstreamConnection(), target.GetLocalRateLimitPerDownstreamConnection()) {
+			return false
+		}
 	}
 
-	if m.GetEnableXRatelimitHeaders() != target.GetEnableXRatelimitHeaders() {
-		return false
+	if h, ok := interface{}(m.GetEnableXRatelimitHeaders()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetEnableXRatelimitHeaders()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetEnableXRatelimitHeaders(), target.GetEnableXRatelimitHeaders()) {
+			return false
+		}
 	}
 
 	return true

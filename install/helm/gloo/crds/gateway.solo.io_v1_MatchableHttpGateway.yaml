@@ -1150,7 +1150,7 @@ spec:
                         type: object
                       httpLocalRatelimit:
                         properties:
-                          defaults:
+                          defaultLimit:
                             properties:
                               fillInterval:
                                 type: string
@@ -1164,8 +1164,10 @@ spec:
                                 type: integer
                             type: object
                           enableXRatelimitHeaders:
+                            nullable: true
                             type: boolean
                           localRateLimitPerDownstreamConnection:
+                            nullable: true
                             type: boolean
                         type: object
                       leftmostXffAddress:

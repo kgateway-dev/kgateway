@@ -62,15 +62,23 @@ func (m *Settings) Clone() proto.Message {
 	}
 	target = &Settings{}
 
-	if h, ok := interface{}(m.GetDefaults()).(clone.Cloner); ok {
-		target.Defaults = h.Clone().(*TokenBucket)
+	if h, ok := interface{}(m.GetDefaultLimit()).(clone.Cloner); ok {
+		target.DefaultLimit = h.Clone().(*TokenBucket)
 	} else {
-		target.Defaults = proto.Clone(m.GetDefaults()).(*TokenBucket)
+		target.DefaultLimit = proto.Clone(m.GetDefaultLimit()).(*TokenBucket)
 	}
 
-	target.LocalRateLimitPerDownstreamConnection = m.GetLocalRateLimitPerDownstreamConnection()
+	if h, ok := interface{}(m.GetLocalRateLimitPerDownstreamConnection()).(clone.Cloner); ok {
+		target.LocalRateLimitPerDownstreamConnection = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.LocalRateLimitPerDownstreamConnection = proto.Clone(m.GetLocalRateLimitPerDownstreamConnection()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
-	target.EnableXRatelimitHeaders = m.GetEnableXRatelimitHeaders()
+	if h, ok := interface{}(m.GetEnableXRatelimitHeaders()).(clone.Cloner); ok {
+		target.EnableXRatelimitHeaders = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.EnableXRatelimitHeaders = proto.Clone(m.GetEnableXRatelimitHeaders()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }

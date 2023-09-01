@@ -99,18 +99,18 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetDefaults()).(safe_hasher.SafeHasher); ok {
-		if _, err = hasher.Write([]byte("Defaults")); err != nil {
+	if h, ok := interface{}(m.GetDefaultLimit()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("DefaultLimit")); err != nil {
 			return 0, err
 		}
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if fieldValue, err := hashstructure.Hash(m.GetDefaults(), nil); err != nil {
+		if fieldValue, err := hashstructure.Hash(m.GetDefaultLimit(), nil); err != nil {
 			return 0, err
 		} else {
-			if _, err = hasher.Write([]byte("Defaults")); err != nil {
+			if _, err = hasher.Write([]byte("DefaultLimit")); err != nil {
 				return 0, err
 			}
 			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
@@ -119,14 +119,44 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetLocalRateLimitPerDownstreamConnection())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetLocalRateLimitPerDownstreamConnection()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("LocalRateLimitPerDownstreamConnection")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetLocalRateLimitPerDownstreamConnection(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("LocalRateLimitPerDownstreamConnection")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetEnableXRatelimitHeaders())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetEnableXRatelimitHeaders()).(safe_hasher.SafeHasher); ok {
+		if _, err = hasher.Write([]byte("EnableXRatelimitHeaders")); err != nil {
+			return 0, err
+		}
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if fieldValue, err := hashstructure.Hash(m.GetEnableXRatelimitHeaders(), nil); err != nil {
+			return 0, err
+		} else {
+			if _, err = hasher.Write([]byte("EnableXRatelimitHeaders")); err != nil {
+				return 0, err
+			}
+			if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

@@ -34,9 +34,9 @@ var _ = Describe("Local Rate Limit Plugin", func() {
 		httpListener = &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				HttpLocalRatelimit: &local_ratelimit.Settings{
-					LocalRateLimitPerDownstreamConnection: true,
-					EnableXRatelimitHeaders:               true,
-					Defaults: &local_ratelimit.TokenBucket{
+					LocalRateLimitPerDownstreamConnection: &wrapperspb.BoolValue{Value: true},
+					EnableXRatelimitHeaders:               &wrapperspb.BoolValue{Value: true},
+					DefaultLimit: &local_ratelimit.TokenBucket{
 						MaxTokens: 10,
 						TokensPerFill: &wrapperspb.UInt32Value{
 							Value: 10,

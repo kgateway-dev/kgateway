@@ -53,17 +53,17 @@ Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network
 The Local Rate Limit settings define the default local rate limit token bucket to apply as well as other configurations
 
 ```yaml
-"defaults": .local_ratelimit.options.gloo.solo.io.TokenBucket
-"localRateLimitPerDownstreamConnection": bool
-"enableXRatelimitHeaders": bool
+"defaultLimit": .local_ratelimit.options.gloo.solo.io.TokenBucket
+"localRateLimitPerDownstreamConnection": .google.protobuf.BoolValue
+"enableXRatelimitHeaders": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `defaults` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../local_ratelimit.proto.sk/#tokenbucket) | The token bucket configuration to use for rate limiting requests. These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token. If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status. |
-| `localRateLimitPerDownstreamConnection` | `bool` | Specifies the scope of the rate limiter’s token bucket. If set to false, the token bucket is shared across all worker threads, thus the rate limits are applied per Envoy process. If set to true, a token bucket is allocated for each connection, thus the rate limits are applied per connection thereby allowing one to rate limit requests on a per connection basis. Defaults to false. |
-| `enableXRatelimitHeaders` | `bool` | Set this to true to return Envoy's X-RateLimit headers to the downstream. reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/common/ratelimit/v3/ratelimit.proto#envoy-v3-api-enum-extensions-common-ratelimit-v3-xratelimitheadersrfcversion. |
+| `defaultLimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../local_ratelimit.proto.sk/#tokenbucket) | The token bucket configuration to use for rate limiting requests. These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token. If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status. |
+| `localRateLimitPerDownstreamConnection` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Specifies the scope of the rate limiter’s token bucket. If set to false, the token bucket is shared across all worker threads, thus the rate limits are applied per Envoy process. If set to true, a token bucket is allocated for each connection, thus the rate limits are applied per connection thereby allowing one to rate limit requests on a per connection basis. Defaults to false. |
+| `enableXRatelimitHeaders` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set this to true to return Envoy's X-RateLimit headers to the downstream. reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/common/ratelimit/v3/ratelimit.proto#envoy-v3-api-enum-extensions-common-ratelimit-v3-xratelimitheadersrfcversion Defaults to false. |
 
 
 

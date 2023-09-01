@@ -89,7 +89,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	settings := listener.GetOptions().GetHttpLocalRatelimit()
-	filter, err := GenerateHTTPFilter(settings, settings.GetDefaults(), CustomStageBeforeAuth)
+	filter, err := GenerateHTTPFilter(settings, settings.GetDefaultLimit(), CustomStageBeforeAuth)
 	if err != nil {
 		return nil, err
 	}

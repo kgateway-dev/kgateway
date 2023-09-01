@@ -178,8 +178,8 @@ var _ = Describe("Local Rate Limit", func() {
 				gw := gatewaydefaults.DefaultGateway(writeNamespace)
 				gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 					HttpLocalRatelimit: &local_ratelimit.Settings{
-						EnableXRatelimitHeaders: true,
-						Defaults: &local_ratelimit.TokenBucket{
+						EnableXRatelimitHeaders: &wrapperspb.BoolValue{Value: true},
+						DefaultLimit: &local_ratelimit.TokenBucket{
 							MaxTokens: defaultLimit,
 							TokensPerFill: &wrapperspb.UInt32Value{
 								Value: defaultLimit,
@@ -278,7 +278,7 @@ var _ = Describe("Local Rate Limit", func() {
 					gw := gatewaydefaults.DefaultGateway(writeNamespace)
 					gw.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
 						HttpLocalRatelimit: &local_ratelimit.Settings{
-							EnableXRatelimitHeaders: true,
+							EnableXRatelimitHeaders: &wrapperspb.BoolValue{Value: true},
 						},
 					}
 

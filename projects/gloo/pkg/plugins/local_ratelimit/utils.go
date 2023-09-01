@@ -106,8 +106,8 @@ func GenerateHTTPFilter(settings *local_ratelimit.Settings, localRatelimit *loca
 		}
 	}
 	// This needs to be set on every virtual service or route that has custom local RL as they default to false and override the HCM level config
-	filter.LocalRateLimitPerDownstreamConnection = settings.GetLocalRateLimitPerDownstreamConnection()
-	if settings.GetEnableXRatelimitHeaders() {
+	filter.LocalRateLimitPerDownstreamConnection = settings.GetLocalRateLimitPerDownstreamConnection().GetValue()
+	if settings.GetEnableXRatelimitHeaders().GetValue() {
 		filter.EnableXRatelimitHeaders = envoyratelimit.XRateLimitHeadersRFCVersion_DRAFT_VERSION_03
 	}
 	return filter, nil
