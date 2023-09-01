@@ -141,7 +141,12 @@ var _ = Describe("Local Rate Limit", func() {
 			}
 		})
 
-		It("Should rate limit at the l4 layer", func() {
+		// This test has flaked before with the following envoy error :
+		// [error][envoy_bug] [external/envoy/source/common/http/conn_manager_impl.cc:527] envoy bug failure: !local_close_reason.empty(). Details: Local Close Reason was not set!
+		// This has been fixed in envoy v1.27.0 but since we still use v1.26.gitx, this issue intermittently occurs.
+		// Since this bug doesn't affect the functionally of the ConnectionLimit filter (requests still do not cross the limit), we're adding FlakeAttempts until we move to a version of envoy with this fix.
+		// More info can be found here : https://github.com/solo-io/gloo/issues/8531
+		It("Should rate limit at the l4 layer", FlakeAttempts(5), func() {
 			expectNotRateLimited := func() {
 				defer GinkgoRecover()
 
