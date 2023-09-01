@@ -1,4 +1,4 @@
-name: Cache
+name: Cache Setup
 
 on:
   # We utilize this job to seed the GitHub action cache(s) for the LTS branch
@@ -11,6 +11,7 @@ jobs:
   setup-mod-cache:
     name: Setup Go Modules Cache
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3

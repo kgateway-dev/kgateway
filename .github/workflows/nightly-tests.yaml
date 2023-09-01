@@ -35,6 +35,7 @@ jobs:
     name: main regression tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
     #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
     # which modified our testing process to pull the latest beta release.
@@ -56,6 +57,7 @@ jobs:
     name: v1.15.x regression tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -72,6 +74,7 @@ jobs:
     name: v1.14.x regression tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression && inputs.branch == 'v1.14.x') || github.event.schedule == '0 7 * * 1' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -88,6 +91,7 @@ jobs:
     name: main performance tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'main') || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
@@ -99,6 +103,7 @@ jobs:
     name: v1.15.x performance tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.15.x') || github.event.schedule == '0 6 * * 1' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
         with:
@@ -112,12 +117,14 @@ jobs:
     name: v1.14.x performance tests
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-performance && inputs.branch == 'v1.14.x'}}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
       - run: echo "v1.14.x performance tests do not exist"
         shell: bash
 
   publish_results:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     if: ${{ always() }}
     needs:
       - regression_tests_main
