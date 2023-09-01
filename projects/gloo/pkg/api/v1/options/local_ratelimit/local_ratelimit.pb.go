@@ -40,7 +40,7 @@ type TokenBucket struct {
 	TokensPerFill *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=tokens_per_fill,json=tokensPerFill,proto3" json:"tokens_per_fill,omitempty"`
 	// The fill interval that tokens are added to the bucket. During each fill interval tokens_per_fill are added to the bucket.
 	// The bucket will never contain more than max_tokens tokens.
-	// Defaults to 1 second.
+	// The fill_interval must be >= 50ms and defaults to 1 second.
 	FillInterval *duration.Duration `protobuf:"bytes,3,opt,name=fill_interval,json=fillInterval,proto3" json:"fill_interval,omitempty"`
 }
 

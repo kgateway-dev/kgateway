@@ -41,7 +41,7 @@ Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network
 | ----- | ---- | ----------- | 
 | `maxTokens` | `int` | The maximum tokens that the bucket can hold. This is also the number of tokens that the bucket initially contains. Must be greater than or equal to one. |
 | `tokensPerFill` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of tokens added to the bucket during each fill interval. If not specified, defaults to a single token. Must be greater than zero. |
-| `fillInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The fill interval that tokens are added to the bucket. During each fill interval tokens_per_fill are added to the bucket. The bucket will never contain more than max_tokens tokens. Defaults to 1 second. |
+| `fillInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The fill interval that tokens are added to the bucket. During each fill interval tokens_per_fill are added to the bucket. The bucket will never contain more than max_tokens tokens. The fill_interval must be >= 50ms and defaults to 1 second. |
 
 
 

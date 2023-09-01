@@ -27,7 +27,7 @@ message TokenBucket {
 
     // The fill interval that tokens are added to the bucket. During each fill interval tokens_per_fill are added to the bucket.
     // The bucket will never contain more than max_tokens tokens.
-    // Defaults to 1 second.
+    // The fill_interval must be >= 50ms and defaults to 1 second.
     google.protobuf.Duration  fill_interval = 3;
 }
 
