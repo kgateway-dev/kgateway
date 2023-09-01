@@ -155,18 +155,28 @@ func configureAwsAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.C
 }
 
 func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*api.Client, error) {
-	if accessKeyId := aws.GetAccessKeyId(); accessKeyId == "" {
-		return nil, errors.New("access key id must be defined for AWS IAM auth")
-	} else {
+	// The AccessKeyID and SecretAccessKey are not required in the case of using temporary credentials from assumed roles with AWS STS or IRSA.
+	// STS: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_use-resources.html
+	// IRSA: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
+	var possibleErrStrings []string
+	if accessKeyId := aws.GetAccessKeyId(); accessKeyId != "" {
 		os.Setenv("AWS_ACCESS_KEY_ID", accessKeyId)
-	}
-
-	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey == "" {
-		return nil, errors.New("secret access key must be defined for AWS IAM auth")
 	} else {
-		os.Setenv("AWS_SECRET_ACCESS_KEY", secretAccessKey)
+		possibleErrStrings = append(possibleErrStrings, "access key id must be defined for AWS IAM auth")
 	}
 
+	if secretAccessKey := aws.GetSecretAccessKey(); secretAccessKey != "" {
+		os.Setenv("AWS_SECRET_ACCESS_KEY", secretAccessKey)
+	} else {
+		possibleErrStrings = append(possibleErrStrings, "secret access key must be defined for AWS IAM auth")
+	}
+
+	// if we have only partial configuration set
+	if len(possibleErrStrings) == 1 {
+		return nil, errors.New("only partial credentials were provided for AWS IAM auth: " + possibleErrStrings[0])
+	}
+
+	// At this point, we either have full auth configuration set, or are in an ec2 environment, where vault will infer the credentials.
 	loginOptions := []awsauth.LoginOption{awsauth.WithIAMAuth()}
 
 	if role := aws.GetVaultRole(); role != "" {
@@ -197,7 +207,13 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 	// TODO(jbohanon) set up auth token refreshing with client.NewLifetimeWatcher()
 	authInfo, err := client.Auth().Login(context.Background(), awsAuth)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to login to AWS auth method")
+		err := errors.Wrapf(err, "unable to login to AWS auth method")
+		// if using inferred credentials, add error information regarding setting credentials
+		if len(possibleErrStrings) > 0 {
+			err = errors.Wrapf(err, "using implicit credentials, consider setting aws secret access key and access key id")
+		}
+
+		return nil, err
 	}
 	if authInfo == nil {
 		return nil, errors.New("no auth info was returned after login")
