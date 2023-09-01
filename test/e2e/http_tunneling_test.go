@@ -36,6 +36,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	testhelpers "github.com/solo-io/gloo/test/helpers"
 
+	pprotocol "github.com/pires/go-proxyproto"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -43,18 +45,19 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("tunneling", func() {
+var _ = FDescribe("tunneling", func() {
 
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *envoy.Instance
-		up             *gloov1.Upstream
-		tuPort         uint32
-		vs             *gatewayv1.VirtualService
-		tlsRequired    v1helpers.UpstreamTlsRequired = v1helpers.NO_TLS
-		tlsHttpConnect bool
+		ctx               context.Context
+		cancel            context.CancelFunc
+		testClients       services.TestClients
+		envoyInstance     *envoy.Instance
+		up                *gloov1.Upstream
+		tuPort            uint32
+		vs                *gatewayv1.VirtualService
+		tlsRequired       v1helpers.UpstreamTlsRequired = v1helpers.NO_TLS
+		tlsHttpConnect    bool
+		proxyProtocolUsed bool
 	)
 
 	checkProxy := func() {
@@ -79,6 +82,8 @@ var _ = Describe("tunneling", func() {
 
 		tlsRequired = v1helpers.NO_TLS
 		tlsHttpConnect = false
+		proxyProtocolUsed = false
+
 		var err error
 		ctx, cancel = context.WithCancel(context.Background())
 
@@ -109,7 +114,7 @@ var _ = Describe("tunneling", func() {
 
 	JustBeforeEach(func() {
 		// start http proxy and setup upstream that points to it
-		port := startHttpProxy(ctx, tlsHttpConnect)
+		port := startHttpProxy(ctx, tlsHttpConnect, proxyProtocolUsed)
 
 		tu := v1helpers.NewTestHttpUpstreamWithTls(ctx, envoyInstance.LocalAddr(), tlsRequired)
 		tuPort = tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
@@ -352,7 +357,7 @@ var _ = Describe("tunneling", func() {
 	})
 })
 
-func startHttpProxy(ctx context.Context, useTLS bool) int {
+func startHttpProxy(ctx context.Context, useTLS, consumeProxyProtocol bool) int {
 	listener, err := net.Listen("tcp", ":0")
 	Expect(err).ToNot(HaveOccurred())
 
@@ -365,9 +370,10 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 
 	fmt.Fprintln(GinkgoWriter, "go proxy addr", addr)
 
-	go func(useTLS bool) {
+	go func(useTLS, consumeProxyProtocol bool) {
 		defer GinkgoRecover()
 		server := &http.Server{Addr: addr, Handler: http.HandlerFunc(connectProxy)}
+		toListen := listener
 		if useTLS {
 			cert := []byte(testhelpers.Certificate())
 			key := []byte(testhelpers.PrivateKey())
@@ -380,13 +386,23 @@ func startHttpProxy(ctx context.Context, useTLS bool) int {
 				},
 			}
 			tlsListener := tls.NewListener(listener, tlsCfg)
-			server.Serve(tlsListener)
-		} else {
-			server.Serve(listener)
+			toListen = tlsListener
 		}
+
+		// consume proxy protocol
+		if consumeProxyProtocol {
+			proxyPWrappedListener := &pprotocol.Listener{
+				Listener:          toListen,
+				ReadHeaderTimeout: 10 * time.Second,
+			}
+			toListen = proxyPWrappedListener
+		}
+
+		server.Serve(toListen)
+
 		<-ctx.Done()
 		server.Close()
-	}(useTLS)
+	}(useTLS, consumeProxyProtocol)
 
 	return port
 }

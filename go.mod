@@ -91,6 +91,7 @@ require (
 require (
 	github.com/go-logr/zapr v1.2.4
 	github.com/google/uuid v1.3.0
+	github.com/pires/go-proxyproto v0.7.0
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526203410-71b5a4ffd15e
