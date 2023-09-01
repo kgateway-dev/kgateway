@@ -1,6 +1,7 @@
 package local_ratelimit
 
 import (
+	"errors"
 	"fmt"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -41,7 +42,8 @@ const (
 var (
 	// Since this is an L4 filter, it would kick in before any HTTP auth can take place.
 	// This also bolsters its main use case which is protect resources.
-	pluginStage = plugins.BeforeStage(plugins.AuthNStage)
+	pluginStage            = plugins.BeforeStage(plugins.AuthNStage)
+	ErrConfigurationExists = errors.New("configuration already exists")
 )
 
 type plugin struct {
@@ -168,7 +170,7 @@ func modIfNoExisting(protoext proto.Message) pluginutils.ModifyFunc {
 		if existing == nil {
 			return protoext, nil
 		}
-		return nil, fmt.Errorf("configuration already exists")
+		return nil, ErrConfigurationExists
 	}
 }
 
