@@ -1,9 +1,10 @@
-name: CI
+name: Regression Tests
 on: pull_request
 jobs:
   prepare_env:
     name: Prepare Environment
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     outputs:
       should-run-regression-tests: ${{ steps.regression-tests.outputs.run_value }}
     steps:
@@ -52,6 +53,7 @@ jobs:
     needs: prepare_env
     if: needs.prepare_env.outputs.should-run-regression-tests == 'true'
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +65,7 @@ jobs:
 
   notify_slack:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     if: ${{ github.event_name == 'pull_request' && failure() }}
     needs: [ regression_tests ]
     steps:

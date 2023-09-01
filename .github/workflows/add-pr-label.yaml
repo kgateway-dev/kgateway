@@ -7,6 +7,7 @@ jobs:
   add-label:
     name: Add `keep pr updated` Label
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Detect Community PR
         id: community-pr-check
