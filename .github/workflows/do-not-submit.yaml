@@ -3,6 +3,7 @@ on: pull_request
 jobs:
   build:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     name: Test changed-files
     steps:
       - uses: actions/checkout@v3
