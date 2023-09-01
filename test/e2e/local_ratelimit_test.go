@@ -109,7 +109,8 @@ var _ = Describe("Local Rate Limit", func() {
 
 	Context("Filter not configured", func() {
 		It("Should not add the filter to the list of HCM filters", func() {
-			// Since the filter is not configured in gloo, the filter should not be present in the envoy config, and requests should not be rate limited
+			// Since the value of RemoveUnusedFilters is set to true in e2e tests, and this filter is not configured in gloo,
+			// The filter should not be present in the envoy config, and requests should not be rate limited
 			cfg, err := testContext.EnvoyInstance().ConfigDump()
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg).ToNot(ContainSubstring(local_ratelimit_plugin.NetworkFilterStatPrefix))
