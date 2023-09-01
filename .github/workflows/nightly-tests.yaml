@@ -22,6 +22,7 @@ jobs:
     name: latest main regression tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-regression) || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     # Previously, there was an environment variable, RELEASED_VERSION="LATEST" set.  This made use of some internal code:
     #       https://github.com/solo-io/gloo/blob/main/test/kube2e/util.go#L229-L241
     # which modified our testing process to pull the latest beta release.
@@ -41,6 +42,7 @@ jobs:
     name: latest performance tests
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run-performance) || github.event.schedule == '0 5 * * 1-5' }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/workflows/composite-actions/prep-go-runner
@@ -50,6 +52,7 @@ jobs:
     name: v1.14.x regression tests
     if: github.event.schedule == '10 10 * * 1'
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -66,6 +69,7 @@ jobs:
     name: v1.13.x regression tests
     if: github.event.schedule == '6 6 * * 1'
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -80,6 +84,7 @@ jobs:
 
   publish_results:
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     if: ${{ always() }}
     needs: [ regression_tests_latest_main, performance_tests_latest_main, regression_tests_14, regression_tests_13 ]
     steps:
