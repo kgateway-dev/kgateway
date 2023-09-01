@@ -77,7 +77,7 @@ func (p *plugin) ProcessVirtualHost(
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoy_config_route_v3.Route) error {
 	if limits := in.GetOptions().GetRatelimit().GetLocalRatelimit(); limits != nil {
-		err := ConfigureRouteHostFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth, out)
+		err := ConfigureRouteFilter(params.HttpListener.GetOptions().GetHttpLocalRatelimit(), limits, CustomStageBeforeAuth, out)
 		if err != nil {
 			return err
 		}

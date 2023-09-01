@@ -133,7 +133,7 @@ func ConfigureVirtualHostFilter(settings *local_ratelimit.Settings, localRatelim
 }
 
 // This function exported since it is used in the enterprise plugin
-func ConfigureRouteHostFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32, out *envoy_config_route_v3.Route) error {
+func ConfigureRouteFilter(settings *local_ratelimit.Settings, localRatelimit *local_ratelimit.TokenBucket, stage uint32, out *envoy_config_route_v3.Route) error {
 	filter, err := GenerateHTTPFilter(settings, localRatelimit, stage)
 	if err != nil {
 		return err
