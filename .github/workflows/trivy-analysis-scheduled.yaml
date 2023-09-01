@@ -1,4 +1,4 @@
-name: security-scan-scheduled
+name: Scheduled Security Scan
 
 on:
   # allow for version to be manually specified under actions page

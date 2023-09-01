@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Add timeout-minutes to GHA, overriding the default 6 hour timeout with more reasonable values.
+      Also update some action names to be more accurate/legible.
