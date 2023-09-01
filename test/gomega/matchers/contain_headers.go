@@ -8,7 +8,6 @@ import (
 	"github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 	"github.com/solo-io/gloo/test/gomega/transforms"
-	"golang.org/x/exp/maps"
 )
 
 // ContainHeaders produces a matcher that will only match if all provided headers
@@ -26,13 +25,6 @@ func ContainHeaders(headers http.Header) types.GomegaMatcher {
 	return gomega.And(headerMatchers...)
 }
 
-// getHeaderKeys returns a Gomega Transform that returns the headers in a request
-func getHeaderKeys() func(response *http.Response) []string {
-	return func(response *http.Response) []string {
-		return maps.Keys(response.Header)
-	}
-}
-
 // ContainHeaders produces a matcher that will only match if all provided header keys exist.
 func ContainHeaderKeys(keys []string) types.GomegaMatcher {
 	if len(keys) == 0 {
@@ -43,6 +35,6 @@ func ContainHeaderKeys(keys []string) types.GomegaMatcher {
 	for i, key := range keys {
 		keys[i] = textproto.CanonicalMIMEHeaderKey(key)
 	}
-	matcher := gomega.WithTransform(getHeaderKeys(), gomega.ContainElements(keys))
+	matcher := gomega.WithTransform(transforms.WithHeaderKeys(), gomega.ContainElements(keys))
 	return gomega.And(matcher)
 }

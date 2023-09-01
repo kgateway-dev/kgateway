@@ -37,6 +37,7 @@ var _ = Describe("Local Rate Limit", func() {
 		expectNotRateLimitedWithOutXRateLimitHeader func()
 		expectNotRateLimitedWithXRateLimitHeader    func()
 		expectRateLimitedWithXRateLimitHeader       func(int)
+		validateRateLimits                          func(int)
 	)
 
 	BeforeEach(func() {
@@ -47,7 +48,6 @@ var _ = Describe("Local Rate Limit", func() {
 		requestBuilder = testContext.GetHttpRequestBuilder()
 
 		expectNotRateLimited := func() *http.Response {
-			defer GinkgoRecover()
 			response, err := httpClient.Do(requestBuilder.Build())
 			ExpectWithOffset(1, response).To(matchers.HaveOkResponse())
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "The connection should not be rate limited")
@@ -55,10 +55,9 @@ var _ = Describe("Local Rate Limit", func() {
 		}
 
 		expectNotRateLimitedWithOutXRateLimitHeader = func() {
-			defer GinkgoRecover()
 			response := expectNotRateLimited()
 			// Since the values of the x-rate-limit headers change with time, we only check the presence of these header keys and not match their value
-			ExpectWithOffset(2, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
+			ExpectWithOffset(1, response).ToNot(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
 				"x-ratelimit headers should not be present for non rate limited requests")
 		}
 
@@ -73,7 +72,7 @@ var _ = Describe("Local Rate Limit", func() {
 		expectRateLimitedWithXRateLimitHeader = func(limit int) {
 			defer GinkgoRecover()
 			response, err := httpClient.Do(requestBuilder.Build())
-			ExpectWithOffset(1, response).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
+			ExpectWithOffset(2, response).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusTooManyRequests,
 				Body:       "local_rate_limited",
 			}), "should rate limit")
@@ -86,7 +85,13 @@ var _ = Describe("Local Rate Limit", func() {
 			ExpectWithOffset(1, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset"}),
 				"x-ratelimit headers should be present")
 			ExpectWithOffset(1, err).NotTo(HaveOccurred(), "There should be no error when rate limited")
+		}
 
+		validateRateLimits = func(limit int) {
+			for i := 0; i < limit; i++ {
+				expectNotRateLimitedWithXRateLimitHeader()
+			}
+			expectRateLimitedWithXRateLimitHeader(limit)
 		}
 	})
 
@@ -186,11 +191,7 @@ var _ = Describe("Local Rate Limit", func() {
 			})
 
 			It("Should rate limit the default value config when nothing else overrides it", func() {
-				// The gateway level rate limit is 3
-				expectNotRateLimitedWithXRateLimitHeader()
-				expectNotRateLimitedWithXRateLimitHeader()
-				expectNotRateLimitedWithXRateLimitHeader()
-				expectRateLimitedWithXRateLimitHeader(defaultLimit)
+				validateRateLimits(defaultLimit)
 			})
 
 			It("Should override the default rate limit with the virtual service rate limit", func() {
@@ -219,10 +220,7 @@ var _ = Describe("Local Rate Limit", func() {
 					g.Expect(cfg).To(ContainSubstring("typed_per_filter_config"))
 				}, "5s", ".5s").Should(Succeed())
 
-				// The rate limit of the virtual service is 2
-				expectNotRateLimitedWithXRateLimitHeader()
-				expectNotRateLimitedWithXRateLimitHeader()
-				expectRateLimitedWithXRateLimitHeader(vsLimit)
+				validateRateLimits(vsLimit)
 			})
 
 			It("Should override the default rate limit with the route level rate limit", func() {
@@ -266,9 +264,7 @@ var _ = Describe("Local Rate Limit", func() {
 					g.Expect(cfg).To(ContainSubstring("typed_per_filter_config"))
 				}, "5s", ".5s").Should(Succeed())
 
-				// The rate limit of the route is 1
-				expectNotRateLimitedWithXRateLimitHeader()
-				expectRateLimitedWithXRateLimitHeader(routeLimit)
+				validateRateLimits(routeLimit)
 			})
 
 			Context("No gateway level default rate limit set", func() {
@@ -339,11 +335,10 @@ var _ = Describe("Local Rate Limit", func() {
 					Eventually(func(g Gomega) {
 						cfg, err := testContext.EnvoyInstance().ConfigDump()
 						g.Expect(err).NotTo(HaveOccurred())
-						g.Expect(cfg).To(ContainSubstring("enable_x_ratelimit_headers"))
+						g.Expect(cfg).To(ContainSubstring("typed_per_filter_config"))
 					}, "5s", ".5s").Should(Succeed())
 
-					expectNotRateLimitedWithXRateLimitHeader()
-					expectRateLimitedWithXRateLimitHeader(1)
+					validateRateLimits(routeLimit)
 
 					// Since the filter is not configured on the /unlimited path, the X-RateLimit headers should not be present
 					requestBuilder = requestBuilder.WithPath("unlimited")
