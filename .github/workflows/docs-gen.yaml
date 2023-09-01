@@ -22,6 +22,7 @@ jobs:
   prepare_env:
     name: Prepare Environment
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     outputs:
       should-build-docs: ${{ steps.build-strategy.outputs.build_value }}
       version: ${{ steps.version.outputs.value }}}
@@ -88,6 +89,7 @@ jobs:
     env:
       VERSION: ${{ needs.prepare_env.outputs.version }}
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     steps:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3
