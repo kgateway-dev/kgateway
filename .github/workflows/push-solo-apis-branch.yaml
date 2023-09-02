@@ -20,6 +20,7 @@ jobs:
   prepare-env:
     name: Prepare Environment Variables
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     outputs:
       # The Gloo Commit ID that contains the changes we are attempting to mirror
       # On a manual trigger, this is branch name with your changes
@@ -54,6 +55,7 @@ jobs:
       SOLO_APIS_PREFIX: ${{ needs.prepare-env.outputs.solo-apis-prefix }}
     name: Publish Gloo APIs
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - name: Install SSH Deploy key
         uses: webfactory/ssh-agent@v0.4.1

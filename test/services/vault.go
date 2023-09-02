@@ -188,7 +188,22 @@ func (i *VaultInstance) EnableSecretEngine(secretEngine string) error {
 	return err
 }
 
-func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string) error {
+func (i *VaultInstance) addAdminPolicy() error {
+	tmpFileName := filepath.Join(i.tmpdir, "policy.json")
+	err := os.WriteFile(tmpFileName, []byte(`{"path":{"*":{"capabilities":["create","read","update","delete","list","patch","sudo"]}}}`), 0666)
+	if err != nil {
+		return err
+	}
+	_, err = i.Exec("policy", "write", "admin", tmpFileName)
+	return err
+}
+
+func (i *VaultInstance) addAuthRole(awsAuthRole string) error {
+	_, err := i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", awsAuthRole), "policies=admin")
+	return err
+}
+
+func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
 	if err != nil {
@@ -196,12 +211,7 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets, 
 	}
 
 	// Add our admin policy
-	tmpFileName := filepath.Join(i.tmpdir, "policy.json")
-	err = os.WriteFile(tmpFileName, []byte(`{"path":{"*":{"capabilities":["create","read","update","delete","list","patch","sudo"]}}}`), 0666)
-	if err != nil {
-		return err
-	}
-	_, err = i.Exec("policy", "write", "admin", tmpFileName)
+	err = i.addAdminPolicy()
 	if err != nil {
 		return err
 	}
@@ -213,7 +223,36 @@ func (i *VaultInstance) EnableAWSAuthMethod(settings *v1.Settings_VaultSecrets, 
 	}
 
 	// Configure the Vault role to align with the provided AWS role
-	_, err = i.Exec("write", "auth/aws/role/vault-role", "auth_type=iam", fmt.Sprintf("bound_iam_principal_arn=%s", awsAuthRole), "policies=admin")
+	err = i.addAuthRole(awsAuthRole)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsRegion string) error {
+	// Enable the AWS auth method
+	_, err := i.Exec("auth", "enable", "aws")
+	if err != nil {
+		return err
+	}
+
+	// Add our admin policy
+	err = i.addAdminPolicy()
+	if err != nil {
+		return err
+	}
+
+	// Configure the AWS auth method with the sts endpoint and server id header set
+	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com", stsRegion)
+	_, err = i.Exec("write", "auth/aws/config/client", fmt.Sprintf("iam_server_id_header_value=%s", serverIdHeader), fmt.Sprintf("sts_endpoint=%s", stsEndpoint), fmt.Sprintf("sts_region=%s", stsRegion))
+	if err != nil {
+		return err
+	}
+
+	// Configure the Vault role to align with the provided AWS role
+	err = i.addAuthRole(awsAuthRole)
 	if err != nil {
 		return err
 	}
