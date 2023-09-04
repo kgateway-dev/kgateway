@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: >-
+      Renew existing certificate if it is expiring in two months.
