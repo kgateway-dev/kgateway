@@ -348,6 +348,7 @@ type HttpListenerOptions struct {
 	NetworkLocalRatelimit *local_ratelimit.TokenBucket `protobuf:"bytes,32,opt,name=network_local_ratelimit,json=networkLocalRatelimit,proto3" json:"network_local_ratelimit,omitempty"`
 	// HttpLocalRatelimit can be used to rate limit the number of requests per gateway and works pre-auth.
 	// Unlike the NetworkLocalRatelimit, this works as part of the HCM (ie: L7 layer).
+	// All virtual host and routes that are part of this gateway will share this rate limit unless explicity configured with another limit.
 	// It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
 	HttpLocalRatelimit *local_ratelimit.Settings `protobuf:"bytes,33,opt,name=http_local_ratelimit,json=httpLocalRatelimit,proto3" json:"http_local_ratelimit,omitempty"`
 	// Router is an extension of the envoy http filters

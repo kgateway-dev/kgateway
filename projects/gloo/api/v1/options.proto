@@ -204,6 +204,7 @@ message HttpListenerOptions {
 
     // HttpLocalRatelimit can be used to rate limit the number of requests per gateway and works pre-auth.
     // Unlike the NetworkLocalRatelimit, this works as part of the HCM (ie: L7 layer).
+    // All virtual host and routes that are part of this gateway will share this rate limit unless explicity configured with another limit.
     // It uses envoy's own local rate limit filter to do so, without the need for an external rate limit server to be set up.
     local_ratelimit.options.gloo.solo.io.Settings http_local_ratelimit = 33;
 

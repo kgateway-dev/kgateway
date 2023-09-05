@@ -165,7 +165,7 @@ running a custom rate limit server you need to configure it yourself.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
-| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../../../../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | The token bucket configuration to use for local rate limiting requests. These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token. If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status. |
+| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../../../../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | The token bucket configuration to use for local rate limiting requests. These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token. If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status. This overrides any local rate limit configured on the gateway and requests to this vHost do not count against requests to the gateway's http local rate limit. All routes that are part of this vHost will share this rate limit unless explicity configured with another limit. |
 
 
 
@@ -190,7 +190,7 @@ running a custom rate limit server you need to configure it yourself.
 | ----- | ---- | ----------- | 
 | `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |
 | `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |
-| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../../../../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | The token bucket configuration to use for local rate limiting requests. These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token. If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status. |
+| `localRatelimit` | [.local_ratelimit.options.gloo.solo.io.TokenBucket](../../../../options/local_ratelimit/local_ratelimit.proto.sk/#tokenbucket) | The token bucket configuration to use for local rate limiting requests. These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token. If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status. This overrides any local rate limit configured on the vHost or gateway and requests to this route do not count against requests to the vHost or gateway's http local rate limit. |
 
 
 
