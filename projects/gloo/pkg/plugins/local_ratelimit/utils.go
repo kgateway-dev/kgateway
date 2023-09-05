@@ -78,7 +78,7 @@ func generateNetworkFilter(localRatelimit *local_ratelimit.TokenBucket) ([]plugi
 					TypedConfig: marshalledConf,
 				},
 			},
-			Stage: pluginStage,
+			Stage: networkFilterPluginStage,
 		},
 	}, nil
 }

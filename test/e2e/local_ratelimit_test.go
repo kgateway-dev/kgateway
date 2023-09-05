@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("Local Rate Limit", func() {
+var _ = Describe("Local Rate Limit", func() {
 
 	const (
 		defaultLimit = 3
@@ -62,7 +62,6 @@ var _ = FDescribe("Local Rate Limit", func() {
 		}
 
 		expectNotRateLimitedWithXRateLimitHeader = func() {
-			defer GinkgoRecover()
 			response := expectNotRateLimited()
 			// Since the x-ratelimit-reset header value changes with time, we only check the presence of this header key and not match its value
 			ExpectWithOffset(2, response).To(matchers.ContainHeaderKeys([]string{"x-ratelimit-reset", "x-ratelimit-limit", "x-ratelimit-remaining"}),
@@ -70,7 +69,6 @@ var _ = FDescribe("Local Rate Limit", func() {
 		}
 
 		expectRateLimitedWithXRateLimitHeader = func(limit int) {
-			defer GinkgoRecover()
 			response, err := httpClient.Do(requestBuilder.Build())
 			ExpectWithOffset(2, response).To(matchers.HaveHttpResponse(&matchers.HttpResponse{
 				StatusCode: http.StatusTooManyRequests,
@@ -148,8 +146,6 @@ var _ = FDescribe("Local Rate Limit", func() {
 		// More info can be found here : https://github.com/solo-io/gloo/issues/8531
 		It("Should rate limit at the l4 layer", FlakeAttempts(5), func() {
 			expectNotRateLimited := func() {
-				defer GinkgoRecover()
-
 				// We use a new client every time as TCP connections are cached and this needs to be avoided in order to test L4 rate limiting
 				httpClient := testutils.DefaultClientBuilder().Build()
 				response, err := httpClient.Do(requestBuilder.Build())
@@ -158,8 +154,6 @@ var _ = FDescribe("Local Rate Limit", func() {
 			}
 
 			expectRateLimited := func() {
-				defer GinkgoRecover()
-
 				// We use a new client every time as TCP connections are cached and this needs to be avoided in order to test L4 rate limiting
 				httpClient := testutils.DefaultClientBuilder().Build()
 				_, err := httpClient.Do(requestBuilder.Build())

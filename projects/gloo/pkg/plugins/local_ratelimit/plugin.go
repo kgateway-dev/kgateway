@@ -23,13 +23,14 @@ const (
 	NetworkFilterName       = "envoy.filters.network.local_ratelimit"
 	HTTPFilterName          = "envoy.filters.http.local_ratelimit"
 	CustomStageBeforeAuth   = uint32(3)
-	CustomDomain            = "custom"
 )
 
 var (
-	// Since this is an L4 filter, it would kick in before any HTTP auth can take place.
-	// This also bolsters its main use case which is protect resources.
-	pluginStage            = plugins.BeforeStage(plugins.AuthNStage)
+	// For the network filter, it would kick in after the TCP connection limit filter to rate limit.
+	networkFilterPluginStage = plugins.DuringStage(plugins.RateLimitStage)
+	// For the HTTP filter, this is designed to rate limit early, and consequently kick in before auth
+	httpFilterPluginStage = plugins.BeforeStage(plugins.AuthNStage)
+
 	ErrConfigurationExists = errors.New("configuration already exists")
 )
 
@@ -105,7 +106,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	stagedRateLimitFilter, err := plugins.NewStagedFilter(
 		HTTPFilterName,
 		filter,
-		pluginStage,
+		httpFilterPluginStage,
 	)
 	if err != nil {
 		return nil, err

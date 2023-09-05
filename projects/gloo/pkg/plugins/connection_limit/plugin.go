@@ -23,9 +23,9 @@ const (
 )
 
 var (
-	// Since this is an L4 filter, it would kick in before any HTTP auth can take place.
+	// Since this is an L4 filter, it would kick in before any HTTP processing takes place.
 	// This also bolsters its main use case which is protect resources.
-	pluginStage = plugins.BeforeStage(plugins.AuthNStage)
+	pluginStage = plugins.BeforeStage(plugins.RateLimitStage)
 )
 
 type plugin struct{}

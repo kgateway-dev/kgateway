@@ -116,7 +116,7 @@ var _ = Describe("Local Rate Limit Plugin", func() {
 						TypedConfig: typedConfig,
 					},
 				},
-				Stage: pluginStage,
+				Stage: networkFilterPluginStage,
 			},
 		}))
 	})
@@ -134,7 +134,7 @@ var _ = Describe("Local Rate Limit Plugin", func() {
 						TypedConfig: typedConfig,
 					},
 				},
-				Stage: pluginStage,
+				Stage: httpFilterPluginStage,
 			},
 		}))
 	})
