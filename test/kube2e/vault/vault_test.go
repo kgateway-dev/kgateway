@@ -115,16 +115,13 @@ var _ = Describe("Vault Tests", func() {
 		}
 
 		// these are the settings that will be used by the secret client.
-		// - can not use vaultClientInitMap + extra client like done in bootstrap_clients_test
-		// 		Empty AWS credentials lead to `Error: NoCredentialProviders: no valid providers in chain. Deprecated`.
-		//      Immediate login in `bootstrap/clients/vault.go:197` causes this. Could it be that we haven't done STS/IRSA stuff fast enough to get credentials before that?
-		//        The only other thing I can think of is that in the non-kube2e setup where this DID NOT happen we first set up Vault with its aws role setup, THEN Gloo.
-		//        But in Kube2e tests we setup Gloo BEFORE Vault, so maybe we're not getting credentials in time?
-		// 		afaik, when field tested without credentials being required this was not an issue, so it's just due to the initMap?
-		//      I also didn't hit this issue in the non kube2e setup (vault_aws_test.go) and got an error regarding a bad role, so seems exclusive to how stuff is set up here...
-		// - can not set during the gloo installation because, at least with this set up, it is installed before the vault instance is running and we won't have an address
-		// - how can i set the secret run settings AFTER gloo installed?
-		//var settings *v1.Settings
+		//   SOME ISSUES:
+		// 		Empty AWS credentials (not having `AWS_SHARED_CREDENTIALS_FILE` envVar set) leads to `Error: NoCredentialProviders: no valid providers in chain. Deprecated`.
+		//      Same this happens in the non-kube test I was working on but I didn't catch it since it's required for it in general... is this expected? or did they maybe have creds set without noticing?
+		//        If so, then what does this mean for the issue's scope / DoD? We'd maybe have to investigate what else would need to be updated to allow for it to work. Maybe just removing the login brought up below?
+		//      Immediate login in `bootstrap/clients/vault.go:197` causes this.
+		//        Could it be that we haven't done STS/IRSA stuff fast enough to get credentials before that?
+		//        Maybe it's not configured correctly, which could be why we're not getting the credentials before login?
 		settings = &v1.Settings{
 			WatchNamespaces: []string{testNamespace},
 			SecretOptions: &v1.Settings_SecretOptions{
