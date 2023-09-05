@@ -9,6 +9,7 @@ jobs:
   add-to-project:
     name: Add Gloo OSS issue to Gloo Edge or Docs project board
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/add-to-project@main
         with:

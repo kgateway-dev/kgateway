@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: >-
+    Adding comments to testutils.DefaultClient detailing the consequences of it caching TCP connections and to instead create a new client everytime when testing network (L4) filters
+    skipCI-kube-tests:true
+    skipCI-docs-build:true
+

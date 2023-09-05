@@ -11,6 +11,7 @@ jobs:
   evict-mod-cache-closed-pr:
     name: Evict Go Modules Cache for Closed PRs
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     steps:
       - name: Check out code
         uses: actions/checkout@v3
