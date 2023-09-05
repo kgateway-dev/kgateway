@@ -4008,6 +4008,20 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("sets secretOptions in settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_secretSettings_in_settings.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.secretOptions.sources[0].vault.address=http://vault-internal.vault:8200",
+								"settings.secretOptions.sources[0].vault.aws.iamServerIdHeader=vault.gloo.example.com",
+								"settings.secretOptions.sources[0].vault.aws.mountPath=aws",
+								"settings.secretOptions.sources[0].vault.aws.region=us-east-1",
+								"settings.secretOptions.sources[0].vault.pathPrefix=dev",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("can enable isolateVirtualHostsBySslConfig", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/isolate_virtual_hosts_by_ssl_config.yaml", namespace)
 

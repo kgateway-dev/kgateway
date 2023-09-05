@@ -109,3 +109,7 @@ Once halted, use `docker ps` to determine the admin port for the Envoy instance,
 Certain tests require environmental conditions to be true for them to succeed. For example, there are tests that only run on Linux machines.
 
 By setting `INVALID_TEST_REQS=skip`, you can run all tests locally, and any tests which will not run in your local environment will be skipped. The default behavior is that they fail.
+
+### Notes
+### AWS Tests
+To run AWS tests locally, see our [AWS testing guide](/devel/testing/aws-tests.md).

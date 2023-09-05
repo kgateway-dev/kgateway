@@ -1,4 +1,4 @@
-name: CI
+name: Regression Tests
 on: pull_request
 
 env:
@@ -9,6 +9,7 @@ jobs:
   prepare_env:
     name: Prepare Environment
     runs-on: ubuntu-22.04
+    timeout-minutes: 5
     outputs:
       should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:
@@ -38,6 +39,7 @@ jobs:
     name: k8s regression tests (${{matrix.kube-e2e-test-type}})
     needs: prepare_env
     runs-on: ubuntu-22.04
+    timeout-minutes: 60
     if: ${{ !github.event.pull_request.draft }}
     strategy:
       fail-fast: false
