@@ -70,7 +70,7 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{- define "gloo.jobHelmDeletePolicySucceeded" -}}
 {{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
       The 'kindIs' comparision is how we can check for undefined */ -}}
-{{- if not (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished) }}
+{{- if not (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished) -}}
 "helm.sh/hook-delete-policy": hook-succeeded
 {{ end -}}
 {{ end -}}
@@ -78,9 +78,9 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{- define "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" -}}
 {{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
       The 'kindIs' comparision is how we can check for undefined */ -}}
-{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished }}
+{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
 "helm.sh/hook-delete-policy": before-hook-creation
-{{ else -}}
+{{- else -}}
 "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 {{ end -}}
 {{ end -}}
