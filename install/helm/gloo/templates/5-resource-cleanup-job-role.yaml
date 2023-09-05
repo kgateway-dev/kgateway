@@ -1,0 +1,21 @@
+{{- if .Values.gateway.cleanupJob.enabled }}
+{{- if .Values.global.glooRbac.create }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-resource-cleanup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "0" # must be created before cleanup job
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+rules:
+- apiGroups: ["gloo.solo.io"]
+  resources: ["*"]
+  verbs: ["list", "delete"]
+{{- end }}{{/* if .Values.global.glooRbac.create */}}
+{{- end }}{{/* if .Values.gateway.cleanupJob.enabled  */}}
