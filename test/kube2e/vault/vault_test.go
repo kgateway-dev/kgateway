@@ -116,12 +116,13 @@ var _ = Describe("Vault Tests", func() {
 
 		// these are the settings that will be used by the secret client.
 		//   SOME ISSUES:
-		// 		Empty AWS credentials (not having `AWS_SHARED_CREDENTIALS_FILE` envVar set) leads to `Error: NoCredentialProviders: no valid providers in chain. Deprecated`.
-		//      Same this happens in the non-kube test I was working on but I didn't catch it since it's required for it in general... is this expected? or did they maybe have creds set without noticing?
-		//        If so, then what does this mean for the issue's scope / DoD? We'd maybe have to investigate what else would need to be updated to allow for it to work. Maybe just removing the login brought up below?
-		//      Immediate login in `bootstrap/clients/vault.go:197` causes this.
-		//        Could it be that we haven't done STS/IRSA stuff fast enough to get credentials before that?
-		//        Maybe it's not configured correctly, which could be why we're not getting the credentials before login?
+		// 	   Empty AWS credentials (not having `AWS_SHARED_CREDENTIALS_FILE` envVar set) leads to `Error: NoCredentialProviders: no valid providers in chain. Deprecated`.
+		//       Same thing happens in the non-kube test I was working on but I didn't catch it since that envVar is required for it in general... is this expected? or did they maybe have creds accidentally(?) set?
+		//         If so, then what does this mean for the issue's scope / DoD? We'd maybe have to investigate what else would need to be updated to allow for it to work. Maybe just removing the login brought up below?
+		//       Immediate login in `bootstrap/clients/vault.go:197` causes this.
+		//         Could it be that we haven't done STS/IRSA stuff fast enough to get credentials before that?
+		//         Maybe it's not configured correctly, which could be why we're not getting the credentials before login?
+		//     NON-Empty credentials leads to: `unable to log in with AWS auth: Error making API request.\n\nURL: PUT http://127.0.0.1:8200/v1/auth/aws/login\nCode: 400. Errors:\n\n* entry for role gloo-edge-e2e-user not found`
 		settings = &v1.Settings{
 			WatchNamespaces: []string{testNamespace},
 			SecretOptions: &v1.Settings_SecretOptions{
