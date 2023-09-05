@@ -82,7 +82,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			return err
 		}
 		p.filterRequiredForListener[params.HttpListener] = struct{}{}
-		return nil
 	}
 	return nil
 }
