@@ -2,6 +2,7 @@ package run
 
 import (
 	"context"
+	"time"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/jobs/pkg/certgen"
@@ -26,6 +27,8 @@ type Options struct {
 	ValidatingWebhookConfigurationName string
 
 	ForceRotation bool
+
+	RenewBefore string
 }
 
 func Run(ctx context.Context, opts Options) error {
@@ -50,15 +53,18 @@ func Run(ctx context.Context, opts Options) error {
 	if opts.ServerKeySecretFileName == "" {
 		return eris.Errorf("must provide name for the server key entry in the secret data")
 	}
+	renewBeforeDuration, err := time.ParseDuration(opts.RenewBefore)
+	if err != nil {
+		return err
+	}
 
 	kubeClient := helpers.MustKubeClient()
 
 	var secret *v1.Secret
-	var err error
 	if !opts.ForceRotation {
 		// check if there is an existing valid TLS secret
 		secret, err = kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace,
-			opts.SvcName, opts.SvcNamespace)
+			opts.SvcName, opts.SvcNamespace, renewBeforeDuration)
 		if err != nil {
 			return eris.Wrapf(err, "failed validating existing secret")
 		}
