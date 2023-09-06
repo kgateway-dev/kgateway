@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: Create certgen CronJob if validation webhook is enabled
+    issueLink: https://github.com/solo-io/gloo/issues/5944
+    resolvesIssue: true
