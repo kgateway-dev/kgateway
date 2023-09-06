@@ -1,5 +1,5 @@
 changelog:
-  - type: FIX
-    description: Renew existing certificate if it is expiring in two months.
+  - type: NEW_FEATURE
+    description: Certgen job will now renew existing certificate if it is expiring soon (90d by default).
     issueLink: https://github.com/solo-io/gloo/issues/5944
     resolvesIssue: true
