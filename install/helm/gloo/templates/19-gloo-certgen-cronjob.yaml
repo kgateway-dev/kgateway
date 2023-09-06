@@ -1,9 +1,9 @@
-{{ define "glooMtls.certGenCronJobSpec" }}
+{{ define "gloo.certGenCronJobSpec" }}
 {{- $image := .Values.gateway.certGenJob.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
 {{- end }}
-{{- if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled }}
+{{- if and (or .Values.global.glooMtls.enabled .Values.gateway.validation.webhook.enabled) .Values.gateway.certGenJob.cron.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -61,7 +61,7 @@ spec:
                 - "--secret-name=gloo-mtls-certs"
                 - "--svc-name=gloo"
                 - "--force-rotation=true"
-{{- end }} {{/* if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled */}}
+{{- end }} {{/* if and (or .Values.global.glooMtls.enabled .Values.gateway.validation.webhook.enabled) .Values.gateway.certGenJob.cron.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 
 {{/* Render template with yaml overrides */}}
@@ -69,4 +69,4 @@ spec:
 {{- if .Values.gateway.certGenJob -}}
 {{- $kubeResourceOverride = .Values.gateway.certGenJob.cron.mtlsKubeResourceOverride -}}
 {{- end -}}
-{{- include "gloo.util.merge" (list . $kubeResourceOverride "glooMtls.certGenCronJobSpec") -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "gloo.certGenCronJobSpec") -}}
