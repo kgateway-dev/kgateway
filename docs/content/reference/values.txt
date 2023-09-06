@@ -379,6 +379,7 @@
 |gateway.certGenJob.cron.enabled|bool|false|enable the cronjob|
 |gateway.certGenJob.cron.schedule|string|* * * * *|Cron job scheduling|
 |gateway.certGenJob.cron.mtlsKubeResourceOverride.NAME|interface||override fields in the gloo-mtls-certgen cronjob.|
+|gateway.certGenJob.cron.ValidationWebhookKubeResourceOverride.NAME|interface||override fields in the gateway-certgen cronjob.|
 |gateway.rolloutJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.rolloutJob.priorityClassName|string||name of a defined priority class|
 |gateway.rolloutJob.nodeName|string||name of node to run on|

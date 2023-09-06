@@ -72,6 +72,6 @@ spec:
 {{/* Render template with yaml overrides */}}
 {{- $kubeResourceOverride := dict -}}
 {{- if .Values.gateway.certGenJob -}}
-{{- $kubeResourceOverride = .Values.gateway.certGenJob.kubeResourceOverride -}}
+{{- $kubeResourceOverride = .Values.gateway.certGenJob.ValidationWebhookKubeResourceOverride -}}
 {{- end -}}
 {{- include "gloo.util.merge" (list . $kubeResourceOverride "gloo.gatewayCertGenJobSpec") -}}
