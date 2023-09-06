@@ -1,6 +1,0 @@
-changelog:
-  - type: FIX
-    issueLink: https://github.com/solo-io/gloo-mesh-enterprise/issues/10589
-    resolvesIssue: false
-    description: >-
-      Add field to ExtAuth API's OIDC AuthorizationCode plugin to eventually support mapping claims to headers.
