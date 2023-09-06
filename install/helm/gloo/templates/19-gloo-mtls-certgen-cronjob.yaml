@@ -1,0 +1,74 @@
+{{ define "glooMtls.certGenCronJobSpec" }}
+{{- $image := .Values.gateway.certGenJob.image }}
+{{- if .Values.global  }}
+{{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
+{{- end }}
+{{- if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo-mtls-certgen-cronjob
+  name: gloo-mtls-certgen-cronjob
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: {{ .Values.gateway.certGenJob.cron.schedule | quote }}
+  jobTemplate:
+    spec:
+      {{- include "gloo.jobSpecStandardFields" .Values.gateway.certGenJob | nindent 6 -}}
+      template:
+        metadata:
+          labels:
+            gloo: gloo-mtls-certs
+            sidecar.istio.io/inject: "false"
+            {{- if .Values.gateway.certGenJob.extraPodLabels }}
+            {{- range $key, $value := .Values.gateway.certGenJob.extraPodLabels }}
+            {{ $key | quote }}: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          {{- if or .Values.settings.linkerd .Values.gateway.certGenJob.extraPodAnnotations }}
+          annotations:
+            {{- if .Values.settings.linkerd }}
+            "linkerd.io/inject": disabled
+            {{- end }}
+            {{- range $key, $value := .Values.gateway.certGenJob.extraPodAnnotations }}
+            {{ $key | quote }}: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+        spec:
+          {{- include "gloo.pullSecret" $image | nindent 10 -}}
+          serviceAccountName: certgen
+          {{- include "gloo.podSpecStandardFields" .Values.gateway.certGenJob | nindent 10 -}}
+          containers:
+            - image: {{template "gloo.image" $image}}
+              imagePullPolicy: {{ $image.pullPolicy }}
+              name: certgen
+              securityContext:
+                runAsNonRoot: true
+                {{- if not .Values.gateway.certGenJob.floatingUserId }}
+                runAsUser: {{ printf "%.0f" (float64 .Values.gateway.certGenJob.runAsUser) -}}
+                {{- end }}
+              {{- with .Values.gateway.certGenJob.resources }}
+              resources: {{ toYaml . | nindent 16 }}
+              {{- end }}
+              env:
+                - name: POD_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+              args:
+                - "--secret-name=gloo-mtls-certs"
+                - "--svc-name=gloo"
+                {{- if .Values.gateway.certGenJob.forceRotation }}
+                - "--force-rotation=true"
+                {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}
+{{- end }} {{/* if and .Values.global.glooMtls.enabled .Values.gateway.certGenJob.cron.enabled */}}
+{{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
+
+{{/* Render template with yaml overrides */}}
+{{- $kubeResourceOverride := dict -}}
+{{- if .Values.gateway.certGenJob -}}
+{{- $kubeResourceOverride = .Values.gateway.certGenJob.cron.mtlsKubeResourceOverride -}}
+{{- end -}}
+{{- include "gloo.util.merge" (list . $kubeResourceOverride "glooMtls.certGenCronJobSpec") -}}
