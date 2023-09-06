@@ -1156,9 +1156,44 @@ spec:
                             nullable: true
                             type: integer
                         type: object
+                      httpLocalRatelimit:
+                        properties:
+                          defaultLimit:
+                            properties:
+                              fillInterval:
+                                type: string
+                              maxTokens:
+                                format: int32
+                                type: integer
+                              tokensPerFill:
+                                maximum: 4294967295
+                                minimum: 0
+                                nullable: true
+                                type: integer
+                            type: object
+                          enableXRatelimitHeaders:
+                            nullable: true
+                            type: boolean
+                          localRateLimitPerDownstreamConnection:
+                            nullable: true
+                            type: boolean
+                        type: object
                       leftmostXffAddress:
                         nullable: true
                         type: boolean
+                      networkLocalRatelimit:
+                        properties:
+                          fillInterval:
+                            type: string
+                          maxTokens:
+                            format: int32
+                            type: integer
+                          tokensPerFill:
+                            maximum: 4294967295
+                            minimum: 0
+                            nullable: true
+                            type: integer
+                        type: object
                       proxyLatency:
                         properties:
                           chargeClusterStat:
