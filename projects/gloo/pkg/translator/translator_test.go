@@ -2790,7 +2790,7 @@ var _ = Describe("Translator", func() {
 	Context("Hybrid", func() {
 
 		// The number of HttpFilters that we expect to be generated on the HttpConnectionManager by default
-		var defaultHttpFilters = 6
+		var defaultHttpFilters = 7
 
 		It("can properly create a hybrid listener", func() {
 			translate()

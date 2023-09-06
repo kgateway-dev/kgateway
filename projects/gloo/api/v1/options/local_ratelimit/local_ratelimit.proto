@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package local_ratelimit.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/local_ratelimit";
+
+import "extproto/ext.proto";
+option (extproto.equal_all) = true;
+option (extproto.hash_all) = true;
+option (extproto.clone_all) = true;
+import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+
+
+// Configures the token bucket, used for rate limiting.
+// Ref. https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+message TokenBucket {
+    // The maximum tokens that the bucket can hold. This is also the number of tokens that the bucket initially contains.
+    // Must be greater than or equal to one.
+    uint32 max_tokens = 1;
+
+    // The number of tokens added to the bucket during each fill interval. If not specified, defaults to a single token.
+    // Must be greater than zero.
+    google.protobuf.UInt32Value tokens_per_fill = 2;
+
+    // The fill interval that tokens are added to the bucket. During each fill interval tokens_per_fill are added to the bucket.
+    // The bucket will never contain more than max_tokens tokens.
+    // The fill_interval must be >= 50ms and defaults to 1 second.
+    google.protobuf.Duration  fill_interval = 3;
+}
+
+// The Local Rate Limit settings define the default local rate limit token bucket to apply as well as other configurations
+message Settings {
+    // The token bucket configuration to use for rate limiting requests.
+    // These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+    // If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
+    // This default limit can be overridden in the vHost or route options.localRatelimit
+    TokenBucket default_limit = 1;
+
+    // Specifies the scope of the rate limiter’s token bucket. If set to false, the token bucket is shared across all worker threads, thus the rate limits are applied per Envoy process.
+    // If set to true, a token bucket is allocated for each connection, thus the rate limits are applied per connection thereby allowing one to rate limit requests on a per connection basis.
+    // This setting applies to all token buckets in the vHost and route as well.
+    // Defaults to false
+    google.protobuf.BoolValue local_rate_limit_per_downstream_connection = 2;
+
+    // Set this to true to return Envoy's X-RateLimit headers to the downstream.
+    // reference docs here: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/common/ratelimit/v3/ratelimit.proto#envoy-v3-api-enum-extensions-common-ratelimit-v3-xratelimitheadersrfcversion
+    // This setting applies at the vHost and route local rate limit as well
+    // Defaults to false
+    google.protobuf.BoolValue enable_x_ratelimit_headers = 3;
+}
