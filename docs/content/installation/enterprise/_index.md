@@ -235,7 +235,7 @@ glooctl install gateway enterprise --values values.yaml --license-key=<LICENSE_K
 {{% /tab %}}
 {{% tab name="helm install" %}}
 ```shell script
-helm install gloo glooe/gloo-ee --namespace gloo-system --set r=true --set license_key=<LICENSE_KEY>
+helm install gloo glooe/gloo-ee --namespace gloo-system --set gloo-fed.glooFedApiserver.enable=true --set license_key=<LICENSE_KEY>
 ```
 {{% /tab %}}
 {{< /tabs >}}
