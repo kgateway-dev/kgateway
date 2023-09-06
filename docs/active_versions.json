@@ -1,11 +1,11 @@
 {
-  "latest": "v1.14.x",
+  "latest": "v1.15.x",
   "versions": [
     "main",
     "v1.15.x",
-    "v1.14.x"
   ],
   "oldVersions": [
+    "v1.14.x"
     "v1.13.x",
     "v1.12.x"
   ]
