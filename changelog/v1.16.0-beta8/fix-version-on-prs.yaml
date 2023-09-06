@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Ensure VERSION includes the most recent git tag, if one is available
