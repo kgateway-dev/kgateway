@@ -5857,7 +5857,9 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(BeNil())
-								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]; ok {
+								if kind == "Job" {
+									helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+									Expect(ok).To(BeTrue())
 									Expect(helmHookDeletePolicy).To(ContainSubstring("hook-succeeded"))
 								}
 								return true
@@ -5887,8 +5889,14 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
-								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]; ok {
-									Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-								if kind == "Job" {
+									helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+									if resourceName == "gateway-certgen" {
+										Expect(ok).To(BeTrue())
+										Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+									} else if resourceName == "gloo-mtls-certgen" {
+										Expect(ok).To(BeFalse())
+									}
 								}
 								return true
 							}
@@ -5916,8 +5924,14 @@ metadata:
 							if u.GetKind() == kind && u.GetName() == resourceName {
 								a := getFieldFromUnstructured(u, append(prefixPath, "spec", "ttlSecondsAfterFinished")...)
 								Expect(a).To(Equal(int64(TTL_SECONDS_AFTER_FINISHED)))
-								if helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]; ok {
-									Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+								if kind == "Job" {
+									helmHookDeletePolicy, ok := u.GetAnnotations()["helm.sh/hook-delete-policy"]
+									if resourceName == "gateway-certgen" {
+										Expect(ok).To(BeTrue())
+										Expect(helmHookDeletePolicy).NotTo(ContainSubstring("hook-succeeded"))
+									} else if resourceName == "gloo-mtls-certgen" {
+										Expect(ok).To(BeFalse())
+									}
 								}
 								return true
 							}
