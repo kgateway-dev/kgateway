@@ -68,16 +68,18 @@ initContainers: {{ toYaml . | nindent 2 }}
 
 
 {{- define "gloo.jobHelmDeletePolicySucceeded" -}}
-{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
-      The 'kindIs' comparision is how we can check for undefined */ -}}
-{{- if not (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished) -}}
+{{- /* include a hook delete policy unless setTtlAfterFinished is either undefined or true and
+      ttlSecondsAfterFinished is set. The 'kindIs' comparision is how we can check for
+      undefined */ -}}
+{{- if not (and .ttlSecondsAfterFinished (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished)) -}}
 "helm.sh/hook-delete-policy": hook-succeeded
 {{ end -}}
 {{ end -}}
 
 {{- define "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" -}}
-{{- /* include ttlSecondsAfterFinished if setTtlAfterFinished is undefined or equal to true.
-      The 'kindIs' comparision is how we can check for undefined */ -}}
+{{- /* include hook detele policy based on whether setTtlAfterFinished is undefined or equal to
+      true. If it is the case, only delete explicitely before hook creation. Otherwise, also
+      delete also on success. The 'kindIs' comparision is how we can check for undefined */ -}}
 {{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
 "helm.sh/hook-delete-policy": before-hook-creation
 {{- else -}}
