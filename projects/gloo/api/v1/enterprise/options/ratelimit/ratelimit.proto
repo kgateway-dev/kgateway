@@ -3,6 +3,7 @@ package ratelimit.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit";
 
 import "github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/local_ratelimit/local_ratelimit.proto";
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";
@@ -76,6 +77,13 @@ message RateLimitVhostExtension {
   // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
   // would be throttled, the entire request returns a 429 (gets throttled)
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
+
+  // The token bucket configuration to use for local rate limiting requests.
+  // These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+  // If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
+  // This overrides any local rate limit configured on the gateway and requests to this vHost do not count against requests to the gateway's http local rate limit.
+  // All routes that are part of this vHost will share this rate limit unless explicity configured with another limit.
+  local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 2;
 }
 
 // Use this field if you want to inline the Envoy rate limits for this Route.
@@ -90,4 +98,10 @@ message RateLimitRouteExtension {
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
+
+    // The token bucket configuration to use for local rate limiting requests.
+    // These options provide the ability to locally rate limit the connections in envoy. Each request processed by the filter consumes a single token.
+    // If the token is available, the request will be allowed. If no tokens are available, the request will receive the configured rate limit status.
+    // This overrides any local rate limit configured on the vHost or gateway and requests to this route do not count against requests to the vHost or gateway's http local rate limit.
+    local_ratelimit.options.gloo.solo.io.TokenBucket local_ratelimit = 3;
 }
