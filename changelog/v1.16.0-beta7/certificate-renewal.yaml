@@ -3,3 +3,11 @@ changelog:
     description: Certgen job will now renew existing certificate if it is expiring soon (90d by default).
     issueLink: https://github.com/solo-io/gloo/issues/5944
     resolvesIssue: true
+  - type: HELM
+    description: Create certgen CronJob if validation webhook is enabled
+    issueLink: https://github.com/solo-io/gloo/issues/5944
+    resolvesIssue: true
+  - type: HELM
+    description: Add an option to enable `force-rotation` flag for certgen job
+    issueLink: https://github.com/solo-io/gloo/issues/5944
+    resolvesIssue: true

@@ -369,6 +369,7 @@
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished on the job. Defaults to true|
 |gateway.certGenJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
+|gateway.certGenJob.forceRotation|bool|false|If true, will create new certs even if the old one are still valid.|
 |gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
 |gateway.certGenJob.resources.limits.memory|string||amount of memory|
 |gateway.certGenJob.resources.limits.cpu|string||amount of CPUs|

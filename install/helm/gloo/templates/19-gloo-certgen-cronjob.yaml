@@ -60,7 +60,9 @@ spec:
               args:
                 - "--secret-name=gloo-mtls-certs"
                 - "--svc-name=gloo"
+                {{- if .Values.gateway.certGenJob.forceRotation }}
                 - "--force-rotation=true"
+                {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}
 {{- end }} {{/* if and (or .Values.global.glooMtls.enabled .Values.gateway.validation.webhook.enabled) .Values.gateway.certGenJob.cron.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 
