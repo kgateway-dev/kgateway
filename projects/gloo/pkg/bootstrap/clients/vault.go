@@ -172,6 +172,10 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 	}
 
 	// if we have only partial configuration set
+	// TODO: Delete this comment
+	// > If using the ec2 auth method or using the iam auth method with inferencing, then these credentials need access to ec2:DescribeInstances
+	// https://developer.hashicorp.com/vault/api-docs/auth/aws#parameters
+	// so is it valid to have the access key without secret key?
 	if len(possibleErrStrings) == 1 {
 		return nil, errors.New("only partial credentials were provided for AWS IAM auth: " + possibleErrStrings[0])
 	}
@@ -205,6 +209,7 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 	}
 
 	// TODO(jbohanon) set up auth token refreshing with client.NewLifetimeWatcher()
+	//if len(possibleErrStrings) == 0 {
 	authInfo, err := client.Auth().Login(context.Background(), awsAuth)
 	if err != nil {
 		err := errors.Wrapf(err, "unable to login to AWS auth method")
@@ -218,6 +223,7 @@ func configureAwsIamAuth(aws *v1.Settings_VaultAwsAuth, client *api.Client) (*ap
 	if authInfo == nil {
 		return nil, errors.New("no auth info was returned after login")
 	}
+	//}
 
 	return client, nil
 }

@@ -29,7 +29,7 @@ const (
 	DefaultPort       = 8200
 	DefaultVaultToken = "root"
 
-	vaultDockerImage = "hashicorp/vault:1.13.3"
+	vaultDockerImage = "hashicorp/vault:1.13.4"
 	vaultBinaryName  = "vault"
 )
 

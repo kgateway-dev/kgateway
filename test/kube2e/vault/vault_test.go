@@ -24,7 +24,9 @@ import (
 // needs AWS_SHARED_CREDENTIALS_FILE set or else causes issues re. AWS "NoCredentialProviders".
 var _ = Describe("Vault Tests", func() {
 	const (
-		vaultAwsRole      = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
+		//vaultAwsRole = "arn:aws:iam::802411188784:user/gloo-edge-e2e-irsa-user"
+		//vaultAwsRole = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
+		vaultAwsRole      = "arn:aws:iam::802411188784:role/vault-role"
 		iamServerIdHeader = "vault.gloo.example.com"
 		vaultAwsRegion    = "us-east-1"
 		vaultRole         = "vault-role"
@@ -107,7 +109,8 @@ var _ = Describe("Vault Tests", func() {
 				Aws: &gloov1.Settings_VaultAwsAuth{
 					IamServerIdHeader: iamServerIdHeader,
 					Region:            vaultAwsRegion,
-					MountPath:         "aws",
+					//VaultRole:         vaultRole,
+					MountPath: "aws",
 				},
 			},
 			PathPrefix: bootstrap.DefaultPathPrefix,
