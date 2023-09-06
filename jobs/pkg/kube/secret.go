@@ -60,7 +60,7 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 			return nil, errors.Wrapf(err, "failed to decode pem encoded ca cert")
 		}
 
-		// Create new certificate if old one is expiring soon (two months)
+		// Create new certificate if old one is expiring soon
 		if now.Before(cert.NotBefore) || now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
 			return nil, nil
 		}
