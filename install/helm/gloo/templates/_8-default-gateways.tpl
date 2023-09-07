@@ -155,12 +155,12 @@ spec:
 {{- if not $gatewaySettings.disableHttpGateway }}
 {{- $defaultGatewayOverride := $spec.gatewaySettings.httpGatewayKubeOverride }}
 ---
-{{- include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
+{{ include "gloo.util.merge" (list $ctx $defaultGatewayOverride "defaultGateway.gateway") -}}
 {{- end }}{{/* if not $gatewaySettings.disableHttpGateway */}}
 {{- if not $gatewaySettings.disableHttpsGateway }}
 {{- $sslGatewayOverride := $spec.gatewaySettings.httpsGatewayKubeOverride }}
 ---
-{{- include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
+{{ include "gloo.util.merge" (list $ctx $sslGatewayOverride "defaultGateway.sslGateway") -}}
 {{- end }}{{/* if not $gatewaySettings.disableHttpsGateway  */}}
 {{- end }}{{/* if not $gatewaySettings.disableGeneratedGateways */}}
 {{- if $spec.failover }}
