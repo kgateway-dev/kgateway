@@ -6364,7 +6364,7 @@ metadata:
 					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
 					Entry("6-access-logger-service", "accessLogger.service.kubeResourceOverride", "accessLogger.enabled=true"),
 					Entry("6.5-gateway-certgen-job", "gateway.certGenJob.kubeResourceOverride"),
-					Entry("6.5-gateway-certgen-cronjob", "gateway.certGenJob.cron.validationWebhookKubeResourceOverride"),
+					Entry("6.5-gateway-certgen-cronjob", "gateway.certGenJob.cron.validationWebhookKubeResourceOverride", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.kubeResourceOverride"),
 					Entry("10-ingress-deployment", "ingress.deployment.kubeResourceOverride", "ingress.enabled=true"),
 					Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.kubeResourceOverride", "ingress.enabled=true"),
