@@ -9,8 +9,8 @@ kind: CronJob
 metadata:
   labels:
     app: gloo
-    gloo: gloo-certgen-cronjob
-  name: gloo-certgen-cronjob
+    gloo: gateway-certgen-cronjob
+  name: gateway-certgen-cronjob
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: {{ .Values.gateway.certGenJob.cron.schedule | quote }}
