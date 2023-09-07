@@ -32,6 +32,9 @@ Each minor version might add custom resource definitions (CRDs) or otherwise hav
    ```sh
    export NEW_VERSION=<version>
    ```
+   {{% notice note %}}
+   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
+   {{% /notice %}}
 
 3. Check the [CRD changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#crd" %}}) to see which CRDs are new, deprecated, or removed in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
    1. Delete any removed CRDs. <!--If applicable, add commands to kubectl delete the removed CRDs-->
@@ -52,14 +55,14 @@ kubectl apply -f gloo-ee/charts/gloo-fed/crds
 ```
 {{% /tab %}}
       {{< /tabs >}}
-   3. Verify that the deployed CRDs use the version that you want to upgrade to.
+   1. Verify that the deployed CRDs use the version that you want to upgrade to.
       ```
       glooctl check-crds
       ```
 
-4. Check the [Feature changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) to see whether there are breaking changes you must address in your resources before you upgrade to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. <!--If applicable, add steps to walk users though updating crs for any breaking changes-->
+1. Check the [Feature changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#features" %}}) to see whether there are breaking changes you must address in your resources before you upgrade to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. <!--If applicable, add steps to walk users though updating crs for any breaking changes-->
 
-5. Check the [Helm changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#helm" %}}) to see whether there are new, deprecated, or removed Helm settings you might address before you upgrade to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
+2. Check the [Helm changes]({{% versioned_link_path fromRoot="/operations/upgrading/faq/#helm" %}}) to see whether there are new, deprecated, or removed Helm settings you might address before you upgrade to {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}.
    1. Get the Helm values file for your current installation.
       {{< tabs >}}
 {{% tab name="Open Source" %}}
@@ -75,7 +78,7 @@ open values.yaml
 ```
 {{% /tab %}}
       {{< /tabs >}}
-   2. Edit the Helm values file or prepare the `--set` flags to make any changes that you want. If you do not want to use certain settings, comment them out.
+   1. Edit the Helm values file or prepare the `--set` flags to make any changes that you want. If you do not want to use certain settings, comment them out.
 
 ## Step 4: Upgrade Gloo Edge {#upgrade}
 
