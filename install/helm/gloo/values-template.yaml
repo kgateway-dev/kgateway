@@ -90,6 +90,7 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
+    forceRotation: true
     cron:
       enabled: false
       schedule: "* * * * *"
