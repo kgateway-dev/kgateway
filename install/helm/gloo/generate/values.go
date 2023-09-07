@@ -455,7 +455,7 @@ type CertGenCron struct {
 	Enabled                               *bool                  `json:"enabled,omitempty" desc:"enable the cronjob"`
 	Schedule                              *string                `json:"schedule,omitempty" desc:"Cron job scheduling"`
 	MtlsKubeResourceOverride              map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen cronjob."`
-	ValidationWebhookKubeResourceOverride map[string]interface{} `json:"ValidationWebhookKubeResourceOverride,omitempty" desc:"override fields in the gateway-certgen cronjob."`
+	ValidationWebhookKubeResourceOverride map[string]interface{} `json:"validationWebhookKubeResourceOverride,omitempty" desc:"override fields in the gateway-certgen cronjob."`
 }
 
 type GatewayProxy struct {
