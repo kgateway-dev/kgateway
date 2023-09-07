@@ -24,7 +24,7 @@ You can install the Gloo Edge command line, `glooctl`, to help install, configur
 
 * **Direct download**: You can download `glooctl` directly via the GitHub releases page.
   1. In your browser, navigate to the [Gloo project releases](https://github.com/solo-io/gloo/releases).
-  2. Choose the version to upgrade `glooctl` to. For Gloo Edge Enterprise, use the Gloo Edge OSS version that corresponds to the Gloo Edge Enterprise version you want to upgrade to. To find the OSS version that corresponds to each Gloo Edge Enterprise release, see the [Gloo Edge Enterprise changelogs](https://docs.solo.io/gloo-edge/latest/reference/changelog/enterprise/).
+  2. Choose the version to upgrade `glooctl` to. For Gloo Edge Enterprise, use the Gloo Edge OSS version that corresponds to the Gloo Edge Enterprise version you want to upgrade to. To find the OSS version that corresponds to each Gloo Edge Enterprise release, see the [Gloo Edge Enterprise changelogs](https://docs.solo.io/gloo-edge/latest/reference/changelog/enterprise/). **Note**: To use a 1.15.x version, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
   3. Click the version of `glooctl` that you want to install.
   4. In the **Assets**, download the `glooctl` package that matches your operating system, and follow your operating system procedures for replacing your existing `glooctl` binary file with the upgraded version.
   5. After downloading, rename the executable to `glooctl` and add it to your system's `PATH`.
@@ -39,6 +39,9 @@ You can use the `glooctl upgrade` command to upgrade or roll back the `glooctl` 
    ```sh
    export GLOOCTL_VERSION=<version>
    ```
+   {{% notice note %}}
+   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
+   {{% /notice %}}
    
 2. Upgrade your version of `glooctl`.
    ```bash
