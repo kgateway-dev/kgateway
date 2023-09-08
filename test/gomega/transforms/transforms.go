@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -47,5 +49,12 @@ func WithJsonBody() func(b []byte) map[string]interface{} {
 		json.Unmarshal(b, &bodyJson)
 
 		return bodyJson
+	}
+}
+
+// WithHeaderKeys returns a Gomega Transform that extracts the header keys in a request
+func WithHeaderKeys() func(response *http.Response) []string {
+	return func(response *http.Response) []string {
+		return maps.Keys(response.Header)
 	}
 }

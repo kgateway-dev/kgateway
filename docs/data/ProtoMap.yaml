@@ -233,6 +233,9 @@ apis:
   enterprise.gloo.solo.io.BufferSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#BufferSettings
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.ClaimToHeader:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ClaimToHeader
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.CustomAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#CustomAuth
     package: enterprise.gloo.solo.io
@@ -1259,6 +1262,12 @@ apis:
   lbhash.options.gloo.solo.io.RouteActionHashConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto.sk/#RouteActionHashConfig
     package: lbhash.options.gloo.solo.io
+  local_ratelimit.options.gloo.solo.io.Settings:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/local_ratelimit/local_ratelimit.proto.sk/#Settings
+    package: local_ratelimit.options.gloo.solo.io
+  local_ratelimit.options.gloo.solo.io.TokenBucket:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/local_ratelimit/local_ratelimit.proto.sk/#TokenBucket
+    package: local_ratelimit.options.gloo.solo.io
   matchers.core.gloo.solo.io.HeaderMatcher:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto.sk/#HeaderMatcher
     package: matchers.core.gloo.solo.io

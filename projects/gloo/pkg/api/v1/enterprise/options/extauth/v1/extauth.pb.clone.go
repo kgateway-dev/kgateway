@@ -726,6 +726,23 @@ func (m *EndSessionProperties) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ClaimToHeader) Clone() proto.Message {
+	var target *ClaimToHeader
+	if m == nil {
+		return target
+	}
+	target = &ClaimToHeader{}
+
+	target.Claim = m.GetClaim()
+
+	target.Header = m.GetHeader()
+
+	target.Append = m.GetAppend()
+
+	return target
+}
+
+// Clone function
 func (m *OidcAuthorizationCode) Clone() proto.Message {
 	var target *OidcAuthorizationCode
 	if m == nil {
@@ -837,6 +854,18 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	} else {
 		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	if h, ok := interface{}(m.GetAccessToken()).(clone.Cloner); ok {
+		target.AccessToken = h.Clone().(*OidcAuthorizationCode_AccessToken)
+	} else {
+		target.AccessToken = proto.Clone(m.GetAccessToken()).(*OidcAuthorizationCode_AccessToken)
+	}
+
+	if h, ok := interface{}(m.GetIdentityToken()).(clone.Cloner); ok {
+		target.IdentityToken = h.Clone().(*OidcAuthorizationCode_IdentityToken)
+	} else {
+		target.IdentityToken = proto.Clone(m.GetIdentityToken()).(*OidcAuthorizationCode_IdentityToken)
 	}
 
 	return target
@@ -2212,6 +2241,54 @@ func (m *UserSession_CipherConfig) Clone() proto.Message {
 }
 
 // Clone function
+func (m *OidcAuthorizationCode_AccessToken) Clone() proto.Message {
+	var target *OidcAuthorizationCode_AccessToken
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_AccessToken{}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *OidcAuthorizationCode_IdentityToken) Clone() proto.Message {
+	var target *OidcAuthorizationCode_IdentityToken
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_IdentityToken{}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *JwtValidation_RemoteJwks) Clone() proto.Message {
 	var target *JwtValidation_RemoteJwks
 	if m == nil {
@@ -2963,25 +3040,10 @@ func (m *ExtAuthConfig_OpaAuthConfig) Clone() proto.Message {
 	target.Query = m.GetQuery()
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*ExtAuthConfig_OpaAuthOptions)
+		target.Options = h.Clone().(*OpaAuthOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*ExtAuthConfig_OpaAuthOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*OpaAuthOptions)
 	}
-
-	return target
-}
-
-// Clone function
-func (m *ExtAuthConfig_OpaAuthOptions) Clone() proto.Message {
-	var target *ExtAuthConfig_OpaAuthOptions
-	if m == nil {
-		return target
-	}
-	target = &ExtAuthConfig_OpaAuthOptions{}
-
-	target.FastInputConversion = m.GetFastInputConversion()
-
-	target.ReturnDecisionReason = m.GetReturnDecisionReason()
 
 	return target
 }
@@ -3001,9 +3063,9 @@ func (m *ExtAuthConfig_OpaServerAuthConfig) Clone() proto.Message {
 	target.ServerAddr = m.GetServerAddr()
 
 	if h, ok := interface{}(m.GetOptions()).(clone.Cloner); ok {
-		target.Options = h.Clone().(*ExtAuthConfig_OpaAuthOptions)
+		target.Options = h.Clone().(*OpaAuthOptions)
 	} else {
-		target.Options = proto.Clone(m.GetOptions()).(*ExtAuthConfig_OpaAuthOptions)
+		target.Options = proto.Clone(m.GetOptions()).(*OpaAuthOptions)
 	}
 
 	return target

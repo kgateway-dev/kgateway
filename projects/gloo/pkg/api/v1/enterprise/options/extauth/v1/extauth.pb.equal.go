@@ -1223,6 +1223,42 @@ func (m *EndSessionProperties) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *ClaimToHeader) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*ClaimToHeader)
+	if !ok {
+		that2, ok := that.(ClaimToHeader)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetClaim(), target.GetClaim()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetHeader(), target.GetHeader()) != 0 {
+		return false
+	}
+
+	if m.GetAppend() != target.GetAppend() {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
 func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -1405,6 +1441,26 @@ func (m *OidcAuthorizationCode) Equal(that interface{}) bool {
 		}
 	} else {
 		if !proto.Equal(m.GetDisableClientSecret(), target.GetDisableClientSecret()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetAccessToken()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetAccessToken()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetAccessToken(), target.GetAccessToken()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetIdentityToken()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetIdentityToken()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetIdentityToken(), target.GetIdentityToken()) {
 			return false
 		}
 	}
@@ -3701,6 +3757,88 @@ func (m *UserSession_CipherConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *OidcAuthorizationCode_AccessToken) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OidcAuthorizationCode_AccessToken)
+	if !ok {
+		that2, ok := that.(OidcAuthorizationCode_AccessToken)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetClaimsToHeaders()) != len(target.GetClaimsToHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetClaimsToHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
+func (m *OidcAuthorizationCode_IdentityToken) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*OidcAuthorizationCode_IdentityToken)
+	if !ok {
+		that2, ok := that.(OidcAuthorizationCode_IdentityToken)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetClaimsToHeaders()) != len(target.GetClaimsToHeaders()) {
+		return false
+	}
+	for idx, v := range m.GetClaimsToHeaders() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetClaimsToHeaders()[idx]) {
+				return false
+			}
+		}
+
+	}
+
+	return true
+}
+
+// Equal function
 func (m *JwtValidation_RemoteJwks) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -4983,38 +5121,6 @@ func (m *ExtAuthConfig_OpaAuthConfig) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetOptions(), target.GetOptions()) {
 			return false
 		}
-	}
-
-	return true
-}
-
-// Equal function
-func (m *ExtAuthConfig_OpaAuthOptions) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_OpaAuthOptions)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_OpaAuthOptions)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if m.GetFastInputConversion() != target.GetFastInputConversion() {
-		return false
-	}
-
-	if m.GetReturnDecisionReason() != target.GetReturnDecisionReason() {
-		return false
 	}
 
 	return true

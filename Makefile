@@ -590,9 +590,23 @@ package-chart: generate-helm-files
 #	- Pull Request (we publish unreleased artifacts to be consumed by our Enterprise project)
 #----------------------------------------------------------------------------------
 # TODO: delete this logic block when we have a github actions-managed release
+
+# git_tag is evaluated when is used (recursively expanded variable)
+# https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html#SEC59
+git_tag = $(shell git describe --abbrev=0 --tags)
+# Semantic versioning format https://semver.org/
+# Regex copied from: https://github.com/solo-io/go-utils/blob/16d4d94e4e5f182ca8c10c5823df303087879dea/versionutils/version.go#L338
+tag_regex := v[0-9]+[.][0-9]+[.][0-9]+(-[a-z]+)*(-[a-z]+[0-9]*)?$
+
 ifneq (,$(TEST_ASSET_ID))
 PUBLISH_CONTEXT := PULL_REQUEST
-VERSION := $(shell git describe --tags --abbrev=0 | cut -c 2-)-$(TEST_ASSET_ID)
+ifeq ($(shell echo $(git_tag) | egrep "$(tag_regex)"),)
+# Forked repos don't have tags by default, so we create a standard tag for them
+# This only impacts the version of the assets used in CI for this PR, so it is ok that it is not a real tag
+VERSION = 1.0.0-$(TEST_ASSET_ID)
+else
+VERSION = $(shell echo $(git_tag) | cut -c 2-)-$(TEST_ASSET_ID) # example: 1.16.0-beta4-{TEST_ASSET_ID}
+endif
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 endif
 

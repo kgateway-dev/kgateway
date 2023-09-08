@@ -5,29 +5,31 @@ import (
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
 	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/contextutils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
-
-	"github.com/solo-io/gloo/pkg/version"
-
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/pkg/version"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/setup"
+	"github.com/solo-io/go-utils/contextutils"
+)
+
+const (
+	glooComponentName = "gloo"
 )
 
 func Main(customCtx context.Context) error {
+	setuputils.SetupLogging(customCtx, glooComponentName)
 	return startSetupLoop(customCtx)
 }
 
 func startSetupLoop(ctx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
-		LoggerName:  "gloo",
+		LoggerName:  glooComponentName,
 		Version:     version.Version,
 		SetupFunc:   setup.NewSetupFunc(),
 		ExitOnError: true,
 		CustomCtx:   ctx,
 
 		ElectionConfig: &leaderelector.ElectionConfig{
-			Id:        "gloo",
+			Id:        glooComponentName,
 			Namespace: utils.GetPodNamespace(),
 			// no-op all the callbacks for now
 			// at the moment, leadership functionality is performed within components

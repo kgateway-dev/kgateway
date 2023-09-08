@@ -45,7 +45,10 @@ weight: 5
 - [AutoMapFromMetadata](#automapfrommetadata)
 - [EndSessionProperties](#endsessionproperties)
 - [MethodType](#methodtype)
+- [ClaimToHeader](#claimtoheader)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
+- [AccessToken](#accesstoken)
+- [IdentityToken](#identitytoken)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -92,7 +95,6 @@ weight: 5
 - [ApiKeyAuthConfig](#apikeyauthconfig)
 - [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
-- [OpaAuthOptions](#opaauthoptions)
 - [OpaServerAuthConfig](#opaserverauthconfig)
 - [LdapConfig](#ldapconfig)
 - [LdapServiceAccountConfig](#ldapserviceaccountconfig)
@@ -877,6 +879,28 @@ The Method used to make the request.
 
 
 ---
+### ClaimToHeader
+
+ 
+Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
+
+```yaml
+"claim": string
+"header": string
+"append": bool
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claim` | `string` | The claim name from the token, such as `sub`. |
+| `header` | `string` | The header to copy the claim to, such as `x-sub`. |
+| `append` | `bool` | If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false). |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -903,6 +927,8 @@ The Method used to make the request.
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "dynamicMetadataFromClaims": map<string, string>
 "disableClientSecret": .google.protobuf.BoolValue
+"accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
+"identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
 
 ```
 
@@ -929,6 +955,44 @@ The Method used to make the request.
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `dynamicMetadataFromClaims` | `map<string, string>` | Map of metadata key to claim. Ie: dynamic_metadata_from_claims: issuer: iss email: email When specified, the matching claims from the ID token will be emitted as dynamic metadata. Note that metadata keys must be unique, and the claim names must be alphanumeric and use `-` or `_` as separators. The metadata will live in a namespace specified by the canonical name of the ext auth filter (in our case `envoy.filters.http.ext_authz`), and the structure of the claim value will be preserved in the metadata struct. |
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
+| `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
+| `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
+
+
+
+
+---
+### AccessToken
+
+ 
+Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+
+```yaml
+"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+
+
+
+
+---
+### IdentityToken
+
+ 
+Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
+
+```yaml
+"claimsToHeaders": []enterprise.gloo.solo.io.ClaimToHeader
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
 
 
 
@@ -1443,7 +1507,7 @@ For Gloo Platform environments, use OpaServerAuth instead.
 ### OpaServerAuth
 
  
-Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external 
+Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the external
 auth server in Gloo Platform environments. For Gloo Edge environments, use OpaAuth instead.
 
 ```yaml
@@ -2112,7 +2176,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 ```yaml
 "modules": map<string, string>
 "query": string
-"options": .enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthOptions
+"options": .enterprise.gloo.solo.io.OpaAuthOptions
 
 ```
 
@@ -2120,26 +2184,7 @@ These values will be encoded in a basic auth header in order to authenticate the
 | ----- | ---- | ----------- | 
 | `modules` | `map<string, string>` | An optional modules (filename, module content) maps containing modules assist in the resolution of `query`. |
 | `query` | `string` | The query that determines the auth decision. The result of this query must be either a boolean or an array with boolean as the first element. A boolean `true` value means that the request will be authorized. Any other value, or error, means that the request will be denied. |
-| `options` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
-
-
-
-
----
-### OpaAuthOptions
-
-
-
-```yaml
-"fastInputConversion": bool
-"returnDecisionReason": bool
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `fastInputConversion` | `bool` | Decreases OPA latency by speeding up conversion of input to the OPA engine. If this is set to true, only http_request and state fields which are a scalar, map, or string array are included in the request input. All other fields are dropped. Dropped fields will not be evaluated by the OPA engine. By default, this is set to false and all fields are evaluated by OPA. |
-| `returnDecisionReason` | `bool` | Set to true to return the reason for an OPA policy decision, based on the logic in your Rego rules. This way, you can use the reason in subsequent filters, such as transformation policies. This `returnDecisionReason` field must be the second parameter of the query. The entry will be in the returned DynamicMetadata in the CheckResponse and the structure will be envoy.filters.http.ext_authz: -> name of the auth step, i.e. spec.configs[i].name -> reason If set to false, the response is allowed or denied based on the rego rules without returning the reason. |
+| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) | Additional Options for Opa Auth configuration. |
 
 
 
@@ -2154,7 +2199,7 @@ Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the e
 "package": string
 "ruleName": string
 "serverAddr": string
-"options": .enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthOptions
+"options": .enterprise.gloo.solo.io.OpaAuthOptions
 
 ```
 
@@ -2163,7 +2208,7 @@ Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the e
 | `package` | `string` |  |
 | `ruleName` | `string` |  |
 | `serverAddr` | `string` |  |
-| `options` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) |  |
+| `options` | [.enterprise.gloo.solo.io.OpaAuthOptions](../extauth.proto.sk/#opaauthoptions) |  |
 
 
 

@@ -206,7 +206,8 @@ type Settings struct {
 	RatelimitServer               interface{}             `json:"ratelimitServer,omitempty" desc:"External Ratelimit Server configuration for Gloo Edge Open Sources’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://docs.solo.io/gloo-edge/main/guides/security/rate_limiting/)"`
 	CircuitBreakers               CircuitBreakersSettings `json:"circuitBreakers,omitempty" desc:"Set this to configure the circuit breaker settings for Gloo."`
 	EnableRestEds                 *bool                   `json:"enableRestEds,omitempty" desc:"Whether or not to use rest xds for all EDS by default. Defaults to false."`
-	DevMode                       *bool                   `json:"devMode,omitempty" desc:"Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not reccomended for production."`
+	DevMode                       *bool                   `json:"devMode,omitempty" desc:"Whether or not to enable dev mode. Defaults to false. Setting to true at install time will expose the gloo dev admin endpoint on port 10010. Not recommended for production."`
+	SecretOptions                 SecretOptions           `json:"secretOptions,omitempty" desc:"Options for how Gloo Edge should handle secrets."`
 	*KubeResourceOverride
 }
 
@@ -217,6 +218,51 @@ type AwsSettings struct {
 	PropagateOriginalRouting        *bool     `json:"propagateOriginalRouting,omitempty" desc:"Send downstream path and method as x-envoy-original-path and x-envoy-original-method headers on the request to AWS lambda."`
 	CredentialRefreshDelay          *Duration `json:"credential_refresh_delay,omitempty" desc:"Adds a timed refresh to for ServiceAccount credentials in addition to the default filewatch."`
 	FallbackToFirstFunction         *bool     `json:"fallbackToFirstFunction,omitempty" desc:"It will use the first function which if discovery is enabled the first function is the first function name alphabetically from the last discovery run. Defaults to false."`
+}
+
+type SecretOptions struct {
+	Sources []*SecretOptionsSource `json:"sources,omitempty" desc:"List of sources to use for secrets."`
+}
+
+type SecretOptionsSource struct {
+	Kubernetes KubernetesSecrets `json:"kubernetes,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
+	Vault      VaultSecrets      `json:"vault,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
+	Directory  Directory         `json:"directory,omitempty" desc:"Only one of kubernetes, vault, or directory may be set"`
+}
+
+type KubernetesSecrets struct {
+}
+
+type VaultSecrets struct {
+	Address     string         `json:"address,omitempty" desc:"Address of the Vault server. This should be a complete URL such as http://solo.io and include port if necessary (vault's default port is 8200)."`
+	RootKey     string         `json:"rootKey,omitempty" desc:"All keys stored in Vault will begin with this Vault this can be used to run multiple instances of Gloo against the same Vault cluster defaults to gloo."`
+	PathPrefix  string         `json:"pathPrefix,omitempty" desc:"Optional. The name of a Vault Secrets Engine to which Vault should route traffic. For more info see https://learn.hashicorp.com/tutorials/vault/getting-started-secrets-engines. Defaults to 'secret'."`
+	TlsConfig   VaultTlsConfig `json:"tlsConfig,omitempty" desc:"Configure TLS options for client connection to Vault. This is only available when running Gloo Edge outside of an container orchestration tool such as Kubernetes or Nomad."`
+	AccessToken string         `json:"accessToken,omitempty" desc:"Vault token to use for authentication. Only one of accessToken or aws may be set."`
+	Aws         VaultAwsAuth   `json:"aws,omitempty" desc:"Only one of accessToken or aws may be set."`
+}
+
+type VaultTlsConfig struct {
+	CaCert        string `json:"caCert,omitempty" desc:"Path to a PEM-encoded CA cert file to use to verify the Vault server SSL certificate."`
+	CaPath        string `json:"caPath,omitempty" desc:"Path to a directory of PEM-encoded CA cert files to verify the Vault server SSL certificate."`
+	ClientCert    string `json:"clientCert,omitempty" desc:"Path to the certificate for Vault communication."`
+	ClientKey     string `json:"clientKey,omitempty" desc:"Path to the private key for Vault communication."`
+	TlsServerName string `json:"tlsServerName,omitempty" desc:"If set, it is used to set the SNI host when connecting via TLS."`
+	Insecure      bool   `json:"insecure,omitempty" desc:"Disables TLS verification when set to true."`
+}
+
+type VaultAwsAuth struct {
+	VaultRole         string `json:"vaultRole,omitempty" desc:"The Vault role we are trying to authenticate to. This is not necessarily the same as the AWS role to which the Vault role is configured."`
+	Region            string `json:"region,omitempty" desc:"The AWS region to use for the login attempt."`
+	IamServerIdHeader string `json:"iamServerIdHeader,omitempty" desc:"The IAM Server ID Header required to be included in the request."`
+	MountPath         string `json:"mountPath,omitempty" desc:"The Vault path on which the AWS auth is mounted."`
+	AccessKeyID       string `json:"accessKeyID,omitempty" desc:"Optional. The Access Key ID as provided by the security credentials on the AWS IAM resource. In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences."`
+	SecretAccessKey   string `json:"secretAccessKey,omitempty" desc:"Optional. The Secret Access Key as provided by the security credentials on the AWS IAM resource. In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences."`
+	SessionToken      string `json:"sessionToken,omitempty" desc:"The Session Token as provided by the security credentials on the AWS IAM resource."`
+}
+
+type Directory struct {
+	Directory string `json:"directory,omitempty" desc:"Directory to read secrets from."`
 }
 
 type CircuitBreakersSettings struct {
@@ -368,6 +414,7 @@ type CertGenJob struct {
 	Enabled             *bool                 `json:"enabled,omitempty" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
 	SetTtlAfterFinished *bool                 `json:"setTtlAfterFinished,omitempty" desc:"Set ttlSecondsAfterFinished on the job. Defaults to true"`
 	FloatingUserId      *bool                 `json:"floatingUserId,omitempty" desc:"If true, allows the cluster to dynamically assign a user ID for the processes running in the container."`
+	ForceRotation       *bool                 `json:"forceRotation,omitempty" desc:"If true, will create new certs even if the old one are still valid."`
 	RunAsUser           *float64              `json:"runAsUser,omitempty" desc:"Explicitly set the user ID for the processes in the container to run as. Default is 10101."`
 	Resources           *ResourceRequirements `json:"resources,omitempty"`
 	RunOnUpdate         *bool                 `json:"runOnUpdate,omitempty" desc:"enable to run the job also on pre-upgrade"`
@@ -405,9 +452,10 @@ Scheduling:
 * * * * *
 */
 type CertGenCron struct {
-	Enabled                  *bool                  `json:"enabled,omitempty" desc:"enable the cronjob"`
-	Schedule                 *string                `json:"schedule,omitempty" desc:"Cron job scheduling"`
-	MtlsKubeResourceOverride map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen cronjob."`
+	Enabled                               *bool                  `json:"enabled,omitempty" desc:"enable the cronjob"`
+	Schedule                              *string                `json:"schedule,omitempty" desc:"Cron job scheduling"`
+	MtlsKubeResourceOverride              map[string]interface{} `json:"mtlsKubeResourceOverride,omitempty" desc:"override fields in the gloo-mtls-certgen cronjob."`
+	ValidationWebhookKubeResourceOverride map[string]interface{} `json:"validationWebhookKubeResourceOverride,omitempty" desc:"override fields in the gateway-certgen cronjob."`
 }
 
 type GatewayProxy struct {

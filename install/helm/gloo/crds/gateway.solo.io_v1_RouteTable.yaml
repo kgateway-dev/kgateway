@@ -598,6 +598,19 @@ spec:
                           properties:
                             includeVhRateLimits:
                               type: boolean
+                            localRatelimit:
+                              properties:
+                                fillInterval:
+                                  type: string
+                                maxTokens:
+                                  format: int32
+                                  type: integer
+                                tokensPerFill:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
+                              type: object
                             rateLimits:
                               items:
                                 properties:
@@ -795,6 +808,19 @@ spec:
                           properties:
                             includeVhRateLimits:
                               type: boolean
+                            localRatelimit:
+                              properties:
+                                fillInterval:
+                                  type: string
+                                maxTokens:
+                                  format: int32
+                                  type: integer
+                                tokensPerFill:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
+                              type: object
                             rateLimits:
                               items:
                                 properties:
@@ -971,6 +997,19 @@ spec:
                           properties:
                             includeVhRateLimits:
                               type: boolean
+                            localRatelimit:
+                              properties:
+                                fillInterval:
+                                  type: string
+                                maxTokens:
+                                  format: int32
+                                  type: integer
+                                tokensPerFill:
+                                  maximum: 4294967295
+                                  minimum: 0
+                                  nullable: true
+                                  type: integer
+                              type: object
                             rateLimits:
                               items:
                                 properties:
