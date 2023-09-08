@@ -222,26 +222,25 @@ Gloo Edge Open Source Helm values in Enterprise must be prefixed with `gloo`, un
 
 ## Enterprise UI
 
-Gloo Edge Enterprise includes the user interface (UI) by default. Note that when you enable Gloo Federation, the UI does not show any data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). If you do not use Gloo Federation, the UI shows the installed Gloo Edge instance automatically without cluster registration.
-
-To disable Gloo Federation, you can set `gloo-fed.enabled=false` during installation as shown in the following examples.
+Gloo Edge Enterprise comes with a built-in UI that you can use to view information about your cluster and the Gloo Edge instance that you installed. You can enable the Gloo Edge Enterprise UI by using the `gloo-fed.glooFedApiserver.enable=true` setting during the installation. 
 
 {{< tabs >}}
 {{% tab name="glooctl install" %}}
 ```shell script
 echo "gloo-fed:
-  enabled: false" > values.yaml
+  glooFedApiserver:
+    enable: true" > values.yaml
 glooctl install gateway enterprise --values values.yaml --license-key=<LICENSE_KEY>
 ```
 {{% /tab %}}
 {{% tab name="helm install" %}}
 ```shell script
-helm install gloo glooe/gloo-ee --namespace gloo-system --set gloo-fed.enabled=false --set license_key=<LICENSE_KEY>
+helm install gloo glooe/gloo-ee --namespace gloo-system --set gloo-fed.glooFedApiserver.enable=true --set license_key=<LICENSE_KEY>
 ```
 {{% /tab %}}
 {{< /tabs >}}
 
-
+Note that when you also enable Gloo Federation by using the `gloo-fed.enabled=true` setting, the UI does not show any federation data until you [register one or more clusters]({{< versioned_link_path fromRoot="/guides/gloo_federation/cluster_registration/" >}}). 
 
 
 ## Verify your Installation
