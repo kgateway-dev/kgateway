@@ -385,7 +385,7 @@ curl $(glooctl proxy url)/all-pets
 ```
 
 {{% notice tip %}}
-If you test locally minikube, the load balancer service that exposes the gateway proxy is not assigned an external IP address or hostname and remains in a `<pending>` state. Because of that, the `glooctl proxy url` command returns an error similar to `Error: load balancer ingress not found on service gateway-proxy curl: (3) URL using bad/illegal format or missing URL`. To open a connection to the gateway proxy service, run `minikube tunnel`. 
+If you test locally by using minikube, the load balancer service that exposes the gateway proxy is not assigned an external IP address or hostname and remains in a `<pending>` state. Because of that, the `glooctl proxy url` command returns an error similar to `Error: load balancer ingress not found on service gateway-proxy curl: (3) URL using bad/illegal format or missing URL`. To open a connection to the gateway proxy service, run `minikube tunnel`. 
 {{% /notice %}}
 
 
