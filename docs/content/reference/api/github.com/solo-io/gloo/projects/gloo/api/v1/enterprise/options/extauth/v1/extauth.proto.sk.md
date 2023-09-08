@@ -1460,7 +1460,9 @@ DEPRECATED: use ApiKey
 ---
 ### OpaAuth
 
-
+ 
+Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+For Gloo Platform environments, use OpaServerAuth instead.
 
 ```yaml
 "modules": []core.solo.io.ResourceRef

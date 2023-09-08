@@ -1091,6 +1091,8 @@ message ApiKeySecret {
     map<string, string> metadata = 4;
 }
 
+// Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+// For Gloo Platform environments, use OpaServerAuth instead.
 message OpaAuth {
     // An optional resource reference to config maps containing modules to assist in the resolution of `query`.
     repeated core.solo.io.ResourceRef modules = 1;

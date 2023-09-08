@@ -3610,6 +3610,8 @@ func (x *ApiKeySecret) GetMetadata() map[string]string {
 	return nil
 }
 
+// Enforce Open Policy Agent (OPA) policies in Gloo Edge environments.
+// For Gloo Platform environments, use OpaServerAuth instead.
 type OpaAuth struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
