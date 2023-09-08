@@ -167,7 +167,7 @@ spec:
 {{- if $spec.failover.enabled }}
 {{- $failoverGatewayOverride := $spec.failover.kubeResourceOverride }}
 ---
-{{- include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
+{{ include "gloo.util.merge" (list $ctx $failoverGatewayOverride "defaultGateway.failoverGateway") -}}
 {{- end }}{{/* if $spec.failover.enabled */}}
 {{- end }}{{/* if $spec.failover */}}
 {{- end }}{{/* if $spec.gatewaySettings and (not $spec.disabled) */}}
