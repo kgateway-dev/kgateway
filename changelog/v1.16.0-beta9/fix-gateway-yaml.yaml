@@ -1,0 +1,10 @@
+changelog:
+  - type: HELM
+    description: Fix syntax error in Gateway yaml when using kube overrides.
+    issueLink: https://github.com/solo-io/gloo/issues/8648
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: k8s-utils
+    dependencyTag: v0.5.1
+    description: Pick up test manifest updates.
