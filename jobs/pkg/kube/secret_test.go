@@ -86,7 +86,7 @@ var _ = Describe("Secret", func() {
 			kube := fake.NewSimpleClientset()
 
 			secret, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
-				"mysvcname", "mysvcnamespace")
+				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secret).To(BeNil())
 		})
@@ -102,7 +102,7 @@ var _ = Describe("Secret", func() {
 				CertFileName:       "tls.crt",
 				CaBundleFileName:   "ca.crt",
 				PrivateKey:         data,
-				Cert:               generateCaCertBytes(time.Now(), time.Now().Add(1*time.Minute)),
+				Cert:               generateCaCertBytes(time.Now(), time.Now().Add(time.Hour*2161)),
 				CaBundle:           data,
 			}
 
@@ -110,7 +110,7 @@ var _ = Describe("Secret", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
-				"mysvcname", "mysvcnamespace")
+				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(existing).NotTo(BeNil())
 		})
@@ -134,7 +134,7 @@ var _ = Describe("Secret", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
-				"mysvcname", "mysvcnamespace")
+				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(existing).To(BeNil())
 		})
@@ -162,7 +162,7 @@ var _ = Describe("Secret", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
-				"mysvcname", "mysvcnamespace")
+				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(existing).To(BeNil())
 		})
@@ -186,7 +186,31 @@ var _ = Describe("Secret", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
-				"newservicename", "mysvcnamespace")
+				"newservicename", "mysvcnamespace", time.Hour*2160)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(existing).To(BeNil())
+		})
+
+		It("recognizes a tls secret that is expiring soon", func() {
+			data := []byte{1, 2, 3}
+
+			kube := fake.NewSimpleClientset()
+			secretCfg := TlsSecret{
+				SecretName:         "mysecret",
+				SecretNamespace:    "mynamespace",
+				PrivateKeyFileName: "tls.key",
+				CertFileName:       "tls.crt",
+				CaBundleFileName:   "ca.crt",
+				PrivateKey:         data,
+				Cert:               generateCaCertBytes(time.Now(), time.Now().Add(time.Hour*720)),
+				CaBundle:           data,
+			}
+
+			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(existing).To(BeNil())
 		})
