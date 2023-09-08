@@ -374,8 +374,13 @@ At this point we have a Virtual Service with a routing rule sending traffic on t
 
 ### Test the Route Rule
 
-Let’s test the route rule by retrieving the URL of Gloo Edge, and sending a web request to the `/all-pets` path of the URL using curl:
+Let’s test the route rule by retrieving the URL of Gloo Edge, and sending a web request to the `/all-pets` path of the URL using curl. 
 
+{{% notice tip %}}
+If you test locally minikube, the load balancer service that exposes the gateway proxy is not assigned an external IP address or hostname and remains in a `<pending>` state. Because of that, the `glooctl proxy url` command returns an error similar to `Error: load balancer ingress not found on service gateway-proxy curl: (3) URL using bad/illegal format or missing URL`. To access the proxy service, run `minikube tunnel`. 
+{{% /notice %}}
+
+Note that 
 ```shell
 curl $(glooctl proxy url)/all-pets
 ```
