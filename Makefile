@@ -603,7 +603,7 @@ PUBLISH_CONTEXT := PULL_REQUEST
 ifeq ($(shell echo $(git_tag) | egrep "$(tag_regex)"),)
 # Forked repos don't have tags by default, so we create a standard tag for them
 # This only impacts the version of the assets used in CI for this PR, so it is ok that it is not a real tag
-VERSION = 1.0.0-$(TEST_ASSET_ID); echo "WARNING: $(git_tag) not valid semver, using version 1.0.0-$(TEST_ASSET_ID)"
+VERSION = 1.0.0-$(TEST_ASSET_ID)
 else
 VERSION = $(shell echo $(git_tag) | cut -c 2-)-$(TEST_ASSET_ID) # example: 1.16.0-beta4-{TEST_ASSET_ID}
 endif
