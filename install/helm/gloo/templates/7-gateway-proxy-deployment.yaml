@@ -448,6 +448,7 @@ spec:
           - name: CANONICAL_REVISION
             valueFrom:
               fieldRef:
+                apiVersion: v1
                 fieldPath: 'metadata.labels[''service.istio.io/canonical-revision'']'
           - name: ISTIO_META_POD_NAME
             valueFrom:
