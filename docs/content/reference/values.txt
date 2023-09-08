@@ -1213,7 +1213,7 @@
 |global.glooMtls.envoy.securityContext.seccompProfile.type|string|||
 |global.glooMtls.envoy.securityContext.seccompProfile.localhostProfile|string|||
 |global.glooMtls.envoy.securityContext.mergePolicy|string||How to combine the defined security policy with the default security policy. Valid values are "", "no-merge", and "helm-merge". If defined as an empty string or "no-merge", use the defined security context as is.  If "helm-merge", merge this security context with the default security context according to the logic of [the helm 'merge' function](https://helm.sh/docs/chart_template_guide/function_list/#merge-mustmerge). This is intended to be used to modify a field in a security context, while using all other default values. Please note that due to how helm's 'merge' function works, you can not override a 'true' value with a 'false' value, and for that case you will need to define the entire security context and set this values to false. Default value is "".|
-|global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
+|global.glooMtls.istioProxy.image.tag|string|1.14.6|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
 |global.glooMtls.istioProxy.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
