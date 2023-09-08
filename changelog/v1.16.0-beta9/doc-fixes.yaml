@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Add weekly updates to fix typos and other stuff. 
+      skipCI-kube-tests:true
