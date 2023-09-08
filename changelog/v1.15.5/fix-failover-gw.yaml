@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix syntax error in Failover Gateway yaml when using kube overrides.
+    resolvesIssue: false
