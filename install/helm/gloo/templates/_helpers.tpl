@@ -77,8 +77,8 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{ end -}}
 
 {{- define "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" -}}
-{{- /* include hook detele policy based on whether setTtlAfterFinished is undefined or equal to
-      true. If it is the case, only delete explicitely before hook creation. Otherwise, also
+{{- /* include hook delete policy based on whether setTtlAfterFinished is undefined or equal to
+      true. If it is the case, only delete explicitly before hook creation. Otherwise, also
       delete also on success. The 'kindIs' comparision is how we can check for undefined */ -}}
 {{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
 "helm.sh/hook-delete-policy": before-hook-creation
