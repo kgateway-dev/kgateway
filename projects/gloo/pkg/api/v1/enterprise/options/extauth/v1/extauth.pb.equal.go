@@ -5127,38 +5127,6 @@ func (m *ExtAuthConfig_OpaAuthConfig) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ExtAuthConfig_OpaAuthOptions) Equal(that interface{}) bool {
-	if that == nil {
-		return m == nil
-	}
-
-	target, ok := that.(*ExtAuthConfig_OpaAuthOptions)
-	if !ok {
-		that2, ok := that.(ExtAuthConfig_OpaAuthOptions)
-		if ok {
-			target = &that2
-		} else {
-			return false
-		}
-	}
-	if target == nil {
-		return m == nil
-	} else if m == nil {
-		return false
-	}
-
-	if m.GetFastInputConversion() != target.GetFastInputConversion() {
-		return false
-	}
-
-	if m.GetReturnDecisionReason() != target.GetReturnDecisionReason() {
-		return false
-	}
-
-	return true
-}
-
-// Equal function
 func (m *ExtAuthConfig_OpaServerAuthConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil

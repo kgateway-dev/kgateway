@@ -60,6 +60,9 @@ spec:
             - "--secret-name={{ .Values.gateway.validation.secretName }}"
             - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
+            {{- if .Values.gateway.certGenJob.forceRotation }}
+            - "--force-rotation=true"
+            {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}
         {{- with .Values.gateway.certGenJob.resources }}
           resources: {{ toYaml . | nindent 12}}
         {{- end }}
