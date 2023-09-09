@@ -1,0 +1,16 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.26.2-patch4
+  issueLink: https://github.com/solo-io/solo-projects/issues/5214
+  resolvesIssue: false
+  description: >-
+    Use latest envoy-gloo which brings us forked envoy for ext proc updates
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-control-plane-fork-v2
+  dependencyTag: v0.11.1
+  description: >-
+    Match forking for envoy
+

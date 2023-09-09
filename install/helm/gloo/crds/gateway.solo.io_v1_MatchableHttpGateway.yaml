@@ -551,6 +551,10 @@ spec:
                             type: string
                           messageTimeout:
                             type: string
+                          metadataContextNamespaces:
+                            items:
+                              type: string
+                            type: array
                           mutationRules:
                             properties:
                               allowAllRouting:
@@ -627,6 +631,10 @@ spec:
                           statPrefix:
                             nullable: true
                             type: string
+                          typedMetadataContextNamespaces:
+                            items:
+                              type: string
+                            type: array
                         type: object
                       extauth:
                         properties:
