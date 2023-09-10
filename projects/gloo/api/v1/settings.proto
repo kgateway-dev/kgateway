@@ -171,9 +171,13 @@ message Settings {
         string iam_server_id_header = 3;
         // The Vault path on which the AWS auth is mounted
         string mount_path = 4;
-        // The Access Key ID as provided by the security credentials on the AWS IAM resource
+        // The Access Key ID as provided by the security credentials on the AWS IAM resource.
+        // Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted.
+        // https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences
         string access_key_id = 5;
-        // The Secret Access Key as provided by the security credentials on the AWS IAM resource
+        // The Secret Access Key as provided by the security credentials on the AWS IAM resource.
+        // Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted.
+        // https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences
         string secret_access_key = 6;
         // The Session Token as provided by the security credentials on the AWS IAM resource
         string session_token = 7;

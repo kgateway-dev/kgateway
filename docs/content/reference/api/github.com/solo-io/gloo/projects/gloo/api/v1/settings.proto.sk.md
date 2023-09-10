@@ -280,8 +280,8 @@ For more info see https://developer.hashicorp.com/vault/docs/auth/aws
 | `region` | `string` | The AWS region to use for the login attempt. |
 | `iamServerIdHeader` | `string` | The IAM Server ID Header required to be included in the request. |
 | `mountPath` | `string` | The Vault path on which the AWS auth is mounted. |
-| `accessKeyId` | `string` | The Access Key ID as provided by the security credentials on the AWS IAM resource. |
-| `secretAccessKey` | `string` | The Secret Access Key as provided by the security credentials on the AWS IAM resource. |
+| `accessKeyId` | `string` | The Access Key ID as provided by the security credentials on the AWS IAM resource. Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences. |
+| `secretAccessKey` | `string` | The Secret Access Key as provided by the security credentials on the AWS IAM resource. Optional: In cases such as receiving temporary credentials through assumed roles with AWS Security Token Service (STS) or IAM Roles for Service Accounts (IRSA), this field can be omitted. https://developer.hashicorp.com/vault/docs/auth/aws#iam-authentication-inferences. |
 | `sessionToken` | `string` | The Session Token as provided by the security credentials on the AWS IAM resource. |
 
 

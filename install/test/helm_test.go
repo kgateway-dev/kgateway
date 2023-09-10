@@ -93,6 +93,7 @@ var _ = Describe("Helm Test", func() {
 			}
 			selector         map[string]string
 			testManifest     TestManifest
+			renderErr        error
 			statsAnnotations map[string]string
 		)
 
@@ -114,8 +115,9 @@ var _ = Describe("Helm Test", func() {
 		}
 
 		BeforeEach(func() {
-			// Ensure that tests do not share manifests by accident
+			// Ensure that tests do not share manifests or renderErrs by accident
 			testManifest = nil
+			renderErr = nil
 		})
 
 		Describe(rendererTestCase.rendererName, func() {
@@ -124,6 +126,12 @@ var _ = Describe("Helm Test", func() {
 				tm, err := rendererTestCase.renderer.RenderManifest(namespace, values)
 				ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to render manifest")
 				testManifest = tm
+			}
+
+			expectRenderError := func(namespace string, values helmValues) {
+				_, err := rendererTestCase.renderer.RenderManifest(namespace, values)
+				ExpectWithOffset(1, err).To(HaveOccurred())
+				renderErr = err
 			}
 
 			// helper for passing a values file
@@ -203,6 +211,73 @@ var _ = Describe("Helm Test", func() {
 						Expect(constructResourceID(resource1)).NotTo(Equal(constructResourceID(resource2)))
 					}
 				}
+			})
+
+			It("does not create the gloo pdb by default", func() {
+				prepareMakefile(namespace, helmValues{})
+
+				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeNil())
+			})
+
+			It("can create gloo pdb with minAvailable", func() {
+
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{
+						"gloo.podDisruptionBudget.minAvailable='2'",
+					},
+				})
+
+				pdb := makeUnstructured(`
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gloo-pdb
+  namespace: gloo-system
+spec:
+  minAvailable: '2'
+  selector:
+    matchLabels:
+      gloo: gloo
+`)
+
+				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeEquivalentTo(pdb))
+			})
+
+			It("can create gloo pdb with maxUnavailable", func() {
+
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{
+						"gloo.podDisruptionBudget.maxUnavailable='2'",
+					},
+				})
+
+				pdb := makeUnstructured(`
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: gloo-pdb
+  namespace: gloo-system
+spec:
+  maxUnavailable: '2'
+  selector:
+    matchLabels:
+      gloo: gloo
+`)
+
+				testManifest.ExpectUnstructured("PodDisruptionBudget", namespace, "gloo-pdb").To(BeEquivalentTo(pdb))
+			})
+
+			It("errors rendering when gloo pdb has both maxUnavailable and minAvailable set", func() {
+
+				expectRenderError(namespace, helmValues{
+					valuesArgs: []string{
+						"gloo.podDisruptionBudget.maxUnavailable='2'",
+						"gloo.podDisruptionBudget.minAvailable='2'",
+					},
+				})
+
+				Expect(renderErr).NotTo(BeNil())
+				Expect(renderErr.Error()).To(ContainSubstring("gloo PDB values minAvailable and maxUnavailable are mutually exclusive"))
 			})
 
 			Context("stats server settings", func() {
@@ -409,6 +484,7 @@ var _ = Describe("Helm Test", func() {
 							"gloo-mtls-certgen-cronjob",
 							"gloo-mtls-certgen",
 							"gateway-certgen",
+							"gateway-certgen-cronjob",
 						}
 
 						expectedLabels := map[string]string{
@@ -1122,7 +1198,7 @@ var _ = Describe("Helm Test", func() {
 							"global.istioIntegration.enableIstioSidecarOnGateway=true",
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
-							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
+							// shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -1173,7 +1249,7 @@ var _ = Describe("Helm Test", func() {
 							"global.istioIntegration.istioSidecarRevTag=some-revision",
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpPort=%d", httpPort),
 							fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.httpsPort=%d", httpsPort),
-							//shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
+							// shortcut to get a proxy with a name and mostly default values but avoid hiding any bugs around needing to set disabled=false
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpPort=%d", secondDeploymentHttpPort),
 							fmt.Sprintf("gatewayProxies.secondGatewayProxy.podTemplate.httpsPort=%d", secondDeploymentHttpsPort),
 						},
@@ -1528,7 +1604,7 @@ var _ = Describe("Helm Test", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.disabled=true",
-								//anotherGatewayProxy should exist but not have a value for disabled
+								// anotherGatewayProxy should exist but not have a value for disabled
 								"gatewayProxies.anotherGatewayProxy.loopbackAddress=127.0.0.1",
 							},
 						})
@@ -2056,7 +2132,7 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable=2",
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.minAvailable='2'",
 							},
 						})
 
@@ -2067,7 +2143,7 @@ metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
 spec:
-  minAvailable: 2
+  minAvailable: '2'
   selector:
     matchLabels:
       gateway-proxy-id: gateway-proxy
@@ -2080,7 +2156,7 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable='2'",
 							},
 						})
 
@@ -2091,7 +2167,7 @@ metadata:
   name: gateway-proxy-pdb
   namespace: gloo-system
 spec:
-  maxUnavailable: 2
+  maxUnavailable: '2'
   selector:
     matchLabels:
       gateway-proxy-id: gateway-proxy
@@ -2104,8 +2180,8 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable=2",
-								"gatewayProxies.gatewayProxyTwo.podDisruptionBudget.maxUnavailable=2",
+								"gatewayProxies.gatewayProxy.podDisruptionBudget.maxUnavailable='2'",
+								"gatewayProxies.gatewayProxyTwo.podDisruptionBudget.maxUnavailable='2'",
 							},
 						})
 
@@ -2116,7 +2192,7 @@ metadata:
   name: %s-pdb
   namespace: gloo-system
 spec:
-  maxUnavailable: 2
+  maxUnavailable: '2'
   selector:
     matchLabels:
       gateway-proxy-id: %s
@@ -3357,7 +3433,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_MESH_ID env var value
+							// get ISTIO_META_MESH_ID env var value
 							var istioMetaMeshID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -3394,7 +3470,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_MESH_ID env var value
+							// get ISTIO_META_MESH_ID env var value
 							var istioMetaMeshID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -3430,7 +3506,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_CLUSTER_ID env var value
+							// get ISTIO_META_CLUSTER_ID env var value
 							var istioMetaClusterID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -3467,7 +3543,7 @@ spec:
 							structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
 							Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
-							//get ISTIO_META_CLUSTER_ID env var value
+							// get ISTIO_META_CLUSTER_ID env var value
 							var istioMetaClusterID string
 							for _, c := range structuredDeployment.Spec.Template.Spec.Containers {
 								for _, e := range c.Env {
@@ -3933,6 +4009,20 @@ spec:
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
+					It("sets secretOptions in settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/set_secretSettings_in_settings.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.secretOptions.sources[0].vault.address=http://vault-internal.vault:8200",
+								"settings.secretOptions.sources[0].vault.aws.iamServerIdHeader=vault.gloo.example.com",
+								"settings.secretOptions.sources[0].vault.aws.mountPath=aws",
+								"settings.secretOptions.sources[0].vault.aws.region=us-east-1",
+								"settings.secretOptions.sources[0].vault.pathPrefix=dev",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("can enable isolateVirtualHostsBySslConfig", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/isolate_virtual_hosts_by_ssl_config.yaml", namespace)
 
@@ -4322,6 +4412,7 @@ spec:
             - "--secret-name=gateway-validation-certs"
             - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
+            - "--force-rotation=true"
       restartPolicy: OnFailure
 
 `)
@@ -5695,6 +5786,7 @@ metadata:
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
@@ -5747,6 +5839,7 @@ metadata:
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("resource rollout job", "Job", "gloo-resource-rollout", "gateway.rolloutJob"),
 					Entry("resource migration job", "Job", "gloo-resource-migration", "gateway.rolloutJob"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup", "gateway.cleanupJob"),
@@ -5777,6 +5870,7 @@ metadata:
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("Setting setTtlAfterFinished=true includes ttlSecondsAfterFinished on Jobs",
@@ -5804,6 +5898,7 @@ metadata:
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",
@@ -5828,6 +5923,7 @@ metadata:
 					Entry("gateway certgen job", "Job", "gateway-certgen"),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
+					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("resource rollout job", "Job", "gloo-resource-rollout"),
 					Entry("resource migration job", "Job", "gloo-resource-migration"),
 					Entry("resource cleanup job", "Job", "gloo-resource-cleanup"),
@@ -6268,6 +6364,7 @@ metadata:
 					Entry("6-access-logger-deployment", "accessLogger.deployment.kubeResourceOverride", "accessLogger.enabled=true"),
 					Entry("6-access-logger-service", "accessLogger.service.kubeResourceOverride", "accessLogger.enabled=true"),
 					Entry("6.5-gateway-certgen-job", "gateway.certGenJob.kubeResourceOverride"),
+					Entry("6.5-gateway-certgen-cronjob", "gateway.certGenJob.cron.validationWebhookKubeResourceOverride", "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 					Entry("8-gateway-proxy-service-account", "gateway.proxyServiceAccount.kubeResourceOverride"),
 					Entry("10-ingress-deployment", "ingress.deployment.kubeResourceOverride", "ingress.enabled=true"),
 					Entry("11-ingress-proxy-deployment", "ingressProxy.deployment.kubeResourceOverride", "ingress.enabled=true"),
@@ -6288,13 +6385,13 @@ metadata:
 					// todo: implement overrides for these if need arises
 					// A named helm template will have to be created for each of the resources
 					// generated in the following files.
-					//Entry("19-gloo-mtls-configmap", ),
-					//Entry("20-namespace-clusterrole-gateway", ""),
-					//Entry("21-namespace-clusterrole-ingress", ""),
-					//Entry("22-namespace-clusterrole-knative", ""),
-					//Entry("23-namespace-clusterrolebinding-gateway", ""),
-					//Entry("24-namespace-clusterrolebinding-ingress", ""),
-					//Entry("25-namespace-clusterrolebinding-knative", ""),
+					// Entry("19-gloo-mtls-configmap", ),
+					// Entry("20-namespace-clusterrole-gateway", ""),
+					// Entry("21-namespace-clusterrole-ingress", ""),
+					// Entry("22-namespace-clusterrole-knative", ""),
+					// Entry("23-namespace-clusterrolebinding-gateway", ""),
+					// Entry("24-namespace-clusterrolebinding-ingress", ""),
+					// Entry("25-namespace-clusterrolebinding-knative", ""),
 				)
 
 				DescribeTable("overrides Yaml in resources for each gateway proxy", func(proxyOverrideProperty string, argsPerProxy []string) {
@@ -6340,17 +6437,64 @@ metadata:
 			})
 
 			Context("Kube GatewayKube overrides", func() {
-				It("httpsGatewayKubeOverride allows to override ssl true value with false", func() {
+				It("can override values on default Gateways", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false"},
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.gatewaySettings.httpGatewayKubeOverride.spec.bindPort=1234",
+							"gatewayProxies.gatewayProxy.gatewaySettings.httpsGatewayKubeOverride.spec.ssl=false",
+							"gatewayProxies.gatewayProxy.failover.enabled=true",
+							"gatewayProxies.gatewayProxy.failover.kubeResourceOverride.spec.bindPort=5678",
+						},
 					})
+					// expected gateways
+					gw := makeUnstructuredGateway(namespace, defaults.GatewayProxyName, false)
+					unstructured.SetNestedField(gw.Object,
+						int64(1234),
+						"spec", "bindPort")
 					gwSsl := makeUnstructuredGateway(namespace, defaults.GatewayProxyName, true)
 					unstructured.SetNestedField(gwSsl.Object,
 						false,
 						"spec", "ssl")
+					gwFailover := makeUnstructuredFailoverGateway(namespace, defaults.GatewayProxyName)
+					unstructured.SetNestedField(gwFailover.Object,
+						int64(5678),
+						"spec", "bindPort")
+
 					assertCustomResourceManifest(map[string]types.GomegaMatcher{
-						defaults.GatewayProxyName:                    Not(BeNil()),
-						getSslGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwSsl),
+						defaults.GatewayProxyName:                         BeEquivalentTo(gw),
+						getSslGatewayName(defaults.GatewayProxyName):      BeEquivalentTo(gwSsl),
+						getFailoverGatewayName(defaults.GatewayProxyName): BeEquivalentTo(gwFailover),
+					})
+				})
+
+				It("can override values on custom Gateways", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.disabled=true",
+							"gatewayProxies.anotherProxy.gatewaySettings.httpGatewayKubeOverride.spec.bindAddress=something",
+							"gatewayProxies.anotherProxy.gatewaySettings.httpsGatewayKubeOverride.spec.proxyNames[0]=new-proxy",
+							"gatewayProxies.anotherProxy.failover.enabled=true",
+							"gatewayProxies.anotherProxy.failover.kubeResourceOverride.spec.bindPort=5678",
+						},
+					})
+					// expected gateways
+					anotherGw := makeUnstructuredGateway(namespace, "another-proxy", false)
+					unstructured.SetNestedField(anotherGw.Object,
+						"something",
+						"spec", "bindAddress")
+					anotherGwSsl := makeUnstructuredGateway(namespace, "another-proxy", true)
+					unstructured.SetNestedStringSlice(anotherGwSsl.Object,
+						[]string{"new-proxy"},
+						"spec", "proxyNames")
+					anotherGwFailover := makeUnstructuredFailoverGateway(namespace, "another-proxy")
+					unstructured.SetNestedField(anotherGwFailover.Object,
+						int64(5678),
+						"spec", "bindPort")
+
+					assertCustomResourceManifest(map[string]types.GomegaMatcher{
+						"another-proxy":                         BeEquivalentTo(anotherGw),
+						getSslGatewayName("another-proxy"):      BeEquivalentTo(anotherGwSsl),
+						getFailoverGatewayName("another-proxy"): BeEquivalentTo(anotherGwFailover),
 					})
 				})
 			})
@@ -6369,7 +6513,7 @@ metadata:
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", u))
 
 						containers := structuredDeployment.Spec.Template.Spec.Containers
-						//a := getFieldFromUnstructured(u, []string{"spec", "template", "spec", "containers"}...)
+						// a := getFieldFromUnstructured(u, []string{"spec", "template", "spec", "containers"}...)
 						Expect(containers).ToNot(BeNil())
 						Expect(containers).To(HaveLen(1), "should have exactly 1 container")
 						ports := containers[0].Ports
@@ -6715,6 +6859,32 @@ spec:
   - ` + name + `
   ssl: ` + strconv.FormatBool(ssl) + `
   useProxyProto: false
+`)
+}
+
+func makeUnstructuredFailoverGateway(namespace string, proxyName string) *unstructured.Unstructured {
+	return makeUnstructured(`
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: ` + getFailoverGatewayName(proxyName) + `
+  namespace: ` + namespace + `
+spec:
+  bindAddress: '::'
+  bindPort: 15443
+  proxyNames:
+  - ` + proxyName + `
+  tcpGateway:
+    tcpHosts:
+    - destination:
+        forwardSniClusterName: {}
+      name: failover
+      sslConfig:
+        secretRef:
+          name: failover-downstream
+          namespace: ` + namespace + `
 `)
 }
 
