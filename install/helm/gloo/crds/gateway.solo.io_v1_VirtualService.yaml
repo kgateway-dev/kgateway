@@ -327,6 +327,10 @@ spec:
                                   timeout:
                                     type: string
                                 type: object
+                              metadataContextNamespaces:
+                                items:
+                                  type: string
+                                type: array
                               processingMode:
                                 properties:
                                   requestBodyMode:
@@ -353,6 +357,10 @@ spec:
                                   type: string
                                 type: array
                               responseAttributes:
+                                items:
+                                  type: string
+                                type: array
+                              typedMetadataContextNamespaces:
                                 items:
                                   type: string
                                 type: array
@@ -2661,6 +2669,10 @@ spec:
                                         timeout:
                                           type: string
                                       type: object
+                                    metadataContextNamespaces:
+                                      items:
+                                        type: string
+                                      type: array
                                     processingMode:
                                       properties:
                                         requestBodyMode:
@@ -2687,6 +2699,10 @@ spec:
                                         type: string
                                       type: array
                                     responseAttributes:
+                                      items:
+                                        type: string
+                                      type: array
+                                    typedMetadataContextNamespaces:
                                       items:
                                         type: string
                                       type: array

@@ -53,6 +53,8 @@ Users should take care to understand the risks of using this extension before pr
 "forwardRules": .extproc.options.gloo.solo.io.HeaderForwardingRules
 "filterMetadata": .google.protobuf.Struct
 "allowModeOverride": .google.protobuf.BoolValue
+"metadataContextNamespaces": []string
+"typedMetadataContextNamespaces": []string
 
 ```
 
@@ -73,6 +75,8 @@ Users should take care to understand the risks of using this extension before pr
 | `forwardRules` | [.extproc.options.gloo.solo.io.HeaderForwardingRules](../extproc.proto.sk/#headerforwardingrules) | Allow headers matching the `forward_rules` to be forwarded to the external processing server. If not set, all headers are forwarded to the external processing server. |
 | `filterMetadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Additional metadata to be added to the filter state for logging purposes. The metadata will be added to StreamInfo's filter state under the namespace corresponding to the ext_proc filter name. |
 | `allowModeOverride` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If `allow_mode_override` is set to true, the filter config [processing_mode](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/ext_proc/v3/ext_proc.proto#envoy-v3-api-field-extensions-filters-http-ext-proc-v3-externalprocessor-processing-mode) can be overridden by the response message from the external processing server [mode_override](https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/ext_proc/v3/external_processor.proto#envoy-v3-api-field-service-ext-proc-v3-processingresponse-mode-override). If not set, `mode_override` API in the response message will be ignored. |
+| `metadataContextNamespaces` | `[]string` | Specifies a list of metadata namespaces whose values, if present, will be passed to the ext_proc service as an opaque *protobuf::Struct*. |
+| `typedMetadataContextNamespaces` | `[]string` | Specifies a list of metadata namespaces whose values, if present, will be passed to the ext_proc service. :ref:`typed_filter_metadata <envoy_v3_api_field_config.core.v3.Metadata.typed_filter_metadata>` is passed as an ``protobuf::Any``. It works in a way similar to ``metadata_context_namespaces`` but allows envoy and external processing server to share the protobuf message definition in order to do a safe parsing. |
 
 
 
@@ -133,6 +137,8 @@ External processor settings that can be configured on a virtual host or route.
 "requestAttributes": []string
 "responseAttributes": []string
 "grpcService": .extproc.options.gloo.solo.io.GrpcService
+"metadataContextNamespaces": []string
+"typedMetadataContextNamespaces": []string
 
 ```
 
@@ -140,9 +146,11 @@ External processor settings that can be configured on a virtual host or route.
 | ----- | ---- | ----------- | 
 | `processingMode` | [.solo.io.envoy.extensions.filters.http.ext_proc.v3.ProcessingMode](../../../../../external/envoy/extensions/filters/http/ext_proc/v3/processing_mode.proto.sk/#processingmode) | Set a different processing mode for this virtual host or route than the default. |
 | `asyncMode` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | NOT CURRENTLY IMPLEMENTED. Set a different asynchronous processing option than the default. |
-| `requestAttributes` | `[]string` | NOT CURRENTLY IMPLEMENTED. Set different optional attributes than the default setting of the `request_attributes` field. |
-| `responseAttributes` | `[]string` | NOT CURRENTLY IMPLEMENTED. Set different optional properties than the default setting of the `response_attributes` field. |
+| `requestAttributes` | `[]string` | NOT FINALIZED UPSTREAM use at your own upgrade risk Set different optional attributes than the default setting of the `request_attributes` field. |
+| `responseAttributes` | `[]string` | NOT FINALIZED UPSTREAM use at your own upgrade risk Set different optional properties than the default setting of the `response_attributes` field. |
 | `grpcService` | [.extproc.options.gloo.solo.io.GrpcService](../extproc.proto.sk/#grpcservice) | Set a different gRPC service for this virtual host or route than the default. |
+| `metadataContextNamespaces` | `[]string` | Specifies a list of metadata namespaces whose values, if present, will be passed to the ext_proc service as an opaque *protobuf::Struct*. |
+| `typedMetadataContextNamespaces` | `[]string` | Specifies a list of metadata namespaces whose values, if present, will be passed to the ext_proc service. :ref:`typed_filter_metadata <envoy_v3_api_field_config.core.v3.Metadata.typed_filter_metadata>` is passed as an ``protobuf::Any``. It works in a way similar to ``metadata_context_namespaces`` but allows envoy and external processing server to share the protobuf message definition in order to do a safe parsing. |
 
 
 
