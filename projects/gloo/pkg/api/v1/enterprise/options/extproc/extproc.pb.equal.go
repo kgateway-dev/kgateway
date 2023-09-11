@@ -198,6 +198,28 @@ func (m *Settings) Equal(that interface{}) bool {
 		}
 	}
 
+	if len(m.GetMetadataContextNamespaces()) != len(target.GetMetadataContextNamespaces()) {
+		return false
+	}
+	for idx, v := range m.GetMetadataContextNamespaces() {
+
+		if strings.Compare(v, target.GetMetadataContextNamespaces()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetTypedMetadataContextNamespaces()) != len(target.GetTypedMetadataContextNamespaces()) {
+		return false
+	}
+	for idx, v := range m.GetTypedMetadataContextNamespaces() {
+
+		if strings.Compare(v, target.GetTypedMetadataContextNamespaces()[idx]) != 0 {
+			return false
+		}
+
+	}
+
 	return true
 }
 
@@ -416,6 +438,28 @@ func (m *Overrides) Equal(that interface{}) bool {
 		if !proto.Equal(m.GetGrpcService(), target.GetGrpcService()) {
 			return false
 		}
+	}
+
+	if len(m.GetMetadataContextNamespaces()) != len(target.GetMetadataContextNamespaces()) {
+		return false
+	}
+	for idx, v := range m.GetMetadataContextNamespaces() {
+
+		if strings.Compare(v, target.GetMetadataContextNamespaces()[idx]) != 0 {
+			return false
+		}
+
+	}
+
+	if len(m.GetTypedMetadataContextNamespaces()) != len(target.GetTypedMetadataContextNamespaces()) {
+		return false
+	}
+	for idx, v := range m.GetTypedMetadataContextNamespaces() {
+
+		if strings.Compare(v, target.GetTypedMetadataContextNamespaces()[idx]) != 0 {
+			return false
+		}
+
 	}
 
 	return true
