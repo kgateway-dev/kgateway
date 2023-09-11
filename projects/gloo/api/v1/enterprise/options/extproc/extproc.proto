@@ -88,6 +88,7 @@ message Settings {
   // between statistics emitted by multiple *ext_proc* filters in an HTTP filter chain.
   google.protobuf.StringValue stat_prefix = 9;
 
+  // [#not-implemented-hide:] This corresponds to future envoy versions that will be adopted
   // Rules that determine what modifications an external processing server may
   // make to message headers. If not set, all headers may be modified except
   // for "host", ":authority", ":scheme", ":method", and headers that start

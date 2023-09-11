@@ -92,6 +92,7 @@ type Settings struct {
 	// Optional additional prefix to use when emitting statistics. This allows distinguishing
 	// between statistics emitted by multiple *ext_proc* filters in an HTTP filter chain.
 	StatPrefix *wrappers.StringValue `protobuf:"bytes,9,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
+	// [#not-implemented-hide:] This corresponds to future envoy versions that will be adopted
 	// Rules that determine what modifications an external processing server may
 	// make to message headers. If not set, all headers may be modified except
 	// for "host", ":authority", ":scheme", ":method", and headers that start
