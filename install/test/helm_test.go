@@ -3338,7 +3338,7 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					FIt("can overwrite sds and istioProxy images", func() {
+					It("can overwrite sds and istioProxy images", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
