@@ -1,6 +1,0 @@
-changelog:
-- type: FIX
-  issueLink: https://github.com/solo-io/gloo/issues/8092
-  resolvesIssue: false
-  description: |
-    Add required env, volumes, and volume mounts to GatewayProxy Helm template to support more recent versions of Istio
