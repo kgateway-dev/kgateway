@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Warns not to use 1.15.0 in docs, due to bug fixed in 1.15.1+.
+      skipCI-kube-tests:true

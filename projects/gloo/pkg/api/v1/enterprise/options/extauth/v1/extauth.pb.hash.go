@@ -5698,32 +5698,6 @@ func (m *ExtAuthConfig_OpaAuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *ExtAuthConfig_OpaAuthOptions) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_OpaAuthOptions")); err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetFastInputConversion())
-	if err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetReturnDecisionReason())
-	if err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
 func (m *ExtAuthConfig_OpaServerAuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

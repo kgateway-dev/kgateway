@@ -25,7 +25,7 @@ type TlsSecret struct {
 // If there is a currently valid TLS secret with the given name and namespace, that is valid for the given
 // service name/namespace, then return it. Otherwise return nil.
 func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string,
-	svcName string, svcNamespace string) (*v1.Secret, error) {
+	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, error) {
 	secretClient := kube.CoreV1().Secrets(secretNamespace)
 
 	existing, err := secretClient.Get(ctx, secretName, metav1.GetOptions{})
@@ -60,7 +60,8 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 			return nil, errors.Wrapf(err, "failed to decode pem encoded ca cert")
 		}
 
-		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+		// Create new certificate if old one is expiring soon
+		if now.Before(cert.NotBefore) || now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
 			return nil, nil
 		}
 
