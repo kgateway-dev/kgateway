@@ -203,6 +203,19 @@ func (i *VaultInstance) addAuthRole(awsAuthRole string) error {
 	return err
 }
 
+func (i *VaultInstance) addAuthSTSRole(awsAuthRole, stsRegion string) error {
+	_, err := i.Exec("write",
+		"auth/aws/role/edge-e2e-test-irsa",
+		"auth_type=iam",
+		//fmt.Sprintf("bound_iam_principal_arn=%s", awsAuthRole),
+		fmt.Sprintf("bound_account_id=%s", "802411188784"),
+		"policies=admin",
+		fmt.Sprintf("inferred_aws_region=%s", stsRegion),
+		"inferred_entity_type=ec2_instance",
+	)
+	return err
+}
+
 func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
@@ -246,13 +259,19 @@ func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsR
 
 	// Configure the AWS auth method with the sts endpoint and server id header set
 	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com", stsRegion)
-	_, err = i.Exec("write", "auth/aws/config/client", fmt.Sprintf("iam_server_id_header_value=%s", serverIdHeader), fmt.Sprintf("sts_endpoint=%s", stsEndpoint), fmt.Sprintf("sts_region=%s", stsRegion))
+	_, err = i.Exec("write", "auth/aws/config/client",
+		fmt.Sprintf("iam_server_id_header_value=%s", serverIdHeader),
+		fmt.Sprintf("sts_endpoint=%s", stsEndpoint),
+		fmt.Sprintf("sts_region=%s", stsRegion),
+		fmt.Sprintf("access_key=%s", "AKIA3VU3PCIYB7RTDIOF"),
+		fmt.Sprintf("secret_key=%s", "..."),
+	)
 	if err != nil {
 		return err
 	}
 
 	// Configure the Vault role to align with the provided AWS role
-	err = i.addAuthRole(awsAuthRole)
+	err = i.addAuthSTSRole(awsAuthRole, stsRegion)
 	if err != nil {
 		return err
 	}

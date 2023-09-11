@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -21,15 +19,13 @@ import (
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-// needs AWS_SHARED_CREDENTIALS_FILE set or else causes issues re. AWS "NoCredentialProviders".
+// Needs AWS_SHARED_CREDENTIALS_FILE set or else causes issues re. AWS `NoCredentialProviders: no valid providers in chain.`.
 var _ = Describe("Vault Tests", func() {
 	const (
-		//vaultAwsRole = "arn:aws:iam::802411188784:user/gloo-edge-e2e-irsa-user"
-		//vaultAwsRole = "arn:aws:iam::802411188784:user/gloo-edge-e2e-user"
-		vaultAwsRole      = "arn:aws:iam::802411188784:role/vault-role"
+		vaultIrsaAwsRole  = "arn:aws:iam::802411188784:role/edge-e2e-test-irsa"
 		iamServerIdHeader = "vault.gloo.example.com"
-		vaultAwsRegion    = "us-east-1"
-		vaultRole         = "vault-role"
+		vaultAwsRegion    = "us-east-2"
+		vaultRole         = "edge-e2e-test-irsa"
 		vaultSecretName   = "vaultsecret"
 	)
 
@@ -88,7 +84,8 @@ var _ = Describe("Vault Tests", func() {
 
 	BeforeEach(func() {
 		testCtx, testCancel = context.WithCancel(ctx)
-		testNamespace = skhelpers.RandString(8)
+		//testNamespace = skhelpers.RandString(8)
+		testNamespace = "gloo-system"
 		vaultClientInitMap = make(map[int]clients.VaultClientInitFunc)
 
 		// Set up Vault
@@ -96,25 +93,19 @@ var _ = Describe("Vault Tests", func() {
 		err := vaultInstance.Run(testCtx)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		//err = vaultInstance.EnableAWSCredentialsAuthMethod(vaultSecretSettings, vaultAwsRole)
-		err = vaultInstance.EnableAWSSTSAuthMethod(vaultAwsRole, iamServerIdHeader, vaultAwsRegion)
+		err = vaultInstance.EnableAWSSTSAuthMethod(vaultIrsaAwsRole, iamServerIdHeader, vaultAwsRegion)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		//localAwsCredentials := credentials.NewSharedCredentials("", "aws_e2e")
-		//v, err := localAwsCredentials.Get()
-		//Expect(err).NotTo(HaveOccurred(), "can load AWS shared credentials")
 		vaultSecretSettings = &gloov1.Settings_VaultSecrets{
 			Address: vaultInstance.Address(),
 			AuthMethod: &gloov1.Settings_VaultSecrets_Aws{
 				Aws: &gloov1.Settings_VaultAwsAuth{
 					IamServerIdHeader: iamServerIdHeader,
 					Region:            vaultAwsRegion,
-					//VaultRole:         vaultRole,
-					MountPath: "aws",
+					VaultRole:         vaultRole,
+					MountPath:         "aws",
 				},
 			},
-			PathPrefix: bootstrap.DefaultPathPrefix,
-			RootKey:    bootstrap.DefaultRootKey,
 		}
 
 		// these are the settings that will be used by the secret client.
@@ -141,8 +132,6 @@ var _ = Describe("Vault Tests", func() {
 				},
 			},
 		}
-
-		// install gloo after
 	})
 
 	AfterEach(func() {
@@ -152,8 +141,6 @@ var _ = Describe("Vault Tests", func() {
 	JustBeforeEach(func() {
 		setupVaultSecret()
 		setVaultClientInitMap(0, vaultSecretSettings)
-		//// having empty aws credentials in the vaultClientInitMap cause this to fail, since vault tries to log in (immediately?) and fails due to missing credentials.
-		//// we need valid credentials during the run for it to continue, but that defeats the purpose of STS/IRSA...
 		factory, err := clients.SecretFactoryForSettings(ctx,
 			clients.SecretFactoryParams{
 				Settings:           settings,
@@ -170,7 +157,6 @@ var _ = Describe("Vault Tests", func() {
 
 	listSecret := func(g Gomega, secretName string) {
 		l, err := secretClient.List(testNamespace, skclients.ListOpts{})
-		//l, err := resourceClientSet.SecretClient().List(testNamespace, skclients.ListOpts{})
 		g.Expect(err).NotTo(HaveOccurred())
 		g.Expect(l).NotTo(BeNil())
 		kubeSecret, err := l.Find(testNamespace, secretName)
