@@ -149,14 +149,6 @@ type GrpcService_EnvoyGrpc struct {
 	// in the :ref:`Cluster <envoy_api_msg_config.cluster.v3.Cluster>` :ref:`transport_socket
 	// <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`.
 	ClusterName string `protobuf:"bytes,1,opt,name=cluster_name,json=clusterName,proto3" json:"cluster_name,omitempty"`
-	// The “:authority“ header in the grpc request. If this field is not set, the authority header value will be “cluster_name“.
-	// Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster.
-	Authority string `protobuf:"bytes,2,opt,name=authority,proto3" json:"authority,omitempty"`
-	// Indicates the retry policy for re-establishing the gRPC stream
-	// This field is optional. If max interval is not provided, it will be set to ten times the provided base interval.
-	// Currently only supported for xDS gRPC streams.
-	// If not set, xDS gRPC streams default base interval:500ms, maximum interval:30s will be applied.
-	RetryPolicy *RetryPolicy `protobuf:"bytes,3,opt,name=retry_policy,json=retryPolicy,proto3" json:"retry_policy,omitempty"`
 }
 
 func (x *GrpcService_EnvoyGrpc) Reset() {
@@ -196,20 +188,6 @@ func (x *GrpcService_EnvoyGrpc) GetClusterName() string {
 		return x.ClusterName
 	}
 	return ""
-}
-
-func (x *GrpcService_EnvoyGrpc) GetAuthority() string {
-	if x != nil {
-		return x.Authority
-	}
-	return ""
-}
-
-func (x *GrpcService_EnvoyGrpc) GetRetryPolicy() *RetryPolicy {
-	if x != nil {
-		return x.RetryPolicy
-	}
-	return nil
 }
 
 // [#next-free-field: 9]
@@ -1210,7 +1188,7 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3
 	0x6e, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61,
 	0x74, 0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x1a, 0x12, 0x65, 0x78, 0x74, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x65, 0x78, 0x74, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xc7, 0x23, 0x0a, 0x0b, 0x47, 0x72, 0x70, 0x63, 0x53, 0x65,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xc7, 0x22, 0x0a, 0x0b, 0x47, 0x72, 0x70, 0x63, 0x53, 0x65,
 	0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x54, 0x0a, 0x0a, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x5f, 0x67,
 	0x72, 0x70, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x33, 0x2e, 0x73, 0x6f, 0x6c, 0x6f,
 	0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
@@ -1231,18 +1209,10 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3
 	0x76, 0x6f, 0x79, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e,
 	0x76, 0x33, 0x2e, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x0f,
 	0x69, 0x6e, 0x69, 0x74, 0x69, 0x61, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x1a,
-	0xef, 0x01, 0x0a, 0x09, 0x45, 0x6e, 0x76, 0x6f, 0x79, 0x47, 0x72, 0x70, 0x63, 0x12, 0x2a, 0x0a,
-	0x0c, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x20, 0x01, 0x52, 0x0b, 0x63, 0x6c,
-	0x75, 0x73, 0x74, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x2f, 0x0a, 0x09, 0x61, 0x75, 0x74,
-	0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x11, 0xfa, 0x42,
-	0x0e, 0x72, 0x0c, 0x10, 0x00, 0x28, 0x80, 0x80, 0x01, 0xc8, 0x01, 0x00, 0xc0, 0x01, 0x02, 0x52,
-	0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x4c, 0x0a, 0x0c, 0x72, 0x65,
-	0x74, 0x72, 0x79, 0x5f, 0x70, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x29, 0x2e, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79,
-	0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x76, 0x33, 0x2e,
-	0x52, 0x65, 0x74, 0x72, 0x79, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x52, 0x0b, 0x72, 0x65, 0x74,
-	0x72, 0x79, 0x50, 0x6f, 0x6c, 0x69, 0x63, 0x79, 0x3a, 0x37, 0x8a, 0xc8, 0xde, 0x8e, 0x04, 0x31,
+	0x70, 0x0a, 0x09, 0x45, 0x6e, 0x76, 0x6f, 0x79, 0x47, 0x72, 0x70, 0x63, 0x12, 0x2a, 0x0a, 0x0c,
+	0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x20, 0x01, 0x52, 0x0b, 0x63, 0x6c, 0x75,
+	0x73, 0x74, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x3a, 0x37, 0x8a, 0xc8, 0xde, 0x8e, 0x04, 0x31,
 	0x0a, 0x2f, 0x73, 0x6f, 0x6c, 0x6f, 0x2e, 0x69, 0x6f, 0x2e, 0x65, 0x6e, 0x76, 0x6f, 0x79, 0x2e,
 	0x61, 0x70, 0x69, 0x2e, 0x76, 0x32, 0x2e, 0x63, 0x6f, 0x72, 0x65, 0x2e, 0x47, 0x72, 0x70, 0x63,
 	0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x2e, 0x45, 0x6e, 0x76, 0x6f, 0x79, 0x47, 0x72, 0x70,
@@ -1538,43 +1508,41 @@ var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3
 	nil,                          // 13: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.ArgsEntry
 	(*duration.Duration)(nil),    // 14: google.protobuf.Duration
 	(*HeaderValue)(nil),          // 15: solo.io.envoy.config.core.v3.HeaderValue
-	(*RetryPolicy)(nil),          // 16: solo.io.envoy.config.core.v3.RetryPolicy
-	(*_struct.Struct)(nil),       // 17: google.protobuf.Struct
-	(*wrappers.UInt32Value)(nil), // 18: google.protobuf.UInt32Value
-	(*DataSource)(nil),           // 19: solo.io.envoy.config.core.v3.DataSource
-	(*empty.Empty)(nil),          // 20: google.protobuf.Empty
-	(*any1.Any)(nil),             // 21: google.protobuf.Any
+	(*_struct.Struct)(nil),       // 16: google.protobuf.Struct
+	(*wrappers.UInt32Value)(nil), // 17: google.protobuf.UInt32Value
+	(*DataSource)(nil),           // 18: solo.io.envoy.config.core.v3.DataSource
+	(*empty.Empty)(nil),          // 19: google.protobuf.Empty
+	(*any1.Any)(nil),             // 20: google.protobuf.Any
 }
 var file_github_com_solo_io_gloo_projects_gloo_api_external_envoy_config_core_v3_grpc_service_proto_depIdxs = []int32{
 	1,  // 0: solo.io.envoy.config.core.v3.GrpcService.envoy_grpc:type_name -> solo.io.envoy.config.core.v3.GrpcService.EnvoyGrpc
 	2,  // 1: solo.io.envoy.config.core.v3.GrpcService.google_grpc:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc
 	14, // 2: solo.io.envoy.config.core.v3.GrpcService.timeout:type_name -> google.protobuf.Duration
 	15, // 3: solo.io.envoy.config.core.v3.GrpcService.initial_metadata:type_name -> solo.io.envoy.config.core.v3.HeaderValue
-	16, // 4: solo.io.envoy.config.core.v3.GrpcService.EnvoyGrpc.retry_policy:type_name -> solo.io.envoy.config.core.v3.RetryPolicy
-	5,  // 5: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.channel_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials
-	6,  // 6: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.call_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials
-	17, // 7: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.config:type_name -> google.protobuf.Struct
-	18, // 8: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.per_stream_buffer_limit_bytes:type_name -> google.protobuf.UInt32Value
-	7,  // 9: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.channel_args:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs
-	19, // 10: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials.root_certs:type_name -> solo.io.envoy.config.core.v3.DataSource
-	19, // 11: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials.private_key:type_name -> solo.io.envoy.config.core.v3.DataSource
-	19, // 12: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials.cert_chain:type_name -> solo.io.envoy.config.core.v3.DataSource
-	3,  // 13: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials.ssl_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials
-	20, // 14: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials.google_default:type_name -> google.protobuf.Empty
-	4,  // 15: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials.local_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.GoogleLocalCredentials
-	20, // 16: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.google_compute_engine:type_name -> google.protobuf.Empty
-	8,  // 17: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.service_account_jwt_access:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.ServiceAccountJWTAccessCredentials
-	9,  // 18: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.google_iam:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.GoogleIAMCredentials
-	10, // 19: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.from_plugin:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.MetadataCredentialsFromPlugin
-	11, // 20: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.sts_service:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.StsService
-	13, // 21: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.args:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.ArgsEntry
-	21, // 22: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.MetadataCredentialsFromPlugin.typed_config:type_name -> google.protobuf.Any
-	12, // 23: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.ArgsEntry.value:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.Value
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	5,  // 4: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.channel_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials
+	6,  // 5: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.call_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials
+	16, // 6: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.config:type_name -> google.protobuf.Struct
+	17, // 7: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.per_stream_buffer_limit_bytes:type_name -> google.protobuf.UInt32Value
+	7,  // 8: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.channel_args:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs
+	18, // 9: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials.root_certs:type_name -> solo.io.envoy.config.core.v3.DataSource
+	18, // 10: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials.private_key:type_name -> solo.io.envoy.config.core.v3.DataSource
+	18, // 11: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials.cert_chain:type_name -> solo.io.envoy.config.core.v3.DataSource
+	3,  // 12: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials.ssl_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.SslCredentials
+	19, // 13: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials.google_default:type_name -> google.protobuf.Empty
+	4,  // 14: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelCredentials.local_credentials:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.GoogleLocalCredentials
+	19, // 15: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.google_compute_engine:type_name -> google.protobuf.Empty
+	8,  // 16: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.service_account_jwt_access:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.ServiceAccountJWTAccessCredentials
+	9,  // 17: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.google_iam:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.GoogleIAMCredentials
+	10, // 18: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.from_plugin:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.MetadataCredentialsFromPlugin
+	11, // 19: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.sts_service:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.StsService
+	13, // 20: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.args:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.ArgsEntry
+	20, // 21: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.CallCredentials.MetadataCredentialsFromPlugin.typed_config:type_name -> google.protobuf.Any
+	12, // 22: solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.ArgsEntry.value:type_name -> solo.io.envoy.config.core.v3.GrpcService.GoogleGrpc.ChannelArgs.Value
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() {

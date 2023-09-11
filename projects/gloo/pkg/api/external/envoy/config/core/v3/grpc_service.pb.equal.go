@@ -140,20 +140,6 @@ func (m *GrpcService_EnvoyGrpc) Equal(that interface{}) bool {
 		return false
 	}
 
-	if strings.Compare(m.GetAuthority(), target.GetAuthority()) != 0 {
-		return false
-	}
-
-	if h, ok := interface{}(m.GetRetryPolicy()).(equality.Equalizer); ok {
-		if !h.Equal(target.GetRetryPolicy()) {
-			return false
-		}
-	} else {
-		if !proto.Equal(m.GetRetryPolicy(), target.GetRetryPolicy()) {
-			return false
-		}
-	}
-
 	return true
 }
 

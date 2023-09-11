@@ -103,14 +103,6 @@ func (m *GrpcService_EnvoyGrpc) Clone() proto.Message {
 
 	target.ClusterName = m.GetClusterName()
 
-	target.Authority = m.GetAuthority()
-
-	if h, ok := interface{}(m.GetRetryPolicy()).(clone.Cloner); ok {
-		target.RetryPolicy = h.Clone().(*RetryPolicy)
-	} else {
-		target.RetryPolicy = proto.Clone(m.GetRetryPolicy()).(*RetryPolicy)
-	}
-
 	return target
 }
 

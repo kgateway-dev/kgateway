@@ -2,7 +2,7 @@ changelog:
 - type: DEPENDENCY_BUMP
   dependencyOwner: solo-io
   dependencyRepo: envoy-gloo
-  dependencyTag: v1.26.2-patch4
+  dependencyTag: v1.26.4-patch2
   issueLink: https://github.com/solo-io/solo-projects/issues/5214
   resolvesIssue: false
   description: >-
@@ -13,4 +13,3 @@ changelog:
   dependencyTag: v0.11.1
   description: >-
     Match forking for envoy
-

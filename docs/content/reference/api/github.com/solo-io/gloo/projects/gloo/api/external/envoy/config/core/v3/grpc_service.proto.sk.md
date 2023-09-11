@@ -67,16 +67,12 @@ gRPC service configuration. This is used by :ref:`ApiConfigSource
 
 ```yaml
 "clusterName": string
-"authority": string
-"retryPolicy": .solo.io.envoy.config.core.v3.RetryPolicy
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `clusterName` | `string` | The name of the upstream gRPC cluster. SSL credentials will be supplied in the :ref:`Cluster <envoy_api_msg_config.cluster.v3.Cluster>` :ref:`transport_socket <envoy_api_field_config.cluster.v3.Cluster.transport_socket>`. |
-| `authority` | `string` | The ``:authority`` header in the grpc request. If this field is not set, the authority header value will be ``cluster_name``. Note that this authority does not override the SNI. The SNI is provided by the transport socket of the cluster. |
-| `retryPolicy` | [.solo.io.envoy.config.core.v3.RetryPolicy](../base.proto.sk/#retrypolicy) | Indicates the retry policy for re-establishing the gRPC stream This field is optional. If max interval is not provided, it will be set to ten times the provided base interval. Currently only supported for xDS gRPC streams. If not set, xDS gRPC streams default base interval:500ms, maximum interval:30s will be applied. |
 
 
 
