@@ -33,6 +33,9 @@ Now you're ready to upgrade. The steps vary depending on your Gloo Edge installa
    ```sh
    export CANARY_VERSION=<version>
    ```
+   {{% notice note %}}
+   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
+   {{% /notice %}}
 
 2. Update and pull the Gloo Edge Helm chart for the canary version.
    {{< tabs >}} 
@@ -119,6 +122,9 @@ In the canary upgrade model for Gloo Edge Federation, you start with an existing
    ```sh
    export CANARY_VERSION=<version>
    ```
+   {{% notice note %}}
+   When you upgrade to 1.15.x, choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
+   {{% /notice %}}
 
 3. Update and pull the Gloo Edge Federation Helm chart for the canary version.
    ```shell

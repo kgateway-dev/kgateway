@@ -147,6 +147,24 @@ func (m *Settings) Clone() proto.Message {
 		target.AllowModeOverride = proto.Clone(m.GetAllowModeOverride()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
 	}
 
+	if m.GetMetadataContextNamespaces() != nil {
+		target.MetadataContextNamespaces = make([]string, len(m.GetMetadataContextNamespaces()))
+		for idx, v := range m.GetMetadataContextNamespaces() {
+
+			target.MetadataContextNamespaces[idx] = v
+
+		}
+	}
+
+	if m.GetTypedMetadataContextNamespaces() != nil {
+		target.TypedMetadataContextNamespaces = make([]string, len(m.GetTypedMetadataContextNamespaces()))
+		for idx, v := range m.GetTypedMetadataContextNamespaces() {
+
+			target.TypedMetadataContextNamespaces[idx] = v
+
+		}
+	}
+
 	return target
 }
 
@@ -279,6 +297,24 @@ func (m *Overrides) Clone() proto.Message {
 		target.GrpcService = h.Clone().(*GrpcService)
 	} else {
 		target.GrpcService = proto.Clone(m.GetGrpcService()).(*GrpcService)
+	}
+
+	if m.GetMetadataContextNamespaces() != nil {
+		target.MetadataContextNamespaces = make([]string, len(m.GetMetadataContextNamespaces()))
+		for idx, v := range m.GetMetadataContextNamespaces() {
+
+			target.MetadataContextNamespaces[idx] = v
+
+		}
+	}
+
+	if m.GetTypedMetadataContextNamespaces() != nil {
+		target.TypedMetadataContextNamespaces = make([]string, len(m.GetTypedMetadataContextNamespaces()))
+		for idx, v := range m.GetTypedMetadataContextNamespaces() {
+
+			target.TypedMetadataContextNamespaces[idx] = v
+
+		}
 	}
 
 	return target

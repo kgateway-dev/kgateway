@@ -23,9 +23,9 @@ const (
 )
 
 var (
-	// Since this is an L4 filter, it would kick in before any HTTP auth can take place.
+	// Since this is an L4 filter, it would kick in before any HTTP processing takes place.
 	// This also bolsters its main use case which is protect resources.
-	pluginStage = plugins.BeforeStage(plugins.AuthNStage)
+	pluginStage = plugins.BeforeStage(plugins.RateLimitStage)
 )
 
 type plugin struct{}
@@ -40,7 +40,7 @@ func (p *plugin) Name() string {
 
 func (p *plugin) Init(params plugins.InitParams) {}
 
-func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) ([]plugins.StagedNetworkFilter, error) {
+func generateNetworkFilter(connectionLimit *connection_limit.ConnectionLimit) ([]plugins.StagedNetworkFilter, error) {
 	// Sanity checks
 	if connectionLimit.GetMaxActiveConnections() == nil {
 		return []plugins.StagedNetworkFilter{}, nil
@@ -75,9 +75,9 @@ func GenerateFilter(connectionLimit *connection_limit.ConnectionLimit) ([]plugin
 }
 
 func (p *plugin) NetworkFiltersHTTP(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedNetworkFilter, error) {
-	return GenerateFilter(listener.GetOptions().GetConnectionLimit())
+	return generateNetworkFilter(listener.GetOptions().GetConnectionLimit())
 }
 
 func (p *plugin) NetworkFiltersTCP(params plugins.Params, listener *v1.TcpListener) ([]plugins.StagedNetworkFilter, error) {
-	return GenerateFilter(listener.GetOptions().GetConnectionLimit())
+	return generateNetworkFilter(listener.GetOptions().GetConnectionLimit())
 }
