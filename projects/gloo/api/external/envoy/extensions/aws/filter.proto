@@ -116,8 +116,8 @@ message AWSLambdaConfig {
     string uri = 2 [ (validate.rules).string.min_bytes = 1 ];
     // timeout for the request
     google.protobuf.Duration timeout = 3;
-    // Region for the sts endpoint
-    string region = 4 [ (validate.rules).string.min_bytes = 1 ];
+    // Region for the sts endpoint. Defaults to us-east-1
+    string region = 4;
   }
 
   // Send downstream path and method as `x-envoy-original-path` and

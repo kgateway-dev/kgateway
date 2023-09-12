@@ -130,7 +130,7 @@ and therefore must be explicitly specified via the uri
 | `cluster` | `string` | The name of the envoy cluster which represents the desired aws sts endpoint. |
 | `uri` | `string` | The full uri of the aws sts endpoint. |
 | `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | timeout for the request. |
-| `region` | `string` | Region for the sts endpoint. |
+| `region` | `string` | Region for the sts endpoint. Defaults to us-east-1. |
 
 
 
