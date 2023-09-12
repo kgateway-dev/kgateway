@@ -1246,6 +1246,185 @@ spec:
                       sanitizeClusterHeader:
                         nullable: true
                         type: boolean
+                      tap:
+                        properties:
+                          staticConfig:
+                            properties:
+                              outputConfig:
+                                properties:
+                                  sinks:
+                                    items:
+                                      properties:
+                                        grpcService:
+                                          properties:
+                                            envoyGrpc:
+                                              properties:
+                                                authority:
+                                                  type: string
+                                                clusterName:
+                                                  type: string
+                                                retryPolicy:
+                                                  properties:
+                                                    numRetries:
+                                                      maximum: 4294967295
+                                                      minimum: 0
+                                                      nullable: true
+                                                      type: integer
+                                                    retryBackOff:
+                                                      properties:
+                                                        baseInterval:
+                                                          type: string
+                                                        maxInterval:
+                                                          type: string
+                                                      type: object
+                                                  type: object
+                                              type: object
+                                            googleGrpc:
+                                              properties:
+                                                callCredentials:
+                                                  items:
+                                                    properties:
+                                                      accessToken:
+                                                        type: string
+                                                      fromPlugin:
+                                                        properties:
+                                                          name:
+                                                            type: string
+                                                          typedConfig:
+                                                            type: object
+                                                            x-kubernetes-preserve-unknown-fields: true
+                                                        type: object
+                                                      googleComputeEngine:
+                                                        maxProperties: 0
+                                                        type: object
+                                                      googleIam:
+                                                        properties:
+                                                          authoritySelector:
+                                                            type: string
+                                                          authorizationToken:
+                                                            type: string
+                                                        type: object
+                                                      googleRefreshToken:
+                                                        type: string
+                                                      serviceAccountJwtAccess:
+                                                        properties:
+                                                          jsonKey:
+                                                            type: string
+                                                          tokenLifetimeSeconds:
+                                                            format: int64
+                                                            type: integer
+                                                            x-kubernetes-int-or-string: true
+                                                        type: object
+                                                      stsService:
+                                                        properties:
+                                                          actorTokenPath:
+                                                            type: string
+                                                          actorTokenType:
+                                                            type: string
+                                                          audience:
+                                                            type: string
+                                                          requestedTokenType:
+                                                            type: string
+                                                          resource:
+                                                            type: string
+                                                          scope:
+                                                            type: string
+                                                          subjectTokenPath:
+                                                            type: string
+                                                          subjectTokenType:
+                                                            type: string
+                                                          tokenExchangeServiceUri:
+                                                            type: string
+                                                        type: object
+                                                    type: object
+                                                  type: array
+                                                channelArgs:
+                                                  properties:
+                                                    args:
+                                                      additionalProperties:
+                                                        properties:
+                                                          intValue:
+                                                            format: int64
+                                                            type: integer
+                                                            x-kubernetes-int-or-string: true
+                                                          stringValue:
+                                                            type: string
+                                                        type: object
+                                                      type: object
+                                                  type: object
+                                                channelCredentials:
+                                                  properties:
+                                                    googleDefault:
+                                                      maxProperties: 0
+                                                      type: object
+                                                    localCredentials:
+                                                      type: object
+                                                    sslCredentials:
+                                                      properties:
+                                                        certChain:
+                                                          properties:
+                                                            filename:
+                                                              type: string
+                                                            inlineBytes:
+                                                              format: byte
+                                                              type: string
+                                                            inlineString:
+                                                              type: string
+                                                          type: object
+                                                        privateKey:
+                                                          properties:
+                                                            filename:
+                                                              type: string
+                                                            inlineBytes:
+                                                              format: byte
+                                                              type: string
+                                                            inlineString:
+                                                              type: string
+                                                          type: object
+                                                        rootCerts:
+                                                          properties:
+                                                            filename:
+                                                              type: string
+                                                            inlineBytes:
+                                                              format: byte
+                                                              type: string
+                                                            inlineString:
+                                                              type: string
+                                                          type: object
+                                                      type: object
+                                                  type: object
+                                                config:
+                                                  type: object
+                                                  x-kubernetes-preserve-unknown-fields: true
+                                                credentialsFactoryName:
+                                                  type: string
+                                                perStreamBufferLimitBytes:
+                                                  maximum: 4294967295
+                                                  minimum: 0
+                                                  nullable: true
+                                                  type: integer
+                                                statPrefix:
+                                                  type: string
+                                                targetUri:
+                                                  type: string
+                                              type: object
+                                            initialMetadata:
+                                              items:
+                                                properties:
+                                                  key:
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                type: object
+                                              type: array
+                                            timeout:
+                                              type: string
+                                          type: object
+                                      type: object
+                                    type: array
+                                type: object
+                            type: object
+                        type: object
                       waf:
                         properties:
                           auditLogging:
@@ -3095,6 +3274,185 @@ spec:
                                 sanitizeClusterHeader:
                                   nullable: true
                                   type: boolean
+                                tap:
+                                  properties:
+                                    staticConfig:
+                                      properties:
+                                        outputConfig:
+                                          properties:
+                                            sinks:
+                                              items:
+                                                properties:
+                                                  grpcService:
+                                                    properties:
+                                                      envoyGrpc:
+                                                        properties:
+                                                          authority:
+                                                            type: string
+                                                          clusterName:
+                                                            type: string
+                                                          retryPolicy:
+                                                            properties:
+                                                              numRetries:
+                                                                maximum: 4294967295
+                                                                minimum: 0
+                                                                nullable: true
+                                                                type: integer
+                                                              retryBackOff:
+                                                                properties:
+                                                                  baseInterval:
+                                                                    type: string
+                                                                  maxInterval:
+                                                                    type: string
+                                                                type: object
+                                                            type: object
+                                                        type: object
+                                                      googleGrpc:
+                                                        properties:
+                                                          callCredentials:
+                                                            items:
+                                                              properties:
+                                                                accessToken:
+                                                                  type: string
+                                                                fromPlugin:
+                                                                  properties:
+                                                                    name:
+                                                                      type: string
+                                                                    typedConfig:
+                                                                      type: object
+                                                                      x-kubernetes-preserve-unknown-fields: true
+                                                                  type: object
+                                                                googleComputeEngine:
+                                                                  maxProperties: 0
+                                                                  type: object
+                                                                googleIam:
+                                                                  properties:
+                                                                    authoritySelector:
+                                                                      type: string
+                                                                    authorizationToken:
+                                                                      type: string
+                                                                  type: object
+                                                                googleRefreshToken:
+                                                                  type: string
+                                                                serviceAccountJwtAccess:
+                                                                  properties:
+                                                                    jsonKey:
+                                                                      type: string
+                                                                    tokenLifetimeSeconds:
+                                                                      format: int64
+                                                                      type: integer
+                                                                      x-kubernetes-int-or-string: true
+                                                                  type: object
+                                                                stsService:
+                                                                  properties:
+                                                                    actorTokenPath:
+                                                                      type: string
+                                                                    actorTokenType:
+                                                                      type: string
+                                                                    audience:
+                                                                      type: string
+                                                                    requestedTokenType:
+                                                                      type: string
+                                                                    resource:
+                                                                      type: string
+                                                                    scope:
+                                                                      type: string
+                                                                    subjectTokenPath:
+                                                                      type: string
+                                                                    subjectTokenType:
+                                                                      type: string
+                                                                    tokenExchangeServiceUri:
+                                                                      type: string
+                                                                  type: object
+                                                              type: object
+                                                            type: array
+                                                          channelArgs:
+                                                            properties:
+                                                              args:
+                                                                additionalProperties:
+                                                                  properties:
+                                                                    intValue:
+                                                                      format: int64
+                                                                      type: integer
+                                                                      x-kubernetes-int-or-string: true
+                                                                    stringValue:
+                                                                      type: string
+                                                                  type: object
+                                                                type: object
+                                                            type: object
+                                                          channelCredentials:
+                                                            properties:
+                                                              googleDefault:
+                                                                maxProperties: 0
+                                                                type: object
+                                                              localCredentials:
+                                                                type: object
+                                                              sslCredentials:
+                                                                properties:
+                                                                  certChain:
+                                                                    properties:
+                                                                      filename:
+                                                                        type: string
+                                                                      inlineBytes:
+                                                                        format: byte
+                                                                        type: string
+                                                                      inlineString:
+                                                                        type: string
+                                                                    type: object
+                                                                  privateKey:
+                                                                    properties:
+                                                                      filename:
+                                                                        type: string
+                                                                      inlineBytes:
+                                                                        format: byte
+                                                                        type: string
+                                                                      inlineString:
+                                                                        type: string
+                                                                    type: object
+                                                                  rootCerts:
+                                                                    properties:
+                                                                      filename:
+                                                                        type: string
+                                                                      inlineBytes:
+                                                                        format: byte
+                                                                        type: string
+                                                                      inlineString:
+                                                                        type: string
+                                                                    type: object
+                                                                type: object
+                                                            type: object
+                                                          config:
+                                                            type: object
+                                                            x-kubernetes-preserve-unknown-fields: true
+                                                          credentialsFactoryName:
+                                                            type: string
+                                                          perStreamBufferLimitBytes:
+                                                            maximum: 4294967295
+                                                            minimum: 0
+                                                            nullable: true
+                                                            type: integer
+                                                          statPrefix:
+                                                            type: string
+                                                          targetUri:
+                                                            type: string
+                                                        type: object
+                                                      initialMetadata:
+                                                        items:
+                                                          properties:
+                                                            key:
+                                                              type: string
+                                                            value:
+                                                              type: string
+                                                          type: object
+                                                        type: array
+                                                      timeout:
+                                                        type: string
+                                                    type: object
+                                                type: object
+                                              type: array
+                                          type: object
+                                      type: object
+                                  type: object
                                 waf:
                                   properties:
                                     auditLogging:

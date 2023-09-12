@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package tap.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tap";
+
+import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/grpc_service.proto";
+import "validate/validate.proto";
+
+message Tap {
+	StaticConfig static_config = 1 [(validate.rules).message = {required: true}];
+}
+
+message StaticConfig {
+	OutputConfig output_config = 1 [(validate.rules).message = {required: true}];
+}
+
+message OutputConfig {
+	// Sinks to which tap data should be output. Currently, only a single sink
+	// is supported. TODO is there a validate rule that we can use to enforce a
+	// length of 1?
+	repeated Sink sinks = 1;
+}
+
+message Sink {
+	// The type of the output sink to which tap data should be written
+	oneof SinkType {
+		option (validate.required) = true;
+		// Write tap data out to a GRPC service
+		.solo.io.envoy.config.core.v3.GrpcService grpc_service = 1;
+	}
+}

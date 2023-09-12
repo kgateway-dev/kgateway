@@ -11,9 +11,9 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/cncf/xds/go v0.0.0-20230428030218-4003588d1b74
+	github.com/cncf/xds/go v0.0.0-20230607035331-e9ce68804cb4
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
-	github.com/envoyproxy/go-control-plane v0.11.1
+	github.com/envoyproxy/go-control-plane v0.11.2-0.20230819171109-107d4056d823
 	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible
 	github.com/fsnotify/fsnotify v1.6.0
@@ -70,8 +70,8 @@ require (
 	golang.org/x/sync v0.3.0
 	golang.org/x/tools v0.9.1
 	google.golang.org/genproto v0.0.0-20230526203410-71b5a4ffd15e // indirect
-	google.golang.org/grpc v1.55.0
-	google.golang.org/protobuf v1.30.0
+	google.golang.org/grpc v1.57.0
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	helm.sh/helm/v3 v3.12.2
 	k8s.io/api v0.27.3
@@ -92,8 +92,8 @@ require (
 	github.com/go-logr/zapr v1.2.4
 	github.com/google/uuid v1.3.0
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870
-	google.golang.org/genproto/googleapis/api v0.0.0-20230526203410-71b5a4ffd15e
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526203410-71b5a4ffd15e
+	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc
 )
 
 require (
@@ -274,7 +274,7 @@ require (
 	github.com/xlab/treeprint v1.1.0 // indirect
 	github.com/yuin/goldmark v1.4.13 // indirect
 	go.mongodb.org/mongo-driver v1.1.2 // indirect
-	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect

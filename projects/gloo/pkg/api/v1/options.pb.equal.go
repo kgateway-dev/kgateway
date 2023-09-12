@@ -425,6 +425,16 @@ func (m *HttpListenerOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetTap()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetTap()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetTap(), target.GetTap()) {
+			return false
+		}
+	}
+
 	switch m.ExtProcConfig.(type) {
 
 	case *HttpListenerOptions_DisableExtProc:
