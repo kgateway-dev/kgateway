@@ -6,6 +6,7 @@ import (
 	vaultapi "github.com/hashicorp/vault/api"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -25,7 +26,6 @@ var _ = Describe("Vault Tests", func() {
 		vaultIrsaAwsRole  = "arn:aws:iam::802411188784:role/edge-e2e-test-irsa"
 		iamServerIdHeader = "vault.gloo.example.com"
 		vaultAwsRegion    = "us-east-2"
-		vaultRole         = "edge-e2e-test-irsa"
 		vaultSecretName   = "vaultsecret"
 	)
 
@@ -102,7 +102,6 @@ var _ = Describe("Vault Tests", func() {
 				Aws: &gloov1.Settings_VaultAwsAuth{
 					IamServerIdHeader: iamServerIdHeader,
 					Region:            vaultAwsRegion,
-					VaultRole:         vaultRole,
 					MountPath:         "aws",
 				},
 			},
@@ -167,7 +166,7 @@ var _ = Describe("Vault Tests", func() {
 	When("using secretSource API", func() {
 		When("using a vault secret source", func() {
 			It("lists secrets", func() {
-				//Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
+				Expect(secretClient.BaseClient()).To(BeAssignableToTypeOf(&vault.ResourceClient{}))
 				Eventually(func(g Gomega) {
 					listSecret(g, vaultSecretName)
 				}, DefaultEventuallyTimeout, DefaultEventuallyPollingInterval).Should(Succeed())
