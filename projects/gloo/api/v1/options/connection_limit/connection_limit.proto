@@ -19,7 +19,7 @@ import "google/protobuf/wrappers.proto";
 message ConnectionLimit {
     // The maximum number of active connections for this gateway. When this limit is reached, any incoming connection
     // will be closed after delay duration.
-    // Must be greater than one.
+    // Must be greater than or equal to one.
     google.protobuf.UInt32Value max_active_connections = 1;
 
     // The time to wait before a connection is dropped. Useful for DoS prevention.

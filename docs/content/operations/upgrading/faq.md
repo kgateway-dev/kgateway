@@ -44,6 +44,10 @@ You might deploy Gloo Edge in Kubernetes environments that use the Kubernetes lo
 
 Review the following changes made to Gloo Edge in version {{< readfile file="static/content/version_geoss_latest_minor.md" markdown="true">}}. For some changes, you might be required to complete additional steps during the upgrade process.
 
+{{% notice warning %}}
+Choose a patch version that is later than 1.15.0, such as `{{< readfile file="static/content/version_geoss_latest.md" markdown="true">}}`. 1.15.0 contains a [bug](https://github.com/solo-io/gloo/issues/8627) that is fixed in 1.15.1 and later patches.
+{{% /notice %}}
+
 ### Changelogs
 
 Check the changelogs for the type of Gloo Edge deployment that you have. Focus especially on any **Breaking Changes** that might require a different upgrade procedure. For Gloo Edge Enterprise, you might also review the open source changelogs because most of the proto definitions are open source.
@@ -131,7 +135,7 @@ Review the following summary of important new, deprecated, or removed CRD update
 * `Gateway`: You can now use the [`hybridGateway.delegatedTcpGateways` field]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" %}}) to configure multiple TCP gateways.
 * `Gateway` (Enterprise only): You can now use the [`hybridGateway.matchedGateway.matcher.passthroughCipherSuites` field]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#hybridgateway" %}}) to specify passthrough cipher suites.
 * `GraphQLApi` (Enterprise only): You can now define a [`timeout` for the REST or gRPC resolver]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/graphql/v1beta1/graphql.proto.sk/#restresolver" %}}).
-* `hcm` and `options`: You can now set x-fowarded-host and x-forwarded-post headers by using the [`appendXForwardedPort` field in the `hcm` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/" %}}) and the `appendXForwardedHost` field in the [`options` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/" %}})
+* `hcm` and `options`: You can now set x-fowarded-host and x-forwarded-post headers by using the [`appendXForwardedPort` field in the `hcm` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/" %}}) and the `appendXForwardedHost` field in the [`options` CRD]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/" %}}).
 
 **Deprecated CRDs**:
 

@@ -50,7 +50,7 @@ require (
 	github.com/sergi/go-diff v1.1.0
 	github.com/solo-io/go-list-licenses v0.1.4
 	github.com/solo-io/go-utils v0.24.6
-	github.com/solo-io/k8s-utils v0.5.0
+	github.com/solo-io/k8s-utils v0.5.1
 	github.com/solo-io/protoc-gen-ext v0.0.18
 	github.com/solo-io/protoc-gen-openapi v0.1.0
 	github.com/solo-io/skv2 v0.32.0
@@ -324,6 +324,9 @@ replace (
 	// to avoid error about it being used for two different module paths
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v24.0.4+incompatible
+	// Remove once we get to a version with extproc changes in upstream envoy 1.28
+	github.com/envoy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20230902201632-ada8201b381c77d25e4a54e6da03d2c62058f743
+
 	// Newer versions result in changes to the names of generated metrics
 	// remove this when we fix https://github.com/solo-io/solo-kit/issues/516
 	github.com/iancoleman/strcase => github.com/iancoleman/strcase v0.1.3
