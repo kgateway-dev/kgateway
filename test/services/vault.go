@@ -243,9 +243,14 @@ func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_Vau
 	return nil
 }
 
-func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsRegion string) error {
+func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsRegion, secretEngine string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
+	if err != nil {
+		return err
+	}
+
+	err = i.EnableSecretEngine(secretEngine)
 	if err != nil {
 		return err
 	}

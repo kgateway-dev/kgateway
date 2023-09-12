@@ -4,20 +4,18 @@ import (
 	"context"
 	"fmt"
 	vaultapi "github.com/hashicorp/vault/api"
-	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
-	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap/clients"
 	. "github.com/solo-io/gloo/test/gomega"
 	"github.com/solo-io/gloo/test/services"
 	skclients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/vault"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // Needs AWS_SHARED_CREDENTIALS_FILE set or else causes issues re. AWS `NoCredentialProviders: no valid providers in chain.`.
@@ -27,11 +25,11 @@ var _ = Describe("Vault Tests", func() {
 		iamServerIdHeader = "vault.gloo.example.com"
 		vaultAwsRegion    = "us-east-2"
 		vaultSecretName   = "vaultsecret"
+		vaultSecretPath   = "dev"
 	)
 
 	var (
-		vaultInstance  *services.VaultInstance
-		secretForVault *v1.Secret
+		vaultInstance *services.VaultInstance
 
 		testNamespace string
 		cfg           *rest.Config
@@ -56,24 +54,26 @@ var _ = Describe("Vault Tests", func() {
 	}
 
 	// setupVaultSecret will
-	// - initiate vault instance
 	// - create a new secret
 	// - wait up to 5 seconds to confirm the existence of the secret
-	//
-	// as-is, this function is not idempotent and should be run only once
 	setupVaultSecret := func() {
-		secretForVault = &v1.Secret{
-			Kind: &v1.Secret_Tls{},
-			Metadata: &core.Metadata{
-				Name:      vaultSecretName,
-				Namespace: testNamespace,
-			},
-		}
+		_, err := vaultInstance.Exec(
+			"kv",
+			"put",
+			fmt.Sprintf("-mount=%s", vaultSecretPath),
+			"gloo/gloo.solo.io/v1",
+			"keys=test",
+		)
+		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		vaultInstance.WriteSecret(secretForVault)
 		Eventually(func(g Gomega) error {
 			// https://developer.hashicorp.com/vault/docs/commands/kv/get
-			s, err := vaultInstance.Exec("kv", "get", "-mount=secret", fmt.Sprintf("gloo/gloo.solo.io/v1/Secret/%s/%s", testNamespace, vaultSecretName))
+			s, err := vaultInstance.Exec(
+				"kv",
+				"get",
+				fmt.Sprintf("-mount=%s", vaultSecretPath),
+				"gloo/gloo.solo.io/v1",
+			)
 			if err != nil {
 				return err
 			}
@@ -93,7 +93,7 @@ var _ = Describe("Vault Tests", func() {
 		err := vaultInstance.Run(testCtx)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-		err = vaultInstance.EnableAWSSTSAuthMethod(vaultIrsaAwsRole, iamServerIdHeader, vaultAwsRegion)
+		err = vaultInstance.EnableAWSSTSAuthMethod(vaultIrsaAwsRole, iamServerIdHeader, vaultAwsRegion, vaultSecretPath)
 		ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 		vaultSecretSettings = &gloov1.Settings_VaultSecrets{
@@ -105,17 +105,10 @@ var _ = Describe("Vault Tests", func() {
 					MountPath:         "aws",
 				},
 			},
+			PathPrefix: vaultSecretPath,
 		}
 
 		// these are the settings that will be used by the secret client.
-		//   SOME ISSUES:
-		// 	   Empty AWS credentials (not having `AWS_SHARED_CREDENTIALS_FILE` envVar set) leads to `Error: NoCredentialProviders: no valid providers in chain. Deprecated`.
-		//       Same thing happens in the non-kube test I was working on but I didn't catch it since that envVar is required for it in general... is this expected? or did they maybe have creds accidentally(?) set?
-		//         If so, then what does this mean for the issue's scope / DoD? We'd maybe have to investigate what else would need to be updated to allow for it to work. Maybe just removing the login brought up below?
-		//       Immediate login in `bootstrap/clients/vault.go:197` causes this.
-		//         Could it be that we haven't done STS/IRSA stuff fast enough to get credentials before that?
-		//         Maybe it's not configured correctly, which could be why we're not getting the credentials before login?
-		//     NON-Empty credentials leads to: `unable to log in with AWS auth: Error making API request.\n\nURL: PUT http://127.0.0.1:8200/v1/auth/aws/login\nCode: 400. Errors:\n\n* entry for role gloo-edge-e2e-user not found`
 		settings = &v1.Settings{
 			WatchNamespaces: []string{testNamespace},
 			SecretOptions: &v1.Settings_SecretOptions{
