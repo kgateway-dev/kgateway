@@ -44,8 +44,10 @@ spec:
         cluster: aws_sts_cluster
 {{- if not .Values.settings.aws.stsCredentialsRegion }}
         uri: sts.amazonaws.com
+        region: us-east-1
 {{- else }}
         uri: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+        region: {{ .Values.settings.aws.stsCredentialsRegion }}
 {{- end }}
 {{- else if .Values.settings.aws.enableCredentialsDiscovery }}
       enableCredentialsDiscovey: true
