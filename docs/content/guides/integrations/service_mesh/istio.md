@@ -10,8 +10,8 @@ You can configure your Gloo Edge gateway with an Istio sidecar to secure the con
 
 Complete the following tasks before configuring an Istio sidecar for your Gloo Edge gateway: 
 
-1. Create or use an existing cluster that runs Kubernetes version 1.20 or later. 
-2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Currently, Istio version 1.11 and 1.12 are supported in Gloo Edge.
+1. Create or use an existing cluster that runs Kubernetes version 1.24 or later. 
+2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.13 and 1.18 are supported in Gloo Edge 1.15. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
 3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/managed_kubernetes/) to configure a service mesh that is based on Envoy and Istio, and that you can span across multiple service meshes and clusters. 
 4. Install an application in your mesh, such as Bookinfo. 
    ```shell
@@ -36,6 +36,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    ```
       
 3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. You can optionally add the `global.istioSDS.enabled` option to your overrides file to automatically renew the certificate that the sidecar uses before it expires. 
+Be sure to specify a valid image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image`. The default Istio version is 1.18.2.
    ```yaml
    global:
      istioIntegration:
@@ -44,6 +45,16 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
        enableIstioSidecarOnGateway: true
      istioSDS:
        enabled: true
+     glooMtls:
+       istioProxy:
+         image:
+           registry: docker.io/istio
+           repository: proxyv2
+           tag: 1.18.2
+       sds:
+         image:
+           repository: sds
+           tag: 1.0.0-ci
    gatewayProxies:
      gatewayProxy:
        podTemplate: 
@@ -55,13 +66,13 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    {{< tabs >}} 
    {{< tab name="Install Gloo Edge">}}
 
-   1. Install Gloo Edge with the settings in the `value-overrides.yaml` file. This command creates the `gloo-system` namespace and installs the Gloo Edge components into it.
-      ```shell
-      helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f value-overrides.yaml
-      ```
+   Install Gloo Edge with the settings in the `value-overrides.yaml` file. This command creates the `gloo-system` namespace and installs the Gloo Edge components into it.
+   ```shell
+    helm install gloo gloo/gloo --namespace gloo-system --create-namespace -f value-overrides.yaml
+   ```
    {{< /tab >}}
    {{< tab name="Upgrade Gloo Edge">}}
-      
+   Upgrade Gloo Edge with the settings in the `value-overrides.yaml` file.
    ```shell
    helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
@@ -164,7 +175,7 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
                  name: productpage
                  namespace: default
                port: 9080
-   EOF           
+   EOF
    ```
    
 4. Send a request to the product page. Because the Istio sidecar is injected into the Gloo Edge gateway proxy, mTLS is used to securely connect to the service in your cluster. The routing is set up correctly if you receive a 200 HTTP response code. 
