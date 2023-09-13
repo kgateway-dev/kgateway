@@ -1511,11 +1511,11 @@ message ExtAuthConfig {
         UserSessionConfig user_session = 20;
 
         message ClientSecretExchangeConfig {
-            string signing_key = 1 [(extproto.sensitive) = true];
+            string client_secret = 1 [(extproto.sensitive) = true];
         }
 
         // message PkJwtExchangeConfig{
-        //     string client_id = 1 ;
+        //     string signing_key = 1 ;
         // }
 
         oneof exchange_config {
