@@ -151,6 +151,7 @@ type PluginConfig struct {
 	// Configuration for finding or starting VM.
 	//
 	// Types that are assignable to Vm:
+	//
 	//	*PluginConfig_VmConfig
 	Vm isPluginConfig_Vm `protobuf_oneof:"vm"`
 	// Filter/service configuration used to configure or reconfigure a plugin

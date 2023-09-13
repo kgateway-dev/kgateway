@@ -40,6 +40,7 @@ type LoadBalancerConfig struct {
 	// Set to 0 to disable and have changes applied immediately.
 	UpdateMergeWindow *duration.Duration `protobuf:"bytes,2,opt,name=update_merge_window,json=updateMergeWindow,proto3" json:"update_merge_window,omitempty"`
 	// Types that are assignable to Type:
+	//
 	//	*LoadBalancerConfig_RoundRobin_
 	//	*LoadBalancerConfig_LeastRequest_
 	//	*LoadBalancerConfig_Random_
@@ -47,6 +48,7 @@ type LoadBalancerConfig struct {
 	//	*LoadBalancerConfig_Maglev_
 	Type isLoadBalancerConfig_Type `protobuf_oneof:"type"`
 	// Types that are assignable to LocalityConfig:
+	//
 	//	*LoadBalancerConfig_LocalityWeightedLbConfig
 	LocalityConfig isLoadBalancerConfig_LocalityConfig `protobuf_oneof:"locality_config"`
 }
@@ -512,8 +514,8 @@ type LoadBalancerConfig_SlowStartConfig struct {
 	// By tuning the parameter, is possible to achieve polynomial or exponential shape of ramp-up curve.
 	//
 	// During slow start window, effective weight of an endpoint would be scaled with time factor and aggression:
-	// ``new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))``,
-	// where ``time_factor=(time_since_start_seconds / slow_start_time_seconds)``.
+	// “new_weight = weight * max(min_weight_percent, time_factor ^ (1 / aggression))“,
+	// where “time_factor=(time_since_start_seconds / slow_start_time_seconds)“.
 	//
 	// As time progresses, more and more traffic would be sent to endpoint, which is in slow start window.
 	// Once host exits slow start, time_factor and aggression no longer affect its weight.
