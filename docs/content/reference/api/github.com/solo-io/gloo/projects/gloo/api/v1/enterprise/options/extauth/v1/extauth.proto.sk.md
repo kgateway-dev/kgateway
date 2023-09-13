@@ -84,6 +84,7 @@ weight: 5
 - [UserSessionConfig](#usersessionconfig)
 - [CipherConfig](#cipherconfig)
 - [OidcAuthorizationCodeConfig](#oidcauthorizationcodeconfig)
+- [ClientSecretExchangeConfig](#clientsecretexchangeconfig)
 - [AccessTokenValidationConfig](#accesstokenvalidationconfig)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -1880,13 +1881,14 @@ Deprecated, prefer OAuth2Config
 "autoMapFromMetadata": .enterprise.gloo.solo.io.AutoMapFromMetadata
 "endSessionProperties": .enterprise.gloo.solo.io.EndSessionProperties
 "userSession": .enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig
+"clientSecretExchangeConfig": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClientSecretExchangeConfig
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `clientId` | `string` | your client id as registered with the issuer. |
-| `clientSecret` | `string` | your client secret as registered with the issuer. |
+| `clientSecret` | `string` | your client secret as registered with the issuer. Do not set if you are using private key JWTs for code exchange. |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_challenge` and `code_challenge_method`. |
 | `tokenEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's token request to the identity provider. this can be useful for flows such as PKCE (https://www.oauth.com/oauth2-servers/pkce/authorization-request/) to set the `code_verifier`. |
@@ -1905,6 +1907,24 @@ Deprecated, prefer OAuth2Config
 | `autoMapFromMetadata` | [.enterprise.gloo.solo.io.AutoMapFromMetadata](../extauth.proto.sk/#automapfrommetadata) | If specified, authEndpointQueryParams and tokenEndpointQueryParams will be populated using dynamic metadata values. By default parameters will be extracted from the solo_authconfig_oidc namespace this behavior can be overridden by explicitly specifying a namespace. |
 | `endSessionProperties` | [.enterprise.gloo.solo.io.EndSessionProperties](../extauth.proto.sk/#endsessionproperties) | If specified, these are properties defined for the end session endpoint specifications. Noted [here](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) in the OIDC documentation. |
 | `userSession` | [.enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig](../extauth.proto.sk/#usersessionconfig) | Configuration related to the user session. |
+| `clientSecretExchangeConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClientSecretExchangeConfig](../extauth.proto.sk/#clientsecretexchangeconfig) | Fetches the JWKS from a remote location. |
+
+
+
+
+---
+### ClientSecretExchangeConfig
+
+
+
+```yaml
+"signingKey": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `signingKey` | `string` |  |
 
 
 

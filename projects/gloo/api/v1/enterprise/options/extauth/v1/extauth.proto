@@ -1403,12 +1403,11 @@ message ExtAuthConfig {
     }
 
     message OidcAuthorizationCodeConfig {
-
         // your client id as registered with the issuer
-        string client_id = 1;
+        string client_id = 1 ;
 
-        // your client secret as registered with the issuer
-        string client_secret = 2 [(extproto.sensitive) = true];
+        // your client secret as registered with the issuer. Do not set if you are using private key JWTs for code exchange.
+        string client_secret = 2 [(extproto.sensitive) = true, deprecated = true];
 
         // The url of the issuer. We will look for OIDC information in issuerUrl+
         // ".well-known/openid-configuration"
@@ -1510,6 +1509,22 @@ message ExtAuthConfig {
 
         // Configuration related to the user session.
         UserSessionConfig user_session = 20;
+
+        message ClientSecretExchangeConfig {
+            string signing_key = 1 [(extproto.sensitive) = true];
+        }
+
+        // message PkJwtExchangeConfig{
+        //     string client_id = 1 ;
+        // }
+
+        oneof exchange_config {
+            // Fetches the JWKS from a remote location.
+            ClientSecretExchangeConfig client_secret_exchange_config = 21;
+            // Loads the JWKS from a local data source.
+            // PkJwtExchangeConfig pk_jwt_exchange_config = 22;
+        }
+
     }
 
     message AccessTokenValidationConfig {

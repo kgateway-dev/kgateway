@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/7744
+  description: OIDC PK_JWT

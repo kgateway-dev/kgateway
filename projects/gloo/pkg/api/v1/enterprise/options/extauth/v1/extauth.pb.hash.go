@@ -5149,6 +5149,32 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Hash(hasher hash.Hash64) (ui
 		}
 	}
 
+	switch m.ExchangeConfig.(type) {
+
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig_:
+
+		if h, ok := interface{}(m.GetClientSecretExchangeConfig()).(safe_hasher.SafeHasher); ok {
+			if _, err = hasher.Write([]byte("ClientSecretExchangeConfig")); err != nil {
+				return 0, err
+			}
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if fieldValue, err := hashstructure.Hash(m.GetClientSecretExchangeConfig(), nil); err != nil {
+				return 0, err
+			} else {
+				if _, err = hasher.Write([]byte("ClientSecretExchangeConfig")); err != nil {
+					return 0, err
+				}
+				if err := binary.Write(hasher, binary.LittleEndian, fieldValue); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
 	return hasher.Sum64(), nil
 }
 
@@ -6284,6 +6310,26 @@ func (m *ExtAuthConfig_UserSessionConfig_CipherConfig) Hash(hasher hash.Hash64) 
 	}
 
 	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSigningKey())); err != nil {
 		return 0, err
 	}
 
