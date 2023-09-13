@@ -104,6 +104,8 @@ func (RouteTableSelector_Expression_Operator) EnumDescriptor() ([]byte, []int) {
 	return file_github_com_solo_io_gloo_projects_gateway_api_v1_virtual_service_proto_rawDescGZIP(), []int{5, 1, 0}
 }
 
+//
+//
 // The **VirtualService** is the root routing object for the Gloo Gateway.
 // A virtual service describes the set of routes to match for a set of domains.
 //
@@ -125,24 +127,21 @@ func (RouteTableSelector_Expression_Operator) EnumDescriptor() ([]byte, []int) {
 // apiVersion: gateway.solo.io/v1
 // kind: VirtualService
 // metadata:
-//
-//	name: 'http'
-//	namespace: 'usernamespace'
-//
+//   name: 'http'
+//   namespace: 'usernamespace'
 // spec:
-//
-//	virtualHost:
-//	  domains:
-//	  - '*.mydomain.com'
-//	  - 'mydomain.com'
-//	  routes:
-//	  - matchers:
-//	    - prefix: '/'
-//	    # delegate all traffic to the `shared-routes` RouteTable
-//	    delegateAction:
-//	      ref:
-//	        name: 'shared-routes'
-//	        namespace: 'usernamespace'
+//   virtualHost:
+//     domains:
+//     - '*.mydomain.com'
+//     - 'mydomain.com'
+//     routes:
+//     - matchers:
+//       - prefix: '/'
+//       # delegate all traffic to the `shared-routes` RouteTable
+//       delegateAction:
+//         ref:
+//           name: 'shared-routes'
+//           namespace: 'usernamespace'
 //
 // ```
 //
@@ -151,28 +150,25 @@ func (RouteTableSelector_Expression_Operator) EnumDescriptor() ([]byte, []int) {
 // apiVersion: gateway.solo.io/v1
 // kind: VirtualService
 // metadata:
-//
-//	name: 'https'
-//	namespace: 'usernamespace'
-//
+//   name: 'https'
+//   namespace: 'usernamespace'
 // spec:
-//
-//	virtualHost:
-//	  domains:
-//	  - '*.mydomain.com'
-//	  - 'mydomain.com'
-//	  routes:
-//	  - matchers:
-//	    - prefix: '/'
-//	    # delegate all traffic to the `shared-routes` RouteTable
-//	    delegateAction:
-//	      ref:
-//	        name: 'shared-routes'
-//	        namespace: 'usernamespace'
-//	sslConfig:
-//	  secretRef:
-//	    name: gateway-tls
-//	    namespace: gloo-system
+//   virtualHost:
+//     domains:
+//     - '*.mydomain.com'
+//     - 'mydomain.com'
+//     routes:
+//     - matchers:
+//       - prefix: '/'
+//       # delegate all traffic to the `shared-routes` RouteTable
+//       delegateAction:
+//         ref:
+//           name: 'shared-routes'
+//           namespace: 'usernamespace'
+//   sslConfig:
+//     secretRef:
+//       name: gateway-tls
+//       namespace: gloo-system
 //
 // ```
 //
@@ -181,21 +177,17 @@ func (RouteTableSelector_Expression_Operator) EnumDescriptor() ([]byte, []int) {
 // apiVersion: gateway.solo.io/v1
 // kind: RouteTable
 // metadata:
-//
-//	name: 'shared-routes'
-//	namespace: 'usernamespace'
-//
+//   name: 'shared-routes'
+//   namespace: 'usernamespace'
 // spec:
-//
-//	routes:
-//	  - matchers:
-//	    - prefix: '/some-route'
-//	    routeAction:
-//	      single:
-//	        upstream:
-//	          name: 'some-upstream'
-//	   ...
-//
+//   routes:
+//     - matchers:
+//       - prefix: '/some-route'
+//       routeAction:
+//         single:
+//           upstream:
+//             name: 'some-upstream'
+//      ...
 // ```
 //
 // **Delegated Routes** are routes that use the `delegateAction` routing action. Delegated Routes obey the following
@@ -204,6 +196,7 @@ func (RouteTableSelector_Expression_Operator) EnumDescriptor() ([]byte, []int) {
 // - delegate routes must use `prefix` path matchers
 // - delegated routes cannot specify header, query, or methods portion of the normal route matcher.
 // - `routeOptions` configuration will be inherited from parent routes, but can be overridden by the child
+//
 type VirtualService struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -295,14 +288,16 @@ func (x *VirtualService) GetMetadata() *core.Metadata {
 	return nil
 }
 
-// Virtual Hosts serve an ordered list of routes for a set of domains.
 //
-// An HTTP request is first matched to a virtual host based on its host header, then to a route within the virtual host.
+//Virtual Hosts serve an ordered list of routes for a set of domains.
 //
-// If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
+//An HTTP request is first matched to a virtual host based on its host header, then to a route within the virtual host.
 //
-// Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#virtualhost" >}}),
-// _Gateway_ Virtual Hosts can delegate their routes to `RouteTables`.
+//If a request is not matched to any virtual host or a route therein, the target proxy will reply with a 404.
+//
+//Unlike the [Gloo Virtual Host]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#virtualhost" >}}),
+//_Gateway_ Virtual Hosts can delegate their routes to `RouteTables`.
+//
 type VirtualHost struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -323,7 +318,6 @@ type VirtualHost struct {
 	// Some configuration here can be overridden by Route Options.
 	Options *v1.VirtualHostOptions `protobuf:"bytes,4,opt,name=options,proto3" json:"options,omitempty"`
 	// Types that are assignable to ExternalOptionsConfig:
-	//
 	//	*VirtualHost_OptionsConfigRefs
 	ExternalOptionsConfig isVirtualHost_ExternalOptionsConfig `protobuf_oneof:"external_options_config"`
 }
@@ -401,18 +395,19 @@ type isVirtualHost_ExternalOptionsConfig interface {
 
 type VirtualHost_OptionsConfigRefs struct {
 	// Delegate the VirtualHost options to an external VirtualHostOption Resource.
-	// Any options configured in the VirtualHost's `options` field will override all
-	// delegated options. If multiple VirtualHostOption CRs are delegated to, configuration will
-	// be taken from prior VirtualHostOption CRs over later ones.
-	// For example if `headerManipulation` is specified on the VirtualHost options, a delegated
-	// `VirtualHostOption` vhost-opt-1, and a second delegated `VirtualHostOption` vhost-opt-2, the `headerManipulation`
-	// config from only the VirtualHost-level `options` will be applied. If the config is removed from the VirtualHost-level `options` field,
-	// then the config from the first delegated `VirtualHostOption`, vhost-opt-1, is applied.
+	//Any options configured in the VirtualHost's `options` field will override all
+	//delegated options. If multiple VirtualHostOption CRs are delegated to, configuration will
+	//be taken from prior VirtualHostOption CRs over later ones.
+	//For example if `headerManipulation` is specified on the VirtualHost options, a delegated
+	//`VirtualHostOption` vhost-opt-1, and a second delegated `VirtualHostOption` vhost-opt-2, the `headerManipulation`
+	//config from only the VirtualHost-level `options` will be applied. If the config is removed from the VirtualHost-level `options` field,
+	//then the config from the first delegated `VirtualHostOption`, vhost-opt-1, is applied.
 	OptionsConfigRefs *DelegateOptionsRefs `protobuf:"bytes,5,opt,name=options_config_refs,json=optionsConfigRefs,proto3,oneof"`
 }
 
 func (*VirtualHost_OptionsConfigRefs) isVirtualHost_ExternalOptionsConfig() {}
 
+//
 // A route specifies how to match a request and what action to take when the request is matched.
 //
 // When a request matches on a route, the route can perform one of the following actions:
@@ -440,7 +435,6 @@ type Route struct {
 	// The Route Action Defines what action the proxy should take when a request matches the route.
 	//
 	// Types that are assignable to Action:
-	//
 	//	*Route_RouteAction
 	//	*Route_RedirectAction
 	//	*Route_DirectResponseAction
@@ -454,7 +448,6 @@ type Route struct {
 	// The name provides a convenience for users to be able to refer to a route by name.
 	Name string `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to ExternalOptionsConfig:
-	//
 	//	*Route_OptionsConfigRefs
 	ExternalOptionsConfig isRoute_ExternalOptionsConfig `protobuf_oneof:"external_options_config"`
 }
@@ -632,13 +625,13 @@ type isRoute_ExternalOptionsConfig interface {
 
 type Route_OptionsConfigRefs struct {
 	// Delegate the Route options to an external RouteOption Resource.
-	// Any options configured in the Route's `options` field will override all
-	// delegated options. If multiple RouteOption CRs are delegated to, configuration will
-	// be taken from prior RouteOption CRs over later ones.
-	// For example if `headerManipulation` is specified on the route options, a delegated
-	// `RouteOption` route-opt-1, and a second delegated `RouteOption` route-opt-2, the `headerManipulation`
-	// config from only the Route-level `options` will be applied. If the config is removed from the Route-level `options` field,
-	// then the config from the first delegated `RouteOption`, route-opt-1, is applied.
+	//Any options configured in the Route's `options` field will override all
+	//delegated options. If multiple RouteOption CRs are delegated to, configuration will
+	//be taken from prior RouteOption CRs over later ones.
+	//For example if `headerManipulation` is specified on the route options, a delegated
+	//`RouteOption` route-opt-1, and a second delegated `RouteOption` route-opt-2, the `headerManipulation`
+	//config from only the Route-level `options` will be applied. If the config is removed from the Route-level `options` field,
+	//then the config from the first delegated `RouteOption`, route-opt-1, is applied.
 	OptionsConfigRefs *DelegateOptionsRefs `protobuf:"bytes,10,opt,name=options_config_refs,json=optionsConfigRefs,proto3,oneof"`
 }
 
@@ -649,7 +642,8 @@ type DelegateOptionsRefs struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// List of resource refs to Option CRs
+	//
+	//List of resource refs to Option CRs
 	DelegateOptions []*core.ResourceRef `protobuf:"bytes,1,rep,name=delegate_options,json=delegateOptions,proto3" json:"delegate_options,omitempty"`
 }
 
@@ -711,7 +705,6 @@ type DelegateAction struct {
 	// Deprecated: Do not use.
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	// Types that are assignable to DelegationType:
-	//
 	//	*DelegateAction_Ref
 	//	*DelegateAction_Selector
 	DelegationType isDelegateAction_DelegationType `protobuf_oneof:"delegation_type"`

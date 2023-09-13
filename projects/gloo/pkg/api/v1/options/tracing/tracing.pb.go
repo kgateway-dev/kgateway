@@ -45,7 +45,6 @@ type ListenerTracingSettings struct {
 	// ProviderConfig defines the configuration for an external tracing provider.
 	//
 	// Types that are assignable to ProviderConfig:
-	//
 	//	*ListenerTracingSettings_ZipkinConfig
 	//	*ListenerTracingSettings_DatadogConfig
 	//	*ListenerTracingSettings_OpenTelemetryConfig

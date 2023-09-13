@@ -42,8 +42,7 @@ type RequestTemplate struct {
 	// for example, if a header is an authorization token, taken from the graphql args,
 	// we can use the following configuration:
 	// headers:
-	//
-	//	Authorization: "Bearer {$args.token}"
+	//   Authorization: "Bearer {$args.token}"
 	Headers map[string]string `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Use this attribute to set query parameters to your REST service. It consists of a
 	// map of strings to templated value strings. The string key determines the name of the
@@ -53,8 +52,7 @@ type RequestTemplate struct {
 	// for example, if a query parameter is an id, taken from the graphql parent object,
 	// we can use the following configuration:
 	// queryParams:
-	//
-	//	id: "{$parent.id}"
+	//   id: "{$parent.id}"
 	QueryParams map[string]string `protobuf:"bytes,2,rep,name=query_params,json=queryParams,proto3" json:"query_params,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Used to construct the outgoing body to the upstream from the
 	// graphql value providers.
@@ -120,40 +118,42 @@ type ResponseTemplate struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Sets the "root" of the upstream response to be turned into a graphql type by the graphql server.
-	// For example, if the graphql type is:
 	//
-	// type Simple {
-	// name String
-	// }
+	//Sets the "root" of the upstream response to be turned into a graphql type by the graphql server.
+	//For example, if the graphql type is:
 	//
-	// and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`,
-	// the graphql server will not be able to marshal the upstream response into the Simple graphql type
-	// because it does not know where the relevant data is. If we set result_root to "data.simple", we can give the
-	// graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants.
+	//type Simple {
+	//name String
+	//}
+	//
+	//and the upstream response is `{"data": {"simple": {"name": "simple name"}}}`,
+	//the graphql server will not be able to marshal the upstream response into the Simple graphql type
+	//because it does not know where the relevant data is. If we set result_root to "data.simple", we can give the
+	//graphql server a hint of where to look in the upstream response for the relevant data that graphql type wants.
 	ResultRoot string `protobuf:"bytes,1,opt,name=result_root,json=resultRoot,proto3" json:"result_root,omitempty"`
-	// Field-specific mapping for a graphql field to a JSON path in the upstream response.
-	// For example, if the graphql type is:
 	//
-	// type Person {
-	// firstname String
-	// lastname String
-	// fullname String
-	// }
+	//Field-specific mapping for a graphql field to a JSON path in the upstream response.
+	//For example, if the graphql type is:
 	//
-	// and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`,
-	// the graphql server will not be able to marshal the upstream response into the Person graphql type because of the
-	// nested `lastname` field. We can use a simple setter here:
+	//type Person {
+	//firstname String
+	//lastname String
+	//fullname String
+	//}
 	//
-	// setters:
-	// lastname: '{$body.details.lastname}'
-	// fullname: '{$body.details.firstname} {$body.details.lastname}'
+	//and the upstream response is `{"firstname": "Joe", "details": {"lastname": "Smith"}}`,
+	//the graphql server will not be able to marshal the upstream response into the Person graphql type because of the
+	//nested `lastname` field. We can use a simple setter here:
 	//
-	// and the graphql server will be able to extract data for a field given the path to the relevant data
-	// in the upstream JSON response. We do not need to have a setter for the `firstname` field because the
-	// JSON response has that field in a position the graphql server can understand automatically.
+	//setters:
+	//lastname: '{$body.details.lastname}'
+	//fullname: '{$body.details.firstname} {$body.details.lastname}'
 	//
-	// So far only the $body keyword is supported, but in the future we may add support for others such as $headers.
+	//and the graphql server will be able to extract data for a field given the path to the relevant data
+	//in the upstream JSON response. We do not need to have a setter for the `firstname` field because the
+	//JSON response has that field in a position the graphql server can understand automatically.
+	//
+	//So far only the $body keyword is supported, but in the future we may add support for others such as $headers.
 	Setters map[string]string `protobuf:"bytes,2,rep,name=setters,proto3" json:"setters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -375,7 +375,6 @@ type GrpcDescriptorRegistry struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to DescriptorSet:
-	//
 	//	*GrpcDescriptorRegistry_ProtoDescriptor
 	//	*GrpcDescriptorRegistry_ProtoDescriptorBin
 	//	*GrpcDescriptorRegistry_ProtoRefsList
@@ -604,7 +603,6 @@ type MockResolver struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Response:
-	//
 	//	*MockResolver_SyncResponse
 	//	*MockResolver_AsyncResponse_
 	//	*MockResolver_ErrorResponse
@@ -709,7 +707,6 @@ type Resolution struct {
 	// The resolver to use.
 	//
 	// Types that are assignable to Resolver:
-	//
 	//	*Resolution_RestResolver
 	//	*Resolution_GrpcResolver
 	//	*Resolution_MockResolver
@@ -834,7 +831,6 @@ type GraphQLApi struct {
 	// Metadata contains the object metadata for this resource
 	Metadata *core.Metadata `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// Types that are assignable to Schema:
-	//
 	//	*GraphQLApi_ExecutableSchema
 	//	*GraphQLApi_StitchedSchema
 	Schema isGraphQLApi_Schema `protobuf_oneof:"schema"`
@@ -1019,25 +1015,25 @@ type ExecutableSchema struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The following directives are supported:
-	// - @resolve(name: string)
-	// - @cacheControl(maxAge: uint32, inheritMaxAge: bool, scope: unset/public/private)
+	//- @resolve(name: string)
+	//- @cacheControl(maxAge: uint32, inheritMaxAge: bool, scope: unset/public/private)
 	//
-	// Define named resolvers on the `Executor.Local.resolutions` message, and reference them here using @resolve:
-	// ```gql
-	// type Query {
-	// author: String @resolve(name: "authorResolver")
-	// }
+	//Define named resolvers on the `Executor.Local.resolutions` message, and reference them here using @resolve:
+	//```gql
+	//type Query {
+	//author: String @resolve(name: "authorResolver")
+	//}
 	//
-	// Further, fields/types can be annotated with the @cacheControl directive, e.g.
-	// ```gql
-	// type Query @cacheControl(maxAge: 60) {
-	// author: String @resolve(name: "authorResolver") @cacheControl(maxAge: 90, scope: private)
-	// }
-	// ```
-	// Any type-level cache control defaults are overridden by field settings, if provided.
-	// The most restrictive cache control setting (smallest maxAge and scope) across all fields in
-	// an entire query will be returned to the client in the `Cache-Control` header with appropriate
-	// `max-age` and  scope (unset, `public`, or `private`) directives.
+	//Further, fields/types can be annotated with the @cacheControl directive, e.g.
+	//```gql
+	//type Query @cacheControl(maxAge: 60) {
+	//author: String @resolve(name: "authorResolver") @cacheControl(maxAge: 90, scope: private)
+	//}
+	//```
+	//Any type-level cache control defaults are overridden by field settings, if provided.
+	//The most restrictive cache control setting (smallest maxAge and scope) across all fields in
+	//an entire query will be returned to the client in the `Cache-Control` header with appropriate
+	//`max-age` and  scope (unset, `public`, or `private`) directives.
 	SchemaDefinition string `protobuf:"bytes,1,opt,name=schema_definition,json=schemaDefinition,proto3" json:"schema_definition,omitempty"`
 	// how to execute the schema
 	Executor *Executor `protobuf:"bytes,2,opt,name=executor,proto3" json:"executor,omitempty"`
@@ -1104,7 +1100,6 @@ type Executor struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Executor:
-	//
 	//	*Executor_Local_
 	//	*Executor_Remote_
 	Executor isExecutor_Executor `protobuf_oneof:"executor"`
@@ -1239,45 +1234,46 @@ type StitchedSchema_SubschemaConfig struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// namespace of the GraphQLApi subschema
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	// Type merge configuration for this subschema. Let's say this subschema is a Users service schema
-	// and provides the User type (with a query to fetch a user given the username)
 	//
-	// ```gql
-	// type Query {
-	// GetUser(username: String): User
-	// }
-	// type User {
-	// username: String
-	// firstName: String
-	// lastName: String
-	// }
-	// ```
+	//Type merge configuration for this subschema. Let's say this subschema is a Users service schema
+	//and provides the User type (with a query to fetch a user given the username)
 	//
-	// and another subschema, e.g. Reviews schema, may have a partial User type:
-	// ```gql
-	// type Review {
-	// author: User
-	// }
+	//```gql
+	//type Query {
+	//GetUser(username: String): User
+	//}
+	//type User {
+	//username: String
+	//firstName: String
+	//lastName: String
+	//}
+	//```
 	//
-	// type User {
-	// username: String
-	// }
-	// ```
-	// We want to provide the relevant information from this Users service schema,
-	// so that another API that can give us a partial User type (with the username) will then
-	// be able to have access to the full user type. With the correct type merging config under the Users subschema, e.g.:
+	//and another subschema, e.g. Reviews schema, may have a partial User type:
+	//```gql
+	//type Review {
+	//author: User
+	//}
 	//
-	// ```yaml
-	// type_merge:
-	// User:
-	// selection_set: '{ username }'
-	// query_name: 'GetUser'
-	// args:
-	// username: username
-	// ```
-	// the stitched schema will now be able to provide the full user type to all types that require it. In this case,
-	// we can now get the first name of an author from the Review.author field even though the Reviews schema does not
-	// provide the full User type.
+	//type User {
+	//username: String
+	//}
+	//```
+	//We want to provide the relevant information from this Users service schema,
+	//so that another API that can give us a partial User type (with the username) will then
+	//be able to have access to the full user type. With the correct type merging config under the Users subschema, e.g.:
+	//
+	//```yaml
+	//type_merge:
+	//User:
+	//selection_set: '{ username }'
+	//query_name: 'GetUser'
+	//args:
+	//username: username
+	//```
+	//the stitched schema will now be able to provide the full user type to all types that require it. In this case,
+	//we can now get the first name of an author from the Review.author field even though the Reviews schema does not
+	//provide the full User type.
 	TypeMerge map[string]*StitchedSchema_SubschemaConfig_TypeMergeConfig `protobuf:"bytes,3,rep,name=type_merge,json=typeMerge,proto3" json:"type_merge,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -1517,23 +1513,23 @@ type Executor_Local struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Mapping of resolver name to resolver definition.
-	// The names are used to reference the resolver in the graphql schema.
-	// For example, a resolver with name "authorResolver" can be defined as
-	// ```yaml
-	// authorResolver:
-	// restResolver:
-	// upstreamRef: ...
-	// request:
-	// ...
-	// response:
-	// ...
-	// ```
-	// and referenced in the graphql schema as
-	// ```gql
-	// type Query {
-	// author: String @resolve(name: "authorResolver")
-	// }
-	// ```
+	//The names are used to reference the resolver in the graphql schema.
+	//For example, a resolver with name "authorResolver" can be defined as
+	//```yaml
+	//authorResolver:
+	//restResolver:
+	//upstreamRef: ...
+	//request:
+	//...
+	//response:
+	//...
+	//```
+	//and referenced in the graphql schema as
+	//```gql
+	//type Query {
+	//author: String @resolve(name: "authorResolver")
+	//}
+	//```
 	Resolutions map[string]*Resolution `protobuf:"bytes,1,rep,name=resolutions,proto3" json:"resolutions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Do we enable introspection for the schema? general recommendation is to
 	// disable this for production and hence it defaults to false.
@@ -1605,8 +1601,7 @@ type Executor_Remote struct {
 	// e.g.
 	// ':path':   '/hard/coded/path'
 	// ':method': '{$headers.method}'
-	//
-	//	':key':    '{$metadata.io.solo.transformation:endpoint_url}'
+	//  ':key':    '{$metadata.io.solo.transformation:endpoint_url}'
 	Headers map[string]string `protobuf:"bytes,2,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// map of query parameter name to extraction type:
 	// e.g.
@@ -1685,47 +1680,41 @@ type Executor_Local_LocalExecutorOptions struct {
 	// any GraphQL operation that runs past the `max_depth` will add an error message to the response and will return as `null`.
 	// As as simple example, if the schema is
 	// ```gql
+	// type Query {
+	//   employee: Employee
+	// }
 	//
-	//	type Query {
-	//	  employee: Employee
-	//	}
-	//
-	//	type Employee {
-	//	  manager: Employee
-	//	  name: String
-	//	}
-	//
+	// type Employee {
+	//   manager: Employee
+	//   name: String
+	// }
 	// ```
 	// and we set a `max_depth` of `3` and we run a query
 	// ```gql
 	// query {             # query depth : 0
-	//
-	//	  employee {        # query depth : 1
-	//	    manager {       # query depth : 2
-	//	      name          # query depth : 3
-	//	      manager {     # query depth : 3
-	//	        name        # query depth : 4
-	//	      }
-	//	    }
-	//	  }
-	//	}
-	//
+	//   employee {        # query depth : 1
+	//     manager {       # query depth : 2
+	//       name          # query depth : 3
+	//       manager {     # query depth : 3
+	//         name        # query depth : 4
+	//       }
+	//     }
+	//   }
+	// }
 	// ```
 	// the graphql server will respond with a response:
 	// ```json
-	//
-	//	{ "data" : {
-	//	    "employee" : {
-	//	      "manager" : {
-	//	        "name" : "Manager 1",
-	//	        "manager"  : {
-	//	          "name" : null
-	//	  }}}},
-	//	  "errors": [
-	//	     {"message": "field 'name' exceeds the max operation depth of 3 for this schema"}
-	//	   ]
-	//	}
-	//
+	// { "data" : {
+	//     "employee" : {
+	//       "manager" : {
+	//         "name" : "Manager 1",
+	//         "manager"  : {
+	//           "name" : null
+	//   }}}},
+	//   "errors": [
+	//      {"message": "field 'name' exceeds the max operation depth of 3 for this schema"}
+	//    ]
+	// }
 	// If not configured, or the value is 0, the query depth will be unbounded.
 	MaxDepth *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=max_depth,json=maxDepth,proto3" json:"max_depth,omitempty"`
 }

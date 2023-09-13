@@ -41,12 +41,10 @@ type UpstreamSpec struct {
 	// If set, a [Gloo Secret Ref](https://docs.solo.io/gloo-edge/latest/reference/cli/glooctl_create_secret_aws/) to an AWS Secret
 	// AWS Secrets can be created with `glooctl secret create aws ...`
 	// If the secret is created manually, it must conform to the following structure:
-	//
-	//	```
-	//	access_key: <aws access key>
-	//	secret_key: <aws secret key>
-	//	```
-	//
+	//  ```
+	//  access_key: <aws access key>
+	//  secret_key: <aws secret key>
+	//  ```
 	// Gloo will create an EC2 API client with this credential. You may choose to use a credential with limited access
 	// in conjunction with a list of Roles, specified by their Amazon Resource Number (ARN).
 	SecretRef *core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref,omitempty"`
@@ -145,7 +143,6 @@ type TagFilter struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Spec:
-	//
 	//	*TagFilter_Key
 	//	*TagFilter_KvPair_
 	Spec isTagFilter_Spec `protobuf_oneof:"spec"`

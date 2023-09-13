@@ -86,8 +86,9 @@ type TransformationRule struct {
 	//
 	// .. code-block:: yaml
 	//
-	//	match:
-	//	  prefix: /
+	//    match:
+	//      prefix: /
+	//
 	Match   *route.RouteMatch `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
 	MatchV3 *v3.RouteMatch    `protobuf:"bytes,3,opt,name=match_v3,json=matchV3,proto3" json:"match_v3,omitempty"`
 	// transformation to perform
@@ -229,7 +230,6 @@ type Transformation struct {
 	// Template is in the transformed request language domain
 	//
 	// Types that are assignable to TransformationType:
-	//
 	//	*Transformation_DlpTransformation
 	TransformationType isTransformation_TransformationType `protobuf_oneof:"transformation_type"`
 }
@@ -640,7 +640,6 @@ type Action_DlpMatcher struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Matcher:
-	//
 	//	*Action_DlpMatcher_RegexMatcher
 	//	*Action_DlpMatcher_KeyValueMatcher
 	Matcher isAction_DlpMatcher_Matcher `protobuf_oneof:"matcher"`

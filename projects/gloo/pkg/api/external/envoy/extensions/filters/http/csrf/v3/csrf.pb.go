@@ -40,12 +40,12 @@ type CsrfPolicy struct {
 	//
 	// .. note::
 	//
-	//	This field defaults to 100/:ref:`HUNDRED
-	//	<envoy_api_enum_type.v3.FractionalPercent.DenominatorType>`.
+	//   This field defaults to 100/:ref:`HUNDRED
+	//   <envoy_api_enum_type.v3.FractionalPercent.DenominatorType>`.
 	FilterEnabled *v3.RuntimeFractionalPercent `protobuf:"bytes,1,opt,name=filter_enabled,json=filterEnabled,proto3" json:"filter_enabled,omitempty"`
 	// Specifies that CSRF policies will be evaluated and tracked, but not enforced.
 	//
-	// This is intended to be used when “filter_enabled“ is off and will be ignored otherwise.
+	// This is intended to be used when ``filter_enabled`` is off and will be ignored otherwise.
 	//
 	// If :ref:`runtime_key <envoy_api_field_config.core.v3.RuntimeFractionalPercent.runtime_key>` is specified,
 	// Envoy will lookup the runtime key to get the percentage of requests for which it will evaluate

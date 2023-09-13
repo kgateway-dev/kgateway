@@ -29,8 +29,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// @solo-kit:xds-service=RateLimitDiscoveryService
-// @solo-kit:resource.no_references
+//
+//@solo-kit:xds-service=RateLimitDiscoveryService
+//@solo-kit:resource.no_references
 type RateLimitConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

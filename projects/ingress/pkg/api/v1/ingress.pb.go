@@ -24,7 +24,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// A simple wrapper for a Kubernetes Ingress Object.
+//
+//A simple wrapper for a Kubernetes Ingress Object.
 type Ingress struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

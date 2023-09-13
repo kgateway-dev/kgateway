@@ -151,7 +151,6 @@ type HashPolicy struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to KeyType:
-	//
 	//	*HashPolicy_Header
 	//	*HashPolicy_Cookie
 	//	*HashPolicy_SourceIp

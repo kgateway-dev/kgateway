@@ -256,20 +256,17 @@ type VirtualHost struct {
 	// virtual host. Wildcard hosts are supported in the suffix or prefix form.
 	//
 	// Domain search order:
+	//  1. Exact domain names: ``www.foo.com``.
+	//  2. Suffix domain wildcards: ``*.foo.com`` or ``*-bar.foo.com``.
+	//  3. Prefix domain wildcards: ``foo.*`` or ``foo-*``.
+	//  4. Special wildcard ``*`` matching any domain.
 	//
-	//  1. Exact domain names: “www.foo.com“.
 	//
-	//  2. Suffix domain wildcards: “*.foo.com“ or “*-bar.foo.com“.
-	//
-	//  3. Prefix domain wildcards: “foo.*“ or “foo-*“.
-	//
-	//  4. Special wildcard “*“ matching any domain.
-	//
-	//     The wildcard will not match the empty string.
-	//     e.g. “*-bar.foo.com“ will match “baz-bar.foo.com“ but not “-bar.foo.com“.
-	//     The longest wildcards match first.
-	//     Only a single virtual host in the entire route configuration can match on “*“. A domain
-	//     must be unique across all virtual hosts or the config will fail to load.
+	//   The wildcard will not match the empty string.
+	//   e.g. ``*-bar.foo.com`` will match ``baz-bar.foo.com`` but not ``-bar.foo.com``.
+	//   The longest wildcards match first.
+	//   Only a single virtual host in the entire route configuration can match on ``*``. A domain
+	//   must be unique across all virtual hosts or the config will fail to load.
 	Domains []string `protobuf:"bytes,2,rep,name=domains,proto3" json:"domains,omitempty"`
 	// The list of routes that will be matched, in order, for incoming requests.
 	// The first route that matches will be used.
@@ -483,8 +480,9 @@ func (x *VirtualHost) GetHedgePolicy() *HedgePolicy {
 // A route is both a specification of how to match a request as well as an indication of what to do
 // next (e.g., redirect, forward, rewrite, etc.).
 //
-//	Envoy supports routing on HTTP method via `header matching
-//	(envoy_api_msg_route.HeaderMatcher)`.
+//
+//   Envoy supports routing on HTTP method via `header matching
+//   (envoy_api_msg_route.HeaderMatcher)`.
 type Route struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -495,7 +493,6 @@ type Route struct {
 	// Route matching parameters.
 	Match *RouteMatch `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
 	// Types that are assignable to Action:
-	//
 	//	*Route_Route
 	//	*Route_Redirect
 	//	*Route_DirectResponse
@@ -793,7 +790,6 @@ type RouteMatch struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to PathSpecifier:
-	//
 	//	*RouteMatch_Prefix
 	//	*RouteMatch_Path
 	//	*RouteMatch_Regex
@@ -810,11 +806,12 @@ type RouteMatch struct {
 	// code/config deploys. Refer to the `traffic shifting
 	// (config_http_conn_man_route_table_traffic_splitting_shift)` docs for additional documentation.
 	//
-	//	Parsing this field is implemented such that the runtime key's data may be represented
-	//	as a FractionalPercent proto represented as JSON/YAML and may also be represented as an
-	//	integer with the assumption that the value is an integral percentage out of 100. For
-	//	instance, a runtime key lookup returning the value "42" would parse as a FractionalPercent
-	//	whose numerator is 42 and denominator is HUNDRED. This preserves legacy semantics.
+	//
+	//    Parsing this field is implemented such that the runtime key's data may be represented
+	//    as a FractionalPercent proto represented as JSON/YAML and may also be represented as an
+	//    integer with the assumption that the value is an integral percentage out of 100. For
+	//    instance, a runtime key lookup returning the value "42" would parse as a FractionalPercent
+	//    whose numerator is 42 and denominator is HUNDRED. This preserves legacy semantics.
 	RuntimeFraction *core.RuntimeFractionalPercent `protobuf:"bytes,9,opt,name=runtime_fraction,json=runtimeFraction,proto3" json:"runtime_fraction,omitempty"`
 	// Specifies a set of headers that the route should match on. The router will
 	// check the request’s headers against all the specified headers in the route
@@ -991,7 +988,6 @@ type CorsPolicy struct {
 	// Specifies whether the resource allows credentials.
 	AllowCredentials *wrappers.BoolValue `protobuf:"bytes,6,opt,name=allow_credentials,json=allowCredentials,proto3" json:"allow_credentials,omitempty"`
 	// Types that are assignable to EnabledSpecifier:
-	//
 	//	*CorsPolicy_Enabled
 	//	*CorsPolicy_FilterEnabled
 	EnabledSpecifier isCorsPolicy_EnabledSpecifier `protobuf_oneof:"enabled_specifier"`
@@ -1001,8 +997,9 @@ type CorsPolicy struct {
 	// More information on how this can be controlled via runtime can be found
 	// `here (cors-runtime)`.
 	//
-	//	This field defaults to 100/`HUNDRED
-	//	(envoy_api_enum_type.FractionalPercent.DenominatorType)`.
+	//
+	//   This field defaults to 100/`HUNDRED
+	//   (envoy_api_enum_type.FractionalPercent.DenominatorType)`.
 	ShadowEnabled *core.RuntimeFractionalPercent `protobuf:"bytes,10,opt,name=shadow_enabled,json=shadowEnabled,proto3" json:"shadow_enabled,omitempty"`
 }
 
@@ -1123,8 +1120,8 @@ type isCorsPolicy_EnabledSpecifier interface {
 type CorsPolicy_Enabled struct {
 	// Specifies if CORS is enabled. Defaults to true. Only effective on route.
 	//
-	//	**This field is deprecated**. Set the
-	//	`filter_enabled (envoy_api_field_route.CorsPolicy.filter_enabled)` field instead.
+	//   **This field is deprecated**. Set the
+	//   `filter_enabled (envoy_api_field_route.CorsPolicy.filter_enabled)` field instead.
 	//
 	// Deprecated: Do not use.
 	Enabled *wrappers.BoolValue `protobuf:"bytes,7,opt,name=enabled,proto3,oneof"`
@@ -1136,8 +1133,9 @@ type CorsPolicy_FilterEnabled struct {
 	// More information on how this can be controlled via runtime can be found
 	// `here (cors-runtime)`.
 	//
-	//	This field defaults to 100/`HUNDRED
-	//	(envoy_api_enum_type.FractionalPercent.DenominatorType)`.
+	//
+	//   This field defaults to 100/`HUNDRED
+	//   (envoy_api_enum_type.FractionalPercent.DenominatorType)`.
 	FilterEnabled *core.RuntimeFractionalPercent `protobuf:"bytes,9,opt,name=filter_enabled,json=filterEnabled,proto3,oneof"`
 }
 
@@ -1151,7 +1149,6 @@ type RouteAction struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ClusterSpecifier:
-	//
 	//	*RouteAction_Cluster
 	//	*RouteAction_ClusterHeader
 	//	*RouteAction_WeightedClusters
@@ -1171,27 +1168,26 @@ type RouteAction struct {
 	// place the original path before rewrite into the `x-envoy-original-path
 	// (config_http_filters_router_x-envoy-original-path)` header.
 	//
-	//	Pay careful attention to the use of trailing slashes in the
-	//	`route's match (envoy_api_field_route.Route.match)` prefix value.
-	//	Stripping a prefix from a path requires multiple Routes to handle all cases. For example,
-	//	rewriting */prefix* to */* and */prefix/etc* to */etc* cannot be done in a single
-	//	`Route (envoy_api_msg_route.Route)`, as shown by the below config entries:
+	//   Pay careful attention to the use of trailing slashes in the
+	//   `route's match (envoy_api_field_route.Route.match)` prefix value.
+	//   Stripping a prefix from a path requires multiple Routes to handle all cases. For example,
+	//   rewriting */prefix* to */* and */prefix/etc* to */etc* cannot be done in a single
+	//   `Route (envoy_api_msg_route.Route)`, as shown by the below config entries:
 	//
-	//	```
-	//	  - match:
-	//	      prefix: "/prefix/"
-	//	    route:
-	//	      prefix_rewrite: "/"
-	//	  - match:
-	//	      prefix: "/prefix"
-	//	    route:
-	//	      prefix_rewrite: "/"
-	//	```
-	//	Having above entries in the config, requests to */prefix* will be stripped to */*, while
-	//	requests to */prefix/etc* will be stripped to */etc*.
+	//   ```
+	//     - match:
+	//         prefix: "/prefix/"
+	//       route:
+	//         prefix_rewrite: "/"
+	//     - match:
+	//         prefix: "/prefix"
+	//       route:
+	//         prefix_rewrite: "/"
+	//   ```
+	//   Having above entries in the config, requests to */prefix* will be stripped to */*, while
+	//   requests to */prefix/etc* will be stripped to */etc*.
 	PrefixRewrite string `protobuf:"bytes,5,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
 	// Types that are assignable to HostRewriteSpecifier:
-	//
 	//	*RouteAction_HostRewrite
 	//	*RouteAction_AutoHostRewrite
 	//	*RouteAction_AutoHostRewriteHeader
@@ -1200,10 +1196,11 @@ type RouteAction struct {
 	// spans between the point at which the entire downstream request (i.e. end-of-stream) has been
 	// processed and when the upstream response has been completely processed.
 	//
-	//	This timeout includes all retries. See also
-	//	`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
-	//	`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
-	//	`retry overview (arch_overview_http_routing_retry)`.
+	//
+	//   This timeout includes all retries. See also
+	//   `config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
+	//   `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
+	//   `retry overview (arch_overview_http_routing_retry)`.
 	Timeout *duration.Duration `protobuf:"bytes,8,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
 	// although the connection manager wide `stream_idle_timeout
@@ -1506,8 +1503,9 @@ type RouteAction_ClusterHeader struct {
 	// header is not found or the referenced cluster does not exist, Envoy will
 	// return a 404 response.
 	//
-	//	Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1
-	//	*Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
+	//
+	//   Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1
+	//   *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
 	ClusterHeader string `protobuf:"bytes,2,opt,name=cluster_header,json=clusterHeader,proto3,oneof"`
 }
 
@@ -1550,8 +1548,9 @@ type RouteAction_AutoHostRewriteHeader struct {
 	// downstream or `custom (config_http_conn_man_headers_custom_request_headers)` header.
 	// If header value is empty, host header is left intact.
 	//
-	//	Pay attention to the potential security implications of using this option. Provided header
-	//	must come from trusted source.
+	//
+	//   Pay attention to the potential security implications of using this option. Provided header
+	//   must come from trusted source.
 	AutoHostRewriteHeader string `protobuf:"bytes,29,opt,name=auto_host_rewrite_header,json=autoHostRewriteHeader,proto3,oneof"`
 }
 
@@ -1579,11 +1578,12 @@ type RetryPolicy struct {
 	// same conditions documented for
 	// `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
 	//
-	//	If left unspecified, Envoy will use the global
-	//	`route timeout (envoy_api_field_route.RouteAction.timeout)` for the request.
-	//	Consequently, when using a `5xx (config_http_filters_router_x-envoy-retry-on)` based
-	//	retry policy, a request that times out will not be retried as the total timeout budget
-	//	would have been exhausted.
+	//
+	//   If left unspecified, Envoy will use the global
+	//   `route timeout (envoy_api_field_route.RouteAction.timeout)` for the request.
+	//   Consequently, when using a `5xx (config_http_filters_router_x-envoy-retry-on)` based
+	//   retry policy, a request that times out will not be retried as the total timeout budget
+	//   would have been exhausted.
 	PerTryTimeout *duration.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
 	// Specifies an implementation of a RetryPriority which is used to determine the
 	// distribution of load across priorities used for retries. Refer to
@@ -1788,7 +1788,6 @@ type RedirectAction struct {
 	//     set to `:443`, the port will be removed after the redirection
 	//
 	// Types that are assignable to SchemeRewriteSpecifier:
-	//
 	//	*RedirectAction_HttpsRedirect
 	//	*RedirectAction_SchemeRedirect
 	SchemeRewriteSpecifier isRedirectAction_SchemeRewriteSpecifier `protobuf_oneof:"scheme_rewrite_specifier"`
@@ -1797,7 +1796,6 @@ type RedirectAction struct {
 	// The port value of the URL will be swapped with this value.
 	PortRedirect uint32 `protobuf:"varint,8,opt,name=port_redirect,json=portRedirect,proto3" json:"port_redirect,omitempty"`
 	// Types that are assignable to PathRewriteSpecifier:
-	//
 	//	*RedirectAction_PathRedirect
 	//	*RedirectAction_PrefixRewrite
 	PathRewriteSpecifier isRedirectAction_PathRewriteSpecifier `protobuf_oneof:"path_rewrite_specifier"`
@@ -1943,8 +1941,9 @@ type RedirectAction_PrefixRewrite struct {
 	// should be swapped with this value. This option allows redirect URLs be dynamically created
 	// based on the request.
 	//
-	//	Pay attention to the use of trailing slashes as mentioned in
-	//	`RouteAction's prefix_rewrite (envoy_api_field_route.RouteAction.prefix_rewrite)`.
+	//
+	//   Pay attention to the use of trailing slashes as mentioned in
+	//   `RouteAction's prefix_rewrite (envoy_api_field_route.RouteAction.prefix_rewrite)`.
 	PrefixRewrite string `protobuf:"bytes,5,opt,name=prefix_rewrite,json=prefixRewrite,proto3,oneof"`
 }
 
@@ -1962,9 +1961,10 @@ type DirectResponseAction struct {
 	// Specifies the content of the response body. If this setting is omitted,
 	// no body is included in the generated response.
 	//
-	//	Headers can be specified using *response_headers_to_add* in the enclosing
-	//	`envoy_api_msg_route.Route`, `envoy_api_msg_RouteConfiguration` or
-	//	`envoy_api_msg_route.VirtualHost`.
+	//
+	//   Headers can be specified using *response_headers_to_add* in the enclosing
+	//   `envoy_api_msg_route.Route`, `envoy_api_msg_RouteConfiguration` or
+	//   `envoy_api_msg_route.VirtualHost`.
 	Body *core.DataSource `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
 }
 
@@ -2022,9 +2022,10 @@ type Decorator struct {
 	// The operation name associated with the request matched to this route. If tracing is
 	// enabled, this information will be used as the span name reported for this request.
 	//
-	//	For ingress (inbound) requests, or egress (outbound) responses, this value may be overridden
-	//	by the `x-envoy-decorator-operation
-	//	(config_http_filters_router_x-envoy-decorator-operation)` header.
+	//
+	//   For ingress (inbound) requests, or egress (outbound) responses, this value may be overridden
+	//   by the `x-envoy-decorator-operation
+	//   (config_http_filters_router_x-envoy-decorator-operation)` header.
 	Operation string `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
 }
 
@@ -2161,9 +2162,10 @@ func (x *Tracing) GetOverallSampling() *_type.FractionalPercent {
 //
 // Documentation for `virtual cluster statistics (config_http_filters_router_stats)`.
 //
-//	Virtual clusters are a useful tool, but we do not recommend setting up a virtual cluster for
-//	every application endpoint. This is both not easily maintainable and as well the matching and
-//	statistics output are not free.
+//
+//    Virtual clusters are a useful tool, but we do not recommend setting up a virtual cluster for
+//    every application endpoint. This is both not easily maintainable and as well the matching and
+//    statistics output are not free.
 type VirtualCluster struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2179,8 +2181,7 @@ type VirtualCluster struct {
 	// * The regex */rides/\d+* matches the path */rides/123*
 	// * The regex */rides/\d+* does not match the path */rides/123/456*
 	Pattern string `protobuf:"bytes,1,opt,name=pattern,proto3" json:"pattern,omitempty"`
-	//	Specifies the name of the virtual cluster. The virtual cluster name as well
-	//
+	//  Specifies the name of the virtual cluster. The virtual cluster name as well
 	// as the virtual host name are used when emitting statistics. The statistics are emitted by the
 	// router filter and are documented `here (config_http_filters_router_stats)`.
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
@@ -2253,7 +2254,8 @@ type RateLimit struct {
 	// applies to filters with the same stage number. The default stage number is
 	// 0.
 	//
-	//	The filter supports a range of 0 - 10 inclusively for stage numbers.
+	//
+	//   The filter supports a range of 0 - 10 inclusively for stage numbers.
 	Stage *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=stage,proto3" json:"stage,omitempty"`
 	// The key to be set in runtime to disable this rate limit configuration.
 	DisableKey string `protobuf:"bytes,2,opt,name=disable_key,json=disableKey,proto3" json:"disable_key,omitempty"`
@@ -2319,25 +2321,26 @@ func (x *RateLimit) GetActions() []*RateLimit_Action {
 	return nil
 }
 
-// Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
-// header. Thus, if attempting to match on *Host*, match on *:authority* instead.
 //
-// To route on HTTP method, use the special HTTP/2 *:method* header. This works for both
-// HTTP/1 and HTTP/2 as Envoy normalizes headers. E.g.,
+//   Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
+//   header. Thus, if attempting to match on *Host*, match on *:authority* instead.
 //
-// ```
 //
-//	{
-//	  "name": ":method",
-//	  "exact_match": "POST"
-//	}
+//   To route on HTTP method, use the special HTTP/2 *:method* header. This works for both
+//   HTTP/1 and HTTP/2 as Envoy normalizes headers. E.g.,
 //
-// ```
+//   ```
+//     {
+//       "name": ":method",
+//       "exact_match": "POST"
+//     }
+//   ```
 //
-// In the absence of any header match specifier, match will default to `present_match
-// (envoy_api_field_route.HeaderMatcher.present_match)`. i.e, a request that has the `name
-// (envoy_api_field_route.HeaderMatcher.name)` header will match, regardless of the header's
-// value.
+//   In the absence of any header match specifier, match will default to `present_match
+//   (envoy_api_field_route.HeaderMatcher.present_match)`. i.e, a request that has the `name
+//   (envoy_api_field_route.HeaderMatcher.name)` header will match, regardless of the header's
+//   value.
+//
 type HeaderMatcher struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2348,7 +2351,6 @@ type HeaderMatcher struct {
 	// Specifies how the header match will be performed to route the request.
 	//
 	// Types that are assignable to HeaderMatchSpecifier:
-	//
 	//	*HeaderMatcher_ExactMatch
 	//	*HeaderMatcher_RegexMatch
 	//	*HeaderMatcher_RangeMatch
@@ -2493,8 +2495,8 @@ type HeaderMatcher_RangeMatch struct {
 	//
 	// Examples:
 	//
-	//   - For range [-10,0), route will match for header value -1, but not for 0, "somestring", 10.9,
-	//     "-1somestring"
+	// * For range [-10,0), route will match for header value -1, but not for 0, "somestring", 10.9,
+	//   "-1somestring"
 	RangeMatch *_type1.Int64Range `protobuf:"bytes,6,opt,name=range_match,json=rangeMatch,proto3,oneof"`
 }
 
@@ -2820,9 +2822,10 @@ type RouteAction_RequestMirrorPolicy struct {
 	// configuration but not present in runtime, 0 is the default and thus 0% of
 	// requests will be mirrored.
 	//
-	//	**This field is deprecated**. Set the
-	//	`runtime_fraction
-	//	(envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_fraction)` field instead.
+	//
+	//   **This field is deprecated**. Set the
+	//   `runtime_fraction
+	//   (envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_fraction)` field instead.
 	//
 	// Deprecated: Do not use.
 	RuntimeKey string `protobuf:"bytes,2,opt,name=runtime_key,json=runtimeKey,proto3" json:"runtime_key,omitempty"`
@@ -2837,13 +2840,14 @@ type RouteAction_RequestMirrorPolicy struct {
 	// number is <= the value of the numerator N, or if the key is not present, the default
 	// value, the request will be mirrored.
 	//
-	//	Parsing this field is implemented such that the runtime key's data may be represented
-	//	as a `FractionalPercent (envoy_api_msg_type.FractionalPercent)` proto represented
-	//	as JSON/YAML and may also be represented as an integer with the assumption that the value
-	//	is an integral percentage out of 100. For instance, a runtime key lookup returning the
-	//	value "42" would parse as a `FractionalPercent` whose numerator is 42 and denominator is
-	//	HUNDRED. This is behaviour is different to that of the deprecated `runtime_key` field,
-	//	where the implicit denominator is 10000.
+	//
+	//   Parsing this field is implemented such that the runtime key's data may be represented
+	//   as a `FractionalPercent (envoy_api_msg_type.FractionalPercent)` proto represented
+	//   as JSON/YAML and may also be represented as an integer with the assumption that the value
+	//   is an integral percentage out of 100. For instance, a runtime key lookup returning the
+	//   value "42" would parse as a `FractionalPercent` whose numerator is 42 and denominator is
+	//   HUNDRED. This is behaviour is different to that of the deprecated `runtime_key` field,
+	//   where the implicit denominator is 10000.
 	RuntimeFraction *core.RuntimeFractionalPercent `protobuf:"bytes,3,opt,name=runtime_fraction,json=runtimeFraction,proto3" json:"runtime_fraction,omitempty"`
 }
 
@@ -2909,7 +2913,6 @@ type RouteAction_HashPolicy struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to PolicySpecifier:
-	//
 	//	*RouteAction_HashPolicy_Header_
 	//	*RouteAction_HashPolicy_Cookie_
 	//	*RouteAction_HashPolicy_ConnectionProperties_
@@ -2923,13 +2926,13 @@ type RouteAction_HashPolicy struct {
 	// list of hash polices.
 	// For example, if the following hash methods are configured:
 	//
-	//	========= ========
-	//	specifier terminal
-	//	========= ========
-	//	Header A  true
-	//	Header B  false
-	//	Header C  false
-	//	========= ========
+	//  ========= ========
+	//  specifier terminal
+	//  ========= ========
+	//  Header A  true
+	//  Header B  false
+	//  Header C  false
+	//  ========= ========
 	//
 	// The generateHash process ends if policy "header A" generates a hash, as
 	// it's a terminal policy.
@@ -3144,18 +3147,18 @@ func (x *RouteAction_HashPolicy_Header) GetHeaderName() string {
 
 // Envoy supports two types of cookie affinity:
 //
-//  1. Passive. Envoy takes a cookie that's present in the cookies header and
-//     hashes on its value.
+// 1. Passive. Envoy takes a cookie that's present in the cookies header and
+//    hashes on its value.
 //
-//  2. Generated. Envoy generates and sets a cookie with an expiration (TTL)
-//     on the first request from the client in its response to the client,
-//     based on the endpoint the request gets sent to. The client then
-//     presents this on the next and all subsequent requests. The hash of
-//     this is sufficient to ensure these requests get sent to the same
-//     endpoint. The cookie is generated by hashing the source and
-//     destination ports and addresses so that multiple independent HTTP2
-//     streams on the same connection will independently receive the same
-//     cookie, even if they arrive at the Envoy simultaneously.
+// 2. Generated. Envoy generates and sets a cookie with an expiration (TTL)
+//    on the first request from the client in its response to the client,
+//    based on the endpoint the request gets sent to. The client then
+//    presents this on the next and all subsequent requests. The hash of
+//    this is sufficient to ensure these requests get sent to the same
+//    endpoint. The cookie is generated by hashing the source and
+//    destination ports and addresses so that multiple independent HTTP2
+//    streams on the same connection will independently receive the same
+//    cookie, even if they arrive at the Envoy simultaneously.
 type RouteAction_HashPolicy_Cookie struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3282,7 +3285,6 @@ type RetryPolicy_RetryPriority struct {
 
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to ConfigType:
-	//
 	//	*RetryPolicy_RetryPriority_Config
 	//	*RetryPolicy_RetryPriority_TypedConfig
 	ConfigType isRetryPolicy_RetryPriority_ConfigType `protobuf_oneof:"config_type"`
@@ -3371,7 +3373,6 @@ type RetryPolicy_RetryHostPredicate struct {
 
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to ConfigType:
-	//
 	//	*RetryPolicy_RetryHostPredicate_Config
 	//	*RetryPolicy_RetryHostPredicate_TypedConfig
 	ConfigType isRetryPolicy_RetryHostPredicate_ConfigType `protobuf_oneof:"config_type"`
@@ -3522,7 +3523,6 @@ type RateLimit_Action struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ActionSpecifier:
-	//
 	//	*RateLimit_Action_SourceCluster_
 	//	*RateLimit_Action_DestinationCluster_
 	//	*RateLimit_Action_RequestHeaders_
@@ -3662,9 +3662,7 @@ func (*RateLimit_Action_HeaderValueMatch_) isRateLimit_Action_ActionSpecifier() 
 // The following descriptor entry is appended to the descriptor:
 //
 // ```
-//
-//	("source_cluster", "<local service cluster>")
-//
+//   ("source_cluster", "<local service cluster>")
 // ```
 //
 // <local service cluster> is derived from the :option:`--service-cluster` option.
@@ -3709,21 +3707,19 @@ func (*RateLimit_Action_SourceCluster) Descriptor() ([]byte, []int) {
 // The following descriptor entry is appended to the descriptor:
 //
 // ```
-//
-//	("destination_cluster", "<routed target cluster>")
-//
+//   ("destination_cluster", "<routed target cluster>")
 // ```
 //
 // Once a request matches against a route table rule, a routed cluster is determined by one of
 // the following `route table configuration (envoy_api_msg_RouteConfiguration)`
 // settings:
 //
-//   - `cluster (envoy_api_field_route.RouteAction.cluster)` indicates the upstream cluster
-//     to route to.
-//   - `weighted_clusters (envoy_api_field_route.RouteAction.weighted_clusters)`
-//     chooses a cluster randomly from a set of clusters with attributed weight.
-//   - `cluster_header (envoy_api_field_route.RouteAction.cluster_header)` indicates which
-//     header in the request contains the target cluster.
+// * `cluster (envoy_api_field_route.RouteAction.cluster)` indicates the upstream cluster
+//   to route to.
+// * `weighted_clusters (envoy_api_field_route.RouteAction.weighted_clusters)`
+//   chooses a cluster randomly from a set of clusters with attributed weight.
+// * `cluster_header (envoy_api_field_route.RouteAction.cluster_header)` indicates which
+//   header in the request contains the target cluster.
 type RateLimit_Action_DestinationCluster struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3766,9 +3762,7 @@ func (*RateLimit_Action_DestinationCluster) Descriptor() ([]byte, []int) {
 // *header_name*:
 //
 // ```
-//
-//	("<descriptor_key>", "<header_value_queried_from_header>")
-//
+//   ("<descriptor_key>", "<header_value_queried_from_header>")
 // ```
 type RateLimit_Action_RequestHeaders struct {
 	state         protoimpl.MessageState
@@ -3833,9 +3827,7 @@ func (x *RateLimit_Action_RequestHeaders) GetDescriptorKey() string {
 // trusted address from `x-forwarded-for (config_http_conn_man_headers_x-forwarded-for)`:
 //
 // ```
-//
-//	("remote_address", "<trusted address from x-forwarded-for>")
-//
+//   ("remote_address", "<trusted address from x-forwarded-for>")
 // ```
 type RateLimit_Action_RemoteAddress struct {
 	state         protoimpl.MessageState
@@ -3878,9 +3870,7 @@ func (*RateLimit_Action_RemoteAddress) Descriptor() ([]byte, []int) {
 // The following descriptor entry is appended to the descriptor:
 //
 // ```
-//
-//	("generic_key", "<descriptor_value>")
-//
+//   ("generic_key", "<descriptor_value>")
 // ```
 type RateLimit_Action_GenericKey struct {
 	state         protoimpl.MessageState
@@ -3933,9 +3923,7 @@ func (x *RateLimit_Action_GenericKey) GetDescriptorValue() string {
 // The following descriptor entry is appended to the descriptor:
 //
 // ```
-//
-//	("header_match", "<descriptor_value>")
-//
+//   ("header_match", "<descriptor_value>")
 // ```
 type RateLimit_Action_HeaderValueMatch struct {
 	state         protoimpl.MessageState

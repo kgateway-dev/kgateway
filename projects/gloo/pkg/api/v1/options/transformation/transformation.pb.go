@@ -375,7 +375,6 @@ type Transformation struct {
 	// The type of transformation to apply.
 	//
 	// Types that are assignable to TransformationType:
-	//
 	//	*Transformation_TransformationTemplate
 	//	*Transformation_HeaderBodyTransform
 	//	*Transformation_XsltTransformation
