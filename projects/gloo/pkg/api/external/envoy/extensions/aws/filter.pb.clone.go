@@ -169,5 +169,7 @@ func (m *AWSLambdaConfig_ServiceAccountCredentials) Clone() proto.Message {
 		target.Timeout = proto.Clone(m.GetTimeout()).(*github_com_golang_protobuf_ptypes_duration.Duration)
 	}
 
+	target.Region = m.GetRegion()
+
 	return target
 }
