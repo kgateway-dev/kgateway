@@ -48,7 +48,7 @@ VERSION ?= 1.0.1-dev
 
 SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.26.4-patch1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.26.4-patch3
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -595,8 +595,7 @@ package-chart: generate-helm-files
 # https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html#SEC59
 git_tag = $(shell git describe --abbrev=0 --tags)
 # Semantic versioning format https://semver.org/
-# Regex copied from: https://github.com/solo-io/go-utils/blob/16d4d94e4e5f182ca8c10c5823df303087879dea/versionutils/version.go#L338
-tag_regex := v[0-9]+[.][0-9]+[.][0-9]+(-[a-z]+)*(-[a-z]+[0-9]*)?$
+tag_regex := ^v([0-9]{1,}\.){2}[0-9]{1,}$
 
 ifneq (,$(TEST_ASSET_ID))
 PUBLISH_CONTEXT := PULL_REQUEST
