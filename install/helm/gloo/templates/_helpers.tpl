@@ -80,7 +80,7 @@ initContainers: {{ toYaml . | nindent 2 }}
 {{- /* include hook delete policy based on whether setTtlAfterFinished is undefined or equal to
       true. If it is the case, only delete explicitly before hook creation. Otherwise, also
       delete also on success. The 'kindIs' comparision is how we can check for undefined */ -}}
-{{- if or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished -}}
+{{- if and .ttlSecondsAfterFinished (or (kindIs "invalid" .setTtlAfterFinished) .setTtlAfterFinished) -}}
 "helm.sh/hook-delete-policy": before-hook-creation
 {{- else -}}
 "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
