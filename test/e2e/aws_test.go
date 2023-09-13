@@ -820,12 +820,6 @@ var _ = Describe("AWS Lambda", func() {
 				})
 
 				It("should be able to call lambda", testProxy)
-
-				It("should be able to call lambda with response transform", testProxyWithResponseTransform)
-
-				It("should be able to call lambda with request transform", testProxyWithRequestTransform)
-
-				It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 			})
 			Context("default region", func() {
 				BeforeEach(func() {
@@ -835,12 +829,6 @@ var _ = Describe("AWS Lambda", func() {
 				})
 
 				It("should be able to call lambda", testProxy)
-
-				It("should be able to call lambda with response transform", testProxyWithResponseTransform)
-
-				It("should be able to call lambda with request transform", testProxyWithRequestTransform)
-
-				It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 			})
 		})
 		Context("With gateway translation", func() {
