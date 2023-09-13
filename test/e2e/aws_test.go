@@ -51,7 +51,8 @@ import (
 
 var _ = Describe("AWS Lambda", func() {
 	const (
-		region               = "us-east-1"
+		defaultRegion        = "us-east-1"
+		secondaryRegion      = "us-east-2"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
 		jwtPrivateKey        = "JWT_PRIVATE_KEY"
 		awsRoleArn           = "AWS_ROLE_ARN"
@@ -167,11 +168,11 @@ var _ = Describe("AWS Lambda", func() {
 		upstream = &gloov1.Upstream{
 			Metadata: &core.Metadata{
 				Namespace: "default",
-				Name:      region,
+				Name:      defaultRegion,
 			},
 			UpstreamType: &gloov1.Upstream_Aws{
 				Aws: &aws_plugin.UpstreamSpec{
-					Region:    region,
+					Region:    defaultRegion,
 					SecretRef: secret.Metadata.Ref(),
 				},
 			},
@@ -206,7 +207,7 @@ var _ = Describe("AWS Lambda", func() {
 			},
 			UpstreamType: &gloov1.Upstream_Aws{
 				Aws: &aws_plugin.UpstreamSpec{
-					Region:    region,
+					Region:    defaultRegion,
 					SecretRef: secret.Metadata.Ref(),
 					// this is a separate account ID from the one that all other lambda
 					// functions tested in this file are in
@@ -555,7 +556,7 @@ var _ = Describe("AWS Lambda", func() {
 			secret = &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Namespace: "default",
-					Name:      region,
+					Name:      defaultRegion,
 				},
 				Kind: &gloov1.Secret_Aws{
 					Aws: &gloov1.AwsSecret{
@@ -610,7 +611,7 @@ var _ = Describe("AWS Lambda", func() {
 
 		addCredentials := func() {
 			localAwsCredentials := credentials.NewSharedCredentials("", "")
-			sess, err := session.NewSession(&aws.Config{Region: aws.String(region), Credentials: localAwsCredentials})
+			sess, err := session.NewSession(&aws.Config{Region: aws.String(defaultRegion), Credentials: localAwsCredentials})
 			if err != nil {
 				Fail("no AWS creds available")
 			}
@@ -622,7 +623,7 @@ var _ = Describe("AWS Lambda", func() {
 			secret = &gloov1.Secret{
 				Metadata: &core.Metadata{
 					Namespace: "default",
-					Name:      region,
+					Name:      defaultRegion,
 				},
 				Kind: &gloov1.Secret_Aws{
 					Aws: &gloov1.AwsSecret{
@@ -718,7 +719,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 		}
 
-		addUpstreamSts := func() {
+		addUpstreamSts := func(region string) {
 			upstream = &gloov1.Upstream{
 				Metadata: &core.Metadata{
 					Namespace: "default",
@@ -752,10 +753,19 @@ var _ = Describe("AWS Lambda", func() {
 			}))
 		}
 
-		setupEnvoySts := func(justGloo bool) {
+		setupEnvoySts := func(justGloo bool, region string) {
 			ctx, cancel = context.WithCancel(context.Background())
 			defaults.HttpPort = services.NextBindPort()
 			defaults.HttpsPort = services.NextBindPort()
+
+			var uri string
+			if region == "" {
+				region = defaultRegion
+				uri = "sts.amazonaws.com"
+			} else {
+				uri = fmt.Sprintf("sts.%s.amazonaws.com", region)
+			}
+
 			ns := defaults.GlooSystem
 			ro := &services.RunOptions{
 				NsToWrite: ns,
@@ -770,7 +780,8 @@ var _ = Describe("AWS Lambda", func() {
 							CredentialsFetcher: &gloov1.GlooOptions_AWSOptions_ServiceAccountCredentials{
 								ServiceAccountCredentials: &aws2.AWSLambdaConfig_ServiceAccountCredentials{
 									Cluster: "aws_sts_cluster",
-									Uri:     "sts.amazonaws.com",
+									Uri:     uri,
+									Region:  region,
 								},
 							},
 						},
@@ -792,29 +803,49 @@ var _ = Describe("AWS Lambda", func() {
 			os.Unsetenv(webIdentityTokenFile)
 		})
 		Context("No gateway translation ", func() {
-			BeforeEach(func() {
-				setupEnvoySts(true)
-				addCredentialsSts()
-				addUpstreamSts()
+			Context("primary region", func() {
+				BeforeEach(func() {
+					setupEnvoySts(true, defaultRegion)
+					addCredentialsSts()
+					addUpstreamSts(defaultRegion)
+				})
+				/*
+				 * these tests can start failing if certs get rotated underneath us.
+				 * the fix is to update the rotated thumbprint on our fake AWS OIDC per
+				 * https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
+				 */
+				It("should be able to call lambda", testProxy)
+
+				It("should be able to call lambda with response transform", testProxyWithResponseTransform)
+
+				It("should be able to call lambda with request transform", testProxyWithRequestTransform)
+
+				It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
 			})
-			/*
-			 * these tests can start failing if certs get rotated underneath us.
-			 * the fix is to update the rotated thumbprint on our fake AWS OIDC per
-			 * https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc_verify-thumbprint.html
-			 */
-			It("should be able to call lambda", testProxy)
+			Context("secondary region", func() {
+				BeforeEach(func() {
+					setupEnvoySts(true, secondaryRegion)
+					addCredentialsSts()
+					addUpstreamSts(secondaryRegion)
+				})
 
-			It("should be able to call lambda with response transform", testProxyWithResponseTransform)
+				It("should be able to call lambda", testProxy)
+			})
+			Context("default region", func() {
+				BeforeEach(func() {
+					setupEnvoySts(true, "")
+					addCredentialsSts()
+					addUpstreamSts(defaultRegion)
+				})
 
-			It("should be able to call lambda with request transform", testProxyWithRequestTransform)
-
-			It("should be able to call lambda with request and response transforms", testProxyWithRequestAndResponseTransforms)
+				It("should be able to call lambda", testProxy)
+			})
 		})
 		Context("With gateway translation", func() {
 			BeforeEach(func() {
-				setupEnvoySts(false)
+				setupEnvoySts(false, defaultRegion)
 				addCredentialsSts()
-				addUpstreamSts()
+				addUpstreamSts(defaultRegion)
 			})
 			It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 

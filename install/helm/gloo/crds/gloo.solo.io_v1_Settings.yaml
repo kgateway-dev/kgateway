@@ -357,6 +357,8 @@ spec:
                         properties:
                           cluster:
                             type: string
+                          region:
+                            type: string
                           timeout:
                             type: string
                           uri:
