@@ -84,7 +84,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-var _ = FDescribe("Translator", func() {
+var _ = Describe("Translator", func() {
 	var (
 		ctrl              *gomock.Controller
 		settings          *v1.Settings
