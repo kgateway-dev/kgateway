@@ -6,15 +6,15 @@ weight: 1
 
 Vault includes the ability to handle authentication using AWS IAM roles. We can either hard-code long-lived credentials, or infer them using AWS IRSA.
 
-AWS allows the ability to manage credentials through **IAM Roles for Service Accounts** (IRSA). With this feature, we can associate IAM roles to Kubernetes Service Accounts, and gain the ability to fetch and use temporary credentials for said role. More information in AWS' [IAM roles for service account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) docs.
+AWS allows the ability to manage credentials through **IAM Roles for Service Accounts** (IRSA). With this feature, you can associate IAM roles to Kubernetes Service Accounts, and gain the ability to fetch and use temporary credentials for said role. For more information, see the AWS [IAM roles for service account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) docs.
 
 # AWS
 
 ## Step 1: Creating a cluster with OIDC
 
-To configure IRSA, we'll need to have an EKS cluster with an associated OpenID Provider (OIDC). For setup instructions, follow AWS' [Creating an IAM OIDC provider for your cluster](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html) docs.
+To configure IRSA, create or use an EKS cluster with an associated OpenID Provider (OIDC). For setup instructions, follow [Creating an IAM OIDC provider for your cluster](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html) in the AWS docs.
 
-Afterward, we'll want to export some environment variables to use throughout our configuration.
+Next, export the following environment variables to use throughout your configuration.
 
 ```shell
 export NAMESPACE=gloo-system
@@ -27,7 +27,7 @@ export OIDC_PROVIDER=$(aws eks describe-cluster --name $CLUSTER_NAME --region $A
 
 ## Step 2: Setting up a Role
 
-We'll want to create an AWS Role with a trust relationship to our OIDC provider. This would allow the AWS IAM role to be assumed by the provider, specifically for the service accounts in `gloo` and `discovery`.
+Create an AWS Role with a trust relationship to your OIDC provider. This allows the provider to assume the AWS IAM role, specifically for the service accounts in `gloo` and `discovery`.
 
 ```shell
 cat <<EOF > trust-relationship.json
@@ -67,7 +67,7 @@ rm -f trust-relationship.json
 
 ## Step 3: Setting a Policy
 
-Next we will create an AWS Policy to grant the necessary permissions for Vault, allowing it to perform actions, such as assuming the IAM role and getting instance and user information. This is a lighter version of Vault's [Recommended Vault IAM Policy](https://developer.hashicorp.com/vault/docs/auth/aws#recommended-vault-iam-policy).
+Create an AWS Policy to grant the necessary permissions for Vault to perform actions, such as assuming the IAM role and getting instance and user information. This is a lighter version of Vault's [Recommended Vault IAM Policy](https://developer.hashicorp.com/vault/docs/auth/aws#recommended-vault-iam-policy).
 
 ```shell
 export VAULT_AUTH_POLICY_NAME=gloo-vault-auth-policy
@@ -105,7 +105,7 @@ export VAULT_AUTH_POLICY_ARN=$([[ $(aws iam list-policies --query "Policies[?Pol
 rm -f gloo-vault-auth-policy.json
 ```
 
-Then finally, attach the newly-created policy to the role created earlier with the following code:
+Finally, attach the newly-created policy to the role that you created earlier.
 ```shell
 aws iam attach-role-policy --role-name $VAULT_AUTH_ROLE_NAME --policy-arn=${VAULT_AUTH_POLICY_ARN}
 ```
@@ -176,10 +176,10 @@ vault write auth/aws/role/dev-role-iam \
 
 # Gloo Edge
 
-Lastly, we'll need to install Gloo Edge configured to allow for Vault and IRSA credential fetching.
+Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching.
 ## 1. Prepare Helm overrides
 
-We override our default settings to use Vault as a source for managing secrets. To allows for IRSA, we'll need to add the `eks.amazonaws.com/role-arn` annotations to our `gloo` and `discovery` service account referencing the roles we'll assume.
+Override the default settings to use Vault as a source for managing secrets. To allow for IRSA, add the `eks.amazonaws.com/role-arn` annotations, which reference the roles to assume, to the `gloo` and `discovery` service accounts.
 
 ```shell
 cat <<EOF > helm-overrides.yaml
@@ -206,7 +206,7 @@ EOF
 ```
 
 {{% notice note %}}
-If using Gloo Edge Enterprise, remember to nest the above helm settings inside `gloo`.
+If you use Gloo Edge Enterprise, nest these Helm settings within the `gloo` section.
 {{% /notice %}}
 
 
