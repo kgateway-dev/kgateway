@@ -8,7 +8,9 @@ Vault includes the ability to handle authentication using AWS IAM roles. We can 
 
 AWS allows the ability to manage credentials through **IAM Roles for Service Accounts** (IRSA). With this feature, you can associate IAM roles to Kubernetes Service Accounts, and gain the ability to fetch and use temporary credentials for said role. For more information, see the AWS [IAM roles for service account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) docs.
 
-# AWS
+## AWS
+
+Start by creating the necessary permissions in AWS.
 
 ## Step 1: Creating a cluster with OIDC
 
