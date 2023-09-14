@@ -310,5 +310,9 @@ func (m *AWSLambdaConfig_ServiceAccountCredentials) Hash(hasher hash.Hash64) (ui
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetRegion())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
