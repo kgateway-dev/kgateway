@@ -6,5 +6,5 @@ weight: 7
 
 # Overview
 
-Gloo Edge integrates with HashiCorp Vault to provide an alternative way to store and manage secrets. 
+Gloo Edge can integrate with HashiCorp Vault to provide an alternative way to manage secrets.
 
