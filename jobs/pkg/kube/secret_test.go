@@ -85,10 +85,11 @@ var _ = Describe("Secret", func() {
 		It("doesn't error on non-existing secret", func() {
 			kube := fake.NewSimpleClientset()
 
-			secret, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+			secret, renew, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
 				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secret).To(BeNil())
+			Expect(renew).To(BeFalse())
 		})
 
 		It("recognizes a tls secret that is still valid", func() {
@@ -109,10 +110,11 @@ var _ = Describe("Secret", func() {
 			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+			existing, renew, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
 				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(existing).NotTo(BeNil())
+			Expect(renew).To(BeFalse())
 		})
 
 		It("recognizes a tls secret that is invalid relative to now", func() {
@@ -133,10 +135,11 @@ var _ = Describe("Secret", func() {
 			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+			existing, renew, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
 				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(existing).To(BeNil())
+			Expect(existing).NotTo(BeNil())
+			Expect(renew).To(BeTrue())
 		})
 
 		It("recognizes a tls secret that is invalid relative to now, not first cert in chain", func() {
@@ -161,10 +164,11 @@ var _ = Describe("Secret", func() {
 			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+			existing, renew, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
 				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(existing).To(BeNil())
+			Expect(existing).NotTo(BeNil())
+			Expect(renew).To(BeTrue())
 		})
 
 		It("recognizes a tls secret that is invalid due to service mismatch", func() {
@@ -185,10 +189,11 @@ var _ = Describe("Secret", func() {
 			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+			existing, renew, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
 				"newservicename", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(existing).To(BeNil())
+			Expect(renew).To(BeFalse())
 		})
 
 		It("recognizes a tls secret that is expiring soon", func() {
@@ -209,10 +214,11 @@ var _ = Describe("Secret", func() {
 			_, err := CreateTlsSecret(context.TODO(), kube, secretCfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			existing, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
+			existing, renew, err := GetExistingValidTlsSecret(context.TODO(), kube, "mysecret", "mynamespace",
 				"mysvcname", "mysvcnamespace", time.Hour*2160)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(existing).To(BeNil())
+			Expect(existing).NotTo(BeNil())
+			Expect(renew).To(BeTrue())
 		})
 	})
 })

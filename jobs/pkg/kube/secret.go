@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
+	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"time"
 
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -25,7 +25,7 @@ type TlsSecret struct {
 // If there is a currently valid TLS secret with the given name and namespace, that is valid for the given
 // service name/namespace, then return it. Otherwise return nil.
 func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string,
-	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, error) {
+	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, bool, error) {
 	secretClient := kube.CoreV1().Secrets(secretNamespace)
 
 	existing, err := secretClient.Get(ctx, secretName, metav1.GetOptions{})
@@ -35,47 +35,43 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 				zap.String("secretName", secretName),
 				zap.String("secretNamespace", secretNamespace))
 			// necessary to return no errors in this case so we don't short circuit certgen on the first run
-			return nil, nil
+			return nil, false, nil
 		}
-		return nil, errors.Wrapf(err, "failed to retrieve existing secret")
+		return nil, false, errors.Wrapf(err, "failed to retrieve existing secret")
 	}
 
 	if existing.Type != v1.SecretTypeTLS {
-		return nil, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
+		return nil, false, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
 	}
 
 	certPemBytes := existing.Data[v1.TLSCertKey]
 	now := time.Now().UTC()
 
 	rest := certPemBytes
-	matchesSvc := false
 	for len(rest) > 0 {
 		var decoded *pem.Block
 		decoded, rest = pem.Decode(rest)
 		if decoded == nil {
-			return nil, errors.New("no PEM data found")
+			return nil, false, errors.New("no PEM data found")
 		}
 		cert, err := x509.ParseCertificate(decoded.Bytes)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to decode pem encoded ca cert")
-		}
-
-		// Create new certificate if old one is expiring soon
-		if now.Before(cert.NotBefore) || now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
-			return nil, nil
+			return nil, false, errors.Wrapf(err, "failed to decode pem encoded ca cert")
 		}
 
 		// check if the cert is valid for this service
-		if !matchesSvc && certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
-			matchesSvc = true
+		if !certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
+			return nil, false, nil
 		}
-	}
+		// Create new certificate if old one is expiring soon
+		// If the old one is ok then we should use it while rotating
+		if now.Before(cert.NotBefore) || now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
+			return existing, true, nil
+		}
 
-	if !matchesSvc {
-		return nil, nil
 	}
 	// cert is valid!
-	return existing, nil
+	return existing, false, nil
 }
 
 // Returns the created or updated secret
@@ -122,18 +118,17 @@ func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecr
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
 	// wait for SDS
-	// TODO: sleep?
-
+	contextutils.LoggerFrom(ctx).Infow("Wrote new cert, waiting to rotate CaBundles")
+	time.Sleep(time.Second * 20)
 	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
-	secret1.CaBundle = secret2.CaBundle
+	secret1.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
 	secretToWrite = makeTlsSecret(secret1)
 
 	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating caBundle")
 	}
-	//wait for SDS again
-
+	contextutils.LoggerFrom(ctx).Infow("rotated out old CA bundle")
 	//Put the new secret in
 	secretToWrite = makeTlsSecret(secret3)
 	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})

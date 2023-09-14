@@ -97,31 +97,32 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 	var certs [][]byte
 	var items []cache_types.Resource
 	for _, sec := range s.secrets {
-		key, err := readAndVerifyCert(sec.SslKeyFile)
+		key, err := readAndVerifyCert(ctx, sec.SslKeyFile)
 		if err != nil {
 			return err
 		}
-		certs = append(certs, key)
-		certChain, err := readAndVerifyCert(sec.SslCertFile)
+		certs = append(certs, key...)
+		certChain, err := readAndVerifyCert(ctx, sec.SslCertFile)
 		if err != nil {
 			return err
 		}
-		certs = append(certs, certChain)
-		ca, err := readAndVerifyCert(sec.SslCaFile)
+		certs = append(certs, certChain...)
+		ca, err := readAndVerifyCert(ctx, sec.SslCaFile)
 		if err != nil {
 			return err
 		}
-		certs = append(certs, ca)
+		certs = append(certs, ca...)
 		var ocspStaple []byte // ocsp stapling is optional
 		if sec.SslOcspFile != "" {
-			ocspStaple, err = readAndVerifyCert(sec.SslOcspFile)
+			ocspStaples, err := readAndVerifyCert(ctx, sec.SslOcspFile)
 			if err != nil {
 				return err
 			}
+			ocspStaple = ocspStaples[0]
 			certs = append(certs, ocspStaple)
 		}
-		items = append(items, serverCertSecret(key, certChain, ocspStaple, sec.ServerCert))
-		items = append(items, validationContextSecret(ca, sec.ValidationContext))
+		items = append(items, serverCertSecret(key[0], certChain[0], ocspStaple, sec.ServerCert))
+		items = append(items, validationContextSecrets(ca, sec.ValidationContext)...)
 	}
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
@@ -130,7 +131,6 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 		return err
 	}
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. sdsClient is %s. Snapshot version is %s", s.sdsClient, snapshotVersion)
-
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
 	return s.snapshotCache.SetSnapshot(ctx, s.sdsClient, secretSnapshot)
@@ -148,10 +148,10 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
 // See https://github.com/fsnotify/fsnotify/pull/252 for more context
-func readAndVerifyCert(certFilePath string) ([]byte, error) {
+func readAndVerifyCert(ctx context.Context, certFilePath string) ([][]byte, error) {
 	var err error
 	var fileBytes []byte
-
+	var separatedCerts [][]byte
 	var validCerts bool
 	// Retry for a few seconds as a write may still be in progress
 	err = retry.Do(
@@ -160,7 +160,7 @@ func readAndVerifyCert(certFilePath string) ([]byte, error) {
 			if err != nil {
 				return err
 			}
-			validCerts = checkCert(fileBytes)
+			separatedCerts, validCerts = checkCert(ctx, fileBytes, [][]byte{})
 			if !validCerts {
 				return fmt.Errorf("failed to validate file %v", certFilePath)
 			}
@@ -168,26 +168,33 @@ func readAndVerifyCert(certFilePath string) ([]byte, error) {
 		},
 		retry.Attempts(5), // Exponential backoff over ~3s
 	)
-
-	return fileBytes, nil
+	// If checkCert never finds any PEM formatted certs then we fall back to assuming that the whole file is one cert
+	// TODO: check all the formats accepted by envoy: https://github.com/solo-io/gloo/issues/8691
+	if len(separatedCerts) == 0 {
+		separatedCerts = append(separatedCerts, fileBytes)
+	}
+	return separatedCerts, nil
 }
 
 // checkCert uses pem.Decode to verify that the given
 // bytes are not malformed, as could be caused by a
 // write-in-progress. Uses pem.Decode to check the blocks.
 // See https://golang.org/src/encoding/pem/pem.go?s=2505:2553#L76
-func checkCert(certs []byte) bool {
+// returns a list of all the certs found in the file
+func checkCert(ctx context.Context, certs []byte, checkedCerts [][]byte) ([][]byte, bool) {
 	block, rest := pem.Decode(certs)
 	if block == nil {
 		// Remainder does not contain any certs/keys
-		return false
+		return checkedCerts, false
 	}
+	checkedCerts = append(checkedCerts, pem.EncodeToMemory(block))
 	// Found a cert, check the rest
 	if len(rest) > 0 {
+		contextutils.LoggerFrom(ctx).Warnf("found data after secret, before %v after %v", block, rest)
 		// Something after the cert, validate that too
-		return checkCert(rest)
+		return checkCert(ctx, rest, checkedCerts)
 	}
-	return true
+	return checkedCerts, true
 }
 
 func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert string) cache_types.Resource {
@@ -209,19 +216,23 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 	}
 }
 
-func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
-	return &envoy_extensions_transport_sockets_tls_v3.Secret{
-		Name: validationContext,
-		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
-			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
-				TrustedCa: &envoy_config_core_v3.DataSource{
-					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-						InlineBytes: caCert,
+func validationContextSecrets(caCerts [][]byte, validationContext string) []cache_types.Resource {
+	secrets := make([]cache_types.Resource, len(caCerts))
+	for i, caCert := range caCerts {
+		secrets[i] = &envoy_extensions_transport_sockets_tls_v3.Secret{
+			Name: fmt.Sprintf("%s%d", validationContext, i),
+			Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
+				ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
+					TrustedCa: &envoy_config_core_v3.DataSource{
+						Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
+							InlineBytes: caCert,
+						},
 					},
 				},
 			},
-		},
+		}
 	}
+	return secrets
 }
 
 func inlineBytesDataSource(b []byte) *envoy_config_core_v3.DataSource {

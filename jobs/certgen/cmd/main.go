@@ -45,6 +45,8 @@ func cmd(ctx context.Context) *cobra.Command {
 		"namespace of the service for which to generate the certs")
 	pFlags.StringVar(&opts.SecretName, "secret-name", "",
 		"name of the secret to create which holds the certs")
+	pFlags.StringVar(&opts.NextSecretName, "next-secret-name", "",
+		"name of the secret to store the next set of certs")
 	pFlags.StringVar(&opts.SecretNamespace, "secret-namespace", podNamespace,
 		"namespace of the secret to create which holds the certs")
 	pFlags.StringVar(&opts.ServerCertSecretFileName, "secret-cert-name", v1.TLSCertKey,
