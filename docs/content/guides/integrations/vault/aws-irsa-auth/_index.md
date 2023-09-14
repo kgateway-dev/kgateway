@@ -1,5 +1,5 @@
 ---
-title: Securing Vault secrets with AWS IAM Roles for Service Accounts (IRSA)
+title: Securing secrets in Hashicorp Vault using AWS IAM Roles for Service Accounts (IRSA)
 description: Secure your secrets using AWS IAM Roles for Service Accounts (IRSA)
 weight: 1
 ---
@@ -97,7 +97,7 @@ EOF
 
 export VAULT_AUTH_POLICY_ARN=$([[ $(aws iam list-policies --query "Policies[?PolicyName=='${VAULT_AUTH_POLICY_NAME}'].Arn" --output text) == "" ]] \
     && aws iam create-policy \
-        --region=ap-southeast-2 \
+        --region=${AWS_REGION} \
         --policy-name="${VAULT_AUTH_POLICY_NAME}" \
         --description="Policy used by the Vault user to check instance identity" \
         --policy-document file://gloo-vault-auth-policy.json | jq -r .Policy.Arn || aws iam list-policies --query "Policies[?PolicyName=='${VAULT_AUTH_POLICY_NAME}'].Arn" --output text)
@@ -194,7 +194,6 @@ settings:
 				mountPath: aws
 				region: ${AWS_REGION}
 			pathPrefix: dev
-		- kubernetes: {}
 gloo:
 	serviceAccount:
 		extraAnnotations: 
