@@ -882,6 +882,18 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 			}
 		}
 
+	case *OidcAuthorizationCode_PkJwtExchangeConfig_:
+
+		if h, ok := interface{}(m.GetPkJwtExchangeConfig()).(clone.Cloner); ok {
+			target.ExchangeConfig = &OidcAuthorizationCode_PkJwtExchangeConfig_{
+				PkJwtExchangeConfig: h.Clone().(*OidcAuthorizationCode_PkJwtExchangeConfig),
+			}
+		} else {
+			target.ExchangeConfig = &OidcAuthorizationCode_PkJwtExchangeConfig_{
+				PkJwtExchangeConfig: proto.Clone(m.GetPkJwtExchangeConfig()).(*OidcAuthorizationCode_PkJwtExchangeConfig),
+			}
+		}
+
 	}
 
 	return target
@@ -2328,6 +2340,23 @@ func (m *OidcAuthorizationCode_ClientSecretExchangeConfig) Clone() proto.Message
 }
 
 // Clone function
+func (m *OidcAuthorizationCode_PkJwtExchangeConfig) Clone() proto.Message {
+	var target *OidcAuthorizationCode_PkJwtExchangeConfig
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_PkJwtExchangeConfig{}
+
+	if h, ok := interface{}(m.GetSigningKeyRef()).(clone.Cloner); ok {
+		target.SigningKeyRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.SigningKeyRef = proto.Clone(m.GetSigningKeyRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *JwtValidation_RemoteJwks) Clone() proto.Message {
 	var target *JwtValidation_RemoteJwks
 	if m == nil {
@@ -2804,6 +2833,8 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 	} else {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
 	}
+
+	target.SigningKey = m.GetSigningKey()
 
 	switch m.ExchangeConfig.(type) {
 

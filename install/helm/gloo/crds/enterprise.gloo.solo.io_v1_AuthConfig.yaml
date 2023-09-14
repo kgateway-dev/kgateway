@@ -587,6 +587,16 @@ spec:
                               type: string
                             parseCallbackPathAsRegex:
                               type: boolean
+                            pkJwtExchangeConfig:
+                              properties:
+                                signingKeyRef:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                              type: object
                             scopes:
                               items:
                                 type: string

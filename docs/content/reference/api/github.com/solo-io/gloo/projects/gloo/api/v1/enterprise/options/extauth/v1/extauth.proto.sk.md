@@ -50,6 +50,7 @@ weight: 5
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
 - [ClientSecretExchangeConfig](#clientsecretexchangeconfig)
+- [PkJwtExchangeConfig](#pkjwtexchangeconfig)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -933,6 +934,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 "accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
 "identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
 "clientSecretExchangeConfig": .enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig
+"pkJwtExchangeConfig": .enterprise.gloo.solo.io.OidcAuthorizationCode.PkJwtExchangeConfig
 
 ```
 
@@ -961,7 +963,8 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
 | `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
-| `clientSecretExchangeConfig` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig](../extauth.proto.sk/#clientsecretexchangeconfig) | Fetches the JWKS from a remote location. |
+| `clientSecretExchangeConfig` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig](../extauth.proto.sk/#clientsecretexchangeconfig) | Fetches the JWKS from a remote location. Only one of `clientSecretExchangeConfig` or `pkJwtExchangeConfig` can be set. |
+| `pkJwtExchangeConfig` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.PkJwtExchangeConfig](../extauth.proto.sk/#pkjwtexchangeconfig) | Loads the JWKS from a local data source. Only one of `pkJwtExchangeConfig` or `clientSecretExchangeConfig` can be set. |
 
 
 
@@ -1017,6 +1020,23 @@ Optional: Map a single claim from an OIDC identity token to a header in the requ
 | ----- | ---- | ----------- | 
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
+
+
+
+
+---
+### PkJwtExchangeConfig
+
+
+
+```yaml
+"signingKeyRef": .core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `signingKeyRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
 
 
@@ -1906,6 +1926,7 @@ Deprecated, prefer OAuth2Config
 "userSession": .enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig
 "clientSecretExchangeConfig": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClientSecretExchangeConfig
 "pkJwtExchangeConfig": .enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.PkJwtExchangeConfig
+"signingKey": string
 
 ```
 
@@ -1933,6 +1954,7 @@ Deprecated, prefer OAuth2Config
 | `userSession` | [.enterprise.gloo.solo.io.ExtAuthConfig.UserSessionConfig](../extauth.proto.sk/#usersessionconfig) | Configuration related to the user session. |
 | `clientSecretExchangeConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.ClientSecretExchangeConfig](../extauth.proto.sk/#clientsecretexchangeconfig) | Fetches the JWKS from a remote location. Only one of `clientSecretExchangeConfig` or `pkJwtExchangeConfig` can be set. |
 | `pkJwtExchangeConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.OidcAuthorizationCodeConfig.PkJwtExchangeConfig](../extauth.proto.sk/#pkjwtexchangeconfig) | Loads the JWKS from a local data source. Only one of `pkJwtExchangeConfig` or `clientSecretExchangeConfig` can be set. |
+| `signingKey` | `string` |  |
 
 
 
