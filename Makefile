@@ -595,7 +595,8 @@ package-chart: generate-helm-files
 # https://ftp.gnu.org/old-gnu/Manuals/make-3.79.1/html_chapter/make_6.html#SEC59
 git_tag = $(shell git describe --abbrev=0 --tags)
 # Semantic versioning format https://semver.org/
-tag_regex := ^v([0-9]{1,}\.){2}[0-9]{1,}$
+# Regex copied from: https://github.com/solo-io/go-utils/blob/16d4d94e4e5f182ca8c10c5823df303087879dea/versionutils/version.go#L338
+tag_regex := v[0-9]+[.][0-9]+[.][0-9]+(-[a-z]+)*(-[a-z]+[0-9]*)?$
 
 ifneq (,$(TEST_ASSET_ID))
 PUBLISH_CONTEXT := PULL_REQUEST
