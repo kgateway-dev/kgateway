@@ -6329,7 +6329,7 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig) H
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetSigningKey())); err != nil {
+	if _, err = hasher.Write([]byte(m.GetClientSecret())); err != nil {
 		return 0, err
 	}
 

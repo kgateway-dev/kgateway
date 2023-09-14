@@ -3395,7 +3395,7 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig) C
 	}
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig{}
 
-	target.SigningKey = m.GetSigningKey()
+	target.ClientSecret = m.GetClientSecret()
 
 	return target
 }

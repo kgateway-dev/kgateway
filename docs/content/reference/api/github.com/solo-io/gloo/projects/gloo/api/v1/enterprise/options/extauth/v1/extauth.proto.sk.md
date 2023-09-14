@@ -1918,13 +1918,13 @@ Deprecated, prefer OAuth2Config
 
 
 ```yaml
-"signingKey": string
+"clientSecret": string
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `signingKey` | `string` |  |
+| `clientSecret` | `string` |  |
 
 
 

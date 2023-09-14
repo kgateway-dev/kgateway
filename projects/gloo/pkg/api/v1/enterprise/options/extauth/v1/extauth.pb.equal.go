@@ -5686,7 +5686,7 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig) E
 		return false
 	}
 
-	if strings.Compare(m.GetSigningKey(), target.GetSigningKey()) != 0 {
+	if strings.Compare(m.GetClientSecret(), target.GetClientSecret()) != 0 {
 		return false
 	}
 
