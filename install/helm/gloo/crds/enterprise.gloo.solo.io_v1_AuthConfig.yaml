@@ -473,6 +473,19 @@ spec:
                               type: string
                             clientId:
                               type: string
+                            clientSecretExchangeConfig:
+                              properties:
+                                clientSecretRef:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  type: object
+                                disableClientSecret:
+                                  nullable: true
+                                  type: boolean
+                              type: object
                             clientSecretRef:
                               properties:
                                 name:

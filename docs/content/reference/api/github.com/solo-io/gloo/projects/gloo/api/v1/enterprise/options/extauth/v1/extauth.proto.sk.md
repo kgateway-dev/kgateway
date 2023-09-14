@@ -49,6 +49,7 @@ weight: 5
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
+- [ClientSecretExchangeConfig](#clientsecretexchangeconfig)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -930,6 +931,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 "disableClientSecret": .google.protobuf.BoolValue
 "accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
 "identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
+"clientSecretExchangeConfig": .enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig
 
 ```
 
@@ -958,6 +960,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
 | `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
+| `clientSecretExchangeConfig` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig](../extauth.proto.sk/#clientsecretexchangeconfig) | Fetches the JWKS from a remote location. |
 
 
 
@@ -994,6 +997,25 @@ Optional: Map a single claim from an OIDC identity token to a header in the requ
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `claimsToHeaders` | [[]enterprise.gloo.solo.io.ClaimToHeader](../extauth.proto.sk/#claimtoheader) | A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination. |
+
+
+
+
+---
+### ClientSecretExchangeConfig
+
+
+
+```yaml
+"clientSecretRef": .core.solo.io.ResourceRef
+"disableClientSecret": .google.protobuf.BoolValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) |  |
 
 
 

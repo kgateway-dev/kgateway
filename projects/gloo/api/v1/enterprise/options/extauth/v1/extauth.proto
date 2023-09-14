@@ -569,7 +569,7 @@ message OidcAuthorizationCode {
 
     // your client secret as registered with the issuer.
     // This is required unless `disable_client_secret` is true
-    core.solo.io.ResourceRef client_secret_ref = 2;
+    core.solo.io.ResourceRef client_secret_ref = 2 [deprecated = true];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -683,7 +683,7 @@ message OidcAuthorizationCode {
     // If true, do not check for or use the client secret.
     // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
-    google.protobuf.BoolValue disable_client_secret = 21;
+    google.protobuf.BoolValue disable_client_secret = 21 [deprecated = true];
 
     // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
     AccessToken access_token = 23;
@@ -704,6 +704,22 @@ message OidcAuthorizationCode {
         // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
         repeated ClaimToHeader claims_to_headers = 1;
     }
+
+    message ClientSecretExchangeConfig {
+        core.solo.io.ResourceRef client_secret_ref = 1 [(extproto.sensitive) = true];
+        google.protobuf.BoolValue disable_client_secret = 2;
+    }
+    
+    // message PkJwtExchangeConfig{
+    //     core.solo.io.ResourceRef signing_key_ref = 1 [(extproto.sensitive) = true];
+    // }
+    
+        oneof exchange_config {
+            // Fetches the JWKS from a remote location.
+            ClientSecretExchangeConfig client_secret_exchange_config = 25;
+            // Loads the JWKS from a local data source.
+            // PkJwtExchangeConfig pk_jwt_exchange_config = 26;
+        }
 }
 
 message PlainOAuth2 {
