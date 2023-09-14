@@ -710,15 +710,15 @@ message OidcAuthorizationCode {
         google.protobuf.BoolValue disable_client_secret = 2;
     }
     
-    // message PkJwtExchangeConfig{
-    //     core.solo.io.ResourceRef signing_key_ref = 1 [(extproto.sensitive) = true];
-    // }
+    message PkJwtExchangeConfig{
+        core.solo.io.ResourceRef signing_key_ref = 1 [(extproto.sensitive) = true];
+    }
     
         oneof exchange_config {
             // Fetches the JWKS from a remote location.
             ClientSecretExchangeConfig client_secret_exchange_config = 25;
             // Loads the JWKS from a local data source.
-            // PkJwtExchangeConfig pk_jwt_exchange_config = 26;
+            PkJwtExchangeConfig pk_jwt_exchange_config = 26;
         }
 }
 
@@ -1531,7 +1531,7 @@ message ExtAuthConfig {
         }
 
         message PkJwtExchangeConfig{
-            string signing_key = 1 ;
+            string signing_key = 1 [(extproto.sensitive) = true];
         }
 
         oneof exchange_config {
@@ -1541,6 +1541,7 @@ message ExtAuthConfig {
             PkJwtExchangeConfig pk_jwt_exchange_config = 22;
         }
 
+        string signing_key = 23 [(extproto.sensitive) = true];
     }
 
     message AccessTokenValidationConfig {
