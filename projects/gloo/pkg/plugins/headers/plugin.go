@@ -247,7 +247,6 @@ func convertResponseHeaderValueOption(
 			return nil, CantSetHostHeaderError
 		}
 
-		// By default, or if `append` is set to true, we'll append the header if it exists.
 		appendAction := envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
 		if appendOption := h.GetAppend(); appendOption != nil {
 			if appendOption.GetValue() == false {

@@ -81,7 +81,6 @@ func CheckForbiddenCustomHeaders(header envoycore_sk.HeaderValue) error {
 }
 
 func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList, secretOptions HeaderSecretOptions) ([]*envoy_config_core_v3.HeaderValueOption, error) {
-	// By default, or if `append` is set to true, we'll append the header if it exists.
 	appendAction := envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
 	if appendOption := option.GetAppend(); appendOption != nil {
 		if appendOption.GetValue() == false {
