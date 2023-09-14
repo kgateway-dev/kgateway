@@ -12,7 +12,7 @@ AWS allows the ability to manage credentials through **IAM Roles for Service Acc
 
 Start by creating the necessary permissions in AWS.
 
-## Step 1: Creating a cluster with OIDC
+### Step 1: Create a cluster with OIDC
 
 To configure IRSA, create or use an EKS cluster with an associated OpenID Provider (OIDC). For setup instructions, follow [Creating an IAM OIDC provider for your cluster](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html) in the AWS docs.
 
@@ -27,7 +27,7 @@ export ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 export OIDC_PROVIDER=$(aws eks describe-cluster --name $CLUSTER_NAME --region $AWS_REGION --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
 ```
 
-## Step 2: Setting up a Role
+### Step 2: Set up a Role
 
 Create an AWS Role with a trust relationship to your OIDC provider. This allows the provider to assume the AWS IAM role, specifically for the service accounts in `gloo` and `discovery`.
 
@@ -67,7 +67,7 @@ export VAULT_AUTH_ROLE_ARN=$([[ $(aws iam list-roles --query "Roles[?RoleName=='
 rm -f trust-relationship.json
 ```
 
-## Step 3: Setting a Policy
+### Step 3: Set a Policy
 
 Create an AWS Policy to grant the necessary permissions for Vault to perform actions, such as assuming the IAM role and getting instance and user information. This is a lighter version of Vault's [Recommended Vault IAM Policy](https://developer.hashicorp.com/vault/docs/auth/aws#recommended-vault-iam-policy).
 
@@ -154,11 +154,11 @@ vault policy write dev policy.hcl
 rm -f policy.hcl
 ```
 
-# 4. Configure the AWS authentication method
+### Step 2: Configure the AWS authentication method
 
-We'll then want to configure Vault's AWS authentication method to point to the Security Token Service (STS) endpoint for our provider.
+Next, configure Vault's AWS authentication method to point to the Security Token Service (STS) endpoint for your provider.
 
-We will be adding an `iam_server_id_header_value` to secure the authN/authZ process and ensuring it matches with our configuration in Gloo later on. For more information regarding the IAM Server ID header, it is explained in Vault's [API Docs](https://developer.hashicorp.com/vault/api-docs/auth/aws#iam_server_id_header_value).
+In later steps, you add an `iam_server_id_header_value` to secure the authN/authZ process and ensure that it matches with your configuration in Gloo For more information on the IAM Server ID header, see the Vault [API docs](https://developer.hashicorp.com/vault/api-docs/auth/aws#iam_server_id_header_value).
 
 ```shell
 export IAM_SERVER_ID_HEADER_VALUE=vault.gloo.example.com
@@ -168,9 +168,9 @@ vault write auth/aws/config/client \
 	sts_region=${AWS_REGION}
 ```
 
-## 5. Associating the Vault Policy with AWS Role
+### Step 3: Associate the Vault Policy with AWS Role
 
-Finally, we'll want to bind the Vault authentication and policy to our role created in AWS. Since we are doing IAM roles, we'll set the `auth_type` to `iam`.
+Finally, bind the Vault authentication and policy to your role in AWS. To use IAM roles, the following command sets the `auth_type` to `iam`.
 
 ```shell
 vault write auth/aws/role/dev-role-iam \
@@ -183,7 +183,7 @@ vault write auth/aws/role/dev-role-iam \
 # Gloo Edge
 
 Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching.
-## 1. Prepare Helm overrides
+### Step 1: Prepare Helm overrides
 
 Override the default settings to use Vault as a source for managing secrets. To allow for IRSA, add the `eks.amazonaws.com/role-arn` annotations, which reference the roles to assume, to the `gloo` and `discovery` service accounts.
 
@@ -216,7 +216,7 @@ If you use Gloo Edge Enterprise, nest these Helm settings within the `gloo` sect
 {{% /notice %}}
 
 
-## 2. Install Gloo (using Helm)
+### Step 2: Install Gloo using Helm
 
 ```shell
 export EDGE_VERSION=v1.15.2
