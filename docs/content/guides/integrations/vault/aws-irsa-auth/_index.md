@@ -113,7 +113,11 @@ aws iam attach-role-policy --role-name $VAULT_AUTH_ROLE_NAME --policy-arn=${VAUL
 ```
 # Vault
 
-After setting up our AWS resources, we can start setting up Vault with AWS authentication. To install Vault on your system, choose one of the installation methods in Vault's [Installing Vault](https://developer.hashicorp.com/vault/docs/install) documentation.
+After you set up your AWS resources, you can configure Vault with AWS authentication.
+
+### Step 1: Set up Vault
+
+1. Install Vault by choosing one of the installation methods in Vault's [Installing Vault](https://developer.hashicorp.com/vault/docs/install) documentation.
 
 ## 1.  Enable AWS authentication on Vault
 
