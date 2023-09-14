@@ -4,9 +4,10 @@ description: Secure your secrets using AWS IAM Roles for Service Accounts (IRSA)
 weight: 1
 ---
 
-Vault includes the ability to handle authentication using AWS IAM roles. We can either hard-code long-lived credentials, or infer them using AWS IRSA.
+Vault supports AWS IAM roles for authentication, offering a choice between hard-coded long-lived credentials and automated AWS IAM Roles for Service Accounts (IRSA).
 
-AWS allows the ability to manage credentials through **IAM Roles for Service Accounts** (IRSA). With this feature, you can associate IAM roles to Kubernetes Service Accounts, and gain the ability to fetch and use temporary credentials for said role. For more information, see the AWS [IAM roles for service account](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html) docs.
+AWS IAM Roles for Service Accounts (IRSA) enable you to associate IAM roles with Kubernetes Service Accounts, allowing automatic retrieval and use of temporary AWS credentials.
+This integration enhances security and operational efficiency, ensuring Kubernetes applications securely access Vault secrets while following AWS IAM best practices.
 
 ## AWS
 
@@ -226,3 +227,8 @@ helm repo add gloo https://storage.googleapis.com/solo-public-helm
 helm repo update
 helm install gloo gloo/gloo --namespace gloo-system --create-namespace --version $EDGE_VERSION --values helm-overrides.yaml
 ```
+
+## Summary
+
+Now, Gloo Edge securely accesses Vault secrets using temporary credentials obtained through AWS IAM Roles for Service Accounts (IRSA).
+This enhances security, streamlines access control, and simplifies authorization within your Kubernetes environment.
