@@ -1,7 +1,7 @@
 ---
-title: "Securing Vault secrets with AWS IAM Roles for Service Accounts (IRSA)"
+title: Securing Vault secrets with AWS IAM Roles for Service Accounts (IRSA)
 description: Secure your secrets using AWS IAM Roles for Service Accounts (IRSA)
-weight: 7
+weight: 1
 ---
 
 Vault includes the ability to handle authentication using AWS IAM roles. We can either hard-code long-lived credentials, or infer them using AWS IRSA.
@@ -173,6 +173,7 @@ vault write auth/aws/role/dev-role-iam \
     policies=dev \
     max_ttl=24h
 ```
+
 # Gloo Edge
 
 Lastly, we'll need to install Gloo Edge configured to allow for Vault and IRSA credential fetching.
