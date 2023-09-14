@@ -2819,6 +2819,18 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 			}
 		}
 
+	case *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig_:
+
+		if h, ok := interface{}(m.GetPkJwtExchangeConfig()).(clone.Cloner); ok {
+			target.ExchangeConfig = &ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig_{
+				PkJwtExchangeConfig: h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig),
+			}
+		} else {
+			target.ExchangeConfig = &ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig_{
+				PkJwtExchangeConfig: proto.Clone(m.GetPkJwtExchangeConfig()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig),
+			}
+		}
+
 	}
 
 	return target
@@ -3435,6 +3447,19 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig) C
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_ClientSecretExchangeConfig{}
 
 	target.ClientSecret = m.GetClientSecret()
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtExchangeConfig{}
+
+	target.SigningKey = m.GetSigningKey()
 
 	return target
 }

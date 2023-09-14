@@ -1530,15 +1530,15 @@ message ExtAuthConfig {
             string client_secret = 1 [(extproto.sensitive) = true];
         }
 
-        // message PkJwtExchangeConfig{
-        //     string signing_key = 1 ;
-        // }
+        message PkJwtExchangeConfig{
+            string signing_key = 1 ;
+        }
 
         oneof exchange_config {
             // Fetches the JWKS from a remote location.
             ClientSecretExchangeConfig client_secret_exchange_config = 21;
             // Loads the JWKS from a local data source.
-            // PkJwtExchangeConfig pk_jwt_exchange_config = 22;
+            PkJwtExchangeConfig pk_jwt_exchange_config = 22;
         }
 
     }
