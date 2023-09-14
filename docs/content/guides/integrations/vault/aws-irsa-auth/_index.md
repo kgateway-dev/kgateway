@@ -111,27 +111,28 @@ Finally, attach the newly-created policy to the role that you created earlier.
 ```shell
 aws iam attach-role-policy --role-name $VAULT_AUTH_ROLE_NAME --policy-arn=${VAULT_AUTH_POLICY_ARN}
 ```
-# Vault
+
+## Vault
 
 After you set up your AWS resources, you can configure Vault with AWS authentication.
 
 ### Step 1: Set up Vault
 
-1. Install Vault by choosing one of the installation methods in Vault's [Installing Vault](https://developer.hashicorp.com/vault/docs/install) documentation.
+Install Vault by choosing one of the installation methods in Vault's [Installing Vault](https://developer.hashicorp.com/vault/docs/install) documentation.
 
-## 1.  Enable AWS authentication on Vault
+### Step 2: Enable AWS authentication on Vault
 
 ```shell
 vault auth enable aws
 ```
 
-## 2. Enable a secrets engine
+### Step 3: Enable a secrets engine
 
 ```shell
 vault secrets enable -path="dev" -version=2 kv
 ```
 
-## 3. Create a Vault Policy
+### Step 4: Create a Vault Policy
 
 ```shell
 cat <<EOF > policy.hcl
@@ -154,7 +155,7 @@ vault policy write dev policy.hcl
 rm -f policy.hcl
 ```
 
-### Step 2: Configure the AWS authentication method
+### Step 5: Configure the AWS authentication method
 
 Next, configure Vault's AWS authentication method to point to the Security Token Service (STS) endpoint for your provider.
 
@@ -168,7 +169,7 @@ vault write auth/aws/config/client \
 	sts_region=${AWS_REGION}
 ```
 
-### Step 3: Associate the Vault Policy with AWS Role
+### Step 6: Associate the Vault Policy with AWS Role
 
 Finally, bind the Vault authentication and policy to your role in AWS. To use IAM roles, the following command sets the `auth_type` to `iam`.
 
@@ -180,7 +181,7 @@ vault write auth/aws/role/dev-role-iam \
     max_ttl=24h
 ```
 
-# Gloo Edge
+## Gloo Edge
 
 Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching.
 ### Step 1: Prepare Helm overrides
