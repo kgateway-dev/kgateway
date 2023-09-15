@@ -2,9 +2,10 @@ package clients
 
 import (
 	"context"
+	"os"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
-	"os"
 
 	"github.com/hashicorp/vault/api"
 	_ "github.com/hashicorp/vault/api/auth/aws"
