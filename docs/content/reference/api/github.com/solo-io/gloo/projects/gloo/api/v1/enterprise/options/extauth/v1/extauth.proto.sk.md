@@ -49,8 +49,9 @@ weight: 5
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessToken](#accesstoken)
 - [IdentityToken](#identitytoken)
-- [ClientSecretExchangeConfig](#clientsecretexchangeconfig)
-- [PkJwtExchangeConfig](#pkjwtexchangeconfig)
+- [CodeExchangeType](#codeexchangetype)
+- [ClientSecret](#clientsecret)
+- [PrivateKeyJwt](#privatekeyjwt)
 - [PlainOAuth2](#plainoauth2)
 - [JwtValidation](#jwtvalidation)
 - [RemoteJwks](#remotejwks)
@@ -933,8 +934,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 "disableClientSecret": .google.protobuf.BoolValue
 "accessToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken
 "identityToken": .enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken
-"clientSecretExchangeConfig": .enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig
-"pkJwtExchangeConfig": .enterprise.gloo.solo.io.OidcAuthorizationCode.PkJwtExchangeConfig
+"codeExchangeType": .enterprise.gloo.solo.io.OidcAuthorizationCode.CodeExchangeType
 
 ```
 
@@ -963,8 +963,7 @@ Map a single claim from an OAuth2 or OIDC token to a header in the request to th
 | `disableClientSecret` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If true, do not check for or use the client secret. Generally the client secret is required and AuthConfigs will be rejected if it isn't set. However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret. |
 | `accessToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.AccessToken](../extauth.proto.sk/#accesstoken) | Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service. |
 | `identityToken` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.IdentityToken](../extauth.proto.sk/#identitytoken) | Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service. |
-| `clientSecretExchangeConfig` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.ClientSecretExchangeConfig](../extauth.proto.sk/#clientsecretexchangeconfig) | Fetches the JWKS from a remote location. Only one of `clientSecretExchangeConfig` or `pkJwtExchangeConfig` can be set. |
-| `pkJwtExchangeConfig` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.PkJwtExchangeConfig](../extauth.proto.sk/#pkjwtexchangeconfig) | Loads the JWKS from a local data source. Only one of `pkJwtExchangeConfig` or `clientSecretExchangeConfig` can be set. |
+| `codeExchangeType` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.CodeExchangeType](../extauth.proto.sk/#codeexchangetype) |  |
 
 
 
@@ -1006,7 +1005,26 @@ Optional: Map a single claim from an OIDC identity token to a header in the requ
 
 
 ---
-### ClientSecretExchangeConfig
+### CodeExchangeType
+
+
+
+```yaml
+"clientSecret": .enterprise.gloo.solo.io.OidcAuthorizationCode.CodeExchangeType.ClientSecret
+"privateKeyJwt": .enterprise.gloo.solo.io.OidcAuthorizationCode.CodeExchangeType.PrivateKeyJwt
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `clientSecret` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.CodeExchangeType.ClientSecret](../extauth.proto.sk/#clientsecret) | Fetches the JWKS from a remote location. Only one of `clientSecret` or `privateKeyJwt` can be set. |
+| `privateKeyJwt` | [.enterprise.gloo.solo.io.OidcAuthorizationCode.CodeExchangeType.PrivateKeyJwt](../extauth.proto.sk/#privatekeyjwt) | Loads the JWKS from a local data source. Only one of `privateKeyJwt` or `clientSecret` can be set. |
+
+
+
+
+---
+### ClientSecret
 
 
 
@@ -1025,7 +1043,7 @@ Optional: Map a single claim from an OIDC identity token to a header in the requ
 
 
 ---
-### PkJwtExchangeConfig
+### PrivateKeyJwt
 
 
 

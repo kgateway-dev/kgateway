@@ -868,32 +868,10 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.IdentityToken = proto.Clone(m.GetIdentityToken()).(*OidcAuthorizationCode_IdentityToken)
 	}
 
-	switch m.ExchangeConfig.(type) {
-
-	case *OidcAuthorizationCode_ClientSecretExchangeConfig_:
-
-		if h, ok := interface{}(m.GetClientSecretExchangeConfig()).(clone.Cloner); ok {
-			target.ExchangeConfig = &OidcAuthorizationCode_ClientSecretExchangeConfig_{
-				ClientSecretExchangeConfig: h.Clone().(*OidcAuthorizationCode_ClientSecretExchangeConfig),
-			}
-		} else {
-			target.ExchangeConfig = &OidcAuthorizationCode_ClientSecretExchangeConfig_{
-				ClientSecretExchangeConfig: proto.Clone(m.GetClientSecretExchangeConfig()).(*OidcAuthorizationCode_ClientSecretExchangeConfig),
-			}
-		}
-
-	case *OidcAuthorizationCode_PkJwtExchangeConfig_:
-
-		if h, ok := interface{}(m.GetPkJwtExchangeConfig()).(clone.Cloner); ok {
-			target.ExchangeConfig = &OidcAuthorizationCode_PkJwtExchangeConfig_{
-				PkJwtExchangeConfig: h.Clone().(*OidcAuthorizationCode_PkJwtExchangeConfig),
-			}
-		} else {
-			target.ExchangeConfig = &OidcAuthorizationCode_PkJwtExchangeConfig_{
-				PkJwtExchangeConfig: proto.Clone(m.GetPkJwtExchangeConfig()).(*OidcAuthorizationCode_PkJwtExchangeConfig),
-			}
-		}
-
+	if h, ok := interface{}(m.GetCodeExchangeType()).(clone.Cloner); ok {
+		target.CodeExchangeType = h.Clone().(*OidcAuthorizationCode_CodeExchangeType)
+	} else {
+		target.CodeExchangeType = proto.Clone(m.GetCodeExchangeType()).(*OidcAuthorizationCode_CodeExchangeType)
 	}
 
 	return target
@@ -2317,12 +2295,51 @@ func (m *OidcAuthorizationCode_IdentityToken) Clone() proto.Message {
 }
 
 // Clone function
-func (m *OidcAuthorizationCode_ClientSecretExchangeConfig) Clone() proto.Message {
-	var target *OidcAuthorizationCode_ClientSecretExchangeConfig
+func (m *OidcAuthorizationCode_CodeExchangeType) Clone() proto.Message {
+	var target *OidcAuthorizationCode_CodeExchangeType
 	if m == nil {
 		return target
 	}
-	target = &OidcAuthorizationCode_ClientSecretExchangeConfig{}
+	target = &OidcAuthorizationCode_CodeExchangeType{}
+
+	switch m.ExchangeConfig.(type) {
+
+	case *OidcAuthorizationCode_CodeExchangeType_ClientSecret_:
+
+		if h, ok := interface{}(m.GetClientSecret()).(clone.Cloner); ok {
+			target.ExchangeConfig = &OidcAuthorizationCode_CodeExchangeType_ClientSecret_{
+				ClientSecret: h.Clone().(*OidcAuthorizationCode_CodeExchangeType_ClientSecret),
+			}
+		} else {
+			target.ExchangeConfig = &OidcAuthorizationCode_CodeExchangeType_ClientSecret_{
+				ClientSecret: proto.Clone(m.GetClientSecret()).(*OidcAuthorizationCode_CodeExchangeType_ClientSecret),
+			}
+		}
+
+	case *OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt_:
+
+		if h, ok := interface{}(m.GetPrivateKeyJwt()).(clone.Cloner); ok {
+			target.ExchangeConfig = &OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt_{
+				PrivateKeyJwt: h.Clone().(*OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt),
+			}
+		} else {
+			target.ExchangeConfig = &OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt_{
+				PrivateKeyJwt: proto.Clone(m.GetPrivateKeyJwt()).(*OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *OidcAuthorizationCode_CodeExchangeType_ClientSecret) Clone() proto.Message {
+	var target *OidcAuthorizationCode_CodeExchangeType_ClientSecret
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_CodeExchangeType_ClientSecret{}
 
 	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
 		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
@@ -2340,12 +2357,12 @@ func (m *OidcAuthorizationCode_ClientSecretExchangeConfig) Clone() proto.Message
 }
 
 // Clone function
-func (m *OidcAuthorizationCode_PkJwtExchangeConfig) Clone() proto.Message {
-	var target *OidcAuthorizationCode_PkJwtExchangeConfig
+func (m *OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt) Clone() proto.Message {
+	var target *OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt
 	if m == nil {
 		return target
 	}
-	target = &OidcAuthorizationCode_PkJwtExchangeConfig{}
+	target = &OidcAuthorizationCode_CodeExchangeType_PrivateKeyJwt{}
 
 	if h, ok := interface{}(m.GetSigningKeyRef()).(clone.Cloner); ok {
 		target.SigningKeyRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)

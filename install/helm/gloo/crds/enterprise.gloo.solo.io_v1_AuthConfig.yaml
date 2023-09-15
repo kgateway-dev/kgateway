@@ -473,25 +473,38 @@ spec:
                               type: string
                             clientId:
                               type: string
-                            clientSecretExchangeConfig:
-                              properties:
-                                clientSecretRef:
-                                  properties:
-                                    name:
-                                      type: string
-                                    namespace:
-                                      type: string
-                                  type: object
-                                disableClientSecret:
-                                  nullable: true
-                                  type: boolean
-                              type: object
                             clientSecretRef:
                               properties:
                                 name:
                                   type: string
                                 namespace:
                                   type: string
+                              type: object
+                            codeExchangeType:
+                              properties:
+                                clientSecret:
+                                  properties:
+                                    clientSecretRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    disableClientSecret:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
+                                privateKeyJwt:
+                                  properties:
+                                    signingKeyRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                  type: object
                               type: object
                             disableClientSecret:
                               nullable: true
@@ -587,16 +600,6 @@ spec:
                               type: string
                             parseCallbackPathAsRegex:
                               type: boolean
-                            pkJwtExchangeConfig:
-                              properties:
-                                signingKeyRef:
-                                  properties:
-                                    name:
-                                      type: string
-                                    namespace:
-                                      type: string
-                                  type: object
-                              type: object
                             scopes:
                               items:
                                 type: string
