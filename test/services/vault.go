@@ -231,14 +231,9 @@ func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_Vau
 	return nil
 }
 
-func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsRegion, secretEngine string) error {
+func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsRegion string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
-	if err != nil {
-		return err
-	}
-
-	err = i.EnableSecretEngine(secretEngine)
 	if err != nil {
 		return err
 	}
@@ -251,11 +246,7 @@ func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsR
 
 	// Configure the AWS auth method with the sts endpoint and server id header set
 	stsEndpoint := fmt.Sprintf("https://sts.%s.amazonaws.com", stsRegion)
-	_, err = i.Exec("write", "auth/aws/config/client",
-		fmt.Sprintf("iam_server_id_header_value=%s", serverIdHeader),
-		fmt.Sprintf("sts_endpoint=%s", stsEndpoint),
-		fmt.Sprintf("sts_region=%s", stsRegion),
-	)
+	_, err = i.Exec("write", "auth/aws/config/client", fmt.Sprintf("iam_server_id_header_value=%s", serverIdHeader), fmt.Sprintf("sts_endpoint=%s", stsEndpoint), fmt.Sprintf("sts_region=%s", stsRegion))
 	if err != nil {
 		return err
 	}
