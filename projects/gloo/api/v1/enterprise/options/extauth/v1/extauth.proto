@@ -723,7 +723,7 @@ message OidcAuthorizationCode {
         }
     }
 
-    CodeExchangeType CodeExchangeType = 25;
+    CodeExchangeType code_exchange_type = 25;
 }
 
 message PlainOAuth2 {
