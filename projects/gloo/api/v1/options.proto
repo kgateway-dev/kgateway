@@ -110,6 +110,12 @@ message RouteConfigurationOptions {
     // Please refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-max-direct-response-body-size-bytes)
     // for more details about the `max_direct_response_body_size_bytes` attribute.
     google.protobuf.UInt32Value max_direct_response_body_size_bytes = 1;
+
+    // By default, headers that should be added/removed are evaluated from most to least specific:
+    // To allow setting overrides at the route or virtual host level, this order can be reversed by setting this option to true.
+    // Refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-most-specific-header-mutations-wins) for more details.
+    // Defaults to false.
+    bool most_specific_header_mutations_wins = 2;
 }
 
 // Optional, feature-specific configuration that lives on http listeners

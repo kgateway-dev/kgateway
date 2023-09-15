@@ -196,6 +196,8 @@ func (m *RouteConfigurationOptions) Clone() proto.Message {
 		target.MaxDirectResponseBodySizeBytes = proto.Clone(m.GetMaxDirectResponseBodySizeBytes()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
+	target.MostSpecificHeaderMutationsWins = m.GetMostSpecificHeaderMutationsWins()
+
 	return target
 }
 

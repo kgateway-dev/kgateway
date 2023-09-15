@@ -5150,6 +5150,8 @@ spec:
                     minimum: 0
                     nullable: true
                     type: integer
+                  mostSpecificHeaderMutationsWins:
+                    type: boolean
                 type: object
               ssl:
                 type: boolean

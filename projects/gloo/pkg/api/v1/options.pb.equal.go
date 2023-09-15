@@ -181,6 +181,10 @@ func (m *RouteConfigurationOptions) Equal(that interface{}) bool {
 		}
 	}
 
+	if m.GetMostSpecificHeaderMutationsWins() != target.GetMostSpecificHeaderMutationsWins() {
+		return false
+	}
+
 	return true
 }
 
