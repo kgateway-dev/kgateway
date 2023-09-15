@@ -29,7 +29,7 @@ const (
 	DefaultPort       = 8200
 	DefaultVaultToken = "root"
 
-	vaultDockerImage = "hashicorp/vault:1.13.4"
+	vaultDockerImage = "hashicorp/vault:1.13.3"
 	vaultBinaryName  = "vault"
 )
 
@@ -203,18 +203,6 @@ func (i *VaultInstance) addAuthRole(awsAuthRole string) error {
 	return err
 }
 
-func (i *VaultInstance) addAuthSTSRole(authRole string) error {
-	roleName := strings.Split(authRole, "/")[1]
-	_, err := i.Exec("write",
-		fmt.Sprintf("auth/aws/role/%s", roleName),
-		"auth_type=iam",
-		"policies=admin",
-		"max_ttl=24h",
-		fmt.Sprintf("bound_iam_principal_arn=%s", authRole),
-	)
-	return err
-}
-
 func (i *VaultInstance) EnableAWSCredentialsAuthMethod(settings *v1.Settings_VaultSecrets, awsAuthRole string) error {
 	// Enable the AWS auth method
 	_, err := i.Exec("auth", "enable", "aws")
@@ -273,7 +261,7 @@ func (i *VaultInstance) EnableAWSSTSAuthMethod(awsAuthRole, serverIdHeader, stsR
 	}
 
 	// Configure the Vault role to align with the provided AWS role
-	err = i.addAuthSTSRole(awsAuthRole)
+	err = i.addAuthRole(awsAuthRole)
 	if err != nil {
 		return err
 	}
