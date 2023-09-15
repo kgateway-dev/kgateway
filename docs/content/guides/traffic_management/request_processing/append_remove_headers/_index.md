@@ -291,5 +291,5 @@ From the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/
 > Headers are appended to requests/responses in the following order: weighted cluster level headers, route level headers, virtual host level headers and finally global level headers.
 
 In the previous example of the `x-route-table` response header, the virtual host level header overwrites the route level header because the virtual host level header is evaluated after the route level header.
-If we had set `append: true` on the virtual host, or removed it, then the route level header would have been appended to the virtual host level header.
+If you set `append: true` or omit this field on the virtual host, then the route level response header (`a`) would get appended to the virtual host level header (`alphabet`).
 If we had set `append: false` on the route, since the route is evaluated before the virtual host, it would not affect the virtual host.
