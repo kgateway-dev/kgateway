@@ -1,8 +1,0 @@
-gloo:
-  serviceAccount:
-    extraAnnotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::802411188784:role/edge-e2e-test-irsa
-discovery:
-  serviceAccount:
-    extraAnnotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::802411188784:role/edge-e2e-test-irsa
