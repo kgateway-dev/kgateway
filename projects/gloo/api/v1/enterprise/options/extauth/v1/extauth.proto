@@ -705,21 +705,25 @@ message OidcAuthorizationCode {
         repeated ClaimToHeader claims_to_headers = 1;
     }
 
-    message ClientSecretExchangeConfig {
-        core.solo.io.ResourceRef client_secret_ref = 1 [(extproto.sensitive) = true];
-        google.protobuf.BoolValue disable_client_secret = 2;
-    }
-    
-    message PkJwtExchangeConfig{
-        core.solo.io.ResourceRef signing_key_ref = 1 [(extproto.sensitive) = true];
-    }
-    
+    message CodeExchangeType {
+        message ClientSecret {
+            core.solo.io.ResourceRef client_secret_ref = 1 [(extproto.sensitive) = true];
+            google.protobuf.BoolValue disable_client_secret = 2;
+        }
+        
+        message PrivateKeyJwt{
+            core.solo.io.ResourceRef signing_key_ref = 1 [(extproto.sensitive) = true];
+        }
+        
         oneof exchange_config {
             // Fetches the JWKS from a remote location.
-            ClientSecretExchangeConfig client_secret_exchange_config = 25;
+            ClientSecret client_secret = 1;
             // Loads the JWKS from a local data source.
-            PkJwtExchangeConfig pk_jwt_exchange_config = 26;
+            PrivateKeyJwt private_key_jwt = 2;
         }
+    }
+
+    CodeExchangeType CodeExchangeType = 25;
 }
 
 message PlainOAuth2 {
