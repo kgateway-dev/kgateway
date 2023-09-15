@@ -283,13 +283,13 @@ Headers can be inherited by children options, such as shown in the following exa
 4. Now, requests that match the route `/a/1` get the following headers:
    * The `x-gateway-start-time` request header is inherited from the parent VirtualHost option.
    * The `x-route-table` request header is set in the child Route option.
-   * The `x-route-table` response header in the parent overwrites the child object's value of `a` instead to `alphabet`, because child objects take precedence in case of conflict.
+   * The `x-route-table` response header in the parent overwrites the child object's value of `a` instead to `alphabet`.
 
 Due to how header manipulations are processed, less specific headers overwrite more specific headers.
 
 From the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/headers#custom-request-response-headers):
 > Headers are appended to requests/responses in the following order: weighted cluster level headers, route level headers, virtual host level headers and finally global level headers.
 
-In our above example with `x-route-table`, since the virtual host level header is evaluated after the route level header, the virtual host level header overwrites the route level header.
+In the previous example of the `x-route-table` response header, the virtual host level header overwrites the route level header because the virtual host level header is evaluated after the route level header.
 If we had set `append: true` on the virtual host, or removed it, then the route level header would have been appended to the virtual host level header.
 If we had set `append: false` on the route, since the route is evaluated before the virtual host, it would not affect the virtual host.
