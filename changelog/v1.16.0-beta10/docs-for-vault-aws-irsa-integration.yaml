@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8645
+    resolvesIssue: false
+    description: >-
+      Add user-facing docs for Vault + AWS IRSA integration. 
+      skipCI-kube-tests:false (may switch to true if the new kube2e tests are removed to get this our)
