@@ -1,19 +1,27 @@
 package e2e_test
 
 import (
-	"os"
-
+	"fmt"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"net/textproto"
+	"time"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/test/testutils"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"net/http"
+	"os"
 
-	. "github.com/onsi/ginkgo/v2"
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
 )
@@ -186,6 +194,167 @@ var _ = Describe("HeaderManipulation", func() {
 				vs, err := testContext.TestClients().VirtualServiceClient.Read(writeNamespace, "forbidden-header-manipulation", clients.ReadOpts{})
 				return vs, err
 			})
+		})
+	})
+
+	Context("Header mutation order", func() {
+		const (
+			responseHeader = "response-header"
+			requestHeader  = "request-header"
+		)
+
+		rtWithOptions := func(append bool) *v1.RouteTable {
+			rtName := "append"
+			if !append {
+				rtName = "overwrite"
+			}
+
+			return &v1.RouteTable{
+				Metadata: &coreV1.Metadata{
+					Name:      fmt.Sprintf("%s-rt", rtName),
+					Namespace: writeNamespace,
+				},
+				Routes: []*v1.Route{{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Prefix{Prefix: fmt.Sprintf("/%s", rtName)},
+					}},
+					Options: &gloov1.RouteOptions{
+						HeaderManipulation: &headers.HeaderManipulation{
+							RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{
+								HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+									Header: &envoycore_sk.HeaderValue{Key: requestHeader, Value: "route-header"},
+								},
+								Append: &wrappers.BoolValue{Value: append},
+							}},
+							ResponseHeadersToAdd: []*headers.HeaderValueOption{{
+								Header: &headers.HeaderValue{Key: responseHeader, Value: "route-header"},
+								Append: &wrappers.BoolValue{Value: append},
+							}},
+						},
+					},
+					Action: &v1.Route_RouteAction{
+						RouteAction: &gloov1.RouteAction{
+							Destination: &gloov1.RouteAction_Single{
+								Single: &gloov1.Destination{
+									DestinationType: &gloov1.Destination_Upstream{
+										Upstream: testContext.TestUpstream().Upstream.GetMetadata().Ref(),
+									},
+								},
+							},
+						},
+					},
+				},
+				},
+			}
+		}
+
+		vsWithOptions := func(append bool, rtRef []*coreV1.ResourceRef) *v1.VirtualService {
+			vsName := "append"
+			if !append {
+				vsName = "overwrite"
+			}
+
+			vsBuilder := helpers.NewVirtualServiceBuilder().
+				WithName(fmt.Sprintf("%s-vs", vsName)).
+				WithNamespace(writeNamespace).
+				WithDomain(fmt.Sprintf("%s.com", vsName)).
+				WithVirtualHostOptions(
+					&gloov1.VirtualHostOptions{HeaderManipulation: &headers.HeaderManipulation{
+						RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{
+							HeaderOption: &envoycore_sk.HeaderValueOption_Header{
+								Header: &envoycore_sk.HeaderValue{Key: requestHeader, Value: "vs-header"},
+							},
+							Append: &wrappers.BoolValue{Value: append},
+						}},
+						ResponseHeadersToAdd: []*headers.HeaderValueOption{{
+							Header: &headers.HeaderValue{Key: responseHeader, Value: "vs-header"},
+							Append: &wrappers.BoolValue{Value: append},
+						}},
+					}})
+
+			for _, ref := range rtRef {
+				routeRef := ref
+				vsBuilder.WithRouteDelegateActionRef(fmt.Sprintf("%s-route", ref.GetName()), routeRef)
+			}
+
+			return vsBuilder.Build()
+		}
+
+		// headerCheck checks that the request and response headers are as expected for a given host and path.
+		headerCheck := func(appendVs, appendRoute bool, expectedHeaders []string) {
+			// The `append.com` host is configured to append headers, while the `overwrite.com` domain is configured to overwrite headers.
+			host := "append.com"
+			if !appendVs {
+				host = "overwrite.com"
+			}
+
+			// The `append` path/route is configured to append headers, while the `overwrite` route is configured to overwrite headers.
+			path := "append"
+			if !appendRoute {
+				path = "overwrite"
+			}
+
+			requestBuilder := testContext.GetHttpRequestBuilder().WithHost(host).WithPath(path)
+			EventuallyWithOffset(1, func(g Gomega) {
+				resp, err := testutils.DefaultHttpClient.Do(requestBuilder.Build())
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(resp.StatusCode).To(Equal(http.StatusOK))
+				respHeaders := resp.Header.Values(responseHeader)
+				g.Expect(respHeaders).To(ContainElements(expectedHeaders))
+				select {
+				case received := <-testContext.TestUpstream().C:
+					reqHeaders := received.Headers
+					g.Expect(reqHeaders).To(HaveKeyWithValue(textproto.CanonicalMIMEHeaderKey(requestHeader), ContainElements(expectedHeaders)))
+				case <-time.After(time.Second * 5):
+					Fail("request didn't make it upstream")
+				}
+			}, "5s", "0.5s")
+		}
+
+		BeforeEach(func() {
+			appendRT := rtWithOptions(true)
+			overwriteRT := rtWithOptions(false)
+
+			overwriteVS := vsWithOptions(false, []*coreV1.ResourceRef{appendRT.Metadata.Ref(), overwriteRT.Metadata.Ref()})
+			appendVS := vsWithOptions(true, []*coreV1.ResourceRef{appendRT.Metadata.Ref(), overwriteRT.Metadata.Ref()})
+
+			testContext.ResourcesToCreate().VirtualServices = v1.VirtualServiceList{overwriteVS, appendVS}
+			testContext.ResourcesToCreate().RouteTables = v1.RouteTableList{overwriteRT, appendRT}
+		})
+
+		JustBeforeEach(func() {
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testContext.TestClients().VirtualServiceClient.Read(writeNamespace, "append-vs", clients.ReadOpts{})
+			})
+			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+				return testContext.TestClients().VirtualServiceClient.Read(writeNamespace, "overwrite-vs", clients.ReadOpts{})
+			})
+		})
+
+		When("most_specific_header_mutations_wins is false (default)", func() {
+			DescribeTable("appends headers correctly", headerCheck,
+				Entry("appends route and vhost level headers", true, true, []string{"route-header", "vs-header"}),
+				Entry("appends route and vhost level headers when route is set to overwrite headers", true, false, []string{"route-header", "vs-header"}),
+				Entry("vhost level header overwrites route level header", false, true, []string{"vs-header"}),
+				Entry("vhost level header overwrites route level header when route is set to overwrite headers", false, false, []string{"vs-header"}),
+			)
+		})
+
+		When("most_specific_header_mutations_wins is true", func() {
+			BeforeEach(func() {
+				gw := defaults.DefaultGateway(writeNamespace)
+				gw.RouteOptions = &gloov1.RouteConfigurationOptions{
+					MostSpecificHeaderMutationsWins: true,
+				}
+				testContext.ResourcesToCreate().Gateways = v1.GatewayList{gw}
+			})
+
+			DescribeTable("appends headers correctly", headerCheck,
+				Entry("appends route and vhost level headers", true, true, []string{"route-header", "vs-header"}),
+				Entry("appends route and vhost level headers when vhost is set to overwrite headers", false, true, []string{"route-header", "vs-header"}),
+				Entry("route level header overwrites vhost level header", true, false, []string{"route-header"}),
+				Entry("route level header overwrites vhost level header when vhost is set to overwrite headers", false, false, []string{"route-header"}),
+			)
 		})
 	})
 })
