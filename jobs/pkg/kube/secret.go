@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"time"
+
+	"github.com/solo-io/gloo/jobs/pkg/certgen"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
@@ -63,9 +64,13 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 		if !certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
 			return nil, false, nil
 		}
+		// if the cert is already expired or not yet valid, requests aren't working so don't try to use it while rotating
+		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+			return nil, false, nil
+		}
 		// Create new certificate if old one is expiring soon
 		// If the old one is ok then we should use it while rotating
-		if now.Before(cert.NotBefore) || now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
+		if now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
 			return existing, true, nil
 		}
 
