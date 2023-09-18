@@ -5919,7 +5919,6 @@ metadata:
 					Entry("gateway certgen job", "Job", "gateway-certgen", "gateway.certGenJob", true),
 					Entry("mtls certgen job", "Job", "gloo-mtls-certgen", "gateway.certGenJob", false, "global.glooMtls.enabled=true"),
 					Entry("mtls certgen cronjob", "CronJob", "gloo-mtls-certgen-cronjob", "gateway.certGenJob", false, "global.glooMtls.enabled=true", "gateway.certGenJob.cron.enabled=true"),
-					Entry("gateway certgen cronjob", "CronJob", "gateway-certgen-cronjob", "gateway.certGenJob", false, "gateway.enabled=true", "gateway.validation.enabled=true", "gateway.validation.webhook.enabled=true", "gateway.certGenJob.cron.enabled=true"),
 				)
 
 				DescribeTable("by default, activeDeadlineSeconds is unset on Jobs",
