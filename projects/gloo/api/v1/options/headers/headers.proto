@@ -46,8 +46,9 @@ message HeaderValueOption {
     // Header name/value pair that this option applies to.
     HeaderValue header = 1;
 
-    // Should the value be appended? If true (default), the value is appended to
-    // existing values.
+    // Specifies if the value should be appended or overwrite an existing header. Defaults to true.
+    // If set to true, this maps to Envoy's `append_value: APPEND_IF_EXISTS_OR_ADD`, where the value gets be appended the header's value(s) if exists, or created if it does not.
+    // If set to false, this maps to Envoy's `append_value: OVERWRITE_IF_EXISTS_OR_ADD`, where the header's value will be overwritten if it exists, or created if it does not.
     google.protobuf.BoolValue append = 2;
 }
 

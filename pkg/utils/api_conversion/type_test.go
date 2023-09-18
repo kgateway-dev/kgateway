@@ -33,9 +33,7 @@ var _ = Describe("Type conversion", func() {
 						Key:   "allowed",
 						Value: "header",
 					},
-					Append: &wrappers.BoolValue{
-						Value: true,
-					},
+					AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 				},
 			}
 			headers, err := ToEnvoyHeaderValueOptionList(allowedHeaders, nil, HeaderSecretOptions{})
