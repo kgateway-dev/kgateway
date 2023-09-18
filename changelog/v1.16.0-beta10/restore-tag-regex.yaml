@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8578
+    description: Restore tag_regex in Makefile, which was accidentally removed in #8605
