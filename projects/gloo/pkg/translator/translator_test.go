@@ -1277,9 +1277,7 @@ var _ = Describe("Translator", func() {
 							Key:   "Authorization",
 							Value: "basic dXNlcjpwYXNzd29yZA==",
 						},
-						Append: &wrappers.BoolValue{
-							Value: true,
-						},
+						AppendAction: envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 					},
 				}
 
@@ -2754,9 +2752,7 @@ var _ = Describe("Translator", func() {
 						Key:   "client-id",
 						Value: "%REQ(client-id)%",
 					},
-					Append: &wrappers.BoolValue{
-						Value: false,
-					},
+					AppendAction: envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 				},
 			))
 		})
