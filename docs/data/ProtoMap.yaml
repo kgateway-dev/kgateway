@@ -1874,6 +1874,9 @@ apis:
   stats.options.gloo.solo.io.VirtualCluster:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/stats/stats.proto.sk/#VirtualCluster
     package: stats.options.gloo.solo.io
+  tap.options.gloo.solo.io.GrpcService:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#GrpcService
+    package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.OutputConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#OutputConfig
     package: tap.options.gloo.solo.io

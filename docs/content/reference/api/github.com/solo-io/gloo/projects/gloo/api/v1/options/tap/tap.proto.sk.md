@@ -15,6 +15,7 @@ weight: 5
 - [StaticConfig](#staticconfig)
 - [OutputConfig](#outputconfig)
 - [Sink](#sink)
+- [GrpcService](#grpcservice)
   
 
 
@@ -82,13 +83,31 @@ weight: 5
 
 
 ```yaml
-"grpcService": .solo.io.envoy.config.core.v3.GrpcService
+"grpcService": .tap.options.gloo.solo.io.GrpcService
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `grpcService` | [.solo.io.envoy.config.core.v3.GrpcService](../../../../external/envoy/config/core/v3/grpc_service.proto.sk/#grpcservice) | Write tap data out to a GRPC service. |
+| `grpcService` | [.tap.options.gloo.solo.io.GrpcService](../tap.proto.sk/#grpcservice) | Write tap data out to a GRPC service .solo.io.envoy.config.core.v3.GrpcService grpc_service = 1;. |
+
+
+
+
+---
+### GrpcService
+
+ 
+A tap sink over a GRPC service
+
+```yaml
+"tapServer": .core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `tapServer` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
 
 
 
