@@ -1,0 +1,31 @@
+global:
+  # Set up gloo with istio integration enabled (through `enableIstioSidecarOnGateway`)
+  istioIntegration:
+    enableIstioSidecarOnGateway: true
+    disableAutoinjection: true
+  istioSDS:
+    enabled: true
+  glooMtls:
+    istioProxy:
+      image:
+        repository: proxyv2
+        registry: docker.io/istio
+        tag: 1.18.2
+gloo:
+  logLevel: info
+  disableLeaderElection: true
+  deployment:
+    #  We have limited GitHub action resources which can cause containers to not create
+    # therefore we lessen the cpu resource requests values from the default (500m) to 100m.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+gatewayProxies:
+  gatewayProxy:
+    podTemplate:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+    healthyPanicThreshold: 0
