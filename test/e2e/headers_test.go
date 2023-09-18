@@ -2,14 +2,18 @@ package e2e_test
 
 import (
 	"fmt"
+	"net/textproto"
+	"time"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"net/textproto"
-	"time"
+
+	"net/http"
+	"os"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -19,8 +23,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	coreV1 "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"net/http"
-	"os"
 
 	"github.com/solo-io/gloo/test/e2e"
 	"github.com/solo-io/gloo/test/helpers"
