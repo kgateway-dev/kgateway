@@ -85,7 +85,7 @@ var _ = FDescribe("Gloo + Istio integration tests", func() {
 				Spec: corev1.ServiceSpec{
 					Ports: []corev1.ServicePort{
 						{
-							Name:       "http",
+							Name:       "https",
 							Port:       port,
 							TargetPort: tPort,
 							Protocol:   corev1.ProtocolTCP,
@@ -154,7 +154,7 @@ var _ = FDescribe("Gloo + Istio integration tests", func() {
 			setupServices(port, targetPort)
 
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
+				Protocol:          "https",
 				Path:              "/",
 				Method:            "GET",
 				Host:              helper.TestrunnerName,
