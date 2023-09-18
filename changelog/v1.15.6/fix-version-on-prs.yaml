@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Ensure that PRs from forked repositories can properly version assets. Previously the version depended on
+      tags (which may not exist in a forked repo) and that caused the value of the tag that we send to docker
+      to be invalid. Ensure VERSION includes the most recent git tag, if one is available.
