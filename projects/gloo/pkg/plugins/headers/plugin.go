@@ -247,12 +247,19 @@ func convertResponseHeaderValueOption(
 			return nil, CantSetHostHeaderError
 		}
 
+		appendAction := envoy_config_core_v3.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD
+		if appendOption := h.GetAppend(); appendOption != nil {
+			if appendOption.GetValue() == false {
+				appendAction = envoy_config_core_v3.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD
+			}
+		}
+
 		out = append(out, &envoy_config_core_v3.HeaderValueOption{
 			Header: &envoy_config_core_v3.HeaderValue{
 				Key:   header.GetKey(),
 				Value: header.GetValue(),
 			},
-			Append: h.GetAppend(),
+			AppendAction: appendAction,
 		})
 	}
 	return out, nil
