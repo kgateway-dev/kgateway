@@ -1875,19 +1875,19 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/stats/stats.proto.sk/#VirtualCluster
     package: stats.options.gloo.solo.io
   tap.options.gloo.solo.io.GrpcService:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#GrpcService
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#GrpcService
     package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.OutputConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#OutputConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#OutputConfig
     package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.Sink:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#Sink
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#Sink
     package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.StaticConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#StaticConfig
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#StaticConfig
     package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.Tap:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto.sk/#Tap
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#Tap
     package: tap.options.gloo.solo.io
   tcp.options.gloo.solo.io.HeaderValue:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#HeaderValue

@@ -49,9 +49,9 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/caching/
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/dynamic_forward_proxy/dynamic_forward_proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tap/tap.proto";
 
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/base.proto";
 import "github.com/solo-io/solo-kit/api/external/envoy/api/v2/core/socket_option.proto";
