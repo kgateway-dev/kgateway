@@ -35,5 +35,5 @@ message Sink {
 
 // A tap sink over a GRPC service
 message GrpcService {
-  core.solo.io.ResourceRef tap_server = 1;
+  core.solo.io.ResourceRef tap_server = 1 [(validate.rules).message = {required: true}];
 }
