@@ -1,7 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    issueLink: https://github.com/solo-io/gloo/issues/8525
-    resolvesIssue: false
-    description: >-
-      Translate header manipulation's `append` to Envoy's `append_action`, the newer non-deprecated field.
-      skipCI-kube-tests:true

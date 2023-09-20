@@ -1,0 +1,13 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8525
+    resolvesIssue: false
+    description: >-
+      Translate header manipulation's `append` to Envoy's `append_action`, the newer non-deprecated field.
+      skipCI-kube-tests:true
+  - type: FIX
+    description: |
+      Add support for `most_specific_header_mutations_wins` to allow the more specific header mutation to win. Toggling it on would reverse the evaluation order of the header mutations, allowing more specific header mutations to overwrite less specific.
+      https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-most-specific-header-mutations-wins
+    issueLink: https://github.com/solo-io/gloo/issues/8690
+    resolvesIssue: false
