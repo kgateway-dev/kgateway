@@ -297,6 +297,22 @@ spec:
 
 Note that the `/callback` path will be handled by this same Virtual Service because we used a catch-all `/` prefix matcher.
 
+### Adjust the timeout
+It is common for initial requests that are routed through Auth0, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object.  The default timeout is 200ms, which is often inadequate to account for the external network hop to Auth0.  Increasing that timeout should resolve the problem.
+
+You can get the current state of the `Settings` object like this:
+```shell
+% kubectl get settings.gloo.solo.io -n gloo-system -oyaml
+```
+
+Then apply a change to the `spec.extauth` stanza to add a `requestTimeout` greater than 200ms, like this:
+```yaml
+    extauth:
+      requestTimeout: 1s
+      extauthzServerRef:
+        name: extauth
+        namespace: gloo-system
+
 ### Verify Auth0 Integration
 
 {{< notice note >}}
@@ -327,20 +343,7 @@ The examples in this guide were tested using both Safari and Chrome on MacOS.  Y
 
 You may experience browser issues if there is an overlap between the email of your Auth0 user and an active Google oauth connection in your browser.  Issuing these requests in Incognito (Chrome) or Private (Safari) windows resolves these problems.
 
-It is common for initial requests that are routed through Auth0, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object.  The default timeout is 200ms, which is often inadequate to account for the external network hop to Auth0.  Increasing that timeout should resolve the problem.
 
-You can get the current state of the `Settings` object like this:
-```shell
-% kubectl get settings.gloo.solo.io -n gloo-system -oyaml
-```
-
-Then apply a change to the `spec.extauth` stanza to add a `requestTimeout` greater than 200ms, like this:
-```yaml
-    extauth:
-      requestTimeout: 1s
-      extauthzServerRef:
-        name: extauth
-        namespace: gloo-system
 ```
 
 ## JWT Claim Extraction
