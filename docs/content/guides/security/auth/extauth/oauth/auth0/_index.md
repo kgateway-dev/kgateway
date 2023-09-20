@@ -34,6 +34,8 @@ Gloo Edge discovers Kubernetes services automatically.  So, running the `glooctl
 
 ```shell
 % glooctl get upstreams default-httpbin-8000
+```
+```shell
 +----------------------+------------+----------+------------------------+
 |       UPSTREAM       |    TYPE    |  STATUS  |        DETAILS         |
 +----------------------+------------+----------+------------------------+
@@ -72,6 +74,8 @@ Run the following `glooctl` command to confirm that the new Route was accepted b
 
 ```shell
 % glooctl get virtualservice httpbin-auth0-vs
+```
+```shell
 +------------------+--------------+--------------+------+----------+-----------------+----------------------------------+
 | VIRTUAL SERVICE  | DISPLAY NAME |   DOMAINS    | SSL  |  STATUS  | LISTENERPLUGINS |              ROUTES              |
 +------------------+--------------+--------------+------+----------+-----------------+----------------------------------+
@@ -93,10 +97,12 @@ Update your `/etc/hosts` file to resolve `glootest.com` by the IP address return
 34.75.13.137 glootest.com
 ```
 
-You can now access the application using the `glootest.com` domain.
+You can now access the application using the `glootest.com` domain. (Please note that if you are using Kind, you will need to include the port in all URLs, for example `http://glootest.com:32500/get`)
 
 ```shell
 % curl http://glootest.com/get
+```
+```shell
 {
   "args": {},
   "headers": {
@@ -121,6 +127,8 @@ For test purposes only, we'll begin by creating a self-signed certificate for th
 
 ```shell
 % openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=glootest.com"
+```
+```shell
 Generating a 2048 bit RSA private key
 ...+++
 ....+++
@@ -131,10 +139,12 @@ Second, we'll create a Kubernetes secret containing this certificate.
 
 ```shell
 % kubectl create secret tls upstream-tls --key tls.key --cert tls.crt --namespace gloo-system
+```
+```shell
 secret/upstream-tls created
 ```
 
-Third, we enable HTTPS for our Virtual Service by using `kubectl` to apply the following change.
+Third, we enable HTTPS for our Virtual Service by using `kubectl` to apply the following change. (If you are using Kind, you will need to include the port in the domain names)
 
 {{< highlight yaml "hl_lines=7-10" >}}
 apiVersion: gateway.solo.io/v1
@@ -164,6 +174,8 @@ Finally, we will use `curl` to confirm that we can access the new https endpoint
 
 ```shell
 % curl -k https://glootest.com/get
+```
+```shell
 {
   "args": {},
   "headers": {
@@ -218,6 +230,8 @@ Create the oauth secret in Kubernetes using `glooctl` with the Auth0 application
 
 ```shell
 % glooctl create secret oauth --namespace gloo-system --name auth0-client-secret --client-secret $CLIENT_SECRET
+```
+```shell
 +---------------------+-------+
 |       SECRET        | TYPE  |
 +---------------------+-------+
@@ -243,7 +257,7 @@ spec:
         clientSecretRef:
           name: auth0-client-secret
           namespace: gloo-system
-        issuerUrl: https://solo-io.us.auth0.com/
+        issuerUrl: <insert-your-app-url-here>
         scopes:
         - email
 ```
