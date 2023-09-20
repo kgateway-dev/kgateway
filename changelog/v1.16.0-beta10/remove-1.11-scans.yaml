@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Remove 1.11 as supported version from security scans, docs, and issue template 
+      skipCI-kube-tests:true
