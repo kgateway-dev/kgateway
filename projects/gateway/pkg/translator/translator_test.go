@@ -58,7 +58,7 @@ var _ = Describe("Translator", func() {
 						BindPort: 2,
 						RouteOptions: &gloov1.RouteConfigurationOptions{
 							MaxDirectResponseBodySizeBytes:  &wrappers.UInt32Value{Value: 2048},
-							MostSpecificHeaderMutationsWins: true,
+							MostSpecificHeaderMutationsWins: &wrappers.BoolValue{Value: true},
 						},
 					},
 				},
@@ -130,10 +130,10 @@ var _ = Describe("Translator", func() {
 			snap.Gateways[0].Options = &gloov1.ListenerOptions{
 				AccessLoggingService: als,
 			}
-			Expect(snap.Gateways[0].RouteOptions.MostSpecificHeaderMutationsWins).To(BeFalse())
+			Expect(snap.Gateways[0].RouteOptions.MostSpecificHeaderMutationsWins).To(BeNil())
 
 			Expect(snap.Gateways[1].RouteOptions.MaxDirectResponseBodySizeBytes.Value).To(BeEquivalentTo(2048))
-			Expect(snap.Gateways[1].RouteOptions.MostSpecificHeaderMutationsWins).To(BeTrue())
+			Expect(snap.Gateways[1].RouteOptions.MostSpecificHeaderMutationsWins.Value).To(BeTrue())
 
 			httpGateway := snap.Gateways[0].GetHttpGateway()
 			Expect(httpGateway).NotTo(BeNil())

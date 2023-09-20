@@ -196,7 +196,11 @@ func (m *RouteConfigurationOptions) Clone() proto.Message {
 		target.MaxDirectResponseBodySizeBytes = proto.Clone(m.GetMaxDirectResponseBodySizeBytes()).(*github_com_golang_protobuf_ptypes_wrappers.UInt32Value)
 	}
 
-	target.MostSpecificHeaderMutationsWins = m.GetMostSpecificHeaderMutationsWins()
+	if h, ok := interface{}(m.GetMostSpecificHeaderMutationsWins()).(clone.Cloner); ok {
+		target.MostSpecificHeaderMutationsWins = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.MostSpecificHeaderMutationsWins = proto.Clone(m.GetMostSpecificHeaderMutationsWins()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
 
 	return target
 }

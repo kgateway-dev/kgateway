@@ -85,12 +85,16 @@ type httpRouteConfigurationTranslator struct {
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
+	mostSpecificHeaderMutationsWins := false
+	if mostSpecificVal := h.parentListener.GetRouteOptions().GetMostSpecificHeaderMutationsWins(); mostSpecificVal != nil {
+		mostSpecificHeaderMutationsWins = mostSpecificVal.GetValue()
+	}
 
 	return []*envoy_config_route_v3.RouteConfiguration{{
 		Name:                            h.routeConfigName,
 		VirtualHosts:                    h.computeVirtualHosts(params),
 		MaxDirectResponseBodySizeBytes:  h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
-		MostSpecificHeaderMutationsWins: h.parentListener.GetRouteOptions().GetMostSpecificHeaderMutationsWins(),
+		MostSpecificHeaderMutationsWins: mostSpecificHeaderMutationsWins,
 	}}
 }
 
