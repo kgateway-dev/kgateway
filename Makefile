@@ -801,7 +801,7 @@ build-test-chart: ## Build the Helm chart and place it in the _test directory
 SCAN_DIR ?= $(OUTPUT_DIR)/scans
 SCAN_BUCKET ?= solo-gloo-security-scans
 # The minimum version to scan with trivy
-MIN_SCANNED_VERSION ?= v1.11.0
+MIN_SCANNED_VERSION ?= v1.12.0
 
 .PHONY: run-security-scans
 run-security-scan:
