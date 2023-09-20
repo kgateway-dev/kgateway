@@ -85,17 +85,17 @@ type httpRouteConfigurationTranslator struct {
 
 func (h *httpRouteConfigurationTranslator) ComputeRouteConfiguration(params plugins.Params) []*envoy_config_route_v3.RouteConfiguration {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_route_config."+h.routeConfigName)
-	mostSpecificHeaderMutationsWins := false
-	if mostSpecificVal := h.parentListener.GetRouteOptions().GetMostSpecificHeaderMutationsWins(); mostSpecificVal != nil {
-		mostSpecificHeaderMutationsWins = mostSpecificVal.GetValue()
+	cfg := &envoy_config_route_v3.RouteConfiguration{
+		Name:                           h.routeConfigName,
+		VirtualHosts:                   h.computeVirtualHosts(params),
+		MaxDirectResponseBodySizeBytes: h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
 	}
 
-	return []*envoy_config_route_v3.RouteConfiguration{{
-		Name:                            h.routeConfigName,
-		VirtualHosts:                    h.computeVirtualHosts(params),
-		MaxDirectResponseBodySizeBytes:  h.parentListener.GetRouteOptions().GetMaxDirectResponseBodySizeBytes(),
-		MostSpecificHeaderMutationsWins: mostSpecificHeaderMutationsWins,
-	}}
+	if mostSpecificVal := h.parentListener.GetRouteOptions().GetMostSpecificHeaderMutationsWins(); mostSpecificVal != nil {
+		cfg.MostSpecificHeaderMutationsWins = mostSpecificVal.GetValue()
+	}
+
+	return []*envoy_config_route_v3.RouteConfiguration{cfg}
 }
 
 func (h *httpRouteConfigurationTranslator) computeVirtualHosts(params plugins.Params) []*envoy_config_route_v3.VirtualHost {

@@ -229,7 +229,6 @@ type RouteConfigurationOptions struct {
 	// By default, headers that should be added/removed are evaluated from most to least specific.
 	// To allow setting overrides at the route or virtual host level, this order can be reversed by setting this option to true.
 	// Refer to the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-most-specific-header-mutations-wins) for more details.
-	// Defaults to false.
 	MostSpecificHeaderMutationsWins *wrappers.BoolValue `protobuf:"bytes,2,opt,name=most_specific_header_mutations_wins,json=mostSpecificHeaderMutationsWins,proto3" json:"most_specific_header_mutations_wins,omitempty"`
 }
 
