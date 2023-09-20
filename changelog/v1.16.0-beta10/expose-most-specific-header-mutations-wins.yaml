@@ -5,6 +5,3 @@ changelog:
       https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/route/v3/route.proto#envoy-v3-api-field-config-route-v3-routeconfiguration-most-specific-header-mutations-wins
     issueLink: https://github.com/solo-io/gloo/issues/8690
     resolvesIssue: false
-  - type: NON_USER_FACING
-    description: |
-      skipCI-kube-tests:true
