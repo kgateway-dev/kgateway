@@ -929,6 +929,30 @@ spec:
                       type: object
                     type: array
                 type: object
+              tap:
+                properties:
+                  staticConfig:
+                    properties:
+                      outputConfig:
+                        properties:
+                          sinks:
+                            items:
+                              properties:
+                                grpcService:
+                                  properties:
+                                    tapServer:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                  type: object
+                              type: object
+                            type: array
+                        type: object
+                    type: object
+                type: object
               upstreamOptions:
                 properties:
                   globalAnnotations:

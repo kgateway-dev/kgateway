@@ -31,6 +31,8 @@ import (
 
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_consul "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tap"
+
 	github_com_solo_io_gloo_projects_gloo_pkg_api_v1_ssl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -213,6 +215,12 @@ func (m *Settings) Clone() proto.Message {
 		target.ExtProc = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
 	} else {
 		target.ExtProc = proto.Clone(m.GetExtProc()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_enterprise_options_extproc.Settings)
+	}
+
+	if h, ok := interface{}(m.GetTap()).(clone.Cloner); ok {
+		target.Tap = h.Clone().(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap.Tap)
+	} else {
+		target.Tap = proto.Clone(m.GetTap()).(*github_com_solo_io_gloo_projects_gloo_pkg_api_v1_options_tap.Tap)
 	}
 
 	switch m.ConfigSource.(type) {
