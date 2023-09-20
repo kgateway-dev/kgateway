@@ -97,7 +97,11 @@ Update your `/etc/hosts` file to resolve `glootest.com` by the IP address return
 34.75.13.137 glootest.com
 ```
 
-You can now access the application using the `glootest.com` domain. (Please note that if you are using Kind, you will need to include the port in all URLs, for example `http://glootest.com:32500/get`)
+You can now access the application using the `glootest.com` domain. 
+
+{{% notice note %}}
+If you locally test on kind, you must include the port in all URLs, such as `http://glootest.com:32500/get`. 
+{{% /notice %}}
 
 ```shell
 % curl http://glootest.com/get
@@ -298,7 +302,7 @@ spec:
 Note that the `/callback` path will be handled by this same Virtual Service because we used a catch-all `/` prefix matcher.
 
 ### Adjust the timeout
-It is common for initial requests that are routed through Auth0, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object.  The default timeout is 200ms, which is often inadequate to account for the external network hop to Auth0.  Increasing that timeout should resolve the problem.
+It is common for initial requests that are routed through Auth0, or any external security service provider, to fail due to an untuned `requestTimeout` parameter in the Gloo `Settings` object. The default timeout is 200ms, which is often inadequate to account for the external network hop to Auth0. Increasing that timeout can resolve the problem.
 
 You can get the current state of the `Settings` object like this:
 ```shell
