@@ -1,0 +1,11 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "testrunner"
+  namespace: "gloo-system"
+spec:
+  selector:
+    matchLabels:
+      gloo: testrunner
+  mtls:
+    mode: STRICT

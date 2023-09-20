@@ -59,6 +59,9 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
+	Expect(err).NotTo(HaveOccurred())
+
 	if !testutils2.ShouldSkipInstall() {
 		installGloo()
 	}
