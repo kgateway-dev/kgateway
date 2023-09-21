@@ -62,46 +62,6 @@ var _ = Describe("ContainHeaders", func() {
 
 })
 
-var _ = Describe("ContainHeaderKeys", func() {
-
-	DescribeTable("HttpResponse contains header keys",
-		func(headerKeys []string) {
-			actualHeaders := http.Header{}
-			actualHeaders.Add("east", "east-1")
-			actualHeaders.Add("east", "east-2")
-			actualHeaders.Add("west", "west-1")
-			actualHeaders.Add("west", "west-2")
-
-			httpResponse := &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     actualHeaders,
-			}
-			Expect(httpResponse).To(matchers.ContainHeaderKeys(headerKeys))
-		},
-		Entry("nil header keys", nil),
-		Entry("subset of header keys", []string{"west"}),
-		Entry("all header keys", []string{"east", "west"}),
-	)
-
-	DescribeTable("HttpResponse does not contain header keys",
-		func(headerKeys []string) {
-			actualHeaders := http.Header{}
-			actualHeaders.Add("east", "east-1")
-			actualHeaders.Add("east", "east-2")
-			actualHeaders.Add("west", "west-1")
-			actualHeaders.Add("west", "west-2")
-
-			httpResponse := &http.Response{
-				StatusCode: http.StatusOK,
-				Header:     actualHeaders,
-			}
-			Expect(httpResponse).NotTo(matchers.ContainHeaderKeys(headerKeys))
-		},
-		Entry("missing header key", []string{"north"}),
-		Entry("empty header key", []string{""}),
-	)
-})
-
 var _ = Describe("ConsistOfHeaders", func() {
 	DescribeTable("HttpResponse contains headers",
 		func(expectedHeaders http.Header, pass bool) {
