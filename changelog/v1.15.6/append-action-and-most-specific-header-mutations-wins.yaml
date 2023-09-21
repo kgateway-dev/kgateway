@@ -4,7 +4,6 @@ changelog:
     resolvesIssue: false
     description: >-
       Translate header manipulation's `append` to Envoy's `append_action`, the newer non-deprecated field.
-      skipCI-kube-tests:true
   - type: FIX
     description: |
       Add support for `most_specific_header_mutations_wins` to allow the more specific header mutation to win. Toggling it on would reverse the evaluation order of the header mutations, allowing more specific header mutations to overwrite less specific.
