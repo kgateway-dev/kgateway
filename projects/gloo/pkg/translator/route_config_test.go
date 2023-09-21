@@ -38,7 +38,7 @@ var _ = Describe("Route Configs", func() {
 		Entry("/.", "hello/./something", false),
 	)
 
-	It("Should validate all seperate characters", func() {
+	It("Should validate all separate characters", func() {
 		// must allow all "pchar" characters = unreserved / pct-encoded / sub-delims / ":" / "@"
 		// https://www.rfc-editor.org/rfc/rfc3986
 		// unreserved
