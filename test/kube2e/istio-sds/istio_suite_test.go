@@ -62,6 +62,9 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
 
+	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", "https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml")
+	Expect(err).NotTo(HaveOccurred())
+
 	if !testutils2.ShouldSkipInstall() {
 		installGloo()
 	}
@@ -135,6 +138,10 @@ func expectIstioInjected() {
 	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestrunnerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
 	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the testrunner after injection")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	//istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "httpbin", "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
+	//ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the httpbin pod after injection")
+	//ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	// Check for sds container
 	sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "sds")].name}'`)
