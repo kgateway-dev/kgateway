@@ -4,3 +4,5 @@ changelog:
     resolvesIssue: false
     description: >-
       Update the helm option for enabling FIPS in Enterprise installations, to also apply to the discovery image.
+
+      skipCI-docs-build=true
