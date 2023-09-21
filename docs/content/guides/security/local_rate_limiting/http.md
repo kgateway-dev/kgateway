@@ -6,7 +6,7 @@ description: Learn how to apply local rate limiting settigns to the HTTP Envoy f
 
 Set local rate limiting settings on an HTTP gateway, virtual service, or route to limit the number of incoming HTTP requests that are allowed to enter the cluster before global rate limiting and exauth policies are applied. 
 
-For more information, see [About local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/overview/" %}}).
+To learn more about what local rate limiting is and the differences between local and global rate limiting, see [About local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/overview/" %}}).
 
 On this page: 
 - [Deploy the httpbin sample app](#sample-app)
@@ -19,7 +19,7 @@ On this page:
 
 To try out local rate limiting for HTTP traffic, deploy the httpbin app to your cluster. 
 
-1. Deploy the httpbin app in your cluster.
+1. Create a service account for the httpbin app and deploy the app to your cluster. You also create a service for the httpbin app to expose the app within the cluster. 
    {{< tabs >}}
    {{% tab %}}
    ```yaml
@@ -79,7 +79,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    {{% /tab %}}
    {{< /tabs >}}
 
-2. Expose a route for the httpbin app by using a virtual service. 
+2. Create a virtual service to expose the `/status/200` route for the httpbin app. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -119,7 +119,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
 
 ## Apply local rate limit settings to Layer 4 traffic {#layer4}
 
-1. Apply local rate limiting settings to Layer 4 traffic by adding the `networkLocalRatelimit` settings to the `gateway-proxy` resource. The following example configures the gateway with a token bucket with a maximum of 1 token that is refilled every 100 seconds. 
+1. Apply local rate limiting settings to Layer 4 traffic by adding the `networkLocalRatelimit` setting to the `gateway-proxy` resource. The following example configures the gateway with a token bucket with a maximum of 1 token that is refilled every 100 seconds. 
    ```yaml
    kubectl apply -n gloo-system -f - <<EOF
    apiVersion: gateway.solo.io/v1
@@ -171,7 +171,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
 
 ## Apply local rate limit settings to Layer 7 traffic {#layer7}
 
-1. Change the local rate limit settings in the gateway to apply to Layer 7 traffic instead of Layer 4 traffic by using the `httpLocalRatelimit` option. The following example configures the gateway with a token bucket with a maximum of 1 token that is refilled every 100 seconds. To verify that your rate limiting settings are working as expected and to simplify troubleshooting, set `enableXRatelimitHeaders: true`. This option adds additional rate limiting headers to your response that indicate what local rate limiting settings are applied, the number of tokens that are left in the bucket, and the number of times, the token bucket was refilled. 
+1. Change the local rate limiting settings in the gateway to apply to Layer 7 traffic instead of Layer 4 traffic by using the `httpLocalRatelimit` option. The following example configures the gateway with a token bucket with a maximum of 1 token that is refilled every 100 seconds. To verify that your rate limiting settings are working as expected and to simplify troubleshooting, set `enableXRatelimitHeaders: true`. This option adds additional rate limiting headers to your response that indicate the local rate limiting settings that are applied, the number of tokens that are left in the bucket, and the number of seconds until the token bucket is refilled. For more information, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/common/ratelimit/v3/ratelimit.proto#envoy-v3-api-enum-extensions-common-ratelimit-v3-xratelimitheadersrfcversion).
    ```yaml
    kubectl apply -n gloo-system -f - <<EOF
    apiVersion: gateway.solo.io/v1
@@ -195,7 +195,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    EOF
    ```
 
-2. Send a request to the httpbin app. Verify that your request succeeds and a 200 HTTP response code is returned. In addition, review the `x-ratelimit` headers that are returned. The `x-ratelimit-limit` header represents the token limit that is set on the gateway. To check how many tokens are available for subsequent requests, check out the `x-ratelimit-remaining` header. Use the `x-ratelimit-reset` header to view how many sesconds are left until the token bucket is refilled. For more information about these headers, see the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/common/ratelimit/v3/ratelimit.proto#envoy-v3-api-enum-extensions-common-ratelimit-v3-xratelimitheadersrfcversion).
+2. Send a request to the httpbin app. Verify that your request succeeds and a 200 HTTP response code is returned. In addition, review the `x-ratelimit-*` headers that are returned. The `x-ratelimit-limit` header represents the token limit that is set on the gateway. To check how many tokens are available for subsequent requests, check out the `x-ratelimit-remaining` header. Use the `x-ratelimit-reset` header to view how many sesconds are left until the token bucket is refilled.
    ```sh
    curl -vik $(glooctl proxy url)/status/200
    ```
@@ -210,8 +210,8 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    x-ratelimit-limit: 1
    < x-ratelimit-remaining: 0
    x-ratelimit-remaining: 0
-   < x-ratelimit-reset: 6
-   x-ratelimit-reset: 6
+   < x-ratelimit-reset: 95
+   x-ratelimit-reset: 95
    ...
    ```
 
@@ -230,8 +230,8 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    x-ratelimit-limit: 1
    < x-ratelimit-remaining: 0
    x-ratelimit-remaining: 0
-   < x-ratelimit-reset: 17
-   x-ratelimit-reset: 17
+   < x-ratelimit-reset: 79
+   x-ratelimit-reset: 79
    ...
    Connection #0 to host 34.XXX.XX.XXX left intact
    local_rate_limited      
@@ -240,7 +240,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
 ## Different local rate limit settings on the gateway and virtual service {#gateway-and-virtual-service}
 
    
-1. Change the virtual service for the httpbin app and add 3 routes. For the `/headers` route, you add local rate limiting settings with a maximum number of 3 tokens in the token bucket that is refilled every 30 seconds. The `/status/200` and `/ip` routes do not configure any local rate limiting settings and therefore share the same limit that is set on the gateway. 
+1. Change the virtual service for the httpbin app to add 2 more routes. The `/status/200` and `/ip` routes do not configure any local rate limiting settings and therefore share the same limit that is set on the gateway. However, the `/headers` route specifies and enforces its own local rate limiting settings with a maximum number of 3 tokens in the token bucket that is refilled every 30 seconds. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -283,7 +283,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    EOF
    ```
 
-2. Send a request to the `/status/200` route and verify that the request succeeds and you get a 200 HTTP response code.  
+2. Send a request to the `/status/200` route and verify that the request succeeds and you get back a 200 HTTP response code.  
    ```sh
    curl -vik $(glooctl proxy url)/status/200
    ```
@@ -294,10 +294,15 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    * Mark bundle as not supporting multiuse
    < HTTP/1.1 200 OK
    HTTP/1.1 200 OK
-   ...
+   < x-ratelimit-limit: 1
+   x-ratelimit-limit: 1
+   < x-ratelimit-remaining: 0
+   x-ratelimit-remaining: 0
+   < x-ratelimit-reset: 96
+   x-ratelimit-reset: 96
    ```
 
-3. Send another request to the `/status/200` route and verify that the request is now denied and that you get back a 429 Too Many requests HTTP response code. 
+3. Send another request to the `/status/200` route and verify that the request is now denied and that you get back a 429 HTTP response code. 
    ```sh
    curl -vik $(glooctl proxy url)/status/200
    ```
@@ -308,16 +313,17 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    * Mark bundle as not supporting multiuse
    < HTTP/1.1 429 Too Many Requests
    HTTP/1.1 429 Too Many Requests
+   < x-ratelimit-limit: 1
    x-ratelimit-limit: 1
    < x-ratelimit-remaining: 0
    x-ratelimit-remaining: 0
-   < x-ratelimit-reset: 27
-   x-ratelimit-reset: 27
+   < x-ratelimit-reset: 88
+   x-ratelimit-reset: 88
    ...
    local_rate_limited
    ```
 
-4. Send a request to the `/ip` route and verify that the request is denied and that you get back a 429 Too Many Requests HTTP response code. Because the `/status/200` and the `/ip` routes do not configure local rate limiting settings, they share the same limit that is set on the gateway, which is set to 1 token in the token bucket that is refilled every 100 seconds. 
+4. Send a request to the `/ip` route and verify that the request is denied and that you get back a 429 HTTP response code. Because the `/status/200` and the `/ip` routes do not configure local rate limiting settings, they share the same limit that is set on the gateway, which is 1 token in the token bucket that is refilled every 100 seconds. 
    ```
    curl -vik $(glooctl proxy url)/ip
    ```
@@ -331,8 +337,8 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    x-ratelimit-limit: 1
    < x-ratelimit-remaining: 0
    x-ratelimit-remaining: 0
-   < x-ratelimit-reset: 15
-   x-ratelimit-reset: 15
+   < x-ratelimit-reset: 84
+   x-ratelimit-reset: 84
    ```
 
 5. Send a request to the `/headers` route and verify that this request succeeds with a 200 HTTP response code. Because this route specifies its own local rate limiting settings, these settings take precedence over the settings on the gateway. 
@@ -348,8 +354,8 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    x-ratelimit-limit: 3
    < x-ratelimit-remaining: 2
    x-ratelimit-remaining: 2
-   < x-ratelimit-reset: 36
-   x-ratelimit-reset: 36
+   < x-ratelimit-reset: 6
+   x-ratelimit-reset: 6
    ```
 
 6. Send 3 more requests to the `/headers` route to verify that your requests are rate limited properly. 
@@ -365,14 +371,24 @@ You can optionally clean up the resources that you created as part of this guide
    kubectl delete serviceaccount httpbin
    ```
 
-2. Delete the virtual service that exposed the httpbin app. 
+2. Delete the virtual service that exposed routes for the httpbin app. 
    ```sh
    kubectl delete virtualservice httpbin -n gloo-system
    ```
 
-3. Restore the `gateway-proxy` gateway resource. 
+3. Restore the settings in the `gateway-proxy` gateway resource. 
    ```yaml
-   kubectl apply -f- <<EOF
-
+   kubectl apply -n gloo-system -f - <<EOF
+   apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     name: gateway-proxy
+     namespace: gloo-system
+   spec:
+     bindAddress: '::'
+     bindPort: 8080
+     httpGateway: {}
+     ssl: false
+     useProxyProto: false
    EOF
    ```

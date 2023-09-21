@@ -6,9 +6,9 @@ description: Apply local rate limiting settigns to the TCPP Envoy filter for Lay
 
 Use the local rate limiting settings on the TCP gateway resource to limit the number of incoming TCP requests. The local rate limiting filter is applied before the TLS handshake between the client and server is started. If no tokens are available in the TCP gateway, the connection is dropped immediately. 
 
-For more information, see [About local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/overview/" %}})
+To learn more about what local rate limiting is and the differences between local and global rate limiting, see [About local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/overview/" %}}).
 
-1. Deploy the TCP echo service in your cluster.
+1. Deploy the TCP echo pod and service in your cluster.
    {{< tabs >}}
    {{% tab %}}
    ```yaml
@@ -78,13 +78,13 @@ For more information, see [About local rate limiting]({{% versioned_link_path fr
          destination:
            single:
              upstream:
-               name: gloo-system-tcp-echo-1025
+               name: default-tcp-echo-1025
                namespace: gloo-system
      useProxyProto: false  
    EOF
    ```
 
-4. Open a TCP port on the `gateway-proxy` service in your cluster and bind it to the gateway port 8000.
+4. Open a TCP port on the `gateway-proxy` service in your cluster and bind it to port 8000.
    1. Edit the `gateway-proxy` service. 
       ```sh
       kubectl edit service gateway-proxy -n gloo-system
@@ -116,6 +116,7 @@ For more information, see [About local rate limiting]({{% versioned_link_path fr
         nodePort: 30197
         port: 8000
         protocol: TCP
+        targetPort: 8000
       ```
 
 5. Get the public IP address of your gateway proxy. Note that the following command returns the IP address and the default port. 
@@ -145,7 +146,7 @@ For more information, see [About local rate limiting]({{% versioned_link_path fr
    hello
    ```
 
-9. Open another terminal window and try to establish another connection to the gateway on port 8000. Because the gateway is configured with a maxinum number of 1 token at any given time, the new connection is terminated immediately as no tokens are available that can be assigned to the connection. 
+9. Open another terminal window and try to establish another connection to the gateway on port 8000. Because the gateway is configured with a maximum number of 1 token, the new connection is terminated immediately as no tokens are available that can be assigned to the connection. 
    ```sh
    telnet <public-gateway-IP> 8000
    ```
