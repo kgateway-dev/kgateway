@@ -37,7 +37,7 @@ jobs:
         env:
           SCAN_DIR: _output/scans
           IMAGE_REGISTRY: quay.io/solo-io
-          MIN_SCANNED_VERSION: 'v1.11.0' # ⚠️ you should also change docs-gen.yaml ⚠️
+          MIN_SCANNED_VERSION: 'v1.12.0' # ⚠️ you should also change docs-gen.yaml ⚠️
         run: |
           mkdir -p $SCAN_DIR
           make run-security-scan
