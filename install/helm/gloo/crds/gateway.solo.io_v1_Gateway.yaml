@@ -4570,6 +4570,9 @@ spec:
                     minimum: 0
                     nullable: true
                     type: integer
+                  mostSpecificHeaderMutationsWins:
+                    nullable: true
+                    type: boolean
                 type: object
               ssl:
                 type: boolean
