@@ -74,6 +74,7 @@ type TestClients struct {
 	HttpGatewayClient    gatewayv1.MatchableHttpGatewayClient
 	TcpGatewayClient     gatewayv1.MatchableTcpGatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
+	RouteTableClient     gatewayv1.RouteTableClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
 	SecretClient         gloov1.SecretClient
@@ -104,6 +105,11 @@ func (c TestClients) WriteSnapshot(ctx context.Context, snapshot *gloosnapshot.A
 	}
 	for _, us := range snapshot.Upstreams {
 		if _, writeErr := c.UpstreamClient.Write(us, writeOptions); writeErr != nil {
+			return writeErr
+		}
+	}
+	for _, rt := range snapshot.RouteTables {
+		if _, writeErr := c.RouteTableClient.Write(rt, writeOptions); writeErr != nil {
 			return writeErr
 		}
 	}
@@ -167,6 +173,12 @@ func (c TestClients) DeleteSnapshot(ctx context.Context, snapshot *gloosnapshot.
 	for _, vs := range snapshot.VirtualServices {
 		vsNamespace, vsName := vs.GetMetadata().Ref().Strings()
 		if deleteErr := c.VirtualServiceClient.Delete(vsNamespace, vsName, deleteOptions); deleteErr != nil {
+			return deleteErr
+		}
+	}
+	for _, rt := range snapshot.RouteTables {
+		rtNamespace, rtName := rt.GetMetadata().Ref().Strings()
+		if deleteErr := c.RouteTableClient.Delete(rtNamespace, rtName, deleteOptions); deleteErr != nil {
 			return deleteErr
 		}
 	}
@@ -275,6 +287,8 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(ctx, bootstrapOpts.VirtualServices)
 	Expect(err).NotTo(HaveOccurred())
+	routeTableClient, err := gatewayv1.NewRouteTableClient(ctx, bootstrapOpts.RouteTables)
+	Expect(err).NotTo(HaveOccurred())
 	upstreamClient, err := gloov1.NewUpstreamClient(ctx, bootstrapOpts.Upstreams)
 	Expect(err).NotTo(HaveOccurred())
 	secretClient, err := gloov1.NewSecretClient(ctx, bootstrapOpts.Secrets)
@@ -289,6 +303,7 @@ func getTestClients(ctx context.Context, bootstrapOpts bootstrap.Opts) TestClien
 		HttpGatewayClient:    httpGatewayClient,
 		TcpGatewayClient:     tcpGatewayClient,
 		VirtualServiceClient: virtualServiceClient,
+		RouteTableClient:     routeTableClient,
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,
 		ArtifactClient:       artifactClient,
