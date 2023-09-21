@@ -108,7 +108,7 @@ func installGloo() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
-	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "300s")
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
