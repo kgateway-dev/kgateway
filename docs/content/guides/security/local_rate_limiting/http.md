@@ -195,7 +195,7 @@ To try out local rate limiting for HTTP traffic, deploy the httpbin app to your 
    EOF
    ```
 
-2. Send a request to the httpbin app. Verify that your request succeeds and a 200 HTTP response code is returned. In addition, review the `x-ratelimit-*` headers that are returned. The `x-ratelimit-limit` header represents the token limit that is set on the gateway. To check how many tokens are available for subsequent requests, check out the `x-ratelimit-remaining` header. Use the `x-ratelimit-reset` header to view how many sesconds are left until the token bucket is refilled.
+2. Send a request to the httpbin app. Verify that your request succeeds and a 200 HTTP response code is returned. In addition, review the `x-ratelimit-*` headers that are returned. The `x-ratelimit-limit` header represents the token limit that is set on the gateway. To check how many tokens are available for subsequent requests, review the `x-ratelimit-remaining` header. Use the `x-ratelimit-reset` header to view how many seconds are left until the token bucket is refilled.
    ```sh
    curl -vik $(glooctl proxy url)/status/200
    ```
