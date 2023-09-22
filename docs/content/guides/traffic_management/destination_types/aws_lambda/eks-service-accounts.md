@@ -52,10 +52,10 @@ Create a new IAM Policy which has access to the following four actions for this 
 
 ### Step 3: Create an IAM Role
 
-Create a new IAM Role with your Policy attached to it. 
+Create an IAM Role and attach the policy that you created in step 2. 
 
-Then, you must modify the role's trust policy to enable the WebIdentities (projected ServiceAccount) to assume that Role.
-[Here](https://docs.aws.amazon.com/IAM/latest/UserGuide/roles-managingrole-editing-cli.html) is the documentation for the AWS CLI. The following JSON payload shows an example of trust relationship:
+Then, you use the [AWS CLI](https://docs.aws.amazon.com/IAM/latest/UserGuide/roles-managingrole-editing-cli.html) to modify the role's trust policy to enable the WebIdentities (projected ServiceAccount) to assume that Role. To find the OIDC provider ID to use with your policy, see the [AWS documentation](https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html). 
+The following JSON payload shows an example of trust relationship:
 
 ```json
 {
@@ -71,12 +71,12 @@ Then, you must modify the role's trust policy to enable the WebIdentities (proje
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::<ACCOUNT ID>:oidc-provider/oidc.eks.eu-central-1.amazonaws.com/id/925F6E6153F324A5D32B7517B1C51919"
+        "Federated": "arn:aws:iam::<ACCOUNT ID>:oidc-provider/oidc.eks.<REGION>.amazonaws.com/id/<OIDC-ID>"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "oidc.eks.eu-central-1.amazonaws.com/id/925F6E6153F324A5D32B7517B1C51919:sub": [
+          "oidc.eks.<REGION>.amazonaws.com/id/<OIDC-ID>:sub": [
             "system:serviceaccount:gloo-system:discovery",
             "system:serviceaccount:gloo-system:gateway-proxy"
           ]
