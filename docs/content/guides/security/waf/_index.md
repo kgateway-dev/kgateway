@@ -440,7 +440,7 @@ ModSecurity audit-logging provides:
 As envoy access logs have their own filtering mechanism built in, we provide two methods of exposing the audit logs via the access logs. Each method has different CPU/Memory trade-offs.
 
 - DynamicMetadata - This processes the audit log eagerly every time it is required. This may increase CPU
-as the audit log will be computed even if envoy doesn't end-up logging it. To use, place `%DYNAMIC_METADATA("io.solo.filters.http.modsecurity:audit_log")%` in the access log.
+as the audit log will be computed even if envoy doesn't end-up logging it. To use, place `%DYNAMIC_METADATA(io.solo.filters.http.modsecurity:audit_log)%` in the access log.
 - FilterState - this will only generate an AuditLog lazily - only if the envoy access log is about to log it. This will use
 less CPU if the message is not logged, but may use more memory, as the ModSecurity transaction 
 will linger in memory longer. To use, place `%FILTER_STATE(io.solo.modsecurity.audit_log)%` in the access log.
