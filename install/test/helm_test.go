@@ -4928,6 +4928,18 @@ metadata:
 
 					})
 
+					It("supports deploying the fips envoy image", func() {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Image = "quay.io/solo-io/discovery-ee-fips:" + version
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.image.fips=true",
+								"discovery.deployment.image.repository=discovery-ee",
+							},
+						})
+
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
 					It("can set log level env var", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							discoveryDeployment.Spec.Template.Spec.Containers[0].Env,
