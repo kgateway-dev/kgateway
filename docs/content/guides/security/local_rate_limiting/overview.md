@@ -61,7 +61,7 @@ You can choose between the following options to configure local rate limiting on
 - **Network local rate limiting**: If you want to configure the HTTP Envoy filter to apply local rate limiting settings to all Layer 4 traffic, you can add the `httpGateway.options.networkLocalRatelimit` option to your gateway resource. If set, local rate limiting is enforced before the TLS handshake between the client and the gateway is started. Because this option is enforced on Layer 4, no HTTP response code, headers, or messages are returned when rate limiting is enforced. 
 
 {{% notice note %}}
-If you add both an HTTP and a network local rate limiting filter to your HTTP gateway, the setting that is most restrictive takes precedence. 
+If you add both an HTTP and a network local rate limiting filter to your HTTP gateway, the setting that is most restrictive is enforced. 
 {{% /notice %}}
 
 To try out an example, see the [HTTP gateway]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/http" %}}) local rate limiting guide. 
