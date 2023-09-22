@@ -305,13 +305,14 @@ You can get the current state of the `Settings` object like this:
 % kubectl get settings.gloo.solo.io -n gloo-system -oyaml
 ```
 
-Then apply a change to the `spec.extauth` stanza to add a `requestTimeout` greater than 200ms, like this:
-```yaml
+Then apply a change to the `spec.extauth` stanza of [settings]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings">}}) to add a `requestTimeout` greater than 200ms, like this:
+{{< highlight yaml "hl_lines=2-2" >}}
     extauth:
       requestTimeout: 1s
       extauthzServerRef:
         name: extauth
         namespace: gloo-system
+{{< /highlight >}}
 
 ### Verify Auth0 Integration
 
@@ -343,8 +344,6 @@ The examples in this guide were tested using both Safari and Chrome on MacOS.  Y
 
 You may experience browser issues if there is an overlap between the email of your Auth0 user and an active Google oauth connection in your browser.  Issuing these requests in Incognito (Chrome) or Private (Safari) windows resolves these problems.
 
-
-```
 
 ## JWT Claim Extraction
 
