@@ -19,7 +19,7 @@ On this page:
 
 To try out local rate limiting for HTTP traffic, deploy the httpbin app to your cluster. 
 
-1. Create a service account for the httpbin app and deploy the app to your cluster. You also create a service for the httpbin app to expose the app within the cluster. 
+1. Create a service account, deployment, and service to deploy and expose the httpbin app within the cluster. 
    {{< tabs >}}
    {{% tab %}}
    ```yaml
