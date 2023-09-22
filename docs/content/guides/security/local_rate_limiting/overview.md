@@ -72,5 +72,5 @@ You can use the `tcpGateway.options.localRatelimit` setting on the TCP gateway t
 ## Limitations
 
 - The current implementation of the local rate limiting filter can be enforced pre-auth only.
-- You cannot use the `spec.virtualhost.ratelimitRegular.localRatelimit` option in the virtual service as this enforces rate limiting settings post-auth. 
-- You cannot set `spec.virtualhost.ratelimitEarly.localRatelimit` and `spec.virtualhost.ratelimit.localRatelimit` on the virtual service at the same time. 
+- You cannot use the `spec.virtualhost.options.ratelimitRegular.localRatelimit` or `spec.virtualhost.routes.options.ratelimitRegular.localRatelimit` options in the virtual service as this enforces rate limiting settings post-auth. 
+- You cannot set `spec.virtualhost.options.ratelimitEarly.localRatelimit` and `spec.virtualhost.options.ratelimit.localRatelimit`, or `spec.virtualhost.routes.options.ratelimitEarly.localRatelimit` and `spec.virtualhost.routes.options.ratelimit.localRatelimit` on the virtual service at the same time. 
