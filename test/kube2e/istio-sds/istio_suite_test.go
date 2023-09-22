@@ -132,11 +132,11 @@ func uninstallGloo() {
 func expectIstioInjected() {
 	// Check for istio-proxy sidecar
 	istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
-	ExpectWithOffset(1, istioContainer).To(ContainSubstring("'istio-proxy'"), "istio-proxy container should be present on gateway-proxy due to IstioSDS being enabled")
+	ExpectWithOffset(1, istioContainer).To(ContainSubstring("istio-proxy"), "istio-proxy container should be present on gateway-proxy due to IstioSDS being enabled")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestrunnerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
-	ExpectWithOffset(1, istioContainer).To(ContainSubstring("'istio-proxy'"), "istio-proxy container should be present on the testrunner after injection")
+	ExpectWithOffset(1, istioContainer).To(ContainSubstring("istio-proxy"), "istio-proxy container should be present on the testrunner after injection")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	//istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "httpbin", "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
