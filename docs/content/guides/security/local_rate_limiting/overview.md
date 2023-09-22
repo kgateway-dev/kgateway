@@ -27,7 +27,9 @@ For more information about local rate limiting, see the [Envoy documentation](ht
 
 ## Architecture
 
-The following image shows how local rate limiting works in Gloo Edge. As clients send requests to an upstream destination, they first reach the Envoy instance that represents your gateway. Each instance is configured with a token bucket rate limit. To allow a request, a token must be available in the bucket so that it can be assigned to a downstream connection. Token buckets are refilled occassionally as defined in the refill setting of the local rate limiting configuration.  If no token is available, the connection is closed immediately, and a 429 HTTP response code is returned to the client. 
+The following image shows how local rate limiting works in Gloo Edge. As clients send requests to an upstream destination, they first reach the Envoy instance that represents your gateway. Local rate limiting settings are applied to an Envoy pod or process. Note that limits are applied to each pod or process. For example, if you have 5 Envoy instances that are configured with a local rate limit of 10 requests per second, the total number of requests per second that are allowed is 50 (5*10). In a global rate limiting setup, this limit is shared between all Envoy instances. 
+
+Depending on your setup, each Evnoy instance or pod is configured with a number of tokens in a token bucket. To allow a request, a token must be available in the bucket so that it can be assigned to a downstream connection. Token buckets are refilled occassionally as defined in the refill setting of the local rate limiting configuration.  If no token is available, the connection is closed immediately, and a 429 HTTP response code is returned to the client. 
 
 When a token is available in the token bucket it can be assigned to an incoming connection. The request is then forwarded to the rate limit server to enforce any global rate limiting settings. For example, the request might be further rate limited based on headers or query parameters. Only requests that are within the local and global rate limits are forwarded to the upstream destination in the cluster. 
 
