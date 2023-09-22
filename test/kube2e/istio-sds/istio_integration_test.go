@@ -2,7 +2,10 @@ package istio_test
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/testutils/exec"
+	"github.com/solo-io/skv2/codegen/util"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"path/filepath"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -135,6 +138,9 @@ var _ = FDescribe("Gloo + Istio SDS integration tests", func() {
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
 		})
+
+		err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(util.GetModuleRoot(), "test", "kube2e", "istio-sds", "petstore_peerauth_strict.yaml"))
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should make a request with the expected cert header", func() {
