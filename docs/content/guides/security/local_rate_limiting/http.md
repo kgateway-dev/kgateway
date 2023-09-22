@@ -4,7 +4,7 @@ weight: 20
 description: Learn how to apply local rate limiting settigns to the HTTP Envoy filter for Layer 4 and Layer 7 traffic. 
 ---
 
-Set local rate limiting settings on an HTTP gateway, virtual service, or route to limit the number of incoming HTTP requests that are allowed to enter the cluster before global rate limiting and exauth policies are applied. 
+Set local rate limiting settings on an HTTP gateway, virtual service, or route to limit the number of incoming HTTP requests that are allowed to enter the cluster before global rate limiting and external auth policies are applied. 
 
 To learn more about what local rate limiting is and the differences between local and global rate limiting, see [About local rate limiting]({{% versioned_link_path fromRoot="/guides/security/local_rate_limiting/overview/" %}}).
 
