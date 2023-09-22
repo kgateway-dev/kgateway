@@ -1,7 +1,7 @@
 ---
 title: TCP gateway
 weight: 30
-description: Apply local rate limiting settigns to the TCPP Envoy filter for Layer 4 traffic.
+description: Apply local rate limiting settigns to the TCP Envoy filter for Layer 4 traffic.
 ---
 
 Use the local rate limiting settings on the TCP gateway resource to limit the number of incoming TCP requests. The local rate limiting filter is applied before the TLS handshake between the client and server is started. If no tokens are available in the TCP gateway, the connection is dropped immediately. 
