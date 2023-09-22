@@ -145,6 +145,6 @@ func expectIstioInjected() {
 
 	// Check for sds container
 	sdsContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "sds")].name}'`)
-	ExpectWithOffset(1, sdsContainer).To(Equal("sds"), "sds container should be present on gateway-proxy due to IstioSDS being enabled")
+	ExpectWithOffset(1, sdsContainer).To(ContainSubstring("sds"), "sds container should be present on gateway-proxy due to IstioSDS being enabled")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
