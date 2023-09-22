@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/5367
+    resolvesIssue: false
+    description: >-
+      Update the helm option for enabling FIPS in Enterprise installations, to also apply to the discovery image.
+
+      skipCI-docs-build=true
