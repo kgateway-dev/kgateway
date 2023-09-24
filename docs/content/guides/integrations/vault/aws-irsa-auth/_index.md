@@ -76,16 +76,16 @@ Create an AWS Policy to grant the necessary permissions for Vault to perform act
 export VAULT_AUTH_POLICY_NAME=gloo-vault-auth-policy
 cat <<EOF > gloo-vault-auth-policy.json
 {
-	"Version": "2012-10-17"
+	"Version": "2012-10-17",
 	"Statement": [
         {
 			"Sid": "",
 			"Effect": "Allow",
 			"Action": [
 				"iam:GetInstanceProfile",
-				"ec2:DescribeInstances"
+				"ec2:DescribeInstances",
 				"iam:GetUser",
-				"iam:GetRole",
+				"iam:GetRole"
 			],
 			"Resource": "*"
 		},
@@ -185,9 +185,12 @@ vault write auth/aws/role/dev-role-iam \
 ## Gloo Edge
 
 Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA credential fetching.
+
 ### Step 1: Prepare Helm overrides
 
 Override the default settings to use Vault as a source for managing secrets. To allow for IRSA, add the `eks.amazonaws.com/role-arn` annotations, which reference the roles to assume, to the `gloo` and `discovery` service accounts.
+
+Both `pathPrefix` and `rootKey` will need to be adjusted when mounting on a custom KV secret engine.
 
 ```shell
 cat <<EOF > helm-overrides.yaml
@@ -201,7 +204,10 @@ settings:
 				iamServerIdHeader: ${IAM_SERVER_ID_HEADER_VALUE}
 				mountPath: aws
 				region: ${AWS_REGION}
+			# assumes kv store is mounted on 'dev'
 			pathPrefix: dev
+			# root key by default is 'gloo'.
+			rootKey: gloo
 gloo:
 	serviceAccount:
 		extraAnnotations: 
@@ -217,7 +223,6 @@ EOF
 If you use Gloo Edge Enterprise, nest these Helm settings within the `gloo` section.
 {{% /notice %}}
 
-
 ### Step 2: Install Gloo using Helm
 
 ```shell
@@ -227,6 +232,24 @@ helm repo add gloo https://storage.googleapis.com/solo-public-helm
 helm repo update
 helm install gloo gloo/gloo --namespace gloo-system --create-namespace --version $EDGE_VERSION --values helm-overrides.yaml
 ```
+
+## Troubleshooting
+
+### Access denied due to identity-based policies – implicit denial
+
+When registering the role in Vault with `vault write auth/aws/role/<role name>` you might encounter the following error due to insufficient action with the identity-based policy.
+
+```
+Error writing data to auth/aws/role/dev-role-iam: Error making API request.
+
+URL: PUT http://localhost:8200/v1/auth/aws/role/dev-role-iam
+Code: 400. Errors:
+
+* unable to resolve ARN "arn:aws:iam::account-id:role/dev-role-iam" to internal ID: AccessDenied: User: arn:aws:sts::account-id:assumed-role/foo-role/bar is not authorized to perform: iam:GetRole on resource: role dev-role-iam because no identity-based policy allows the iam:GetRole action
+	status code: 403, request id: e348ee87-6d44-493b-8763-14fff6aea689
+```
+
+To fix, add the `iam:GetRole` action to a policy attached to the assumed-role identity. In the above example to the identity `arn:aws:sts::account-id:assumed-role/foo-role/bar`.
 
 ## Summary
 
