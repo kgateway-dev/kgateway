@@ -2,15 +2,14 @@ package istio_test
 
 import (
 	"fmt"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/skv2/codegen/util"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"path/filepath"
 	"time"
-
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -138,23 +137,27 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
 		})
-
-		err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(util.GetModuleRoot(), "test", "kube2e", "istio-sds", "petstore_peerauth_strict.yaml"))
-		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should make a request with the expected cert header", func() {
-		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-			Protocol:          "http",
-			Path:              "/headers",
-			Method:            "GET",
-			Host:              helper.TestrunnerName,
-			Service:           gatewayProxy,
-			Port:              gatewayPort,
-			ConnectionTimeout: 10,
-			Verbose:           false,
-			WithoutStats:      true,
-			ReturnHeaders:     false,
-		}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute*1)
+	Context("strict peer auth", func() {
+		BeforeEach(func() {
+			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(util.GetModuleRoot(), "test", "kube2e", "istio-sds", "peerauth_strict.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should make a request with the expected cert header", func() {
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/headers",
+				Method:            "GET",
+				Host:              helper.TestrunnerName,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 10,
+				Verbose:           false,
+				WithoutStats:      true,
+				ReturnHeaders:     false,
+			}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute*1)
+		})
 	})
 })
