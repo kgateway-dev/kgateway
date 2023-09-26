@@ -62,12 +62,12 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
 
-	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", "https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml")
-	Expect(err).NotTo(HaveOccurred())
-
 	if !testutils2.ShouldSkipInstall() {
 		installGloo()
 	}
+
+	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", "https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml")
+	Expect(err).NotTo(HaveOccurred())
 
 	// delete test-runner Service, as the tests create and manage their own
 	err = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", namespace)

@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = FDescribe("Gloo + Istio SDS integration tests", func() {
+var _ = Describe("Gloo + Istio SDS integration tests", func() {
 	var (
 		upstreamRef       core.ResourceRef
 		serviceRef        = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
