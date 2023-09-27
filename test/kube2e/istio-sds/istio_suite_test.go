@@ -66,6 +66,7 @@ var _ = BeforeSuite(func() {
 		installGloo()
 	}
 
+	// install httpbin app
 	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", "https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
@@ -100,6 +101,7 @@ func installGloo() {
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// Install Gloo
+	// this helper function also applies the testrunner pod and service
 	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
 	Expect(err).NotTo(HaveOccurred())
 

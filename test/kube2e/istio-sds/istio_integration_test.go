@@ -2,12 +2,13 @@ package istio_test
 
 import (
 	"fmt"
+	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	"path/filepath"
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/skv2/codegen/util"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -22,66 +23,40 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	httpbinName = "httpbin"
+	httpbinPort = 8000
+)
+
 var _ = Describe("Gloo + Istio SDS integration tests", func() {
 	var (
-		upstreamRef       core.ResourceRef
-		serviceRef        = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
-		virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
+		upstreamRef, serviceRef, virtualServiceRef core.ResourceRef
 	)
 
-	AfterEach(func() {
-		var err error
-		err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		Expect(err).NotTo(HaveOccurred())
-		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
-		})
-
-		err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() bool {
-			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
-			// we should receive a DNE error, meaning it's now deleted
-			return err != nil && skerrors.IsNotExist(err)
-		}, "5s", "1s").Should(BeTrue())
-
-		err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
-		})
-	})
-
 	BeforeEach(func() {
-		serviceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: defaults.GlooSystem}
-		virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: defaults.GlooSystem}
+		serviceRef = core.ResourceRef{Name: httpbinName, Namespace: namespace}
+		virtualServiceRef = core.ResourceRef{Name: httpbinName, Namespace: namespace}
 
 		service := corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      serviceRef.Name,
 				Namespace: serviceRef.Namespace,
-				Labels:    map[string]string{"gloo": helper.TestrunnerName},
+				Labels:    map[string]string{"gloo": httpbinName},
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
 						Name:       "http",
-						Port:       8000,
-						TargetPort: intstr.FromInt(8000),
+						Port:       httpbinPort,
+						TargetPort: intstr.FromInt(httpbinPort),
 						Protocol:   corev1.ProtocolTCP,
 					},
 				},
-				Selector: map[string]string{"gloo": helper.TestrunnerName},
+				Selector: map[string]string{"gloo": httpbinName},
 			},
 		}
 		var err error
@@ -97,8 +72,8 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 
 		// the upstream should be created by discovery service
 		upstreamRef = core.ResourceRef{
-			Name:      "gloo-system-httpbin-8000",
-			Namespace: defaults.GlooSystem,
+			Name:      kubernetesplugin.UpstreamName(namespace, httpbinName, httpbinPort),
+			Namespace: namespace,
 		}
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
@@ -140,6 +115,34 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		})
 	})
 
+	AfterEach(func() {
+		var err error
+		err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{
+			IgnoreNotExist: true,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
+		})
+
+		err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
+			IgnoreNotExist: true,
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() bool {
+			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
+			// we should receive a DNE error, meaning it's now deleted
+			return err != nil && skerrors.IsNotExist(err)
+		}, "5s", "1s").Should(BeTrue())
+
+		err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
+			IgnoreNotExist: true,
+		})
+		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
+		})
+	})
+
 	Context("strict peer auth", func() {
 		BeforeEach(func() {
 			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(util.GetModuleRoot(), "test", "kube2e", "istio-sds", "peerauth_strict.yaml"))
@@ -147,6 +150,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		})
 
 		It("should make a request with the expected cert header", func() {
+			// the /headers endpoint will respond with the headers the request to the client contains
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/headers",
