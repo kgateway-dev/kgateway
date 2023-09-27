@@ -90,25 +90,10 @@ func recordKubeState(f *os.File) {
 		f.WriteString("*** Unable to get endpoint state ***\n")
 		return
 	}
-	kubePeerAuthenticationState, err := kubeCli.KubectlOut(nil, "get", "peerauthentications.security.istio.io", "-A")
-	if err != nil {
-		f.WriteString("*** Unable to get peerauthentication state ***\n")
-		return
-	}
 	f.WriteString("*** Kube state ***\n")
 	f.WriteString(string(kubeState) + "\n")
 	f.WriteString(string(kubeEndpointsState) + "\n")
-	f.WriteString(string(kubePeerAuthenticationState) + "\n")
 	f.WriteString("*** End Kube state ***\n")
-
-	podSpecs, err := kubeCli.KubectlOut(nil, "get", "pods", "-n", "gloo-system", "-oyaml")
-	if err != nil {
-		f.WriteString("*** Unable to get pod specs ***\n")
-		return
-	}
-	f.WriteString("*** Pod specs ***\n")
-	f.WriteString(string(podSpecs) + "\n")
-	f.WriteString("*** End Pod specs ***\n")
 }
 
 func recordKubeDump(namespaces ...string) {
