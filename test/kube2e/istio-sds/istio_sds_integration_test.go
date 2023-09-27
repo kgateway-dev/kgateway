@@ -1,31 +1,23 @@
-package istio_test
+package istio_sds_test
 
 import (
 	"fmt"
 	"path/filepath"
 	"time"
 
-	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	skerrors "github.com/solo-io/solo-kit/pkg/errors"
-
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/go-utils/testutils/exec"
-	"github.com/solo-io/skv2/codegen/util"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
-	kubeService "github.com/solo-io/solo-kit/api/external/kubernetes/service"
+	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -35,41 +27,11 @@ const (
 
 var _ = Describe("Gloo + Istio SDS integration tests", func() {
 	var (
-		upstreamRef, serviceRef, virtualServiceRef core.ResourceRef
+		upstreamRef, virtualServiceRef core.ResourceRef
 	)
 
 	BeforeEach(func() {
-		serviceRef = core.ResourceRef{Name: httpbinName, Namespace: namespace}
 		virtualServiceRef = core.ResourceRef{Name: httpbinName, Namespace: namespace}
-
-		service := corev1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      serviceRef.Name,
-				Namespace: serviceRef.Namespace,
-				Labels:    map[string]string{"gloo": httpbinName},
-			},
-			Spec: corev1.ServiceSpec{
-				Ports: []corev1.ServicePort{
-					{
-						Name:       "http",
-						Port:       httpbinPort,
-						TargetPort: intstr.FromInt(httpbinPort),
-						Protocol:   corev1.ProtocolTCP,
-					},
-				},
-				Selector: map[string]string{"gloo": httpbinName},
-			},
-		}
-		var err error
-		_, err = resourceClientSet.ServiceClient().Write(
-			&kubernetes.Service{Service: kubeService.Service{Service: service}},
-			clients.WriteOpts{},
-		)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() error {
-			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, service.Name, clients.ReadOpts{})
-			return err
-		}, "5s", "1s").Should(BeNil())
 
 		// the upstream should be created by discovery service
 		upstreamRef = core.ResourceRef{
@@ -109,7 +71,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 				}},
 			},
 		}
-		_, err = resourceClientSet.VirtualServiceClient().Write(virtualService, clients.WriteOpts{})
+		_, err := resourceClientSet.VirtualServiceClient().Write(virtualService, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
@@ -125,16 +87,6 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
 			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
 		})
-
-		err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() bool {
-			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
-			// we should receive a DNE error, meaning it's now deleted
-			return err != nil && skerrors.IsNotExist(err)
-		}, "5s", "1s").Should(BeTrue())
 
 		err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
 			IgnoreNotExist: true,

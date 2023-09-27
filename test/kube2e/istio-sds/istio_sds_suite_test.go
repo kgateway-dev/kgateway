@@ -1,4 +1,4 @@
-package istio_test
+package istio_sds_test
 
 import (
 	"context"
