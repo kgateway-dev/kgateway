@@ -2,14 +2,15 @@ package istio_test
 
 import (
 	"fmt"
+	"path/filepath"
+	"time"
+
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/skv2/codegen/util"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
