@@ -2,10 +2,11 @@ package istio_test
 
 import (
 	"fmt"
-	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
-	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	"path/filepath"
 	"time"
+
+	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
