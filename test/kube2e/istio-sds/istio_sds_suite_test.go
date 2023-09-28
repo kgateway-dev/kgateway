@@ -69,7 +69,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	if !testutils2.ShouldSkipInstall() {
-		installGloo(cwd)
+		installGloo()
 	}
 
 	// install httpbin app
@@ -97,7 +97,7 @@ var _ = AfterSuite(func() {
 	cancel()
 })
 
-func installGloo(cwd string) {
+func installGloo() {
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// Install Gloo
