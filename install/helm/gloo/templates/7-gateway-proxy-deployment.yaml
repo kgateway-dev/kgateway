@@ -70,10 +70,9 @@ spec:
         sidecar.istio.io/inject: "true"
           {{- end }}
         {{- end }}
-{{ $annotationExist := false}}
-{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
-{{ $annotationExist = true}}
       annotations:
+        checksum/{{ $name | kebabcase }}-envoy-config: {{ include (print .Template.BasePath "/9-gateway-proxy-configmap.yaml") . | sha256sum }}
+{{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
       {{- end }}
@@ -85,10 +84,6 @@ spec:
       {{- end }}
 {{- end }}
 {{- if $statsConfig.enabled }}
-{{- if not $annotationExist }}
-{{- $annotationExist = true}}
-      annotations:
-{{- end}}
         prometheus.io/path: /metrics
         prometheus.io/port: "8081"
         prometheus.io/scrape: "true"
@@ -97,9 +92,6 @@ spec:
         {{- end }}
 {{- end}}
 {{- if $spec.readConfig }}
-{{- if not $annotationExist }}
-      annotations:
-{{- end}}
         readconfig-stats: /stats
         readconfig-ready: /ready
         readconfig-config_dump: /config_dump
