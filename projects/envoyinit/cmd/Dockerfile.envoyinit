@@ -3,8 +3,11 @@ ARG ENVOY_IMAGE
 FROM $ENVOY_IMAGE
 
 ARG GOARCH=amd64
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apk -U upgrade
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf  /var/log/*log /var/lib/apt/lists/* /var/log/apt/* /var/lib/dpkg/*-old /var/cache/debconf/*-old
 
 COPY envoyinit-linux-$GOARCH /usr/local/bin/envoyinit
 
@@ -13,5 +16,5 @@ COPY docker-entrypoint.sh /
 
 USER 10101
 
-ENTRYPOINT ["/usr/bin/dumb-init", "--", "/docker-entrypoint.sh"]
+ENTRYPOINT [ "/docker-entrypoint.sh"]
 CMD []
