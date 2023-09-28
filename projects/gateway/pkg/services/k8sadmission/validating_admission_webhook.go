@@ -396,9 +396,13 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 		return wh.validateList(ctx, admissionRequest.Object.Raw, dryRun)
 	}
 
-	if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
-		contextutils.LoggerFrom(ctx).Debugf("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
-		return &validation.Reports{}, nil
+	// Only check resources that are part of our internal API, not Kubernetes' core APIs ("")
+	// This is currently just used for secrets
+	if gvk.Group != "" {
+		if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
+			contextutils.LoggerFrom(ctx).Infof("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+			return &validation.Reports{}, nil
+		}
 	}
 
 	if isDelete {
@@ -410,7 +414,11 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 
 func (wh *gatewayValidationWebhook) deleteRef(ctx context.Context, gvk schema.GroupVersionKind, ref *core.ResourceRef, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
-
+	// Special case for Kubernetes secrets, since they are not handled by our hashable resource.
+	// We can reuse the NewSecretHashableResource resource.Resource, since all that matters is the metadata for deletion.
+	if gvk.Group == "" && gvk.Kind == "Secret" {
+		newResourceFunc = gloov1.NewSecretHashableResource
+	}
 	newResource := newResourceFunc()
 	newResource.SetMetadata(&core.Metadata{
 		Namespace: ref.GetNamespace(),

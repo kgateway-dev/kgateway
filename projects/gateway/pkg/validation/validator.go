@@ -297,6 +297,12 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 		proxyReport := glooReports[0].ProxyReport
 		proxyReports = append(proxyReports, proxyReport)
 		if err := validationutils.GetProxyError(proxyReport); err != nil {
+			// TODO - misleading error when deleting secret in use: SSLConfigError. Reason: SSL secret not found: list did not find secret default.upstream-tls
+			//   It only happens for tls secret(s) that are used. We can still delete unused secrets. Not sure why the messaging says it's not found for used secrets...
+			//   This points to a secret not being in our snapshot's(?) list of secrets since the ssl.go code only prints this when secret is not found through `secrets.Find()`...
+			//   When I un-reference it, it can delete normally.
+			//   The secret should also exist, since if it didn't we'd have validation errors on VS if it can't find it in list of secrets... so something weird happens in this case.
+			contextutils.LoggerFrom(ctx).Infof("ERROR in GetProxyError: %v", err)
 			errs = multierr.Append(errs, proxyFailedGlooValidation(err, proxy))
 			continue
 		}
@@ -309,6 +315,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		err = v.getErrorsFromGlooValidation(glooReports)
 		if err != nil {
+			contextutils.LoggerFrom(ctx).Infof("ERROR in getErrorsFromGlooValidation: %v", err)
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierr.Append(errs, err)
 			continue
@@ -358,7 +365,7 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 // ValidateDeletedGvk will validate a deletion of a resource, as long as it is supported, against the Gateway and Gloo Translations.
 func (v *validator) ValidateDeletedGvk(ctx context.Context, gvk schema.GroupVersionKind, resource resources.Resource, dryRun bool) error {
-	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Delete: true, DryRun: dryRun, AcquireLock: true})
+	_, err := v.validateResource(&validationOptions{Ctx: ctx, Resource: resource, Gvk: gvk, Delete: true, DryRun: dryRun, AcquireLock: true})
 	return err
 }
 
