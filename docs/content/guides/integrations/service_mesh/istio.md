@@ -54,7 +54,7 @@ Be sure to specify a valid image fields under `global.glooMtls.istioProxy.image`
        sds:
          image:
            repository: sds
-           tag: 1.0.0-ci
+           tag: 1.15.7
    gatewayProxies:
      gatewayProxy:
        podTemplate: 
