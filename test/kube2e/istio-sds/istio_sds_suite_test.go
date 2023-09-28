@@ -35,13 +35,15 @@ func TestIstio(t *testing.T) {
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())
-	RunSpecs(t, "Istio Suite")
+	RunSpecs(t, "Istio SDS Suite")
 }
 
 var (
 	testHelper *helper.SoloTestHelper
 	ctx        context.Context
 	cancel     context.CancelFunc
+
+	cwd string
 
 	resourceClientSet *kube2e.KubeResourceClientSet
 )
@@ -51,6 +53,9 @@ var _ = BeforeSuite(func() {
 
 	ctx, cancel = context.WithCancel(context.Background())
 
+	cwd, err = os.Getwd()
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved")
+
 	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -59,15 +64,16 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
+	// we need to label the namespace so that the test runner pod, which is not part of a deployment gets the Istio sidecar
 	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
 
 	if !testutils2.ShouldSkipInstall() {
-		installGloo()
+		installGloo(cwd)
 	}
 
 	// install httpbin app
-	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", "https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml")
+	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", filepath.Join(cwd, "artifacts", "httpbin.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
 	// delete test-runner Service, as the tests create and manage their own
@@ -76,10 +82,6 @@ var _ = BeforeSuite(func() {
 	EventuallyWithOffset(1, func() error {
 		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", namespace)
 	}, "60s", "1s").Should(HaveOccurred())
-
-	// set istio-inject for the testrunner pod to set up istio-proxy
-	err = testutils.Kubectl("annotate", "pods", helper.TestrunnerName, "-n", testHelper.InstallNamespace, "sidecar.istio.io/inject=true")
-	Expect(err).NotTo(HaveOccurred())
 
 	expectIstioInjected()
 
@@ -95,18 +97,12 @@ var _ = AfterSuite(func() {
 	cancel()
 })
 
-func installGloo() {
-	cwd, err := os.Getwd()
-	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved while installing gloo")
+func installGloo(cwd string) {
 	helmValuesFile := filepath.Join(cwd, "artifacts", "helm.yaml")
 
 	// Install Gloo
 	// this helper function also applies the testrunner pod and service
-	err = testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
-	Expect(err).NotTo(HaveOccurred())
-
-	// patch only the gateway-proxy to be istio inject-able
-	err = testutils.Kubectl("patch", "-n", testHelper.InstallNamespace, "deployment", "gateway-proxy", "--patch", "{\"spec\": {\"template\": {\"metadata\": {\"labels\": {\"sidecar.istio.io/inject\": \"true\"}}}}}")
+	err := testHelper.InstallGloo(ctx, helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", helmValuesFile))
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
@@ -141,7 +137,7 @@ func expectIstioInjected() {
 	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the testrunner after injection")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	//istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "httpbin", "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
+	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "app=httpbin", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
 	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the httpbin pod after injection")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 

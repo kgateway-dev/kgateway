@@ -2,7 +2,6 @@ global:
   # Set up gloo with istio integration enabled (through `enableIstioSidecarOnGateway`)
   istioIntegration:
     enableIstioSidecarOnGateway: true
-    disableAutoinjection: true
   istioSDS:
     enabled: true
   glooMtls:

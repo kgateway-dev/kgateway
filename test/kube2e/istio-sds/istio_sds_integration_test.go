@@ -7,14 +7,11 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/k8s-utils/testutils/helper"
-	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -42,36 +39,23 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
 		})
 
-		virtualService := &v1.VirtualService{
-			Metadata: &core.Metadata{
-				Name:      virtualServiceRef.Name,
-				Namespace: virtualServiceRef.Namespace,
-			},
-			VirtualHost: &v1.VirtualHost{
-				Domains: []string{"*"},
-				Routes: []*v1.Route{{
-					Action: &v1.Route_RouteAction{
-						RouteAction: &gloov1.RouteAction{
-							Destination: &gloov1.RouteAction_Single{
-								Single: &gloov1.Destination{
-									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: &upstreamRef,
-									},
-								},
-							},
-						},
-					},
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/",
-							},
-						},
-					},
-				}},
-			},
-		}
-		_, err := resourceClientSet.VirtualServiceClient().Write(virtualService, clients.WriteOpts{})
+		route := helpers.NewRouteBuilder().
+			WithRouteActionToUpstreamRef(&upstreamRef).
+			WithMatcher(&matchers.Matcher{
+				PathSpecifier: &matchers.Matcher_Prefix{
+					Prefix: "/",
+				},
+			}).
+			Build()
+
+		vs := helpers.NewVirtualServiceBuilder().
+			WithName(virtualServiceRef.Name).
+			WithNamespace(virtualServiceRef.Namespace).
+			WithDomain(httpbinName).
+			WithRoute("default-route", route).
+			Build()
+
+		_, err := resourceClientSet.VirtualServiceClient().Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
@@ -98,7 +82,12 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 
 	Context("strict peer auth", func() {
 		BeforeEach(func() {
-			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(util.GetModuleRoot(), "test", "kube2e", "istio-sds", "peerauth_strict.yaml"))
+			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(cwd, "artifacts", "peerauth_strict.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", namespace, "peerauthentication", "test")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -108,7 +97,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 				Protocol:          "http",
 				Path:              "/headers",
 				Method:            "GET",
-				Host:              helper.TestrunnerName,
+				Host:              httpbinName,
 				Service:           gatewayProxy,
 				Port:              gatewayPort,
 				ConnectionTimeout: 10,
