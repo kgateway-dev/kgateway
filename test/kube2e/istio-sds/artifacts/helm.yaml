@@ -5,6 +5,8 @@ global:
   istioSDS:
     enabled: true
   glooMtls:
+    # This will likely be overwritten by an istio-proxy container written by Istio itself, but worth keeping the tag
+    # up-to-date with the latest version we support unless/until we deprecate these values
     istioProxy:
       image:
         repository: proxyv2
