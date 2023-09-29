@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	gatewayProxy = gatewaydefaults.GatewayProxyName
-	gatewayPort  = int(80)
-	namespace    = defaults.GlooSystem
+	gatewayProxy     = gatewaydefaults.GatewayProxyName
+	gatewayPort      = int(80)
+	installNamespace = defaults.GlooSystem
+	httpbinNamespace = "httpbin-ns"
 )
 
 func TestIstio(t *testing.T) {
@@ -56,7 +57,7 @@ var _ = BeforeSuite(func() {
 	cwd, err = os.Getwd()
 	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved")
 
-	testHelper, err = kube2e.GetTestHelper(ctx, namespace)
+	testHelper, err = kube2e.GetTestHelper(ctx, installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
@@ -64,8 +65,11 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	// we need to label the namespace so that the test runner pod, which is not part of a deployment gets the Istio sidecar
-	err = testutils.Kubectl("label", "namespace", testHelper.InstallNamespace, "istio-injection=enabled")
+	err = testutils.Kubectl("create", "ns", httpbinNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
+	// we want httpbin to be in the mesh
+	err = testutils.Kubectl("label", "namespace", httpbinNamespace, "istio-injection=enabled")
 	Expect(err).NotTo(HaveOccurred())
 
 	if !testutils2.ShouldSkipInstall() {
@@ -73,14 +77,14 @@ var _ = BeforeSuite(func() {
 	}
 
 	// install httpbin app
-	err = testutils.Kubectl("apply", "-n", testHelper.InstallNamespace, "-f", filepath.Join(cwd, "artifacts", "httpbin.yaml"))
+	err = testutils.Kubectl("apply", "-n", httpbinNamespace, "-f", filepath.Join(cwd, "artifacts", "httpbin.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
 	// delete test-runner Service, as the tests create and manage their own
-	err = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", namespace)
+	err = testutils.Kubectl("delete", "service", helper.TestrunnerName, "-n", installNamespace)
 	Expect(err).NotTo(HaveOccurred())
 	EventuallyWithOffset(1, func() error {
-		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", namespace)
+		return testutils.Kubectl("get", "service", helper.TestrunnerName, "-n", installNamespace)
 	}, "60s", "1s").Should(HaveOccurred())
 
 	expectIstioInjected()
@@ -92,6 +96,9 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	if testutils2.ShouldTearDown() {
 		uninstallGloo()
+
+		err := testutils.Kubectl("delete", "namespace", httpbinNamespace)
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	cancel()
@@ -126,7 +133,7 @@ func uninstallGloo() {
 	}, "60s", "1s").Should(HaveOccurred())
 }
 
-// expects gateway-proxy and testrunner to have the istio-proxy sidecar
+// expects gateway-proxy and httpbin to have the istio-proxy sidecar, testrunner should not
 func expectIstioInjected() {
 	// Check for istio-proxy sidecar
 	istioContainer, err := exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "gloo=gateway-proxy", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
@@ -134,10 +141,10 @@ func expectIstioInjected() {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", helper.TestrunnerName, "-o", `jsonpath='{.spec.containers[?(@.name == "istio-proxy")].name}'`)
-	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the testrunner after injection")
+	ExpectWithOffset(1, istioContainer).To(Equal("''"), "istio-proxy container should not be present on the testrunner")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", testHelper.InstallNamespace, "pods", "-l", "app=httpbin", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
+	istioContainer, err = exec.RunCommandOutput(testHelper.RootDir, false, "kubectl", "get", "-n", httpbinNamespace, "pods", "-l", "app=httpbin", "-o", `jsonpath='{.items[*].spec.containers[?(@.name == "istio-proxy")].name}'`)
 	ExpectWithOffset(1, istioContainer).To(Equal("'istio-proxy'"), "istio-proxy container should be present on the httpbin pod after injection")
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 

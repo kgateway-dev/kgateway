@@ -28,12 +28,12 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 	)
 
 	BeforeEach(func() {
-		virtualServiceRef = core.ResourceRef{Name: httpbinName, Namespace: namespace}
+		virtualServiceRef = core.ResourceRef{Name: httpbinName, Namespace: installNamespace}
 
 		// the upstream should be created by discovery service
 		upstreamRef = core.ResourceRef{
-			Name:      kubernetesplugin.UpstreamName(namespace, httpbinName, httpbinPort),
-			Namespace: namespace,
+			Name:      kubernetesplugin.UpstreamName(httpbinNamespace, httpbinName, httpbinPort),
+			Namespace: installNamespace,
 		}
 		helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
@@ -87,7 +87,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		})
 
 		AfterEach(func() {
-			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", namespace, "peerauthentication", "test")
+			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "istio-system", "peerauthentication", "test")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
