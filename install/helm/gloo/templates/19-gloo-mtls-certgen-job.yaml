@@ -4,12 +4,6 @@
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
 {{- end }}
 {{- if .Values.global.glooMtls.enabled }}
-{{- /* With ArgoCD, there is no concept or installs or upgrades. Everything is a sync. */}}
-{{- /* This causes an issue when a hook must run on an install but not an upgrade based on a flag. */}}
-{{- /* We address this by creating the job definition for an upgrade only if the flag says so */}}
-{{- /* This is done in the next two lines */}}
-{{- $shouldJobRunOnUpgrade := and .Release.IsUpgrade .Values.gateway.certGenJob.runOnUpdate }}
-{{- if or .Release.IsInstall $shouldJobRunOnUpgrade }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -19,6 +13,8 @@ metadata:
   name: gloo-mtls-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
+    {{- /* With ArgoCD, there is no concept or installs or upgrades. Everything is a sync. */}}
+    {{- /* Due to this behavour of ArgoCD, the value of `gateway.certGenJob.runOnUpdate` can not be respected and will run on every sync. */}}
     {{- if .Values.gateway.certGenJob.runOnUpdate }}
     "helm.sh/hook": pre-install, pre-upgrade
     {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.certGenJob | nindent 4 }}
@@ -75,7 +71,6 @@ spec:
             {{- if .Values.gateway.certGenJob.forceRotation }}
             - "--force-rotation=true"
             {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}
-{{- end }} {{/* if or .Release.IsInstall $shouldCreateOnUpgrade */}}
 {{- end }} {{/* if .Values.global.glooMtls.enabled */}}
 {{- end }} {{/* define gateway.certGenJob.JobSpec*/}}
 
