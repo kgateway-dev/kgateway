@@ -1360,7 +1360,10 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("routing (tcp/tls)", func() {
 
-			var secretName = "secret-routing-tls"
+			const (
+				secretName  = "secret-routing-tls"
+				gatewayName = "one"
+			)
 
 			BeforeEach(func() {
 				// Create secret to use for ssl routing
@@ -1369,7 +1372,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				tcpGateway := defaults.DefaultTcpGateway(testHelper.InstallNamespace)
 				tcpGateway.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{{
-					Name: "one",
+					Name: gatewayName,
 					Destination: &gloov1.TcpHost_TcpAction{
 						Destination: &gloov1.TcpHost_TcpAction_ForwardSniClusterName{
 							ForwardSniClusterName: &empty.Empty{},
@@ -1396,8 +1399,10 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				// It is possible the state has not fully reconciled yet, and we could hit a validation error due to the gateway that references the secret.
+				Eventually(func() error {
+					return resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+				}, "10s", "1s").ShouldNot(HaveOccurred())
 			})
 
 			It("correctly routes to the service (tcp/tls)", func() {
