@@ -3,11 +3,12 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/google/uuid"
 
