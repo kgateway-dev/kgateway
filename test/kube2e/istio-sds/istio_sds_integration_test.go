@@ -2,11 +2,12 @@ package istio_sds_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	testutils2 "github.com/solo-io/go-utils/testutils"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	testutils2 "github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
