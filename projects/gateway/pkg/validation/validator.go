@@ -309,7 +309,6 @@ func (v *validator) validateSnapshot(opts *validationOptions) (*Reports, error) 
 
 		err = v.getErrorsFromGlooValidation(glooReports)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).Infof("ERROR in getErrorsFromGlooValidation: %v", err)
 			err = errors.Wrapf(err, failedResourceReports)
 			errs = multierr.Append(errs, err)
 			continue
