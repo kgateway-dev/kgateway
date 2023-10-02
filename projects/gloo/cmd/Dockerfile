@@ -3,6 +3,8 @@ ARG ENVOY_IMAGE
 FROM $ENVOY_IMAGE
 
 ARG GOARCH=amd64
+# eventually may matter for now https://unix.stackexchange.com/a/701288
+# means its not too useful
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
