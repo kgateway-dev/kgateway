@@ -98,7 +98,6 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		When("mtls is not enabled for the upstream", func() {
 
 			It("should be able to complete the request without mTLS header", func() {
-				// the /headers endpoint will respond with the headers the request to the client contains
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 					Protocol:          "http",
 					Path:              "/",
@@ -110,7 +109,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 					Verbose:           false,
 					WithoutStats:      true,
 					ReturnHeaders:     false,
-				}, fmt.Sprintf("200"), 1, time.Minute)
+				}, "200", 1, time.Minute)
 			})
 		})
 
@@ -150,7 +149,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 					Verbose:           false,
 					WithoutStats:      true,
 					ReturnHeaders:     false,
-				}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute)
+				}, "\"X-Forwarded-Client-Cert\"", 1, time.Minute)
 			})
 		})
 	})
@@ -181,7 +180,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 					Verbose:           false,
 					WithoutStats:      true,
 					ReturnHeaders:     false,
-				}, fmt.Sprintf("upstream connect error or disconnect/reset before headers. reset reason: connection termination"), 1, time.Minute*1)
+				}, "upstream connect error or disconnect/reset before headers. reset reason: connection termination", 1, time.Minute*1)
 			})
 		})
 
@@ -192,6 +191,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 			})
 
 			AfterEach(func() {
+				// It seems to sometimes take multiple calls before the disable command is registered
 				Eventually(func() error {
 					err := testutils.Glooctl(fmt.Sprintf("istio disable-mtls --upstream %s", upstreamRef.Name))
 					if err != nil {
@@ -205,7 +205,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 						return fmt.Errorf("upstream has sslConfig after disable-mtls")
 					}
 					return nil
-				}).ShouldNot(HaveOccurred())
+				}).ShouldNot(HaveOccurred(), 30*time.Second)
 			})
 
 			It("should make a request with the expected cert header", func() {
@@ -221,7 +221,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 					Verbose:           false,
 					WithoutStats:      true,
 					ReturnHeaders:     false,
-				}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute*1)
+				}, "\"X-Forwarded-Client-Cert\"", 1, time.Minute*1)
 			})
 		})
 	})

@@ -65,18 +65,17 @@ var _ = BeforeSuite(func() {
 	err = testutils.Kubectl("create", "ns", testHelper.InstallNamespace)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = testutils.Kubectl("create", "ns", httpbinNamespace)
-	Expect(err).NotTo(HaveOccurred())
-
-	// we want httpbin to be in the mesh
-	err = testutils.Kubectl("label", "namespace", httpbinNamespace, "istio-injection=enabled")
-	Expect(err).NotTo(HaveOccurred())
-
 	if !testutils2.ShouldSkipInstall() {
 		installGloo()
 	}
 
-	// install httpbin app
+	// add httpbin app in its own namespace, labeled for Istio injection
+	err = testutils.Kubectl("create", "ns", httpbinNamespace)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = testutils.Kubectl("label", "namespace", httpbinNamespace, "istio-injection=enabled")
+	Expect(err).NotTo(HaveOccurred())
+
 	err = testutils.Kubectl("apply", "-n", httpbinNamespace, "-f", filepath.Join(cwd, "artifacts", "httpbin.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
