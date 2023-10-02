@@ -45,7 +45,7 @@ specific resources, we will manage the resources that the webhook receives via t
 {{/* Can't use the include for this one because if the operations are empty, we need to drop the whole list element */}}
 {{- if and (not (has "*" .Values.gateway.validation.webhook.skipDeleteValidationResources)) (not (has "secrets" .Values.gateway.validation.webhook.skipDeleteValidationResources)) }}
   - operations: [ "DELETE" ]
-    apiGroups: [""] {{/* We do not have internal secret CRDs. We want to validate the deletion of secrets such as TLS, so we add "" which refers to Kubernetes' core APIs. */}}
+    apiGroups: [""]{{/* We do not have internal secret CRDs. We want to validate the deletion of secrets such as TLS, so we add "" which refers to Kubernetes' core APIs. */}}
     apiVersions: ["v1"]
     resources: ["secrets"]
 {{- end }}
