@@ -2,7 +2,10 @@ package istio_sds_test
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	testutils2 "github.com/solo-io/go-utils/testutils"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -80,6 +83,77 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 		})
 	})
 
+	Context("permissive peer auth", func() {
+		BeforeEach(func() {
+			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(cwd, "artifacts", "peerauth_permissive.yaml"))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", "istio-system", "peerauthentication", "test")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		When("mtls is not enabled for the upstream", func() {
+
+			It("should be able to complete the request without mTLS header", func() {
+				// the /headers endpoint will respond with the headers the request to the client contains
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/",
+					Method:            "GET",
+					Host:              httpbinName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 10,
+					Verbose:           false,
+					WithoutStats:      true,
+					ReturnHeaders:     false,
+				}, fmt.Sprintf("200"), 1, time.Minute)
+			})
+		})
+
+		When("mtls is enabled for the upstream", func() {
+			BeforeEach(func() {
+				err := testutils.Glooctl(fmt.Sprintf("istio enable-mtls --upstream %s", upstreamRef.Name))
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Eventually(func() error {
+					err := testutils.Glooctl(fmt.Sprintf("istio disable-mtls --upstream %s", upstreamRef.Name))
+					if err != nil {
+						return err
+					}
+					us, err := testutils2.KubectlOut("get", "upstream", "-n", installNamespace, "-oyaml", upstreamRef.Name)
+					if err != nil {
+						return err
+					}
+					if strings.Contains(us, "sslConfig") {
+						return fmt.Errorf("upstream has sslConfig after disable-mtls")
+					}
+					return nil
+				}).ShouldNot(HaveOccurred())
+			})
+
+			It("should make a request with the expected cert header", func() {
+				// the /headers endpoint will respond with the headers the request to the client contains
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/headers",
+					Method:            "GET",
+					Host:              httpbinName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 10,
+					Verbose:           false,
+					WithoutStats:      true,
+					ReturnHeaders:     false,
+				}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute)
+			})
+		})
+	})
+
 	Context("strict peer auth", func() {
 		BeforeEach(func() {
 			err := exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", filepath.Join(cwd, "artifacts", "peerauth_strict.yaml"))
@@ -91,20 +165,63 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("should make a request with the expected cert header", func() {
-			// the /headers endpoint will respond with the headers the request to the client contains
-			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
-				Protocol:          "http",
-				Path:              "/headers",
-				Method:            "GET",
-				Host:              httpbinName,
-				Service:           gatewayProxy,
-				Port:              gatewayPort,
-				ConnectionTimeout: 10,
-				Verbose:           false,
-				WithoutStats:      true,
-				ReturnHeaders:     false,
-			}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute*1)
+		When("mtls is not enabled for the upstream", func() {
+
+			It("should not be able to complete the request", func() {
+				// the /headers endpoint will respond with the headers the request to the client contains
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/headers",
+					Method:            "GET",
+					Host:              httpbinName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 10,
+					Verbose:           false,
+					WithoutStats:      true,
+					ReturnHeaders:     false,
+				}, fmt.Sprintf("upstream connect error or disconnect/reset before headers. reset reason: connection termination"), 1, time.Minute*1)
+			})
+		})
+
+		When("mtls is enabled for the upstream", func() {
+			BeforeEach(func() {
+				err := testutils.Glooctl(fmt.Sprintf("istio enable-mtls --upstream %s", upstreamRef.Name))
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Eventually(func() error {
+					err := testutils.Glooctl(fmt.Sprintf("istio disable-mtls --upstream %s", upstreamRef.Name))
+					if err != nil {
+						return err
+					}
+					us, err := testutils2.KubectlOut("get", "upstream", "-n", installNamespace, "-oyaml", upstreamRef.Name)
+					if err != nil {
+						return err
+					}
+					if strings.Contains(us, "sslConfig") {
+						return fmt.Errorf("upstream has sslConfig after disable-mtls")
+					}
+					return nil
+				}).ShouldNot(HaveOccurred())
+			})
+
+			It("should make a request with the expected cert header", func() {
+				// the /headers endpoint will respond with the headers the request to the client contains
+				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+					Protocol:          "http",
+					Path:              "/headers",
+					Method:            "GET",
+					Host:              httpbinName,
+					Service:           gatewayProxy,
+					Port:              gatewayPort,
+					ConnectionTimeout: 10,
+					Verbose:           false,
+					WithoutStats:      true,
+					ReturnHeaders:     false,
+				}, fmt.Sprintf("\"X-Forwarded-Client-Cert\""), 1, time.Minute*1)
+			})
 		})
 	})
 })
