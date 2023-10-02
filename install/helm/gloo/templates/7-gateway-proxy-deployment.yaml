@@ -461,6 +461,8 @@ spec:
           successThreshold: 1
           timeoutSeconds: 1
         volumeMounts:
+        - mountPath: /var/run/secrets/credential-uds
+          name: credential-socket
         - mountPath: /var/run/secrets/istio
           name: istiod-ca-cert
         - mountPath: /etc/istio/proxy
@@ -469,6 +471,10 @@ spec:
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
           name: istio-token
+        - mountPath: /var/run/secrets/workload-spiffe-uds
+          name: workload-socket
+        - mountPath: /var/run/secrets/workload-spiffe-credentials
+          name: workload-certs
 {{- end }} {{/* if not $global.istioSDS.customSidecars */}}
 {{- end }}{{/* if $global.istioSDS.enabled */}}
       volumes:
@@ -476,6 +482,12 @@ spec:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
 {{- if $global.istioSDS.enabled }}
+      - emptyDir: {}
+        name: workload-socket
+      - emptyDir: {}
+        name: credential-socket
+      - emptyDir: {}
+        name: workload-certs
       - name: istio-certs
         emptyDir:
           medium: Memory
