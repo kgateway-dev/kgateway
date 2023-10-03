@@ -35,8 +35,12 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm repo update
    ```
       
-3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. You can optionally add the `global.istioSDS.enabled` option to your overrides file to automatically renew the certificate that the sidecar uses before it expires. 
-Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image`. The default Istio version is 1.18.2.
+3. Create a `value-overrides.yaml` file with the following content:
+- To configure your gateway with an Istio sidecar, add the `istioIntegration` section and set `enableIstioSidecarOnGateway` option to `true`
+- Set `disableAutoInjection` to `true` in order to ensure Gloo components are not included in the Mesh
+- Set `global.istioSDS.enabled` to `true` to allow the Gateway Proxy to consume Istio certs despite not being in the Mesh 
+- Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
+  - The default Istio version is 1.18.2
    ```yaml
    global:
      istioIntegration:
@@ -62,8 +66,8 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
    ```
 
    {{% notice note %}}
-   Though we're actually configuring istioMtls in this guide, the `istioProxy` values for this feature are taken from the `glooMtls` block.
-   {{% /notice %}}
+   Although the `istioProxy` values are defined in the `glooMtls` block, the values are also used to configure `istioMtls`.
+-  {{% /notice %}}
    
 4. Install or upgrade Gloo Edge. 
    {{< tabs >}} 
@@ -83,7 +87,7 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
    {{< /tabs >}}   
 5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
    
-6. Get the pods for your gateway proxy deployment. You should now see three containers in the gateway-proxy pod. 
+6. Verify that your `gateway-proxy` pod now has three containers.
    ```shell
    kubectl get pods -n gloo-system
    ```
@@ -98,7 +102,7 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
    gloo-resource-rollout-hhvf9      0/1     Completed   0          38s
    ```
     
-7Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running. 
+7. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running.
    ```shell
    kubectl describe <gateway-pod-name> -n gloo-system
    ```
@@ -107,9 +111,9 @@ Congratulations! You have successfully configured an Istio sidecar for your Gloo
 
 ## Set up and verify the mTLS connection 
 
-To demonstrate that you can connect to your app via mutual TLS (mTLS), we will: 
+To demonstrate that you can connect to your app via mutual TLS (mTLS), you can follow these step to: 
 - Install the Bookinfo app in your cluster
-- Set up a virtual service to route incoming requests to the
+- Set up a virtual service to route incoming requests to the Bookinfo app
 - Require strict PeerAuthentication in the Istio mesh
 - Configure the relevant upstream(s) to use Istio mTLS
 
@@ -160,10 +164,11 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), we will:
    EOF
    ```
    
-3. At this point we can send a request to the product page. 
+3. Test access to Bookinfo by sending a request to the product page. 
    ```shell
    curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null
    ```
+   A `200 OK` response indicates that Bookinfo is reachable. However, traffic to the product page upstream is not encrypted with mTLS.
    ```text
    *   Trying 127.0.0.1:32000...
    * Connected to localhost (127.0.0.1) port 32000 (#0)
@@ -182,9 +187,8 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), we will:
    { [5290 bytes data]
    * Connection #0 to host localhost left intact
    ```
-   A 200 response indicates that we can reach our app, however if we stop here, traffic to the productpage Upstream will not be encrypted with mTLS.
 
-4. In order to require all traffic in the Mesh uses mTLS, apply the following STRICT PeerAuthentication policy:
+4. To require all traffic in the mesh to use mTLS, apply the following STRICT PeerAuthentication policy.
    ```yaml
    kubectl apply -f - <<EOF
    apiVersion: "security.istio.io/v1beta1"
@@ -197,10 +201,11 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), we will:
        mode: STRICT
    EOF
    ```
-5. Now if we make the same curl request we will get a 503 response, as our upstream is not configured for Istio mTLS.
+5. Repeat the same curl request to the product page.
    ```shell
    curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
    ```
+   The `503 Service Unavailable` response is returned because the upstream is not configured for Istio mTLS.
    ```text
    *   Trying 127.0.0.1:32000...
    * Connected to localhost (127.0.0.1) port 32000 (#0)
@@ -219,12 +224,12 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), we will:
    * Connection #0 to host localhost left intact
    ```
 
-6. Use `glooctl` to configure the upstream for Istio mTLS: 
+6. Use `glooctl` to configure the upstream for Istio mTLS.
    ```shell
    glooctl istio enable-mtls --upstream default-productpage-9080
    ```
 
-7. Now the request will once again succeed, with a 200 response, with traffic encrypted using mTLS.
+7. Repeat the same curl request to the product page. This time, the request succeeds because traffic is encrypted using mTLS.
    ```shell
    curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
    ```
