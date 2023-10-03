@@ -220,7 +220,6 @@ var _ = Describe("Kube2e: helm", func() {
 			previousAnnotationValue := getDeploymentChecksumAnnotation()
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, nil)
 			expectDeploymentChecksumAnnotationChangedFrom(previousAnnotationValue)
-			// The default value is 250000
 			expectConfigDumpToContain(`"global_downstream_max_connections": 250000`)
 
 			// Repeat the same upgrade. The annotation shouldn't have changed
@@ -228,8 +227,9 @@ var _ = Describe("Kube2e: helm", func() {
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, nil)
 			expectDeploymentChecksumAnnotationToEqual(previousAnnotationValue)
 
-			// The annotation should change which in turn should trigger a new deployment
-			// This new deployment should contain the new value of `globalDownstreamMaxConnections` on envoy
+			// We upgrade Gloo with a new value of `globalDownstreamMaxConnections` on envoy
+			// This should cause the checkup annotation on the deployment to change and therefore 
+			// the deployment should be updated with the new value
 			previousAnnotationValue = getDeploymentChecksumAnnotation()
 			requiredSettings := map[string]string{
 				"gatewayProxies.gatewayProxy.globalDownstreamMaxConnections": "12345",
