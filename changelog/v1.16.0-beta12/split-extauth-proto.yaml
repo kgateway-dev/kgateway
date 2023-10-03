@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Split extauth interface file into internal and public files
