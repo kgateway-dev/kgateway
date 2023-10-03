@@ -3,14 +3,11 @@ package istio_sds_test
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	testutils2 "github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/test/helpers"
@@ -120,6 +117,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 			})
 
 			AfterEach(func() {
+				// It seems to sometimes take multiple calls before the disable command is registered
 				Eventually(func() error {
 					err := testutils.Glooctl(fmt.Sprintf("istio disable-mtls --upstream %s", upstreamRef.Name))
 					if err != nil {
@@ -197,11 +195,11 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 					if err != nil {
 						return err
 					}
-					us, err := testutils2.KubectlOut("get", "upstream", "-n", installNamespace, "-oyaml", upstreamRef.Name)
+					us, err := resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
 					if err != nil {
 						return err
 					}
-					if strings.Contains(us, "sslConfig") {
+					if us.SslConfig != nil {
 						return fmt.Errorf("upstream has sslConfig after disable-mtls")
 					}
 					return nil
