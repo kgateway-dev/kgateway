@@ -569,7 +569,8 @@ message OidcAuthorizationCode {
 
     // your client secret as registered with the issuer.
     // This is required unless `disable_client_secret` is true
-    core.solo.io.ResourceRef client_secret_ref = 2;
+    // This field has been deprecated and can be set in the client_secret option of client_authentication
+    core.solo.io.ResourceRef client_secret_ref = 2 [deprecated = true];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -683,7 +684,8 @@ message OidcAuthorizationCode {
     // If true, do not check for or use the client secret.
     // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
     // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
-    google.protobuf.BoolValue disable_client_secret = 21;
+    // This field has been deprecated and can be set in the client_secret option of client_authentication
+    google.protobuf.BoolValue disable_client_secret = 21 [deprecated = true];
 
     // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
     AccessToken access_token = 23;
@@ -704,6 +706,39 @@ message OidcAuthorizationCode {
         // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
         repeated ClaimToHeader claims_to_headers = 1;
     }
+
+    // Configuration specific to the client authentication type used to exchange the access code for the access and id tokens.
+    message ClientAuthentication {
+        // Client Secret Authentication requires a client secret (unless it is disabled)
+        message ClientSecret {
+            // your client secret as registered with the issuer.
+            // This is required unless `disable_client_secret` is true
+            core.solo.io.ResourceRef client_secret_ref = 1;
+            // If true, do not check for or use the client secret.
+            // Generally the client secret is required and AuthConfigs will be rejected if it isn't set.
+            // However certain implementations of the PKCE flow do not use a client secret (including Okta) so this setting allows configuring Oidc without a client secret.
+            google.protobuf.BoolValue disable_client_secret = 2;
+        }
+
+         // Private Key JWT Authentication requires a signing key for the JWT and an duration for the JWT to be valid.
+        message PrivateKeyJwt{
+            // Signing key for the JWT used to authenticate the client
+            core.solo.io.ResourceRef signing_key_ref = 1;
+            // Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in 
+            // the future the expiration time is allowed to be. If omitted, default is 5s.
+            google.protobuf.Duration valid_for = 2;
+        }
+
+        // Configure how to authenticate the client
+        oneof client_authentication_config {
+            // Use the client secret method to authenticate the client
+            ClientSecret client_secret = 1;
+            // Use the private ket JWT method to authenticate the client
+            PrivateKeyJwt private_key_jwt = 2;
+        }
+    }
+
+    ClientAuthentication client_authentication = 25;
 }
 
 message PlainOAuth2 {
@@ -1403,11 +1438,11 @@ message ExtAuthConfig {
     }
 
     message OidcAuthorizationCodeConfig {
-
         // your client id as registered with the issuer
         string client_id = 1;
 
-        // your client secret as registered with the issuer
+        // your client secret as registered with the issuer.
+        // Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence.
         string client_secret = 2 [(extproto.sensitive) = true];
 
         // The url of the issuer. We will look for OIDC information in issuerUrl+
@@ -1510,6 +1545,19 @@ message ExtAuthConfig {
 
         // Configuration related to the user session.
         UserSessionConfig user_session = 20;
+
+        // Fields for private key JWT Client Authentication.
+        message PkJwtClientAuthenticationConfig{
+            // Signing key for the JWT used for client authentication
+            string signing_key = 1 [(extproto.sensitive) = true];
+            // Amount of time for which the JWT is valid. No maximmum is enforced, but different IDPs may impose limits on how far in 
+            // the future the expiration time is allowed to be. Defaults in 5s in front end, but expected to be set explictly here
+            google.protobuf.Duration valid_for = 2;
+        }
+
+        // Configuration for private key JWT client authentication.
+        // Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence.
+        PkJwtClientAuthenticationConfig pk_jwt_client_authentication_config = 21;
     }
 
     message AccessTokenValidationConfig {
