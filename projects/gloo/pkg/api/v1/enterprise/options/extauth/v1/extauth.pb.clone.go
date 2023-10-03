@@ -868,6 +868,12 @@ func (m *OidcAuthorizationCode) Clone() proto.Message {
 		target.IdentityToken = proto.Clone(m.GetIdentityToken()).(*OidcAuthorizationCode_IdentityToken)
 	}
 
+	if h, ok := interface{}(m.GetClientAuthentication()).(clone.Cloner); ok {
+		target.ClientAuthentication = h.Clone().(*OidcAuthorizationCode_ClientAuthentication)
+	} else {
+		target.ClientAuthentication = proto.Clone(m.GetClientAuthentication()).(*OidcAuthorizationCode_ClientAuthentication)
+	}
+
 	return target
 }
 
@@ -2289,6 +2295,91 @@ func (m *OidcAuthorizationCode_IdentityToken) Clone() proto.Message {
 }
 
 // Clone function
+func (m *OidcAuthorizationCode_ClientAuthentication) Clone() proto.Message {
+	var target *OidcAuthorizationCode_ClientAuthentication
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_ClientAuthentication{}
+
+	switch m.ClientAuthenticationConfig.(type) {
+
+	case *OidcAuthorizationCode_ClientAuthentication_ClientSecret_:
+
+		if h, ok := interface{}(m.GetClientSecret()).(clone.Cloner); ok {
+			target.ClientAuthenticationConfig = &OidcAuthorizationCode_ClientAuthentication_ClientSecret_{
+				ClientSecret: h.Clone().(*OidcAuthorizationCode_ClientAuthentication_ClientSecret),
+			}
+		} else {
+			target.ClientAuthenticationConfig = &OidcAuthorizationCode_ClientAuthentication_ClientSecret_{
+				ClientSecret: proto.Clone(m.GetClientSecret()).(*OidcAuthorizationCode_ClientAuthentication_ClientSecret),
+			}
+		}
+
+	case *OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt_:
+
+		if h, ok := interface{}(m.GetPrivateKeyJwt()).(clone.Cloner); ok {
+			target.ClientAuthenticationConfig = &OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt_{
+				PrivateKeyJwt: h.Clone().(*OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt),
+			}
+		} else {
+			target.ClientAuthenticationConfig = &OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt_{
+				PrivateKeyJwt: proto.Clone(m.GetPrivateKeyJwt()).(*OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *OidcAuthorizationCode_ClientAuthentication_ClientSecret) Clone() proto.Message {
+	var target *OidcAuthorizationCode_ClientAuthentication_ClientSecret
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_ClientAuthentication_ClientSecret{}
+
+	if h, ok := interface{}(m.GetClientSecretRef()).(clone.Cloner); ok {
+		target.ClientSecretRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.ClientSecretRef = proto.Clone(m.GetClientSecretRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if h, ok := interface{}(m.GetDisableClientSecret()).(clone.Cloner); ok {
+		target.DisableClientSecret = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	} else {
+		target.DisableClientSecret = proto.Clone(m.GetDisableClientSecret()).(*github_com_golang_protobuf_ptypes_wrappers.BoolValue)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt) Clone() proto.Message {
+	var target *OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt
+	if m == nil {
+		return target
+	}
+	target = &OidcAuthorizationCode_ClientAuthentication_PrivateKeyJwt{}
+
+	if h, ok := interface{}(m.GetSigningKeyRef()).(clone.Cloner); ok {
+		target.SigningKeyRef = h.Clone().(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	} else {
+		target.SigningKeyRef = proto.Clone(m.GetSigningKeyRef()).(*github_com_solo_io_solo_kit_pkg_api_v1_resources_core.ResourceRef)
+	}
+
+	if h, ok := interface{}(m.GetValidFor()).(clone.Cloner); ok {
+		target.ValidFor = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.ValidFor = proto.Clone(m.GetValidFor()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	return target
+}
+
+// Clone function
 func (m *JwtValidation_RemoteJwks) Clone() proto.Message {
 	var target *JwtValidation_RemoteJwks
 	if m == nil {
@@ -2764,6 +2855,12 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.UserSession = h.Clone().(*ExtAuthConfig_UserSessionConfig)
 	} else {
 		target.UserSession = proto.Clone(m.GetUserSession()).(*ExtAuthConfig_UserSessionConfig)
+	}
+
+	if h, ok := interface{}(m.GetPkJwtClientAuthenticationConfig()).(clone.Cloner); ok {
+		target.PkJwtClientAuthenticationConfig = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig)
+	} else {
+		target.PkJwtClientAuthenticationConfig = proto.Clone(m.GetPkJwtClientAuthenticationConfig()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig)
 	}
 
 	return target
@@ -3367,6 +3464,25 @@ func (m *ExtAuthConfig_UserSessionConfig_CipherConfig) Clone() proto.Message {
 	target = &ExtAuthConfig_UserSessionConfig_CipherConfig{}
 
 	target.Key = m.GetKey()
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig{}
+
+	target.SigningKey = m.GetSigningKey()
+
+	if h, ok := interface{}(m.GetValidFor()).(clone.Cloner); ok {
+		target.ValidFor = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
+	} else {
+		target.ValidFor = proto.Clone(m.GetValidFor()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
 
 	return target
 }
