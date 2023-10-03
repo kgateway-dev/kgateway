@@ -2552,7 +2552,8 @@ spec:
 				})
 
 				AfterEach(func() {
-					// The secrets kube client does not have an IgnoreNotFound field, so not removing the created secret here, as the removal of the secret part of the test
+					// The secrets kube client does not have an IgnoreNotFound field, and deleting the secret is part of the test
+					// so there is no need to remove the created secret here
 				})
 
 				It("should act as expected with secret validation", func() {
