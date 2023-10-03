@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Most CI tools wait until resources are ready to mark a release as successful such as ArgoCD and Flux. We can emulate this by passing the --wait flag to helm rather than individually adding support for every CD tool out there.
+
