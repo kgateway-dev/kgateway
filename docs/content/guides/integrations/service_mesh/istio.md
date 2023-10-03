@@ -86,11 +86,12 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
     
    Example output: 
    ```
-   NAME                             READY   STATUS    RESTARTS   AGE
-   discovery-5c66ccfccb-tvr5v       1/1     Running   0          3h58m
-   gateway-6f88cff479-7mx6k         1/1     Running   0          3h58m
-   gateway-proxy-584974c887-km4mk   2/2     Running   0          158m
-   gloo-6c8f68bd4b-rv52f            1/1     Running   0          3h58m
+   NAME                             READY   STATUS      RESTARTS   AGE
+   discovery-6dcc8ddc58-q4zv7       1/1     Running     0          39s
+   gateway-certgen-xzr7t            0/1     Completed   0          43s
+   gateway-proxy-7bc5c97449-n9498   3/3     Running     0          39s
+   gloo-d8cfbf86b-v59j4             1/1     Running     0          39s
+   gloo-resource-rollout-hhvf9      0/1     Completed   0          38s
    ```
     
 9. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running. 
@@ -104,9 +105,10 @@ Congratulations! You successfully configured an Istio sidecar for your Gloo Edge
 
 To verify that you can connect to your app via mutual TLS (mTLS), you can install the Bookinfo app in your cluster and set up an upstream and a virtual service to route incoming requests to that app. 
 
-1. If you haven't already, Install the Bookinfo app in your cluster. 
+1. If you haven't already, install the Bookinfo app in your cluster as part of the Istio mesh. 
    ```shell
-   kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
+   kubectl label namespace default istio-injection=enabled
+   kubectl apply -f /path/to/istio/samples/bookinfo/platform/kube/bookinfo.yaml
    ```
    
    Example output: 
@@ -126,58 +128,57 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
    serviceaccount/bookinfo-productpage created
    deployment.apps/productpage-v1 created
    ```
-   
-2. Create an upstream to open up a port on your Gloo Edge gateway. The following example creates the `www.example.com` host that listens for incoming requests on port 80. 
-   ```yaml
-   kubectl apply -f- <<EOF
-   apiVersion: gloo.solo.io/v1
-   kind: Upstream
-   metadata:
-     name: my-upstream
-     namespace: gloo-system
-   spec:
-     static:
-       hosts:
-         - addr: www.example.com
-           port: 8080
-   EOF
-   ```
 
-3. Use `glooctl` to enable mTLS on the upstrea:
-   ```bash
-   glooctl istio enable-mtls --upstream my-upstream
-   ```
-
-3. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
+2. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
    kind: VirtualService
    metadata:
-     name: my-virtual-service
+     name: vs
      namespace: gloo-system
    spec:
      virtualHost:
        domains:
-         - 'www.example.com'
-       routes:
-       - matchers:
-         - prefix: /productpage
-         routeAction:
-           single:
-             kube:
-               ref:
-                 name: productpage
-                 namespace: default
-               port: 9080
+       - 'www.example.com'
+     routes:
+     - matchers:
+       - prefix: /productpage
+       routeAction:
+         single:
+           upstream:
+             name: default-productpage-9080
+             namespace: gloo-system
    EOF
    ```
    
-4. Send a request to the product page. Because the Istio sidecar is injected into the Gloo Edge gateway proxy, mTLS is used to securely connect to the service in your cluster. The routing is set up correctly if you receive a 200 HTTP response code. 
+3. At this point we can send a request to the product page. 
    ```shell
-   curl -vik -H "Host: www.example.com" "$(glooctl proxy url)/productpage" 
+   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
    ```
-   
+   A 200 response indicates success, however if we stop here, traffic to the productpage Upstream will not be encrypted with mTLS.
+
+4. In order to require all traffic in the Mesh uses mTLS, apply the following STRICT PeerAuthentication policy:
+   ```yaml
+   kubectl apply -f - <<EOF
+   apiVersion: "security.istio.io/v1beta1"
+   kind: "PeerAuthentication"
+   metadata:
+     name: "test"
+     namespace: "istio-system"
+   spec:
+     mtls:
+       mode: STRICT
+   EOF
+   ```
+   Now if we make the same curl request we will get a 503 response, as our upstream is not configured for Istio mTLS.
+
+5. Use `glooctl` to configure the upstream for Istio mTLS: 
+   ```shell
+   glooctl istio enable-mtls --upstream default-productpage-9080
+   ```
+   Now the request will once again succeed, with a 200 response, with traffic encrypted using mTLS.
+
 {{% notice note %}} 
 If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
 {{% /notice %}}
