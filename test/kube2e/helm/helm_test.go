@@ -191,6 +191,13 @@ var _ = Describe("Kube2e: helm", func() {
 				return runAndCleanCommand("kubectl", "-n", "gloo-system", "get", "deployment", "gateway-proxy", "-o", "jsonpath='{.spec.template.metadata.annotations.checksum/gateway-proxy-envoy-config}'")
 			}
 
+			expectDeploymentChecksumAnnotationToEqual := func(old []byte) {
+				EventuallyWithOffset(1, func() []byte {
+					return getDeploymentChecksumAnnotation()
+				}, "30s", "1s").Should(
+					Equal(old))
+			}
+
 			expectDeploymentChecksumAnnotationChangedFrom := func(old []byte) {
 				EventuallyWithOffset(1, func() []byte {
 					return getDeploymentChecksumAnnotation()
@@ -216,6 +223,11 @@ var _ = Describe("Kube2e: helm", func() {
 			// The default value is 250000
 			expectConfigDumpToContain(`"global_downstream_max_connections": 250000`)
 
+			// Repeat the same upgrade. The annotation shouldn't have changed
+			previousAnnotationValue = getDeploymentChecksumAnnotation()
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, nil)
+			expectDeploymentChecksumAnnotationToEqual(previousAnnotationValue)
+
 			// The annotation should change which in turn should trigger a new deployment
 			// This new deployment should contain the new value of `globalDownstreamMaxConnections` on envoy
 			previousAnnotationValue = getDeploymentChecksumAnnotation()
@@ -230,7 +242,6 @@ var _ = Describe("Kube2e: helm", func() {
 			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, settings)
 			expectDeploymentChecksumAnnotationChangedFrom(previousAnnotationValue)
 			expectConfigDumpToContain(`"global_downstream_max_connections": 12345`)
-
 		})
 	})
 
@@ -714,6 +725,7 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 			fmt.Println("ExitError: ", string(v.Stderr))
 		}
 	}
+	fmt.Println(string(b))
 	Expect(err).To(BeNil())
 	cmd.Process.Kill()
 	cmd.Process.Release()
@@ -744,6 +756,7 @@ func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
 	}
 
 	cfg, err := gateway.GetEnvoyCfgDump(opts)
+	fmt.Println(cfg)
 	Expect(err).NotTo(HaveOccurred())
 	return cfg
 
