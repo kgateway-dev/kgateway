@@ -747,7 +747,6 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 			fmt.Println("ExitError: ", string(v.Stderr))
 		}
 	}
-	fmt.Println(string(b))
 	Expect(err).To(BeNil())
 	cmd.Process.Kill()
 	cmd.Process.Release()
@@ -778,8 +777,6 @@ func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
 	}
 
 	cfg, err := gateway.GetEnvoyCfgDump(opts)
-	fmt.Println(cfg)
 	Expect(err).NotTo(HaveOccurred())
 	return cfg
-
 }
