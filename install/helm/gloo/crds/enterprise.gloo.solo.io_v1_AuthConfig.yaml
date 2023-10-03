@@ -471,6 +471,34 @@ spec:
                               type: object
                             callbackPath:
                               type: string
+                            clientAuthentication:
+                              properties:
+                                clientSecret:
+                                  properties:
+                                    clientSecretRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    disableClientSecret:
+                                      nullable: true
+                                      type: boolean
+                                  type: object
+                                privateKeyJwt:
+                                  properties:
+                                    signingKeyRef:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    validFor:
+                                      type: string
+                                  type: object
+                              type: object
                             clientId:
                               type: string
                             clientSecretRef:
