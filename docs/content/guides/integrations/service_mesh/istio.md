@@ -60,6 +60,10 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
          httpPort: 8080
          httpsPort: 8443
    ```
+
+   {{% notice note %}}
+   Though we're actually configuring istioMtls in this guide, the `istioProxy` values for this feature are taken from the `glooMtls` block.
+   {{% /notice %}}
    
 4. Install or upgrade Gloo Edge. 
    {{< tabs >}} 
@@ -79,7 +83,7 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
    {{< /tabs >}}   
 5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
    
-7. Get the pods for your gateway proxy deployment. You now see three containers in the gateway-proxy pod. 
+6. Get the pods for your gateway proxy deployment. You should now see three containers in the gateway-proxy pod. 
    ```shell
    kubectl get pods -n gloo-system
    ```
@@ -94,16 +98,20 @@ Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` a
    gloo-resource-rollout-hhvf9      0/1     Completed   0          38s
    ```
     
-9. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running. 
+7Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running. 
    ```shell
    kubectl describe <gateway-pod-name> -n gloo-system
    ```
 
-Congratulations! You successfully configured an Istio sidecar for your Gloo Edge gateway. 
+Congratulations! You have successfully configured an Istio sidecar for your Gloo Edge gateway. 
 
-## Verify the mTLS connection 
+## Set up and verify the mTLS connection 
 
-To verify that you can connect to your app via mutual TLS (mTLS), you can install the Bookinfo app in your cluster and set up an upstream and a virtual service to route incoming requests to that app. 
+To demonstrate that you can connect to your app via mutual TLS (mTLS), we will: 
+- Install the Bookinfo app in your cluster
+- Set up a virtual service to route incoming requests to the
+- Require strict PeerAuthentication in the Istio mesh
+- Configure the relevant upstream(s) to use Istio mTLS
 
 1. If you haven't already, install the Bookinfo app in your cluster as part of the Istio mesh. 
    ```shell
@@ -154,9 +162,27 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
    
 3. At this point we can send a request to the product page. 
    ```shell
-   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
+   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null
    ```
-   A 200 response indicates success, however if we stop here, traffic to the productpage Upstream will not be encrypted with mTLS.
+   ```text
+   *   Trying 127.0.0.1:32000...
+   * Connected to localhost (127.0.0.1) port 32000 (#0)
+   > GET /productpage HTTP/1.1
+   > Host: www.example.com
+   > User-Agent: curl/7.88.1
+   > Accept: */*
+   >
+   < HTTP/1.1 200 OK
+   < content-type: text/html; charset=utf-8
+   < content-length: 5290
+   < server: envoy
+   < date: Tue, 03 Oct 2023 20:14:00 GMT
+   < x-envoy-upstream-service-time: 17
+   <
+   { [5290 bytes data]
+   * Connection #0 to host localhost left intact
+   ```
+   A 200 response indicates that we can reach our app, however if we stop here, traffic to the productpage Upstream will not be encrypted with mTLS.
 
 4. In order to require all traffic in the Mesh uses mTLS, apply the following STRICT PeerAuthentication policy:
    ```yaml
@@ -171,13 +197,56 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
        mode: STRICT
    EOF
    ```
-   Now if we make the same curl request we will get a 503 response, as our upstream is not configured for Istio mTLS.
+5. Now if we make the same curl request we will get a 503 response, as our upstream is not configured for Istio mTLS.
+   ```shell
+   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
+   ```
+   ```text
+   *   Trying 127.0.0.1:32000...
+   * Connected to localhost (127.0.0.1) port 32000 (#0)
+   > GET /productpage HTTP/1.1
+   > Host: www.example.com
+   > User-Agent: curl/7.88.1
+   > Accept: */*
+   >
+   < HTTP/1.1 503 Service Unavailable
+   < content-length: 95
+   < content-type: text/plain
+   < date: Tue, 03 Oct 2023 20:15:55 GMT
+   < server: envoy
+   <
+   { [95 bytes data]
+   * Connection #0 to host localhost left intact
+   ```
 
-5. Use `glooctl` to configure the upstream for Istio mTLS: 
+6. Use `glooctl` to configure the upstream for Istio mTLS: 
    ```shell
    glooctl istio enable-mtls --upstream default-productpage-9080
    ```
-   Now the request will once again succeed, with a 200 response, with traffic encrypted using mTLS.
+
+7. Now the request will once again succeed, with a 200 response, with traffic encrypted using mTLS.
+   ```shell
+   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
+   ```
+   ```text
+   *   Trying 127.0.0.1:32000...
+   * Connected to localhost (127.0.0.1) port 32000 (#0)
+   > GET /productpage HTTP/1.1
+   > Host: www.example.com
+   > User-Agent: curl/7.88.1
+   > Accept: */*
+   >
+   < HTTP/1.1 200 OK
+   < content-type: text/html; charset=utf-8
+   < content-length: 4293
+   < server: envoy
+   < date: Tue, 03 Oct 2023 20:19:55 GMT
+   < x-envoy-upstream-service-time: 420
+   < x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
+   <
+   { [4293 bytes data]
+   * Connection #0 to host localhost left intact
+   ```
 
 {{% notice note %}} 
 If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
