@@ -73,7 +73,7 @@ spec:
       annotations:
         # This annotation was introduced to resolve https://github.com/solo-io/gloo/issues/8392
         # It triggers a new rollout of the gateway proxy if the values in this config map changes.
-        checksum/{{ $name | kebabcase }}-envoy-config: {{ include (print .Template.BasePath "/9-gateway-proxy-configmap.yaml") . | sha256sum }}
+        checksum/{{ $name | kebabcase }}-envoy-config: {{ $gatewaySpec.checksum }}
 {{- if or ($spec.podTemplate.extraAnnotations) (.Values.global.glooStats.setDatadogAnnotations) }}
       {{- range $key, $value := $spec.podTemplate.extraAnnotations }}
         {{ $key }}: {{ $value | quote }}
