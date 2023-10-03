@@ -36,13 +36,12 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    ```
       
 3. Create a `value-overrides.yaml` file with the following content. To configure your gateway with an Istio sidecar, make sure to add the `istioIntegration` section and set the `enableIstioSidecarOnGateway` option to `true`. You can optionally add the `global.istioSDS.enabled` option to your overrides file to automatically renew the certificate that the sidecar uses before it expires. 
-Be sure to specify a valid image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image`. The default Istio version is 1.18.2.
+Be sure to specify valid image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image`. The default Istio version is 1.18.2.
    ```yaml
    global:
      istioIntegration:
-       labelInstallNamespace: true
-       whitelistDiscovery: true
        enableIstioSidecarOnGateway: true
+       disableAutoInjection: true
      istioSDS:
        enabled: true
      glooMtls:
@@ -79,17 +78,8 @@ Be sure to specify a valid image fields under `global.glooMtls.istioProxy.image`
    {{< /tab >}}
    {{< /tabs >}}   
 5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
-6. Label the `gloo` namespace to automatically inject an Istio sidecar to all pods that run in that namespace. 
-   ```shell
-   kubectl label namespaces gloo-system istio-injection=enabled
-   ```
    
-7. Restart the proxy gateway deployment to pick up the Envoy configuration for the Istio sidecar. 
-   ```shell
-   kubectl rollout restart -n gloo-system deployment gateway-proxy
-   ```
-   
-8. Get the pods for your gateway proxy deployment. You now see a second container in each pod. 
+7. Get the pods for your gateway proxy deployment. You now see three containers in the gateway-proxy pod. 
    ```shell
    kubectl get pods -n gloo-system
    ```
@@ -103,7 +93,7 @@ Be sure to specify a valid image fields under `global.glooMtls.istioProxy.image`
    gloo-6c8f68bd4b-rv52f            1/1     Running   0          3h58m
    ```
     
-9. Describe the `gateway-proxy` pod to verify that the second container runs an Istio proxy image, such as `docker.io/istio/proxyv2:1.12.7`. 
+9. Describe the `gateway-proxy` pod to verify that the `istio-proxy` and `sds` containers are running. 
    ```shell
    kubectl describe <gateway-pod-name> -n gloo-system
    ```
@@ -114,7 +104,7 @@ Congratulations! You successfully configured an Istio sidecar for your Gloo Edge
 
 To verify that you can connect to your app via mutual TLS (mTLS), you can install the Bookinfo app in your cluster and set up an upstream and a virtual service to route incoming requests to that app. 
 
-1. Install the Bookinfo app in your cluster. 
+1. If you haven't already, Install the Bookinfo app in your cluster. 
    ```shell
    kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
    ```
@@ -152,7 +142,12 @@ To verify that you can connect to your app via mutual TLS (mTLS), you can instal
            port: 8080
    EOF
    ```
-   
+
+3. Use `glooctl` to enable mTLS on the upstrea:
+   ```bash
+   glooctl istio enable-mtls --upstream my-upstream
+   ```
+
 3. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
    ```yaml
    kubectl apply -f- <<EOF
