@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/7744
+  description: Add a `clientAuthentication` block to the OidcAuthorizationCode config to allow for client secret and private key jwt client authentication methods
+  resolvesIssue: false
