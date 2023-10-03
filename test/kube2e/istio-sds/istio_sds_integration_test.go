@@ -125,15 +125,15 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 					if err != nil {
 						return err
 					}
-					us, err := testutils2.KubectlOut("get", "upstream", "-n", installNamespace, "-oyaml", upstreamRef.Name)
+					us, err := resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
 					if err != nil {
 						return err
 					}
-					if strings.Contains(us, "sslConfig") {
+					if us.SslConfig != nil {
 						return fmt.Errorf("upstream has sslConfig after disable-mtls")
 					}
 					return nil
-				}).ShouldNot(HaveOccurred())
+				}, 30*time.Second).ShouldNot(HaveOccurred())
 			})
 
 			It("should make a request with the expected cert header", func() {
@@ -205,7 +205,7 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 						return fmt.Errorf("upstream has sslConfig after disable-mtls")
 					}
 					return nil
-				}).ShouldNot(HaveOccurred(), 30*time.Second)
+				}, 30*time.Second).ShouldNot(HaveOccurred())
 			})
 
 			It("should make a request with the expected cert header", func() {
