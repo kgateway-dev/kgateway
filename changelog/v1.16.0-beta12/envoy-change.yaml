@@ -1,0 +1,18 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5344
+    resolvesIssue: false
+    description: > 
+      Migrate from alpine to ubuntu for released version. 
+      Backlogged an issue to move fully to distroless on beta branch.
+      Can be found here https://github.com/solo-io/solo-projects/issues/5388
+      Not migrating prior as this may impact some debugging steps.
+      Forced to migrate per glibc being unable to update.
+      https://nvd.nist.gov/vuln/detail/CVE-2022-23218
+      https://nvd.nist.gov/vuln/detail/CVE-2022-23219
+      https://nvd.nist.gov/vuln/detail/CVE-2021-38604
+      https://nvd.nist.gov/vuln/detail/CVE-2021-3998
+      See here for glibc on alpine maintainers
+      https://gitlab.alpinelinux.org/alpine/tsc/-/issues/43#note_306270
+      https://github.com/sgerrand/alpine-pkg-glibc/issues/207#issuecomment-1707209887
+      https://github.com/sgerrand/alpine-pkg-glibc/issues/176
