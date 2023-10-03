@@ -228,7 +228,7 @@ var _ = Describe("Kube2e: helm", func() {
 			expectDeploymentChecksumAnnotationToEqual(previousAnnotationValue)
 
 			// We upgrade Gloo with a new value of `globalDownstreamMaxConnections` on envoy
-			// This should cause the checkup annotation on the deployment to change and therefore 
+			// This should cause the checkup annotation on the deployment to change and therefore
 			// the deployment should be updated with the new value
 			previousAnnotationValue = getDeploymentChecksumAnnotation()
 			requiredSettings := map[string]string{
