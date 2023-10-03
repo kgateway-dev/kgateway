@@ -1649,14 +1649,13 @@ spec:
 								"gatewayProxies.anotherGatewayProxy.globalDownstreamMaxConnections=12345",
 							},
 						})
+
 						defaultGWPconfigMap := getConfigMap(testManifest, namespace, "gateway-proxy-envoy-config")
 						anotherGWPconfigMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
-
 						Expect(defaultGWPconfigMap.Data["envoy.yaml"]).ToNot(Equal(anotherGWPconfigMap.Data["envoy.yaml"]))
 
 						defaultGWP := getDeployment("gateway-proxy")
 						anotherGWP := getDeployment("another-gateway-proxy")
-
 						Expect(defaultGWP.Spec.Template.Annotations["checksum/gateway-proxy-envoy-config"]).ToNot(Equal(anotherGWP.Spec.Template.Annotations["checksum/another-gateway-proxy-envoy-config"]))
 					})
 
