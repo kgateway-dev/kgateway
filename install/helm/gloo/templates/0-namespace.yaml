@@ -14,4 +14,5 @@ metadata:
     {{- end}}
   annotations:
     "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "-1" # Ensure that this is always the first hook triggered
 {{- end}}

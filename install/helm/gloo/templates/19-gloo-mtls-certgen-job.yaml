@@ -13,6 +13,8 @@ metadata:
   name: gloo-mtls-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
+    {{- /* With ArgoCD, there is no concept or installs or upgrades. Everything is a sync. */}}
+    {{- /* Due to this behavour of ArgoCD, the value of `gateway.certGenJob.runOnUpdate` can not be respected and will run on every sync. */}}
     {{- if .Values.gateway.certGenJob.runOnUpdate }}
     "helm.sh/hook": pre-install, pre-upgrade
     {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.certGenJob | nindent 4 }}
