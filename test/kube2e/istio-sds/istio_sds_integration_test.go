@@ -118,19 +118,12 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 
 			AfterEach(func() {
 				// It seems to sometimes take multiple calls before the disable command is registered
-				Eventually(func() error {
+				EventuallyWithOffset(1, func(g Gomega) {
 					err := testutils.Glooctl(fmt.Sprintf("istio disable-mtls --upstream %s", upstreamRef.Name))
-					if err != nil {
-						return err
-					}
+					g.Expect(err).NotTo(HaveOccurred())
 					us, err := resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
-					if err != nil {
-						return err
-					}
-					if us.SslConfig != nil {
-						return fmt.Errorf("upstream has sslConfig after disable-mtls")
-					}
-					return nil
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(us.SslConfig).To(BeNil())
 				}, 30*time.Second).ShouldNot(HaveOccurred())
 			})
 
@@ -190,19 +183,12 @@ var _ = Describe("Gloo + Istio SDS integration tests", func() {
 
 			AfterEach(func() {
 				// It seems to sometimes take multiple calls before the disable command is registered
-				Eventually(func() error {
+				EventuallyWithOffset(1, func(g Gomega) {
 					err := testutils.Glooctl(fmt.Sprintf("istio disable-mtls --upstream %s", upstreamRef.Name))
-					if err != nil {
-						return err
-					}
+					g.Expect(err).NotTo(HaveOccurred())
 					us, err := resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
-					if err != nil {
-						return err
-					}
-					if us.SslConfig != nil {
-						return fmt.Errorf("upstream has sslConfig after disable-mtls")
-					}
-					return nil
+					g.Expect(err).NotTo(HaveOccurred())
+					g.Expect(us.SslConfig).To(BeNil())
 				}, 30*time.Second).ShouldNot(HaveOccurred())
 			})
 
