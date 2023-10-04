@@ -2,10 +2,11 @@ package istio_test
 
 import (
 	"fmt"
-	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	"github.com/solo-io/go-utils/testutils/exec"
