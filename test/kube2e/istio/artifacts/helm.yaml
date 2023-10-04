@@ -29,3 +29,16 @@ gatewayProxies:
           cpu: 100m
           memory: 256Mi
     healthyPanicThreshold: 0
+
+# These values are recommended production values and are not expected to impact tested behavior for the Istio suite
+settings:
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+gateway:
+  persistProxySpec: true
+  logLevel: info
+  validation:
+    allowWarnings: true
+    alwaysAcceptResources: false
