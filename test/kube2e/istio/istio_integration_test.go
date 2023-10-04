@@ -2,11 +2,12 @@ package istio_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	"github.com/solo-io/go-utils/testutils/exec"
 	"net/http"
 	"path/filepath"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"github.com/solo-io/go-utils/testutils/exec"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	kubernetesplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
