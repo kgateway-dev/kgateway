@@ -98,6 +98,10 @@ func getEnvoyCfgDump(opts *options.Options) (string, error) {
 
 }
 
+func GetEnvoyCfgDump(opts *options.Options) (string, error) {
+	return getEnvoyCfgDump(opts)
+}
+
 func statsCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stats",
