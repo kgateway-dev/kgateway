@@ -13,13 +13,7 @@ Complete the following tasks before configuring an Istio sidecar for your Gloo E
 1. Create or use an existing cluster that runs Kubernetes a version supported by both [your version of Edge]({{< versioned_link_path fromRoot="/reference/support" >}}) and the [version of Istio you intend to install](https://istio.io/latest/docs/releases/supported-releases/). 
 2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.13 through 1.18 are supported in Gloo Edge 1.15. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
 3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/managed_kubernetes/) to configure a service mesh that is based on Envoy and Istio, and that can span across multiple service meshes and clusters. 
-4. Install an application in your mesh, such as Bookinfo. 
-   ```shell
-   kubectl label namespace default istio-injection=enabled
-   kubectl apply -f /path/to/istio/samples/bookinfo/platform/kube/bookinfo.yaml
-   ```
-   
-5. Install [Helm version 3](https://helm.sh/docs/intro/install/) on your local machine.
+4. Install [Helm version 3](https://helm.sh/docs/intro/install/) on your local machine.
 
 ## Configure the Gloo Edge gateway with an Istio sidecar
 
@@ -67,7 +61,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
 
    {{% notice note %}}
    Although the `istioProxy` values are defined in the `glooMtls` block, the values are also used to configure `istioMtls`.
--  {{% /notice %}}
+   {{% /notice %}}
    
 4. Install or upgrade Gloo Edge. 
    {{< tabs >}} 
@@ -84,7 +78,8 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    helm upgrade gloo gloo/gloo --namespace gloo-system -f value-overrides.yaml
    ```
    {{< /tab >}}
-   {{< /tabs >}}   
+   {{< /tabs >}}
+
 5. [Verify your setup]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" >}}). 
    
 6. Verify that your `gateway-proxy` pod now has three containers.
@@ -117,28 +112,18 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
 - Require strict PeerAuthentication in the Istio mesh
 - Configure the relevant upstream(s) to use Istio mTLS
 
-1. If you haven't already, install the Bookinfo app in your cluster as part of the Istio mesh. 
+1. Install the httpbin app in your cluster as part of the Istio mesh. 
    ```shell
    kubectl label namespace default istio-injection=enabled
-   kubectl apply -f /path/to/istio/samples/bookinfo/platform/kube/bookinfo.yaml
+   kubectl apply -f https://raw.githubusercontent.com/solo-io/workshops/master/gloo-edge/data/httpbin.yaml
    ```
    
    Example output: 
    ```
-   service/details created
-   serviceaccount/bookinfo-details created
-   deployment.apps/details-v1 created
-   service/ratings created
-   serviceaccount/bookinfo-ratings created
-   deployment.apps/ratings-v1 created
-   service/reviews created
-   serviceaccount/bookinfo-reviews created
-   deployment.apps/reviews-v1 created
-   deployment.apps/reviews-v2 created
-   deployment.apps/reviews-v3 created
-   service/productpage created
-   serviceaccount/bookinfo-productpage created
-   deployment.apps/productpage-v1 created
+   namespace/default labeled
+   serviceaccount/httpbin created
+   service/httpbin created
+   deployment.apps/httpbin created
    ```
 
 2. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
@@ -153,39 +138,35 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
      virtualHost:
        domains:
        - 'www.example.com'
-     routes:
-     - matchers:
-       - prefix: /productpage
-       routeAction:
-         single:
-           upstream:
-             name: default-productpage-9080
-             namespace: gloo-system
+       routes:
+       - matchers:
+         - prefix: /
+         routeAction:
+           single:
+             upstream:
+               name: default-httpbin-8000
+               namespace: gloo-system
    EOF
    ```
    
-3. Test access to Bookinfo by sending a request to the product page. 
+3. Test access to httpbin by sending a request to the `/headers` endpoint. This endpoint returns a response with all of the request headers received by httpbin. 
    ```shell
-   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null
+   curl -H "Host: www.example.com" $(glooctl proxy url)/headers
    ```
-   A `200 OK` response indicates that Bookinfo is reachable. However, traffic to the product page upstream is not encrypted with mTLS.
-   ```text
-   *   Trying 127.0.0.1:32000...
-   * Connected to localhost (127.0.0.1) port 32000 (#0)
-   > GET /productpage HTTP/1.1
-   > Host: www.example.com
-   > User-Agent: curl/7.88.1
-   > Accept: */*
-   >
-   < HTTP/1.1 200 OK
-   < content-type: text/html; charset=utf-8
-   < content-length: 5290
-   < server: envoy
-   < date: Tue, 03 Oct 2023 20:14:00 GMT
-   < x-envoy-upstream-service-time: 17
-   <
-   { [5290 bytes data]
-   * Connection #0 to host localhost left intact
+   A response indicates that httpbin is reachable. However, traffic to the product page upstream is not encrypted with mTLS.
+   We can tell this because the `X-Forwarded-Client-Cert` header is not present.
+   ```json
+   {
+     "headers": {
+       "Accept": "*/*",
+       "Host": "httpbin.default",
+       "User-Agent": "curl/7.88.1",
+       "X-B3-Sampled": "0",
+       "X-B3-Spanid": "b55df4f4d6d75692",
+       "X-B3-Traceid": "c048ebc0bb22b1eeb55df4f4d6d75692",
+       "X-Forwarded-Host": "www.example.com"
+     }
+   }
    ```
 
 4. To require all traffic in the mesh to use mTLS, apply the following STRICT PeerAuthentication policy.
@@ -203,13 +184,13 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    ```
 5. Repeat the same curl request to the product page.
    ```shell
-   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
+   curl -v -H "Host: www.example.com" $(glooctl proxy url)/headers 
    ```
    The `503 Service Unavailable` response is returned because the upstream is not configured for Istio mTLS.
    ```text
    *   Trying 127.0.0.1:32000...
    * Connected to localhost (127.0.0.1) port 32000 (#0)
-   > GET /productpage HTTP/1.1
+   > GET /headers HTTP/1.1
    > Host: www.example.com
    > User-Agent: curl/7.88.1
    > Accept: */*
@@ -220,38 +201,34 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    < date: Tue, 03 Oct 2023 20:15:55 GMT
    < server: envoy
    <
-   { [95 bytes data]
    * Connection #0 to host localhost left intact
+     upstream connect error or disconnect/reset before headers. reset reason: connection termination
    ```
 
 6. Use `glooctl` to configure the upstream for Istio mTLS.
    ```shell
-   glooctl istio enable-mtls --upstream default-productpage-9080
+   glooctl istio enable-mtls --upstream default-httpbin-8000
    ```
 
-7. Repeat the same curl request to the product page. This time, the request succeeds because traffic is encrypted using mTLS.
+7. Repeat the same curl request to the product page.
    ```shell
-   curl -viks -H "Host: www.example.com" "$(glooctl proxy url)/productpage" --output /dev/null 
+   curl -H "Host: www.example.com" "localhost:32000/headers" 
    ```
-   ```text
-   *   Trying 127.0.0.1:32000...
-   * Connected to localhost (127.0.0.1) port 32000 (#0)
-   > GET /productpage HTTP/1.1
-   > Host: www.example.com
-   > User-Agent: curl/7.88.1
-   > Accept: */*
-   >
-   < HTTP/1.1 200 OK
-   < content-type: text/html; charset=utf-8
-   < content-length: 4293
-   < server: envoy
-   < date: Tue, 03 Oct 2023 20:19:55 GMT
-   < x-envoy-upstream-service-time: 420
-   < x-envoy-decorator-operation: productpage.default.svc.cluster.local:9080/*
-   <
-   { [4293 bytes data]
-   * Connection #0 to host localhost left intact
-   ```
+   This time, the request succeeds because traffic is encrypted using mTLS. Note that httpbin received the `X-Forwarded-Client-Cert` header, indicating that Istio mTLS has occurred.
+   {{<highlight json "hl_lines=9">}}
+   {
+     "headers": {
+       "Accept": "*/*",
+       "Host": "httpbin.default",
+       "User-Agent": "curl/7.88.1",
+       "X-B3-Sampled": "0",
+       "X-B3-Spanid": "b34b0243f9a1e410",
+       "X-B3-Traceid": "21dc96a98c29ef48b34b0243f9a1e410",
+       "X-Forwarded-Client-Cert": "By=spiffe://cluster.local/ns/default/sa/httpbin;Hash=924e94ed5ff628e797d62acddf37d347ce3df827d5605727bae31a45025bb2a3;Subject=\"\";URI=spiffe://cluster.local/ns/gloo-system/sa/gateway-proxy",
+       "X-Forwarded-Host": "www.example.com"
+     }
+   }
+   {{</highlight>}}
 
 {{% notice note %}} 
 If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
