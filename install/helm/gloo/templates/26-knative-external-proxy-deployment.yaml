@@ -31,6 +31,7 @@ spec:
         sidecar.istio.io/inject: "false"
         {{- end }}
       annotations:
+        checksum/knative-external-proxy-config: {{ include (print .Template.BasePath "/27-knative-external-proxy-configmap.yaml") . | sha256sum }}
         {{- if .Values.settings.integrations.knative.extraKnativeExternalAnnotations }}
         {{- range $key, $value := .Values.settings.integrations.knative.extraKnativeExternalAnnotations }}
         {{ $key }}: {{ $value | quote }}

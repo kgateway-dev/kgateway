@@ -17,6 +17,8 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewayv1kube "github.com/solo-io/gloo/projects/gateway/pkg/api/v1/kube/client/clientset/versioned/typed/gateway.solo.io/v1"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/gateway"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
@@ -27,6 +29,7 @@ import (
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/skv2/codegen/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/code-generator/schemagen"
 	admission_v1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -180,6 +183,65 @@ var _ = Describe("Kube2e: helm", func() {
 				return exec_utils.RunCommandOutput(testHelper.RootDir, false,
 					"kubectl", "get", "serviceaccount", "-n", externalNamespace)
 			}, "10s", "1s").Should(ContainSubstring("gateway-proxy"))
+		})
+
+		It("triggers a new rollout when the configmap has changed", func() {
+			getDeploymentChecksumAnnotation := func() []byte {
+				// kubectl -n gloo-system get deployment gateway-proxy -o jsonpath='{.spec.template.metadata.annotations.checksum/gateway-proxy-envoy-config}'
+				return runAndCleanCommand("kubectl", "-n", "gloo-system", "get", "deployment", "gateway-proxy", "-o", "jsonpath='{.spec.template.metadata.annotations.checksum/gateway-proxy-envoy-config}'")
+			}
+
+			expectDeploymentChecksumAnnotationToEqual := func(old []byte) {
+				EventuallyWithOffset(1, func() []byte {
+					return getDeploymentChecksumAnnotation()
+				}, "30s", "1s").Should(
+					Equal(old))
+			}
+
+			expectDeploymentChecksumAnnotationChangedFrom := func(old []byte) {
+				EventuallyWithOffset(1, func() []byte {
+					return getDeploymentChecksumAnnotation()
+				}, "30s", "1s").Should(
+					Not(Equal(old)))
+			}
+
+			expectConfigDumpToContain := func(str string) {
+				EventuallyWithOffset(1, func() string {
+					return GetEnvoyCfgDump(testHelper)
+				}, "30s", "1s").Should(
+					ContainSubstring(str))
+			}
+
+			// The default value is 250000
+			expectConfigDumpToContain(`"global_downstream_max_connections": 250000`)
+
+			// Since we are running a version that doesn't have this annotation, we need to upgrade to one that does.
+			// This should trigger a new deployment anyway
+			previousAnnotationValue := getDeploymentChecksumAnnotation()
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, nil)
+			expectDeploymentChecksumAnnotationChangedFrom(previousAnnotationValue)
+			expectConfigDumpToContain(`"global_downstream_max_connections": 250000`)
+
+			// Repeat the same upgrade. The annotation shouldn't have changed
+			previousAnnotationValue = getDeploymentChecksumAnnotation()
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, nil)
+			expectDeploymentChecksumAnnotationToEqual(previousAnnotationValue)
+
+			// We upgrade Gloo with a new value of `globalDownstreamMaxConnections` on envoy
+			// This should cause the checkup annotation on the deployment to change and therefore
+			// the deployment should be updated with the new value
+			previousAnnotationValue = getDeploymentChecksumAnnotation()
+			requiredSettings := map[string]string{
+				"gatewayProxies.gatewayProxy.globalDownstreamMaxConnections": "12345",
+			}
+			var settings []string
+			for key, val := range requiredSettings {
+				settings = append(settings, "--set")
+				settings = append(settings, strings.Join([]string{key, val}, "="))
+			}
+			upgradeGloo(testHelper, chartUri, crdDir, fromRelease, targetVersion, strictValidation, settings)
+			expectDeploymentChecksumAnnotationChangedFrom(previousAnnotationValue)
+			expectConfigDumpToContain(`"global_downstream_max_connections": 12345`)
 		})
 	})
 
@@ -697,4 +759,24 @@ func checkGlooHealthy(testHelper *helper.SoloTestHelper) {
 		runAndCleanCommand("kubectl", "rollout", "status", "deployment", "-n", testHelper.InstallNamespace, deploymentName)
 	}
 	kube2e.GlooctlCheckEventuallyHealthy(2, testHelper, "90s")
+}
+
+func GetEnvoyCfgDump(testHelper *helper.SoloTestHelper) string {
+	contextWithCancel, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	opts := &options.Options{
+		Metadata: core.Metadata{
+			Namespace: testHelper.InstallNamespace,
+		},
+		Top: options.Top{
+			Ctx: contextWithCancel,
+		},
+		Proxy: options.Proxy{
+			Name: "gateway-proxy",
+		},
+	}
+
+	cfg, err := gateway.GetEnvoyCfgDump(opts)
+	Expect(err).NotTo(HaveOccurred())
+	return cfg
 }
