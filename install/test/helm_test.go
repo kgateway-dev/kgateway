@@ -1632,6 +1632,33 @@ spec:
 						Expect(gwpStr.Spec.Template.Spec.NodeSelector).To(Equal(map[string]string{"custom": "custom"}))
 					})
 
+					It("has a different checksum for each gateway-proxy-envoy-config", func() {
+						getDeployment := func(name string) *appsv1.Deployment {
+							gwpUns := testManifest.ExpectCustomResource("Deployment", namespace, name)
+							gwp, err := kuberesource.ConvertUnstructured(gwpUns)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(gwp).To(BeAssignableToTypeOf(&appsv1.Deployment{}))
+							gwpStr := *gwp.(*appsv1.Deployment)
+							return &gwpStr
+						}
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.globalDownstreamMaxConnections=54321",
+								// anotherGatewayProxy should a different value of globalDownstreamMaxConnections to ensure that the config maps generated are different
+								"gatewayProxies.anotherGatewayProxy.globalDownstreamMaxConnections=12345",
+							},
+						})
+
+						defaultGWPconfigMap := getConfigMap(testManifest, namespace, "gateway-proxy-envoy-config")
+						anotherGWPconfigMap := getConfigMap(testManifest, namespace, "another-gateway-proxy-envoy-config")
+						Expect(defaultGWPconfigMap.Data["envoy.yaml"]).ToNot(Equal(anotherGWPconfigMap.Data["envoy.yaml"]))
+
+						defaultGWP := getDeployment("gateway-proxy")
+						anotherGWP := getDeployment("another-gateway-proxy")
+						Expect(defaultGWP.Spec.Template.Annotations["checksum/gateway-proxy-envoy-config"]).ToNot(Equal(anotherGWP.Spec.Template.Annotations["checksum/another-gateway-proxy-envoy-config"]))
+					})
+
 					It("uses default nodeSelectors for custom gateway proxy when none is specified", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -2801,6 +2828,10 @@ spec:
 							"prometheus.io/path":   "/metrics",
 							"prometheus.io/port":   "8081",
 							"prometheus.io/scrape": "true",
+							// This annotation was introduced to resolve https://github.com/solo-io/gloo/issues/8392
+							// It triggers a new rollout of the gateway proxy if the config map it uses changes
+							// As of PR 8733, changing the values of the deployment spec doesn't change the gateway-proxy config map, so it is safe to hardcode the checksum in the tests
+							"checksum/gateway-proxy-envoy-config": "27068cd033014d38f6c77522484e957ab25fa1be34a900a1f5241b8f7d62f525",
 						}
 						deploy.Spec.Template.Spec.Volumes = []v1.Volume{{
 							Name: "envoy-config",
@@ -3388,6 +3419,10 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true"},
 						})
+						// Since changing the value of gatewayProxies.gatewayProxy.readConfig changes the gateway-proxy-envoy-config configmap, we need to update the checksum on the deployment as well.
+						// This also doubles as a check to validate that changes in the configmap change the checksum annotation on the deployment which will trigger a rollout.
+						gatewayProxyDeployment.Spec.Template.Annotations["checksum/gateway-proxy-envoy-config"] = "3e431b3dbb3fa7e31cedf9594474ad19e6ecc0e5a7bba59b99cf044d51546eaa"
+
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
