@@ -2,6 +2,7 @@ package istio_test
 
 import (
 	"fmt"
+	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -44,38 +44,38 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 		virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: "gloo-system"}
 	)
 
-	AfterEach(func() {
-		var err error
-		err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		Expect(err).NotTo(HaveOccurred())
-		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
-		})
-
-		err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() bool {
-			_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
-			// we should receive a DNE error, meaning it's now deleted
-			return err != nil && skerrors.IsNotExist(err)
-		}, "5s", "1s").Should(BeTrue())
-
-		err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
-			IgnoreNotExist: true,
-		})
-		helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
-			return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
-		})
-	})
-
 	Context("port settings", func() {
 		BeforeEach(func() {
 			serviceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: defaults.GlooSystem}
 			virtualServiceRef = core.ResourceRef{Name: helper.TestrunnerName, Namespace: defaults.GlooSystem}
+		})
+
+		AfterEach(func() {
+			var err error
+			err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
+			})
+
+			err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
+				// we should receive a DNE error, meaning it's now deleted
+				return err != nil && skerrors.IsNotExist(err)
+			}, "5s", "1s").Should(BeTrue())
+
+			err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
+			})
 		})
 
 		// Sets up services
@@ -259,6 +259,34 @@ var _ = Describe("Gloo + Istio integration tests", func() {
 			Expect(err).NotTo(HaveOccurred())
 			helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
 				return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
+			})
+		})
+
+		AfterEach(func() {
+			var err error
+			err = resourceClientSet.VirtualServiceClient().Delete(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return resourceClientSet.VirtualServiceClient().Read(virtualServiceRef.Namespace, virtualServiceRef.Name, clients.ReadOpts{})
+			})
+
+			err = resourceClientSet.ServiceClient().Delete(serviceRef.Namespace, serviceRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				_, err := resourceClientSet.ServiceClient().Read(serviceRef.Namespace, serviceRef.Name, clients.ReadOpts{})
+				// we should receive a DNE error, meaning it's now deleted
+				return err != nil && skerrors.IsNotExist(err)
+			}, "5s", "1s").Should(BeTrue())
+
+			err = resourceClientSet.UpstreamClient().Delete(upstreamRef.Namespace, upstreamRef.Name, clients.DeleteOpts{
+				IgnoreNotExist: true,
+			})
+			helpers.EventuallyResourceDeleted(func() (resources.InputResource, error) {
+				return resourceClientSet.UpstreamClient().Read(upstreamRef.Namespace, upstreamRef.Name, clients.ReadOpts{})
 			})
 		})
 
