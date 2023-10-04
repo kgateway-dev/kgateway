@@ -190,7 +190,7 @@ Lastly, install Gloo Edge by using a configuration that allows Vault and IRSA cr
 
 Override the default settings to use Vault as a source for managing secrets. To allow for IRSA, add the `eks.amazonaws.com/role-arn` annotations, which reference the roles to assume, to the `gloo` and `discovery` service accounts.
 
-Both `pathPrefix` and `rootKey` will need to be adjusted when mounting on a custom KV secret engine.
+Note that you must adjust both the `pathPrefix` and `rootKey` options when you use a custom `kv` secrets engine.
 
 ```shell
 cat <<EOF > helm-overrides.yaml
@@ -237,7 +237,7 @@ helm install gloo gloo/gloo --namespace gloo-system --create-namespace --version
 
 ### Access denied due to identity-based policies – implicit denial
 
-When registering the role in Vault with `vault write auth/aws/role/<role name>` you might encounter the following error due to insufficient action with the identity-based policy.
+When you register the role in Vault by running `vault write auth/aws/role/<role name>`, you might encounter the following error due to insufficient action with the identity-based policy.
 
 ```
 Error writing data to auth/aws/role/dev-role-iam: Error making API request.
@@ -249,7 +249,7 @@ Code: 400. Errors:
 	status code: 403, request id: e348ee87-6d44-493b-8763-14fff6aea689
 ```
 
-To fix, add the `iam:GetRole` action to a policy attached to the assumed-role identity. In the above example to the identity `arn:aws:sts::account-id:assumed-role/foo-role/bar`.
+To resolve this issue, add the `iam:GetRole` action to a policy attached to the assumed-role identity. In the previous example, you would add the `iam:GetRole` action to the identity `arn:aws:sts::account-id:assumed-role/foo-role/bar`.
 
 ## Summary
 
