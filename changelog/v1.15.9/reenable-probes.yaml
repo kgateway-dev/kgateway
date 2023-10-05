@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8749
+    resolvesIssue: false
+    description: > 
+      Re-enable wget in our gloo and gateway-proxy pods.
+      Wget is currently used in our non-custom probes which are currently not well covered in tests.
+      Caused by https://github.com/solo-io/solo-projects/issues/5344 shift to ubuntu.
