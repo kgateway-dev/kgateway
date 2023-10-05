@@ -1,0 +1,8 @@
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "test"
+  namespace: "istio-system"
+spec:
+  mtls:
+    mode: STRICT
