@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -32,7 +32,11 @@ func (a *AggregateTranslator) ComputeListener(params Params, proxyName string, g
 	if len(snap.VirtualServices) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
-		return nil
+		if settingsutil.MaybeFromContext(params.ctx).GetGateway().GetTranslateEmptyGateways().GetValue() {
+			contextutils.LoggerFrom(params.ctx).Debugf("but continuing since translateEmptyGateways is set", snapHash)
+		} else {
+			return nil
+		}
 	}
 
 	var aggregateListener *gloov1.AggregateListener

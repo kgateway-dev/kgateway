@@ -238,6 +238,63 @@ var _ = Describe("Kube2e: helm", func() {
 		})
 	})
 
+	// The aim of the test is to ensure that the readiness probe is configured on the gateway proxy
+	// and the gateway-proxy deployment is ready before helm marks the upgrade as successful.
+	// Ref: https://github.com/solo-io/gloo/issues/8288
+	Context("Custom readiness probe", func() {
+		var valuesFileForCustomReadinessProbe string
+		var expectGatewayProxyIsReady func()
+
+		BeforeEach(func() {
+			valuesFileForCustomReadinessProbe = getHelmUpgradeValuesOverrideFileForCustomReadinessProbe()
+
+			expectGatewayProxyIsReady = func() {
+				Eventually(func() (string, error) {
+					a, b := exec_utils.RunCommandOutput(testHelper.RootDir, false,
+						"kubectl", "-n", namespace, "get", "deployment", "gateway-proxy", "-o", "yaml")
+					return a, b
+				}, "30s", "1s").Should(
+					// kubectl -n gloo-system get deployment gateway-proxy -o yaml
+					// ...
+					// readinessProbe:
+					//   httpGet:
+					//     path: /envoy-hc
+					// ...
+					// readyReplicas: 1
+					And(ContainSubstring("readinessProbe:"),
+						ContainSubstring("/envoy-hc"),
+						ContainSubstring("readyReplicas: 1")))
+			}
+		})
+
+		Context("On clean install", func() {
+			BeforeEach(func() {
+				additionalInstallArgs = []string{
+					"--values", valuesFileForCustomReadinessProbe,
+					"--wait",
+					"--wait-for-jobs",
+				}
+			})
+
+			It("succeeds adding a custom readiness probe and the gateway-proxy deployment is ready", func() {
+				expectGatewayProxyIsReady()
+			})
+		})
+
+		Context("On upgrade", func() {
+			It("succeeds adding a custom readiness probe and the gateway-proxy deployment is ready", func() {
+				settings := []string{
+					"--wait",
+					"--wait-for-jobs",
+				}
+
+				upgradeGlooWithCustomValuesFile(testHelper, chartUri, crdDir, fromRelease, strictValidation, settings, valuesFileForCustomReadinessProbe)
+
+				expectGatewayProxyIsReady()
+			})
+		})
+	})
+
 	Context("validation webhook", func() {
 		var cfg *rest.Config
 		var err error
@@ -609,11 +666,9 @@ func upgradeCrds(testHelper *helper.SoloTestHelper, fromRelease string, crdDir s
 	time.Sleep(time.Second * 5)
 }
 
-func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
-	upgradeCrds(testHelper, fromRelease, crdDir)
+func upgradeGlooWithCustomValuesFile(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string, valueOverrideFile string) {
 
-	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
-	defer cleanupFunc()
+	upgradeCrds(testHelper, fromRelease, crdDir)
 
 	var args = []string{"upgrade", testHelper.HelmChartName, chartUri,
 		// As most CD tools wait for resources to be ready before marking the release as successful,
@@ -639,6 +694,12 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir stri
 
 	// Check that everything is OK
 	checkGlooHealthy(testHelper)
+
+}
+
+func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, crdDir string, fromRelease string, strictValidation bool, additionalArgs []string) {
+	valueOverrideFile := getHelmUpgradeValuesOverrideFile()
+	upgradeGlooWithCustomValuesFile(testHelper, chartUri, crdDir, fromRelease, strictValidation, additionalArgs, valueOverrideFile)
 }
 
 func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cancel context.CancelFunc) {
@@ -650,46 +711,19 @@ func uninstallGloo(testHelper *helper.SoloTestHelper, ctx context.Context, cance
 	cancel()
 }
 
-func getHelmUpgradeValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := os.CreateTemp("", "values-*.yaml")
-	Expect(err).NotTo(HaveOccurred())
+func getHelmValuesFile(filename string) string {
+	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred(), "working dir could not be retrieved")
+	helmUpgradeValuesFile := filepath.Join(cwd, "artifacts", filename)
+	return helmUpgradeValuesFile
+}
 
-	_, err = values.Write([]byte(`
-global:
-  image:
-    pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
-settings:
-  singleNamespace: true
-  create: true
-  replaceInvalidRoutes: true
-gateway:
-  persistProxySpec: true
-gatewayProxies:
-  gatewayProxy:
-    healthyPanicThreshold: 0
-    gatewaySettings:
-      # the KEYVALUE action type was first available in v1.11.11 (within the v1.11.x branch); this is a sanity check to
-      # ensure we can upgrade without errors from an older version to a version with these new fields (i.e. we can set
-      # the new fields on the Gateway CR during the helm upgrade, and that it will pass validation)
-      customHttpGateway:
-        options:
-          dlp:
-            dlpRules:
-            - actions:
-              - actionType: KEYVALUE
-                keyValueAction:
-                  keyToMask: test
-                  name: test
-`))
-	Expect(err).NotTo(HaveOccurred())
+func getHelmUpgradeValuesOverrideFileForCustomReadinessProbe() (filename string) {
+	return getHelmValuesFile("custom-readiness-probe.yaml")
+}
 
-	err = values.Close()
-	Expect(err).NotTo(HaveOccurred())
-
-	return values.Name(), func() { _ = os.Remove(values.Name()) }
+func getHelmUpgradeValuesOverrideFile() (filename string) {
+	return getHelmValuesFile("upgrade-override.yaml")
 }
 
 // return a base64-encoded proto descriptor to use for testing

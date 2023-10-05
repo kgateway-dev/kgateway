@@ -6,8 +6,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
@@ -162,5 +164,37 @@ var _ = Describe("Aggregate translator", func() {
 			// demand that the order is deterministic
 			Expect(currentOrder).To(Equal(originalOrder))
 		}
+	})
+
+	Context("No virtual Services", func() {
+		JustBeforeEach(func() {
+			snap.VirtualServices = []*v1.VirtualService{}
+		})
+
+		It("Does not generate a listener", func() {
+			aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
+			genProxyWithIsolatedVirtualHosts()
+			proxyName := proxy.Metadata.Name
+			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
+			Expect(l).To(BeNil())
+			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		})
+
+		It("Does generates a listener if TranslateEmptyGateways is set", func() {
+			ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
+				Gateway: &gloov1.GatewayOptions{
+					TranslateEmptyGateways: &wrapperspb.BoolValue{
+						Value: true,
+					},
+				},
+			})
+			aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
+			genProxyWithIsolatedVirtualHosts()
+			proxyName := proxy.Metadata.Name
+			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
+			Expect(l).NotTo(BeNil())
+			Expect(l.GetAggregateListener())
+			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		})
 	})
 })

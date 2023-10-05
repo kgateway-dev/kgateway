@@ -11,10 +11,6 @@ metadata:
     gloo: resource-rollout
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
-    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob | nindent 4 }}
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
@@ -74,6 +70,14 @@ spec:
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
 
+            # Wait for the enterprise job if present
+            kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout &> /dev/null
+            if [ $? -eq 0 ]
+            then
+              echo "Waiting for the enterprise resource rollout job to complete"
+              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout
+            fi
+
             # apply Gloo Edge custom resources
             if [ $HAS_CUSTOM_RESOURCES == "true" ]
             then
@@ -95,10 +99,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
 ---
@@ -110,10 +110,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -121,6 +117,10 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["*"]
   verbs: ["get", "list", "create", "update", "patch"]
+  # This permission is required by the oss rollout job in order to wait for the enterprise rollout job to finish first
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "delete"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -130,10 +130,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 roleRef:
   kind: Role
   name: gloo-resource-rollout
@@ -150,10 +146,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["*"]
@@ -166,10 +158,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 roleRef:
   kind: ClusterRole
   name: gloo-resource-rollout{{ include "gloo.rbacNameSuffix" . }}

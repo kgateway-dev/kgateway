@@ -63,6 +63,7 @@ discovery:
     fsGroup: 10101
 gateway:
   enabled: true
+  translateEmptyGateways: false
   readGatewaysFromAllNamespaces: false
   isolateVirtualHostsBySslConfig: false
   validation:
@@ -97,7 +98,9 @@ gateway:
       repository: kubectl
     restartPolicy: OnFailure
     runAsUser: 10101
-    ttlSecondsAfterFinished: 60
+    # When adding the --wait && --wait-for-jobs flag in helm, sometimes the job can complete and be deleted before helm can check if it has finished (for instance, while helm is waiting on a deployment).
+    # So set this to a higher value where it should still be around after all the other resources are ready
+    ttlSecondsAfterFinished: 300
   cleanupJob:
     enabled: true
     image:
@@ -151,7 +154,7 @@ gatewayProxies:
     envoyOverloadManager:
       enabled: false
       actions: []
-      bufferFactoryConfig: 
+      bufferFactoryConfig:
       refreshInterval: 1s
       resourceMonitors: []
     globalDownstreamMaxConnections: 250000
