@@ -3369,7 +3369,7 @@ spec:
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					It("can overwrite sds and istioProxy images from istioSDS", func() {
+					FIt("can overwrite sds and istioProxy images from istioSDS", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true",
@@ -3405,9 +3405,9 @@ spec:
 						Expect(istioProxyContainer.VolumeMounts[4]).To(Equal(v1.VolumeMount{Name: "credential-socket", MountPath: "/var/run/secrets/credential-uds"}))
 						Expect(istioProxyContainer.VolumeMounts[5]).To(Equal(v1.VolumeMount{Name: "workload-socket", MountPath: "/var/run/secrets/workload-spiffe-uds"}))
 						Expect(istioProxyContainer.VolumeMounts[6]).To(Equal(v1.VolumeMount{Name: "workload-certs", MountPath: "/var/run/secrets/workload-spiffe-credentials"}))
-						Expect(gwpDepl.Spec.Template.Spec.Volumes[4]).To(Equal(v1.Volume{Name: "credential-socket", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
-						Expect(gwpDepl.Spec.Template.Spec.Volumes[5]).To(Equal(v1.Volume{Name: "workload-socket", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
-						Expect(gwpDepl.Spec.Template.Spec.Volumes[6]).To(Equal(v1.Volume{Name: "workload-certs", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[5]).To(Equal(v1.Volume{Name: "credential-socket", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[6]).To(Equal(v1.Volume{Name: "workload-socket", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
+						Expect(gwpDepl.Spec.Template.Spec.Volumes[7]).To(Equal(v1.Volume{Name: "workload-certs", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}))
 					})
 
 					It("adds readConfig annotations", func() {

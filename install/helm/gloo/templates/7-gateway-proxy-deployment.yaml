@@ -494,9 +494,9 @@ spec:
               audience: istio-ca
               expirationSeconds: 43200
               path: istio-token
-      - name: workload-socket
-        emptyDir: {}
       - name: credential-socket
+        emptyDir: {}
+      - name: workload-socket
         emptyDir: {}
       - name: workload-certs
         emptyDir: {}
