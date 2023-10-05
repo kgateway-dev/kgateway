@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/go-utils/log"
 
 	envoy_config_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -85,9 +86,11 @@ func (n *httpNetworkFilterTranslator) computePreHCMFilters(params plugins.Params
 }
 
 func (n *httpNetworkFilterTranslator) ComputeNetworkFilters(params plugins.Params) ([]*envoy_config_listener_v3.Filter, error) {
-	// return if listener has no virtual hosts
-	if len(n.listener.GetVirtualHosts()) == 0 {
-		return nil, nil
+	if !settingsutil.MaybeFromContext(params.Ctx).GetGateway().GetTranslateEmptyGateways().GetValue() {
+		// return if listener has no virtual hosts
+		if len(n.listener.GetVirtualHosts()) == 0 {
+			return nil, nil
+		}
 	}
 
 	// We used to support a ListenerFilterPlugin interface, which was used to generate
