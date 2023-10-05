@@ -87,7 +87,7 @@ func recordKubeState(f *os.File) {
 	}
 	kubeEndpointsState, err := kubeCli.KubectlOut(nil, "get", "endpoints", "-A")
 	if err != nil {
-		f.WriteString("*** Unable to get kube state ***\n")
+		f.WriteString("*** Unable to get endpoint state ***\n")
 		return
 	}
 	f.WriteString("*** Kube state ***\n")
