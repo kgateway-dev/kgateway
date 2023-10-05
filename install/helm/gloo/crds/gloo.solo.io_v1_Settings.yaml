@@ -514,6 +514,9 @@ spec:
                     type: boolean
                   readGatewaysFromAllNamespaces:
                     type: boolean
+                  translateEmptyGateways:
+                    nullable: true
+                    type: boolean
                   validation:
                     properties:
                       allowWarnings:

@@ -9,8 +9,11 @@ metadata:
   labels:
     app: gloo
     gloo: resource-rollout
-  name: gloo-resource-rollout
+  name: gloo-resource-rollout-check
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob | nindent 4 }}
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
@@ -68,30 +71,35 @@ spec:
           - /bin/sh
           - -c
           - |
-            {{ if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.validation.webhook.enabled -}}
-            # if validation webhook is enabled, wait for deployment rollout so validation service will be available
-            kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
-            {{- end }}
-
-            # Wait for the enterprise job if present
-            kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout &> /dev/null
-            if [ $? -eq 0 ]
-            then
-              echo "Waiting for the enterprise resource rollout job to complete"
-              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout
-            fi
-
-            # apply Gloo Edge custom resources
+            # Check if Gloo Edge applied custom resources
             if [ $HAS_CUSTOM_RESOURCES == "true" ]
             then
-              kubectl apply -f /etc/gloo-custom-resources/custom-resources || exit $?
-            else
-              echo "no custom resources to apply"
-            fi
 
-            # remove the resource-policy annotations that were added temporarily by the gloo-resource-migration job during upgrade
-            kubectl annotate upstreams.gloo.solo.io -n {{ $.Release.Namespace }} -l app=gloo helm.sh/resource-policy- || exit $?
-            {{- range include "gloo.gatewayNamespaces" $ | fromJsonArray }}
-            kubectl annotate gateways.gateway.solo.io -n {{ . }} -l app=gloo helm.sh/resource-policy- || exit $?
-            {{- end }}
+              # Wait for the resource rollout job to complete
+              kubectl -n {{ .Release.Namespace }} get job gloo-resource-rollout &> /dev/null
+              if [ $? -eq 0 ]
+              then
+                echo "Waiting for the resource rollout job to complete"
+                kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-resource-rollout
+              fi
+              # Delete the resource rollout job as it can linger around and not be re-created durig an upgrade
+              kubectl -n {{ .Release.Namespace }} delete job gloo-resource-rollout
+
+              # If the resource has been applied, re-applying it should output something like this
+              # gateway.gateway.solo.io/default unchanged
+              # If not it will output
+              # gateway.gateway.solo.io/default configured
+              # gateway.gateway.solo.io/default created
+              # This indicates that the resource was not applied in the resource rollout job
+              FAILED_RESOURCES=$(kubectl apply -f /etc/gloo-custom-resources/custom-resources | grep -iv ' unchanged')
+              if [ ! -z "$FAILED_RESOURCES" ]
+              then
+                echo "The following resources failed to be applied in the resource rollout job $FAILED_RESOURCES"
+                exit 1
+              else
+                echo "The resource rollout job successfully applied all the resources"
+              fi
+            else
+              echo "no custom resources to check"
+            fi
 {{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}

@@ -5049,6 +5049,17 @@ metadata:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("allows setting translateEmptyGateways for gateway translation", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/translate_empty_gateway.yaml", namespace)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.validation.enabled=false",
+								"gateway.translateEmptyGateways=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					Context("pass image pull secrets", func() {
 						pullSecretName := "test-pull-secret"
 						pullSecret := []v1.LocalObjectReference{
