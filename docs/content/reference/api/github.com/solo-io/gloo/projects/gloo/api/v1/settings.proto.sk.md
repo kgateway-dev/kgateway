@@ -807,6 +807,7 @@ Settings specific to the Gateway controller
 "persistProxySpec": .google.protobuf.BoolValue
 "enableGatewayController": .google.protobuf.BoolValue
 "isolateVirtualHostsBySslConfig": .google.protobuf.BoolValue
+"translateEmptyGateways": .google.protobuf.BoolValue
 
 ```
 
@@ -821,6 +822,7 @@ Settings specific to the Gateway controller
 | `persistProxySpec` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set this to persist the Proxy CRD to etcd By default, proxies are kept in memory to improve performance. Proxies can be persisted to etcd to allow external tools and other pods to read the contents the Proxy CRD. |
 | `enableGatewayController` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | This is set based on the install mode. It indicates to gloo whether or not it should run the gateway translations and validation. |
 | `isolateVirtualHostsBySslConfig` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set, group virtual hosts by matching ssl config, and isolate them on separate filter chains The default behavior is to aggregate all virtual hosts, and expose them on identical filter chains, each with a FilterChainMatch that corresponds to the ssl config. Individual Gateways can override this behavior by configuring the "gateway.solo.io/isolate_vhost" annotation to be a truthy ("true", "false") value. |
+| `translateEmptyGateways` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set, gateways will be translated into Envoy listeners even if no VirtualServices exist or match a gateway. As a consequence of no VirtualServices, which in turn implies that there are no routes to serve, the listener will not contain any routes, so all requests will return a 404. Defaults to false. The default behaviour is when there are no VirtualServices defined or a Gateway does not match any VirtualService, the gateway is not converted into an envoy listener. |
 
 
 

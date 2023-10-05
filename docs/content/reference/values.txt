@@ -342,7 +342,7 @@
 |gateway.certGenJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
 |gateway.certGenJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
 |gateway.certGenJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
-|gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest.|
 |gateway.certGenJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.certGenJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
 |gateway.certGenJob.kubeResourceOverride.NAME|interface||override fields in the gateway-certgen job.|
@@ -376,7 +376,7 @@
 |gateway.rolloutJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
 |gateway.rolloutJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
 |gateway.rolloutJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
-|gateway.rolloutJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.rolloutJob.ttlSecondsAfterFinished|int|300|Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest.|
 |gateway.rolloutJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.rolloutJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
 |gateway.rolloutJob.enabled|bool|true|Enable the job that applies default Gloo Edge custom resources at install and upgrade time (default true).|
@@ -412,7 +412,7 @@
 |gateway.cleanupJob.completions|int||Specifies the desired number of successfully finished pods the job should be run with.|
 |gateway.cleanupJob.manualSelector|bool||Controls generation of pod labels and pod selectors.|
 |gateway.cleanupJob.parallelism|int||Specifies the maximum desired number of pods the job should run at any given time.|
-|gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.cleanupJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 300 for the rollout jobs and 60 for the rest.|
 |gateway.cleanupJob.extraPodLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the job.|
 |gateway.cleanupJob.extraPodAnnotations.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.annotations data of the job.|
 |gateway.cleanupJob.enabled|bool|true|Enable the job that removes Gloo Edge custom resources when Gloo Edge is uninstalled (default true).|
@@ -439,6 +439,7 @@
 |gateway.isolateVirtualHostsBySslConfig|bool|false|if true, Added support for the envoy.filters.listener.tls_inspector listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting.|
 |gateway.compressedProxySpec|bool||if true, enables compression for the Proxy CRD spec|
 |gateway.persistProxySpec|bool||Enable writing Proxy CRD to etcd. Disabled by default for performance.|
+|gateway.translateEmptyGateways|bool|false|If true, the gateways wil be translated into Envoy listeners even if no VirtualServices exist|
 |gateway.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
