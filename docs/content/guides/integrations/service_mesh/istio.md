@@ -107,8 +107,8 @@ Congratulations! You have successfully configured an Istio sidecar for your Gloo
 ## Set up and verify the mTLS connection 
 
 To demonstrate that you can connect to your app via mutual TLS (mTLS), you can follow these step to: 
-- Install the Bookinfo app in your cluster
-- Set up a virtual service to route incoming requests to the Bookinfo app
+- Install the httpbin app in your cluster
+- Set up a virtual service to route incoming requests to the httpbin app
 - Require strict PeerAuthentication in the Istio mesh
 - Configure the relevant upstream(s) to use Istio mTLS
 
@@ -126,7 +126,7 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    deployment.apps/httpbin created
    ```
 
-2. Create a virtual service to set up the routing rules for your Bookinfo app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
+2. Create a virtual service to set up the routing rules for your httpbin app. In the following example, you instruct the Gloo Edge gateway to route incoming requests on the `/productpage` path to be routed to the `productpage` service in your cluster. 
    ```yaml
    kubectl apply -f- <<EOF
    apiVersion: gateway.solo.io/v1
@@ -231,5 +231,5 @@ To demonstrate that you can connect to your app via mutual TLS (mTLS), you can f
    {{</highlight>}}
 
 {{% notice note %}} 
-If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the Bookinfo app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
+If you use Gloo Mesh Enterprise for your service mesh, you can configure your Gloo Edge upstream resource to point to the Gloo Mesh `ingress-gateway`. For a request to reach the httpbin app in remote workload clusters, your virtual service must be configured to route traffic to the Gloo Mesh `east-west` gateway. 
 {{% /notice %}}
