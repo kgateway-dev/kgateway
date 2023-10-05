@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	errors "github.com/rotisserie/eris"
+	"go.uber.org/zap/zapcore"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
@@ -94,12 +96,19 @@ func (t *HybridTranslator) computeHybridListenerFromMatchedGateways(
 		switch gt := matchedGateway.GetGatewayType().(type) {
 		case *v1.MatchedGateway_HttpGateway:
 			if len(snap.VirtualServices) == 0 {
+				var snapHash uint64
+				if contextutils.GetLogLevel() == zapcore.DebugLevel {
+					snapHash = hashutils.MustHash(snap)
+				}
 				if !loggedError {
-					snapHash := hashutils.MustHash(snap)
 					contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
 					loggedError = true // only log no virtual service error once
 				}
-				continue
+				if settingsutil.MaybeFromContext(params.ctx).GetGateway().GetTranslateEmptyGateways().GetValue() {
+					contextutils.LoggerFrom(params.ctx).Debugf("but continuing since translateEmptyGateways is set", snapHash)
+				} else {
+					continue
+				}
 			}
 
 			httpGateway := matchedGateway.GetHttpGateway()
