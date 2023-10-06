@@ -471,6 +471,12 @@ spec:
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
           name: istio-token
+        - mountPath: /var/run/secrets/credential-uds
+          name: credential-socket
+        - mountPath: /var/run/secrets/workload-spiffe-uds
+          name: workload-socket
+        - mountPath: /var/run/secrets/workload-spiffe-credentials
+          name: workload-certs
 {{- end }} {{/* if not $global.istioSDS.customSidecars */}}
 {{- end }}{{/* if $global.istioSDS.enabled */}}
       volumes:
@@ -496,6 +502,12 @@ spec:
               audience: istio-ca
               expirationSeconds: 43200
               path: istio-token
+      - name: credential-socket
+        emptyDir: {}
+      - name: workload-socket
+        emptyDir: {}
+      - name: workload-certs
+        emptyDir: {}
 {{- end}}
 
 {{- if $global.glooMtls.enabled }}
