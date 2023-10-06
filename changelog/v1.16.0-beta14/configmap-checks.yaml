@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Removes redundant checks in configmaps to keep them consistent across versions. This fix was applied in 1.13.x - 1.15.x but not in main
+
