@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/gloosnapshot"
 
@@ -22,17 +23,20 @@ import (
 type ScaledSnapshotBuilder struct {
 	injectedSnap *gloosnapshot.ApiSnapshot
 
-	epCount int
-	usCount int
+	epCount     int
+	usCount     int
+	secretCount int
 
-	epBuilder *EndpointBuilder
-	usBuilder *UpstreamBuilder
+	epBuilder     *EndpointBuilder
+	usBuilder     *UpstreamBuilder
+	secretBuilder *SecretBuilder
 }
 
 func NewScaledSnapshotBuilder() *ScaledSnapshotBuilder {
 	return &ScaledSnapshotBuilder{
-		epBuilder: NewEndpointBuilder(),
-		usBuilder: NewUpstreamBuilder(),
+		epBuilder:     NewEndpointBuilder(),
+		usBuilder:     NewUpstreamBuilder(),
+		secretBuilder: NewSecretBuilder(),
 	}
 }
 
@@ -64,6 +68,16 @@ func (b *ScaledSnapshotBuilder) WithEndpointBuilder(eb *EndpointBuilder) *Scaled
 	return b
 }
 
+func (b *ScaledSnapshotBuilder) WithSecretCount(n int) *ScaledSnapshotBuilder {
+	b.secretCount = n
+	return b
+}
+
+func (b *ScaledSnapshotBuilder) WithSecretBuilder(eb *SecretBuilder) *ScaledSnapshotBuilder {
+	b.secretBuilder = eb
+	return b
+}
+
 /* Getter funcs to be used by the description generator */
 
 func (b *ScaledSnapshotBuilder) HasInjectedSnapshot() bool {
@@ -76,6 +90,10 @@ func (b *ScaledSnapshotBuilder) UpstreamCount() int {
 
 func (b *ScaledSnapshotBuilder) EndpointCount() int {
 	return b.epCount
+}
+
+func (b *ScaledSnapshotBuilder) SecretCount() int {
+	return b.secretCount
 }
 
 // Build generates a snapshot populated with the specified number of each resource for the builder, using the
@@ -95,12 +113,18 @@ func (b *ScaledSnapshotBuilder) Build() *gloosnapshot.ApiSnapshot {
 		upstreamList[i] = b.usBuilder.Build(i)
 	}
 
+	secretList := make(v1.SecretList, b.secretCount)
+	for i := 0; i < b.secretCount; i++ {
+		secretList[i] = b.secretBuilder.Build(i)
+	}
+
 	return &gloosnapshot.ApiSnapshot{
 		// The proxy should contain a route for each upstream
 		Proxies: []*v1.Proxy{Proxy(b.usCount)},
 
 		Endpoints: endpointList,
 		Upstreams: upstreamList,
+		Secrets:   secretList,
 	}
 }
 
@@ -110,7 +134,7 @@ func (b *ScaledSnapshotBuilder) description() string {
 	}
 
 	// If/when additional Snapshot fields are included in testing, the description should be updated accordingly
-	return fmt.Sprintf("%d endpoint(s), %d upstream(s)", b.EndpointCount(), b.UpstreamCount())
+	return fmt.Sprintf("%d endpoint(s), %d upstream(s), %d secret(s)", b.EndpointCount(), b.UpstreamCount(), b.SecretCount())
 }
 
 func upMeta(i int) *core.Metadata {
@@ -147,6 +171,20 @@ func Endpoint(i int) *v1.Endpoint {
 		Port:      32,
 		Metadata: &core.Metadata{
 			Name:      fmt.Sprintf("test-ep-%06d", i),
+			Namespace: defaults.GlooSystem,
+		},
+	}
+}
+
+func Secret(i int) *v1.Secret {
+	return &v1.Secret{
+		Kind: &v1.Secret_ApiKey{
+			ApiKey: &v12.ApiKey{
+				ApiKey: "apikey",
+			},
+		},
+		Metadata: &core.Metadata{
+			Name:      fmt.Sprintf("test-apikey-%d", i),
 			Namespace: defaults.GlooSystem,
 		},
 	}
