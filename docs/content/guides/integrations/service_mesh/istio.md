@@ -51,7 +51,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
        sds:
          image:
            repository: sds
-           tag: 1.15.7
+           tag: 1.14.21
    gatewayProxies:
      gatewayProxy:
        podTemplate: 
