@@ -316,7 +316,7 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetRelea
 	// As a consequence the job is not automatically cleaned as part of the hook deletion policy
 	// or within the time between installing gloo and upgrading it in the test.
 	// So we wait until the job ttl has expired to be cleaned up to ensure the upgrade passes
-	runAndCleanCommand("kubectl", "-n", defaults.GlooSystem, "wait", "--for=delete", "job", "gloo-resource-rollout", "timeout=600s")
+	runAndCleanCommand("kubectl", "-n", defaults.GlooSystem, "wait", "--for=delete", "job", "gloo-resource-rollout", "--timeout=600s")
 
 	upgradeCrds(crdDir)
 
