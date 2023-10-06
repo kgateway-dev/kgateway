@@ -311,6 +311,13 @@ func upgradeCrds(crdDir string) {
 }
 
 func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetReleasedVersion string, crdDir string, strictValidation bool, additionalArgs []string) {
+	// With the fix for custom readiness probe : https://github.com/solo-io/gloo/pull/8698
+	// The resource rollout job is not longer in a post hook and the job ttl has changed from 60 t0 300
+	// As a consequence the job is not automatically cleaned as part of the hook deletion policy
+	// or within the time between installing gloo and upgrading it in the test.
+	// So we manually remove the rollout job to ensure the upgrade passes
+	runAndCleanCommandWithoutErrorCheck("kubectl", "-n", defaults.GlooSystem, "delete", "job", "gloo-resource-rollout")
+
 	upgradeCrds(crdDir)
 
 	valueOverrideFile, cleanupFunc := getHelmUpgradeValuesOverrideFile()
@@ -402,9 +409,16 @@ var strictValidationArgs = []string{
 	"--set", "gateway.validation.alwaysAcceptResources=false",
 }
 
-func runAndCleanCommand(name string, arg ...string) []byte {
+func runAndCleanCommandWithoutErrorCheck(name string, arg ...string) ([]byte, error) {
 	cmd := exec.Command(name, arg...)
 	b, err := cmd.Output()
+	cmd.Process.Kill() // This is *almost certainly* the reason a namespace deletion was able to hang without alerting us
+	cmd.Process.Release()
+	return b, err
+}
+
+func runAndCleanCommand(name string, arg ...string) []byte {
+	b, err := runAndCleanCommandWithoutErrorCheck(name, arg...)
 	// for debugging in Cloud Build
 	if err != nil {
 		if v, ok := err.(*exec.ExitError); ok {
@@ -412,8 +426,6 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 		}
 	}
 	Expect(err).To(BeNil())
-	cmd.Process.Kill() // This is *almost certainly* the reason a namespace deletion was able to hang without alerting us
-	cmd.Process.Release()
 	return b
 }
 

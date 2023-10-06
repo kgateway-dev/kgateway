@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix nightly upgrade tests caused after adding the fix for custom readiness probe issue (https://github.com/solo-io/gloo/pull/8698) by deleting the resource rollout job prior to an upgrade
+
