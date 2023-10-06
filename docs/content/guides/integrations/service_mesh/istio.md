@@ -34,7 +34,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
 - Set `disableAutoInjection` to `true` in order to ensure Gloo components are not included in the Mesh
 - Set `global.istioSDS.enabled` to `true` to allow the Gateway Proxy to consume Istio certs despite not being in the Mesh 
 - Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
-  - The default Istio version is 1.18.2
+  - The default Istio version is 1.17.1
    ```yaml
    global:
      istioIntegration:
@@ -47,7 +47,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
          image:
            registry: docker.io/istio
            repository: proxyv2
-           tag: 1.18.2
+           tag: 1.17.1
        sds:
          image:
            repository: sds
