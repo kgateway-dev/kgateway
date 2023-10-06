@@ -1026,7 +1026,7 @@
 |global.glooMtls.envoy.image.pullSecret|string||The image pull secret to use for the container, in the same namespace as the container pod.|
 |global.glooMtls.envoy.image.extended|bool||If true, deploys an extended version of the container with additional debug tools.|
 |global.glooMtls.envoy.image.fips|bool||If true, deploys a version of the data-plane containers that is built with FIPS-compliant crypto libraries. (Enterprise-only feature.)|
-|global.glooMtls.istioProxy.image.tag|string|1.9.5|The image tag for the container.|
+|global.glooMtls.istioProxy.image.tag|string|1.15.7|The image tag for the container.|
 |global.glooMtls.istioProxy.image.repository|string|proxyv2|The image repository (name) for the container.|
 |global.glooMtls.istioProxy.image.digest|string||The hash digest of the container's image, ie. sha256:12345....|
 |global.glooMtls.istioProxy.image.fipsDigest|string||The hash digest of the container's fips image, ie. sha256:12345....  Only consumed if fips=true|
@@ -1047,7 +1047,7 @@
 |global.istioSDS.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false|
 |global.istioIntegration.labelInstallNamespace|bool|false|If creating a namespace for Gloo, include the 'istio-injection: enabled' label (or 'istio.io/rev=' if 'istioSidecarRevTag' field is also set) to allow Istio sidecar injection for Gloo pods. Be aware that Istio's default injection behavior will auto-inject a sidecar into all pods in such a marked namespace. Disabling this behavior in Istio's configs or using gloo's global.istioIntegration.disableAutoinjection flag is recommended.|
 |global.istioIntegration.whitelistDiscovery|bool|false|Annotate the discovery pod for Istio sidecar injection to ensure that it gets a sidecar even when namespace-wide auto-injection is disabled. Generally only needed for FDS is enabled.|
-|global.istioIntegration.disableAutoinjection|bool|false|Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true if Gloo's namespace is marked for Istio discovery, as some pods do not immediately work with an Istio sidecar without extra manual configuration.|
+|global.istioIntegration.disableAutoinjection|bool|false|Annotate all pods (excluding those whitelisted by other config values) to with an explicit 'do not inject' annotation to prevent Istio from adding sidecars to all pods. It's recommended that this be set to true, as some pods do not immediately work with an Istio sidecar without extra manual configuration.|
 |global.istioIntegration.enableIstioSidecarOnGateway|bool|false|Enable Istio sidecar injection on the gateway-proxy deployment. Ignored if LabelInstallNamespace is not 'true'. Ignored if DisableAutoInjection is 'true'.|
 |global.istioIntegration.istioSidecarRevTag|string||Value of revision tag for Istio sidecar injection on the gateway-proxy and discovery deployments (when enabled with LabelInstallNamespace, WhitelistDiscovery or EnableIstioSidecarOnGateway). If set, applies the label 'istio.io/rev:<rev>' instead of 'sidecar.istio.io/inject' or 'istio-injection:enabled'. Ignored if DisableAutoInjection is 'true'.|
 |global.extraSpecs|bool||Add additional specs to include in the settings manifest, as defined by a helm partial. Defaults to false in open source, and true in enterprise.|
