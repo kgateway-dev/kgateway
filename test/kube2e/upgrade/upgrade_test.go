@@ -316,7 +316,7 @@ func upgradeGloo(testHelper *helper.SoloTestHelper, chartUri string, targetRelea
 	// As a consequence the job is not automatically cleaned as part of the hook deletion policy
 	// or within the time between installing gloo and upgrading it in the test.
 	// So we wait until the job ttl has expired to be cleaned up to ensure the upgrade passes
-	runAndCleanCommandWithoutErrorCheck("kubectl", "-n", defaults.GlooSystem, "wait", "--for=delete", "job", "gloo-resource-rollout", "timeout=600s")
+	runAndCleanCommand("kubectl", "-n", defaults.GlooSystem, "wait", "--for=delete", "job", "gloo-resource-rollout", "timeout=600s")
 
 	upgradeCrds(crdDir)
 
@@ -409,16 +409,9 @@ var strictValidationArgs = []string{
 	"--set", "gateway.validation.alwaysAcceptResources=false",
 }
 
-func runAndCleanCommandWithoutErrorCheck(name string, arg ...string) ([]byte, error) {
+func runAndCleanCommand(name string, arg ...string) []byte {
 	cmd := exec.Command(name, arg...)
 	b, err := cmd.Output()
-	cmd.Process.Kill() // This is *almost certainly* the reason a namespace deletion was able to hang without alerting us
-	cmd.Process.Release()
-	return b, err
-}
-
-func runAndCleanCommand(name string, arg ...string) []byte {
-	b, err := runAndCleanCommandWithoutErrorCheck(name, arg...)
 	// for debugging in Cloud Build
 	if err != nil {
 		if v, ok := err.(*exec.ExitError); ok {
@@ -426,6 +419,8 @@ func runAndCleanCommand(name string, arg ...string) []byte {
 		}
 	}
 	Expect(err).To(BeNil())
+	cmd.Process.Kill() // This is *almost certainly* the reason a namespace deletion was able to hang without alerting us
+	cmd.Process.Release()
 	return b
 }
 
