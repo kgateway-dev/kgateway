@@ -227,7 +227,7 @@ global:
       image:
         repository: proxyv2
         registry: docker.io/istio
-        tag: 1.9.5
+        tag: 1.18.2
     envoy:
       image:
         repository: gloo-envoy-wrapper
