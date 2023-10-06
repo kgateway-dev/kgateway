@@ -11,7 +11,7 @@ You can configure your Gloo Edge gateway with an Istio sidecar to secure the con
 Complete the following tasks before configuring an Istio sidecar for your Gloo Edge gateway: 
 
 1. Create or use an existing cluster that runs Kubernetes a version supported by both [your version of Edge]({{< versioned_link_path fromRoot="/reference/support" >}}) and the [version of Istio you intend to install](https://istio.io/latest/docs/releases/supported-releases/). 
-2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.13 through 1.18 are supported in Gloo Edge 1.15. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
+2. [Install Istio in your cluster](https://istio.io/latest/docs/setup/getting-started/). Istio versions 1.13 through 1.17 are supported in Gloo Edge 1.14. See the [support matrix]({{< versioned_link_path fromRoot="/reference/support" >}}) for more details.
 3. Set up a service mesh for your cluster. For example, you can use [Gloo Mesh Enterprise](https://docs.solo.io/gloo-mesh-enterprise/latest/getting_started/managed_kubernetes/) to configure a service mesh that is based on Envoy and Istio, and that can span across multiple service meshes and clusters. 
 4. Install [Helm version 3](https://helm.sh/docs/intro/install/) on your local machine.
 
