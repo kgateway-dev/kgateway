@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/8621
+    resolvesIssue: false
+    description: >
+      Update Istio support matrix, add link to Istio documentation in e2e test README
+      skipCI-kube-tests:true
