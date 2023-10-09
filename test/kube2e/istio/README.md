@@ -18,7 +18,7 @@ Each component involved in the xDS communication will contain an SDS sidecar and
 
 **Envoy Sidecar**: Responsible for TLS termination, and outgoing encryption. Receives it’s secret information via SDS, talking to the SDS sidecar. The sidecar bootstrap configuration is defined in a ConfigMap for each component.
 
-**SDS Sidecar**: Watches the gloo-mtls-certs TLS secret in kubernetes, and serves the contents via the SDS API to the Envoy sidecar. The SDS code can be found here. Anytime the secret is modified, the contents will be updated dynamically. To automate the updating of secrets, run the [CertGen Job](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/19-gloo-mtls-certgen-job.yaml)
+**SDS Sidecar**: Watches the gloo-mtls-certs TLS secret in kubernetes, and serves the contents via the SDS API to the Envoy sidecar. The SDS code can be found [here](https://github.com/solo-io/gloo/tree/main/projects/sds). Anytime the secret is modified, the contents will be updated dynamically. To automate the updating of secrets, run the [CertGen Job](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/19-gloo-mtls-certgen-job.yaml)
 
 
 ### Example: Gloo <-> ExtAuth
@@ -48,7 +48,7 @@ To keep the mTLS communication transparent to the Edge configuration, we again l
 
 Envoy provides an API for dynamically updating TLS certificates. Historically, this required restarting the proxies with the new certificates, but the [SDS API](https://www.envoyproxy.io/docs/envoy/latest/configuration/security/secret) allows a zero-downtime approach to this.
 
-In Gloo Edge, we build an SDS server which implements this API.  Its sole responsibility is to implement the SDS API, and serve up certificates via xDS. We configure our Envoy proxies as the client to this server, and the proxies are [configured to get their certificates via the SDS API](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L195)
+In Gloo Edge, we build an SDS server which implements this API. Its sole responsibility is to implement the SDS API, and serve up certificates via xDS. We configure our Envoy proxies as the client to this server, and the proxies are [configured to get their certificates via the SDS API](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L195)
 
 While the component itself has a single responsibility, implement the SDS API, it can be used in Gloo Edge in multiple ways:
 - Serve certificates to establish mTLS communication between Gloo components (Gloo mTLS)
@@ -59,7 +59,7 @@ _As a result, we have `glooMtls.enabled` to enable the former, and `istioSDS.ena
 
 # Validating mTLS Traffic
 
-Istio leverages the [`x-forwarded-client-cert`](https://istio.io/latest/docs/ops/configuration/traffic-management/network-topologies/#forwarding-external-client-attributes-ip-address-certificate-info-to-destination-workloads) header to identify
+Istio leverages the [`x-forwarded-client-cert`](https://istio.io/latest/docs/ops/configuration/traffic-management/network-topologies/#forwarding-external-client-attributes-ip-address-certificate-info-to-destination-workloads) header to identify encrypted traffic
 
 If the application that we’re running can logs requests that it receives, we could search the logs for the existence of that header
 
