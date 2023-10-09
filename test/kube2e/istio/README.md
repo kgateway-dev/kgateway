@@ -21,16 +21,13 @@ Each component involved in the xDS communication will contain an SDS sidecar and
 **SDS Sidecar**: Watches the gloo-mtls-certs TLS secret in kubernetes, and serves the contents via the SDS API to the Envoy sidecar. The SDS code can be found here. Anytime the secret is modified, the contents will be updated dynamically. To automate the updating of secrets, run the [CertGen Job](https://github.com/solo-io/gloo/blob/main/install/helm/gloo/templates/19-gloo-mtls-certgen-job.yaml)
 
 
-Example: Gloo <-> ExtAuth
+### Example: Gloo <-> ExtAuth
 [ExtAuth Envoy Sidecar](https://github.com/solo-io/solo-projects/blob/main/install/helm/gloo-ee/templates/24-extauth-sidecar-config.yaml)
 
-ExtAuth pod initiates xDS request to Gloo
-
-ExtAuth.EnvoySidecar hijacks request, and sends encrypted request to Gloo
-
-Gloo.EnvoySidecar terminates TLS request from ExtAuth
-
-Gloo.EnvoySidecar directs request to Gloo xDS port
+- ExtAuth pod initiates xDS request to Gloo
+- ExtAuth.EnvoySidecar hijacks request, and sends encrypted request to Gloo
+- Gloo.EnvoySidecar terminates TLS request from ExtAuth
+- Gloo.EnvoySidecar directs request to Gloo xDS port
 
 # Istio mTLS
 
