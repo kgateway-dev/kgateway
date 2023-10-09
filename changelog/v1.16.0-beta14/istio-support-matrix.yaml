@@ -4,3 +4,4 @@ changelog:
     resolvesIssue: false
     description: >
       Update Istio support matrix, add link to Istio documentation in e2e test README
+      skipCI-kube-tests:true
