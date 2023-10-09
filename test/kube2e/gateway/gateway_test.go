@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
 	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/google/uuid"
@@ -68,7 +70,7 @@ import (
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -2373,7 +2375,7 @@ spec:
 						petstoreName         = "petstore"
 						petstoreUpstreamName string
 						petstoreSvc          *corev1.Service
-						petstoreDeployment   *v1.Deployment
+						petstoreDeployment   *appsv1.Deployment
 					)
 
 					BeforeEach(func() {
@@ -2552,8 +2554,13 @@ spec:
 				})
 
 				AfterEach(func() {
-					// The secrets kube client does not have an IgnoreNotFound field, and deleting the secret is part of the test
-					// so there is no need to remove the created secret here
+					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					// Some tests delete the Secret for assertions. The KubeClient does not have an "IgnoreNotFound" field, so we check for
+					// either a nil error indicating a successful deletion, or for the Secret to not be found indicating it was previously deleted as part of a test.
+					Expect(err).To(Or(
+						Not(HaveOccurred()),
+						MatchError(errors.NewNotFound(corev1.Resource("secrets"), secretName).Error()),
+					))
 				})
 
 				It("should act as expected with secret validation", func() {
@@ -2663,7 +2670,7 @@ func getRouteWithDelegateRef(delegate string, path string) *gatewayv1.Route {
 	}
 }
 
-func petstore(namespace string) (*v1.Deployment, *corev1.Service) {
+func petstore(namespace string) (*appsv1.Deployment, *corev1.Service) {
 	deployment := fmt.Sprintf(`
 ##########################
 #                        #
@@ -2698,7 +2705,7 @@ spec:
           name: http
 `, namespace)
 
-	var dep v1.Deployment
+	var dep appsv1.Deployment
 	err := yaml.Unmarshal([]byte(deployment), &dep)
 	Expect(err).NotTo(HaveOccurred())
 

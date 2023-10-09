@@ -398,7 +398,7 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 		return wh.validateList(ctx, admissionRequest.Object.Raw, dryRun)
 	}
 
-	// Only check resources that are part of our internal API
+	// Kubernetes' core API group is the only group we get validation requests for that is not a part of a Solo API.
 	if gvk.Group != kubernetesCoreApiGroup {
 		if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
 			contextutils.LoggerFrom(ctx).Infof("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
