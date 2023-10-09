@@ -1,0 +1,1 @@
+Additional context on Istio and how the Gloo integration with Istio works can be found [here](https://docs.google.com/document/d/1g7wq6yBGR6VioNJTz_eA7GLRbijlDasGR3h-eToz7jA)
