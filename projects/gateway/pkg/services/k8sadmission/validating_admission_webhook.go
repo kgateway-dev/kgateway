@@ -42,6 +42,8 @@ const (
 	ValidationPath      = "/validation"
 	SkipValidationKey   = "gateway.solo.io/skip_validation"
 	SkipValidationValue = "true"
+	// kubernetesCoreApiGroup is the GVK group name for Kubernetes core API resources
+	kubernetesCoreApiGroup = ""
 )
 
 var (
@@ -396,8 +398,16 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 		return wh.validateList(ctx, admissionRequest.Object.Raw, dryRun)
 	}
 
-	if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
-		contextutils.LoggerFrom(ctx).Debugf("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+	// Kubernetes' Secrets deletions are the only non-Solo API resource operations we support validation requests for.
+	// For a Kubernetes Secrets, we want to skip validation on operations we don't support. We only support DELETEs.
+	// Else, we expect to find the resource in our ApiGvkToHashableResource map - if the resource is supported.
+	if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Secret" {
+		if !isDelete {
+			contextutils.LoggerFrom(ctx).Infof("unsupported operation validation [%s] for resource namespace [%s] name [%s] group [%s] kind [%s]", admissionRequest.Operation, ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
+			return &validation.Reports{}, nil
+		}
+	} else if _, hit := gloosnapshot.ApiGvkToHashableResource[gvk]; !hit {
+		contextutils.LoggerFrom(ctx).Infof("unsupported validation for resource namespace [%s] name [%s] group [%s] kind [%s]", ref.GetNamespace(), ref.GetName(), gvk.Group, gvk.Kind)
 		return &validation.Reports{}, nil
 	}
 
@@ -410,7 +420,11 @@ func (wh *gatewayValidationWebhook) validateAdmissionRequest(
 
 func (wh *gatewayValidationWebhook) deleteRef(ctx context.Context, gvk schema.GroupVersionKind, ref *core.ResourceRef, admissionRequest *v1beta1.AdmissionRequest) (*validation.Reports, *multierror.Error) {
 	newResourceFunc := gloosnapshot.ApiGvkToHashableResource[gvk]
-
+	// Special case for Kubernetes secrets, since they are not handled by our hashable resource.
+	// We can reuse the NewSecretHashableResource resource.Resource, since all that matters is the metadata for deletion.
+	if gvk.Group == kubernetesCoreApiGroup && gvk.Kind == "Secret" {
+		newResourceFunc = gloov1.NewSecretHashableResource
+	}
 	newResource := newResourceFunc()
 	newResource.SetMetadata(&core.Metadata{
 		Namespace: ref.GetNamespace(),

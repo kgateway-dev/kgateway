@@ -145,15 +145,17 @@ var _ = Describe("Translation - Benchmarking Tests", decorators.Performance, Lab
 		},
 		gloohelpers.GenerateBenchmarkDesc, // generate descriptions for table entries with nil descriptions
 		Entry("basic", gloohelpers.NewInjectedSnapshotBuilder(basicSnap), basicConfig),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1), basicConfig, "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1), oneKUpstreamsConfig, "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(10), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1000), basicConfig, "endpoint scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(10), basicConfig, "endpoint scale", "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).WithSecretCount(1), basicConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1000).WithEndpointCount(1).WithSecretCount(1), oneKUpstreamsConfig, "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(10).WithSecretCount(1), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1000).WithSecretCount(1), basicConfig, "endpoint scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(10).WithSecretCount(1), basicConfig, "endpoint scale", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).WithSecretCount(1).
 			WithUpstreamBuilder(consistentSniUsBuilder), basicConfig, "consistent SNI", "upstream scale"),
-		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(10).WithEndpointCount(1).WithSecretCount(1).
 			WithUpstreamBuilder(uniqueSniUsBuilder), basicConfig, "unique SNI", "upstream scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1).WithSecretCount(10), basicConfig, "secret scale"),
+		Entry(nil, gloohelpers.NewScaledSnapshotBuilder().WithUpstreamCount(1).WithEndpointCount(1).WithSecretCount(1000), basicConfig, "secret scale"),
 	)
 })
 
@@ -172,6 +174,7 @@ var basicSnap = &v1snap.ApiSnapshot{
 	},
 	Endpoints: []*v1.Endpoint{gloohelpers.Endpoint(0)},
 	Upstreams: []*v1.Upstream{gloohelpers.Upstream(0)},
+	Secrets:   []*v1.Secret{gloohelpers.Secret(0)},
 }
 
 var basicConfig = &gloohelpers.BenchmarkConfig{
