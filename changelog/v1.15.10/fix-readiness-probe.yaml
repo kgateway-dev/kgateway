@@ -3,3 +3,8 @@ changelog:
     issueLink: https://github.com/solo-io/gloo/issues/8288
     description: >- 
       Fixes the issue of defining a custom readiness probe for the gateway proxy for zero downtime upgrades via helm with the `--wait` flag.
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8288
+    description: >-
+      Changes the default value of `gateway.rolloutJob.ttlSecondsAfterFinished` from 60 to 300 to accomodate the fix for the aforementioned custom readiness probe issue.
+
