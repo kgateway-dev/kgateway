@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/8092
+    resolvesIssue: false
+    description: >
+      Fix istio-proxy container definition in gateway-proxy template
+      Add new e2e tests that handles Istio SDS case, ensuring mTLS occurs as expected

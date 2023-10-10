@@ -2,8 +2,15 @@ global:
   # Set up gloo with istio integration enabled (through `enableIstioSidecarOnGateway`)
   istioIntegration:
     enableIstioSidecarOnGateway: true
-    disableAutoinjection: true
-    labelInstallNamespace: true
+    disableAutoinjection: true # We do not want Gloo components to be included in the mesh
+  istioSDS:
+    enabled: true
+  glooMtls:
+    istioProxy:
+      image:
+        repository: proxyv2
+        registry: docker.io/istio
+        tag: 1.17.1 # This tag has to match the version of Istio being used in the test
 gloo:
   logLevel: info
   disableLeaderElection: true
@@ -22,3 +29,16 @@ gatewayProxies:
           cpu: 100m
           memory: 256Mi
     healthyPanicThreshold: 0
+
+# These values are recommended production values and are not expected to impact tested behavior for the Istio suite
+settings:
+  invalidConfigPolicy:
+    replaceInvalidRoutes: true
+    invalidRouteResponseCode: 404
+    invalidRouteResponseBody: Gloo Gateway has invalid configuration.
+gateway:
+  persistProxySpec: true
+  logLevel: info
+  validation:
+    allowWarnings: true
+    alwaysAcceptResources: false
