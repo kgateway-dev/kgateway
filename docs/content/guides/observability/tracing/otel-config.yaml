@@ -129,11 +129,11 @@ data:
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [logging, otlphttp]
+          exporters: [logging]
         traces:
           receivers: [otlp]
           processors: [memory_limiter, batch]
-          exporters: [logging, otlphttp, zipkin]
+          exporters: [logging, zipkin]
 ---
 apiVersion: v1
 kind: Service
