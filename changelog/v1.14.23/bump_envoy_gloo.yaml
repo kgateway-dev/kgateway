@@ -1,0 +1,15 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: cloud-builders
+  dependencyTag: v0.6.5
+  description: >-
+    Use the latest cloud builders to match go version of builder to that of enterprise
+    This pulls in fixes for CVE-2023-39325, as announced in
+    https://groups.google.com/g/golang-announce/c/iNNxDTCjZvo
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.25.10-patch1
+  description: >-
+    Bump envoy-gloo to pull in fixes for (CVE-2023-44487)[https://nvd.nist.gov/vuln/detail/CVE-2023-44487]
