@@ -1,4 +1,5 @@
 changelog:
-  - type: NON_USER_FACING
-    description: Adding a longer timeout while waiting for the resource rollout job to complete.
+  - type: HELM
+    issue_link: https://github.com/solo-io/gloo/issues/8782
+    description: Adds the helm value `gateway.rolloutJob.timeout` to specifiy the timeout while waiting for the resource rollout job to complete.
 
