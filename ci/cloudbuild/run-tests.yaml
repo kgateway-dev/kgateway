@@ -101,7 +101,7 @@ steps:
   secretEnv:
   - 'JWT_PRIVATE_KEY'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.4'
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.6.5'
   id: 'run-hashicorp-e2e-tests'
   dir: *dir
   entrypoint: 'make'
