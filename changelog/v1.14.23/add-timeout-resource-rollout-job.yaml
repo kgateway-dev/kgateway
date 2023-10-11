@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adding a longer timeout while waiting for the resource rollout job to complete.
+
