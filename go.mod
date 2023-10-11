@@ -95,6 +95,7 @@ require (
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d
+	sigs.k8s.io/gateway-api v0.8.1
 )
 
 require (
@@ -146,7 +147,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20151013193312-d6023ce2651d // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fatih/color v1.13.0 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/fgrosse/zaptest v1.1.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/gertd/go-pluralize v0.1.1 // indirect
