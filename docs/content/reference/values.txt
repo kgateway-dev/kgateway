@@ -352,6 +352,7 @@
 |gateway.rolloutJob.resources.requests.cpu|string||amount of CPUs|
 |gateway.rolloutJob.floatingUserId|bool||If true, allows the cluster to dynamically assign a user ID for the processes running in the container.|
 |gateway.rolloutJob.runAsUser|float64||Explicitly set the user ID for the processes in the container to run as. Default is 10101.|
+|gateway.rolloutJob.timeout|int|600|Time to wait in seconds until the job has completed. If it exceeds this limit, it is deemed to have failed. Defaults to 600|
 |gateway.cleanupJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.cleanupJob.priorityClassName|string||name of a defined priority class|
 |gateway.cleanupJob.nodeName|string||name of node to run on|

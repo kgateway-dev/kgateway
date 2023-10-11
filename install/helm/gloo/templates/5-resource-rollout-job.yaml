@@ -75,7 +75,7 @@ spec:
             if [ $? -eq 0 ]
             then
               echo "Waiting for the enterprise resource rollout job to complete"
-              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout --timeout=600s || exit 1
+              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout --timeout={{ .Values.gateway.rolloutJob.timeout }}s || exit 1
             fi
 
             # apply Gloo Edge custom resources
