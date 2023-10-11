@@ -22,12 +22,12 @@ var (
 type GatewayQueries interface {
 	// Returns map of listener names -> list of http routes.
 	GetRoutesForGw(ctx context.Context, gw *api.Gateway) (map[string][]api.HTTPRoute, error)
-	// Given a backendRef that resides in namespace routeNs, return the service that backs it.
+	// Given a backendRef that resides in namespace obj, return the service that backs it.
 	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
 	// return value depends on the group/kind in the backendRef.
-	GetBackendsForRef(ctx context.Context, routeNs string, backendRef *api.HTTPBackendRef) (client.Object, error)
+	GetBackendForRef(ctx context.Context, obj client.Object, backendRef *api.HTTPBackendRef) (client.Object, error)
 
-	GetSecretForRef(ctx context.Context, secretRefNs string, secretRef *api.SecretObjectReference) (client.Object, error)
+	GetSecretForRef(ctx context.Context, obj client.Object, secretRef *api.SecretObjectReference) (client.Object, error)
 }
 
 func NewData(c client.Client, scheme *runtime.Scheme) GatewayQueries {
@@ -126,7 +126,7 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 	return ret, err
 }
 
-func (r *gatewayQueries) GetSecretForRef(ctx context.Context, secretRefNs string, secretRef *api.SecretObjectReference) (client.Object, error) {
+func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object, secretRef *api.SecretObjectReference) (client.Object, error) {
 	secretKind := "Secret"
 	secretGroup := ""
 
@@ -136,13 +136,12 @@ func (r *gatewayQueries) GetSecretForRef(ctx context.Context, secretRefNs string
 	if secretRef.Kind != nil {
 		secretKind = string(*secretRef.Kind)
 	}
-	from := metav1.GroupKind{Group: "networking.gateway.k8s.io", Kind: "Gateway"}
 	secretGK := metav1.GroupKind{Group: secretGroup, Kind: secretKind}
 
-	return r.getRef(ctx, from, secretRefNs, string(secretRef.Name), secretRef.Namespace, secretGK)
+	return r.getRef(ctx, obj, string(secretRef.Name), secretRef.Namespace, secretGK)
 }
 
-func (r *gatewayQueries) GetBackendsForRef(ctx context.Context, routeNs string, backend *api.HTTPBackendRef) (client.Object, error) {
+func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object, backend *api.HTTPBackendRef) (client.Object, error) {
 	backendKind := "Service"
 	backendGroup := ""
 
@@ -152,19 +151,32 @@ func (r *gatewayQueries) GetBackendsForRef(ctx context.Context, routeNs string, 
 	if backend.Kind != nil {
 		backendKind = string(*backend.Kind)
 	}
-	from := metav1.GroupKind{Group: "networking.gateway.k8s.io", Kind: "HTTPRoute"}
 	backendGK := metav1.GroupKind{Group: backendGroup, Kind: backendKind}
 
-	return r.getRef(ctx, from, routeNs, string(backend.Name), backend.Namespace, backendGK)
+	return r.getRef(ctx, obj, string(backend.Name), backend.Namespace, backendGK)
 }
 
-func (r *gatewayQueries) getRef(ctx context.Context, fromgk metav1.GroupKind, fromNs string, backendName string, backendNS *api.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
+func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backendName string, backendNS *api.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
 
+	gvks, isVersioned, err := r.scheme.ObjectKinds(from)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get object kind %T", from)
+	}
+	if !isVersioned {
+		return nil, fmt.Errorf("object of type %T is not versioned", from)
+	}
+	if len(gvks) != 1 {
+		return nil, fmt.Errorf("ambigous gvks for %T, %v", from, gvks)
+	}
+	gvk := gvks[0]
+	fromgk := metav1.GroupKind{Group: gvk.Group, Kind: gvk.Kind}
+
+	fromNs := from.GetNamespace()
 	ns := fromNs
 	if backendNS != nil {
 		ns = string(*backendNS)
 	}
-
 	if ns != fromNs {
 		// check if we're allowed to reference this namespace
 		allowed, err := r.referenceAllowed(ctx, fromgk, fromNs, backendGK, ns, backendName)
