@@ -1,0 +1,5 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-control-plane-fork-v2
+    dependencyTag: v0.11.1/forked-extproc
