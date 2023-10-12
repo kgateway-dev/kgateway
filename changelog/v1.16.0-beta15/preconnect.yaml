@@ -1,7 +1,7 @@
 changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/solo-projects/issues/5411
-    resolvesIssue: fale
+    resolvesIssue: false
     description: >- 
       Exposes cluster option for preconnect policy. 
       Explicitly scoped to just upstreams as this is RARELY a good feature to use.
