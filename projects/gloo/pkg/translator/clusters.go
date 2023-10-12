@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	envoy_config_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -318,15 +319,15 @@ func getPreconnectPolicy(cfgs ...*v1.PreconnectPolicy) (*envoy_config_cluster_v3
 		perUpstream := curConfig.GetPerUpstreamPreconnectRatio()
 		predictive := curConfig.GetPredictivePreconnectRatio()
 
-		eString := ""
+		eStrings := []string{}
 		if perUpstream != nil && (perUpstream.GetValue() < 1 || perUpstream.GetValue() > 3) {
-			eString = fmt.Sprintf("perupstream must be between 1 and 3 if set, it was: %v", perUpstream.GetValue())
+			eStrings = append(eStrings, fmt.Sprintf("perupstream must be between 1 and 3 if set, it was: %v", perUpstream.GetValue()))
 		}
 		if predictive != nil && (predictive.GetValue() < 1 || predictive.GetValue() > 3) {
-			eString += fmt.Sprintf("predictive must be between 1 and 3 if set, it was: %v", perUpstream.GetValue())
+			eStrings = append(eStrings, fmt.Sprintf("predictive must be between 1 and 3 if set, it was: %v", perUpstream.GetValue()))
 		}
-		if eString != "" {
-			return nil, errors.New("invalid preconnect policy: " + eString)
+		if len(eStrings) > 0 {
+			return nil, errors.New("invalid preconnect policy: " + strings.Join(eStrings, "; "))
 		}
 		return &envoy_config_cluster_v3.Cluster_PreconnectPolicy{
 
