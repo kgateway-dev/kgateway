@@ -304,7 +304,7 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_
 // it returns the first non-nil policy
 func getPreconnectPolicy(cfgs ...*v1.PreconnectPolicy) (*envoy_config_cluster_v3.Cluster_PreconnectPolicy, error) {
 
-	// since we dont want strict reliance on envoys current api
+	// since we dont want strict reliance on envoy's current api
 	// but still able to map as closely as possible
 	// if not nil then convert the gloo configurations to envoy
 	for _, curConfig := range cfgs {
