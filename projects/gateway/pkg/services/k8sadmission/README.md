@@ -7,7 +7,7 @@ There are two types of admission controllers which can be configured at runtime,
 - *ValidatingAdmissionWebhook* (invoked second, and can reject requests to enforce custom policies)
 
 ## MutatingAdmissionWebhook
-Gloo does not currently configure a ValidatingAdmissionWebhook
+Gloo does not currently configure a MutatingAdmissionWebhook
 
 ## ValidatingAdmissionWebhook
 Gloo leverages the ValidatingAdmissionWebhook to validate proposed changes to custom resources (i.e. a VirtualService) before they are persisted in etcd. Where the [structural schemas on CRDs](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#specifying-a-structural-schema) provide syntactic validation, the validating webhook provides semantic validation.
@@ -19,7 +19,7 @@ The ValidatingWebhookConfiguration is part of the Kubernetes API, and configured
 #### Where is the Webhook entrypoint defined?
 The ValidatingWebhookConfiguration defines the `name` and `path` to the service which handles validation requests. In Gloo, this is the Gloo Service, at the `/validation` endpoint.
 
-The [ValidatingAdmissionWebhook contstructor](https://github.com/solo-io/gloo/blob/a3430da820bd39a8b0940025c1040e33eeb7d8f8/projects/gateway/pkg/services/k8sadmission/validating_admission_webhook.go#L141) returns the `http.Server` which can handle these requests.
+The [ValidatingAdmissionWebhook constructor](https://github.com/solo-io/gloo/blob/a3430da820bd39a8b0940025c1040e33eeb7d8f8/projects/gateway/pkg/services/k8sadmission/validating_admission_webhook.go#L141) returns the `http.Server` which can handle these requests.
 
 #### How is communication with the Webhook secured?
 To verify the TLS connection with the webhook, a PEM-encoded CA bundle for validating the webhook's server certificate is provided in the webhook configuration.
