@@ -15,6 +15,7 @@ weight: 5
 - [ClusterProtocolSelection](#clusterprotocolselection)
 - [DiscoveryMetadata](#discoverymetadata)
 - [HeaderValue](#headervalue)
+- [PreconnectPolicy](#preconnectpolicy)
   
 
 
@@ -65,6 +66,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "respectDnsTtl": .google.protobuf.BoolValue
 "dnsRefreshRate": .google.protobuf.Duration
 "proxyProtocolVersion": .google.protobuf.StringValue
+"preconnectPolicy": .gloo.solo.io.PreconnectPolicy
 
 ```
 
@@ -100,6 +102,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `respectDnsTtl` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | If set to true, Service Discovery update period will be triggered once the TTL is expired. If minimum TTL of all records is 0 then dns_refresh_rate will be used. |
 | `dnsRefreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Service Discovery DNS Refresh Rate. Minimum value is 1 ms. Values below the minimum are considered invalid. Only valid for STRICT_DNS and LOGICAL_DNS cluster types. All other cluster types are considered invalid. |
 | `proxyProtocolVersion` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Proxy Protocol Version to add when communicating with the upstream. If unset will not wrap the transport socket. These are of the format "V1" or "V2". |
+| `preconnectPolicy` | [.gloo.solo.io.PreconnectPolicy](../upstream.proto.sk/#preconnectpolicy) | Preconnect policy for the cluster Aligns as closely as possible with https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/cluster/v3/cluster.proto#envoy-v3-api-msg-config-cluster-v3-cluster-preconnectpolicy This is not recommended for use unless you are sure you need it. In most cases preconnect hurts more than it helps. |
 
 
 
@@ -151,6 +154,25 @@ Header name/value pair.
 | ----- | ---- | ----------- | 
 | `key` | `string` | Header name. |
 | `value` | `string` | Header value. |
+
+
+
+
+---
+### PreconnectPolicy
+
+
+
+```yaml
+"perUpstreamPreconnectRatio": .google.protobuf.DoubleValue
+"predictivePreconnectRatio": .google.protobuf.DoubleValue
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `perUpstreamPreconnectRatio` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Indicates how many streams (rounded up) can be anticipated per-upstream for each incoming stream. This is useful for high-QPS or latency-sensitive services. Preconnecting will only be done if the upstream is healthy and the cluster has traffic. For example if this is 2, for an incoming HTTP/1.1 stream, 2 connections will be established, one for the new incoming stream, and one for a presumed follow-up stream. For HTTP/2, only one connection would be established by default as one connection can serve both the original and presumed follow-up stream. In steady state for non-multiplexed connections a value of 1.5 would mean if there were 100 active streams, there would be 100 connections in use, and 50 connections preconnected. This might be a useful value for something like short lived single-use connections, for example proxying HTTP/1.1 if keep-alive were false and each stream resulted in connection termination. It would likely be overkill for long lived connections, such as TCP proxying SMTP or regular HTTP/1.1 with keep-alive. For long lived traffic, a value of 1.05 would be more reasonable, where for every 100 connections, 5 preconnected connections would be in the queue in case of unexpected disconnects where the connection could not be reused. If this value is not set, or set explicitly to one, Envoy will fetch as many connections as needed to serve streams in flight. This means in steady state if a connection is torn down, a subsequent streams will pay an upstream-rtt latency penalty waiting for a new connection. This is limited somewhat arbitrarily to 3 because preconnecting too aggressively can harm latency more than the preconnecting helps. |
+| `predictivePreconnectRatio` | [.google.protobuf.DoubleValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/double-value) | Indicates how many streams (rounded up) can be anticipated across a cluster for each stream, useful for low QPS services. This is currently supported for a subset of deterministic non-hash-based load-balancing algorithms (weighted round robin, random). Unlike ``per_upstream_preconnect_ratio`` this preconnects across the upstream instances in a cluster, doing best effort predictions of what upstream would be picked next and pre-establishing a connection. Preconnecting will be limited to one preconnect per configured upstream in the cluster and will only be done if there are healthy upstreams and the cluster has traffic. For example if preconnecting is set to 2 for a round robin HTTP/2 cluster, on the first incoming stream, 2 connections will be preconnected - one to the first upstream for this cluster, one to the second on the assumption there will be a follow-up stream. If this value is not set, or set explicitly to one, Envoy will fetch as many connections as needed to serve streams in flight, so during warm up and in steady state if a connection is closed (and per_upstream_preconnect_ratio is not set), there will be a latency hit for connection establishment. If both this and preconnect_ratio are set, Envoy will make sure both predicted needs are met, basically preconnecting max(predictive-preconnect, per-upstream-preconnect), for each upstream. |
 
 
 

@@ -207,6 +207,12 @@ func (m *Upstream) Clone() proto.Message {
 		target.ProxyProtocolVersion = proto.Clone(m.GetProxyProtocolVersion()).(*github_com_golang_protobuf_ptypes_wrappers.StringValue)
 	}
 
+	if h, ok := interface{}(m.GetPreconnectPolicy()).(clone.Cloner); ok {
+		target.PreconnectPolicy = h.Clone().(*PreconnectPolicy)
+	} else {
+		target.PreconnectPolicy = proto.Clone(m.GetPreconnectPolicy()).(*PreconnectPolicy)
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:
@@ -329,6 +335,29 @@ func (m *HeaderValue) Clone() proto.Message {
 	target.Key = m.GetKey()
 
 	target.Value = m.GetValue()
+
+	return target
+}
+
+// Clone function
+func (m *PreconnectPolicy) Clone() proto.Message {
+	var target *PreconnectPolicy
+	if m == nil {
+		return target
+	}
+	target = &PreconnectPolicy{}
+
+	if h, ok := interface{}(m.GetPerUpstreamPreconnectRatio()).(clone.Cloner); ok {
+		target.PerUpstreamPreconnectRatio = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	} else {
+		target.PerUpstreamPreconnectRatio = proto.Clone(m.GetPerUpstreamPreconnectRatio()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	}
+
+	if h, ok := interface{}(m.GetPredictivePreconnectRatio()).(clone.Cloner); ok {
+		target.PredictivePreconnectRatio = h.Clone().(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	} else {
+		target.PredictivePreconnectRatio = proto.Clone(m.GetPredictivePreconnectRatio()).(*github_com_golang_protobuf_ptypes_wrappers.DoubleValue)
+	}
 
 	return target
 }
