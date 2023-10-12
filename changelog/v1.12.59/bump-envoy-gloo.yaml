@@ -1,0 +1,8 @@
+
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.23.12-patch3
+    description: >-
+      Upgrade envoy-gloo version to handle CVE-2023-44487
