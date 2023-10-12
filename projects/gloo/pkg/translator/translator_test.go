@@ -3685,6 +3685,7 @@ var _ = Describe("Translator", func() {
 			Entry("When valid perupstream", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(1)}, false),
 			Entry("When valid predictive", &v1.PreconnectPolicy{PredictivePreconnectRatio: asDouble(2)}, false),
 			Entry("When valid", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(1), PredictivePreconnectRatio: asDouble(2)}, false),
+			// invalid based on proto constraints https://github.com/envoyproxy/envoy/blob/353c0a439ef8bc8eb63bf08c2db4fd3fc3778dec/api/envoy/config/cluster/v3/cluster.proto#L724
 			Entry("When invalid perupstream", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(0.5)}, true),
 			Entry("When both pieces are invalid", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(0.5), PredictivePreconnectRatio: asDouble(1000)}, true),
 			Entry("When valid perupstream but invalid predictive", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(1), PredictivePreconnectRatio: asDouble(1000)}, true),
