@@ -3651,13 +3651,13 @@ var _ = Describe("Translator", func() {
 			Entry("When value=nil", nil, false))
 	})
 
-	FContext("PreconnectPolicy", func() {
+	Context("PreconnectPolicy", func() {
 		DescribeTable("propagates PreconnectPolicy to Cluster",
 			func(upstreamValue *v1.PreconnectPolicy, shouldErr bool) {
 				// Set the value to test
 				upstream.PreconnectPolicy = upstreamValue
 
-				snap, errs, report := translator.Translate(params, proxy)
+				snap, errs, _ := translator.Translate(params, proxy)
 				if shouldErr {
 					Expect(errs.Validate()).To(HaveOccurred())
 					return
