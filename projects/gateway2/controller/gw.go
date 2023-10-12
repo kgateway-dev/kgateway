@@ -6,7 +6,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -16,10 +15,7 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-const (
-	httpRouteTargetField = "http-route-target"
-	referenceGrantFrom   = "ref-grant-from"
-)
+
 
 func newBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass api.ObjectName) error {
 
@@ -58,6 +54,12 @@ type controllerBuilder struct {
 	reconciler *gatewayReconciler
 }
 
+func (c *controllerBuilder) addIndexes(ctx context.Context) error {
+	return IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
+		return c.mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
+	})
+}
+
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	return ctrl.NewControllerManagedBy(c.mgr).
 		For(&api.Gateway{}).
@@ -83,32 +85,7 @@ func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := c.mgr.GetFieldIndexer().IndexField(ctx, &api.HTTPRoute{}, httpRouteTargetField, httpRouteToTargetIndex); err != nil {
-		return err
-	}
 	return nil
-}
-
-func httpRouteToTargetIndex(obj client.Object) []string {
-	hr := obj.(*api.HTTPRoute)
-	var parents []string
-	for _, pRef := range hr.Spec.ParentRefs {
-		if pRef.Kind == nil || *pRef.Kind == kind(&api.Gateway{}) {
-			ns := resolveNs(pRef.Namespace)
-			if ns == "" {
-				ns = hr.Namespace
-			}
-			if ns == "" {
-				continue
-			}
-			nns := types.NamespacedName{
-				Namespace: ns,
-				Name:      string(pRef.Name),
-			}
-			parents = append(parents, nns.String())
-		}
-	}
-	return parents
 }
 
 func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
@@ -118,21 +95,7 @@ func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := c.mgr.GetFieldIndexer().IndexField(ctx, &api.ReferenceGrant{}, referenceGrantFrom, refGrantFrom); err != nil {
-		return err
-	}
 	return nil
-}
-
-func refGrantFrom(obj client.Object) []string {
-	rg := obj.(*api.ReferenceGrant)
-	var ns []string
-	for _, from := range rg.Spec.From {
-		if from.Namespace != "" {
-			ns = append(ns, string(from.Namespace))
-		}
-	}
-	return ns
 }
 
 func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {

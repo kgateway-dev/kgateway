@@ -16,8 +16,7 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
-func Start() {
-	ctrl.SetLogger(zap.New())
+func NewScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
 		api.AddToScheme, corev1.AddToScheme,
@@ -27,8 +26,13 @@ func Start() {
 			os.Exit(1)
 		}
 	}
+	return scheme
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{Scheme: scheme})
+}
+
+func Start() {
+	ctrl.SetLogger(zap.New())
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{Scheme: NewScheme()})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)

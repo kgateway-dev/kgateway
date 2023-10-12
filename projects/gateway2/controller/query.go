@@ -42,11 +42,20 @@ type gatewayQueries struct {
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
 
 	var list api.ReferenceGrantList
-	err := r.client.List(ctx, &list, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(referenceGrantFrom, tons)})
+	err := r.client.List(ctx, &list, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(referenceGrantFromField, fromns)})
 	if err != nil {
 		return false, err
 	}
-	return ReferenceAllowed(ctx, from, fromns, to, toname, list.Items), nil
+	// filter out just ref grants in tons
+	var refGrants []api.ReferenceGrant
+	for _, rg := range list.Items {
+		if rg.Namespace != tons {
+			continue
+		}
+		refGrants = append(refGrants, rg)
+	}
+
+	return ReferenceAllowed(ctx, from, fromns, to, toname, refGrants), nil
 }
 
 func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (map[string][]api.HTTPRoute, error) {
@@ -56,10 +65,6 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 	}
 
 	var hrlist api.HTTPRouteList
-	err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(httpRouteTargetField, nns.String())})
-	if err != nil {
-		return nil, err
-	}
 	ret := map[string][]api.HTTPRoute{}
 	for _, l := range gw.Spec.Listeners {
 		if _, ok := ret[string(l.Name)]; ok {
@@ -89,6 +94,8 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 					gk := metav1.GroupKind{Kind: string(k.Kind)}
 					if k.Group != nil {
 						gk.Group = string(*k.Group)
+					} else {
+						gk.Group = "gateway.networking.k8s.io"
 					}
 					allowedKinds = append(allowedKinds, gk)
 				}
@@ -112,6 +119,12 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 		}
 		if isHttpRouteAllowed(allowedKinds) {
 			var result []api.HTTPRoute
+			if hrlist.Items == nil {
+				err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(httpRouteTargetField, nns.String())})
+				if err != nil {
+					return nil, err
+				}
+			}
 			for _, hr := range hrlist.Items {
 				if !allowedNs(hr.Namespace) {
 					continue
@@ -123,7 +136,7 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 			ret[string(l.Name)] = result
 		}
 	}
-	return ret, err
+	return ret, nil
 }
 
 func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object, secretRef *api.SecretObjectReference) (client.Object, error) {
@@ -158,12 +171,12 @@ func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object
 
 func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backendName string, backendNS *api.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
 
-	gvks, isVersioned, err := r.scheme.ObjectKinds(from)
+	gvks, isUnversioned, err := r.scheme.ObjectKinds(from)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get object kind %T", from)
 	}
-	if !isVersioned {
+	if isUnversioned {
 		return nil, fmt.Errorf("object of type %T is not versioned", from)
 	}
 	if len(gvks) != 1 {
@@ -205,7 +218,10 @@ func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backend
 	}
 
 	err = r.client.Get(ctx, types.NamespacedName{Namespace: ns, Name: backendName}, ret)
-	return ret, err
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 
 }
 
@@ -243,9 +259,12 @@ func (r *gatewayQueries) NamespaceSelector(sel labels.Selector) func(string) boo
 func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []api.ReferenceGrant) bool {
 	for _, refGrant := range grantsInToNs {
 		for _, from := range refGrant.Spec.From {
-			if fromgk.Group == string(from.Group) && fromgk.Kind == string(from.Kind) {
+			if string(from.Namespace) != fromns {
+				continue
+			}
+			if coreIfEmpty(fromgk.Group) == coreIfEmpty(string(from.Group)) && fromgk.Kind == string(from.Kind) {
 				for _, to := range refGrant.Spec.To {
-					if togk.Group == string(to.Group) && togk.Kind == string(to.Kind) {
+					if coreIfEmpty(togk.Group) == coreIfEmpty(string(to.Group)) && togk.Kind == string(to.Kind) {
 						if to.Name == nil || string(*to.Name) == toname {
 							return true
 						}
@@ -253,8 +272,17 @@ func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns strin
 				}
 			}
 		}
-
 	}
-
 	return false
+}
+
+// Note that the spec has examples where the "core" api group is explicitly specified.
+// so this helper function converts an empty string (which implies core api group) to the
+// explicit "core" api group. It should only be used in places where the spec specifies that empty
+// group means "core" api group (some place in the spec may default to the "gateway" api group instead.
+func coreIfEmpty(s string) string {
+	if s == "" {
+		return "core"
+	}
+	return s
 }
