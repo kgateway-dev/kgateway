@@ -284,6 +284,16 @@ func (m *Upstream) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetPreconnectPolicy()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPreconnectPolicy()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPreconnectPolicy(), target.GetPreconnectPolicy()) {
+			return false
+		}
+	}
+
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:
@@ -463,6 +473,50 @@ func (m *HeaderValue) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetValue(), target.GetValue()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *PreconnectPolicy) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*PreconnectPolicy)
+	if !ok {
+		that2, ok := that.(PreconnectPolicy)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if h, ok := interface{}(m.GetPerUpstreamPreconnectRatio()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPerUpstreamPreconnectRatio()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPerUpstreamPreconnectRatio(), target.GetPerUpstreamPreconnectRatio()) {
+			return false
+		}
+	}
+
+	if h, ok := interface{}(m.GetPredictivePreconnectRatio()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetPredictivePreconnectRatio()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetPredictivePreconnectRatio(), target.GetPredictivePreconnectRatio()) {
+			return false
+		}
 	}
 
 	return true
