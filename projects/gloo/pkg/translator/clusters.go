@@ -12,6 +12,7 @@ import (
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/api_conversion"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1_options "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -93,6 +94,11 @@ func (t *translatorInstance) initializeCluster(
 		reports.AddError(upstream, err)
 	}
 
+	preconnect, err := getPreconnectPolicy(upstream.GetPreconnectPolicy())
+	if err != nil {
+		reports.AddError(upstream, err)
+	}
+
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
 	out := &envoy_config_cluster_v3.Cluster{
 		Name:             UpstreamToClusterName(upstream.GetMetadata().Ref()),
@@ -109,6 +115,7 @@ func (t *translatorInstance) initializeCluster(
 		IgnoreHealthOnHostRemoval: upstream.GetIgnoreHealthOnHostRemoval().GetValue(),
 		RespectDnsTtl:             upstream.GetRespectDnsTtl().GetValue(),
 		DnsRefreshRate:            getDnsRefreshRate(upstream, reports),
+		PreconnectPolicy:          preconnect,
 	}
 
 	if sslConfig := upstream.GetSslConfig(); sslConfig != nil {
@@ -290,6 +297,45 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoy_config_cluster_
 		}
 	}
 	return nil
+}
+
+// getPreconnectPolicy follows the naming of the rest of functions here
+// it MAY someday deal with inheritance like the other functions
+// it consumes an ordered list of preconnect policies
+// it returns the first non-nil policy
+func getPreconnectPolicy(cfgs ...*v1.PreconnectPolicy) (*envoy_config_cluster_v3.Cluster_PreconnectPolicy, error) {
+
+	// since we dont want strict reliance on envoys current api
+	// but still able to map as closely as possible
+	// if not nil then convert the gloo configurations to envoy
+	for _, curConfig := range cfgs {
+		if curConfig == nil {
+			continue
+		}
+
+		// we have a policy. However we dont respect proto constraints
+		// therefore we need to check here to see if the applied configuration is
+		// SILLY and warn the user.
+		perUpstream := curConfig.GetPerUpstreamPreconnectRatio()
+		predictive := curConfig.GetPredictivePreconnectRatio()
+
+		eString := ""
+		if perUpstream != nil && (perUpstream.GetValue() < 1 || perUpstream.GetValue() > 3) {
+			eString = fmt.Sprintf("perupstream must be between 1 and 3 if set, it was: %v", perUpstream.GetValue())
+		}
+		if predictive != nil && (predictive.GetValue() < 1 || predictive.GetValue() > 3) {
+			eString += fmt.Sprintf("predictive must be between 1 and 3 if set, it was: %v", perUpstream.GetValue())
+		}
+		if eString != "" {
+			return nil, errors.New("invalid preconnect policy: " + eString)
+		}
+		return &envoy_config_cluster_v3.Cluster_PreconnectPolicy{
+
+			PerUpstreamPreconnectRatio: curConfig.GetPerUpstreamPreconnectRatio(),
+			PredictivePreconnectRatio:  curConfig.GetPredictivePreconnectRatio(),
+		}, nil
+	}
+	return nil, nil
 }
 
 func getHttp2options(us *v1.Upstream) *envoy_config_core_v3.Http2ProtocolOptions {

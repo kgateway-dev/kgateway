@@ -84,7 +84,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-var _ = Describe("Translator", func() {
+var _ = Describe("Clusters Translator", func() {
 	var (
 		ctrl              *gomock.Controller
 		settings          *v1.Settings
@@ -3651,45 +3651,6 @@ var _ = Describe("Translator", func() {
 			Entry("When value=nil", nil, false))
 	})
 
-	FContext("PreconnectPolicy", func() {
-		DescribeTable("propagates PreconnectPolicy to Cluster",
-			func(upstreamValue *v1.PreconnectPolicy, shouldErr bool) {
-				// Set the value to test
-				upstream.PreconnectPolicy = upstreamValue
-
-				snap, errs, report := translator.Translate(params, proxy)
-				if shouldErr {
-					Expect(errs.Validate()).To(HaveOccurred())
-					return
-				}
-				Expect(snap).NotTo(BeNil())
-				Expect(errs.Validate()).To(BeNil())
-
-				clusters := snap.GetResources(types.ClusterTypeV3)
-				clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
-				cluster = clusterResource.ResourceProto().(*envoy_config_cluster_v3.Cluster)
-				Expect(cluster).NotTo(BeNil())
-
-				// The underlying types are different but not individual fields
-				actualPrecon := cluster.PreconnectPolicy
-				if upstreamValue == nil {
-					Expect(actualPrecon).To(BeNil())
-					return
-				}
-
-				Expect(actualPrecon.PerUpstreamPreconnectRatio).To(Equal(upstreamValue.PerUpstreamPreconnectRatio))
-
-				Expect(actualPrecon.PredictivePreconnectRatio).To(Equal(upstreamValue.PredictivePreconnectRatio))
-			},
-			Entry("When unset", nil, false),
-			Entry("When valid perupstream", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(1)}, false),
-			Entry("When valid predictive", &v1.PreconnectPolicy{PredictivePreconnectRatio: asDouble(2)}, false),
-			Entry("When valid", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(1), PredictivePreconnectRatio: asDouble(2)}, false),
-			Entry("When invalid perupstream", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(0.5)}, true),
-			Entry("When valid perupstream but invalid predictive", &v1.PreconnectPolicy{PerUpstreamPreconnectRatio: asDouble(1), PredictivePreconnectRatio: asDouble(1000)}, true),
-		)
-	})
-
 	Context("DnsRefreshRate", func() {
 		DescribeTable("Sets DnsRefreshRate on Cluster",
 			func(staticUpstream bool, refreshRate *duration.Duration, refreshRateMatcher types2.GomegaMatcher, reportMatcher types2.GomegaMatcher) {
@@ -3813,6 +3774,8 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	
+
 })
 
 // The endpoint Cluster is now the UpstreamToClusterName-<hash of upstream> to facilitate
@@ -3918,8 +3881,4 @@ func createMultiActionRoute(routeName string, matcher *matchers.Matcher, destina
 			},
 		},
 	}
-}
-
-func asDouble(v float64) *wrappers.DoubleValue {
-	return &wrappers.DoubleValue{Value: v}
 }

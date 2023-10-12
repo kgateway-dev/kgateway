@@ -1331,6 +1331,15 @@ spec:
                         type: object
                     type: object
                 type: object
+              preconnectPolicy:
+                properties:
+                  perUpstreamPreconnectRatio:
+                    nullable: true
+                    type: number
+                  predictivePreconnectRatio:
+                    nullable: true
+                    type: number
+                type: object
               protocolSelection:
                 type: string
                 x-kubernetes-int-or-string: true
