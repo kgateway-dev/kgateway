@@ -46,6 +46,9 @@ func Run(ctx context.Context, opts Options) error {
 	if opts.SecretName == "" {
 		return eris.Errorf("must provide secret-name")
 	}
+	if opts.NextSecretName == "" {
+		return eris.Errorf("must provide next-secret-name")
+	}
 	if opts.ServerCertSecretFileName == "" {
 		return eris.Errorf("must provide name for the server cert entry in the secret data")
 	}
@@ -54,9 +57,6 @@ func Run(ctx context.Context, opts Options) error {
 	}
 	if opts.ServerKeySecretFileName == "" {
 		return eris.Errorf("must provide name for the server key entry in the secret data")
-	}
-	if opts.NextSecretName == "" {
-		return eris.Errorf("must provide secret-name")
 	}
 	renewBeforeDuration, err := time.ParseDuration(opts.RenewBefore)
 	if err != nil {

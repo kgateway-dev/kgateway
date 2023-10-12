@@ -67,6 +67,7 @@ spec:
                   fieldPath: metadata.namespace
           args:
             - "--secret-name=gloo-mtls-certs"
+            - "--next-secret-name=gloo-mtls-next-certs"
             - "--svc-name=gloo"
             {{- if .Values.gateway.certGenJob.forceRotation }}
             - "--force-rotation=true"
