@@ -117,7 +117,7 @@ var _ = Describe("UpdateUpstream", func() {
 		// This should happen very rarely, and should be used as an indication that the `UpdateUpstream` function
 		// most likely needs to change.
 		Expect(reflect.TypeOf(gloov1.Upstream{}).NumField()).To(
-			Equal(27),
+			Equal(28),
 			"wrong number of fields found",
 		)
 	})

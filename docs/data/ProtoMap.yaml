@@ -839,6 +839,9 @@ apis:
   gloo.solo.io.NotifyOnResyncResponse:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/gloo_validation.proto.sk/#NotifyOnResyncResponse
     package: gloo.solo.io
+  gloo.solo.io.PreconnectPolicy:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/#PreconnectPolicy
+    package: gloo.solo.io
   gloo.solo.io.Proxy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy
     package: gloo.solo.io
