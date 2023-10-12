@@ -6,3 +6,11 @@ changelog:
     dependencyTag: v1.23.12-patch3
     description: >-
       Upgrade envoy-gloo version to handle CVE-2023-44487
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: cloud-builders
+    dependencyTag: v0.6.5
+    description: >-
+      Use the latest cloud builders to match go version of builder to that of enterprise
+      This pulls in fixes for CVE-2023-39325, as announced in
+      https://groups.google.com/g/golang-announce/c/iNNxDTCjZvo
