@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/8782
+    resolvesIssue: true
+    description: Adds the helm value `gateway.rolloutJob.timeout` to specifiy the timeout to wait for the resource rollout job to complete.
+

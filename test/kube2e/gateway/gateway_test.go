@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+
 	"github.com/google/uuid"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
@@ -66,7 +70,7 @@ import (
 	"github.com/solo-io/k8s-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -1358,7 +1362,10 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		Context("routing (tcp/tls)", func() {
 
-			var secretName = "secret-routing-tls"
+			const (
+				secretName  = "secret-routing-tls"
+				gatewayName = "one"
+			)
 
 			BeforeEach(func() {
 				// Create secret to use for ssl routing
@@ -1367,7 +1374,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				tcpGateway := defaults.DefaultTcpGateway(testHelper.InstallNamespace)
 				tcpGateway.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{{
-					Name: "one",
+					Name: gatewayName,
 					Destination: &gloov1.TcpHost_TcpAction{
 						Destination: &gloov1.TcpHost_TcpAction_ForwardSniClusterName{
 							ForwardSniClusterName: &empty.Empty{},
@@ -1394,8 +1401,10 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 
 			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				// It is possible the state has not fully reconciled yet, and we could hit a validation error due to the gateway that references the secret.
+				Eventually(func() error {
+					return resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+				}, "10s", "1s").ShouldNot(HaveOccurred())
 			})
 
 			It("correctly routes to the service (tcp/tls)", func() {
@@ -2366,7 +2375,7 @@ spec:
 						petstoreName         = "petstore"
 						petstoreUpstreamName string
 						petstoreSvc          *corev1.Service
-						petstoreDeployment   *v1.Deployment
+						petstoreDeployment   *appsv1.Deployment
 					)
 
 					BeforeEach(func() {
@@ -2522,6 +2531,77 @@ spec:
 			})
 		})
 
+		Context("resource CRUD validation", func() {
+			Context("secret validation", func() {
+				const secretName = "tls-secret"
+
+				BeforeEach(func() {
+					var err error
+					// Create secret to use for ssl routing
+					tlsSecret := helpers.GetKubeSecret(secretName, testHelper.InstallNamespace)
+					tlsSecret, err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					// Modify the VirtualService to include the created SslConfig
+					testRunnerVs.SslConfig = &ssl.SslConfig{
+						SslSecrets: &ssl.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      tlsSecret.GetName(),
+								Namespace: tlsSecret.GetNamespace(),
+							},
+						},
+					}
+				})
+
+				AfterEach(func() {
+					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					// Some tests delete the Secret for assertions. The KubeClient does not have an "IgnoreNotFound" field, so we check for
+					// either a nil error indicating a successful deletion, or for the Secret to not be found indicating it was previously deleted as part of a test.
+					Expect(err).To(Or(
+						Not(HaveOccurred()),
+						MatchError(errors.NewNotFound(corev1.Resource("secrets"), secretName).Error()),
+					))
+				})
+
+				It("should act as expected with secret validation", func() {
+					By("failing to delete a secret that is in use")
+					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+
+					By("successfully deleting a secret that is no longer in use")
+					// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
+					err = helpers.PatchResource(
+						ctx,
+						&core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      testRunnerVs.GetMetadata().Name,
+						},
+						func(resource resources.Resource) resources.Resource {
+							vs := resource.(*gatewayv1.VirtualService)
+							vs.SslConfig = nil
+							return vs
+						},
+						resourceClientset.VirtualServiceClient().BaseClient())
+					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					})
+
+					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("can delete a secret that is not in use", func() {
+					tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
+					tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+		})
 	})
 
 })
@@ -2590,7 +2670,7 @@ func getRouteWithDelegateRef(delegate string, path string) *gatewayv1.Route {
 	}
 }
 
-func petstore(namespace string) (*v1.Deployment, *corev1.Service) {
+func petstore(namespace string) (*appsv1.Deployment, *corev1.Service) {
 	deployment := fmt.Sprintf(`
 ##########################
 #                        #
@@ -2625,7 +2705,7 @@ spec:
           name: http
 `, namespace)
 
-	var dep v1.Deployment
+	var dep appsv1.Deployment
 	err := yaml.Unmarshal([]byte(deployment), &dep)
 	Expect(err).NotTo(HaveOccurred())
 
