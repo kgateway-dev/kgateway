@@ -12,14 +12,15 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"math/big"
 	"net"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"golang.org/x/crypto/ocsp"
 
