@@ -2576,11 +2576,6 @@ spec:
 				It("should act as expected with secret validation", FlakeAttempts(3), func() {
 					By("failing to delete a secret that is in use")
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					// DO_NOT_SUBMIT: There was also a flake here were the proxy status did not update when deleting a secret, meaning it went through. Unsure if a test issue, or a bigger investigation is needed.
-					// Note: This is something I also hit in 1.14-, although there it happened ~1/2 of runs, whereas I haven't hit this yet (after ~15 runs).
-					// A quick patch could be adding a minimal amount of flake attempts (~3), since this _should not_ be commonly occurring.
-					// We could also to do an investigation into our tests, and possibly proxy+translation code in case this is bigger.
-					// I remember when working on e2e tests a few months ago it sometimes took a while for status(es) to update, but can't remember the context.
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
 
