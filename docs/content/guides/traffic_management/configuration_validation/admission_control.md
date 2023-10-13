@@ -128,7 +128,7 @@ validation_gateway_solo_io_upstream_config_status{name="default-petstore-8080",n
 
 ## Test resource configurations
 
-You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration<!-- or [send requests directly to the Gloo Edge validation API](#validation-api)-->. 
+You can use the Kubernetes [dry run capability](#dry-run) to verify your resource configuration or [send requests directly to the Gloo Edge validation API](#validation-api). 
 
 {{% notice note %}}
 The information in this guide assumes that you enabled strict validation, including the rejection of resources that result in a `Warning` state. To enable these settings, run `kubectl edit settings default -n gloo-system` and set `alwaysAccept: false` and `allowWarnings: false` in the `spec.gateway.validation` section. 
@@ -348,9 +348,9 @@ Send a curl request to the validation API to test your resource configurations.
 {{< notice tip >}}
 If an empty response <code>{}</code> is returned from the validation API, you might need to add or remove a bracket from your request. This response is returned also if the wrong bracket type is used, such as when you used <code>{}</code> instead of <code>[]</code>. 
 {{< /notice >}}
-{{< notice note >}}
+{{% notice note %}}
 The validation API currently assumes that all configuration that is sent to the API passes the Kubernetes object schema validation. For example, if your configuration contains valid Gloo configuration, but you use an API version or kind that does not exist in your cluster, the validation API logs a warning, but accepts the request. To ensure that your resource configuration passes the Kubernetes object schema validation, use the [dry run capability in Kubernetes](#dry-run) instead.
-{{< /notice >}}
+{{% /notice %}}
 
 1. Port-forward the gloo service on port 8443. 
    ```sh
