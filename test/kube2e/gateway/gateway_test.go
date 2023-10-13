@@ -1361,9 +1361,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			)
 
 			BeforeEach(func() {
-				// get the certificate so it is generated in the background
-				go helpers.Certificate()
-
 				// Create secret to use for ssl routing
 				tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
 				glooResources.Secrets = gloov1.SecretList{tlsSecret}
@@ -2533,9 +2530,6 @@ spec:
 				const secretName = "tls-secret"
 
 				BeforeEach(func() {
-					// get the certificate so it is generated in the background
-					go helpers.Certificate()
-
 					tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
 					glooResources.Secrets = gloov1.SecretList{tlsSecret}
 
