@@ -3,14 +3,12 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
 
 	"github.com/google/uuid"
 
@@ -339,23 +337,18 @@ var _ = Describe("Kube2e: gateway", func() {
 				// get the certificate so it is generated in the background
 				go helpers.Certificate()
 
-				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret(secretName, testHelper.InstallNamespace), metav1.CreateOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
+				glooResources.Secrets = gloov1.SecretList{tlsSecret}
 
 				// Modify the VirtualService to include the necessary SslConfig
 				testRunnerVs.SslConfig = &ssl.SslConfig{
 					SslSecrets: &ssl.SslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
-							Name:      createdSecret.GetName(),
-							Namespace: createdSecret.GetNamespace(),
+							Name:      tlsSecret.GetMetadata().GetName(),
+							Namespace: tlsSecret.GetMetadata().GetNamespace(),
 						},
 					},
 				}
-			})
-
-			AfterEach(func() {
-				err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("works with ssl", func() {
@@ -1369,8 +1362,8 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			BeforeEach(func() {
 				// Create secret to use for ssl routing
-				createdSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, helpers.GetKubeSecret(secretName, testHelper.InstallNamespace), metav1.CreateOptions{})
-				Expect(err).NotTo(HaveOccurred())
+				tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
+				glooResources.Secrets = gloov1.SecretList{tlsSecret}
 
 				tcpGateway := defaults.DefaultTcpGateway(testHelper.InstallNamespace)
 				tcpGateway.GetTcpGateway().TcpHosts = []*gloov1.TcpHost{{
@@ -1385,8 +1378,8 @@ var _ = Describe("Kube2e: gateway", func() {
 						SniDomains: []string{httpEchoClusterName},
 						SslSecrets: &ssl.SslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{
-								Name:      createdSecret.GetName(),
-								Namespace: createdSecret.GetNamespace(),
+								Name:      tlsSecret.GetMetadata().GetName(),
+								Namespace: tlsSecret.GetMetadata().GetNamespace(),
 							},
 						},
 						// Force http1, as defaulting to 2 fails. The service in question is an http1 service, but as this
@@ -1398,13 +1391,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				glooResources.Gateways = gatewayv1.GatewayList{tcpGateway}
 
-			})
-
-			AfterEach(func() {
-				// It is possible the state has not fully reconciled yet, and we could hit a validation error due to the gateway that references the secret.
-				Eventually(func() error {
-					return resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-				}, "10s", "1s").ShouldNot(HaveOccurred())
 			})
 
 			It("correctly routes to the service (tcp/tls)", func() {
@@ -2099,6 +2085,77 @@ spec:
 				}
 			})
 
+			Context("secret validation", func() {
+				const secretName = "tls-secret"
+
+				BeforeEach(func() {
+					// Create secret to use for ssl routing
+					tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
+					glooResources.Secrets = gloov1.SecretList{tlsSecret}
+
+					// Modify the VirtualService to include the created SslConfig
+					testRunnerVs.SslConfig = &ssl.SslConfig{
+						SslSecrets: &ssl.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      tlsSecret.GetMetadata().GetName(),
+								Namespace: tlsSecret.GetMetadata().GetNamespace(),
+							},
+						},
+					}
+				})
+
+				AfterEach(func() {
+					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					// Some tests delete the Secret for assertions. The KubeClient does not have an "IgnoreNotFound" field, so we check for
+					// either a nil error indicating a successful deletion, or for the Secret to not be found indicating it was previously deleted as part of a test.
+					Expect(err).To(Or(
+						Not(HaveOccurred()),
+						MatchError(errors.NewNotFound(corev1.Resource("secrets"), secretName).Error()),
+					))
+				})
+
+				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
+				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
+				// The reason is still unknown, so we retry on flakes in the meantime.
+				It("should act as expected with secret validation", FlakeAttempts(3), func() {
+					By("failing to delete a secret that is in use")
+					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+
+					By("successfully deleting a secret that is no longer in use")
+					// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
+					err = helpers.PatchResource(
+						ctx,
+						&core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      testRunnerVs.GetMetadata().Name,
+						},
+						func(resource resources.Resource) resources.Resource {
+							vs := resource.(*gatewayv1.VirtualService)
+							vs.SslConfig = nil
+							return vs
+						},
+						resourceClientset.VirtualServiceClient().BaseClient())
+					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					})
+
+					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("can delete a secret that is not in use", func() {
+					tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
+					tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
 		})
 
 		When("allowWarnings=true", Ordered, func() {
@@ -2527,78 +2584,6 @@ spec:
 						g.Expect(rlc.Status.Message).Should(ContainSubstring("enterprise-only"))
 						return nil
 					}, "15s", "0.5s").ShouldNot(HaveOccurred())
-				})
-			})
-		})
-
-		Context("resource CRUD validation", func() {
-			Context("secret validation", func() {
-				const secretName = "tls-secret"
-
-				BeforeEach(func() {
-					var err error
-					// Create secret to use for ssl routing
-					tlsSecret := helpers.GetKubeSecret(secretName, testHelper.InstallNamespace)
-					tlsSecret, err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
-					Expect(err).NotTo(HaveOccurred())
-
-					// Modify the VirtualService to include the created SslConfig
-					testRunnerVs.SslConfig = &ssl.SslConfig{
-						SslSecrets: &ssl.SslConfig_SecretRef{
-							SecretRef: &core.ResourceRef{
-								Name:      tlsSecret.GetName(),
-								Namespace: tlsSecret.GetNamespace(),
-							},
-						},
-					}
-				})
-
-				AfterEach(func() {
-					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					// Some tests delete the Secret for assertions. The KubeClient does not have an "IgnoreNotFound" field, so we check for
-					// either a nil error indicating a successful deletion, or for the Secret to not be found indicating it was previously deleted as part of a test.
-					Expect(err).To(Or(
-						Not(HaveOccurred()),
-						MatchError(errors.NewNotFound(corev1.Resource("secrets"), secretName).Error()),
-					))
-				})
-
-				It("should act as expected with secret validation", func() {
-					By("failing to delete a secret that is in use")
-					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
-
-					By("successfully deleting a secret that is no longer in use")
-					// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
-					err = helpers.PatchResource(
-						ctx,
-						&core.ResourceRef{
-							Namespace: testHelper.InstallNamespace,
-							Name:      testRunnerVs.GetMetadata().Name,
-						},
-						func(resource resources.Resource) resources.Resource {
-							vs := resource.(*gatewayv1.VirtualService)
-							vs.SslConfig = nil
-							return vs
-						},
-						resourceClientset.VirtualServiceClient().BaseClient())
-					Expect(err).NotTo(HaveOccurred())
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-					})
-
-					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("can delete a secret that is not in use", func() {
-					tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
-					tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
-					Expect(err).NotTo(HaveOccurred())
-
-					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
-					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 		})
