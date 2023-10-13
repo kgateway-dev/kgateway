@@ -404,3 +404,141 @@ spec:
             logName: example
             staticClusterName: access_log_cluster
 ```
+
+## Filtering access logs 
+
+You can apply different filters on your access logs to reduce and optimize the number of logs that are stored. For example, you can filter access logs based on request headers, HTTP response codes, gRPC status codes, request duration, health check status, tracing parameters, response flags, and more. You can also combine multiple filters, and perform `AND` and `OR` operations on filter results. For more information, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}. 
+
+1. Follow the steps in [File-based](file-based-access-logging) or [gRPC](#grpc-access-loggin) access logging to enable access logging for your gateway.
+2. To apply additional filters to your access logs, you create or edit your gateway resource and add the access log filters to the `spec.options.accessLoggingService.accessLog` section. The following example uses file-based access logging and captures access logs only for requests with an HTTP response code that is greater than or equal to 400. 
+   ```yaml
+   apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     labels:
+       app: gloo
+     name: gateway-proxy
+     namespace: gloo-system
+   spec:
+     bindAddress: '::'
+     bindPort: 8080
+     options:
+       accessLoggingService:
+         accessLog:
+         - fileSink:
+             jsonFormat:
+               duration: '%DURATION%'
+               origpath: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
+               protocol: '%PROTOCOL%'
+             path: /dev/stdout
+           filter:
+             statusCodeFilter:
+               comparison:
+                 op: GE
+                 value: 
+                   runtimeKey: "400"
+     proxyNames:
+     - gateway-proxy
+     ssl: false
+     useProxyProto: false
+   ```
+
+For more configuration options, see {{% protobuf name="als.options.gloo.solo.io.AccessLogFilter" display="AccessLogFilter"%}}.
+
+### Using header filters on access logs with prefix matching
+
+You can apply access log filters to requests where the request path is rewritten to a different path before the request is forwarded to the upstream destination. 
+
+Let's assume the following virtual service that rewrites request paths from `httpbin/get` to `/get` before the request is forwarded to the httpbin app. 
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+name: default
+namespace: gloo-system
+spec:
+virtualHost:
+  domains:
+  - '*'
+  routes:
+  - matchers:
+    - prefix: /httpbin/get
+    options:
+      prefixRewrite: /get
+    routeAction:
+      single:
+        upstream:
+          name: default-httpbin-8000
+          namespace: gloo-system
+```
+
+For requests that are rewritten to a different path, the original path is stored in the `X-ENVOY-ORIGINAL-PATH` header. To filter access logs based on the original path, you can use the `headerFilter` access log filter option in the gateway resource. In the following example, the `X-ENVOY-ORIGINAL-PATH` header must be set to `/httpbin/get` (`prefixMatch`) for the filter to apply. Because `invertMatch: true` is set, only requests with an `X-ENVOY-ORIGINAL-PATH` header value that does not equal `/httpbin/get` are logged. 
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          jsonFormat:
+            duration: '%DURATION%'
+            origpath: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
+            protocol: '%PROTOCOL%'
+          path: /dev/stdout
+        filter:
+          headerFilter:
+            header:
+              invertMatch: true #requests NOT starting with /httpbin/get are logged
+              name: X-ENVOY-ORIGINAL-PATH
+              prefixMatch: /httpbin/get
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false
+```
+
+To log requests for the rewritten path only, you can set the `header.name` field to `:path` as shown in the following example. 
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  options:
+    accessLoggingService:
+      accessLog:
+      - fileSink:
+          jsonFormat:
+            duration: '%DURATION%'
+            origpath: '%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%'
+            protocol: '%PROTOCOL%'
+          path: /dev/stdout
+        filter:
+          headerFilter:
+            header:
+              name: ":path"
+              exactMatch: /get
+  proxyNames:
+  - gateway-proxy
+  ssl: false
+  useProxyProto: false
+```
+
+
+
