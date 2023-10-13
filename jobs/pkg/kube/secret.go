@@ -112,6 +112,10 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 
 	return createdSecret, nil
 }
+
+// secret1: current secret (ca bundle both A B)
+// secret2: next secret
+// secret3: next next secret
 func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
 	secretClient := kube.CoreV1().Secrets(secret1.SecretNamespace)
 	// Move the tls key/cert from secret2 -> secret1
@@ -122,9 +126,15 @@ func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecr
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
+
+	if true {
+		return secretToWrite, nil
+	}
+
 	// wait for SDS
 	contextutils.LoggerFrom(ctx).Infow("Wrote new cert, waiting to rotate CaBundles")
-	time.Sleep(time.Second * 20)
+	time.Sleep(time.Second * 5)
+
 	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
 	secret1.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
 	secretToWrite = makeTlsSecret(secret1)

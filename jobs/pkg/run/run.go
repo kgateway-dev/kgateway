@@ -75,6 +75,9 @@ func Run(ctx context.Context, opts Options) error {
 	}
 	nextSecret, renewNext, err := kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.NextSecretName, opts.SecretNamespace,
 		opts.SvcName, opts.SvcNamespace, renewBeforeDuration)
+	if err != nil {
+		return eris.Wrapf(err, "failed validating next secret")
+	}
 	// If either secret is empty or invalid, generate two new secrets and save them.
 	if secret == nil || nextSecret == nil {
 		certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
@@ -113,7 +116,7 @@ func Run(ctx context.Context, opts Options) error {
 		}
 		_, err = kube.CreateTlsSecret(ctx, kubeClient, nextSecretConfig)
 		if err != nil {
-			return eris.Wrapf(err, "error saving secret")
+			return eris.Wrapf(err, "error saving next secret")
 		}
 		return persistWebhook(ctx, opts, kubeClient, secret)
 	}
