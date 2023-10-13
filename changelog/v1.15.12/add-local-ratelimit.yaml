@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/7428
+  resolvesIssue: true
+  description: >-
+    Gloo now supports local limiting. This restricts the rate of connections per gateway, virtual host or route using envoy's own local rate limit filter, thus no longer requiring the need for an external rate limit server. This includes both the network and http local rate limit filter.
+
