@@ -12,6 +12,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"math/big"
 	"net"
 	"os"
@@ -228,6 +230,21 @@ func GetKubeSecret(name, namespace string) *kubev1.Secret {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
+		},
+	}
+}
+
+func GetTlsSecret(name, namespace string) *v1.Secret {
+	return &v1.Secret{
+		Metadata: &core.Metadata{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Kind: &v1.Secret_Tls{
+			Tls: &v1.TlsSecret{
+				PrivateKey: PrivateKey(),
+				CertChain:  Certificate(),
+			},
 		},
 	}
 }
