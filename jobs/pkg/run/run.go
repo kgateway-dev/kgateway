@@ -47,7 +47,8 @@ func Run(ctx context.Context, opts Options) error {
 		return eris.Errorf("must provide secret-name")
 	}
 	if opts.NextSecretName == "" {
-		return eris.Errorf("must provide next-secret-name")
+		opts.NextSecretName = opts.SecretName + "-next"
+		//return eris.Errorf("must provide next-secret-name")
 	}
 	if opts.ServerCertSecretFileName == "" {
 		return eris.Errorf("must provide name for the server cert entry in the secret data")
