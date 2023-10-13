@@ -341,13 +341,15 @@ To test whether a YAML file is accepted by the validation webhook, you can use t
 {{% /tab %}}
 {{< /tabs >}}
 
-<!--
 ### Send requests to the validation API directly {#validation-api}
 
 Send a curl request to the validation API to test your resource configurations. 
 
 {{< notice tip >}}
-If an empty response <code>{}</code> is from the validation API, you might need to add or remove a bracket from your request. This response is returned also if the wrong bracket type is used, such as when you used <code>{}</code> instead of <code>[]</code>. 
+If an empty response <code>{}</code> is returned from the validation API, you might need to add or remove a bracket from your request. This response is returned also if the wrong bracket type is used, such as when you used <code>{}</code> instead of <code>[]</code>. 
+{{< /notice >}}
+{{< notice note >}}
+The validation API currently assumes that all configuration that is sent to the API passes the Kubernetes object schema validation. For example, if your configuration contains valid Gloo configuration, but you use an API version or kind that does not exist in your cluster, the validation API logs a warning, but accepts the request. To ensure that your resource configuration passes the Kubernetes object schema validation, use the [dry run capability in Kubernetes](#dry-run) instead.
 {{< /notice >}}
 
 1. Port-forward the gloo service on port 8443. 
@@ -375,7 +377,7 @@ If an empty response <code>{}</code> is from the validation API, you might need 
 
    </br>
    
-   1. Send a request to the validation API.
+   1. Send a request to the validation API to create the upstream resource.
       ```sh
       curl -k -XPOST -d '{"request":{"uid":"1234","kind":{"group":"gloo.solo.io","version":"v1","kind":"Upstream"},"resource":{"group":"","version":"","resource":""},"name":"upstream","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object": { "apiVersion": "gloo.solo.io/v1", "kind": "Upstream", "metadata": { "name": "upstream", "namespace": "gloo-system" }, "spec": { "static": { "hosts": [ { "addr": "jsonplaceholder.typicode.com", "port": 80 } ]}}} }}' -H 'Content-Type: application/json' https://localhost:8443/validation 
       ```
@@ -440,16 +442,6 @@ If an empty response <code>{}</code> is from the validation API, you might need 
       ```
       {"response":{"uid":"1234","allowed":false,"status":{"metadata":{},"message":"resource incompatible with current Gloo snapshot: [1 error occurred:\n\t* could not unmarshal raw object: parsing resource from crd spec tcp in namespace gloo-system into *v1.Gateway: json: cannot unmarshal string into Go value of type bool\n\n]","details":{"name":"tcp","group":"gateway.solo.io","kind":"Gateway","causes":[{"message":"Error 1 error occurred:\n\t* could not unmarshal raw object: parsing resource from crd spec tcp in namespace gloo-system into *v1.Gateway: json: cannot unmarshal string into Go value of type bool\n\n"}]}}}}
       ```
-
-   3. Remove the `tcpGateway` section and verify that the validation API returns an error because no gateway type is provided. 
-      ```sh
-      curl -k -XPOST -d '{"request":"uid":"1234","kind":{"group":"gateway.solo.io","version":"v1","kind":"Gateway"},"resource":{"group":"","version":"","resource":""},"name":"tcp","namespace":"gloo-system","operation":"CREATE","userInfo":{},"object":{ "apiVersion": "gateway.solo.io/v1", "kind": "Gateway", "metadata": { "name": "tcp", "namespace": "gloo-system" }, "spec": { "bindAddress": "::", "bindPort": 8000, "useProxyProto": "false" }} }}' -H 'Content-Type: application/json' https://localhost:8443/validation
-      ```
-
-      Example output for invalid validation: 
-      ```
-      {}
-      ```
    
    {{% /tab %}}
    {{% tab name="Virtual service" %}}
@@ -511,7 +503,6 @@ If an empty response <code>{}</code> is from the validation API, you might need 
    {{% /tab %}}
    {{< /tabs >}}
 
--->
    
 ## Disable resource validation in Gloo Edge
 
