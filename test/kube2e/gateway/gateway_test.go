@@ -2573,6 +2573,16 @@ spec:
 					))
 				})
 
+				JustBeforeEach(func() {
+					// Ensure the VirtualService referencing the Secret has been accepted. This helps avoid the possibility of the Secret getting deleted before it's referenced.
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testRunnerVs.GetMetadata().GetNamespace(), testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{})
+					})
+				})
+
+				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
+				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
+				// The reason is still unknown, so we retry on flakes in the meantime.
 				It("should act as expected with secret validation", FlakeAttempts(3), func() {
 					By("failing to delete a secret that is in use")
 					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
