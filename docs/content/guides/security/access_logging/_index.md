@@ -473,7 +473,7 @@ virtualHost:
           namespace: gloo-system
 ```
 
-For requests that are rewritten to a different path, the original path is stored in the `X-ENVOY-ORIGINAL-PATH` header. To filter access logs based on the original path, you can use the `headerFilter` access log filter option in the gateway resource. In the following example, the `X-ENVOY-ORIGINAL-PATH` header must be set to `/httpbin/get` (`prefixMatch`) for the filter to apply. Because `invertMatch: true` is set, only requests with an `X-ENVOY-ORIGINAL-PATH` header value that does not equal to `/httpbin/get` are logged. 
+For requests that are rewritten to a different path, the original path is stored in the `X-ENVOY-ORIGINAL-PATH` header. To filter access logs based on the original path, you can use the `headerFilter` access log filter option in the gateway resource. In the following example, the `X-ENVOY-ORIGINAL-PATH` header must be set to `/httpbin/get` (`prefixMatch`) for the filter to apply. Because `invertMatch: true` is set, only requests with an `X-ENVOY-ORIGINAL-PATH` header value that does not equal `/httpbin/get` are logged. 
 
 ```yaml
 apiVersion: gateway.solo.io/v1
