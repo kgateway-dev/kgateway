@@ -2085,6 +2085,67 @@ spec:
 				}
 			})
 
+			Context("secret validation", func() {
+				const secretName = "tls-secret"
+
+				BeforeEach(func() {
+					tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
+					glooResources.Secrets = gloov1.SecretList{tlsSecret}
+
+					// Modify the VirtualService to include the created SslConfig
+					testRunnerVs.SslConfig = &ssl.SslConfig{
+						SslSecrets: &ssl.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      tlsSecret.GetMetadata().GetName(),
+								Namespace: tlsSecret.GetMetadata().GetNamespace(),
+							},
+						},
+					}
+				})
+
+				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
+				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
+				// The reason is still unknown, so we retry on flakes in the meantime.
+				It("should act as expected with secret validation", FlakeAttempts(3), func() {
+					By("failing to delete a secret that is in use")
+					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
+
+					By("successfully deleting a secret that is no longer in use")
+					// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
+					err = helpers.PatchResource(
+						ctx,
+						&core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      testRunnerVs.GetMetadata().Name,
+						},
+						func(resource resources.Resource) resources.Resource {
+							vs := resource.(*gatewayv1.VirtualService)
+							vs.SslConfig = nil
+							return vs
+						},
+						resourceClientset.VirtualServiceClient().BaseClient())
+					Expect(err).NotTo(HaveOccurred())
+					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
+						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
+					})
+
+					// Although these tests delete the secret handled by our SnapshotWriter, because we set `IgnoreNotFound` when deleting snapshot resources, this won't cause an issue.
+					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("can delete a secret that is not in use", func() {
+					tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
+					tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
 		})
 
 		When("allowWarnings=true", Ordered, func() {
@@ -2513,77 +2574,6 @@ spec:
 						g.Expect(rlc.Status.Message).Should(ContainSubstring("enterprise-only"))
 						return nil
 					}, "15s", "0.5s").ShouldNot(HaveOccurred())
-				})
-			})
-		})
-
-		Context("resource CRUD validation", func() {
-			BeforeEach(func() {
-				kube2e.UpdateAlwaysAcceptSetting(ctx, false, testHelper.InstallNamespace)
-			})
-
-			AfterEach(func() {
-				// No need to reset Settings here, as they already have AlwaysAccept: false through helm values.
-			})
-
-			Context("secret validation", func() {
-				const secretName = "tls-secret"
-
-				BeforeEach(func() {
-					tlsSecret := helpers.GetTlsSecret(secretName, testHelper.InstallNamespace)
-					glooResources.Secrets = gloov1.SecretList{tlsSecret}
-
-					// Modify the VirtualService to include the created SslConfig
-					testRunnerVs.SslConfig = &ssl.SslConfig{
-						SslSecrets: &ssl.SslConfig_SecretRef{
-							SecretRef: &core.ResourceRef{
-								Name:      tlsSecret.GetMetadata().GetName(),
-								Namespace: tlsSecret.GetMetadata().GetNamespace(),
-							},
-						},
-					}
-				})
-
-				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
-				// It isn't until later - either a few minutes and/or after forcing an update by updating the VS - that the error status appears.
-				// The reason is still unknown, so we retry on flakes in the meantime.
-				It("should act as expected with secret validation", FlakeAttempts(3), func() {
-					By("failing to delete a secret that is in use")
-					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(matchers2.ContainSubstrings([]string{"admission webhook", "SSL secret not found", secretName}))
-
-					By("successfully deleting a secret that is no longer in use")
-					// We patch the VirtualService to remove the ssl reference, allowing the Secret to be removed
-					err = helpers.PatchResource(
-						ctx,
-						&core.ResourceRef{
-							Namespace: testHelper.InstallNamespace,
-							Name:      testRunnerVs.GetMetadata().Name,
-						},
-						func(resource resources.Resource) resources.Resource {
-							vs := resource.(*gatewayv1.VirtualService)
-							vs.SslConfig = nil
-							return vs
-						},
-						resourceClientset.VirtualServiceClient().BaseClient())
-					Expect(err).NotTo(HaveOccurred())
-					helpers.EventuallyResourceAccepted(func() (resources.InputResource, error) {
-						return resourceClientset.VirtualServiceClient().Read(testHelper.InstallNamespace, testRunnerVs.GetMetadata().GetName(), clients.ReadOpts{Ctx: ctx})
-					})
-
-					// Although these tests delete the secret handled by our SnapshotWriter, because we set `IgnoreNotFound` when deleting snapshot resources, this won't cause an issue.
-					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("can delete a secret that is not in use", func() {
-					tlsSecret := helpers.GetKubeSecret("tls-secret-2", testHelper.InstallNamespace)
-					tlsSecret, err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Create(ctx, tlsSecret, metav1.CreateOptions{})
-					Expect(err).NotTo(HaveOccurred())
-
-					err = resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, tlsSecret.GetName(), metav1.DeleteOptions{})
-					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 		})
