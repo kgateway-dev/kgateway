@@ -9,7 +9,6 @@ import (
 	"time"
 
 	matchers2 "github.com/solo-io/gloo/test/gomega/matchers"
-	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/google/uuid"
 
@@ -2103,16 +2102,6 @@ spec:
 							},
 						},
 					}
-				})
-
-				AfterEach(func() {
-					err := resourceClientset.KubeClients().CoreV1().Secrets(testHelper.InstallNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
-					// Some tests delete the Secret for assertions. The KubeClient does not have an "IgnoreNotFound" field, so we check for
-					// either a nil error indicating a successful deletion, or for the Secret to not be found indicating it was previously deleted as part of a test.
-					Expect(err).To(Or(
-						Not(HaveOccurred()),
-						MatchError(errors.NewNotFound(corev1.Resource("secrets"), secretName).Error()),
-					))
 				})
 
 				// There are times when the VirtualService + Proxy do not update Status with the error when deleting the referenced Secret, therefore the validation error doesn't occur.
