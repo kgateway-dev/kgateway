@@ -77,11 +77,15 @@ func Run(ctx context.Context, opts Options) error {
 	// If either secret is empty or invalid, generate two new secrets and save them.
 	if secret == nil || nextSecret == nil {
 		certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-		nextCerts, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-		certs.CaCertificate = append(certs.CaCertificate, nextCerts.CaCertificate...)
 		if err != nil {
 			return eris.Wrapf(err, "failed creating secret")
 		}
+		nextCerts, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
+		if err != nil {
+			return eris.Wrapf(err, "failed creating next secret")
+		}
+		certs.CaCertificate = append(certs.CaCertificate, nextCerts.CaCertificate...)
+
 		newSecretConfig := kube.TlsSecret{
 			SecretName:         opts.SecretName,
 			SecretNamespace:    opts.SecretNamespace,
