@@ -49,13 +49,13 @@ func Run(ctx context.Context, secrets []server.Secret, sdsClient, sdsServerAddre
 		for {
 			select {
 			// watch for events
-			case event := <-watcher.Events:
-				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
-				sdsServer.UpdateSDSConfig(ctx)
-				watchFiles(ctx, watcher, secrets)
-			// watch for errors
-			case err := <-watcher.Errors:
-				contextutils.LoggerFrom(ctx).Warnw("Received error from file watcher", zap.Error(err))
+			// case event := <-watcher.Events:
+			// 	contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
+			// 	sdsServer.UpdateSDSConfig(ctx)
+			// 	watchFiles(ctx, watcher, secrets)
+			// // watch for errors
+			// case err := <-watcher.Errors:
+			// 	contextutils.LoggerFrom(ctx).Warnw("Received error from file watcher", zap.Error(err))
 			case <-ctx.Done():
 				return
 			}

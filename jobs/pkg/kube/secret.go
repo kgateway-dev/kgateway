@@ -127,9 +127,9 @@ func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecr
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
 
-	if true {
-		return secretToWrite, nil
-	}
+	// if true {
+	// 	return secretToWrite, nil
+	// }
 
 	// wait for SDS
 	contextutils.LoggerFrom(ctx).Infow("Wrote new cert, waiting to rotate CaBundles")

@@ -168,11 +168,23 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([][]byte, erro
 		},
 		retry.Attempts(5), // Exponential backoff over ~3s
 	)
+
 	// If checkCert never finds any PEM formatted certs then we fall back to assuming that the whole file is one cert
 	// TODO: check all the formats accepted by envoy: https://github.com/solo-io/gloo/issues/8691
 	if len(separatedCerts) == 0 {
+		contextutils.LoggerFrom(ctx).Info("no PEM formatted certs found, assuming the whole file is one cert")
 		separatedCerts = append(separatedCerts, fileBytes)
 	}
+
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warnf("error checking certs %v", err)
+		return separatedCerts, err
+	}
+
+	if true {
+		return [][]byte{fileBytes}, nil
+	}
+
 	return separatedCerts, nil
 }
 
@@ -187,10 +199,11 @@ func checkCert(ctx context.Context, certs []byte, checkedCerts [][]byte) ([][]by
 		// Remainder does not contain any certs/keys
 		return checkedCerts, false
 	}
-	checkedCerts = append(checkedCerts, pem.EncodeToMemory(block))
+	reencodedBlock := pem.EncodeToMemory(block)
+	checkedCerts = append(checkedCerts, reencodedBlock)
 	// Found a cert, check the rest
 	if len(rest) > 0 {
-		contextutils.LoggerFrom(ctx).Warnf("found data after secret, before %v after %v", block, rest)
+		contextutils.LoggerFrom(ctx).Warnf("found data after secret, before %v after %v", len(reencodedBlock), len(rest))
 		// Something after the cert, validate that too
 		return checkCert(ctx, rest, checkedCerts)
 	}
@@ -217,21 +230,25 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 }
 
 func validationContextSecrets(caCerts [][]byte, validationContext string) []cache_types.Resource {
-	secrets := make([]cache_types.Resource, len(caCerts))
-	for i, caCert := range caCerts {
-		secrets[i] = &envoy_extensions_transport_sockets_tls_v3.Secret{
-			Name: fmt.Sprintf("%s%d", validationContext, i),
-			Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
-				ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
-					TrustedCa: &envoy_config_core_v3.DataSource{
-						Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-							InlineBytes: caCert,
-						},
+	secrets := make([]cache_types.Resource, 1)
+	combinedCerts := []byte{}
+	for _, caCert := range caCerts {
+		combinedCerts = append(combinedCerts, caCert...)
+	}
+	secrets[0] = &envoy_extensions_transport_sockets_tls_v3.Secret{
+		// Name: fmt.Sprintf("%s%d", validationContext, i),
+		Name: validationContext,
+		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
+			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
+				TrustedCa: &envoy_config_core_v3.DataSource{
+					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
+						InlineBytes: combinedCerts,
 					},
 				},
 			},
-		}
+		},
 	}
+
 	return secrets
 }
 
