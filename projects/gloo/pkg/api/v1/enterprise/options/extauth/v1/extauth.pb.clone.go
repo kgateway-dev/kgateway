@@ -2863,6 +2863,18 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Clone() proto.Message {
 		target.PkJwtClientAuthenticationConfig = proto.Clone(m.GetPkJwtClientAuthenticationConfig()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConfig)
 	}
 
+	if h, ok := interface{}(m.GetAccessToken()).(clone.Cloner); ok {
+		target.AccessToken = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken)
+	} else {
+		target.AccessToken = proto.Clone(m.GetAccessToken()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken)
+	}
+
+	if h, ok := interface{}(m.GetIdentityToken()).(clone.Cloner); ok {
+		target.IdentityToken = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken)
+	} else {
+		target.IdentityToken = proto.Clone(m.GetIdentityToken()).(*ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken)
+	}
+
 	return target
 }
 
@@ -3482,6 +3494,54 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConf
 		target.ValidFor = h.Clone().(*github_com_golang_protobuf_ptypes_duration.Duration)
 	} else {
 		target.ValidFor = proto.Clone(m.GetValidFor()).(*github_com_golang_protobuf_ptypes_duration.Duration)
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken{}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken{}
+
+	if m.GetClaimsToHeaders() != nil {
+		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		for idx, v := range m.GetClaimsToHeaders() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+			} else {
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+			}
+
+		}
 	}
 
 	return target

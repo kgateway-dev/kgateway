@@ -1558,6 +1558,24 @@ message ExtAuthConfig {
         // Configuration for private key JWT client authentication.
         // Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence.
         PkJwtClientAuthenticationConfig pk_jwt_client_authentication_config = 21;
+
+        // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
+        AccessToken access_token = 22;
+
+        // Optional: Configuration specific to the OIDC identity token received and processed by the ext-auth-service.
+        IdentityToken identity_token = 23;
+
+        // Optional: Map a single claim from an OAuth2 access token to a header in the request to the upstream destination.
+        message AccessToken {
+            // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
+            repeated ClaimToHeader claims_to_headers = 1;
+        }
+
+        // Optional: Map a single claim from an OIDC identity token to a header in the request to the upstream destination.
+        message IdentityToken {
+            // A list of claims to be mapped from the JWT token received by ext-auth-service to an upstream destination
+            repeated ClaimToHeader claims_to_headers = 1;
+        }
     }
 
     message AccessTokenValidationConfig {
