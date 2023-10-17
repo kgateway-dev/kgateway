@@ -4480,6 +4480,7 @@ spec:
             - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
             - "--force-rotation=true"
+			- "--rotation-duration=10s"
       restartPolicy: OnFailure
 
 `)
