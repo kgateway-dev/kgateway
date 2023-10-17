@@ -4,7 +4,7 @@ weight: 80
 description: Installing Gloo Edge Enterprise with FIPS-compliant crypto libraries 
 ---
 ## Installing FIPS compliant images 
-Gloo Edge Enterprise binaries have images available that were built with FIPS compliant crypto libraries.
+Gloo Edge Enterprise binaries have images available that were built with FIPS-compliant crypto libraries.
 These can be installed by setting `global.image.fips=true` via Helm.  
 Add the following to your `value-overrides.yaml` file 
 ```yaml
@@ -29,6 +29,40 @@ meet the security standards required for use in government settings. Using FIPS-
 for getting FIPS certification for your application.
 
 ### Caveats
-The FIPS compliant binaries are built with `goboring`, which uses `CGO` to call out to FIPS-compliant crypto libraries. 
+The FIPS-compliant binaries are built with `goboring`, which uses `CGO` to call out to FIPS-compliant crypto libraries. 
 This adds overhead to cryptography operations and can complicate cross-compilation. 
-If your project does not require FIPS compliant cryptography, installing FIPS compliant Gloo Edge is not recommended. 
+If your project does not require FIPS-compliant cryptography, installing FIPS-compliant Gloo Edge is not recommended.
+
+### Validation
+During the build and release process, the FIPS-compliant images are validated to ensure they are built with FIPS-compliant crypto libraries. Below are the steps that you can take to validate the images yourself:
+
+1. Download the FIPS-compliant image
+```bash
+docker pull quay.io/solo-io/gloo-ee-fips:1.16.0-beta1
+```
+2. Create a container
+```bash
+docker create --name gloo-ee quay.io/solo-io/gloo-ee-fips:1.16.0-beta1
+```
+3. Copy the binary to your local machine
+```bash
+docker cp gloo-ee:/usr/local/bin/gloo .
+```
+4. Download [goversion](https://github.com/rsc/goversion)
+```bash
+go install github.com/rsc/goversion@latest
+```
+5. Use `goversion` to print the cryto libraries linked in the executable
+```bash
+goversion -crypto gloo
+```
+
+For standard Gloo Edge images, the output should look like this:
+```bash
+gloo go1.20.9 (standard crypto)
+```
+
+For FIPS-compliant Gloo Edge images, the output should look like this:
+```bash
+gloo go1.20.9 X:boringcrypto (boring crypto)
+```
