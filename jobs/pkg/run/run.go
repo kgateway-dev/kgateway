@@ -71,7 +71,6 @@ func Run(ctx context.Context, opts Options) error {
 	if err != nil {
 		return err
 	}
-
 	rotationDuration, err := time.ParseDuration(opts.RotationDuration)
 	if err != nil {
 		return err
@@ -172,7 +171,7 @@ func Run(ctx context.Context, opts Options) error {
 			Cert:               caCert,
 			CaBundle:           certs.CaCertificate,
 		}
-		secret, err = kube.SwapSecrets(ctx,rotationDuration,  kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
+		secret, err = kube.SwapSecrets(ctx, rotationDuration, kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "failed creating or rotating secret")
 		}
