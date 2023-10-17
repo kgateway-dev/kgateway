@@ -59,8 +59,8 @@ func cmd(ctx context.Context) *cobra.Command {
 		"name of the ValidatingWebhookConfiguration to patch with the generated CA bundle. leave empty to skip this step.")
 	pFlags.BoolVar(&opts.ForceRotation, "force-rotation", false,
 		"if set, will create new certs even if the old one are still valid")
-	pFlags.StringVar(&opts.RotationDuration, "rotation-duration ", "10s",
-		"time duration string value which specifies the total delay expected while swapping certs, if too short will cause requests to potentially be dropped")
+	pFlags.StringVar(&opts.RotationDuration, "rotation-duration", "10s",
+		"time duration string value which specifies the total delay expected while swapping certs, if too short will cause requests to potentially be dropped. If activedeadlineseconds is set make sure this is less")
 	pFlags.StringVar(&opts.RenewBefore, "renew-before", "2160h",
 		"time duration string value which specifies how long before expiry a certificate should be renewed")
 	return cmd
