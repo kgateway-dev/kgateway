@@ -309,6 +309,40 @@ func (m *BasicAuth) Clone() proto.Message {
 		target.Apr = proto.Clone(m.GetApr()).(*BasicAuth_Apr)
 	}
 
+	if h, ok := interface{}(m.GetUsers()).(clone.Cloner); ok {
+		target.Users = h.Clone().(*BasicAuth_Users)
+	} else {
+		target.Users = proto.Clone(m.GetUsers()).(*BasicAuth_Users)
+	}
+
+	switch m.Encryption.(type) {
+
+	case *BasicAuth_Apr0:
+
+		if h, ok := interface{}(m.GetApr0()).(clone.Cloner); ok {
+			target.Encryption = &BasicAuth_Apr0{
+				Apr0: h.Clone().(*BasicAuth_Apr),
+			}
+		} else {
+			target.Encryption = &BasicAuth_Apr0{
+				Apr0: proto.Clone(m.GetApr0()).(*BasicAuth_Apr),
+			}
+		}
+
+	case *BasicAuth_Sha1_:
+
+		if h, ok := interface{}(m.GetSha1()).(clone.Cloner); ok {
+			target.Encryption = &BasicAuth_Sha1_{
+				Sha1: h.Clone().(*BasicAuth_Sha1),
+			}
+		} else {
+			target.Encryption = &BasicAuth_Sha1_{
+				Sha1: proto.Clone(m.GetSha1()).(*BasicAuth_Sha1),
+			}
+		}
+
+	}
+
 	return target
 }
 
@@ -2121,6 +2155,44 @@ func (m *BasicAuth_Apr) Clone() proto.Message {
 }
 
 // Clone function
+func (m *BasicAuth_Sha1) Clone() proto.Message {
+	var target *BasicAuth_Sha1
+	if m == nil {
+		return target
+	}
+	target = &BasicAuth_Sha1{}
+
+	return target
+}
+
+// Clone function
+func (m *BasicAuth_Users) Clone() proto.Message {
+	var target *BasicAuth_Users
+	if m == nil {
+		return target
+	}
+	target = &BasicAuth_Users{}
+
+	switch m.Users.(type) {
+
+	case *BasicAuth_Users_UserList:
+
+		if h, ok := interface{}(m.GetUserList()).(clone.Cloner); ok {
+			target.Users = &BasicAuth_Users_UserList{
+				UserList: h.Clone().(*BasicAuth_Users_InlineUserList),
+			}
+		} else {
+			target.Users = &BasicAuth_Users_UserList{
+				UserList: proto.Clone(m.GetUserList()).(*BasicAuth_Users_InlineUserList),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
 func (m *BasicAuth_Apr_SaltedHashedPassword) Clone() proto.Message {
 	var target *BasicAuth_Apr_SaltedHashedPassword
 	if m == nil {
@@ -2131,6 +2203,45 @@ func (m *BasicAuth_Apr_SaltedHashedPassword) Clone() proto.Message {
 	target.Salt = m.GetSalt()
 
 	target.HashedPassword = m.GetHashedPassword()
+
+	return target
+}
+
+// Clone function
+func (m *BasicAuth_Users_InlineUser) Clone() proto.Message {
+	var target *BasicAuth_Users_InlineUser
+	if m == nil {
+		return target
+	}
+	target = &BasicAuth_Users_InlineUser{}
+
+	target.Salt = m.GetSalt()
+
+	target.HashedPassword = m.GetHashedPassword()
+
+	return target
+}
+
+// Clone function
+func (m *BasicAuth_Users_InlineUserList) Clone() proto.Message {
+	var target *BasicAuth_Users_InlineUserList
+	if m == nil {
+		return target
+	}
+	target = &BasicAuth_Users_InlineUserList{}
+
+	if m.GetUsers() != nil {
+		target.Users = make(map[string]*BasicAuth_Users_InlineUser, len(m.GetUsers()))
+		for k, v := range m.GetUsers() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Users[k] = h.Clone().(*BasicAuth_Users_InlineUser)
+			} else {
+				target.Users[k] = proto.Clone(v).(*BasicAuth_Users_InlineUser)
+			}
+
+		}
+	}
 
 	return target
 }

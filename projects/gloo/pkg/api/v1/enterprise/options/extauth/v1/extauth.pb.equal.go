@@ -521,6 +521,55 @@ func (m *BasicAuth) Equal(that interface{}) bool {
 		}
 	}
 
+	if h, ok := interface{}(m.GetUsers()).(equality.Equalizer); ok {
+		if !h.Equal(target.GetUsers()) {
+			return false
+		}
+	} else {
+		if !proto.Equal(m.GetUsers(), target.GetUsers()) {
+			return false
+		}
+	}
+
+	switch m.Encryption.(type) {
+
+	case *BasicAuth_Apr0:
+		if _, ok := target.Encryption.(*BasicAuth_Apr0); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetApr0()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetApr0()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetApr0(), target.GetApr0()) {
+				return false
+			}
+		}
+
+	case *BasicAuth_Sha1_:
+		if _, ok := target.Encryption.(*BasicAuth_Sha1_); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetSha1()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetSha1()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetSha1(), target.GetSha1()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Encryption != target.Encryption {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -3520,6 +3569,78 @@ func (m *BasicAuth_Apr) Equal(that interface{}) bool {
 }
 
 // Equal function
+func (m *BasicAuth_Sha1) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BasicAuth_Sha1)
+	if !ok {
+		that2, ok := that.(BasicAuth_Sha1)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *BasicAuth_Users) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BasicAuth_Users)
+	if !ok {
+		that2, ok := that.(BasicAuth_Users)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	switch m.Users.(type) {
+
+	case *BasicAuth_Users_UserList:
+		if _, ok := target.Users.(*BasicAuth_Users_UserList); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetUserList()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetUserList()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetUserList(), target.GetUserList()) {
+				return false
+			}
+		}
+
+	default:
+		// m is nil but target is not nil
+		if m.Users != target.Users {
+			return false
+		}
+	}
+
+	return true
+}
+
+// Equal function
 func (m *BasicAuth_Apr_SaltedHashedPassword) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
@@ -3546,6 +3667,79 @@ func (m *BasicAuth_Apr_SaltedHashedPassword) Equal(that interface{}) bool {
 
 	if strings.Compare(m.GetHashedPassword(), target.GetHashedPassword()) != 0 {
 		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *BasicAuth_Users_InlineUser) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BasicAuth_Users_InlineUser)
+	if !ok {
+		that2, ok := that.(BasicAuth_Users_InlineUser)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if strings.Compare(m.GetSalt(), target.GetSalt()) != 0 {
+		return false
+	}
+
+	if strings.Compare(m.GetHashedPassword(), target.GetHashedPassword()) != 0 {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *BasicAuth_Users_InlineUserList) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BasicAuth_Users_InlineUserList)
+	if !ok {
+		that2, ok := that.(BasicAuth_Users_InlineUserList)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	if len(m.GetUsers()) != len(target.GetUsers()) {
+		return false
+	}
+	for k, v := range m.GetUsers() {
+
+		if h, ok := interface{}(v).(equality.Equalizer); ok {
+			if !h.Equal(target.GetUsers()[k]) {
+				return false
+			}
+		} else {
+			if !proto.Equal(v, target.GetUsers()[k]) {
+				return false
+			}
+		}
+
 	}
 
 	return true

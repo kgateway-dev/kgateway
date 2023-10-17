@@ -26,6 +26,10 @@ weight: 5
 - [BasicAuth](#basicauth)
 - [Apr](#apr)
 - [SaltedHashedPassword](#saltedhashedpassword)
+- [Sha1](#sha1)
+- [Users](#users)
+- [InlineUser](#inlineuser)
+- [InlineUserList](#inlineuserlist)
 - [HmacAuth](#hmacauth)
 - [SecretRefList](#secretreflist)
 - [HmacParametersInHeaders](#hmacparametersinheaders)
@@ -417,6 +421,9 @@ This is used with custom auth servers.
 ```yaml
 "realm": string
 "apr": .enterprise.gloo.solo.io.BasicAuth.Apr
+"apr0": .enterprise.gloo.solo.io.BasicAuth.Apr
+"sha1": .enterprise.gloo.solo.io.BasicAuth.Sha1
+"users": .enterprise.gloo.solo.io.BasicAuth.Users
 
 ```
 
@@ -424,6 +431,9 @@ This is used with custom auth servers.
 | ----- | ---- | ----------- | 
 | `realm` | `string` |  |
 | `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) |  |
+| `apr0` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) |  Only one of `apr0` or `sha1` can be set. |
+| `sha1` | [.enterprise.gloo.solo.io.BasicAuth.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr0` can be set. |
+| `users` | [.enterprise.gloo.solo.io.BasicAuth.Users](../extauth.proto.sk/#users) |  |
 
 
 
@@ -460,6 +470,74 @@ This is used with custom auth servers.
 | ----- | ---- | ----------- | 
 | `salt` | `string` |  |
 | `hashedPassword` | `string` |  |
+
+
+
+
+---
+### Sha1
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Users
+
+
+
+```yaml
+"userList": .enterprise.gloo.solo.io.BasicAuth.Users.InlineUserList
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `userList` | [.enterprise.gloo.solo.io.BasicAuth.Users.InlineUserList](../extauth.proto.sk/#inlineuserlist) |  |
+
+
+
+
+---
+### InlineUser
+
+
+
+```yaml
+"salt": string
+"hashedPassword": string
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `salt` | `string` |  |
+| `hashedPassword` | `string` |  |
+
+
+
+
+---
+### InlineUserList
+
+
+
+```yaml
+"users": map<string, .enterprise.gloo.solo.io.BasicAuth.Users.InlineUser>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Users.InlineUser>` |  |
 
 
 

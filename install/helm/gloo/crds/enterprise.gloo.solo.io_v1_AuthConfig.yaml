@@ -173,8 +173,37 @@ spec:
                                 type: object
                               type: object
                           type: object
+                        apr0:
+                          properties:
+                            users:
+                              additionalProperties:
+                                properties:
+                                  hashedPassword:
+                                    type: string
+                                  salt:
+                                    type: string
+                                type: object
+                              type: object
+                          type: object
                         realm:
                           type: string
+                        sha1:
+                          type: object
+                        users:
+                          properties:
+                            userList:
+                              properties:
+                                users:
+                                  additionalProperties:
+                                    properties:
+                                      hashedPassword:
+                                        type: string
+                                      salt:
+                                        type: string
+                                    type: object
+                                  type: object
+                              type: object
+                          type: object
                       type: object
                     hmacAuth:
                       properties:

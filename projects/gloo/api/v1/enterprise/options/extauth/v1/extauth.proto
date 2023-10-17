@@ -265,7 +265,31 @@ message BasicAuth {
         map<string, SaltedHashedPassword> users = 2;
     }
     Apr apr = 2;
+
+    message Sha1 {}
+    oneof encryption {
+      Apr apr0 = 3;
+      Sha1 sha1 = 4;
+    }
+
+    message Users {
+        message InlineUser {
+            string salt = 1;
+            string hashed_password = 2;
+        }
+
+        message InlineUserList {
+            map<string, InlineUser> users= 1;
+        }
+
+        oneof users {
+            InlineUserList user_list = 1;
+        }
+    }
+
+    Users users = 5;
 }
+
 
 // HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages.
 // It conforms to https://www.ietf.org/rfc/rfc2104.txt
