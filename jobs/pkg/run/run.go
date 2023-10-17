@@ -8,12 +8,15 @@ import (
 	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/gloo/jobs/pkg/kube"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/go-utils/certutils"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
+// Options to configure the rotation job
+// Certgen job yaml files have opinionated defaults for these options
 type Options struct {
 	SvcName      string
 	SvcNamespace string
@@ -31,6 +34,12 @@ type Options struct {
 	ForceRotation bool
 
 	RenewBefore string
+
+	// The duration waited after first updating a secret's cabundle before
+	// updating the actual secrets.
+	// Lower values make the rotation job run faster
+	// Higher values make the rotation job more resilient to errors
+	RotationDuration string
 }
 
 func Run(ctx context.Context, opts Options) error {
@@ -48,7 +57,6 @@ func Run(ctx context.Context, opts Options) error {
 	}
 	if opts.NextSecretName == "" {
 		opts.NextSecretName = opts.SecretName + "-next"
-		//return eris.Errorf("must provide next-secret-name")
 	}
 	if opts.ServerCertSecretFileName == "" {
 		return eris.Errorf("must provide name for the server cert entry in the secret data")
@@ -60,6 +68,11 @@ func Run(ctx context.Context, opts Options) error {
 		return eris.Errorf("must provide name for the server key entry in the secret data")
 	}
 	renewBeforeDuration, err := time.ParseDuration(opts.RenewBefore)
+	if err != nil {
+		return err
+	}
+
+	rotationDuration, err := time.ParseDuration(opts.RotationDuration)
 	if err != nil {
 		return err
 	}
@@ -80,14 +93,46 @@ func Run(ctx context.Context, opts Options) error {
 	}
 	// If either secret is empty or invalid, generate two new secrets and save them.
 	if secret == nil || nextSecret == nil {
-		certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-		if err != nil {
-			return eris.Wrapf(err, "failed creating secret")
-		}
+
+		// standup the follow up secret.
+		// this is needed to have a handle on its ca for the cabundle
 		nextCerts, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
 		if err != nil {
 			return eris.Wrapf(err, "failed creating next secret")
 		}
+
+		nextSecretConfig := kube.TlsSecret{
+			SecretName:         opts.NextSecretName,
+			SecretNamespace:    opts.SecretNamespace,
+			PrivateKeyFileName: opts.ServerKeySecretFileName,
+			CertFileName:       opts.ServerCertSecretFileName,
+			CaBundleFileName:   opts.ServerCertAuthorityFileName,
+			PrivateKey:         nextCerts.ServerCertKey,
+			Cert:               nextCerts.ServerCertificate,
+			CaBundle:           nextCerts.CaCertificate,
+		}
+		_, err = kube.CreateTlsSecret(ctx, kubeClient, nextSecretConfig)
+		if err != nil {
+			return eris.Wrapf(err, "error saving next secret")
+		}
+
+		var certs *certutils.Certificates
+		if secret != nil && !renewCurrent {
+			// In this case we have a valid unexpired secret
+			// and we havent gotten to the force rotation flag check yet
+			// DO_NOT_SUBMIT: We need to make sure that we can do a smooth run here if the next secret is mistyped however for now we dont do anyhting in this
+
+			// Here we should pull the secret out, update its cabundle like in swap secrets
+			// then store it back
+
+			// secret.CaBundle = append(secret.CaBundle, nextCerts.CaCertificate...)
+			// return persistWebhook(ctx, opts, kubeClient, secret)
+		}
+		certs, err = certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
+		if err != nil {
+			return eris.Wrapf(err, "failed creating secret")
+		}
+
 		certs.CaCertificate = append(certs.CaCertificate, nextCerts.CaCertificate...)
 
 		newSecretConfig := kube.TlsSecret{
@@ -104,20 +149,7 @@ func Run(ctx context.Context, opts Options) error {
 		if err != nil {
 			return eris.Wrapf(err, "error saving secret")
 		}
-		nextSecretConfig := kube.TlsSecret{
-			SecretName:         opts.NextSecretName,
-			SecretNamespace:    opts.SecretNamespace,
-			PrivateKeyFileName: opts.ServerKeySecretFileName,
-			CertFileName:       opts.ServerCertSecretFileName,
-			CaBundleFileName:   opts.ServerCertAuthorityFileName,
-			PrivateKey:         nextCerts.ServerCertKey,
-			Cert:               nextCerts.ServerCertificate,
-			CaBundle:           nextCerts.CaCertificate,
-		}
-		_, err = kube.CreateTlsSecret(ctx, kubeClient, nextSecretConfig)
-		if err != nil {
-			return eris.Wrapf(err, "error saving next secret")
-		}
+
 		return persistWebhook(ctx, opts, kubeClient, secret)
 	}
 	// Rotate out the older cert and add a newer one
@@ -140,7 +172,7 @@ func Run(ctx context.Context, opts Options) error {
 			Cert:               caCert,
 			CaBundle:           certs.CaCertificate,
 		}
-		secret, err = kube.SwapSecrets(ctx, kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
+		secret, err = kube.SwapSecrets(ctx,rotationDuration,  kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "failed creating or rotating secret")
 		}

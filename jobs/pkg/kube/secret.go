@@ -113,10 +113,12 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 	return createdSecret, nil
 }
 
+// SwapSecrets by updating making sure that everything has all the right
+// certs in the bundle.
 // secret1: current secret (ca bundle both A B)
 // secret2: next secret
 // secret3: next next secret
-func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
+func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes.Interface, secret1 TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
 	secretClient := kube.CoreV1().Secrets(secret1.SecretNamespace)
 	// Move the tls key/cert from secret2 -> secret1
 	secret1.Cert = secret2.Cert
@@ -127,13 +129,9 @@ func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecr
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
 
-	// if true {
-	// 	return secretToWrite, nil
-	// }
-
 	// wait for SDS
 	contextutils.LoggerFrom(ctx).Infow("Wrote new cert, waiting to rotate CaBundles")
-	time.Sleep(time.Second * 5)
+	time.Sleep(gracePeriod)
 
 	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
 	// DO_NOT_SUBMIT: This is how we can validate that the multi ca bundle works
