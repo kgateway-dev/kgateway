@@ -61,7 +61,7 @@ spec:
                 - "--secret-name=gloo-mtls-certs"
                 - "--next-secret-name=gloo-mtls-next-certs"
                 - "--svc-name=gloo"
-                - "--rotation-duration=10s"
+                - "--rotation-duration=25s"
                 {{- if .Values.gateway.certGenJob.forceRotation }}
                 - "--force-rotation=true"
                 {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}
