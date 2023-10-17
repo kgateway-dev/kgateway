@@ -107,11 +107,11 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 			return err
 		}
 		certs = append(certs, certChain)
-		_, ca, err := readAndVerifyCert(ctx, sec.SslCaFile)
+		ca, _, err := readAndVerifyCert(ctx, sec.SslCaFile)
 		if err != nil {
 			return err
 		}
-		certs = append(certs, ca...)
+		certs = append(certs, ca)
 		var ocspStaple []byte // ocsp stapling is optional
 		if sec.SslOcspFile != "" {
 			ocspStaple, _, err := readAndVerifyCert(ctx, sec.SslOcspFile)
@@ -225,27 +225,22 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 	}
 }
 
-func validationContextSecrets(caCerts [][]byte, validationContext string) []cache_types.Resource {
-	secrets := make([]cache_types.Resource, 1)
-	combinedCerts := []byte{}
-	for _, caCert := range caCerts {
-		combinedCerts = append(combinedCerts, caCert...)
-	}
-	secrets[0] = &envoy_extensions_transport_sockets_tls_v3.Secret{
+func validationContextSecrets(caCert []byte, validationContext string) cache_types.Resource {
+
+	return &envoy_extensions_transport_sockets_tls_v3.Secret{
 		// Name: fmt.Sprintf("%s%d", validationContext, i),
 		Name: validationContext,
 		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
 			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
 				TrustedCa: &envoy_config_core_v3.DataSource{
 					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-						InlineBytes: combinedCerts,
+						InlineBytes: caCert,
 					},
 				},
 			},
 		},
 	}
 
-	return secrets
 }
 
 func inlineBytesDataSource(b []byte) *envoy_config_core_v3.DataSource {
