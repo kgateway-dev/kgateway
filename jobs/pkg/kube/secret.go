@@ -136,6 +136,8 @@ func SwapSecrets(ctx context.Context, kube kubernetes.Interface, secret1 TlsSecr
 	time.Sleep(time.Second * 5)
 
 	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
+	// DO_NOT_SUBMIT: This is how we can validate that the multi ca bundle works
+	// secret1.CaBundle = append(append(secret1.CaBundle, secret2.CaBundle...), secret3.CaBundle...)
 	secret1.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
 	secretToWrite = makeTlsSecret(secret1)
 

@@ -97,31 +97,31 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 	var certs [][]byte
 	var items []cache_types.Resource
 	for _, sec := range s.secrets {
-		key, err := readAndVerifyCert(ctx, sec.SslKeyFile)
+		key, _, err := readAndVerifyCert(ctx, sec.SslKeyFile)
 		if err != nil {
 			return err
 		}
-		certs = append(certs, key...)
-		certChain, err := readAndVerifyCert(ctx, sec.SslCertFile)
+		certs = append(certs, key)
+		certChain, _, err := readAndVerifyCert(ctx, sec.SslCertFile)
 		if err != nil {
 			return err
 		}
-		certs = append(certs, certChain...)
-		ca, err := readAndVerifyCert(ctx, sec.SslCaFile)
+		certs = append(certs, certChain)
+		_, ca, err := readAndVerifyCert(ctx, sec.SslCaFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, ca...)
 		var ocspStaple []byte // ocsp stapling is optional
 		if sec.SslOcspFile != "" {
-			ocspStaples, err := readAndVerifyCert(ctx, sec.SslOcspFile)
+			ocspStaple, _, err := readAndVerifyCert(ctx, sec.SslOcspFile)
 			if err != nil {
 				return err
 			}
-			ocspStaple = ocspStaples[0]
+			// ocspStaple = ocspStaples[0]
 			certs = append(certs, ocspStaple)
 		}
-		items = append(items, serverCertSecret(key[0], certChain[0], ocspStaple, sec.ServerCert))
+		items = append(items, serverCertSecret(key, certChain, ocspStaple, sec.ServerCert))
 		items = append(items, validationContextSecrets(ca, sec.ValidationContext)...)
 	}
 
@@ -148,7 +148,7 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
 // See https://github.com/fsnotify/fsnotify/pull/252 for more context
-func readAndVerifyCert(ctx context.Context, certFilePath string) ([][]byte, error) {
+func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, [][]byte, error) {
 	var err error
 	var fileBytes []byte
 	var separatedCerts [][]byte
@@ -178,14 +178,10 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([][]byte, erro
 
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Warnf("error checking certs %v", err)
-		return separatedCerts, err
+		return fileBytes, separatedCerts, err
 	}
 
-	if true {
-		return [][]byte{fileBytes}, nil
-	}
-
-	return separatedCerts, nil
+	return fileBytes, separatedCerts, nil
 }
 
 // checkCert uses pem.Decode to verify that the given
