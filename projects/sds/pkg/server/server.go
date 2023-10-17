@@ -122,7 +122,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 			certs = append(certs, ocspStaple)
 		}
 		items = append(items, serverCertSecret(key, certChain, ocspStaple, sec.ServerCert))
-		items = append(items, validationContextSecrets(ca, sec.ValidationContext)...)
+		items = append(items, validationContextSecret(ca, sec.ValidationContext))
 	}
 
 	snapshotVersion, err := GetSnapshotVersion(certs)
@@ -225,7 +225,7 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 	}
 }
 
-func validationContextSecrets(caCert []byte, validationContext string) cache_types.Resource {
+func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
 
 	return &envoy_extensions_transport_sockets_tls_v3.Secret{
 		// Name: fmt.Sprintf("%s%d", validationContext, i),
