@@ -36,33 +36,33 @@ If your project does not require FIPS-compliant cryptography, installing FIPS-co
 ### Validation
 During the build and release process, the FIPS-compliant images are validated to ensure they are built with FIPS-compliant crypto libraries. Below are the steps that you can take to validate the images yourself:
 
-1. Download the FIPS-compliant image
-```bash
-docker pull quay.io/solo-io/gloo-ee-fips:1.16.0-beta1
-```
-2. Create a container
-```bash
-docker create --name gloo-ee quay.io/solo-io/gloo-ee-fips:1.16.0-beta1
-```
-3. Copy the binary to your local machine
-```bash
-docker cp gloo-ee:/usr/local/bin/gloo .
-```
-4. Download [goversion](https://github.com/rsc/goversion)
-```bash
-go install github.com/rsc/goversion@latest
-```
-5. Use `goversion` to print the cryto libraries linked in the executable
-```bash
-goversion -crypto gloo
-```
+1. Download the FIPS-compliant image.
+   ```sh
+   docker pull quay.io/solo-io/gloo-ee-fips:1.16.0-beta1
+   ```
+2. Create a container with the image that you downloaded. 
+   ```sh
+   docker create --name gloo-ee quay.io/solo-io/gloo-ee-fips:1.16.0-beta1
+   ```
+3. Copy the Gloo binary from the container to your local machine.
+   ```sh
+   docker cp gloo-ee:/usr/local/bin/gloo .
+   ```
+4. Download the lastest [goversion](https://github.com/rsc/goversion).
+   ```sh
+   go install github.com/rsc/goversion@latest
+   ```
+5. Use the `goversion` CLI to print the cryto libraries that are linked in the Gloo binary. 
+   ```sh
+   goversion -crypto gloo
+   ```
 
-For standard Gloo Edge images, the output should look like this:
-```bash
-gloo go1.20.9 (standard crypto)
-```
+   Example output for standard Gloo Edge images:
+   ```
+   gloo go1.20.9 (standard crypto)
+   ```
 
-For FIPS-compliant Gloo Edge images, the output should look like this:
-```bash
-gloo go1.20.9 X:boringcrypto (boring crypto)
-```
+   Example output for FIPS-compliant Gloo Edge images:
+   ```
+   gloo go1.20.9 X:boringcrypto (boring crypto)
+   ```
