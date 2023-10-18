@@ -122,25 +122,25 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 
 // SwapSecrets by updating making sure that everything has all the right
 // certs in the bundle.
-// secret1: current secret (ca bundle both A B)
+// currentSecret: current secret (ca bundle both A B)
 // secret2: next secret
 // secret3: next next secret
-func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes.Interface, secret1 TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
+func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes.Interface, currentSecret TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
 
 	logger := contextutils.LoggerFrom(ctx)
-	// initially, we have secret1 with secret1 server cert + caBundle from secret1 + secret2
+	// initially, we have currentSecret with currentSecret server cert + caBundle from currentSecret + secret2
 
-	secretClient := kube.CoreV1().Secrets(secret1.SecretNamespace)
-	// Move the tls key/cert from secret2 -> secret1
-	secret1.Cert = secret2.Cert
-	secret1.PrivateKey = secret2.PrivateKey
-	secretToWrite := makeTlsSecret(secret1)
+	secretClient := kube.CoreV1().Secrets(currentSecret.SecretNamespace)
+	// Move the tls key/cert from secret2 -> currentSecret
+	currentSecret.Cert = secret2.Cert
+	currentSecret.PrivateKey = secret2.PrivateKey
+	secretToWrite := makeTlsSecret(currentSecret)
 	_, err := secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
 
-	// now we have written secret with new server cert + caBundle from secret1 + secret2
+	// now we have written secret with new server cert + caBundle from currentSecret + secret2
 
 	// wait for all pods to pick up above secret with both caBundles
 	// wait for SDS
@@ -169,13 +169,13 @@ AFTER: // label to break out of the ticker loop
 
 	// now we try to go to new servert cert + new caBundle
 
-	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
+	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from currentSecret
 	// DO_NOT_SUBMIT: This is how we can validate that the multi ca bundle works
-	//secret1.CaBundle = append(append(secret1.CaBundle, secret2.CaBundle...), secret3.CaBundle...)
+	//currentSecret.CaBundle = append(append(currentSecret.CaBundle, secret2.CaBundle...), secret3.CaBundle...)
 
 	// now we have new cert, caBundle = new + next
-	secret1.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
-	secretToWrite = makeTlsSecret(secret1)
+	currentSecret.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
+	secretToWrite = makeTlsSecret(currentSecret)
 
 	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})
 	if err != nil {
@@ -184,8 +184,8 @@ AFTER: // label to break out of the ticker loop
 	logger.Infow("rotated out old CA bundle")
 	//Put the new secret in
 	// now we persist next cert, caBundle = new + next
-	secretToWrite = makeTlsSecret(secret3)
-	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})
+	secretToWrite2 := makeTlsSecret(secret3)
+	_, err = secretClient.Update(ctx, secretToWrite2, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating next secret")
 	}
