@@ -36,7 +36,6 @@ func ValidForService(dnsNames []string, svcName, svcNamespace string) bool {
 func getDnsNames(svcName, svcNamespace string) []string {
 	return []string{
 		svcName,
-		"supergloo-webhook-cert-ca",
 		fmt.Sprintf("%s.%s", svcName, svcNamespace),
 		fmt.Sprintf("%s.%s.svc", svcName, svcNamespace),
 		fmt.Sprintf("%s.%s.svc.%s", svcName, svcNamespace, network.GetClusterDomainName()),
