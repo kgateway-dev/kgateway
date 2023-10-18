@@ -2785,6 +2785,38 @@ func (m *PassThroughHttp_Response) Clone() proto.Message {
 }
 
 // Clone function
+func (m *ExtAuthConfig_BasicAuthConfig) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthConfig
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_BasicAuthConfig{}
+
+	target.Realm = m.GetRealm()
+
+	if h, ok := interface{}(m.GetEncryption()).(clone.Cloner); ok {
+		target.Encryption = h.Clone().(*ExtAuthConfig_BasicAuthConfig_EncryptionType)
+	} else {
+		target.Encryption = proto.Clone(m.GetEncryption()).(*ExtAuthConfig_BasicAuthConfig_EncryptionType)
+	}
+
+	if m.GetUsers() != nil {
+		target.Users = make(map[string]*ExtAuthConfig_BasicAuthConfig_User, len(m.GetUsers()))
+		for k, v := range m.GetUsers() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Users[k] = h.Clone().(*ExtAuthConfig_BasicAuthConfig_User)
+			} else {
+				target.Users[k] = proto.Clone(v).(*ExtAuthConfig_BasicAuthConfig_User)
+			}
+
+		}
+	}
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_OAuthConfig) Clone() proto.Message {
 	var target *ExtAuthConfig_OAuthConfig
 	if m == nil {
@@ -3570,7 +3602,95 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 			}
 		}
 
+	case *ExtAuthConfig_Config_BasicAuthConfig:
+
+		if h, ok := interface{}(m.GetBasicAuthConfig()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_BasicAuthConfig{
+				BasicAuthConfig: h.Clone().(*ExtAuthConfig_BasicAuthConfig),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_BasicAuthConfig{
+				BasicAuthConfig: proto.Clone(m.GetBasicAuthConfig()).(*ExtAuthConfig_BasicAuthConfig),
+			}
+		}
+
 	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthConfig_EncryptionType
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_BasicAuthConfig_EncryptionType{}
+
+	switch m.Encryption.(type) {
+
+	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_:
+
+		if h, ok := interface{}(m.GetApr()).(clone.Cloner); ok {
+			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_{
+				Apr: h.Clone().(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr),
+			}
+		} else {
+			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_{
+				Apr: proto.Clone(m.GetApr()).(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr),
+			}
+		}
+
+	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_:
+
+		if h, ok := interface{}(m.GetSha1()).(clone.Cloner); ok {
+			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_{
+				Sha1: h.Clone().(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1),
+			}
+		} else {
+			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_{
+				Sha1: proto.Clone(m.GetSha1()).(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1),
+			}
+		}
+
+	}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_BasicAuthConfig_User) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthConfig_User
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_BasicAuthConfig_User{}
+
+	target.Salt = m.GetSalt()
+
+	target.HashedPassword = m.GetHashedPassword()
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1{}
+
+	return target
+}
+
+// Clone function
+func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr{}
 
 	return target
 }

@@ -1423,6 +1423,31 @@ message ExtAuthConfig {
     // Any request to the external auth server includes an identifier that is matched against this field to determine
     // which AuthConfig should be applied to it.
     string auth_config_ref_name = 1;
+
+    message BasicAuthConfig {
+        string realm = 1;
+
+        message EncryptionType {
+            message Sha1 {}
+            message Apr {}
+            oneof encryption {
+                Apr apr = 1;
+                Sha1 sha1 = 2;
+            }
+        }
+    
+        EncryptionType encryption = 2;
+    
+        message User {
+            string salt = 1;
+            string hashed_password = 2;
+        }
+    
+
+        map<string, User> users= 3;
+    }
+
+
     // Deprecated, prefer OAuth2Config
     message OAuthConfig {
         // your client id as registered with the issuer
@@ -1925,7 +1950,7 @@ message ExtAuthConfig {
         oneof auth_config {
             OAuthConfig oauth = 3 [deprecated = true];
             OAuth2Config oauth2 = 9;
-            BasicAuth basic_auth = 4;
+            BasicAuth basic_auth = 4 [deprecated = true];
             ApiKeyAuthConfig api_key_auth = 5;
             AuthPlugin plugin_auth = 6;
             OpaAuthConfig opa_auth = 7;
@@ -1939,6 +1964,7 @@ message ExtAuthConfig {
             PassThroughAuth pass_through_auth = 13;
             HmacAuthConfig hmac_auth = 15;
             OpaServerAuthConfig opa_server_auth = 16;
+            BasicAuthConfig basic_auth_config = 17;
         }
     }
 
