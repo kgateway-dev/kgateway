@@ -132,7 +132,6 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 
 	logger := contextutils.LoggerFrom(ctx)
 	// initially, we have currentSecret with currentSecret server cert + caBundle from currentSecret + nextSecret
-
 	secretClient := kube.CoreV1().Secrets(currentSecret.SecretNamespace)
 	// Move the tls key/cert from nextSecret -> currentSecret
 	currentSecret.Cert = nextSecret.Cert
@@ -151,10 +150,11 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 
 	ticker := time.NewTicker(1 * time.Second)
 	end := time.Now().Add(gracePeriod)
+	logger.Infof("Starting a graceperiod for all pods to settle: %v seconds remaining", int(time.Until(end).Seconds()))
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Info("context cancelled")
+			logger.Info("context cancelled, next rotation will not break trust consider rotating an extra time")
 			goto AFTER
 		case t := <-ticker.C:
 			if t.After(end) {
@@ -163,7 +163,7 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 			}
 			// find the remaining integer amount of seconds remaining
 			secRemains := int(end.Sub(t).Seconds())
-			if secRemains%10 == 0 {
+			if secRemains%5 == 0 {
 				logger.Infof("%v seconds remaining remaining", secRemains)
 			}
 		}
@@ -181,6 +181,7 @@ AFTER: // label to break out of the ticker loop
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating caBundle")
 	}
+
 	logger.Infow("rotated out old CA bundle")
 	//Put the new secret in
 	// now we persist next cert, caBundle = new + next
@@ -189,6 +190,7 @@ AFTER: // label to break out of the ticker loop
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating next secret")
 	}
+
 	return secretToWrite, nil
 }
 
