@@ -4012,7 +4012,7 @@ func (m *BasicAuth_EncryptionType) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	switch m.Encryption.(type) {
+	switch m.Algorithm.(type) {
 
 	case *BasicAuth_EncryptionType_Apr:
 
