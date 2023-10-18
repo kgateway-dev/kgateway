@@ -149,9 +149,7 @@ func Run(ctx context.Context, opts Options) error {
 		}
 		nextSecretConfig := parseTlsSecret(nextSecret, opts.ServerKeySecretFileName, opts.ServerCertSecretFileName, opts.ServerCertAuthorityFileName)
 		secretConfig := parseTlsSecret(secret, opts.ServerKeySecretFileName, opts.ServerCertSecretFileName, opts.ServerCertAuthorityFileName)
-		caCert := append(certs.ServerCertificate, certs.CaCertificate...)
-		newSecretConfig := fillTlsSecret(opts, certs.ServerCertKey, caCert, certs.ServerCertificate)
-
+		newSecretConfig := fillTlsSecret(opts, certs.ServerCertKey, certs.ServerCertificate, certs.CaCertificate)
 		secret, err = kube.SwapSecrets(ctx, rotationDuration, kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "failed creating or rotating secret")

@@ -27,13 +27,15 @@ type TlsSecret struct {
 // service name/namespace, then return it. Otherwise return nil.
 func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string,
 	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, bool, error) {
-	contextutils.LoggerFrom(ctx).Infof("GetExistingValidTlsSecret " + secretName)
+
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Infof("GetExistingValidTlsSecret " + secretName)
 	secretClient := kube.CoreV1().Secrets(secretNamespace)
 
 	existing, err := secretClient.Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			contextutils.LoggerFrom(ctx).Warnw("failed to retrieve existing secret",
+			logger.Warnw("failed to retrieve existing secret",
 				zap.String("secretName", secretName),
 				zap.String("secretNamespace", secretNamespace))
 			// necessary to return no errors in this case so we don't short circuit certgen on the first run
@@ -46,43 +48,48 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 		return nil, false, errors.Errorf("unexpected secret type, expected %s and got %s", v1.SecretTypeTLS, existing.Type)
 	}
 
+	// decode the server cert(s)
 	certPemBytes := existing.Data[v1.TLSCertKey]
-	now := time.Now().UTC()
+	decodedCerts, err := decodeCertChain(certPemBytes)
+	if err != nil {
+		return nil, false, errors.Wrapf(err, "failed to decode cert chain")
+	}
+	logger.Infof("==new decode: %v, err=%v\n", len(decodedCerts), err)
 
-	rest := certPemBytes
-	for len(rest) > 0 {
-		var decoded *pem.Block
-		decoded, rest = pem.Decode(rest)
-		if decoded == nil {
-			return nil, false, errors.New("no PEM data found")
+	matchesSvc := false
+	now := time.Now().UTC()
+	for _, cert := range decodedCerts {
+		// if any one of the certs is not currently valid, need to create a new secret
+		if now.Before(cert.NotBefore) || now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
+			logger.Info("return 2 (cert not currently valid)")
+			return nil, false, nil
 		}
-		cert, err := x509.ParseCertificate(decoded.Bytes)
-		if err != nil {
-			return nil, false, errors.Wrapf(err, "failed to decode pem encoded ca cert")
-		}
+
+		// // if the cert is already expired or not yet valid, requests aren't working so don't try to use it while rotating
+		// if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+		// 	return nil, false, nil
+		// }
+		// // Create new certificate if old one is expiring soon
+		// // If the old one is ok then we should use it while rotating
+		// if now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
+		// 	return existing, true, nil
+		// }
 
 		// check if the cert is valid for this service
-		contextutils.LoggerFrom(ctx).Infof("checking cert validity: dnsNames=%v, svcName=%s, svcNamespace=%s\n", cert.DNSNames, svcName, svcNamespace)
-		if !certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
-			contextutils.LoggerFrom(ctx).Infof("return 1: dnsNames=%v, svcName=%s, svcNamespace=%s\n", cert.DNSNames, svcName, svcNamespace)
-			return nil, false, nil
+		logger.Infof("checking cert validity: dnsNames=%v, svcName=%s, svcNamespace=%s\n", cert.DNSNames, svcName, svcNamespace)
+		if !matchesSvc && certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
+			matchesSvc = true
 		}
-		// if the cert is already expired or not yet valid, requests aren't working so don't try to use it while rotating
-		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
-			contextutils.LoggerFrom(ctx).Info("return 2")
-			return nil, false, nil
-		}
-		// Create new certificate if old one is expiring soon
-		// If the old one is ok then we should use it while rotating
-		if now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
-			contextutils.LoggerFrom(ctx).Info("return 3, renewBefore=" + renewBeforeDuration.String())
-
-			return existing, true, nil
-		}
-
 	}
+
+	// require at least one cert to match service
+	if !matchesSvc {
+		logger.Info("return 3 (does not match service)")
+		return nil, false, nil
+	}
+
 	// cert is valid!
-	contextutils.LoggerFrom(ctx).Info("return 4 (valid)")
+	logger.Info("return 4 (valid)")
 	return existing, false, nil
 }
 
@@ -92,12 +99,13 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 
 	secretClient := kube.CoreV1().Secrets(secret.Namespace)
 
-	contextutils.LoggerFrom(ctx).Infow("creating TLS secret", zap.String("secret", secret.Name))
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Infow("creating TLS secret", zap.String("secret", secret.Name))
 
 	createdSecret, err := secretClient.Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, attempting to update",
+			logger.Infow("existing TLS secret found, attempting to update",
 				zap.String("secretName", secret.Name),
 				zap.String("secretNamespace", secret.Namespace))
 
@@ -126,12 +134,13 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 // ctx: context
 // currentSecret: current secret (ca bundle both A B), this will be mutated throughout
 // nextSecret: The currently unused secret with a CA supported by our current secret
-// futureSecret: the future next secret. Used to update the ca bundle of the nextsecret once its persisted
+// futureSecret: the future nextSecret. Used to update the ca bundle of the nextSecret once it's persisted
 // returns the updated currentSecret or an error if something went wrong
 func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes.Interface, currentSecret, nextSecret, futureSecret TlsSecret) (*v1.Secret, error) {
 
 	logger := contextutils.LoggerFrom(ctx)
-	// initially, we have currentSecret with currentSecret server cert + caBundle from currentSecret + nextSecret
+
+	// initially, we have currentSecret with (currentSecret server cert) + (caBundle from currentSecret + nextSecret)
 
 	secretClient := kube.CoreV1().Secrets(currentSecret.SecretNamespace)
 	// Move the tls key/cert from nextSecret -> currentSecret
@@ -143,7 +152,7 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
 
-	// now we have written secret with new server cert + caBundle from currentSecret + nextSecret
+	// now we have written secret with (nextSecret server cert) + (caBundle from currentSecret + nextSecret)
 
 	// wait for all pods to pick up above secret with both caBundles
 	// wait for SDS
@@ -173,6 +182,9 @@ AFTER: // label to break out of the ticker loop
 	// now we try to go to new servert cert + new caBundle
 
 	// Now that every pod is using the key/cert from nextSecret, overwrite the CaBundle from currentSecret
+	// DO_NOT_SUBMIT: This is how we can validate that the multi ca bundle works
+	//currentSecret.CaBundle = append(append(currentSecret.CaBundle, nextSecret.CaBundle...), futureSecret.CaBundle...)
+
 	// now we have new cert, caBundle = new + next
 	currentSecret.CaBundle = append(nextSecret.CaBundle, futureSecret.CaBundle...)
 	secretToWrite = makeTlsSecret(currentSecret)
@@ -205,4 +217,19 @@ func makeTlsSecret(args TlsSecret) *v1.Secret {
 			args.CaBundleFileName:   args.CaBundle,
 		},
 	}
+}
+
+func decodeCertChain(chain []byte) ([]*x509.Certificate, error) {
+	var rootDecoded []byte
+	rest := chain
+	for {
+		var pemBlock *pem.Block
+		pemBlock, rest = pem.Decode(rest)
+		if pemBlock == nil {
+			break
+		}
+		rootDecoded = append(rootDecoded, pemBlock.Bytes...)
+	}
+
+	return x509.ParseCertificates(rootDecoded)
 }
