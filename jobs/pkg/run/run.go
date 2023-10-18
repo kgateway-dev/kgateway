@@ -106,16 +106,8 @@ func Run(ctx context.Context, opts Options) error {
 			return eris.Wrapf(err, "failed creating next secret")
 		}
 
-		nextSecretConfig := kube.TlsSecret{
-			SecretName:         opts.NextSecretName,
-			SecretNamespace:    opts.SecretNamespace,
-			PrivateKeyFileName: opts.ServerKeySecretFileName,
-			CertFileName:       opts.ServerCertSecretFileName,
-			CaBundleFileName:   opts.ServerCertAuthorityFileName,
-			PrivateKey:         nextCerts.ServerCertKey,
-			Cert:               nextCerts.ServerCertificate,
-			CaBundle:           nextCerts.CaCertificate,
-		}
+		nextSecretConfig := fillTlsSecret(opts, nextCerts.ServerCertKey, nextCerts.ServerCertificate, nextCerts.CaCertificate)
+
 		_, err = kube.CreateTlsSecret(ctx, kubeClient, nextSecretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "error saving next secret")
@@ -140,16 +132,7 @@ func Run(ctx context.Context, opts Options) error {
 
 		certs.CaCertificate = append(certs.CaCertificate, nextCerts.CaCertificate...)
 
-		newSecretConfig := kube.TlsSecret{
-			SecretName:         opts.SecretName,
-			SecretNamespace:    opts.SecretNamespace,
-			PrivateKeyFileName: opts.ServerKeySecretFileName,
-			CertFileName:       opts.ServerCertSecretFileName,
-			CaBundleFileName:   opts.ServerCertAuthorityFileName,
-			PrivateKey:         certs.ServerCertKey,
-			Cert:               certs.ServerCertificate,
-			CaBundle:           certs.CaCertificate,
-		}
+		newSecretConfig := fillTlsSecret(opts, certs.ServerCertKey, certs.ServerCertificate, certs.CaCertificate)
 		secret, err = kube.CreateTlsSecret(ctx, kubeClient, newSecretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "error saving secret")
@@ -167,16 +150,8 @@ func Run(ctx context.Context, opts Options) error {
 		nextSecretConfig := parseTlsSecret(nextSecret, opts.ServerKeySecretFileName, opts.ServerCertSecretFileName, opts.ServerCertAuthorityFileName)
 		secretConfig := parseTlsSecret(secret, opts.ServerKeySecretFileName, opts.ServerCertSecretFileName, opts.ServerCertAuthorityFileName)
 		caCert := append(certs.ServerCertificate, certs.CaCertificate...)
-		newSecretConfig := kube.TlsSecret{
-			SecretName:         opts.NextSecretName,
-			SecretNamespace:    opts.SecretNamespace,
-			PrivateKeyFileName: opts.ServerKeySecretFileName,
-			CertFileName:       opts.ServerCertSecretFileName,
-			CaBundleFileName:   opts.ServerCertAuthorityFileName,
-			PrivateKey:         certs.ServerCertKey,
-			Cert:               caCert,
-			CaBundle:           certs.CaCertificate,
-		}
+		newSecretConfig := fillTlsSecret(opts, certs.ServerCertKey, caCert, certs.ServerCertificate)
+
 		secret, err = kube.SwapSecrets(ctx, rotationDuration, kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
 		if err != nil {
 			return eris.Wrapf(err, "failed creating or rotating secret")
@@ -189,6 +164,21 @@ func Run(ctx context.Context, opts Options) error {
 	}
 
 	return nil
+}
+
+// fill a kube tls secret with the provided data
+// a helper as we reuse the options and it gets bloaty
+func fillTlsSecret(opt Options, key, cert, caBundle []byte) kube.TlsSecret {
+	return kube.TlsSecret{
+		SecretName:         opt.SecretName,
+		SecretNamespace:    opt.SecretNamespace,
+		PrivateKeyFileName: opt.ServerKeySecretFileName,
+		CertFileName:       opt.ServerCertSecretFileName,
+		CaBundleFileName:   opt.ServerCertAuthorityFileName,
+		PrivateKey:         key,
+		Cert:               cert,
+		CaBundle:           caBundle,
+	}
 }
 
 func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Interface, secret *v1.Secret) error {
