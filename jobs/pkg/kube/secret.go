@@ -27,6 +27,7 @@ type TlsSecret struct {
 // service name/namespace, then return it. Otherwise return nil.
 func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, secretName string, secretNamespace string,
 	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, bool, error) {
+	contextutils.LoggerFrom(ctx).Infof("GetExistingValidTlsSecret " + secretName)
 	secretClient := kube.CoreV1().Secrets(secretNamespace)
 
 	existing, err := secretClient.Get(ctx, secretName, metav1.GetOptions{})
@@ -61,21 +62,27 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 		}
 
 		// check if the cert is valid for this service
+		contextutils.LoggerFrom(ctx).Infof("checking cert validity: dnsNames=%v, svcName=%s, svcNamespace=%s\n", cert.DNSNames, svcName, svcNamespace)
 		if !certgen.ValidForService(cert.DNSNames, svcName, svcNamespace) {
+			contextutils.LoggerFrom(ctx).Infof("return 1: dnsNames=%v, svcName=%s, svcNamespace=%s\n", cert.DNSNames, svcName, svcNamespace)
 			return nil, false, nil
 		}
 		// if the cert is already expired or not yet valid, requests aren't working so don't try to use it while rotating
 		if now.Before(cert.NotBefore) || now.After(cert.NotAfter) {
+			contextutils.LoggerFrom(ctx).Info("return 2")
 			return nil, false, nil
 		}
 		// Create new certificate if old one is expiring soon
 		// If the old one is ok then we should use it while rotating
 		if now.After(cert.NotAfter.Add(-renewBeforeDuration)) {
+			contextutils.LoggerFrom(ctx).Info("return 3, renewBefore=" + renewBeforeDuration.String())
+
 			return existing, true, nil
 		}
 
 	}
 	// cert is valid!
+	contextutils.LoggerFrom(ctx).Info("return 4 (valid)")
 	return existing, false, nil
 }
 
@@ -119,6 +126,8 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 // secret2: next secret
 // secret3: next next secret
 func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes.Interface, secret1 TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
+	// initially, we have secret1 with secret1 server cert + caBundle from secret1 + secret2
+
 	secretClient := kube.CoreV1().Secrets(secret1.SecretNamespace)
 	// Move the tls key/cert from secret2 -> secret1
 	secret1.Cert = secret2.Cert
@@ -129,13 +138,21 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 		return nil, errors.Wrapf(err, "Failed updating current private key")
 	}
 
+	// now we have written secret with new server cert + caBundle from secret1 + secret2
+
+	// wait for all pods to pick up above secret with both caBundles
 	// wait for SDS
 	contextutils.LoggerFrom(ctx).Infow("Wrote new cert, waiting to rotate CaBundles")
+	contextutils.LoggerFrom(ctx).Infow("Sleeping for " + gracePeriod.String())
 	time.Sleep(gracePeriod)
+
+	// now we try to go to new servert cert + new caBundle
 
 	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
 	// DO_NOT_SUBMIT: This is how we can validate that the multi ca bundle works
-	// secret1.CaBundle = append(append(secret1.CaBundle, secret2.CaBundle...), secret3.CaBundle...)
+	//secret1.CaBundle = append(append(secret1.CaBundle, secret2.CaBundle...), secret3.CaBundle...)
+
+	// now we have new cert, caBundle = new + next
 	secret1.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
 	secretToWrite = makeTlsSecret(secret1)
 
@@ -143,8 +160,10 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating caBundle")
 	}
+
 	contextutils.LoggerFrom(ctx).Infow("rotated out old CA bundle")
 	//Put the new secret in
+	// now we persist next cert, caBundle = new + next
 	secretToWrite = makeTlsSecret(secret3)
 	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})
 	if err != nil {
@@ -152,6 +171,7 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 	}
 	return secretToWrite, nil
 }
+
 func makeTlsSecret(args TlsSecret) *v1.Secret {
 	return &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
