@@ -291,7 +291,6 @@ message BasicAuth {
     oneof user_sources {
         UserList user_list = 4;
     }
-
 }
 
 
