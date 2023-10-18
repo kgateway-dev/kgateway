@@ -119,6 +119,8 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 // secret2: next secret
 // secret3: next next secret
 func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes.Interface, secret1 TlsSecret, secret2 TlsSecret, secret3 TlsSecret) (*v1.Secret, error) {
+
+	logger := contextutils.LoggerFrom(ctx)
 	secretClient := kube.CoreV1().Secrets(secret1.SecretNamespace)
 	// Move the tls key/cert from secret2 -> secret1
 	secret1.Cert = secret2.Cert
@@ -130,20 +132,38 @@ func SwapSecrets(ctx context.Context, gracePeriod time.Duration, kube kubernetes
 	}
 
 	// wait for SDS
-	contextutils.LoggerFrom(ctx).Infow("Wrote new cert, waiting to rotate CaBundles")
-	time.Sleep(gracePeriod)
+	logger.Infow("Wrote new cert, waiting to rotate CaBundles")
+
+	ticker := time.NewTicker(1 * time.Second)
+	end := time.Now().Add(gracePeriod)
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Info("context cancelled")
+			goto AFTER
+		case t := <-ticker.C:
+			if t.After(end) {
+				logger.Info("finished waiting for mtls to settle proceeding to break trust in original ca")
+				goto AFTER
+			}
+			// find the remaining integer amount of seconds remaining
+			secRemains := int(end.Sub(t).Seconds())
+			if secRemains%10 == 0 {
+				logger.Infof("%v seconds remaining remaining", secRemains)
+			}
+		}
+	}
+AFTER: // label to break out of the ticker loop
 
 	// Now that every pod is using the key/cert from secret2, overwrite the CaBundle from secret1
 	// DO_NOT_SUBMIT: This is how we can validate that the multi ca bundle works
-	// secret1.CaBundle = append(append(secret1.CaBundle, secret2.CaBundle...), secret3.CaBundle...)
-	secret1.CaBundle = append(secret2.CaBundle, secret3.CaBundle...)
 	secretToWrite = makeTlsSecret(secret1)
 
 	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed updating caBundle")
 	}
-	contextutils.LoggerFrom(ctx).Infow("rotated out old CA bundle")
+	logger.Infow("rotated out old CA bundle")
 	//Put the new secret in
 	secretToWrite = makeTlsSecret(secret3)
 	_, err = secretClient.Update(ctx, secretToWrite, metav1.UpdateOptions{})

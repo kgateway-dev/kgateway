@@ -76,6 +76,9 @@ func Run(ctx context.Context, opts Options) error {
 		return err
 	}
 
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Info("starting cert rotation job, validated inputs")
+
 	kubeClient := helpers.MustKubeClient()
 
 	var secret *v1.Secret
@@ -90,6 +93,9 @@ func Run(ctx context.Context, opts Options) error {
 	if err != nil {
 		return eris.Wrapf(err, "failed validating next secret")
 	}
+
+	logger.Infof("checked for existing secrets, secret:%v shouldrenew:%t  nextsecret:%v shouldrenew:%t", secret, renewCurrent, nextSecret, renewNext)
+
 	// If either secret is empty or invalid, generate two new secrets and save them.
 	if secret == nil || nextSecret == nil {
 
@@ -184,6 +190,7 @@ func Run(ctx context.Context, opts Options) error {
 
 	return nil
 }
+
 func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Interface, secret *v1.Secret) error {
 
 	vwcName := opts.ValidatingWebhookConfigurationName
