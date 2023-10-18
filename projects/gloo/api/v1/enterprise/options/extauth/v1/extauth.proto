@@ -266,28 +266,32 @@ message BasicAuth {
     }
     Apr apr = 2;
 
-    message Sha1 {}
-    oneof encryption {
-      Apr apr0 = 3;
-      Sha1 sha1 = 4;
-    }
-
-    message Users {
-        message InlineUser {
-            string salt = 1;
-            string hashed_password = 2;
-        }
-
-        message InlineUserList {
-            map<string, InlineUser> users= 1;
-        }
-
-        oneof users {
-            InlineUserList user_list = 1;
+    
+    message EncryptionType {
+        message Sha1 {}
+        oneof encryption {
+            // When Apr message is used here, no users should be defined. They should be defined in the users field
+            Apr apr = 1;
+            Sha1 sha1 = 2;
         }
     }
 
-    Users users = 5;
+    EncryptionType encryption = 3;
+
+    message User {
+        string salt = 1;
+        string hashed_password = 2;
+    }
+
+    message UserList {
+        map<string, User> users= 1;
+    }
+
+    // create new types to add here
+    oneof user_sources {
+        UserList user_list = 4;
+    }
+
 }
 
 

@@ -173,25 +173,9 @@ spec:
                                 type: object
                               type: object
                           type: object
-                        apr0:
+                        encryption:
                           properties:
-                            users:
-                              additionalProperties:
-                                properties:
-                                  hashedPassword:
-                                    type: string
-                                  salt:
-                                    type: string
-                                type: object
-                              type: object
-                          type: object
-                        realm:
-                          type: string
-                        sha1:
-                          type: object
-                        users:
-                          properties:
-                            userList:
+                            apr:
                               properties:
                                 users:
                                   additionalProperties:
@@ -202,6 +186,22 @@ spec:
                                         type: string
                                     type: object
                                   type: object
+                              type: object
+                            sha1:
+                              type: object
+                          type: object
+                        realm:
+                          type: string
+                        userList:
+                          properties:
+                            users:
+                              additionalProperties:
+                                properties:
+                                  hashedPassword:
+                                    type: string
+                                  salt:
+                                    type: string
+                                type: object
                               type: object
                           type: object
                       type: object

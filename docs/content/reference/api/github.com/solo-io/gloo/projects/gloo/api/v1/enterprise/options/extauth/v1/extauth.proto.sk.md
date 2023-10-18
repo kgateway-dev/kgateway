@@ -26,10 +26,10 @@ weight: 5
 - [BasicAuth](#basicauth)
 - [Apr](#apr)
 - [SaltedHashedPassword](#saltedhashedpassword)
+- [EncryptionType](#encryptiontype)
 - [Sha1](#sha1)
-- [Users](#users)
-- [InlineUser](#inlineuser)
-- [InlineUserList](#inlineuserlist)
+- [User](#user)
+- [UserList](#userlist)
 - [HmacAuth](#hmacauth)
 - [SecretRefList](#secretreflist)
 - [HmacParametersInHeaders](#hmacparametersinheaders)
@@ -421,9 +421,8 @@ This is used with custom auth servers.
 ```yaml
 "realm": string
 "apr": .enterprise.gloo.solo.io.BasicAuth.Apr
-"apr0": .enterprise.gloo.solo.io.BasicAuth.Apr
-"sha1": .enterprise.gloo.solo.io.BasicAuth.Sha1
-"users": .enterprise.gloo.solo.io.BasicAuth.Users
+"encryption": .enterprise.gloo.solo.io.BasicAuth.EncryptionType
+"userList": .enterprise.gloo.solo.io.BasicAuth.UserList
 
 ```
 
@@ -431,9 +430,8 @@ This is used with custom auth servers.
 | ----- | ---- | ----------- | 
 | `realm` | `string` |  |
 | `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) |  |
-| `apr0` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) |  Only one of `apr0` or `sha1` can be set. |
-| `sha1` | [.enterprise.gloo.solo.io.BasicAuth.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr0` can be set. |
-| `users` | [.enterprise.gloo.solo.io.BasicAuth.Users](../extauth.proto.sk/#users) |  |
+| `encryption` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType](../extauth.proto.sk/#encryptiontype) |  |
+| `userList` | [.enterprise.gloo.solo.io.BasicAuth.UserList](../extauth.proto.sk/#userlist) |  |
 
 
 
@@ -475,6 +473,25 @@ This is used with custom auth servers.
 
 
 ---
+### EncryptionType
+
+
+
+```yaml
+"apr": .enterprise.gloo.solo.io.BasicAuth.Apr
+"sha1": .enterprise.gloo.solo.io.BasicAuth.EncryptionType.Sha1
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) | When Apr message is used here, no users should be defined. They should be defined in the users field. Only one of `apr` or `sha1` can be set. |
+| `sha1` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr` can be set. |
+
+
+
+
+---
 ### Sha1
 
 
@@ -490,24 +507,7 @@ This is used with custom auth servers.
 
 
 ---
-### Users
-
-
-
-```yaml
-"userList": .enterprise.gloo.solo.io.BasicAuth.Users.InlineUserList
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `userList` | [.enterprise.gloo.solo.io.BasicAuth.Users.InlineUserList](../extauth.proto.sk/#inlineuserlist) |  |
-
-
-
-
----
-### InlineUser
+### User
 
 
 
@@ -526,18 +526,18 @@ This is used with custom auth servers.
 
 
 ---
-### InlineUserList
+### UserList
 
 
 
 ```yaml
-"users": map<string, .enterprise.gloo.solo.io.BasicAuth.Users.InlineUser>
+"users": map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Users.InlineUser>` |  |
+| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>` |  |
 
 
 

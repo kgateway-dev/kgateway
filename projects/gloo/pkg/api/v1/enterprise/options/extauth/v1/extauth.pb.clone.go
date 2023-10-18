@@ -309,35 +309,23 @@ func (m *BasicAuth) Clone() proto.Message {
 		target.Apr = proto.Clone(m.GetApr()).(*BasicAuth_Apr)
 	}
 
-	if h, ok := interface{}(m.GetUsers()).(clone.Cloner); ok {
-		target.Users = h.Clone().(*BasicAuth_Users)
+	if h, ok := interface{}(m.GetEncryption()).(clone.Cloner); ok {
+		target.Encryption = h.Clone().(*BasicAuth_EncryptionType)
 	} else {
-		target.Users = proto.Clone(m.GetUsers()).(*BasicAuth_Users)
+		target.Encryption = proto.Clone(m.GetEncryption()).(*BasicAuth_EncryptionType)
 	}
 
-	switch m.Encryption.(type) {
+	switch m.UserSources.(type) {
 
-	case *BasicAuth_Apr0:
+	case *BasicAuth_UserList_:
 
-		if h, ok := interface{}(m.GetApr0()).(clone.Cloner); ok {
-			target.Encryption = &BasicAuth_Apr0{
-				Apr0: h.Clone().(*BasicAuth_Apr),
+		if h, ok := interface{}(m.GetUserList()).(clone.Cloner); ok {
+			target.UserSources = &BasicAuth_UserList_{
+				UserList: h.Clone().(*BasicAuth_UserList),
 			}
 		} else {
-			target.Encryption = &BasicAuth_Apr0{
-				Apr0: proto.Clone(m.GetApr0()).(*BasicAuth_Apr),
-			}
-		}
-
-	case *BasicAuth_Sha1_:
-
-		if h, ok := interface{}(m.GetSha1()).(clone.Cloner); ok {
-			target.Encryption = &BasicAuth_Sha1_{
-				Sha1: h.Clone().(*BasicAuth_Sha1),
-			}
-		} else {
-			target.Encryption = &BasicAuth_Sha1_{
-				Sha1: proto.Clone(m.GetSha1()).(*BasicAuth_Sha1),
+			target.UserSources = &BasicAuth_UserList_{
+				UserList: proto.Clone(m.GetUserList()).(*BasicAuth_UserList),
 			}
 		}
 
@@ -2155,38 +2143,78 @@ func (m *BasicAuth_Apr) Clone() proto.Message {
 }
 
 // Clone function
-func (m *BasicAuth_Sha1) Clone() proto.Message {
-	var target *BasicAuth_Sha1
+func (m *BasicAuth_EncryptionType) Clone() proto.Message {
+	var target *BasicAuth_EncryptionType
 	if m == nil {
 		return target
 	}
-	target = &BasicAuth_Sha1{}
+	target = &BasicAuth_EncryptionType{}
+
+	switch m.Encryption.(type) {
+
+	case *BasicAuth_EncryptionType_Apr:
+
+		if h, ok := interface{}(m.GetApr()).(clone.Cloner); ok {
+			target.Encryption = &BasicAuth_EncryptionType_Apr{
+				Apr: h.Clone().(*BasicAuth_Apr),
+			}
+		} else {
+			target.Encryption = &BasicAuth_EncryptionType_Apr{
+				Apr: proto.Clone(m.GetApr()).(*BasicAuth_Apr),
+			}
+		}
+
+	case *BasicAuth_EncryptionType_Sha1_:
+
+		if h, ok := interface{}(m.GetSha1()).(clone.Cloner); ok {
+			target.Encryption = &BasicAuth_EncryptionType_Sha1_{
+				Sha1: h.Clone().(*BasicAuth_EncryptionType_Sha1),
+			}
+		} else {
+			target.Encryption = &BasicAuth_EncryptionType_Sha1_{
+				Sha1: proto.Clone(m.GetSha1()).(*BasicAuth_EncryptionType_Sha1),
+			}
+		}
+
+	}
 
 	return target
 }
 
 // Clone function
-func (m *BasicAuth_Users) Clone() proto.Message {
-	var target *BasicAuth_Users
+func (m *BasicAuth_User) Clone() proto.Message {
+	var target *BasicAuth_User
 	if m == nil {
 		return target
 	}
-	target = &BasicAuth_Users{}
+	target = &BasicAuth_User{}
 
-	switch m.Users.(type) {
+	target.Salt = m.GetSalt()
 
-	case *BasicAuth_Users_UserList:
+	target.HashedPassword = m.GetHashedPassword()
 
-		if h, ok := interface{}(m.GetUserList()).(clone.Cloner); ok {
-			target.Users = &BasicAuth_Users_UserList{
-				UserList: h.Clone().(*BasicAuth_Users_InlineUserList),
+	return target
+}
+
+// Clone function
+func (m *BasicAuth_UserList) Clone() proto.Message {
+	var target *BasicAuth_UserList
+	if m == nil {
+		return target
+	}
+	target = &BasicAuth_UserList{}
+
+	if m.GetUsers() != nil {
+		target.Users = make(map[string]*BasicAuth_User, len(m.GetUsers()))
+		for k, v := range m.GetUsers() {
+
+			if h, ok := interface{}(v).(clone.Cloner); ok {
+				target.Users[k] = h.Clone().(*BasicAuth_User)
+			} else {
+				target.Users[k] = proto.Clone(v).(*BasicAuth_User)
 			}
-		} else {
-			target.Users = &BasicAuth_Users_UserList{
-				UserList: proto.Clone(m.GetUserList()).(*BasicAuth_Users_InlineUserList),
-			}
+
 		}
-
 	}
 
 	return target
@@ -2208,40 +2236,12 @@ func (m *BasicAuth_Apr_SaltedHashedPassword) Clone() proto.Message {
 }
 
 // Clone function
-func (m *BasicAuth_Users_InlineUser) Clone() proto.Message {
-	var target *BasicAuth_Users_InlineUser
+func (m *BasicAuth_EncryptionType_Sha1) Clone() proto.Message {
+	var target *BasicAuth_EncryptionType_Sha1
 	if m == nil {
 		return target
 	}
-	target = &BasicAuth_Users_InlineUser{}
-
-	target.Salt = m.GetSalt()
-
-	target.HashedPassword = m.GetHashedPassword()
-
-	return target
-}
-
-// Clone function
-func (m *BasicAuth_Users_InlineUserList) Clone() proto.Message {
-	var target *BasicAuth_Users_InlineUserList
-	if m == nil {
-		return target
-	}
-	target = &BasicAuth_Users_InlineUserList{}
-
-	if m.GetUsers() != nil {
-		target.Users = make(map[string]*BasicAuth_Users_InlineUser, len(m.GetUsers()))
-		for k, v := range m.GetUsers() {
-
-			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Users[k] = h.Clone().(*BasicAuth_Users_InlineUser)
-			} else {
-				target.Users[k] = proto.Clone(v).(*BasicAuth_Users_InlineUser)
-			}
-
-		}
-	}
+	target = &BasicAuth_EncryptionType_Sha1{}
 
 	return target
 }
