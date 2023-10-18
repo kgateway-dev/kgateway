@@ -86,15 +86,15 @@ func Run(ctx context.Context, opts Options) error {
 	secret, renewCurrent, err := kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace,
 		opts.SvcName, opts.SvcNamespace, renewBeforeDuration)
 	if err != nil {
-		return eris.Wrapf(err, "failed validating existing secret")
+		return eris.Wrapf(err, "failed validating existing secret, consider deleting it and rerunning the job")
 	}
 	nextSecret, renewNext, err := kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.NextSecretName, opts.SecretNamespace,
 		opts.SvcName, opts.SvcNamespace, renewBeforeDuration)
 	if err != nil {
-		return eris.Wrapf(err, "failed validating next secret")
+		return eris.Wrapf(err, "failed validating next secret, consider deleting it and rerunning the job")
 	}
 
-	logger.Infof("checked for existing secrets, secret:%v shouldrenew:%t  nextsecret:%v shouldrenew:%t", secret, renewCurrent, nextSecret, renewNext)
+	logger.Infof("checked for existing secrets, currentSecretExists:%v shouldrenew:%t  nextSecretExists:%v shouldrenew:%t", secret != nil, renewCurrent, nextSecret == nil, renewNext)
 
 	// If either secret is empty or invalid, generate two new secrets and save them.
 	if secret == nil || nextSecret == nil {
