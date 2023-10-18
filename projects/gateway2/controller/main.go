@@ -16,6 +16,11 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+type ControllerConfig struct {
+	// The name of the GatewayClass to watch for
+	GatewayClassName string
+}
+
 func NewScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
@@ -30,17 +35,16 @@ func NewScheme() *runtime.Scheme {
 
 }
 
-func Start() {
+func Start(cfg ControllerConfig) {
 	ctrl.SetLogger(zap.New())
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{Scheme: NewScheme()})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
-
 	ctx := signals.SetupSignalHandler()
 
-	var gatewayClassName api.ObjectName = "gloo-edge"
+	var gatewayClassName api.ObjectName = api.ObjectName(cfg.GatewayClassName)
 	err = newBaseGatewayController(ctx, mgr, gatewayClassName)
 
 	if err != nil {

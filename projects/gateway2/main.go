@@ -1,10 +1,7 @@
 package main
 
-import (
-	"github.com/solo-io/gloo/projects/gateway2/controller"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-)
+import "github.com/solo-io/gloo/projects/gateway2/cmd"
 
 func main() {
-	controller.Start()
+	cmd.Execute()
 }

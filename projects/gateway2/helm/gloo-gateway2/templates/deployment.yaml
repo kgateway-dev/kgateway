@@ -1,0 +1,61 @@
+{{- if .Values.controlPlane.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gloo-gateway2.controlPlane.fullname" . }}
+  labels:
+    {{- include "gloo-gateway2.controlPlane.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.controlPlane.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "gloo-gateway2.controlPlane.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.controlPlane.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "gloo-gateway2.controlPlane.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.controlPlane.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "gloo-gateway2.controlPlane.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.controlPlane.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.controlPlane.securityContext | nindent 12 }}
+          image: "{{ .Values.controlPlane.image.repository }}:{{ .Values.controlPlane.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
+          args:
+          - controller
+          - "--class-name"
+          - "{{ .Values.gatewayClass.className }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.controlPlane.service.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.controlPlane.resources | nindent 12 }}
+      {{- with .Values.controlPlane.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controlPlane.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.controlPlane.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

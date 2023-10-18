@@ -5,6 +5,8 @@ import (
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,8 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	api "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
-
-
 
 func newBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass api.ObjectName) error {
 
@@ -142,6 +142,33 @@ func (r *gatewayReconciler) ReconcileReferenceGrants(ctx context.Context, req ct
 }
 
 func (r *gatewayReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
+
+	// if a gateway
+	gwclass := &api.GatewayClass{}
+	err := r.Client.Get(ctx, req.NamespacedName, gwclass)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	log.Info("reconciling gateway class")
+
+	// mark it as accepted:
+	condition := metav1.Condition{
+		Type:               string(api.GatewayClassConditionStatusAccepted),
+		Status:             metav1.ConditionTrue,
+		Reason:             string(api.GatewayClassReasonAccepted),
+		ObservedGeneration: gwclass.Generation,
+		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
+	}
+	meta.SetStatusCondition(&gwclass.Status.Conditions, condition)
+
+	err = r.Client.Status().Update(ctx, gwclass)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log.Info("updated gateway class status")
+
 	return ctrl.Result{}, nil
 }
 
