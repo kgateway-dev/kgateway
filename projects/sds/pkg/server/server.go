@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"hash/fnv"
@@ -114,7 +115,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 		certs = append(certs, ca)
 		var ocspStaple []byte // ocsp stapling is optional
 		if sec.SslOcspFile != "" {
-			ocspStaple, err := readAndVerifyCert(ctx, sec.SslOcspFile)
+			ocspStaple, err = readAndVerifyCert(ctx, sec.SslOcspFile)
 			if err != nil {
 				return err
 			}
@@ -151,7 +152,6 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error) {
 	var err error
 	var fileBytes []byte
-	var separatedCerts [][]byte
 	var validCerts bool
 	// Retry for a few seconds as a write may still be in progress
 	err = retry.Do(
@@ -160,7 +160,7 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error)
 			if err != nil {
 				return err
 			}
-			separatedCerts, validCerts = checkCert(ctx, fileBytes, [][]byte{})
+			validCerts = checkCert(ctx, fileBytes)
 			if !validCerts {
 				return fmt.Errorf("failed to validate file %v", certFilePath)
 			}
@@ -168,12 +168,6 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error)
 		},
 		retry.Attempts(5), // Exponential backoff over ~3s
 	)
-
-	// If checkCert never finds any PEM formatted certs then we fall back to assuming that the whole file is one cert
-	// TODO: check all the formats accepted by envoy: https://github.com/solo-io/gloo/issues/8691
-	if len(separatedCerts) == 0 {
-		contextutils.LoggerFrom(ctx).Info("no PEM formatted certs found, assuming the whole file is one cert")
-	}
 
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Warnf("error checking certs %v", err)
@@ -185,24 +179,29 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error)
 
 // checkCert uses pem.Decode to verify that the given
 // bytes are not malformed, as could be caused by a
-// write-in-progress. Uses pem.Decode to check the blocks.
-// See https://golang.org/src/encoding/pem/pem.go?s=2505:2553#L76
-// returns a list of all the certs found in the file
-func checkCert(ctx context.Context, certs []byte, checkedCerts [][]byte) ([][]byte, bool) {
-	block, rest := pem.Decode(certs)
-	if block == nil {
-		// Remainder does not contain any certs/keys
-		return checkedCerts, false
+// write-in-progress.
+func checkCert(ctx context.Context, certs []byte) bool {
+	var rootDecoded []byte
+	rest := certs
+	for {
+		var pemBlock *pem.Block
+		pemBlock, rest = pem.Decode(rest)
+		if pemBlock == nil {
+			break
+		}
+		rootDecoded = append(rootDecoded, pemBlock.Bytes...)
 	}
-	reencodedBlock := pem.EncodeToMemory(block)
-	checkedCerts = append(checkedCerts, reencodedBlock)
-	// Found a cert, check the rest
-	if len(rest) > 0 {
-		contextutils.LoggerFrom(ctx).Warnf("found data after secret, before %v after %v", len(reencodedBlock), len(rest))
-		// Something after the cert, validate that too
-		return checkCert(ctx, rest, checkedCerts)
+
+	parsedCerts, err := x509.ParseCertificates(rootDecoded)
+	if err != nil {
+		contextutils.LoggerFrom(ctx).Warnw("error parsing certs", zap.Error(err))
+		return false
 	}
-	return checkedCerts, true
+	if len(parsedCerts) == 0 {
+		contextutils.LoggerFrom(ctx).Warn("did not find any PEM-encoded certs")
+		return false
+	}
+	return true
 }
 
 func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert string) cache_types.Resource {
@@ -229,11 +228,7 @@ func validationContextSecret(caCert []byte, validationContext string) cache_type
 		Name: validationContext,
 		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
 			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
-				TrustedCa: &envoy_config_core_v3.DataSource{
-					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-						InlineBytes: caCert,
-					},
-				},
+				TrustedCa: inlineBytesDataSource(caCert),
 			},
 		},
 	}
