@@ -30,7 +30,7 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 	svcName string, svcNamespace string, renewBeforeDuration time.Duration) (*v1.Secret, bool, error) {
 
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infow("GetExistingValidTlsSecret for secret",
+	logger.Infow("looking for existing valid tls secret",
 		zap.String("secretName", secretName),
 		zap.String("secretNamespace", secretNamespace))
 
@@ -57,7 +57,7 @@ func GetExistingValidTlsSecret(ctx context.Context, kube kubernetes.Interface, s
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "failed to decode cert chain")
 	}
-	logger.Infof("found %v certs\n", len(decodedCerts))
+	logger.Infof("found %v certs", len(decodedCerts))
 
 	matchesSvc := false
 	now := time.Now().UTC()
