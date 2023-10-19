@@ -948,6 +948,18 @@ spec:
                                           type: string
                                       type: object
                                   type: object
+                                httpService:
+                                  properties:
+                                    tapServer:
+                                      properties:
+                                        name:
+                                          type: string
+                                        namespace:
+                                          type: string
+                                      type: object
+                                    timeout:
+                                      type: string
+                                  type: object
                               type: object
                             type: array
                         type: object

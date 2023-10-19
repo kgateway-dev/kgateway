@@ -581,6 +581,9 @@ apis:
   envoy.config.tap.output_sink.v3.GrpcOutputSink:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/tap/output_sink/v3/grpc_output_sink.proto.sk/#GrpcOutputSink
     package: envoy.config.tap.output_sink.v3
+  envoy.config.tap.output_sink.v3.HttpOutputSink:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/tap/output_sink/v3/http_output_sink.proto.sk/#HttpOutputSink
+    package: envoy.config.tap.output_sink.v3
   envoy.config.transformer.xslt.v2.XsltTransformation:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformers/xslt/xslt_transformer.proto.sk/#XsltTransformation
     package: envoy.config.transformer.xslt.v2
@@ -1876,6 +1879,9 @@ apis:
     package: stats.options.gloo.solo.io
   tap.options.gloo.solo.io.GrpcService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#GrpcService
+    package: tap.options.gloo.solo.io
+  tap.options.gloo.solo.io.HttpService:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#HttpService
     package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.OutputConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#OutputConfig

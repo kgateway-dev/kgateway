@@ -7,6 +7,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/ta
 // import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/grpc_service.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "validate/validate.proto";
+import "google/protobuf/duration.proto";
 
 message Tap {
   StaticConfig static_config = 1 [(validate.rules).message = {required: true}];
@@ -18,9 +19,8 @@ message StaticConfig {
 
 message OutputConfig {
   // Sinks to which tap data should be output. Currently, only a single sink
-  // is supported. TODO is there a validate rule that we can use to enforce a
-  // length of 1?
-  repeated Sink sinks = 1;
+  // is supported.
+  repeated Sink sinks = 1 [(validate.rules).repeated = {max_items: 1, min_items: 1}];
 }
 
 message Sink {
@@ -28,12 +28,24 @@ message Sink {
   oneof SinkType {
     option (validate.required) = true;
     // Write tap data out to a GRPC service
-    // .solo.io.envoy.config.core.v3.GrpcService grpc_service = 1;
     GrpcService grpc_service = 1;
+
+    // Write tap data out to a HTTP service
+    HttpService http_service = 2;
   }
 }
 
 // A tap sink over a GRPC service
 message GrpcService {
+  // Upstream reference to the tap server
   core.solo.io.ResourceRef tap_server = 1 [(validate.rules).message = {required: true}];
+}
+
+// A tap sink over a HTTP service
+message HttpService {
+  // Upstream reference to the tap server
+  core.solo.io.ResourceRef tap_server = 1 [(validate.rules).message = {required: true}];
+
+  // Connection timeout
+  google.protobuf.Duration timeout = 2 [(validate.rules).message = {required: true}];
 }

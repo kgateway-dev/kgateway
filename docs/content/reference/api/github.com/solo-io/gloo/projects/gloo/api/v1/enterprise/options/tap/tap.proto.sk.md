@@ -16,6 +16,7 @@ weight: 5
 - [OutputConfig](#outputconfig)
 - [Sink](#sink)
 - [GrpcService](#grpcservice)
+- [HttpService](#httpservice)
   
 
 
@@ -72,7 +73,7 @@ weight: 5
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `sinks` | [[]tap.options.gloo.solo.io.Sink](../tap.proto.sk/#sink) | Sinks to which tap data should be output. Currently, only a single sink is supported. TODO is there a validate rule that we can use to enforce a length of 1?. |
+| `sinks` | [[]tap.options.gloo.solo.io.Sink](../tap.proto.sk/#sink) | Sinks to which tap data should be output. Currently, only a single sink is supported. |
 
 
 
@@ -84,12 +85,14 @@ weight: 5
 
 ```yaml
 "grpcService": .tap.options.gloo.solo.io.GrpcService
+"httpService": .tap.options.gloo.solo.io.HttpService
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `grpcService` | [.tap.options.gloo.solo.io.GrpcService](../tap.proto.sk/#grpcservice) | Write tap data out to a GRPC service .solo.io.envoy.config.core.v3.GrpcService grpc_service = 1;. |
+| `grpcService` | [.tap.options.gloo.solo.io.GrpcService](../tap.proto.sk/#grpcservice) | Write tap data out to a GRPC service. Only one of `grpcService` or `httpService` can be set. |
+| `httpService` | [.tap.options.gloo.solo.io.HttpService](../tap.proto.sk/#httpservice) | Write tap data out to a HTTP service. Only one of `httpService` or `grpcService` can be set. |
 
 
 
@@ -107,7 +110,27 @@ A tap sink over a GRPC service
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `tapServer` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  |
+| `tapServer` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Upstream reference to the tap server. |
+
+
+
+
+---
+### HttpService
+
+ 
+A tap sink over a HTTP service
+
+```yaml
+"tapServer": .core.solo.io.ResourceRef
+"timeout": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `tapServer` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Upstream reference to the tap server. |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Connection timeout. |
 
 
 
