@@ -60,7 +60,7 @@ spec:
               args:
                 - "--secret-name=gloo-mtls-certs"
                 - "--svc-name=gloo"
-                - "--rotation-duration=65s"
+                - "--rotation-duration={{ .Values.gateway.certGenJob.rotationDuration }}"
                 {{- if .Values.gateway.certGenJob.forceRotation }}
                 - "--force-rotation=true"
                 {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}

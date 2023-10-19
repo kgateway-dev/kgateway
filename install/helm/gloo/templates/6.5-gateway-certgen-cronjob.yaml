@@ -61,7 +61,6 @@ spec:
                 - "--secret-name={{ .Values.gateway.validation.secretName }}"
                 - "--svc-name=gloo"
                 - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-{{ .Release.Namespace }}"
-                - "--rotation-duration=65s"
                 {{- if .Values.gateway.certGenJob.forceRotation }}
                 - "--force-rotation=true"
                 {{- end }} {{/* if .Values.gateway.certGenJob.forceRotation */}}
