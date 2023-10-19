@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"hash/fnv"
@@ -160,7 +159,7 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error)
 			if err != nil {
 				return err
 			}
-			validCerts = checkCert(ctx, fileBytes)
+			validCerts = checkCert(fileBytes)
 			if !validCerts {
 				return fmt.Errorf("failed to validate file %v", certFilePath)
 			}
@@ -180,26 +179,44 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error)
 // checkCert uses pem.Decode to verify that the given
 // bytes are not malformed, as could be caused by a
 // write-in-progress.
-func checkCert(ctx context.Context, certs []byte) bool {
-	var rootDecoded []byte
-	rest := certs
-	for {
-		var pemBlock *pem.Block
-		pemBlock, rest = pem.Decode(rest)
-		if pemBlock == nil {
-			break
-		}
-		rootDecoded = append(rootDecoded, pemBlock.Bytes...)
-	}
+// func checkCert(ctx context.Context, certs []byte) bool {
+// 	var rootDecoded []byte
+// 	rest := certs
+// 	for {
+// 		var pemBlock *pem.Block
+// 		pemBlock, rest = pem.Decode(rest)
+// 		if pemBlock == nil {
+// 			break
+// 		}
+// 		rootDecoded = append(rootDecoded, pemBlock.Bytes...)
+// 	}
 
-	parsedCerts, err := x509.ParseCertificates(rootDecoded)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Warnw("error parsing certs", zap.Error(err))
+// 	parsedCerts, err := x509.ParseCertificates(rootDecoded)
+// 	if err != nil {
+// 		contextutils.LoggerFrom(ctx).Warnw("error parsing certs", zap.Error(err))
+// 		return false
+// 	}
+// 	if len(parsedCerts) == 0 {
+// 		contextutils.LoggerFrom(ctx).Warn("did not find any PEM-encoded certs")
+// 		return false
+// 	}
+// 	return true
+// }
+
+// checkCert uses pem.Decode to verify that the given
+// bytes are not malformed, as could be caused by a
+// write-in-progress. Uses pem.Decode to check the blocks.
+// See https://golang.org/src/encoding/pem/pem.go?s=2505:2553#L76
+func checkCert(certs []byte) bool {
+	block, rest := pem.Decode(certs)
+	if block == nil {
+		// Remainder does not contain any certs/keys
 		return false
 	}
-	if len(parsedCerts) == 0 {
-		contextutils.LoggerFrom(ctx).Warn("did not find any PEM-encoded certs")
-		return false
+	// Found a cert, check the rest
+	if len(rest) > 0 {
+		// Something after the cert, validate that too
+		return checkCert(rest)
 	}
 	return true
 }
