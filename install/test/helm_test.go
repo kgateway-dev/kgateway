@@ -4479,8 +4479,8 @@ spec:
             - "--secret-name=gateway-validation-certs"
             - "--svc-name=gloo"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
-            - "--force-rotation=true"
             - "--rotation-duration=65s"
+            - "--force-rotation=true"
       restartPolicy: OnFailure
 
 `)
