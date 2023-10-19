@@ -97,28 +97,27 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 	var certs [][]byte
 	var items []cache_types.Resource
 	for _, sec := range s.secrets {
-		key, _, err := readAndVerifyCert(ctx, sec.SslKeyFile)
+		key, err := readAndVerifyCert(ctx, sec.SslKeyFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, key)
-		certChain, _, err := readAndVerifyCert(ctx, sec.SslCertFile)
+		certChain, err := readAndVerifyCert(ctx, sec.SslCertFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, certChain)
-		ca, _, err := readAndVerifyCert(ctx, sec.SslCaFile)
+		ca, err := readAndVerifyCert(ctx, sec.SslCaFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, ca)
 		var ocspStaple []byte // ocsp stapling is optional
 		if sec.SslOcspFile != "" {
-			ocspStaple, _, err := readAndVerifyCert(ctx, sec.SslOcspFile)
+			ocspStaple, err := readAndVerifyCert(ctx, sec.SslOcspFile)
 			if err != nil {
 				return err
 			}
-			// ocspStaple = ocspStaples[0]
 			certs = append(certs, ocspStaple)
 		}
 		items = append(items, serverCertSecret(key, certChain, ocspStaple, sec.ServerCert))
@@ -131,6 +130,7 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 		return err
 	}
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. sdsClient is %s. Snapshot version is %s", s.sdsClient, snapshotVersion)
+
 	secretSnapshot := &cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
 	return s.snapshotCache.SetSnapshot(ctx, s.sdsClient, secretSnapshot)
@@ -148,7 +148,7 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
 // See https://github.com/fsnotify/fsnotify/pull/252 for more context
-func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, [][]byte, error) {
+func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error) {
 	var err error
 	var fileBytes []byte
 	var separatedCerts [][]byte
@@ -173,15 +173,14 @@ func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, [][]by
 	// TODO: check all the formats accepted by envoy: https://github.com/solo-io/gloo/issues/8691
 	if len(separatedCerts) == 0 {
 		contextutils.LoggerFrom(ctx).Info("no PEM formatted certs found, assuming the whole file is one cert")
-		separatedCerts = append(separatedCerts, fileBytes)
 	}
 
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Warnf("error checking certs %v", err)
-		return fileBytes, separatedCerts, err
+		return fileBytes, err
 	}
 
-	return fileBytes, separatedCerts, nil
+	return fileBytes, nil
 }
 
 // checkCert uses pem.Decode to verify that the given
@@ -226,9 +225,7 @@ func serverCertSecret(privateKey, certChain, ocspStaple []byte, serverCert strin
 }
 
 func validationContextSecret(caCert []byte, validationContext string) cache_types.Resource {
-
 	return &envoy_extensions_transport_sockets_tls_v3.Secret{
-		// Name: fmt.Sprintf("%s%d", validationContext, i),
 		Name: validationContext,
 		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
 			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
@@ -240,7 +237,6 @@ func validationContextSecret(caCert []byte, validationContext string) cache_type
 			},
 		},
 	}
-
 }
 
 func inlineBytesDataSource(b []byte) *envoy_config_core_v3.DataSource {
