@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/jobs/pkg/kube"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/k8s-utils/certutils"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -23,7 +22,6 @@ type Options struct {
 
 	SecretName      string
 	SecretNamespace string
-	NextSecretName  string
 
 	ServerCertSecretFileName    string
 	ServerCertAuthorityFileName string
@@ -55,9 +53,6 @@ func Run(ctx context.Context, opts Options) error {
 	if opts.SecretName == "" {
 		return eris.Errorf("must provide secret-name")
 	}
-	if opts.NextSecretName == "" {
-		opts.NextSecretName = opts.SecretName + "-next"
-	}
 	if opts.ServerCertSecretFileName == "" {
 		return eris.Errorf("must provide name for the server cert entry in the secret data")
 	}
@@ -77,122 +72,73 @@ func Run(ctx context.Context, opts Options) error {
 	}
 
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Info("starting cert rotation job, validated inputs")
+	logger.Info("starting certgen job, validated inputs")
 
 	kubeClient := helpers.MustKubeClient()
 
-	var secret *v1.Secret
 	// check if there is an existing valid TLS secret
-	secret, renewCurrent, err := kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace,
+	secret, expiringSoon, err := kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.SecretName, opts.SecretNamespace,
 		opts.SvcName, opts.SvcNamespace, renewBeforeDuration)
 	if err != nil {
-		return eris.Wrapf(err, "failed validating existing secret, consider deleting it and rerunning the job")
-	}
-	nextSecret, renewNext, err := kube.GetExistingValidTlsSecret(ctx, kubeClient, opts.NextSecretName, opts.SecretNamespace,
-		opts.SvcName, opts.SvcNamespace, renewBeforeDuration)
-	if err != nil {
-		return eris.Wrapf(err, "failed validating next secret, consider deleting it and rerunning the job")
+		return eris.Wrapf(err, "failed validating existing secret")
 	}
 
-	logger.Infof("checked for existing secrets, currentSecretExists:%v shouldrenew:%t  nextSecretExists:%v shouldrenew:%t", secret != nil, renewCurrent, nextSecret == nil, renewNext)
-
-	// If either secret is empty or invalid, generate two new secrets and save them.
-	if secret == nil || nextSecret == nil {
-
-		// standup the follow up secret.
-		// this is needed to have a handle on its ca for the cabundle
-		nextCerts, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-		if err != nil {
-			return eris.Wrapf(err, "failed creating next secret")
-		}
-
-		nextSecretConfig := fillTlsSecret(opts, opts.NextSecretName, nextCerts.ServerCertKey, nextCerts.ServerCertificate, nextCerts.CaCertificate)
-
-		_, err = kube.CreateTlsSecret(ctx, kubeClient, nextSecretConfig)
-		if err != nil {
-			return eris.Wrapf(err, "error saving next secret")
-		}
-
-		var certs *certutils.Certificates
-		if secret != nil && !renewCurrent {
-			// In this case we have a valid unexpired secret
-			// and we havent gotten to the force rotation flag check yet
-			// DO_NOT_SUBMIT: We need to make sure that we can do a smooth run here if the next secret is mistyped however for now we dont do anyhting in this
-
-			// Here we should pull the secret out, update its cabundle like in swap secrets
-			// then store it back
-
-			// secret.CaBundle = append(secret.CaBundle, nextCerts.CaCertificate...)
-			// return persistWebhook(ctx, opts, kubeClient, secret)
-		}
-		certs, err = certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-		if err != nil {
-			return eris.Wrapf(err, "failed creating secret")
-		}
-
-		newSecretConfig := fillTlsSecret(opts, opts.SecretName, certs.ServerCertKey, certs.ServerCertificate, append(certs.CaCertificate, nextCerts.CaCertificate...))
-		secret, err = kube.CreateTlsSecret(ctx, kubeClient, newSecretConfig)
-		if err != nil {
-			return eris.Wrapf(err, "error saving secret")
-		}
-
-		return persistWebhook(ctx, opts, kubeClient, secret)
-	}
-	// Rotate out the older cert and add a newer one
-	if opts.ForceRotation || renewCurrent || renewNext {
-		contextutils.LoggerFrom(ctx).Infow("Rotating secrets regardless of expiration")
+	if secret == nil {
+		logger.Info("no existing valid secret, generating a new one...")
+		// generate a new one
 		certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
 		if err != nil {
 			return eris.Wrapf(err, "generating self-signed certs and key")
 		}
-		nextSecretConfig := parseTlsSecret(nextSecret, opts.ServerKeySecretFileName, opts.ServerCertSecretFileName, opts.ServerCertAuthorityFileName)
-		secretConfig := parseTlsSecret(secret, opts.ServerKeySecretFileName, opts.ServerCertSecretFileName, opts.ServerCertAuthorityFileName)
 
-		newSecretConfig := fillTlsSecret(opts, opts.NextSecretName, certs.ServerCertKey, certs.ServerCertificate, certs.CaCertificate)
-
-		secret, err = kube.SwapSecrets(ctx, rotationDuration, kubeClient, secretConfig, nextSecretConfig, newSecretConfig)
-		if err != nil {
-			return eris.Wrapf(err, "failed creating or rotating secret")
+		secretConfig := kube.TlsSecret{
+			SecretName:         opts.SecretName,
+			SecretNamespace:    opts.SecretNamespace,
+			PrivateKeyFileName: opts.ServerKeySecretFileName,
+			CertFileName:       opts.ServerCertSecretFileName,
+			CaBundleFileName:   opts.ServerCertAuthorityFileName,
+			PrivateKey:         certs.ServerCertKey,
+			Cert:               certs.ServerCertificate,
+			CaBundle:           certs.CaCertificate,
 		}
-		return persistWebhook(ctx, opts, kubeClient, secret)
+		secret, err = kube.CreateTlsSecret(ctx, kubeClient, secretConfig)
+		if err != nil {
+			return eris.Wrapf(err, "failed creating secret")
+		}
+	} else if expiringSoon || opts.ForceRotation {
+		logger.Info("secret exists but need to rotate...")
+		// current secret
+		tlsSecret := parseTlsSecret(secret, opts)
+		// newly generated certs to rotate in
+		nextCerts, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
+		if err != nil {
+			return eris.Wrapf(err, "generating self-signed certs and key")
+		}
+		secret, err = kube.RotateSecrets(ctx, kubeClient, tlsSecret, nextCerts, rotationDuration)
+		if err != nil {
+			return eris.Wrapf(err, "failed to rotate certs")
+		}
 	} else {
+		// cert is still good
 		contextutils.LoggerFrom(ctx).Infow("existing TLS secret found, skipping update to TLS secret since the old TLS secret is still valid",
 			zap.String("secretName", opts.SecretName),
 			zap.String("secretNamespace", opts.SecretNamespace))
 	}
 
-	return nil
-}
-
-// fill a kube tls secret with the provided data
-// a helper as we reuse the options and it gets bloaty
-func fillTlsSecret(opt Options, name string, key, serverCert, caBundle []byte) kube.TlsSecret {
-	return kube.TlsSecret{
-		SecretName:         name,
-		SecretNamespace:    opt.SecretNamespace,
-		PrivateKeyFileName: opt.ServerKeySecretFileName,
-		CertFileName:       opt.ServerCertSecretFileName,
-		CaBundleFileName:   opt.ServerCertAuthorityFileName,
-		PrivateKey:         key,
-		Cert:               serverCert,
-		CaBundle:           caBundle,
-	}
+	return persistWebhook(ctx, opts, kubeClient, secret)
 }
 
 func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Interface, secret *v1.Secret) error {
-
 	vwcName := opts.ValidatingWebhookConfigurationName
 	if vwcName == "" {
 		contextutils.LoggerFrom(ctx).Infof("no ValidatingWebhookConfiguration provided. finished successfully.")
 		return nil
 	}
 
-	safeBundle := make([]byte, len(secret.Data[opts.ServerCertAuthorityFileName]))
-	copy(safeBundle, secret.Data[opts.ServerCertAuthorityFileName])
 	vwcConfig := kube.WebhookTlsConfig{
 		ServiceName:      opts.SvcName,
 		ServiceNamespace: opts.SvcNamespace,
-		CaBundle:         safeBundle,
+		CaBundle:         secret.Data[opts.ServerCertAuthorityFileName],
 	}
 
 	if err := kube.UpdateValidatingWebhookConfigurationCaBundle(ctx, kubeClient, vwcName, vwcConfig); err != nil {
@@ -202,15 +148,17 @@ func persistWebhook(ctx context.Context, opts Options, kubeClient kubernetes.Int
 	contextutils.LoggerFrom(ctx).Infof("finished successfully.")
 	return nil
 }
-func parseTlsSecret(args *v1.Secret, privateKeyFilename, certFileName, caBundleFileName string) kube.TlsSecret {
+
+// construct a TlsSecret from an existing Secret
+func parseTlsSecret(secret *v1.Secret, opts Options) kube.TlsSecret {
 	return kube.TlsSecret{
-		SecretName:         args.GetObjectMeta().GetName(),
-		SecretNamespace:    args.GetObjectMeta().GetNamespace(),
-		PrivateKeyFileName: privateKeyFilename,
-		CertFileName:       certFileName,
-		CaBundleFileName:   caBundleFileName,
-		PrivateKey:         args.Data[privateKeyFilename],
-		Cert:               args.Data[certFileName],
-		CaBundle:           args.Data[caBundleFileName],
+		SecretName:         secret.GetObjectMeta().GetName(),
+		SecretNamespace:    secret.GetObjectMeta().GetNamespace(),
+		PrivateKeyFileName: opts.ServerKeySecretFileName,
+		CertFileName:       opts.ServerCertSecretFileName,
+		CaBundleFileName:   opts.ServerCertAuthorityFileName,
+		PrivateKey:         secret.Data[opts.ServerKeySecretFileName],
+		Cert:               secret.Data[opts.ServerCertSecretFileName],
+		CaBundle:           secret.Data[opts.ServerCertAuthorityFileName],
 	}
 }
