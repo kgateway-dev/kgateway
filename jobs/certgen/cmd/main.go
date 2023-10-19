@@ -58,7 +58,10 @@ func cmd(ctx context.Context) *cobra.Command {
 	pFlags.BoolVar(&opts.ForceRotation, "force-rotation", false,
 		"if set, will create new certs even if the old one are still valid")
 	pFlags.StringVar(&opts.RotationDuration, "rotation-duration", "10s",
-		"time duration string value which specifies the total delay expected while swapping certs, if too short will cause requests to potentially be dropped. If activedeadlineseconds is set make sure this is less")
+		"time duration string value indicating the (environment-specific) expected time for all pods to pick up a secret update via SDS. "+
+			"if this duration is too short, secret changes may not have time to propagate to all pods, and some requests may be dropped during cert rotation. "+
+			"since we do 2 secret updates during a cert rotation, the certgen job is expected to run for at least twice this amount of time. "+
+			"if activeDeadlineSeconds is set on the job, make sure it is at least twice as long as the rotation duration, otherwise the certgen job might time out.")
 	pFlags.StringVar(&opts.RenewBefore, "renew-before", "2160h",
 		"time duration string value which specifies how long before expiry a certificate should be renewed")
 	return cmd

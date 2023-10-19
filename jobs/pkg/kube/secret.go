@@ -164,7 +164,7 @@ func RotateSecrets(ctx context.Context,
 
 	// wait for pods to pick up the ca bundle change
 	logger.Info("waiting for ca bundle changes to be picked up")
-	waitGracePeriod(ctx, gracePeriod)
+	waitGracePeriod(ctx, gracePeriod, "ca bundles update")
 
 	// set serverCert to next and persist secret
 	currentTlsSecret.Cert = nextCerts.ServerCertificate
@@ -178,7 +178,7 @@ func RotateSecrets(ctx context.Context,
 
 	// wait for pods to pick up the server cert change
 	logger.Info("waiting for server cert changes to be picked up")
-	waitGracePeriod(ctx, gracePeriod)
+	waitGracePeriod(ctx, gracePeriod, "cert update")
 
 	// set currentSecret's caBundle to next (now currentSecret contains only next ca and next serverCert) and persist currentSecret
 	currentTlsSecret.CaBundle = nextCerts.CaCertificate
@@ -194,8 +194,9 @@ func RotateSecrets(ctx context.Context,
 	return secretToWrite, nil
 }
 
-func waitGracePeriod(ctx context.Context, gracePeriod time.Duration) {
-	logger := contextutils.LoggerFrom(ctx)
+// description is an informative message about what we are waiting for
+func waitGracePeriod(ctx context.Context, gracePeriod time.Duration, description string) {
+	logger := contextutils.LoggerFrom(ctx).With(zap.String("waitingFor", description))
 	ticker := time.NewTicker(1 * time.Second)
 	end := time.Now().Add(gracePeriod)
 	logger.Infof("Starting a grace period for all pods to settle: %v seconds remaining", int(time.Until(end).Seconds()))
