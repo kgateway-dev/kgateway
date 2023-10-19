@@ -315,16 +315,16 @@ func (m *BasicAuth) Clone() proto.Message {
 		target.Encryption = proto.Clone(m.GetEncryption()).(*BasicAuth_EncryptionType)
 	}
 
-	switch m.UserSources.(type) {
+	switch m.UserSource.(type) {
 
 	case *BasicAuth_UserList_:
 
 		if h, ok := interface{}(m.GetUserList()).(clone.Cloner); ok {
-			target.UserSources = &BasicAuth_UserList_{
+			target.UserSource = &BasicAuth_UserList_{
 				UserList: h.Clone().(*BasicAuth_UserList),
 			}
 		} else {
-			target.UserSources = &BasicAuth_UserList_{
+			target.UserSource = &BasicAuth_UserList_{
 				UserList: proto.Clone(m.GetUserList()).(*BasicAuth_UserList),
 			}
 		}
@@ -3627,16 +3627,16 @@ func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Clone() proto.Message {
 	}
 	target = &ExtAuthConfig_BasicAuthConfig_EncryptionType{}
 
-	switch m.Encryption.(type) {
+	switch m.Algorithm.(type) {
 
 	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_:
 
 		if h, ok := interface{}(m.GetApr()).(clone.Cloner); ok {
-			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_{
+			target.Algorithm = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_{
 				Apr: h.Clone().(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr),
 			}
 		} else {
-			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_{
+			target.Algorithm = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_{
 				Apr: proto.Clone(m.GetApr()).(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr),
 			}
 		}
@@ -3644,11 +3644,11 @@ func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Clone() proto.Message {
 	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_:
 
 		if h, ok := interface{}(m.GetSha1()).(clone.Cloner); ok {
-			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_{
+			target.Algorithm = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_{
 				Sha1: h.Clone().(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1),
 			}
 		} else {
-			target.Encryption = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_{
+			target.Algorithm = &ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_{
 				Sha1: proto.Clone(m.GetSha1()).(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1),
 			}
 		}

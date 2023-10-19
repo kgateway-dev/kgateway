@@ -592,7 +592,7 @@ func (m *BasicAuth) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	switch m.UserSources.(type) {
+	switch m.UserSource.(type) {
 
 	case *BasicAuth_UserList_:
 
@@ -6828,7 +6828,7 @@ func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Hash(hasher hash.Hash64) 
 		return 0, err
 	}
 
-	switch m.Encryption.(type) {
+	switch m.Algorithm.(type) {
 
 	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_:
 

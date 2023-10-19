@@ -288,7 +288,7 @@ message BasicAuth {
     }
 
     // create new types to add here
-    oneof user_sources {
+    oneof user_source {
         UserList user_list = 4;
     }
 }
@@ -1430,7 +1430,7 @@ message ExtAuthConfig {
         message EncryptionType {
             message Sha1 {}
             message Apr {}
-            oneof encryption {
+            oneof algorithm {
                 Apr apr = 1;
                 Sha1 sha1 = 2;
             }
@@ -1950,7 +1950,7 @@ message ExtAuthConfig {
         oneof auth_config {
             OAuthConfig oauth = 3 [deprecated = true];
             OAuth2Config oauth2 = 9;
-            BasicAuth basic_auth = 4 [deprecated = true];
+            BasicAuth basic_auth = 4;
             ApiKeyAuthConfig api_key_auth = 5;
             AuthPlugin plugin_auth = 6;
             OpaAuthConfig opa_auth = 7;

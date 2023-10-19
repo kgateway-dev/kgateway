@@ -531,10 +531,10 @@ func (m *BasicAuth) Equal(that interface{}) bool {
 		}
 	}
 
-	switch m.UserSources.(type) {
+	switch m.UserSource.(type) {
 
 	case *BasicAuth_UserList_:
-		if _, ok := target.UserSources.(*BasicAuth_UserList_); !ok {
+		if _, ok := target.UserSource.(*BasicAuth_UserList_); !ok {
 			return false
 		}
 
@@ -550,7 +550,7 @@ func (m *BasicAuth) Equal(that interface{}) bool {
 
 	default:
 		// m is nil but target is not nil
-		if m.UserSources != target.UserSources {
+		if m.UserSource != target.UserSource {
 			return false
 		}
 	}
@@ -6080,10 +6080,10 @@ func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Equal(that interface{}) b
 		return false
 	}
 
-	switch m.Encryption.(type) {
+	switch m.Algorithm.(type) {
 
 	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_:
-		if _, ok := target.Encryption.(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_); !ok {
+		if _, ok := target.Algorithm.(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Apr_); !ok {
 			return false
 		}
 
@@ -6098,7 +6098,7 @@ func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Equal(that interface{}) b
 		}
 
 	case *ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_:
-		if _, ok := target.Encryption.(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_); !ok {
+		if _, ok := target.Algorithm.(*ExtAuthConfig_BasicAuthConfig_EncryptionType_Sha1_); !ok {
 			return false
 		}
 
@@ -6114,7 +6114,7 @@ func (m *ExtAuthConfig_BasicAuthConfig_EncryptionType) Equal(that interface{}) b
 
 	default:
 		// m is nil but target is not nil
-		if m.Encryption != target.Encryption {
+		if m.Algorithm != target.Algorithm {
 			return false
 		}
 	}
