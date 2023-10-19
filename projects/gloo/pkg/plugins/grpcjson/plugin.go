@@ -98,6 +98,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	grpcJsonFilter, err := plugins.NewStagedFilter(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
+	if err != nil {
+		return err
+	}
 	p.upstreamFilters[in.GetMetadata().Ref().Key()] = grpcJsonFilter
 	// GRPC transcoding always requires http2
 	if out.GetHttp2ProtocolOptions() == nil {
