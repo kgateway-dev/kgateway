@@ -128,7 +128,7 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 	return createdSecret, nil
 }
 
-// RotateSecrets rotates secrets in a few steps.
+// RotateCerts rotates certs in a few steps.
 //
 // We start with:
 //   - The current secret (currentTlsSecret) which will be rotated out. It initially
@@ -142,7 +142,7 @@ func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg T
 //  4. Wait for the change to propagate
 //  5. Set the current secret's ca bundle to the next ca bundle. Now it contains only the next server
 //     cert and next ca bundle and the old ones are no longer supported.
-func RotateSecrets(ctx context.Context,
+func RotateCerts(ctx context.Context,
 	kubeClient kubernetes.Interface,
 	currentTlsSecret TlsSecret,
 	nextCerts *certutils.Certificates,

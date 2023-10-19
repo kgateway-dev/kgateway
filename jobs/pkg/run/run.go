@@ -114,7 +114,7 @@ func Run(ctx context.Context, opts Options) error {
 		if err != nil {
 			return eris.Wrapf(err, "generating self-signed certs and key")
 		}
-		secret, err = kube.RotateSecrets(ctx, kubeClient, tlsSecret, nextCerts, rotationDuration)
+		secret, err = kube.RotateCerts(ctx, kubeClient, tlsSecret, nextCerts, rotationDuration)
 		if err != nil {
 			return eris.Wrapf(err, "failed to rotate certs")
 		}
