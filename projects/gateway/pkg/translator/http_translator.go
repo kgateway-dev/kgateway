@@ -1,9 +1,9 @@
 package translator
 
 import (
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 )
@@ -26,12 +26,7 @@ func (t *HttpTranslator) ComputeListener(params Params, proxyName string, gatewa
 	if len(snap.VirtualServices) == 0 {
 		snapHash := hashutils.MustHash(snap)
 		contextutils.LoggerFrom(params.ctx).Debugf("%v had no virtual services", snapHash)
-		if settingsutil.MaybeFromContext(params.ctx).GetGateway().GetTranslateEmptyGateways().GetValue() {
-			contextutils.LoggerFrom(params.ctx).Debugf("but continuing since translateEmptyGateways is set", snapHash)
-		} else {
-			return nil
-
-		}
+		return nil
 	}
 
 	sslGateway := gateway.GetSsl()

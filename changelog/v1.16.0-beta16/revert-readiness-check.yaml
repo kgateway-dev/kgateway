@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/8809
+  resolvesIssue: false
+  description: Unfortunately, the custom readiness probe fix causes issues in deployments via Argo, since the resouce-rollout job is deleted and causes the argo app to go out of sync, as well as missing permissions to watch jobs. Reverted this fix
+

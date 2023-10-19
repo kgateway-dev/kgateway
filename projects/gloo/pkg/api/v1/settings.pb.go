@@ -1008,11 +1008,7 @@ type GatewayOptions struct {
 	// Individual Gateways can override this behavior by configuring the "gateway.solo.io/isolate_vhost" annotation
 	// to be a truthy ("true", "false") value
 	IsolateVirtualHostsBySslConfig *wrappers.BoolValue `protobuf:"bytes,10,opt,name=isolate_virtual_hosts_by_ssl_config,json=isolateVirtualHostsBySslConfig,proto3" json:"isolate_virtual_hosts_by_ssl_config,omitempty"`
-	// If set, gateways will be translated into Envoy listeners even if no VirtualServices exist or match a gateway.
-	// As a consequence of no VirtualServices, which in turn implies that there are no routes to serve,
-	// the listener will not contain any routes, so all requests will return a 404. Defaults to false.
-	// The default behaviour is when there are no VirtualServices defined or a Gateway does not match
-	// any VirtualService, the gateway is not converted into an envoy listener.
+	// This field is a no-op for now
 	TranslateEmptyGateways *wrappers.BoolValue `protobuf:"bytes,11,opt,name=translate_empty_gateways,json=translateEmptyGateways,proto3" json:"translate_empty_gateways,omitempty"`
 }
 
