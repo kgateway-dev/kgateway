@@ -27,23 +27,12 @@ var _ = Describe("SDS Server", func() {
 		sdsClient                                   = "test-client"
 		srv                                         *server.Server
 	)
-	const (
-		CertData = `
------BEGIN CERTIFICATE----- 
-testdata
------END CERTIFICATE-----
-`
-		ExtraCaData = `
------BEGIN CERTIFICATE----- 
-testdata
------END CERTIFICATE-----
-`
-	)
+
 	BeforeEach(func() {
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
 		Expect(err).To(BeNil())
-		fileString := CertData
+		fileString := `test`
 
 		keyFile, err = afero.TempFile(fs, dir, "")
 		Expect(err).To(BeNil())
@@ -68,7 +57,7 @@ testdata
 		Expect(err).To(BeNil())
 		secrets := []server.Secret{
 			{
-				ServerCert:        CertData,
+				ServerCert:        "test-server",
 				SslCaFile:         caFile.Name(),
 				SslCertFile:       certFile.Name(),
 				SslKeyFile:        keyFile.Name(),
@@ -83,11 +72,7 @@ testdata
 		_ = fs.RemoveAll(dir)
 	})
 
-	DescribeTable("correctly reads tls secrets from files to generate snapshot version", func(useOcsp bool, multipleCa bool, expectedHashes []string) {
-		//Add a second CA to the file and ensure that SDS picks up both
-		if multipleCa {
-			caFile.WriteString(ExtraCaData)
-		}
+	DescribeTable("correctly reads tls secrets from files to generate snapshot version", func(useOcsp bool, expectedHashes []string) {
 		certs, err := testutils.FilesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
 		Expect(err).NotTo(HaveOccurred())
 		if useOcsp {
@@ -95,6 +80,7 @@ testdata
 			Expect(err).To(BeNil())
 			certs = append(certs, ocspResponse)
 		}
+
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal(expectedHashes[0]))
@@ -114,9 +100,8 @@ testdata
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal(expectedHashes[1]))
 	},
-		Entry("without ocsps", false, false, []string{"3830835369138522420", "12687513569506880673"}),
-		Entry("with ocsps", true, false, []string{"12295484596482176317", "13320336604693253141"}),
-		Entry("with multiple CAs", false, true, []string{"15700219710179392555", "4169072019285866366"}),
+		Entry("without ocsps", false, []string{"6730780456972595554", "4234248347190811569"}),
+		Entry("with ocsps", true, []string{"969835737182439215", "6328977429293055969"}),
 	)
 
 	Context("Test gRPC Server", func() {

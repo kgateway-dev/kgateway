@@ -2,7 +2,6 @@ package run_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"time"
@@ -35,12 +34,11 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		testServerAddress                                               = "127.0.0.1:8236"
 		sdsClient                                                       = "test-client"
 	)
-	const (
-		CERT_FORMAT = "-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----\n"
-	)
+
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		fileString := []byte(fmt.Sprintf(CERT_FORMAT, "test"))
+
+		fileString := []byte("test")
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
 		Expect(err).To(BeNil())
@@ -158,7 +156,6 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal(expectedHashes[0]))
-		fmt.Printf("fist cert to hash %s", string(certs[0]))
 
 		var resp *envoy_service_discovery_v3.DiscoveryResponse
 
@@ -175,7 +172,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		// Cert rotation #1
 		err = os.Remove(keyName)
 		Expect(err).To(BeNil())
-		err = afero.WriteFile(fs, keyName, []byte(fmt.Sprintf(CERT_FORMAT, "tls.key-1")), 0644)
+		err = afero.WriteFile(fs, keyName, []byte("tls.key-1"), 0644)
 		Expect(err).To(BeNil())
 
 		// Re-read certs
@@ -199,7 +196,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		// Cert rotation #2
 		err = os.Remove(keyName)
 		Expect(err).To(BeNil())
-		err = afero.WriteFile(fs, keyName, []byte(fmt.Sprintf(CERT_FORMAT, "tls.key-2")), 0644)
+		err = afero.WriteFile(fs, keyName, []byte("tls.key-2"), 0644)
 		Expect(err).To(BeNil())
 
 		// Re-read certs again
@@ -220,7 +217,7 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 			return resp.VersionInfo == snapshotVersion
 		}, "15s", "1s").Should(BeTrue())
 	},
-		Entry("with ocsp", true, []string{"17778761080321736010", "9734965716847957211", "14589246578941886776"}),
-		Entry("without ocsp", false, []string{"7656317382886943633", "5806503621267184422", "297872572804666268"}),
+		Entry("with ocsp", true, []string{"969835737182439215", "6265739243366543658", "14893951670674740726"}),
+		Entry("without ocsp", false, []string{"6730780456972595554", "16241649556325798095", "7644406922477208950"}),
 	)
 })
