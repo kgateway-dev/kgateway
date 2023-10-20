@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/leaderelector"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
@@ -45,6 +46,11 @@ func NewSetupSyncer(settingsRef *core.ResourceRef, setupFunc SetupFunc, identity
 
 func (s *SetupSyncer) Sync(ctx context.Context, snap *v1.SetupSnapshot) error {
 	settings, err := snap.Settings.Find(s.settingsRef.Strings())
+	// Explicitly set this to false until we decide how to proceed
+	// Ref: https://github.com/solo-io/gloo/pull/8814#pullrequestreview-1689874689
+	if settings.GetGateway().GetTranslateEmptyGateways().GetValue() {
+		settings.GetGateway().TranslateEmptyGateways = wrapperspb.Bool(false)
+	}
 	if err != nil {
 		return errors.Wrapf(err, "finding bootstrap configuration")
 	}
