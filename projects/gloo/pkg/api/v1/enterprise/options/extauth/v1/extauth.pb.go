@@ -3296,7 +3296,7 @@ type AerospikeApiKeyStorage struct {
 	// The TLS identifier for an elliptic curve. For more information, see [TLS supported groups](https://www.iana.org/assignments/tls-parameters/tls-parameters.xml#tls-parameters-8).
 	TlsCurveGroups []*AerospikeApiKeyStorageTlsCurveID `protobuf:"bytes,16,rep,name=tls_curve_groups,json=tlsCurveGroups,proto3" json:"tls_curve_groups,omitempty"`
 	// Identify the set of required labels (key/value) which an Aerospike secret must contain
-	// If a secret contains the provided set of labels, it will be considered when matching an ApiKey provided in a request
+	// If a secret contains the provided set of labels, it will be considered valid when authorizing an ApiKey provided in a request
 	LabelSelector map[string]string `protobuf:"bytes,17,rep,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
