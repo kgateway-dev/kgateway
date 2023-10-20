@@ -57,7 +57,7 @@ func cmd(ctx context.Context) *cobra.Command {
 		"name of the ValidatingWebhookConfiguration to patch with the generated CA bundle. leave empty to skip this step.")
 	pFlags.BoolVar(&opts.ForceRotation, "force-rotation", false,
 		"if set, will create new certs even if the old one are still valid")
-	pFlags.StringVar(&opts.RotationDuration, "rotation-duration", "10s",
+	pFlags.StringVar(&opts.RotationDuration, "rotation-duration", "0s",
 		"time duration string value indicating the (environment-specific) expected time for all pods to pick up a secret update via SDS. "+
 			"if this duration is too short, secret changes may not have time to propagate to all pods, and some requests may be dropped during cert rotation. "+
 			"since we do 2 secret updates during a cert rotation, the certgen job is expected to run for at least twice this amount of time. "+

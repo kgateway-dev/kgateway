@@ -220,6 +220,48 @@ var _ = Describe("Secret", func() {
 			Expect(expiringSoon).To(BeTrue())
 		})
 	})
+
+	Context("rotate certs", func() {
+		It("updates the cert and ca when rotating", func() {
+			kubeClient := fake.NewSimpleClientset()
+
+			// create "old" secret
+			oldPrivateKey := []byte("oldPrivateKey")
+			oldCert := []byte("oldCert")
+			oldCaBundle := []byte("oldCaBundle")
+			secretCfg := TlsSecret{
+				SecretName:         "mysecret",
+				SecretNamespace:    "mynamespace",
+				PrivateKeyFileName: "keyFile",
+				CertFileName:       "certFile",
+				CaBundleFileName:   "caBundleFile",
+				PrivateKey:         oldPrivateKey,
+				Cert:               oldCert,
+				CaBundle:           oldCaBundle,
+			}
+			_, err := CreateTlsSecret(context.TODO(), kubeClient, secretCfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			// generate new certs
+			newPrivateKey := []byte("newPrivateKey")
+			newCert := []byte("newCert")
+			newCaBundle := []byte("newCaBundle")
+			newCerts := &certutils.Certificates{
+				ServerCertKey:     newPrivateKey,
+				ServerCertificate: newCert,
+				CaCertificate:     newCaBundle,
+			}
+
+			// rotate
+			secret, err := RotateCerts(context.TODO(), kubeClient, secretCfg, newCerts, time.Second)
+			Expect(err).NotTo(HaveOccurred())
+
+			// make sure the secret now contains the new certs
+			Expect(secret.Data["keyFile"]).To(Equal(newPrivateKey))
+			Expect(secret.Data["certFile"]).To(Equal(newCert))
+			Expect(secret.Data["caBundleFile"]).To(Equal(newCaBundle))
+		})
+	})
 })
 
 func computeSKI(template *x509.Certificate) ([]byte, error) {
