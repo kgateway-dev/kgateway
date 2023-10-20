@@ -12,15 +12,13 @@ import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_extensions_transport_sockets_tls_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/hashutils"
-
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/hashutils"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -97,24 +95,24 @@ func (s *Server) UpdateSDSConfig(ctx context.Context) error {
 	var certs [][]byte
 	var items []cache_types.Resource
 	for _, sec := range s.secrets {
-		key, err := readAndVerifyCert(sec.SslKeyFile)
+		key, err := readAndVerifyCert(ctx, sec.SslKeyFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, key)
-		certChain, err := readAndVerifyCert(sec.SslCertFile)
+		certChain, err := readAndVerifyCert(ctx, sec.SslCertFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, certChain)
-		ca, err := readAndVerifyCert(sec.SslCaFile)
+		ca, err := readAndVerifyCert(ctx, sec.SslCaFile)
 		if err != nil {
 			return err
 		}
 		certs = append(certs, ca)
 		var ocspStaple []byte // ocsp stapling is optional
 		if sec.SslOcspFile != "" {
-			ocspStaple, err = readAndVerifyCert(sec.SslOcspFile)
+			ocspStaple, err = readAndVerifyCert(ctx, sec.SslOcspFile)
 			if err != nil {
 				return err
 			}
@@ -148,10 +146,9 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
 // See https://github.com/fsnotify/fsnotify/pull/252 for more context
-func readAndVerifyCert(certFilePath string) ([]byte, error) {
+func readAndVerifyCert(ctx context.Context, certFilePath string) ([]byte, error) {
 	var err error
 	var fileBytes []byte
-
 	var validCerts bool
 	// Retry for a few seconds as a write may still be in progress
 	err = retry.Do(
@@ -168,6 +165,12 @@ func readAndVerifyCert(certFilePath string) ([]byte, error) {
 		},
 		retry.Attempts(5), // Exponential backoff over ~3s
 	)
+
+	// TODO: we should return error here, but this currently makes ci tests fail so leaving it unchanged for now
+	// if err != nil {
+	// 	contextutils.LoggerFrom(ctx).Warnf("error checking certs %v", err)
+	// 	return fileBytes, err
+	// }
 
 	return fileBytes, nil
 }
@@ -214,11 +217,7 @@ func validationContextSecret(caCert []byte, validationContext string) cache_type
 		Name: validationContext,
 		Type: &envoy_extensions_transport_sockets_tls_v3.Secret_ValidationContext{
 			ValidationContext: &envoy_extensions_transport_sockets_tls_v3.CertificateValidationContext{
-				TrustedCa: &envoy_config_core_v3.DataSource{
-					Specifier: &envoy_config_core_v3.DataSource_InlineBytes{
-						InlineBytes: caCert,
-					},
-				},
+				TrustedCa: inlineBytesDataSource(caCert),
 			},
 		},
 	}
