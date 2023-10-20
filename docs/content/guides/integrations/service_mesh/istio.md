@@ -31,7 +31,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
       
 3. Create a `value-overrides.yaml` file with the following content:
 - To configure your gateway with an Istio sidecar, add the `istioIntegration` section and set `enableIstioSidecarOnGateway` option to `true`
-- Set `disableAutoInjection` to `true` in order to ensure Gloo components are not included in the Mesh
+- Set `disableAutoinjection` to `true` in order to ensure Gloo components are not included in the Mesh
 - Set `global.istioSDS.enabled` to `true` to allow the Gateway Proxy to consume Istio certs despite not being in the Mesh 
 - Specify image fields under `global.glooMtls.istioProxy.image` and `global.glooMtls.sds.image` corresponding with the version of Istio and Gloo Edge installed respectively
   - The default Istio version is 1.18.2
@@ -39,7 +39,7 @@ Install the Gloo Edge gateway and inject it with an Istio sidecar.
    global:
      istioIntegration:
        enableIstioSidecarOnGateway: true
-       disableAutoInjection: true
+       disableAutoinjection: true
      istioSDS:
        enabled: true
      glooMtls:

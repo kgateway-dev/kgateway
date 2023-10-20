@@ -1658,8 +1658,8 @@ else the request is unauthorized.
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `url` | `string` | Required: URL of the passthrough http service, is a fully qualified domain name. Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected. To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service pod as a base64-encoded string. |
-| `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) |  |
-| `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) |  |
+| `request` | [.enterprise.gloo.solo.io.PassThroughHttp.Request](../extauth.proto.sk/#request) | Pass through the incoming request body, ext auth state, and filter metadata. For more information, see the [PassThrough Http Request description](#request-1). |
+| `response` | [.enterprise.gloo.solo.io.PassThroughHttp.Response](../extauth.proto.sk/#response) | Pass through response information such as the headers and body to downstream clients. For more information, see the [PassThrough Http Response description](#response-1). |
 | `connectionTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout for the auth server to respond. Defaults to 5s. |
 
 

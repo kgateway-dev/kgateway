@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >- 
+      Backports weekly doc fixes, such as typos, links, version bumps, and feedback raised in Slack.
+      Backports docs for local rate limiting.
+      skipCI-kube-tests:true

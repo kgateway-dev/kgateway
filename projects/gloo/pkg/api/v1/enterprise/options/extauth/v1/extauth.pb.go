@@ -4152,8 +4152,12 @@ type PassThroughHttp struct {
 	// Example: http://ext-auth-service.svc.local:9001. Path provided in the URL will be respected.
 	// To use https, provide the cert in the HTTPS_PASSTHROUGH_CA_CERT environment variable to the ext-auth-service
 	// pod as a base64-encoded string
-	Url      string                    `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	Request  *PassThroughHttp_Request  `protobuf:"bytes,3,opt,name=request,proto3" json:"request,omitempty"`
+	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	// Pass through the incoming request body, ext auth state, and filter metadata.
+	// For more information, see the [PassThrough Http Request description](#request-1).
+	Request *PassThroughHttp_Request `protobuf:"bytes,3,opt,name=request,proto3" json:"request,omitempty"`
+	// Pass through response information such as the headers and body to downstream clients.
+	// For more information, see the [PassThrough Http Response description](#response-1).
 	Response *PassThroughHttp_Response `protobuf:"bytes,4,opt,name=response,proto3" json:"response,omitempty"`
 	// Timeout for the auth server to respond. Defaults to 5s
 	ConnectionTimeout *duration.Duration `protobuf:"bytes,8,opt,name=connection_timeout,json=connectionTimeout,proto3" json:"connection_timeout,omitempty"`
