@@ -8,7 +8,7 @@ Gloo Edge has integrations with several other applications and services to eithe
 * **[Kubernetes Ingress](#kubernetes-ingress)** - Use Gloo Edge as the ingress controller on your Kubernetes cluster
 * **[AWS Elastic Load Balancers](#aws-elastic-load-balancers)** - Augment the AWS Elastic Load Balancer with Gloo Edge
 * **[Service Mesh](#service-mesh)** - Provide edge ingress for a service mesh deployment like Istio, Linkerd, or AWS App Mesh
-* **[Let's Encrypt](#let-s-encrypt)** - Provision and manage certificates for Gloo Edge using Let's Encrypt and cert-manager
+* **[Let's Encrypt](#lets-encrypt)** - Provision and manage certificates for Gloo Edge using Let's Encrypt and cert-manager
 
 ---
 
@@ -38,7 +38,7 @@ Checkout our [service mesh guides section]({{% versioned_link_path fromRoot="/gu
 
 ---
 
-## Let's Encrypt
+## Let's Encrypt {#lets-encrypt}
 
 Supporting HTTP traffic over TLS is almost a given for web services. The procurement and installation of certificates to support TLS can be a hassle. Let's Encrypt and cert-manager offer a simple and automated approach to certificate management. [Cert-manager](https://cert-manager.io/docs/) is a native Kubernetes certificate management controller that can assist with issuing certificates from sources like Let's Encrypt and HashiCorp Vault. [Let's Encrypt](https://letsencrypt.org) is a free, automated, open certificate authority providing digital certificates to enable TLS for a website.
 
