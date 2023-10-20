@@ -2142,6 +2142,17 @@ func (m *AerospikeApiKeyStorage) Equal(that interface{}) bool {
 
 	}
 
+	if len(m.GetLabelSelector()) != len(target.GetLabelSelector()) {
+		return false
+	}
+	for k, v := range m.GetLabelSelector() {
+
+		if strings.Compare(v, target.GetLabelSelector()[k]) != 0 {
+			return false
+		}
+
+	}
+
 	switch m.CommitLevel.(type) {
 
 	case *AerospikeApiKeyStorage_CommitAll:
