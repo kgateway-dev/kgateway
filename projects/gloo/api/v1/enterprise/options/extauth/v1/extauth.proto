@@ -1068,7 +1068,7 @@ message AerospikeApiKeyStorage {
     }
 
     // Identify the set of required labels (key/value) which an Aerospike secret must contain
-    // If a secret contains the provided set of labels, it will be considered when matching an ApiKey provided in a request
+    // If a secret contains the provided set of labels, it will be considered valid when authorizing an ApiKey provided in a request
     map<string, string> label_selector = 17;
 }
 
