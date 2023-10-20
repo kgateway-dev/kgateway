@@ -209,6 +209,67 @@ var _ = Describe("Hybrid Translator", func() {
 
 			})
 
+			Context("No virtual Services", func() {
+				BeforeEach(func() {
+					snap = &gloov1snap.ApiSnapshot{
+						Gateways: v1.GatewayList{
+							{
+								Metadata: &core.Metadata{Namespace: ns, Name: "name"},
+								GatewayType: &v1.Gateway_HybridGateway{
+									HybridGateway: &v1.HybridGateway{
+										MatchedGateways: []*v1.MatchedGateway{
+											{
+												Matcher: &v1.Matcher{
+													SourcePrefixRanges: []*v3.CidrRange{
+														{
+															AddressPrefix: "match1",
+														},
+													},
+												},
+												GatewayType: &v1.MatchedGateway_HttpGateway{
+													HttpGateway: &v1.HttpGateway{},
+												},
+											},
+										},
+									},
+								},
+								BindPort: 2,
+							},
+						},
+						VirtualServices: v1.VirtualServiceList{},
+					}
+				})
+
+				It("Does not generate a listener", func() {
+					params := NewTranslatorParams(ctx, snap, reports)
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					Expect(listener).To(BeNil())
+					Expect(reports.ValidateStrict()).To(HaveOccurred())
+				})
+
+				// It("Does generates a listener if TranslateEmptyGateways is set", func() {
+				// 	ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
+				// 		Gateway: &gloov1.GatewayOptions{
+				// 			TranslateEmptyGateways: &wrapperspb.BoolValue{
+				// 				Value: true,
+				// 			},
+				// 		},
+				// 	})
+				// 	params := NewTranslatorParams(ctx, snap, reports)
+				// 	listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+				// 	Expect(listener).NotTo(BeNil())
+				// 	Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+
+				// 	hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
+				// 	Expect(hybridListener.MatchedListeners).To(HaveLen(1))
+
+				// 	matchedHttpListener := hybridListener.MatchedListeners[0]
+				// 	Expect(matchedHttpListener.Matcher.SourcePrefixRanges).To(HaveLen(1))
+				// 	Expect(matchedHttpListener.Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
+				// 	Expect(matchedHttpListener.GetHttpListener()).NotTo(BeNil())
+				// 	Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(0))
+				// })
+			})
 		})
 
 		Context("tcp", func() {
