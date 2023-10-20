@@ -247,6 +247,8 @@ var _ = Describe("Hybrid Translator", func() {
 					Expect(reports.ValidateStrict()).To(HaveOccurred())
 				})
 
+				// Leaving the tests here until we decide how to proceed
+				// Ref: https://github.com/solo-io/gloo/pull/8814#discussion_r1366991629
 				// It("Does generates a listener if TranslateEmptyGateways is set", func() {
 				// 	ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
 				// 		Gateway: &gloov1.GatewayOptions{
