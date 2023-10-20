@@ -50,6 +50,10 @@ spec:
                               type: string
                             keyPath:
                               type: string
+                            labelSelector:
+                              additionalProperties:
+                                type: string
+                              type: object
                             namespace:
                               type: string
                             nodeTlsName:
