@@ -1676,4 +1676,42 @@ var _ = Describe("Http Translator", func() {
 
 	})
 
+	Context("No virtual Services", func() {
+		BeforeEach(func() {
+			snap = &gloov1snap.ApiSnapshot{
+				Gateways: v1.GatewayList{
+					{
+						Metadata: &core.Metadata{Namespace: ns, Name: "gw1"},
+						GatewayType: &v1.Gateway_HttpGateway{
+							HttpGateway: &v1.HttpGateway{},
+						},
+					},
+				},
+				VirtualServices: v1.VirtualServiceList{},
+			}
+			initializeReportsForSnap()
+		})
+
+		It("Does not generate a listener", func() {
+			params := NewTranslatorParams(ctx, snap, reports)
+			listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
+			Expect(listener).To(BeNil())
+			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		})
+
+		// It("Does generates a listener if TranslateEmptyGateways is set", func() {
+		// 	ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
+		// 		Gateway: &gloov1.GatewayOptions{
+		// 			TranslateEmptyGateways: &wrapperspb.BoolValue{
+		// 				Value: true,
+		// 			},
+		// 		},
+		// 	})
+		// 	params := NewTranslatorParams(ctx, snap, reports)
+		// 	listener := translator.ComputeListener(params, "proxy123", snap.Gateways[0])
+		// 	Expect(listener).NotTo(BeNil())
+		// 	Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		// })
+	})
+
 })

@@ -163,4 +163,36 @@ var _ = Describe("Aggregate translator", func() {
 			Expect(currentOrder).To(Equal(originalOrder))
 		}
 	})
+
+	Context("No virtual Services", func() {
+		JustBeforeEach(func() {
+			snap.VirtualServices = []*v1.VirtualService{}
+		})
+
+		It("Does not generate a listener", func() {
+			aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
+			genProxyWithIsolatedVirtualHosts()
+			proxyName := proxy.Metadata.Name
+			l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
+			Expect(l).To(BeNil())
+			Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		})
+
+		// It("Does generates a listener if TranslateEmptyGateways is set", func() {
+		// 	ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
+		// 		Gateway: &gloov1.GatewayOptions{
+		// 			TranslateEmptyGateways: &wrapperspb.BoolValue{
+		// 				Value: true,
+		// 			},
+		// 		},
+		// 	})
+		// 	aggregateTranslator := &AggregateTranslator{VirtualServiceTranslator: &VirtualServiceTranslator{}}
+		// 	genProxyWithIsolatedVirtualHosts()
+		// 	proxyName := proxy.Metadata.Name
+		// 	l := aggregateTranslator.ComputeListener(NewTranslatorParams(ctx, snap, reports), proxyName, snap.Gateways[0])
+		// 	Expect(l).NotTo(BeNil())
+		// 	Expect(l.GetAggregateListener())
+		// 	Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+		// })
+	})
 })
