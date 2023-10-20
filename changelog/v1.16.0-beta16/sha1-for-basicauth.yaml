@@ -1,7 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    issueLink:  https://github.com/solo-io/solo-projects/issues/5234
-    description: >
-      "To be filled"
-    resolvesIssue: false
-
