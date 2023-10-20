@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/selectors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 
@@ -247,30 +248,28 @@ var _ = Describe("Hybrid Translator", func() {
 					Expect(reports.ValidateStrict()).To(HaveOccurred())
 				})
 
-				// Leaving the tests here until we decide how to proceed
-				// Ref: https://github.com/solo-io/gloo/pull/8814#discussion_r1366991629
-				// It("Does generates a listener if TranslateEmptyGateways is set", func() {
-				// 	ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
-				// 		Gateway: &gloov1.GatewayOptions{
-				// 			TranslateEmptyGateways: &wrapperspb.BoolValue{
-				// 				Value: true,
-				// 			},
-				// 		},
-				// 	})
-				// 	params := NewTranslatorParams(ctx, snap, reports)
-				// 	listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
-				// 	Expect(listener).NotTo(BeNil())
-				// 	Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
+				It("Does generates a listener if TranslateEmptyGateways is set", func() {
+					ctx := settingsutil.WithSettings(ctx, &gloov1.Settings{
+						Gateway: &gloov1.GatewayOptions{
+							TranslateEmptyGateways: &wrapperspb.BoolValue{
+								Value: true,
+							},
+						},
+					})
+					params := NewTranslatorParams(ctx, snap, reports)
+					listener := hybridTranslator.ComputeListener(params, defaults.GatewayProxyName, snap.Gateways[0])
+					Expect(listener).NotTo(BeNil())
+					Expect(reports.ValidateStrict()).NotTo(HaveOccurred())
 
-				// 	hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
-				// 	Expect(hybridListener.MatchedListeners).To(HaveLen(1))
+					hybridListener := listener.ListenerType.(*gloov1.Listener_HybridListener).HybridListener
+					Expect(hybridListener.MatchedListeners).To(HaveLen(1))
 
-				// 	matchedHttpListener := hybridListener.MatchedListeners[0]
-				// 	Expect(matchedHttpListener.Matcher.SourcePrefixRanges).To(HaveLen(1))
-				// 	Expect(matchedHttpListener.Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
-				// 	Expect(matchedHttpListener.GetHttpListener()).NotTo(BeNil())
-				// 	Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(0))
-				// })
+					matchedHttpListener := hybridListener.MatchedListeners[0]
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges).To(HaveLen(1))
+					Expect(matchedHttpListener.Matcher.SourcePrefixRanges[0].AddressPrefix).To(Equal("match1"))
+					Expect(matchedHttpListener.GetHttpListener()).NotTo(BeNil())
+					Expect(matchedHttpListener.GetHttpListener().VirtualHosts).To(HaveLen(0))
+				})
 			})
 		})
 
