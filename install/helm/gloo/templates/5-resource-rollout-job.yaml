@@ -11,6 +11,10 @@ metadata:
     gloo: resource-rollout
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5" # run this job after the role/rolebinding is created
+    {{- include "gloo.jobHelmDeletePolicySucceededAndBeforeCreation" .Values.gateway.rolloutJob | nindent 4 }}
 spec:
   {{- include "gloo.jobSpecStandardFields" .Values.gateway.rolloutJob | nindent 2 -}}
   template:
@@ -72,14 +76,6 @@ spec:
             # if validation webhook is enabled, wait for deployment rollout so validation service will be available
             kubectl rollout status deployment -n {{ .Release.Namespace }} gloo
             {{- end }}
-
-            # Wait for the enterprise job if present
-            kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout &> /dev/null
-            if [ $? -eq 0 ]
-            then
-              echo "Waiting for the enterprise resource rollout job to complete"
-              kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-ee-resource-rollout --timeout={{ .Values.gateway.rolloutJob.timeout }}s || exit 1
-            fi
 
             # apply Gloo Edge custom resources
             if [ $HAS_CUSTOM_RESOURCES == "true" ]

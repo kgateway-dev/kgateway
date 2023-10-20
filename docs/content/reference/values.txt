@@ -461,7 +461,7 @@
 |gateway.isolateVirtualHostsBySslConfig|bool|false|if true, Added support for the envoy.filters.listener.tls_inspector listener_filter when using the gateway.isolateVirtualHostsBySslConfig=true global setting.|
 |gateway.compressedProxySpec|bool||if true, enables compression for the Proxy CRD spec|
 |gateway.persistProxySpec|bool||Enable writing Proxy CRD to etcd. Disabled by default for performance.|
-|gateway.translateEmptyGateways|bool|false|If true, the gateways wil be translated into Envoy listeners even if no VirtualServices exist|
+|gateway.translateEmptyGateways|bool|false|This field is a no-op for now|
 |gateway.kubeResourceOverride.NAME|interface||override fields in the generated resource by specifying the yaml structure to override under the top-level key.|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
