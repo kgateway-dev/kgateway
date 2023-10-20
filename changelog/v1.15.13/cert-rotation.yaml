@@ -1,0 +1,18 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/solo-projects/issues/5252
+    resolvesIssue: false
+    description: >- 
+      Make cert rotation more resilient against downtime when mTLS is enabled, by updating
+      the certs in stages and waiting for changes to propagate. A new helm value `gateway.certGenJob.rotationDuration`
+      (default 65s) can be used the configure the duration to wait for each stage of cert rotation to complete. This
+      value must be tuned according to the performance of the specific environment in which the jobs are run.
+  - type: FIX
+    description: Certgen job will now renew existing certificate if it is expiring soon (90d by default).
+    issueLink: https://github.com/solo-io/gloo/issues/5944
+  - type: HELM
+    description: Add new certgen CronJob if validation webhook is enabled
+    issueLink: https://github.com/solo-io/gloo/issues/5944
+  - type: HELM
+    description: Add an option to enable `force-rotation` flag for certgen job
+    issueLink: https://github.com/solo-io/gloo/issues/5944
