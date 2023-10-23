@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var (

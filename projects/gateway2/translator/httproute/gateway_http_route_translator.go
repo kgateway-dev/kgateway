@@ -3,6 +3,7 @@ package httproute
 import (
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 

@@ -18,10 +18,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func NewBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass api.ObjectName, release, controllerName string, autoProvision bool, server string, port uint16) error {
+func NewBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass apiv1.ObjectName, release, controllerName string, autoProvision bool, server string, port uint16) error {
 	log := log.FromContext(ctx)
 	log.V(5).Info("starting controller", "controllerName", controllerName, "gwclass", gwclass)
 
@@ -66,7 +67,7 @@ type controllerBuilder struct {
 	server         string
 	port           uint16
 	mgr            manager.Manager
-	gwclass        api.ObjectName
+	gwclass        apiv1.ObjectName
 
 	reconciler *controllerReconciler
 }
@@ -94,8 +95,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	buildr := ctrl.NewControllerManagedBy(c.mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
-		For(&api.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
-			if gw, ok := object.(*api.Gateway); ok {
+		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
+			if gw, ok := object.(*apiv1.Gateway); ok {
 				return gw.Spec.GatewayClassName == c.gwclass
 			}
 			return false
@@ -140,13 +141,13 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 
 func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
 	return ctrl.NewControllerManagedBy(c.mgr).
-		For(&api.GatewayClass{}).
+		For(&apiv1.GatewayClass{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
 func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.mgr).
-		For(&api.HTTPRoute{}).
+		For(&apiv1.HTTPRoute{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
 	if err != nil {
 		return err
@@ -156,7 +157,7 @@ func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 
 func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
 	err := ctrl.NewControllerManagedBy(c.mgr).
-		For(&api.ReferenceGrant{}).
+		For(&apiv1beta1.ReferenceGrant{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileReferenceGrants))
 	if err != nil {
 		return err
@@ -174,20 +175,20 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
-func resolveNs(ns *api.Namespace) string {
+func resolveNs(ns *apiv1.Namespace) string {
 	if ns == nil {
 		return ""
 	}
 	return string(*ns)
 }
 
-func kind(obj client.Object) api.Kind {
+func kind(obj client.Object) apiv1.Kind {
 	t := reflect.TypeOf(obj)
 	if t.Kind() != reflect.Pointer {
 		panic("All types must be pointers to structs.")
 	}
 	t = t.Elem()
-	return api.Kind(t.Name())
+	return apiv1.Kind(t.Name())
 }
 
 type controllerReconciler struct {
@@ -211,7 +212,7 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
 	// if a gateway
-	gwclass := &api.GatewayClass{}
+	gwclass := &apiv1.GatewayClass{}
 	err := r.cli.Get(ctx, req.NamespacedName, gwclass)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -221,9 +222,9 @@ func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req 
 
 	// mark it as accepted:
 	condition := metav1.Condition{
-		Type:               string(api.GatewayClassConditionStatusAccepted),
+		Type:               string(apiv1.GatewayClassConditionStatusAccepted),
 		Status:             metav1.ConditionTrue,
-		Reason:             string(api.GatewayClassReasonAccepted),
+		Reason:             string(apiv1.GatewayClassReasonAccepted),
 		ObservedGeneration: gwclass.Generation,
 		// no need to set LastTransitionTime, it will be set automatically by SetStatusCondition
 	}

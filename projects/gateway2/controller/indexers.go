@@ -6,7 +6,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 const (
@@ -16,19 +17,19 @@ const (
 
 func IterateIndices(f func(client.Object, string, client.IndexerFunc) error) error {
 	return errors.Join(
-		f(&api.HTTPRoute{}, httpRouteTargetField, httpRouteToTargetIndexer),
-		f(&api.ReferenceGrant{}, referenceGrantFromField, refGrantFromIndexer),
+		f(&apiv1.HTTPRoute{}, httpRouteTargetField, httpRouteToTargetIndexer),
+		f(&apiv1beta1.ReferenceGrant{}, referenceGrantFromField, refGrantFromIndexer),
 	)
 }
 
 func httpRouteToTargetIndexer(obj client.Object) []string {
-	hr, ok := obj.(*api.HTTPRoute)
+	hr, ok := obj.(*apiv1.HTTPRoute)
 	if !ok {
 		panic(fmt.Sprintf("wrong type %T provided to indexer. expected HTTPRoute", obj))
 	}
 	var parents []string
 	for _, pRef := range hr.Spec.ParentRefs {
-		if pRef.Kind == nil || *pRef.Kind == kind(&api.Gateway{}) {
+		if pRef.Kind == nil || *pRef.Kind == kind(&apiv1.Gateway{}) {
 			ns := resolveNs(pRef.Namespace)
 			if ns == "" {
 				ns = hr.Namespace
@@ -44,7 +45,7 @@ func httpRouteToTargetIndexer(obj client.Object) []string {
 }
 
 func refGrantFromIndexer(obj client.Object) []string {
-	rg, ok := obj.(*api.ReferenceGrant)
+	rg, ok := obj.(*apiv1beta1.ReferenceGrant)
 	if !ok {
 		panic(fmt.Sprintf("wrong type %T provided to indexer. expected ReferenceGrant", obj))
 	}

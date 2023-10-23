@@ -1,26 +1,28 @@
 package listener
 
 import (
+	"sort"
+
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
-	"sort"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
+	// "sigs.k8s.io/gateway-api/apis/"
 )
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
-	gateway *v1beta1.Gateway,
-	routes map[string][]v1beta1.HTTPRoute,
+	gateway *gwv1.Gateway,
+	routes map[string][]gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway.Spec.Listeners, reporter.Gateway(gateway))
 	return mergeGWListeners(validatedListeners).translateListeners(routes, reporter)
 }
 
-func mergeGWListeners(listeners []v1beta1.Listener) *mergedListeners {
+func mergeGWListeners(listeners []gwv1.Listener) *mergedListeners {
 	ml := &mergedListeners{}
 	for _, listener := range listeners {
 		ml.append(listener)
@@ -32,7 +34,7 @@ type mergedListeners struct {
 	listeners []*mergedListener
 }
 
-func (ml *mergedListeners) appendHttpListener(listener v1beta1.Listener) {
+func (ml *mergedListeners) appendHttpListener(listener gwv1.Listener) {
 	parent := httpFilterChainParent{
 		gatewayListenerName: string(listener.Name),
 		host:                listener.Hostname,
@@ -65,7 +67,7 @@ func (ml *mergedListeners) appendHttpListener(listener v1beta1.Listener) {
 
 }
 
-func (ml *mergedListeners) appendHttpsListener(listener v1beta1.Listener) {
+func (ml *mergedListeners) appendHttpsListener(listener gwv1.Listener) {
 
 	// create a new filter chain for the listener
 	//protocol:            listener.Protocol,
@@ -93,18 +95,18 @@ func (ml *mergedListeners) appendHttpsListener(listener v1beta1.Listener) {
 	})
 }
 
-func (ml *mergedListeners) append(listener v1beta1.Listener) {
+func (ml *mergedListeners) append(listener gwv1.Listener) {
 
 	switch listener.Protocol {
-	case v1beta1.HTTPProtocolType:
+	case gwv1.HTTPProtocolType:
 		ml.appendHttpListener(listener)
-	case v1beta1.HTTPSProtocolType:
+	case gwv1.HTTPSProtocolType:
 		ml.appendHttpsListener(listener)
 		// TODO default handling
 	}
 }
 
-func (ml *mergedListeners) translateListeners(routes map[string][]v1beta1.HTTPRoute,
+func (ml *mergedListeners) translateListeners(routes map[string][]gwv1.HTTPRoute,
 	reporter reports.Reporter) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
@@ -116,14 +118,14 @@ func (ml *mergedListeners) translateListeners(routes map[string][]v1beta1.HTTPRo
 
 type mergedListener struct {
 	name              string
-	port              v1beta1.PortNumber
+	port              gwv1.PortNumber
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
 	// TODO(policy via http listener options)
 }
 
 func (ml *mergedListener) translateListener(
-	routes map[string][]v1beta1.HTTPRoute,
+	routes map[string][]gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) *v1.Listener {
 
@@ -177,12 +179,12 @@ type httpFilterChain struct {
 
 type httpFilterChainParent struct {
 	gatewayListenerName string
-	host                *v1beta1.Hostname
+	host                *gwv1.Hostname
 }
 
 func (mfc *httpFilterChain) translateFilterChain(
 	parentName string,
-	routes []v1beta1.HTTPRoute,
+	routes []gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
@@ -212,14 +214,14 @@ func (mfc *httpFilterChain) translateFilterChain(
 // In the case where no GW Listener merging takes place, every listener will use a Gloo AggregatedListeener with 1 HTTP filter chain.
 type httpsFilterChain struct {
 	gatewayListenerName string
-	host                *v1beta1.Hostname
-	protocol            v1beta1.ProtocolType
-	tls                 *v1beta1.GatewayTLSConfig
+	host                *gwv1.Hostname
+	protocol            gwv1.ProtocolType
+	tls                 *gwv1.GatewayTLSConfig
 }
 
 func (mfc *httpsFilterChain) translateFilterChain(
 	parentName string,
-	routes []v1beta1.HTTPRoute,
+	routes []gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
@@ -244,7 +246,7 @@ func (mfc *httpsFilterChain) translateFilterChain(
 	}, virtualHosts
 }
 
-func translateSslConfig(tls *v1beta1.GatewayTLSConfig) *ssl.SslConfig {
+func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
 	return &ssl.SslConfig{
 		SslSecrets:                    nil,
 		SniDomains:                    nil,
@@ -260,13 +262,13 @@ func translateSslConfig(tls *v1beta1.GatewayTLSConfig) *ssl.SslConfig {
 
 // TODO: cross-listener validation
 // return valid for translation
-func validateGateway(gateway *v1beta1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
+func validateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
 
 	return true
 }
 
 // TODO: cross-listener validation
-func validateListeners(listeners []v1beta1.Listener, gwReporter reports.GatewayReporter) []v1beta1.Listener {
+func validateListeners(listeners []gwv1.Listener, gwReporter reports.GatewayReporter) []gwv1.Listener {
 
 	// gateway must contain at least 1 listener
 	if len(listeners) == 0 {

@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	api "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type gatewayPort struct {

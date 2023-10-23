@@ -12,7 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 var (
@@ -33,7 +34,7 @@ type ControllerConfig struct {
 func NewScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
-		api.AddToScheme, corev1.AddToScheme, appsv1.AddToScheme,
+		apiv1.AddToScheme, apiv1beta1.AddToScheme, corev1.AddToScheme, appsv1.AddToScheme,
 	} {
 		if err := f(scheme); err != nil {
 			setupLog.Error(err, "unable to add scheme")
@@ -71,7 +72,7 @@ func Start(cfg ControllerConfig) {
 
 	ctx := signals.SetupSignalHandler()
 
-	var gatewayClassName api.ObjectName = api.ObjectName(cfg.GatewayClassName)
+	var gatewayClassName apiv1.ObjectName = apiv1.ObjectName(cfg.GatewayClassName)
 	err = NewBaseGatewayController(ctx, mgr, gatewayClassName, cfg.Release, cfg.GatewayControllerName, cfg.AutoProvision, cfg.XdsServer, cfg.XdsPort)
 
 	if err != nil {

@@ -2,12 +2,14 @@ package translator
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
+	"istio.io/api/networking/v1beta1"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // K8sGwTranslator This translator Translates K8s Gateway resources into Gloo Edege Proxies.

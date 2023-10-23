@@ -13,7 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 var _ = Describe("Query", func() {
@@ -36,9 +37,9 @@ var _ = Describe("Query", func() {
 			fakeClient := fake.NewFakeClient(svc("default"))
 
 			gq := controller.NewData(fakeClient, controller.NewScheme())
-			ref := &api.HTTPBackendRef{
-				BackendRef: api.BackendRef{
-					BackendObjectReference: api.BackendObjectReference{
+			ref := &apiv1.HTTPBackendRef{
+				BackendRef: apiv1.BackendRef{
+					BackendObjectReference: apiv1.BackendObjectReference{
 						Name: "foo",
 					},
 				},
@@ -54,9 +55,9 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
 			gq := controller.NewData(fakeClient, scheme)
-			ref := &api.HTTPBackendRef{
-				BackendRef: api.BackendRef{
-					BackendObjectReference: api.BackendObjectReference{
+			ref := &apiv1.HTTPBackendRef{
+				BackendRef: apiv1.BackendRef{
+					BackendObjectReference: apiv1.BackendObjectReference{
 						Name:      "foo",
 						Namespace: nsptr("default2"),
 					},
@@ -73,9 +74,9 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(rg).Build()
 			gq := controller.NewData(fakeClient, scheme)
-			ref := &api.HTTPBackendRef{
-				BackendRef: api.BackendRef{
-					BackendObjectReference: api.BackendObjectReference{
+			ref := &apiv1.HTTPBackendRef{
+				BackendRef: apiv1.BackendRef{
+					BackendObjectReference: apiv1.BackendObjectReference{
 						Name:      "foo",
 						Namespace: nsptr("default2"),
 					},
@@ -87,36 +88,36 @@ var _ = Describe("Query", func() {
 		})
 
 		It("should fail getting a service with ref grant with wrong from", func() {
-			ref := &api.HTTPBackendRef{
-				BackendRef: api.BackendRef{
-					BackendObjectReference: api.BackendObjectReference{
+			ref := &apiv1.HTTPBackendRef{
+				BackendRef: apiv1.BackendRef{
+					BackendObjectReference: apiv1.BackendObjectReference{
 						Name:      "foo",
 						Namespace: nsptr("default2"),
 					},
 				},
 			}
-			rg := &api.ReferenceGrant{
+			rg := &apiv1beta1.ReferenceGrant{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default2",
 					Name:      "foo",
 				},
-				Spec: api.ReferenceGrantSpec{
-					From: []api.ReferenceGrantFrom{
+				Spec: apiv1beta1.ReferenceGrantSpec{
+					From: []apiv1beta1.ReferenceGrantFrom{
 						{
-							Group:     api.Group("gateway.networking.k8s.io"),
-							Kind:      api.Kind("NotGateway"),
-							Namespace: api.Namespace("default"),
+							Group:     apiv1.Group("gateway.networking.k8s.io"),
+							Kind:      apiv1.Kind("NotGateway"),
+							Namespace: apiv1.Namespace("default"),
 						},
 						{
-							Group:     api.Group("gateway.networking.k8s.io"),
-							Kind:      api.Kind("Gateway"),
-							Namespace: api.Namespace("default2"),
+							Group:     apiv1.Group("gateway.networking.k8s.io"),
+							Kind:      apiv1.Kind("Gateway"),
+							Namespace: apiv1.Namespace("default2"),
 						},
 					},
-					To: []api.ReferenceGrantTo{
+					To: []apiv1beta1.ReferenceGrantTo{
 						{
-							Group: api.Group("core"),
-							Kind:  api.Kind("Service"),
+							Group: apiv1.Group("core"),
+							Kind:  apiv1.Kind("Service"),
 						},
 					},
 				},
@@ -132,9 +133,9 @@ var _ = Describe("Query", func() {
 		It("should fail getting a service with no ref grant", func() {
 			fakeClient := builder.WithObjects(svc("default3")).Build()
 			gq := controller.NewData(fakeClient, scheme)
-			ref := &api.HTTPBackendRef{
-				BackendRef: api.BackendRef{
-					BackendObjectReference: api.BackendObjectReference{
+			ref := &apiv1.HTTPBackendRef{
+				BackendRef: apiv1.BackendRef{
+					BackendObjectReference: apiv1.BackendObjectReference{
 						Name:      "foo",
 						Namespace: nsptr("default3"),
 					},
@@ -150,9 +151,9 @@ var _ = Describe("Query", func() {
 			fakeClient := builder.WithObjects(svc("default3"), rg).Build()
 
 			gq := controller.NewData(fakeClient, scheme)
-			ref := &api.HTTPBackendRef{
-				BackendRef: api.BackendRef{
-					BackendObjectReference: api.BackendObjectReference{
+			ref := &apiv1.HTTPBackendRef{
+				BackendRef: apiv1.BackendRef{
+					BackendObjectReference: apiv1.BackendObjectReference{
 						Name:      "foo",
 						Namespace: nsptr("default3"),
 					},
@@ -170,7 +171,7 @@ var _ = Describe("Query", func() {
 			rg := refGrantSecret()
 			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
 			gq := controller.NewData(fakeClient, scheme)
-			ref := &api.SecretObjectReference{
+			ref := &apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
 			}
@@ -186,14 +187,14 @@ var _ = Describe("Query", func() {
 
 		It("should get http routes for listener", func() {
 			gwWithListener := gw()
-			gwWithListener.Spec.Listeners = []api.Listener{
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: api.HTTPProtocolType,
+					Protocol: apiv1.HTTPProtocolType,
 				},
 			}
 			hr := httpRoute()
-			hr.Spec.ParentRefs = []api.ParentReference{
+			hr.Spec.ParentRefs = []apiv1.ParentReference{
 				{
 					Name: "test",
 				},
@@ -210,13 +211,13 @@ var _ = Describe("Query", func() {
 
 		It("should get http routes in other ns for listener", func() {
 			gwWithListener := gw()
-			all := api.NamespacesFromAll
-			gwWithListener.Spec.Listeners = []api.Listener{
+			all := apiv1.NamespacesFromAll
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
 				{
 					Name:     "foo",
-					Protocol: api.HTTPProtocolType,
-					AllowedRoutes: &api.AllowedRoutes{
-						Namespaces: &api.RouteNamespaces{
+					Protocol: apiv1.HTTPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Namespaces: &apiv1.RouteNamespaces{
 							From: &all,
 						},
 					},
@@ -224,10 +225,10 @@ var _ = Describe("Query", func() {
 			}
 			hr := httpRoute()
 			hr.Namespace = "default2"
-			hr.Spec.ParentRefs = []api.ParentReference{
+			hr.Spec.ParentRefs = []apiv1.ParentReference{
 				{
-					Name: "test",
-                    Namespace: nsptr("default"),
+					Name:      "test",
+					Namespace: nsptr("default"),
 				},
 			}
 
@@ -242,55 +243,55 @@ var _ = Describe("Query", func() {
 	})
 })
 
-func refGrantSecret() *api.ReferenceGrant {
-	return &api.ReferenceGrant{
+func refGrantSecret() *apiv1beta1.ReferenceGrant {
+	return &apiv1beta1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: api.ReferenceGrantSpec{
-			From: []api.ReferenceGrantFrom{
+		Spec: apiv1beta1.ReferenceGrantSpec{
+			From: []apiv1beta1.ReferenceGrantFrom{
 				{
-					Group:     api.Group("gateway.networking.k8s.io"),
-					Kind:      api.Kind("Gateway"),
-					Namespace: api.Namespace("default"),
+					Group:     apiv1.Group("gateway.networking.k8s.io"),
+					Kind:      apiv1.Kind("Gateway"),
+					Namespace: apiv1.Namespace("default"),
 				},
 			},
-			To: []api.ReferenceGrantTo{
+			To: []apiv1beta1.ReferenceGrantTo{
 				{
-					Group: api.Group("core"),
-					Kind:  api.Kind("Secret"),
+					Group: apiv1.Group("core"),
+					Kind:  apiv1.Kind("Secret"),
 				},
 			},
 		},
 	}
 }
-func refGrant() *api.ReferenceGrant {
-	return &api.ReferenceGrant{
+func refGrant() *apiv1beta1.ReferenceGrant {
+	return &apiv1beta1.ReferenceGrant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default2",
 			Name:      "foo",
 		},
-		Spec: api.ReferenceGrantSpec{
-			From: []api.ReferenceGrantFrom{
+		Spec: apiv1beta1.ReferenceGrantSpec{
+			From: []apiv1beta1.ReferenceGrantFrom{
 				{
-					Group:     api.Group("gateway.networking.k8s.io"),
-					Kind:      api.Kind("HTTPRoute"),
-					Namespace: api.Namespace("default"),
+					Group:     apiv1.Group("gateway.networking.k8s.io"),
+					Kind:      apiv1.Kind("HTTPRoute"),
+					Namespace: apiv1.Namespace("default"),
 				},
 			},
-			To: []api.ReferenceGrantTo{
+			To: []apiv1beta1.ReferenceGrantTo{
 				{
-					Group: api.Group("core"),
-					Kind:  api.Kind("Service"),
+					Group: apiv1.Group("core"),
+					Kind:  apiv1.Kind("Service"),
 				},
 			},
 		},
 	}
 }
 
-func httpRoute() *api.HTTPRoute {
-	return &api.HTTPRoute{
+func httpRoute() *apiv1.HTTPRoute {
+	return &apiv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
@@ -299,8 +300,8 @@ func httpRoute() *api.HTTPRoute {
 
 }
 
-func gw() *api.Gateway {
-	return &api.Gateway{
+func gw() *apiv1.Gateway {
+	return &apiv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "test",
@@ -327,7 +328,7 @@ func svc(ns string) *corev1.Service {
 	}
 }
 
-func nsptr(s string) *api.Namespace {
-	var ns api.Namespace = api.Namespace(s)
+func nsptr(s string) *apiv1.Namespace {
+	var ns apiv1.Namespace = apiv1.Namespace(s)
 	return &ns
 }

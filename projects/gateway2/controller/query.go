@@ -12,7 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	api "sigs.k8s.io/gateway-api/apis/v1beta1"
+	apiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
 var (
@@ -21,13 +22,13 @@ var (
 
 type GatewayQueries interface {
 	// Returns map of listener names -> list of http routes.
-	GetRoutesForGw(ctx context.Context, gw *api.Gateway) (map[string][]api.HTTPRoute, error)
+	GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (map[string][]apiv1.HTTPRoute, error)
 	// Given a backendRef that resides in namespace obj, return the service that backs it.
 	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
 	// return value depends on the group/kind in the backendRef.
-	GetBackendForRef(ctx context.Context, obj client.Object, backendRef *api.HTTPBackendRef) (client.Object, error)
+	GetBackendForRef(ctx context.Context, obj client.Object, backendRef *apiv1.HTTPBackendRef) (client.Object, error)
 
-	GetSecretForRef(ctx context.Context, obj client.Object, secretRef *api.SecretObjectReference) (client.Object, error)
+	GetSecretForRef(ctx context.Context, obj client.Object, secretRef *apiv1.SecretObjectReference) (client.Object, error)
 }
 
 func NewData(c client.Client, scheme *runtime.Scheme) GatewayQueries {
@@ -41,13 +42,13 @@ type gatewayQueries struct {
 
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
 
-	var list api.ReferenceGrantList
+	var list apiv1beta1.ReferenceGrantList
 	err := r.client.List(ctx, &list, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(referenceGrantFromField, fromns)})
 	if err != nil {
 		return false, err
 	}
 	// filter out just ref grants in tons
-	var refGrants []api.ReferenceGrant
+	var refGrants []apiv1beta1.ReferenceGrant
 	for _, rg := range list.Items {
 		if rg.Namespace != tons {
 			continue
@@ -58,14 +59,14 @@ func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.Group
 	return ReferenceAllowed(ctx, from, fromns, to, toname, refGrants), nil
 }
 
-func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (map[string][]api.HTTPRoute, error) {
+func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (map[string][]apiv1.HTTPRoute, error) {
 	nns := types.NamespacedName{
 		Namespace: gw.Namespace,
 		Name:      gw.Name,
 	}
 
-	var hrlist api.HTTPRouteList
-	ret := map[string][]api.HTTPRoute{}
+	var hrlist apiv1.HTTPRouteList
+	ret := map[string][]apiv1.HTTPRoute{}
 	for _, l := range gw.Spec.Listeners {
 		if _, ok := ret[string(l.Name)]; ok {
 			return nil, fmt.Errorf("duplicate listener name %s", l.Name)
@@ -74,15 +75,15 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 		var allowedKinds []metav1.GroupKind
 
 		switch l.Protocol {
-		case api.HTTPSProtocolType:
+		case apiv1.HTTPSProtocolType:
 			fallthrough
-		case api.HTTPProtocolType:
-			allowedKinds = []metav1.GroupKind{{Kind: string(kind(&api.HTTPRoute{})), Group: "gateway.networking.k8s.io"}}
-		case api.TLSProtocolType:
+		case apiv1.HTTPProtocolType:
+			allowedKinds = []metav1.GroupKind{{Kind: string(kind(&apiv1.HTTPRoute{})), Group: "gateway.networking.k8s.io"}}
+		case apiv1.TLSProtocolType:
 			fallthrough
-		case api.TCPProtocolType:
+		case apiv1.TCPProtocolType:
 			allowedKinds = []metav1.GroupKind{{}}
-		case api.UDPProtocolType:
+		case apiv1.UDPProtocolType:
 			allowedKinds = []metav1.GroupKind{{}}
 		}
 
@@ -102,9 +103,9 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 			}
 			if ar.Namespaces != nil && ar.Namespaces.From != nil {
 				switch *ar.Namespaces.From {
-				case api.NamespacesFromAll:
+				case apiv1.NamespacesFromAll:
 					allowedNs = AllNamespace()
-				case api.NamespacesFromSelector:
+				case apiv1.NamespacesFromSelector:
 					if ar.Namespaces.Selector == nil {
 						return nil, fmt.Errorf("selector must be set")
 					}
@@ -118,7 +119,7 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 			}
 		}
 		if isHttpRouteAllowed(allowedKinds) {
-			var result []api.HTTPRoute
+			var result []apiv1.HTTPRoute
 			if hrlist.Items == nil {
 				err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(httpRouteTargetField, nns.String())})
 				if err != nil {
@@ -139,7 +140,7 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *api.Gateway) (m
 	return ret, nil
 }
 
-func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object, secretRef *api.SecretObjectReference) (client.Object, error) {
+func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object, secretRef *apiv1.SecretObjectReference) (client.Object, error) {
 	secretKind := "Secret"
 	secretGroup := ""
 
@@ -154,7 +155,7 @@ func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object,
 	return r.getRef(ctx, obj, string(secretRef.Name), secretRef.Namespace, secretGK)
 }
 
-func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object, backend *api.HTTPBackendRef) (client.Object, error) {
+func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object, backend *apiv1.HTTPBackendRef) (client.Object, error) {
 	backendKind := "Service"
 	backendGroup := ""
 
@@ -169,7 +170,7 @@ func (r *gatewayQueries) GetBackendForRef(ctx context.Context, obj client.Object
 	return r.getRef(ctx, obj, string(backend.Name), backend.Namespace, backendGK)
 }
 
-func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backendName string, backendNS *api.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
+func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backendName string, backendNS *apiv1.Namespace, backendGK metav1.GroupKind) (client.Object, error) {
 
 	gvks, isUnversioned, err := r.scheme.ObjectKinds(from)
 
@@ -228,7 +229,7 @@ func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backend
 func isHttpRouteAllowed(allowedKinds []metav1.GroupKind) bool {
 
 	for _, k := range allowedKinds {
-		if (k.Group != "" || k.Group == "gateway.networking.k8s.io") && k.Kind == string(kind(&api.HTTPRoute{})) {
+		if (k.Group != "" || k.Group == "gateway.networking.k8s.io") && k.Kind == string(kind(&apiv1.HTTPRoute{})) {
 			return true
 		}
 	}
@@ -256,7 +257,7 @@ func (r *gatewayQueries) NamespaceSelector(sel labels.Selector) func(string) boo
 	}
 }
 
-func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []api.ReferenceGrant) bool {
+func ReferenceAllowed(ctx context.Context, fromgk metav1.GroupKind, fromns string, togk metav1.GroupKind, toname string, grantsInToNs []apiv1beta1.ReferenceGrant) bool {
 	for _, refGrant := range grantsInToNs {
 		for _, from := range refGrant.Spec.From {
 			if string(from.Namespace) != fromns {
