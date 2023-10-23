@@ -2152,15 +2152,15 @@ func (m *BasicAuth_EncryptionType) Clone() proto.Message {
 
 	switch m.Algorithm.(type) {
 
-	case *BasicAuth_EncryptionType_Apr:
+	case *BasicAuth_EncryptionType_Apr_:
 
 		if h, ok := interface{}(m.GetApr()).(clone.Cloner); ok {
-			target.Algorithm = &BasicAuth_EncryptionType_Apr{
-				Apr: h.Clone().(*BasicAuth_Apr),
+			target.Algorithm = &BasicAuth_EncryptionType_Apr_{
+				Apr: h.Clone().(*BasicAuth_EncryptionType_Apr),
 			}
 		} else {
-			target.Algorithm = &BasicAuth_EncryptionType_Apr{
-				Apr: proto.Clone(m.GetApr()).(*BasicAuth_Apr),
+			target.Algorithm = &BasicAuth_EncryptionType_Apr_{
+				Apr: proto.Clone(m.GetApr()).(*BasicAuth_EncryptionType_Apr),
 			}
 		}
 
@@ -2242,6 +2242,17 @@ func (m *BasicAuth_EncryptionType_Sha1) Clone() proto.Message {
 		return target
 	}
 	target = &BasicAuth_EncryptionType_Sha1{}
+
+	return target
+}
+
+// Clone function
+func (m *BasicAuth_EncryptionType_Apr) Clone() proto.Message {
+	var target *BasicAuth_EncryptionType_Apr
+	if m == nil {
+		return target
+	}
+	target = &BasicAuth_EncryptionType_Apr{}
 
 	return target
 }

@@ -3576,8 +3576,8 @@ func (m *BasicAuth_EncryptionType) Equal(that interface{}) bool {
 
 	switch m.Algorithm.(type) {
 
-	case *BasicAuth_EncryptionType_Apr:
-		if _, ok := target.Algorithm.(*BasicAuth_EncryptionType_Apr); !ok {
+	case *BasicAuth_EncryptionType_Apr_:
+		if _, ok := target.Algorithm.(*BasicAuth_EncryptionType_Apr_); !ok {
 			return false
 		}
 
@@ -3730,6 +3730,30 @@ func (m *BasicAuth_EncryptionType_Sha1) Equal(that interface{}) bool {
 	target, ok := that.(*BasicAuth_EncryptionType_Sha1)
 	if !ok {
 		that2, ok := that.(BasicAuth_EncryptionType_Sha1)
+		if ok {
+			target = &that2
+		} else {
+			return false
+		}
+	}
+	if target == nil {
+		return m == nil
+	} else if m == nil {
+		return false
+	}
+
+	return true
+}
+
+// Equal function
+func (m *BasicAuth_EncryptionType_Apr) Equal(that interface{}) bool {
+	if that == nil {
+		return m == nil
+	}
+
+	target, ok := that.(*BasicAuth_EncryptionType_Apr)
+	if !ok {
+		that2, ok := that.(BasicAuth_EncryptionType_Apr)
 		if ok {
 			target = &that2
 		} else {

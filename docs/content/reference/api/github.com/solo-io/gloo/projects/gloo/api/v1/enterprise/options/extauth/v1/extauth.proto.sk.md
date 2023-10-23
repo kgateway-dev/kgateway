@@ -28,6 +28,7 @@ weight: 5
 - [SaltedHashedPassword](#saltedhashedpassword)
 - [EncryptionType](#encryptiontype)
 - [Sha1](#sha1)
+- [Apr](#apr)
 - [User](#user)
 - [UserList](#userlist)
 - [HmacAuth](#hmacauth)
@@ -483,14 +484,14 @@ This is used with custom auth servers.
 
 
 ```yaml
-"apr": .enterprise.gloo.solo.io.BasicAuth.Apr
+"apr": .enterprise.gloo.solo.io.BasicAuth.EncryptionType.Apr
 "sha1": .enterprise.gloo.solo.io.BasicAuth.EncryptionType.Sha1
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) | When Apr message is used here, no users should be defined. They should be defined in the users field. Only one of `apr` or `sha1` can be set. |
+| `apr` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType.Apr](../extauth.proto.sk/#apr) | When Apr message is used here, no users should be defined. They should be defined in the users field. Only one of `apr` or `sha1` can be set. |
 | `sha1` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr` can be set. |
 
 
@@ -498,6 +499,21 @@ This is used with custom auth servers.
 
 ---
 ### Sha1
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+
+
+
+
+---
+### Apr
 
 
 

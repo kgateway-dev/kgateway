@@ -176,16 +176,6 @@ spec:
                         encryption:
                           properties:
                             apr:
-                              properties:
-                                users:
-                                  additionalProperties:
-                                    properties:
-                                      hashedPassword:
-                                        type: string
-                                      salt:
-                                        type: string
-                                    type: object
-                                  type: object
                               type: object
                             sha1:
                               type: object

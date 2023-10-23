@@ -269,6 +269,7 @@ message BasicAuth {
     
     message EncryptionType {
         message Sha1 {}
+        message Apr {}
         oneof algorithm {
             // When Apr message is used here, no users should be defined. They should be defined in the users field
             Apr apr = 1;
