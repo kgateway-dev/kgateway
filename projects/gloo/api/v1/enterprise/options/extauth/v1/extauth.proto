@@ -257,38 +257,55 @@ message AuthPlugin {
 message BasicAuth {
     string realm = 1;
 
+    // This is the legacy/simple basic auth config. It supports the APR hashing algorithm and an inline userlist.
+    // If apr is defined, encryption and user_source must not be defined.
     message Apr {
+        // Message to store the salt and salted hashed password for a user
         message SaltedHashedPassword {
+            // Salt used with the apr algorithm for the user
             string salt = 1;
+            // Salted and hashed password for the user
             string hashed_password = 2;
         }
+        // Map of valid username to stored credentials
         map<string, SaltedHashedPassword> users = 2;
     }
     Apr apr = 2;
 
-    
+    // Below here is the "extended" basic auth config. Hashing algorithm and user source are independent and configurable.AccessToken
+    // It is required to define exactly one of "apr" and ("encryption" + "user_source")
+
+    // The encryption/hashing algorithm to use to store the password
     message EncryptionType {
+        // Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
         message Sha1 {}
+        // Apache specific iterated MD5 hashing: (https://httpd.apache.org/docs/2.4/misc/password_encryptions.html)
         message Apr {}
         oneof algorithm {
-            // When Apr message is used here, no users should be defined. They should be defined in the users field
             Apr apr = 1;
             Sha1 sha1 = 2;
         }
     }
 
+    // The encryption type to use to store the password on the server
+    // If encryption is defined user_source must be defined and the top level apr field must not be defined
     EncryptionType encryption = 3;
 
+    // Message to store user data. We need the salt and salted hashed password for each user
     message User {
+        // Salt used with the hashing algorithm for the user
         string salt = 1;
+        // Salted and hashed password for the user
         string hashed_password = 2;
     }
 
+     // Map of valid usernames to stored credentials
     message UserList {
         map<string, User> users= 1;
     }
 
-    // create new types to add here
+     // Source of user credential data
+     // If user_source is defined encryption must be defined and the top level apr field must not be defined
     oneof user_source {
         UserList user_list = 4;
     }

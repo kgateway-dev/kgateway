@@ -436,7 +436,7 @@ This is used with custom auth servers.
 | ----- | ---- | ----------- | 
 | `realm` | `string` |  |
 | `apr` | [.enterprise.gloo.solo.io.BasicAuth.Apr](../extauth.proto.sk/#apr) |  |
-| `encryption` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType](../extauth.proto.sk/#encryptiontype) |  |
+| `encryption` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType](../extauth.proto.sk/#encryptiontype) | The encryption type to use to store the password on the server If encryption is defined user_source must be defined and the top level apr field must not be defined. |
 | `userList` | [.enterprise.gloo.solo.io.BasicAuth.UserList](../extauth.proto.sk/#userlist) |  |
 
 
@@ -445,7 +445,9 @@ This is used with custom auth servers.
 ---
 ### Apr
 
-
+ 
+This is the legacy/simple basic auth config. It supports the APR hashing algorithm and an inline userlist.
+If apr is defined, encryption and user_source must not be defined.
 
 ```yaml
 "users": map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>
@@ -454,7 +456,7 @@ This is used with custom auth servers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>` |  |
+| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>` | Map of valid username to stored credentials. |
 
 
 
@@ -462,7 +464,8 @@ This is used with custom auth servers.
 ---
 ### SaltedHashedPassword
 
-
+ 
+Message to store the salt and salted hashed password for a user
 
 ```yaml
 "salt": string
@@ -472,8 +475,8 @@ This is used with custom auth servers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `salt` | `string` |  |
-| `hashedPassword` | `string` |  |
+| `salt` | `string` | Salt used with the apr algorithm for the user. |
+| `hashedPassword` | `string` | Salted and hashed password for the user. |
 
 
 
@@ -481,7 +484,8 @@ This is used with custom auth servers.
 ---
 ### EncryptionType
 
-
+ 
+The encryption/hashing algorithm to use to store the password
 
 ```yaml
 "apr": .enterprise.gloo.solo.io.BasicAuth.EncryptionType.Apr
@@ -491,7 +495,7 @@ This is used with custom auth servers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `apr` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType.Apr](../extauth.proto.sk/#apr) | When Apr message is used here, no users should be defined. They should be defined in the users field. Only one of `apr` or `sha1` can be set. |
+| `apr` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType.Apr](../extauth.proto.sk/#apr) |  Only one of `apr` or `sha1` can be set. |
 | `sha1` | [.enterprise.gloo.solo.io.BasicAuth.EncryptionType.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr` can be set. |
 
 
@@ -500,7 +504,8 @@ This is used with custom auth servers.
 ---
 ### Sha1
 
-
+ 
+Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
 
 ```yaml
 
@@ -515,7 +520,8 @@ This is used with custom auth servers.
 ---
 ### Apr
 
-
+ 
+Apache specific iterated MD5 hashing: (https://httpd.apache.org/docs/2.4/misc/password_encryptions.html)
 
 ```yaml
 
@@ -530,7 +536,8 @@ This is used with custom auth servers.
 ---
 ### User
 
-
+ 
+Message to store user data. We need the salt and salted hashed password for each user
 
 ```yaml
 "salt": string
@@ -540,8 +547,8 @@ This is used with custom auth servers.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `salt` | `string` |  |
-| `hashedPassword` | `string` |  |
+| `salt` | `string` | Salt used with the hashing algorithm for the user. |
+| `hashedPassword` | `string` | Salted and hashed password for the user. |
 
 
 
@@ -549,7 +556,8 @@ This is used with custom auth servers.
 ---
 ### UserList
 
-
+ 
+Map of valid usernames to stored credentials
 
 ```yaml
 "users": map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>
