@@ -3,12 +3,15 @@ package controller
 import (
 	"os"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	api "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
@@ -18,13 +21,19 @@ var (
 
 type ControllerConfig struct {
 	// The name of the GatewayClass to watch for
-	GatewayClassName string
+	GatewayClassName      string
+	GatewayControllerName string
+	Release               string
+	AutoProvision         bool
+	XdsServer             string
+	XdsPort               uint16
+	Dev                   bool
 }
 
 func NewScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	for _, f := range []func(*runtime.Scheme) error{
-		api.AddToScheme, corev1.AddToScheme,
+		api.AddToScheme, corev1.AddToScheme, appsv1.AddToScheme,
 	} {
 		if err := f(scheme); err != nil {
 			setupLog.Error(err, "unable to add scheme")
@@ -36,16 +45,34 @@ func NewScheme() *runtime.Scheme {
 }
 
 func Start(cfg ControllerConfig) {
-	ctrl.SetLogger(zap.New())
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{Scheme: NewScheme()})
+	var opts []zap.Opts
+	if cfg.Dev {
+		setupLog.Info("starting log in dev mode")
+		opts = append(opts, zap.UseDevMode(true))
+	}
+	ctrl.SetLogger(zap.New(opts...))
+	mgrOpts := ctrl.Options{
+		Scheme:           NewScheme(),
+		PprofBindAddress: "127.0.0.1:9099",
+		// if you change the port here, also change the port "health" in the helmchart.
+		HealthProbeBindAddress: ":9091",
+		Metrics: metricsserver.Options{
+			BindAddress: ":9090",
+		},
+	}
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), mgrOpts)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	// TODO: replace this with something that checks that we have xds snapshot ready (or that we don't need one).
+	mgr.AddReadyzCheck("ready-ping", healthz.Ping)
+
 	ctx := signals.SetupSignalHandler()
 
 	var gatewayClassName api.ObjectName = api.ObjectName(cfg.GatewayClassName)
-	err = newBaseGatewayController(ctx, mgr, gatewayClassName)
+	err = NewBaseGatewayController(ctx, mgr, gatewayClassName, cfg.Release, cfg.GatewayControllerName, cfg.AutoProvision, cfg.XdsServer, cfg.XdsPort)
 
 	if err != nil {
 		setupLog.Error(err, "unable to create controller")

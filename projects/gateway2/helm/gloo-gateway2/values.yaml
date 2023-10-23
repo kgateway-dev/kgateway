@@ -5,10 +5,13 @@
 gatewayClass:
   className: solo-gateway
   controllerName: solo.io/gloo-gateway2
-  
+
+develop: false
+
 controlPlane:
   enabled: true
   replicaCount: 1
+  autoProvision: true
 
   nameOverride: ""
   fullnameOverride: ""
@@ -36,17 +39,17 @@ controlPlane:
   podSecurityContext: {}
     # fsGroup: 2000
 
-  securityContext: {}
-    # capabilities:
-    #   drop:
-    #   - ALL
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
     # readOnlyRootFilesystem: true
-    # runAsNonRoot: true
-    # runAsUser: 1000
+    runAsNonRoot: true
+    runAsUser: 10101
 
   service:
     type: ClusterIP
-    port: 80
+    port: 8080
 
   resources: {}
     # We usually recommend not to specify default resources and to leave this as a conscious
@@ -69,7 +72,12 @@ controlPlane:
 
 gateway:
   enabled: true
+  nameOverride: ""
+  fullnameOverride: ""
   createGateway: true
+  xds:
+    host: ""
+    port: 8080
   create: true
   replicaCount: 1
   resources: {}
@@ -94,6 +102,9 @@ gateway:
     tag: "v1.27.1"
   securityContext:
     allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 10101
     capabilities:
       drop:
         - ALL

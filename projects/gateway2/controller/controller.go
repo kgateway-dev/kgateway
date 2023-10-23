@@ -2,13 +2,17 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
+	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -17,13 +21,20 @@ import (
 	api "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func newBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass api.ObjectName) error {
+func NewBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass api.ObjectName, release, controllerName string, autoProvision bool, server string, port uint16) error {
+	log := log.FromContext(ctx)
+	log.V(5).Info("starting controller", "controllerName", controllerName, "gwclass", gwclass)
 
 	controllerBuilder := &controllerBuilder{
-		mgr:     mgr,
-		gwclass: gwclass,
-		reconciler: &gatewayReconciler{
-			Client: mgr.GetClient(),
+		controllerName: controllerName,
+		release:        release,
+		autoProvision:  autoProvision,
+		server:         server,
+		port:           port,
+		mgr:            mgr,
+		gwclass:        gwclass,
+		reconciler: &controllerReconciler{
+			cli:    mgr.GetClient(),
 			scheme: mgr.GetScheme(),
 		},
 	}
@@ -34,6 +45,7 @@ func newBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass 
 		controllerBuilder.watchHttpRoute,
 		controllerBuilder.watchReferenceGrant,
 		controllerBuilder.watchNamespaces,
+		controllerBuilder.addIndexes,
 	)
 
 }
@@ -48,10 +60,15 @@ func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 }
 
 type controllerBuilder struct {
-	mgr     manager.Manager
-	gwclass api.ObjectName
+	controllerName string
+	release        string
+	autoProvision  bool
+	server         string
+	port           uint16
+	mgr            manager.Manager
+	gwclass        api.ObjectName
 
-	reconciler *gatewayReconciler
+	reconciler *controllerReconciler
 }
 
 func (c *controllerBuilder) addIndexes(ctx context.Context) error {
@@ -61,15 +78,64 @@ func (c *controllerBuilder) addIndexes(ctx context.Context) error {
 }
 
 func (c *controllerBuilder) watchGw(ctx context.Context) error {
-	return ctrl.NewControllerManagedBy(c.mgr).
-		For(&api.Gateway{}).
-		WithEventFilter(predicate.NewPredicateFuncs(func(object client.Object) bool {
+	// setup a deployer
+	log := log.FromContext(ctx)
+
+	log.Info("creating deployer", "ctrlname", c.controllerName, "server", c.server, "port", c.port)
+	d, err := deployer.NewDeployer(c.mgr.GetScheme(), c.release, c.controllerName, c.server, c.port)
+	if err != nil {
+		return err
+	}
+
+	gvks, err := d.GetGvksToWatch(ctx)
+	if err != nil {
+		return err
+	}
+
+	buildr := ctrl.NewControllerManagedBy(c.mgr).
+		// Don't use WithEventFilter here as it also filters events for Owned objects.
+		For(&api.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			if gw, ok := object.(*api.Gateway); ok {
 				return gw.Spec.GatewayClassName == c.gwclass
 			}
 			return false
-		})).Complete(reconcile.Func(c.reconciler.ReconcileGateway))
+		}), predicate.GenerationChangedPredicate{}))
 
+	for _, gvk := range gvks {
+		obj, err := c.mgr.GetScheme().New(gvk)
+		if err != nil {
+			return err
+		}
+		clientObj, ok := obj.(client.Object)
+		if !ok {
+			return fmt.Errorf("object %T is not a client.Object", obj)
+		}
+		log.Info("watching gvk as gateway child", "gvk", gvk)
+		// unless its a service, we don't care about the status
+		var opts []builder.OwnsOption
+		if shouldIgnoreStatusChild(gvk) {
+			opts = append(opts, builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+		}
+		buildr.Owns(clientObj, opts...)
+	}
+
+	gwreconciler := &gatewayReconciler{
+		cli:           c.mgr.GetClient(),
+		scheme:        c.mgr.GetScheme(),
+		className:     c.gwclass,
+		autoProvision: c.autoProvision,
+		deployer:      d,
+	}
+	err = buildr.Complete(gwreconciler)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
+	// avoid triggering on pod changes that update deployment status
+	return gvk.Kind == "Deployment"
 }
 
 func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
@@ -124,29 +190,29 @@ func kind(obj client.Object) api.Kind {
 	return api.Kind(t.Name())
 }
 
-type gatewayReconciler struct {
-	client.Client
+type controllerReconciler struct {
+	cli    client.Client
 	scheme *runtime.Scheme
 }
 
-func (r *gatewayReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func (r *gatewayReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func (r *gatewayReconciler) ReconcileReferenceGrants(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) ReconcileReferenceGrants(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
-func (r *gatewayReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) ReconcileGatewayClasses(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
 
 	// if a gateway
 	gwclass := &api.GatewayClass{}
-	err := r.Client.Get(ctx, req.NamespacedName, gwclass)
+	err := r.cli.Get(ctx, req.NamespacedName, gwclass)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -163,26 +229,11 @@ func (r *gatewayReconciler) ReconcileGatewayClasses(ctx context.Context, req ctr
 	}
 	meta.SetStatusCondition(&gwclass.Status.Conditions, condition)
 
-	err = r.Client.Status().Update(ctx, gwclass)
+	err = r.cli.Status().Update(ctx, gwclass)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 	log.Info("updated gateway class status")
-
-	return ctrl.Result{}, nil
-}
-
-func (r *gatewayReconciler) ReconcileGateway(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx).WithValues("gw", req.NamespacedName)
-	log.V(1).Info("reconciling request", req)
-
-	var gwlist api.GatewayList
-	if err := r.List(ctx, &gwlist); err != nil {
-		log.Error(err, "unable to get gateways")
-		return ctrl.Result{}, err
-	}
-
-	// Not sure we have what to do here, if anything at all. The gateways here should be of our class due to the event filter.
 
 	return ctrl.Result{}, nil
 }

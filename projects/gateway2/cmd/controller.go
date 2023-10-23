@@ -20,5 +20,11 @@ var controllerCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(controllerCmd)
-	controllerCmd.Flags().StringVarP(&cfg.GatewayClassName, "class-name", "c", "solo-gateway", "The gateway class name that we own")
+	controllerCmd.Flags().StringVar(&cfg.GatewayClassName, "class-name", "solo-gateway", "The gateway class name that we own")
+	controllerCmd.Flags().StringVar(&cfg.GatewayControllerName, "controller-name", "solo.io/gloo-gateway2", "The gateway class controller name")
+	controllerCmd.Flags().StringVar(&cfg.Release, "release-name", "", "The release name for gateway resources")
+	controllerCmd.Flags().BoolVar(&cfg.Dev, "dev-mode", false, "Turn on dev mode (more verbose logging, etc.)")
+	controllerCmd.Flags().BoolVar(&cfg.AutoProvision, "auto-provision", false, "Auto provision gateway resources")
+	controllerCmd.Flags().StringVar(&cfg.XdsServer, "xds-server", "", "Xds host to set on auto provisioned gateway resources")
+	controllerCmd.Flags().Uint16Var(&cfg.XdsPort, "xds-port", 8080, "Xds port to set on auto provisioned gateway resources")
 }

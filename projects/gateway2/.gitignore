@@ -3,3 +3,4 @@ gateway-api
 gateway-api/*
 # ignore binary that may be created in the current dir
 /gloo-gateway2
+/.bin

@@ -92,6 +92,13 @@ If release name contains chart name it will be used as a full name.
 {{- define "gloo-gateway2.gateway.fullname" -}}
 {{- if .Values.gateway.fullnameOverride }}
 {{- .Values.gateway.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- else if .Values.gateway.name }}
+{{- $name := default .Chart.Name .Values.gateway.nameOverride }}
+{{- if contains $name .Release.Name }}
+{{- .Values.gateway.name | printf "%s-dp" | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s-dp" .Release.Name .Values.gateway.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- else }}
 {{- $name := default .Chart.Name .Values.gateway.nameOverride }}
 {{- if contains $name .Release.Name }}

@@ -73,6 +73,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: ENVOY_UID
+          value: "0"
         ports:
         {{- range $p := .Values.gateway.ports }}
         - name: {{ $p.name }}
@@ -137,6 +139,11 @@ spec:
   selector:
     {{- include "gloo-gateway2.gateway.selectorLabels" . | nindent 4 }}
 ---
+{{- $xdsDefault := printf "%s.%s" (include "gloo-gateway2.controlPlane.fullname" . ) .Release.Namespace }}
+{{- $xdsHost := default $xdsDefault .Values.gateway.xds.host }}
+{{- $xdsPort := default .Values.controlPlane.service.port .Values.gateway.xds.port }}
+{{- $xdsClusterName := printf "%s:%v" $xdsHost $xdsPort }}
+
 # config_map
 apiVersion: v1
 kind: ConfigMap
@@ -186,20 +193,20 @@ data:
               - name: envoy.filters.http.router
                 typed_config:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-  
+
       clusters:
-        - name: {{ include "gloo-gateway2.gateway.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.gateway.service.port }}
+        - name: {{ $xdsClusterName }}
           alt_stat_name: xds_cluster
           connect_timeout: 5.000s
           load_assignment:
-            cluster_name: {{ include "gloo-gateway2.gateway.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.gateway.service.port }}
+            cluster_name: {{ $xdsClusterName }}
             endpoints:
             - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: {{ include "gloo-gateway2.gateway.fullname" . }}.{{ .Release.Namespace }}
-                      port_value: {{ .Values.controlPlane.service.port }}
+                      address: {{ $xdsHost }}
+                      port_value: {{ $xdsPort }}
           typed_extension_protocol_options:
             envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
               "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
@@ -231,7 +238,7 @@ data:
         rate_limit_settings: {}
         grpc_services:
         - envoy_grpc:
-            cluster_name: {{ include "gloo-gateway2.gateway.fullname" . }}.{{ .Release.Namespace }}:{{ .Values.gateway.service.port }}
+            cluster_name: {{ $xdsClusterName }}
       cds_config:
         resource_api_version: V3
         ads: {}

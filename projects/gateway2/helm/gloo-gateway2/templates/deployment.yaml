@@ -36,14 +36,33 @@ spec:
           - controller
           - "--class-name"
           - "{{ .Values.gatewayClass.className }}"
+          - "--controller-name"
+          - "{{ .Values.gatewayClass.controllerName }}"
+          {{- if .Values.develop }}
+          - "--dev-mode"
+          {{- end }}
+          {{- if .Values.controlPlane.autoProvision }}
+          - "--auto-provision"
+          {{- end }}
+          - --xds-server
+          - {{ printf "%s.%s" (include "gloo-gateway2.controlPlane.fullname" . ) .Release.Namespace }}
+          - --xds-port
+          - "{{ .Values.controlPlane.service.port }}"
+          - --release-name={{ .Release.Name }}
           ports:
+            - name: health
+              containerPort: 9091
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
             - name: http
               containerPort: {{ .Values.controlPlane.service.port }}
               protocol: TCP
           readinessProbe:
             httpGet:
-              path: /
-              port: http
+              path: /readyz
+              port: health
           resources:
             {{- toYaml .Values.controlPlane.resources | nindent 12 }}
       {{- with .Values.controlPlane.nodeSelector }}
