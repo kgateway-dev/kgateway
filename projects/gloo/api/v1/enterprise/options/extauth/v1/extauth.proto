@@ -273,7 +273,7 @@ message BasicAuth {
     Apr apr = 2;
 
     // Below here is the "extended" basic auth config. Hashing algorithm and user source are independent and configurable.AccessToken
-    // It is required to define exactly one of "apr" and ("encryption" + "user_source")
+    // It is required to define exactly one of "apr" or ("encryption" + "user_source")
 
     // The encryption/hashing algorithm to use to store the password
     message EncryptionType {
