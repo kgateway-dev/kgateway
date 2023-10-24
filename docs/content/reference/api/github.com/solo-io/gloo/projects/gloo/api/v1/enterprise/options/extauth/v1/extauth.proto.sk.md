@@ -88,11 +88,12 @@ weight: 5
 - [Request](#request)
 - [Response](#response)
 - [ExtAuthConfig](#extauthconfig)
-- [BasicAuthConfig](#basicauthconfig)
+- [BasicAuthExtended](#basicauthextended)
 - [EncryptionType](#encryptiontype)
 - [Sha1](#sha1)
 - [Apr](#apr)
 - [User](#user)
+- [UserList](#userlist)
 - [OAuthConfig](#oauthconfig)
 - [UserSessionConfig](#usersessionconfig)
 - [CipherConfig](#cipherconfig)
@@ -456,7 +457,7 @@ If apr is defined, encryption and user_source must not be defined.
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>` | Map of valid username to stored credentials. |
+| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>` | Map of authorized usernames to stored credentials. |
 
 
 
@@ -506,6 +507,7 @@ The encryption/hashing algorithm to use to store the password
 
  
 Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
+Sha1 is considered insecure and is not recommended for production use
 
 ```yaml
 
@@ -1958,22 +1960,25 @@ rules about breaking changes still apply to ensure we do not get errors during u
 
 
 ---
-### BasicAuthConfig
+### BasicAuthExtended
 
-
+ 
+Message to store Basic Auth Configuration.
+"Extended" refers to this format allowing for selection of the hashing algorithm and user source.
+If only the legacy "apr" field is defined, the existing public BasicAuth configuration will continue be used.
 
 ```yaml
 "realm": string
-"encryption": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig.EncryptionType
-"users": map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>
+"encryption": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.EncryptionType
+"userList": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.UserList
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `realm` | `string` |  |
-| `encryption` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig.EncryptionType](../extauth.proto.sk/#encryptiontype) |  |
-| `users` | `map<string, .enterprise.gloo.solo.io.BasicAuth.Apr.SaltedHashedPassword>` |  |
+| `realm` | `string` | Realm to use in the Basic Auth challenge. |
+| `encryption` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.EncryptionType](../extauth.proto.sk/#encryptiontype) | Hashing algorithm to use for password hashing. |
+| `userList` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.UserList](../extauth.proto.sk/#userlist) |  |
 
 
 
@@ -1981,18 +1986,19 @@ rules about breaking changes still apply to ensure we do not get errors during u
 ---
 ### EncryptionType
 
-
+ 
+Selection of hashing algorithms to use for password hashing.
 
 ```yaml
-"apr": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig.EncryptionType.Apr
-"sha1": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig.EncryptionType.Sha1
+"apr": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.EncryptionType.Apr
+"sha1": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.EncryptionType.Sha1
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
-| `apr` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig.EncryptionType.Apr](../extauth.proto.sk/#apr) |  Only one of `apr` or `sha1` can be set. |
-| `sha1` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig.EncryptionType.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr` can be set. |
+| `apr` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.EncryptionType.Apr](../extauth.proto.sk/#apr) |  Only one of `apr` or `sha1` can be set. |
+| `sha1` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.EncryptionType.Sha1](../extauth.proto.sk/#sha1) |  Only one of `sha1` or `apr` can be set. |
 
 
 
@@ -2030,7 +2036,8 @@ rules about breaking changes still apply to ensure we do not get errors during u
 ---
 ### User
 
-
+ 
+To authenticate a user we need the salt and hashed password. The username is expected to be the key in a map of Users.
 
 ```yaml
 "salt": string
@@ -2042,6 +2049,24 @@ rules about breaking changes still apply to ensure we do not get errors during u
 | ----- | ---- | ----------- | 
 | `salt` | `string` |  |
 | `hashedPassword` | `string` |  |
+
+
+
+
+---
+### UserList
+
+ 
+Map of valid usernames to stored credentials
+
+```yaml
+"users": map<string, .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.User>
+
+```
+
+| Field | Type | Description |
+| ----- | ---- | ----------- | 
+| `users` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended.User>` |  |
 
 
 
@@ -2606,26 +2631,26 @@ Enforce Open Policy Agent (OPA) policies through an OPA sidecar as part of the e
 "passThroughAuth": .enterprise.gloo.solo.io.PassThroughAuth
 "hmacAuth": .enterprise.gloo.solo.io.ExtAuthConfig.HmacAuthConfig
 "opaServerAuth": .enterprise.gloo.solo.io.ExtAuthConfig.OpaServerAuthConfig
-"basicAuthConfig": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig
+"basicAuthExtended": .enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended
 
 ```
 
 | Field | Type | Description |
 | ----- | ---- | ----------- | 
 | `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |
-| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `oauth2` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config](../extauth.proto.sk/#oauth2config) |  Only one of `oauth2`, `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk/#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, `oauth2`, `basicAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk/#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `ldapInternal` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig](../extauth.proto.sk/#ldapconfig) | Used for LDAP configurations that need service account credentials saved in a secret. Only one of `ldapInternal`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour. Only one of `jwt`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `hmacAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `hmacAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.HmacAuthConfig](../extauth.proto.sk/#hmacauthconfig) |  Only one of `hmacAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `opaServerAuth`, or `basicAuthConfig` can be set. |
-| `opaServerAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaServerAuthConfig](../extauth.proto.sk/#opaserverauthconfig) |  Only one of `opaServerAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, or `basicAuthConfig` can be set. |
-| `basicAuthConfig` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthConfig](../extauth.proto.sk/#basicauthconfig) |  Only one of `basicAuthConfig`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
+| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `oauth2` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config](../extauth.proto.sk/#oauth2config) |  Only one of `oauth2`, `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk/#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, `oauth2`, `basicAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk/#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `ldapInternal` | [.enterprise.gloo.solo.io.ExtAuthConfig.LdapConfig](../extauth.proto.sk/#ldapconfig) | Used for LDAP configurations that need service account credentials saved in a secret. Only one of `ldapInternal`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `jwt`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `jwt` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | This is a "dummy" extauth service which can be used to support multiple auth mechanisms with JWT authentication. If Jwt authentication is to be used in the [boolean expression](https://docs.solo.io/gloo-edge/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#authconfig) in an AuthConfig, you can use this auth config type to include Jwt as an Auth config. In addition, `allow_missing_or_failed_jwt` must be set on the Virtual Host or Route that uses JWT auth or else the JWT filter will short circuit this behaviour. Only one of `jwt`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `passThroughAuth`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `passThroughAuth` | [.enterprise.gloo.solo.io.PassThroughAuth](../extauth.proto.sk/#passthroughauth) |  Only one of `passThroughAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `hmacAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `hmacAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.HmacAuthConfig](../extauth.proto.sk/#hmacauthconfig) |  Only one of `hmacAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `opaServerAuth`, or `basicAuthExtended` can be set. |
+| `opaServerAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaServerAuthConfig](../extauth.proto.sk/#opaserverauthconfig) |  Only one of `opaServerAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, or `basicAuthExtended` can be set. |
+| `basicAuthExtended` | [.enterprise.gloo.solo.io.ExtAuthConfig.BasicAuthExtended](../extauth.proto.sk/#basicauthextended) |  Only one of `basicAuthExtended`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, `opaAuth`, `ldap`, `ldapInternal`, `jwt`, `passThroughAuth`, `hmacAuth`, or `opaServerAuth` can be set. |
 
 
 
