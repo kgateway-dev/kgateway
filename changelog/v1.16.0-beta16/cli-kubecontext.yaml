@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: >- 
+      Glooctl should now correctly respect kube context if passed.
