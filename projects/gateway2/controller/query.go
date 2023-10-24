@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,13 +23,23 @@ var (
 
 type GatewayQueries interface {
 	// Returns map of listener names -> list of http routes.
-	GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (map[string][]apiv1.HTTPRoute, error)
+	GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (map[string]*ListenerResult, error)
 	// Given a backendRef that resides in namespace obj, return the service that backs it.
 	// This will error with `ErrMissingReferenceGrant` if there is no reference grant allowing the reference
 	// return value depends on the group/kind in the backendRef.
 	GetBackendForRef(ctx context.Context, obj client.Object, backendRef *apiv1.HTTPBackendRef) (client.Object, error)
 
 	GetSecretForRef(ctx context.Context, obj client.Object, secretRef *apiv1.SecretObjectReference) (client.Object, error)
+}
+
+type ListenerRouteResult struct {
+	Error     error
+	Hostnames []string
+	Route     apiv1.HTTPRoute
+}
+type ListenerResult struct {
+	Error  error
+	Routes []*ListenerRouteResult
 }
 
 func NewData(c client.Client, scheme *runtime.Scheme) GatewayQueries {
@@ -59,67 +70,30 @@ func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.Group
 	return ReferenceAllowed(ctx, from, fromns, to, toname, refGrants), nil
 }
 
-func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (map[string][]apiv1.HTTPRoute, error) {
+func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) (map[string]*ListenerResult, error) {
+	ret := map[string]*ListenerResult{}
+
 	nns := types.NamespacedName{
 		Namespace: gw.Namespace,
 		Name:      gw.Name,
 	}
 
 	var hrlist apiv1.HTTPRouteList
-	ret := map[string][]apiv1.HTTPRoute{}
 	for _, l := range gw.Spec.Listeners {
+		lr := &ListenerResult{}
+
 		if _, ok := ret[string(l.Name)]; ok {
 			return nil, fmt.Errorf("duplicate listener name %s", l.Name)
 		}
+		ret[string(l.Name)] = lr
 
-		var allowedKinds []metav1.GroupKind
-
-		switch l.Protocol {
-		case apiv1.HTTPSProtocolType:
-			fallthrough
-		case apiv1.HTTPProtocolType:
-			allowedKinds = []metav1.GroupKind{{Kind: string(kind(&apiv1.HTTPRoute{})), Group: "gateway.networking.k8s.io"}}
-		case apiv1.TLSProtocolType:
-			fallthrough
-		case apiv1.TCPProtocolType:
-			allowedKinds = []metav1.GroupKind{{}}
-		case apiv1.UDPProtocolType:
-			allowedKinds = []metav1.GroupKind{{}}
+		allowedNs, allowedKinds, err := r.allowedRoutes(gw, &l)
+		if err != nil {
+			lr.Error = err
+			continue
 		}
 
-		allowedNs := SameNamespace(gw.Namespace)
-		if ar := l.AllowedRoutes; ar != nil {
-			if ar.Kinds != nil {
-				allowedKinds = nil
-				for _, k := range ar.Kinds {
-					gk := metav1.GroupKind{Kind: string(k.Kind)}
-					if k.Group != nil {
-						gk.Group = string(*k.Group)
-					} else {
-						gk.Group = "gateway.networking.k8s.io"
-					}
-					allowedKinds = append(allowedKinds, gk)
-				}
-			}
-			if ar.Namespaces != nil && ar.Namespaces.From != nil {
-				switch *ar.Namespaces.From {
-				case apiv1.NamespacesFromAll:
-					allowedNs = AllNamespace()
-				case apiv1.NamespacesFromSelector:
-					if ar.Namespaces.Selector == nil {
-						return nil, fmt.Errorf("selector must be set")
-					}
-					selector, err := metav1.LabelSelectorAsSelector(ar.Namespaces.Selector)
-					if err != nil {
-						return nil, err
-					}
-					allowedNs = r.NamespaceSelector(selector)
-				}
-
-			}
-		}
 		if isHttpRouteAllowed(allowedKinds) {
-			var result []apiv1.HTTPRoute
 			if hrlist.Items == nil {
 				err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(httpRouteTargetField, nns.String())})
 				if err != nil {
@@ -131,13 +105,154 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) 
 					continue
 				}
 
-				// TODO: more checks - verify hostname matches.
-				result = append(result, hr)
+				refs := getParentRefsForGw(gw, &hr)
+
+				if len(refs) == 0 {
+					// this shouldnt happen with our index
+					// as at least 1 parent ref should match - otherwise this wouldn't have been indexed
+					continue
+				}
+
+				if !parentRefsMatchListener(refs, &l) {
+					continue
+				}
+
+				if ok, hostnames := hostnameIntersect(&l, &hr); ok {
+					lrr := &ListenerRouteResult{
+						Route:     hr,
+						Hostnames: hostnames,
+					}
+					lr.Routes = append(lr.Routes, lrr)
+				}
 			}
-			ret[string(l.Name)] = result
 		}
 	}
 	return ret, nil
+}
+
+func (r *gatewayQueries) allowedRoutes(gw *apiv1.Gateway, l *apiv1.Listener) (func(string) bool, []metav1.GroupKind, error) {
+	var allowedKinds []metav1.GroupKind
+
+	switch l.Protocol {
+	case apiv1.HTTPSProtocolType:
+		fallthrough
+	case apiv1.HTTPProtocolType:
+		allowedKinds = []metav1.GroupKind{{Kind: string(kind(&apiv1.HTTPRoute{})), Group: "gateway.networking.k8s.io"}}
+	case apiv1.TLSProtocolType:
+		fallthrough
+	case apiv1.TCPProtocolType:
+		allowedKinds = []metav1.GroupKind{{}}
+	case apiv1.UDPProtocolType:
+		allowedKinds = []metav1.GroupKind{{}}
+	}
+
+	allowedNs := SameNamespace(gw.Namespace)
+	if ar := l.AllowedRoutes; ar != nil {
+		if ar.Kinds != nil {
+			allowedKinds = nil
+			for _, k := range ar.Kinds {
+				gk := metav1.GroupKind{Kind: string(k.Kind)}
+				if k.Group != nil {
+					gk.Group = string(*k.Group)
+				} else {
+					gk.Group = "gateway.networking.k8s.io"
+				}
+				allowedKinds = append(allowedKinds, gk)
+			}
+		}
+		if ar.Namespaces != nil && ar.Namespaces.From != nil {
+			switch *ar.Namespaces.From {
+			case apiv1.NamespacesFromAll:
+				allowedNs = AllNamespace()
+			case apiv1.NamespacesFromSelector:
+				if ar.Namespaces.Selector == nil {
+					return nil, nil, fmt.Errorf("selector must be set")
+				}
+				selector, err := metav1.LabelSelectorAsSelector(ar.Namespaces.Selector)
+				if err != nil {
+					return nil, nil, err
+				}
+				allowedNs = r.NamespaceSelector(selector)
+			}
+		}
+	}
+	return allowedNs, allowedKinds, nil
+}
+
+func parentRefsMatchListener(refs []apiv1.ParentReference, l *apiv1.Listener) bool {
+	for _, ref := range refs {
+		if ref.Port != nil && *ref.Port != l.Port {
+			continue
+		}
+		if ref.SectionName != nil && *ref.SectionName != l.Name {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func getParentRefsForGw(gw *apiv1.Gateway, hr *apiv1.HTTPRoute) []apiv1.ParentReference {
+
+	var ret []apiv1.ParentReference
+	for _, pRef := range hr.Spec.ParentRefs {
+
+		if pRef.Group != nil && *pRef.Group != "gateway.networking.k8s.io" {
+			continue
+		}
+		if pRef.Kind != nil && *pRef.Kind != kind(&apiv1.Gateway{}) {
+			continue
+		}
+		ns := hr.Namespace
+		if pRef.Namespace != nil {
+			ns = string(*pRef.Namespace)
+		}
+
+		if ns == gw.Namespace && string(pRef.Name) == gw.Name {
+			ret = append(ret, pRef)
+		}
+	}
+	return ret
+}
+
+func hostnameIntersect(l *apiv1.Listener, hr *apiv1.HTTPRoute) (bool, []string) {
+	var hostnames []string
+	if l.Hostname == nil {
+		for _, h := range hr.Spec.Hostnames {
+			hostnames = append(hostnames, string(h))
+		}
+		return true, hostnames
+	}
+	var listenerHostname string = string(*l.Hostname)
+
+	if strings.HasPrefix(listenerHostname, "*.") {
+		for _, hostname := range hr.Spec.Hostnames {
+			hrHost := string(hostname)
+			if strings.HasSuffix(hrHost, listenerHostname[1:]) {
+				hostnames = append(hostnames, hrHost)
+			}
+		}
+		return len(hostnames) > 0, hostnames
+	} else {
+		if len(hr.Spec.Hostnames) == 0 {
+			return true, []string{listenerHostname}
+		}
+		for _, hostname := range hr.Spec.Hostnames {
+			hrHost := string(hostname)
+			if hrHost == listenerHostname {
+				return true, []string{listenerHostname}
+			}
+
+			if strings.HasPrefix(hrHost, "*.") {
+				if strings.HasSuffix(listenerHostname, hrHost[1:]) {
+					return true, []string{listenerHostname}
+				}
+			}
+			// also possible that listener hostname is more specific than the hr hostname
+		}
+	}
+
+	return false, nil
 }
 
 func (r *gatewayQueries) GetSecretForRef(ctx context.Context, obj client.Object, secretRef *apiv1.SecretObjectReference) (client.Object, error) {

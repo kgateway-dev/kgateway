@@ -1,7 +1,0 @@
-steps:
-  # This is a noop step to pass CI so build bot succeeds
-  # While we are developing the integration with the k8s Gateway API, we do not want to use the existing
-  # Gloo Edge pipeline to publish artifacts or run build-bot tests
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['version']
-    id: 'no-op'

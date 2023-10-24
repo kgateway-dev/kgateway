@@ -29,17 +29,21 @@ func httpRouteToTargetIndexer(obj client.Object) []string {
 	}
 	var parents []string
 	for _, pRef := range hr.Spec.ParentRefs {
-		if pRef.Kind == nil || *pRef.Kind == kind(&apiv1.Gateway{}) {
-			ns := resolveNs(pRef.Namespace)
-			if ns == "" {
-				ns = hr.Namespace
-			}
-			nns := types.NamespacedName{
-				Namespace: ns,
-				Name:      string(pRef.Name),
-			}
-			parents = append(parents, nns.String())
+		if pRef.Group != nil && *pRef.Group != "gateway.networking.k8s.io" {
+			continue
 		}
+		if pRef.Kind != nil && *pRef.Kind != kind(&apiv1.Gateway{}) {
+			continue
+		}
+		ns := resolveNs(pRef.Namespace)
+		if ns == "" {
+			ns = hr.Namespace
+		}
+		nns := types.NamespacedName{
+			Namespace: ns,
+			Name:      string(pRef.Name),
+		}
+		parents = append(parents, nns.String())
 	}
 	return parents
 }

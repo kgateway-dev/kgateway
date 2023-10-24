@@ -15,7 +15,7 @@ import (
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	gateway *gwv1.Gateway,
-	routes map[string][]gwv1.HTTPRoute,
+	routes map[string]*controller.ListenerResult,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway.Spec.Listeners, reporter.Gateway(gateway))
@@ -106,7 +106,7 @@ func (ml *mergedListeners) append(listener gwv1.Listener) {
 	}
 }
 
-func (ml *mergedListeners) translateListeners(routes map[string][]gwv1.HTTPRoute,
+func (ml *mergedListeners) translateListeners(routes map[string]*controller.ListenerResult,
 	reporter reports.Reporter) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
@@ -125,7 +125,7 @@ type mergedListener struct {
 }
 
 func (ml *mergedListener) translateListener(
-	routes map[string][]gwv1.HTTPRoute,
+	routes map[string]*controller.ListenerResult,
 	reporter reports.Reporter,
 ) *v1.Listener {
 
@@ -135,7 +135,13 @@ func (ml *mergedListener) translateListener(
 	)
 
 	for _, mfc := range ml.httpsFilterChains {
-		routesForFilterChain := routes[mfc.gatewayListenerName]
+		var routesForFilterChain []gwv1.HTTPRoute
+		for _, hr := range routes[mfc.gatewayListenerName].Routes {
+			if hr.Error != nil {
+				rt := hr.Route
+				routesForFilterChain = append(routesForFilterChain, rt)
+			}
+		}
 		// each virtual host name must be unique across all filter chains
 		// to prevent collisions because the vhosts have to be re-computed for each set
 		httpFilterChain, vhostsForFilterchain := mfc.translateFilterChain(mfc.gatewayListenerName, routesForFilterChain, reporter)
@@ -262,7 +268,7 @@ func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
 
 // TODO: cross-listener validation
 // return valid for translation
-func validateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
+func ValidateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
 
 	return true
 }

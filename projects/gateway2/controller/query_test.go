@@ -206,7 +206,8 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes).NotTo(BeNil())
-			Expect(len(routes["foo"])).To(Equal(1))
+			Expect(routes["foo"].Error).NotTo(HaveOccurred())
+			Expect(len(routes["foo"].Routes)).To(Equal(1))
 		})
 
 		It("should get http routes in other ns for listener", func() {
@@ -238,7 +239,59 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes).NotTo(BeNil())
-			Expect(len(routes["foo"])).To(Equal(1))
+			Expect(len(routes["foo"].Routes)).To(Equal(1))
+		})
+
+		Context("test host intersection", func() {
+
+			expectHostnamesToMatch := func(lh string, rh []string, expectedHostnames ...string) {
+
+				gwWithListener := gw()
+				gwWithListener.Spec.Listeners = []apiv1.Listener{
+					{
+						Name:     "foo",
+						Protocol: apiv1.HTTPProtocolType,
+					},
+				}
+				if lh != "" {
+					h := apiv1.Hostname(lh)
+					gwWithListener.Spec.Listeners[0].Hostname = &h
+
+				}
+
+				hr := httpRoute()
+				for _, h := range rh {
+					hr.Spec.Hostnames = append(hr.Spec.Hostnames, apiv1.Hostname(h))
+				}
+				hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+					Name: apiv1.ObjectName(gwWithListener.Name),
+				})
+
+				fakeClient := builder.WithObjects(hr).Build()
+				gq := controller.NewData(fakeClient, scheme)
+				routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(routes["foo"].Routes[0].Hostnames).To(Equal(expectedHostnames))
+			}
+
+			It("should work with identical names", func() {
+				expectHostnamesToMatch("foo.com", []string{"foo.com"}, "foo.com")
+			})
+			It("should work with specific listeners and prefix http", func() {
+				expectHostnamesToMatch("bar.foo.com", []string{"*.foo.com", "foo.com", "example.com"}, "bar.foo.com")
+			})
+			It("should work with prefix listeners and specific http", func() {
+				expectHostnamesToMatch("*.foo.com", []string{"bar.foo.com", "foo.com", "far.foo.com", "blah.com"}, "bar.foo.com", "far.foo.com")
+			})
+			It("should work with catch all listener hostname", func() {
+				expectHostnamesToMatch("", []string{"foo.com", "blah.com"}, "foo.com", "blah.com")
+			})
+			It("should work with catch all http hostname", func() {
+				expectHostnamesToMatch("foo.com", nil, "foo.com")
+			})
+			It("should work with double catch all", func() {
+				expectHostnamesToMatch("", nil)
+			})
 		})
 	})
 })
