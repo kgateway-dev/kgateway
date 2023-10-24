@@ -1997,7 +1997,7 @@ message ExtAuthConfig {
             PassThroughAuth pass_through_auth = 13;
             HmacAuthConfig hmac_auth = 15;
             OpaServerAuthConfig opa_server_auth = 16;
-            BasicAuthConfig basic_auth_config = 17;
+            BasicAuthExtended basic_auth_extended = 17;
         }
     }
 
