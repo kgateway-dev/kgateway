@@ -278,6 +278,7 @@ message BasicAuth {
     // The encryption/hashing algorithm to use to store the password
     message EncryptionType {
         // Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
+        // Sha1 is considered insecure and is not recommended for production use
         message Sha1 {}
         // Apache specific iterated MD5 hashing: (https://httpd.apache.org/docs/2.4/misc/password_encryptions.html)
         message Apr {}
