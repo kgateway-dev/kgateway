@@ -267,7 +267,7 @@ message BasicAuth {
             // Salted and hashed password for the user
             string hashed_password = 2;
         }
-        // Map of valid username to stored credentials
+        // Map of authorized usernames to stored credentials
         map<string, SaltedHashedPassword> users = 2;
     }
     Apr apr = 2;
@@ -1443,9 +1443,14 @@ message ExtAuthConfig {
     // which AuthConfig should be applied to it.
     string auth_config_ref_name = 1;
 
-    message BasicAuthConfig {
+    // Message to store Basic Auth Configuration.
+    // "Extended" refers to this format allowing for selection of the hashing algorithm and user source.
+    // If only the legacy "apr" field is defined, the existing public BasicAuth configuration will continue be used.
+    message BasicAuthExtended {
+        // Realm to use in the Basic Auth challenge.
         string realm = 1;
 
+        // Selection of hashing algorithms to use for password hashing.
         message EncryptionType {
             message Sha1 {}
             message Apr {}
@@ -1455,15 +1460,24 @@ message ExtAuthConfig {
             }
         }
     
+        // Hashing algorithm to use for password hashing.
         EncryptionType encryption = 2;
     
+        // To authenticate a user we need the salt and hashed password. The username is expected to be the key in a map of Users.
         message User {
             string salt = 1;
             string hashed_password = 2;
         }
-    
 
-        map<string, User> users= 3;
+        // Map of valid usernames to stored credentials
+        message UserList {
+            map<string, User> users= 1;
+        }
+
+        // Source of user credential data.
+        oneof user_source {
+            UserList user_list = 4;
+        }
     }
 
 
