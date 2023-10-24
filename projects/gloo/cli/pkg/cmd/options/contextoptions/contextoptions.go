@@ -41,10 +41,11 @@ func ContextAccessibleFrom(ctx context.Context) (ContextAccessible, error) {
 }
 
 // KubecontextFrom pulls the kube context if it was stuffed into the go context.
+// Swallows the no options error that is normally retrieved.
 func KubecontextFrom(ctx context.Context) (string, error) {
 	opts, err := ContextAccessibleFrom(ctx)
 	if err == nil {
 		return opts.KubeContext, nil
 	}
-	return "", err
+	return "", nil
 }
