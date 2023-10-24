@@ -4746,14 +4746,14 @@ func (m *PassThroughHttp_Response) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ExtAuthConfig_BasicAuthExtended) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_BasicAuthInternal) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_BasicAuthExtended)
+	target, ok := that.(*ExtAuthConfig_BasicAuthInternal)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_BasicAuthExtended)
+		that2, ok := that.(ExtAuthConfig_BasicAuthInternal)
 		if ok {
 			target = &that2
 		} else {
@@ -4782,8 +4782,8 @@ func (m *ExtAuthConfig_BasicAuthExtended) Equal(that interface{}) bool {
 
 	switch m.UserSource.(type) {
 
-	case *ExtAuthConfig_BasicAuthExtended_UserList_:
-		if _, ok := target.UserSource.(*ExtAuthConfig_BasicAuthExtended_UserList_); !ok {
+	case *ExtAuthConfig_BasicAuthInternal_UserList_:
+		if _, ok := target.UserSource.(*ExtAuthConfig_BasicAuthInternal_UserList_); !ok {
 			return false
 		}
 
@@ -5930,6 +5930,21 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
+	case *ExtAuthConfig_Config_BasicAuthInternal:
+		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_BasicAuthInternal); !ok {
+			return false
+		}
+
+		if h, ok := interface{}(m.GetBasicAuthInternal()).(equality.Equalizer); ok {
+			if !h.Equal(target.GetBasicAuthInternal()) {
+				return false
+			}
+		} else {
+			if !proto.Equal(m.GetBasicAuthInternal(), target.GetBasicAuthInternal()) {
+				return false
+			}
+		}
+
 	case *ExtAuthConfig_Config_ApiKeyAuth:
 		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_ApiKeyAuth); !ok {
 			return false
@@ -6065,21 +6080,6 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 			}
 		}
 
-	case *ExtAuthConfig_Config_BasicAuthExtended:
-		if _, ok := target.AuthConfig.(*ExtAuthConfig_Config_BasicAuthExtended); !ok {
-			return false
-		}
-
-		if h, ok := interface{}(m.GetBasicAuthExtended()).(equality.Equalizer); ok {
-			if !h.Equal(target.GetBasicAuthExtended()) {
-				return false
-			}
-		} else {
-			if !proto.Equal(m.GetBasicAuthExtended(), target.GetBasicAuthExtended()) {
-				return false
-			}
-		}
-
 	default:
 		// m is nil but target is not nil
 		if m.AuthConfig != target.AuthConfig {
@@ -6091,14 +6091,14 @@ func (m *ExtAuthConfig_Config) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_BasicAuthInternal_EncryptionType) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_BasicAuthExtended_EncryptionType)
+	target, ok := that.(*ExtAuthConfig_BasicAuthInternal_EncryptionType)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_BasicAuthExtended_EncryptionType)
+		that2, ok := that.(ExtAuthConfig_BasicAuthInternal_EncryptionType)
 		if ok {
 			target = &that2
 		} else {
@@ -6113,8 +6113,8 @@ func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType) Equal(that interface{})
 
 	switch m.Algorithm.(type) {
 
-	case *ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr_:
-		if _, ok := target.Algorithm.(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr_); !ok {
+	case *ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr_:
+		if _, ok := target.Algorithm.(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr_); !ok {
 			return false
 		}
 
@@ -6128,8 +6128,8 @@ func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType) Equal(that interface{})
 			}
 		}
 
-	case *ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1_:
-		if _, ok := target.Algorithm.(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1_); !ok {
+	case *ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1_:
+		if _, ok := target.Algorithm.(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1_); !ok {
 			return false
 		}
 
@@ -6154,14 +6154,14 @@ func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType) Equal(that interface{})
 }
 
 // Equal function
-func (m *ExtAuthConfig_BasicAuthExtended_User) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_BasicAuthInternal_User) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_BasicAuthExtended_User)
+	target, ok := that.(*ExtAuthConfig_BasicAuthInternal_User)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_BasicAuthExtended_User)
+		that2, ok := that.(ExtAuthConfig_BasicAuthInternal_User)
 		if ok {
 			target = &that2
 		} else {
@@ -6186,14 +6186,14 @@ func (m *ExtAuthConfig_BasicAuthExtended_User) Equal(that interface{}) bool {
 }
 
 // Equal function
-func (m *ExtAuthConfig_BasicAuthExtended_UserList) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_BasicAuthInternal_UserList) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_BasicAuthExtended_UserList)
+	target, ok := that.(*ExtAuthConfig_BasicAuthInternal_UserList)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_BasicAuthExtended_UserList)
+		that2, ok := that.(ExtAuthConfig_BasicAuthInternal_UserList)
 		if ok {
 			target = &that2
 		} else {
@@ -6227,14 +6227,14 @@ func (m *ExtAuthConfig_BasicAuthExtended_UserList) Equal(that interface{}) bool 
 }
 
 // Equal function
-func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1)
+	target, ok := that.(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1)
+		that2, ok := that.(ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1)
 		if ok {
 			target = &that2
 		} else {
@@ -6251,14 +6251,14 @@ func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1) Equal(that interfa
 }
 
 // Equal function
-func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr) Equal(that interface{}) bool {
+func (m *ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr) Equal(that interface{}) bool {
 	if that == nil {
 		return m == nil
 	}
 
-	target, ok := that.(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr)
+	target, ok := that.(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr)
 	if !ok {
-		that2, ok := that.(ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr)
+		that2, ok := that.(ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr)
 		if ok {
 			target = &that2
 		} else {

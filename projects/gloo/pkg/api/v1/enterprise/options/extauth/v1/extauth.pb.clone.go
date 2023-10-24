@@ -2796,32 +2796,32 @@ func (m *PassThroughHttp_Response) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ExtAuthConfig_BasicAuthExtended) Clone() proto.Message {
-	var target *ExtAuthConfig_BasicAuthExtended
+func (m *ExtAuthConfig_BasicAuthInternal) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthInternal
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_BasicAuthExtended{}
+	target = &ExtAuthConfig_BasicAuthInternal{}
 
 	target.Realm = m.GetRealm()
 
 	if h, ok := interface{}(m.GetEncryption()).(clone.Cloner); ok {
-		target.Encryption = h.Clone().(*ExtAuthConfig_BasicAuthExtended_EncryptionType)
+		target.Encryption = h.Clone().(*ExtAuthConfig_BasicAuthInternal_EncryptionType)
 	} else {
-		target.Encryption = proto.Clone(m.GetEncryption()).(*ExtAuthConfig_BasicAuthExtended_EncryptionType)
+		target.Encryption = proto.Clone(m.GetEncryption()).(*ExtAuthConfig_BasicAuthInternal_EncryptionType)
 	}
 
 	switch m.UserSource.(type) {
 
-	case *ExtAuthConfig_BasicAuthExtended_UserList_:
+	case *ExtAuthConfig_BasicAuthInternal_UserList_:
 
 		if h, ok := interface{}(m.GetUserList()).(clone.Cloner); ok {
-			target.UserSource = &ExtAuthConfig_BasicAuthExtended_UserList_{
-				UserList: h.Clone().(*ExtAuthConfig_BasicAuthExtended_UserList),
+			target.UserSource = &ExtAuthConfig_BasicAuthInternal_UserList_{
+				UserList: h.Clone().(*ExtAuthConfig_BasicAuthInternal_UserList),
 			}
 		} else {
-			target.UserSource = &ExtAuthConfig_BasicAuthExtended_UserList_{
-				UserList: proto.Clone(m.GetUserList()).(*ExtAuthConfig_BasicAuthExtended_UserList),
+			target.UserSource = &ExtAuthConfig_BasicAuthInternal_UserList_{
+				UserList: proto.Clone(m.GetUserList()).(*ExtAuthConfig_BasicAuthInternal_UserList),
 			}
 		}
 
@@ -3508,6 +3508,18 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 			}
 		}
 
+	case *ExtAuthConfig_Config_BasicAuthInternal:
+
+		if h, ok := interface{}(m.GetBasicAuthInternal()).(clone.Cloner); ok {
+			target.AuthConfig = &ExtAuthConfig_Config_BasicAuthInternal{
+				BasicAuthInternal: h.Clone().(*ExtAuthConfig_BasicAuthInternal),
+			}
+		} else {
+			target.AuthConfig = &ExtAuthConfig_Config_BasicAuthInternal{
+				BasicAuthInternal: proto.Clone(m.GetBasicAuthInternal()).(*ExtAuthConfig_BasicAuthInternal),
+			}
+		}
+
 	case *ExtAuthConfig_Config_ApiKeyAuth:
 
 		if h, ok := interface{}(m.GetApiKeyAuth()).(clone.Cloner); ok {
@@ -3616,54 +3628,42 @@ func (m *ExtAuthConfig_Config) Clone() proto.Message {
 			}
 		}
 
-	case *ExtAuthConfig_Config_BasicAuthExtended:
-
-		if h, ok := interface{}(m.GetBasicAuthExtended()).(clone.Cloner); ok {
-			target.AuthConfig = &ExtAuthConfig_Config_BasicAuthExtended{
-				BasicAuthExtended: h.Clone().(*ExtAuthConfig_BasicAuthExtended),
-			}
-		} else {
-			target.AuthConfig = &ExtAuthConfig_Config_BasicAuthExtended{
-				BasicAuthExtended: proto.Clone(m.GetBasicAuthExtended()).(*ExtAuthConfig_BasicAuthExtended),
-			}
-		}
-
 	}
 
 	return target
 }
 
 // Clone function
-func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType) Clone() proto.Message {
-	var target *ExtAuthConfig_BasicAuthExtended_EncryptionType
+func (m *ExtAuthConfig_BasicAuthInternal_EncryptionType) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthInternal_EncryptionType
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_BasicAuthExtended_EncryptionType{}
+	target = &ExtAuthConfig_BasicAuthInternal_EncryptionType{}
 
 	switch m.Algorithm.(type) {
 
-	case *ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr_:
+	case *ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr_:
 
 		if h, ok := interface{}(m.GetApr()).(clone.Cloner); ok {
-			target.Algorithm = &ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr_{
-				Apr: h.Clone().(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr),
+			target.Algorithm = &ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr_{
+				Apr: h.Clone().(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr),
 			}
 		} else {
-			target.Algorithm = &ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr_{
-				Apr: proto.Clone(m.GetApr()).(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr),
+			target.Algorithm = &ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr_{
+				Apr: proto.Clone(m.GetApr()).(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr),
 			}
 		}
 
-	case *ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1_:
+	case *ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1_:
 
 		if h, ok := interface{}(m.GetSha1()).(clone.Cloner); ok {
-			target.Algorithm = &ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1_{
-				Sha1: h.Clone().(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1),
+			target.Algorithm = &ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1_{
+				Sha1: h.Clone().(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1),
 			}
 		} else {
-			target.Algorithm = &ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1_{
-				Sha1: proto.Clone(m.GetSha1()).(*ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1),
+			target.Algorithm = &ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1_{
+				Sha1: proto.Clone(m.GetSha1()).(*ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1),
 			}
 		}
 
@@ -3673,12 +3673,12 @@ func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ExtAuthConfig_BasicAuthExtended_User) Clone() proto.Message {
-	var target *ExtAuthConfig_BasicAuthExtended_User
+func (m *ExtAuthConfig_BasicAuthInternal_User) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthInternal_User
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_BasicAuthExtended_User{}
+	target = &ExtAuthConfig_BasicAuthInternal_User{}
 
 	target.Salt = m.GetSalt()
 
@@ -3688,21 +3688,21 @@ func (m *ExtAuthConfig_BasicAuthExtended_User) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ExtAuthConfig_BasicAuthExtended_UserList) Clone() proto.Message {
-	var target *ExtAuthConfig_BasicAuthExtended_UserList
+func (m *ExtAuthConfig_BasicAuthInternal_UserList) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthInternal_UserList
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_BasicAuthExtended_UserList{}
+	target = &ExtAuthConfig_BasicAuthInternal_UserList{}
 
 	if m.GetUsers() != nil {
-		target.Users = make(map[string]*ExtAuthConfig_BasicAuthExtended_User, len(m.GetUsers()))
+		target.Users = make(map[string]*ExtAuthConfig_BasicAuthInternal_User, len(m.GetUsers()))
 		for k, v := range m.GetUsers() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.Users[k] = h.Clone().(*ExtAuthConfig_BasicAuthExtended_User)
+				target.Users[k] = h.Clone().(*ExtAuthConfig_BasicAuthInternal_User)
 			} else {
-				target.Users[k] = proto.Clone(v).(*ExtAuthConfig_BasicAuthExtended_User)
+				target.Users[k] = proto.Clone(v).(*ExtAuthConfig_BasicAuthInternal_User)
 			}
 
 		}
@@ -3712,23 +3712,23 @@ func (m *ExtAuthConfig_BasicAuthExtended_UserList) Clone() proto.Message {
 }
 
 // Clone function
-func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1) Clone() proto.Message {
-	var target *ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1
+func (m *ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_BasicAuthExtended_EncryptionType_Sha1{}
+	target = &ExtAuthConfig_BasicAuthInternal_EncryptionType_Sha1{}
 
 	return target
 }
 
 // Clone function
-func (m *ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr) Clone() proto.Message {
-	var target *ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr
+func (m *ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr) Clone() proto.Message {
+	var target *ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr
 	if m == nil {
 		return target
 	}
-	target = &ExtAuthConfig_BasicAuthExtended_EncryptionType_Apr{}
+	target = &ExtAuthConfig_BasicAuthInternal_EncryptionType_Apr{}
 
 	return target
 }

@@ -1,10 +1,8 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: NON_USER_FACING
     issueLink:  https://github.com/solo-io/solo-projects/issues/5234
     description: >
       Add support to use sha1 for basic auth. This requires extended the basic auth API to allow selection of an excyption algorithm.
-      While extending the API, we had to create a new method of defining the users, and we took this opportunity to add support for
-      sources of data other than an inline list in anticipation of being asked to support user credentials from a secret.
       Sha1 is considered insecure and is not recommended for production use.
     resolvesIssue: false
 
