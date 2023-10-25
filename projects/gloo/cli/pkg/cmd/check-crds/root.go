@@ -135,10 +135,7 @@ func preprocessCRD(crd *apiextv1.CustomResourceDefinition) {
 // getCRDsInCluster gets all custom resources currently in the local cluster
 func getCRDsInCluster(ctx context.Context) ([]apiextv1.CustomResourceDefinition, error) {
 	crds := []apiextv1.CustomResourceDefinition{}
-	kubecontext, err := contextoptions.KubecontextFrom(ctx)
-	if err != nil {
-		return nil, err
-	}
+	kubecontext := contextoptions.KubecontextFrom(ctx)
 	out, err := cliutil.KubectlOut(nil, "get", "crd", "--context", kubecontext)
 	if err != nil {
 		return nil, err

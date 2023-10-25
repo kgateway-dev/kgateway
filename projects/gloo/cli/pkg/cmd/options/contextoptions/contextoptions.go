@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/rotisserie/eris"
 )
 
 // ContextAccessible is a set of options that are possibly stuffed into the go context
@@ -31,21 +30,19 @@ type Consul struct {
 
 // ContextAccessibleFrom attempts to pull our options that have been stuffed into the go context.
 // This relies on "top" being set on the context via the root of the cli package.
-func ContextAccessibleFrom(ctx context.Context) (ContextAccessible, error) {
+func ContextAccessibleFrom(ctx context.Context) ContextAccessible {
 	if ctx != nil {
 		if contextAccessible, ok := ctx.Value("top").(ContextAccessible); ok {
-			return contextAccessible, nil
+			return contextAccessible
 		}
 	}
-	return ContextAccessible{}, eris.New("No options set on current context")
+	return ContextAccessible{}
 }
 
 // KubecontextFrom pulls the kube context if it was stuffed into the go context.
-// Swallows the no options error that is normally retrieved.
-func KubecontextFrom(ctx context.Context) (string, error) {
-	opts, err := ContextAccessibleFrom(ctx)
-	if err == nil {
-		return opts.KubeContext, nil
-	}
-	return "", nil
+// Returns an empty string if it was not set.
+func KubecontextFrom(ctx context.Context) string {
+	opts := ContextAccessibleFrom(ctx)
+	return opts.KubeContext // gaurenteed to be set
+
 }
