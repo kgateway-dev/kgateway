@@ -272,20 +272,3 @@ func ValidateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, re
 
 	return true
 }
-
-// TODO: cross-listener validation
-func validateListeners(listeners []gwv1.Listener, gwReporter reports.GatewayReporter) []gwv1.Listener {
-
-	// gateway must contain at least 1 listener
-	if len(listeners) == 0 {
-		gwReporter.Err("gateway must contain at least 1 listener")
-	}
-	// each gateway listener must not match exactly the same traffic
-	// validate - only supporting HTTP and HTTPS protocols right now
-
-	// TODO
-	// validate names
-	// validate uniquenesss
-	// return valid for translation
-	return listeners
-}
