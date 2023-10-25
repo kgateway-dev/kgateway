@@ -77,41 +77,32 @@ type xdsSyncer struct {
 
 	xdsGarbageCollection bool
 
-	xdsInputChannels
+	inputs *XdsInputChannels
 }
 
-type xdsInputChannels struct {
-	proxyEvent     chan ProxyInputs
-	discoveryEvent chan DiscoveryInputs
-	secretEvent    chan SecretInputs
+type XdsInputChannels struct {
+	proxyEvent     AsyncQueue[ProxyInputs]
+	discoveryEvent AsyncQueue[DiscoveryInputs]
+	secretEvent    AsyncQueue[SecretInputs]
 }
 
-func (x *xdsInputChannels) UpdateProxyInputs(ctx context.Context, inputs ProxyInputs) {
-	select {
-	case x.proxyEvent <- inputs:
-	case <-ctx.Done():
-	}
+func (x *XdsInputChannels) UpdateProxyInputs(ctx context.Context, inputs ProxyInputs) {
+	x.proxyEvent.Enqueue(inputs)
 }
 
-func (x *xdsInputChannels) UpdateDiscoveryInputs(ctx context.Context, inputs DiscoveryInputs) {
-	select {
-	case x.discoveryEvent <- inputs:
-	case <-ctx.Done():
-	}
+func (x *XdsInputChannels) UpdateDiscoveryInputs(ctx context.Context, inputs DiscoveryInputs) {
+	x.discoveryEvent.Enqueue(inputs)
 }
 
-func (x *xdsInputChannels) UpdateSecretInputs(ctx context.Context, inputs SecretInputs) {
-	select {
-	case x.secretEvent <- inputs:
-	case <-ctx.Done():
-	}
+func (x *XdsInputChannels) UpdateSecretInputs(ctx context.Context, inputs SecretInputs) {
+	x.secretEvent.Enqueue(inputs)
 }
 
-func newXdsInputChannels() *xdsInputChannels {
-	return &xdsInputChannels{
-		proxyEvent:     make(chan ProxyInputs, 1),
-		discoveryEvent: make(chan DiscoveryInputs, 1),
-		secretEvent:    make(chan SecretInputs, 1),
+func NewXdsInputChannels() *XdsInputChannels {
+	return &XdsInputChannels{
+		proxyEvent:     NewAsyncQueue[ProxyInputs](),
+		discoveryEvent: NewAsyncQueue[DiscoveryInputs](),
+		secretEvent:    NewAsyncQueue[SecretInputs](),
 	}
 }
 
@@ -120,12 +111,14 @@ func newXdsSyncer(
 	sanitizer sanitizer.XdsSanitizer,
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
+	inputs *XdsInputChannels,
 ) *xdsSyncer {
 	return &xdsSyncer{
 		translator:           translator,
 		sanitizer:            sanitizer,
 		xdsCache:             xdsCache,
 		xdsGarbageCollection: xdsGarbageCollection,
+		inputs:               inputs,
 	}
 }
 
@@ -156,16 +149,16 @@ func (s *xdsSyncer) SyncXdsOnEvent(
 		case <-ctx.Done():
 			contextutils.LoggerFrom(ctx).Debug("context done, stopping syncer")
 			return
-		case proxyEvent := <-s.proxyEvent:
+		case proxyEvent := <-s.inputs.proxyEvent.Next():
 			proxyApiSnapshot.Proxies = proxyEvent.Proxies
 			proxiesWarmed = true
 			resyncXds()
-		case discoveryEvent := <-s.discoveryEvent:
+		case discoveryEvent := <-s.inputs.discoveryEvent.Next():
 			proxyApiSnapshot.Upstreams = discoveryEvent.Upstreams
 			proxyApiSnapshot.Endpoints = discoveryEvent.Endpoints
 			discoveryWarmed = true
 			resyncXds()
-		case secretEvent := <-s.secretEvent:
+		case secretEvent := <-s.inputs.secretEvent.Next():
 			proxyApiSnapshot.Secrets = secretEvent.Secrets
 			secretsWarmed = true
 			resyncXds()

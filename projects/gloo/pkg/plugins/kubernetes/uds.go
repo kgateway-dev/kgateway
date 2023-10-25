@@ -3,6 +3,8 @@ package kubernetes
 import (
 	"context"
 
+	"github.com/solo-io/go-utils/stringutils"
+
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -88,7 +90,7 @@ func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, 
 		}
 
 		if !utils.AllNamespaces(watchNamespaces) {
-			if !containsString(svc.Namespace, watchNamespaces) {
+			if !stringutils.ContainsString(svc.Namespace, watchNamespaces) {
 				continue
 			}
 		}
