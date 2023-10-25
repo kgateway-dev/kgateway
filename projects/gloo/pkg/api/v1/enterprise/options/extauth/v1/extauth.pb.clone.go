@@ -1287,6 +1287,15 @@ func (m *AerospikeApiKeyStorage) Clone() proto.Message {
 		}
 	}
 
+	if m.GetLabelSelector() != nil {
+		target.LabelSelector = make(map[string]string, len(m.GetLabelSelector()))
+		for k, v := range m.GetLabelSelector() {
+
+			target.LabelSelector[k] = v
+
+		}
+	}
+
 	switch m.CommitLevel.(type) {
 
 	case *AerospikeApiKeyStorage_CommitAll:

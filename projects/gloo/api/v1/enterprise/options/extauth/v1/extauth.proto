@@ -1102,6 +1102,10 @@ message AerospikeApiKeyStorage {
             uint32 x_25519 = 4;
         }
     }
+
+    // Identify the set of required labels (key/value) which an Aerospike secret must contain
+    // If a secret contains the provided set of labels, it will be considered valid when authorizing an ApiKey provided in a request
+    map<string, string> label_selector = 17;
 }
 
 message ApiKey {
@@ -1801,6 +1805,7 @@ message ExtAuthConfig {
 
         // A mapping of valid API keys to their associated metadata.
         // This map is automatically populated with the information from the relevant `ApiKey`s.
+        // Currently this is only configured when using the k8s Secret storage backend
         map<string, KeyMetadata> valid_api_keys = 1 [(extproto.sensitive) = true];
 
         // (Optional) When receiving a request, the Gloo Edge Enterprise external auth server will look for an API key
@@ -1816,7 +1821,6 @@ message ExtAuthConfig {
             K8sSecretApiKeyStorage k8s_secret_apikey_storage = 4;
             AerospikeApiKeyStorage aerospike_apikey_storage = 5;
         }
-
     }
 
     message OpaAuthConfig {
