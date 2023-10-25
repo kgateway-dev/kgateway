@@ -33,7 +33,7 @@ func getIstiodContainer(ctx context.Context, namespace string) (corev1.Container
 	kubecontext := contextoptions.KubecontextFrom(ctx)
 
 	client := helpers.MustKubeClientWithKubecontext(kubecontext)
-	_, err = client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return c, err
 	}
