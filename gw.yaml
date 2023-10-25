@@ -1,0 +1,11 @@
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy-ssl
+  namespace: gloo-system
+spec:
+  httpGateway: {}
+  ssl: true
+  useProxyProto: false

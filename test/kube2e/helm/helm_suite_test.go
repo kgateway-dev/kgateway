@@ -14,3 +14,7 @@ func TestHelm(t *testing.T) {
 	skhelpers.SetupLog()
 	RunSpecs(t, "Helm Suite")
 }
+
+var _ = BeforeSuite(func() {
+	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, namespace))
+})

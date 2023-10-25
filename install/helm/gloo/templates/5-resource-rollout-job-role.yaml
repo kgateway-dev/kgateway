@@ -9,10 +9,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": post-install,post-upgrade
-    "helm.sh/hook-weight": "0" # must be created before rollout job
-    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -20,5 +16,9 @@ rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["*"]
   verbs: ["get", "list", "create", "update", "patch"]
+# This permission is required by the oss rollout job in order to wait for the enterprise rollout job to finish first
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "watch", "delete"]
 {{- end -}}{{/* if .Values.global.glooRbac.create */}}
 {{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}
