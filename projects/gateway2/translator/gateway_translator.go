@@ -49,7 +49,7 @@ func (t *translator) TranslateProxy(
 
 	listeners := listener.TranslateListeners(
 		gateway,
-		routes,
+		routes.ListenerResults,
 		reporter,
 	)
 

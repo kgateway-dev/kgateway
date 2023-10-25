@@ -206,8 +206,8 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes).NotTo(BeNil())
-			Expect(routes["foo"].Error).NotTo(HaveOccurred())
-			Expect(len(routes["foo"].Routes)).To(Equal(1))
+			Expect(routes.ListenerResults["foo"].Error).NotTo(HaveOccurred())
+			Expect(len(routes.ListenerResults["foo"].Routes)).To(Equal(1))
 		})
 
 		It("should get http routes in other ns for listener", func() {
@@ -239,7 +239,253 @@ var _ = Describe("Query", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes).NotTo(BeNil())
-			Expect(len(routes["foo"].Routes)).To(Equal(1))
+			Expect(len(routes.ListenerResults["foo"].Routes)).To(Equal(1))
+		})
+
+		It("should error with invalid label selector", func() {
+			gwWithListener := gw()
+			selector := apiv1.NamespacesFromSelector
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Namespaces: &apiv1.RouteNamespaces{
+							From:     &selector,
+							Selector: nil,
+						},
+					},
+				},
+			}
+			hr := httpRoute()
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.ListenerResults["foo"].Error).To(MatchError("selector must be set"))
+		})
+
+		It("should error when listeners allow route", func() {
+			gwWithListener := gw()
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					},
+				},
+				{
+					Name:     "foo2",
+					Protocol: apiv1.HTTPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind2"}},
+					},
+				},
+			}
+			hr := httpRoute()
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNotAllowedByListeners))
+            Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNotAllowedByListeners))
+			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
+		})
+
+		It("should NOT error when one listeners allows route", func() {
+			gwWithListener := gw()
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					AllowedRoutes: &apiv1.AllowedRoutes{
+						Kinds: []apiv1.RouteGroupKind{{Kind: "FakeKind"}},
+					},
+				},
+				{
+					Name:     "foo2",
+					Protocol: apiv1.HTTPProtocolType,
+				},
+			}
+			hr := httpRoute()
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(0))
+		})
+
+		It("should error when listeners don't match route", func() {
+			gwWithListener := gw()
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+				},
+				{
+					Name:     "bar",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     81,
+				},
+			}
+			hr := httpRoute()
+			var port apiv1.PortNumber = 1234
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+				Port: &port,
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
+		})
+
+		It("should NOT error when one listener match route", func() {
+			gwWithListener := gw()
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+				},
+				{
+					Name:     "foo2",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     81,
+				},
+			}
+			hr := httpRoute()
+			var port apiv1.PortNumber = 81
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+				Port: &port,
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(0))
+		})
+
+		It("should error when listeners hostnames don't intersect", func() {
+			gwWithListener := gw()
+			var hostname apiv1.Hostname = "foo.com"
+			var hostname2 apiv1.Hostname = "foo2.com"
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+					Hostname: &hostname,
+				},
+				{
+					Name:     "foo2",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+					Hostname: &hostname2,
+				},
+			}
+			hr := httpRoute()
+			hr.Spec.Hostnames = append(hr.Spec.Hostnames, "bar.com")
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNoMatchingListenerHostname))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingListenerHostname))
+			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
+		})
+
+		It("should NOT error when one listener hostname do intersect", func() {
+			gwWithListener := gw()
+			var hostname apiv1.Hostname = "foo.com"
+			var hostname2 apiv1.Hostname = "bar.com"
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+					Hostname: &hostname,
+				},
+				{
+					Name:     "foo2",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+					Hostname: &hostname2,
+				},
+			}
+			hr := httpRoute()
+			hr.Spec.Hostnames = append(hr.Spec.Hostnames, "bar.com")
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(BeEmpty())
+			Expect(routes.ListenerResults["foo2"].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(0))
+		})
+
+		It("should error for one parent ref but not the other", func() {
+			gwWithListener := gw()
+			var hostname apiv1.Hostname = "foo.com"
+			gwWithListener.Spec.Listeners = []apiv1.Listener{
+				{
+					Name:     "foo",
+					Protocol: apiv1.HTTPProtocolType,
+					Port:     80,
+					Hostname: &hostname,
+				},
+			}
+			hr := httpRoute()
+			var badPort apiv1.PortNumber = 81
+			hr.Spec.ParentRefs = append(hr.Spec.ParentRefs, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+				Port: &badPort,
+			}, apiv1.ParentReference{
+				Name: apiv1.ObjectName(gwWithListener.Name),
+			})
+
+			fakeClient := builder.WithObjects(hr).Build()
+			gq := controller.NewData(fakeClient, scheme)
+			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(routes.RouteErrors).To(HaveLen(1))
+			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
+			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(hr.Spec.ParentRefs[1]))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
+			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 
 		Context("test host intersection", func() {
@@ -271,7 +517,7 @@ var _ = Describe("Query", func() {
 				gq := controller.NewData(fakeClient, scheme)
 				routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(routes["foo"].Routes[0].Hostnames).To(Equal(expectedHostnames))
+				Expect(routes.ListenerResults["foo"].Routes[0].Hostnames).To(Equal(expectedHostnames))
 			}
 
 			It("should work with identical names", func() {

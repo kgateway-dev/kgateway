@@ -141,10 +141,8 @@ func (ml *mergedListener) translateListener(
 	if ml.httpFilterChain != nil {
 		var routesForFilterChain []gwv1.HTTPRoute
 		for _, hr := range routes[ml.name].Routes {
-			if hr.Error != nil {
-				rt := hr.Route
-				routesForFilterChain = append(routesForFilterChain, rt)
-			}
+			rt := hr.Route
+			routesForFilterChain = append(routesForFilterChain, rt)
 		}
 		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
 			ml.name,
@@ -164,10 +162,8 @@ func (ml *mergedListener) translateListener(
 	for _, mfc := range ml.httpsFilterChains {
 		var routesForFilterChain []gwv1.HTTPRoute
 		for _, hr := range routes[mfc.gatewayListenerName].Routes {
-			if hr.Error != nil {
-				rt := hr.Route
-				routesForFilterChain = append(routesForFilterChain, rt)
-			}
+			rt := hr.Route
+			routesForFilterChain = append(routesForFilterChain, rt)
 		}
 		// each virtual host name must be unique across all filter chains
 		// to prevent collisions because the vhosts have to be re-computed for each set
