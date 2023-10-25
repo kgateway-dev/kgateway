@@ -12,8 +12,6 @@ weight: 5
 
 
 - [Tap](#tap)
-- [StaticConfig](#staticconfig)
-- [OutputConfig](#outputconfig)
 - [Sink](#sink)
 - [GrpcService](#grpcservice)
 - [HttpService](#httpservice)
@@ -29,40 +27,6 @@ weight: 5
 
 ---
 ### Tap
-
-
-
-```yaml
-"staticConfig": .tap.options.gloo.solo.io.StaticConfig
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `staticConfig` | [.tap.options.gloo.solo.io.StaticConfig](../tap.proto.sk/#staticconfig) |  |
-
-
-
-
----
-### StaticConfig
-
-
-
-```yaml
-"outputConfig": .tap.options.gloo.solo.io.OutputConfig
-
-```
-
-| Field | Type | Description |
-| ----- | ---- | ----------- | 
-| `outputConfig` | [.tap.options.gloo.solo.io.OutputConfig](../tap.proto.sk/#outputconfig) |  |
-
-
-
-
----
-### OutputConfig
 
 
 

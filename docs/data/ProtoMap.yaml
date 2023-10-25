@@ -1883,14 +1883,8 @@ apis:
   tap.options.gloo.solo.io.HttpService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#HttpService
     package: tap.options.gloo.solo.io
-  tap.options.gloo.solo.io.OutputConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#OutputConfig
-    package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.Sink:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#Sink
-    package: tap.options.gloo.solo.io
-  tap.options.gloo.solo.io.StaticConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#StaticConfig
     package: tap.options.gloo.solo.io
   tap.options.gloo.solo.io.Tap:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/tap/tap.proto.sk/#Tap
