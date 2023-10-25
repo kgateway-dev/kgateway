@@ -9,7 +9,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/ssl"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	// "sigs.k8s.io/gateway-api/apis/"
 )
 
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
@@ -19,11 +18,13 @@ func TranslateListeners(
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway.Spec.Listeners, reporter.Gateway(gateway))
-	return mergeGWListeners(validatedListeners).translateListeners(routes, reporter)
+	return mergeGWListeners(gateway.Namespace, validatedListeners).translateListeners(routes, reporter)
 }
 
-func mergeGWListeners(listeners []gwv1.Listener) *mergedListeners {
-	ml := &mergedListeners{}
+func mergeGWListeners(gatewayNamespace string, listeners []gwv1.Listener) *mergedListeners {
+	ml := &mergedListeners{
+		gatewayNamespace: gatewayNamespace,
+	}
 	for _, listener := range listeners {
 		ml.append(listener)
 	}
@@ -31,7 +32,8 @@ func mergeGWListeners(listeners []gwv1.Listener) *mergedListeners {
 }
 
 type mergedListeners struct {
-	listeners []*mergedListener
+	gatewayNamespace string
+	listeners        []*mergedListener
 }
 
 func (ml *mergedListeners) appendHttpListener(listener gwv1.Listener) {
@@ -60,9 +62,10 @@ func (ml *mergedListeners) appendHttpListener(listener gwv1.Listener) {
 
 	// create a new filter chain for the listener
 	ml.listeners = append(ml.listeners, &mergedListener{
-		name:            listenerName,
-		port:            listener.Port,
-		httpFilterChain: fc,
+		name:             listenerName,
+		gatewayNamespace: ml.gatewayNamespace,
+		port:             listener.Port,
+		httpFilterChain:  fc,
 	})
 
 }
@@ -118,6 +121,7 @@ func (ml *mergedListeners) translateListeners(routes map[string]*controller.List
 
 type mergedListener struct {
 	name              string
+	gatewayNamespace  string
 	port              gwv1.PortNumber
 	httpFilterChain   *httpFilterChain
 	httpsFilterChains []httpsFilterChain
@@ -134,6 +138,29 @@ func (ml *mergedListener) translateListener(
 		mergedVhosts     = map[string]*v1.VirtualHost{}
 	)
 
+	if ml.httpFilterChain != nil {
+		var routesForFilterChain []gwv1.HTTPRoute
+		for _, hr := range routes[ml.name].Routes {
+			if hr.Error != nil {
+				rt := hr.Route
+				routesForFilterChain = append(routesForFilterChain, rt)
+			}
+		}
+		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
+			ml.name,
+			ml.gatewayNamespace,
+			routesForFilterChain,
+			reporter,
+		)
+		httpFilterChains = append(httpFilterChains, httpFilterChain)
+		for vhostRef, vhost := range vhostsForFilterchain {
+			if _, ok := mergedVhosts[vhostRef]; ok {
+				// TODO handle internal error
+
+			}
+			mergedVhosts[vhostRef] = vhost
+		}
+	}
 	for _, mfc := range ml.httpsFilterChains {
 		var routesForFilterChain []gwv1.HTTPRoute
 		for _, hr := range routes[mfc.gatewayListenerName].Routes {
@@ -144,8 +171,13 @@ func (ml *mergedListener) translateListener(
 		}
 		// each virtual host name must be unique across all filter chains
 		// to prevent collisions because the vhosts have to be re-computed for each set
-		httpFilterChain, vhostsForFilterchain := mfc.translateFilterChain(mfc.gatewayListenerName, routesForFilterChain, reporter)
-		httpFilterChains = append(httpFilterChains, httpFilterChain)
+		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
+			mfc.gatewayListenerName,
+			ml.gatewayNamespace,
+			routesForFilterChain,
+			reporter,
+		)
+		httpFilterChains = append(httpFilterChains, httpsFilterChain)
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
 				// TODO handle internal error
@@ -188,20 +220,19 @@ type httpFilterChainParent struct {
 	host                *gwv1.Hostname
 }
 
-func (mfc *httpFilterChain) translateFilterChain(
+func (mfc *httpFilterChain) translateHttpFilterChain(
 	parentName string,
+	gatewayNamespace string,
 	routes []gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
-	// TODO translate FC matcher
-	matcher := &v1.Matcher{}
 	var (
 		virtualHostRefs []string
 		virtualHosts    = map[string]*v1.VirtualHost{}
 	)
 	for _, parent := range mfc.parents {
-		vhostsForParent := httproute.TranslateGatewayHTTPRoutes(parentName, parent.host, routes, reporter)
+		vhostsForParent := httproute.TranslateGatewayHTTPRoutes(parentName, gatewayNamespace, parent.host, routes, reporter)
 
 		for virtualHostRef, virtualHost := range vhostsForParent {
 			virtualHostRefs = append(virtualHostRefs, virtualHostRef)
@@ -211,7 +242,7 @@ func (mfc *httpFilterChain) translateFilterChain(
 	sort.Strings(virtualHostRefs)
 
 	return &v1.AggregateListener_HttpFilterChain{
-		Matcher:         matcher,
+		Matcher:         &v1.Matcher{}, // http filter chain matcher is not used
 		VirtualHostRefs: virtualHostRefs,
 	}, virtualHosts
 }
@@ -225,19 +256,19 @@ type httpsFilterChain struct {
 	tls                 *gwv1.GatewayTLSConfig
 }
 
-func (mfc *httpsFilterChain) translateFilterChain(
+func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	parentName string,
+	gatewayNamespace string,
 	routes []gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
-	// TODO translate FC matcher
 	matcher := &v1.Matcher{
 		SslConfig:               translateSslConfig(mfc.tls),
 		SourcePrefixRanges:      nil,
 		PassthroughCipherSuites: nil,
 	}
-	virtualHosts := httproute.TranslateGatewayHTTPRoutes(parentName, mfc.host, routes, reporter)
+	virtualHosts := httproute.TranslateGatewayHTTPRoutes(parentName, gatewayNamespace, mfc.host, routes, reporter)
 
 	var virtualHostRefs []string
 	for _, virtualHost := range virtualHosts {
@@ -252,7 +283,10 @@ func (mfc *httpsFilterChain) translateFilterChain(
 	}, virtualHosts
 }
 
+// TODO ssl config
 func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
+	// TODO validate ssl config
+
 	return &ssl.SslConfig{
 		SslSecrets:                    nil,
 		SniDomains:                    nil,
@@ -264,11 +298,4 @@ func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
 		TransportSocketConnectTimeout: nil,
 		OcspStaplePolicy:              0,
 	}
-}
-
-// TODO: cross-listener validation
-// return valid for translation
-func ValidateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
-
-	return true
 }

@@ -3,6 +3,7 @@ package listener
 import (
 	"slices"
 
+	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -10,6 +11,13 @@ import (
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
 const HTTPRouteKind = "HTTPRoute"
+
+// TODO: cross-listener validation
+// return valid for translation
+func ValidateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
+
+	return true
+}
 
 type portProtocol struct {
 	hostnames map[gwv1.Hostname]int
