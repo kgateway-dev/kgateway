@@ -39,26 +39,10 @@ spec:
       {{- include "gloo.pullSecret" $image | nindent 6 -}}
       serviceAccountName: gloo-resource-rollout
       {{- include "gloo.podSpecStandardFields" .Values.gateway.rolloutJob | nindent 6 -}}
-      volumes:
-        - name: custom-resource-config-volume
-          configMap:
-            name: gloo-custom-resource-config
-            items:
-              - key: custom-resources
-                path: custom-resources
       containers:
         - name: kubectl
           image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}
-          env:
-            - name: HAS_CUSTOM_RESOURCES
-              valueFrom:
-                configMapKeyRef:
-                  name: gloo-custom-resource-config
-                  key: has-custom-resources
-          volumeMounts:
-            - name: custom-resource-config-volume
-              mountPath: /etc/gloo-custom-resources
           securityContext:
             runAsNonRoot: true
             {{- if not .Values.gateway.rolloutJob.floatingUserId }}
@@ -79,4 +63,3 @@ spec:
               kubectl -n {{ .Release.Namespace }} delete job gloo-resource-rollout || exit $?
             fi
 {{- end }}{{/* if .Values.gateway.rolloutJob.enabled  */}}
-
