@@ -84,6 +84,9 @@ func uninstallGloo() {
 }
 
 func checkRolloutJobDeleted() {
+	// Wait `gateway.rolloutJob.ttlSecondsAfterFinished` until the resource rollout job has been deleted
+	fmt.Println("Waiting for the gloo-resource-rollout job to be cleaned up")
+	time.Sleep(60 * time.Second)
 	EventuallyWithOffset(1, func() string {
 		cmd := exec.Command("kubectl", "-n", "gloo-system", "get", "jobs", "-A")
 		b, err := cmd.Output()
