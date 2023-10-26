@@ -670,7 +670,7 @@ func RateLimitConfigClient(ctx context.Context, namespaces []string) (v1alpha1.R
 	if customFactory != nil {
 		return v1alpha1.NewRateLimitConfigClient(ctx, customFactory)
 	}
-	kubecontext := contextoptions.(ctx)
+	kubecontext := contextoptions.KubecontextFrom(ctx)
 	cfg, err := kubeutils.GetConfigWithContext("", "", kubecontext)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
