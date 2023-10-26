@@ -214,10 +214,7 @@ func checkKnativeInstallation(ctx context.Context, kubeclient ...kubernetes.Inte
 	if len(kubeclient) > 0 {
 		kc = kubeclient[0]
 	} else {
-		kubecontext, err := contextoptions.KubecontextFrom(ctx)
-		if err != nil {
-			return false, nil, err
-		}
+		kubecontext := contextoptions.KubecontextFrom(ctx)
 		kc = helpers.MustKubeClientWithKubecontext(kubecontext)
 	}
 	namespaces, err := kc.CoreV1().Namespaces().List(ctx, v1.ListOptions{})
