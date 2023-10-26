@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/solo-io/gloo/projects/gateway2/discovery"
+	"github.com/solo-io/gloo/projects/gateway2/secrets"
 	"github.com/solo-io/gloo/projects/gateway2/xds"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -84,6 +85,12 @@ func Start(cfg ControllerConfig) {
 
 	inputChannels := xds.NewXdsInputChannels()
 	err = discovery.NewDiscoveryController(ctx, mgr, inputChannels)
+	if err != nil {
+		setupLog.Error(err, "unable to create controller")
+		os.Exit(1)
+	}
+
+	err = secrets.NewSecretsController(ctx, mgr, inputChannels)
 	if err != nil {
 		setupLog.Error(err, "unable to create controller")
 		os.Exit(1)
