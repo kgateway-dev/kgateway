@@ -43,6 +43,6 @@ func ContextAccessibleFrom(ctx context.Context) ContextAccessible {
 // Returns an empty string if it was not set.
 func KubecontextFrom(ctx context.Context) string {
 	opts := ContextAccessibleFrom(ctx)
-	return opts.KubeContext // gaurenteed to be set
+	return opts.KubeContext // if context was unset or this value was unset then its empty
 
 }

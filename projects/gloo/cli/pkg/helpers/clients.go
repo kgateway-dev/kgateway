@@ -118,6 +118,8 @@ func MustKubeClient() kubernetes.Interface {
 	return MustKubeClientWithKubecontext("")
 }
 
+// MustKubeClientWithKubecontext attempts to get a kubeclient given some string that denotes a way to retrieve kubecontext
+// Not allowed to fail
 func MustKubeClientWithKubecontext(kubecontext string) kubernetes.Interface {
 	client, err := KubeClientWithKubecontext(kubecontext)
 	if err != nil {
@@ -126,10 +128,12 @@ func MustKubeClientWithKubecontext(kubecontext string) kubernetes.Interface {
 	return client
 }
 
+// KubeClient retrieves a kubeclient plausibly with some direction from env details
 func KubeClient() (kubernetes.Interface, error) {
 	return KubeClientWithKubecontext("")
 }
 
+// KubeClientWithKubecontext attempts to get a kubeclient given some string that denotes a way to retrieve kubecontext
 func KubeClientWithKubecontext(kubecontext string) (kubernetes.Interface, error) {
 	if fakeKubeClientset != nil {
 		return fakeKubeClientset, nil
@@ -666,7 +670,7 @@ func RateLimitConfigClient(ctx context.Context, namespaces []string) (v1alpha1.R
 	if customFactory != nil {
 		return v1alpha1.NewRateLimitConfigClient(ctx, customFactory)
 	}
-	kubecontext := contextoptions.KubecontextFrom(ctx)
+	kubecontext := contextoptions.(ctx)
 	cfg, err := kubeutils.GetConfigWithContext("", "", kubecontext)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")

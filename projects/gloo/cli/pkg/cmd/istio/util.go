@@ -30,8 +30,8 @@ func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, err
 
 func getIstiodContainer(ctx context.Context, namespace string) (corev1.Container, error) {
 	var c corev1.Container
-	kubecontext := contextoptions.KubecontextFrom(ctx)
 
+	kubecontext := contextoptions.KubecontextFrom(ctx)
 	client := helpers.MustKubeClientWithKubecontext(kubecontext)
 	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
