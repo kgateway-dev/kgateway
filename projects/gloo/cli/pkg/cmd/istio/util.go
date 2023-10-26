@@ -30,12 +30,10 @@ func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, err
 
 func getIstiodContainer(ctx context.Context, namespace string) (corev1.Container, error) {
 	var c corev1.Container
-	kubecontext, err := contextoptions.KubecontextFrom(ctx)
-	if err != nil {
-		return c, err
-	}
+
+	kubecontext := contextoptions.KubecontextFrom(ctx)
 	client := helpers.MustKubeClientWithKubecontext(kubecontext)
-	_, err = client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return c, err
 	}
@@ -118,10 +116,7 @@ func getJWTPolicy(pilotContainer corev1.Container) string {
 // GetGlooVersion gets the version of gloo currently running
 // in the given namespace, by checking the gloo deployment.
 func GetGlooVersion(ctx context.Context, namespace string) (string, error) {
-	kubecontext, err := contextoptions.KubecontextFrom(ctx)
-	if err != nil {
-		return "", err
-	}
+	kubecontext := contextoptions.KubecontextFrom(ctx)
 	sv := versioncmd.NewKube(namespace, kubecontext)
 	server, err := sv.Get(ctx)
 	if err != nil {
