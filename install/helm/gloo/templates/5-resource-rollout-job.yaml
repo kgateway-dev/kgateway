@@ -12,6 +12,10 @@ metadata:
   name: gloo-resource-rollout
   namespace: {{ .Release.Namespace }}
   annotations:
+    # Argo checks the status of resources in an app to determine its state. Since a job is cleaned up (deleted) after ttlSecondsAfterFinished,
+    # the missing job causes the argo app to go out of sync.
+    # Annotating this job as a Sync hook along with an argo-specific hook deletion policy ensures that even when the job is cleaned up,
+    # it does not alter the state of the argo app and that it is still in sync.
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
