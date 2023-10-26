@@ -8,6 +8,9 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0" # must be created before rollout job
 roleRef:
   kind: ClusterRole
   name: gloo-resource-rollout{{ include "gloo.rbacNameSuffix" . }}
