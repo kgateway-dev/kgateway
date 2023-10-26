@@ -89,6 +89,14 @@ spec:
                 kubectl -n {{ .Release.Namespace }} wait --for=condition=complete job gloo-resource-rollout --timeout={{ .Values.gateway.rolloutJob.timeout }}s || exit 1
               fi
 
+              # Clean up the resource rollout jobs so they don't cause issues with upgrades
+              kubectl -n {{ .Release.Namespace }} get job gloo-ee-resource-rollout &> /dev/null
+              if [ $? -eq 0 ]
+              then
+                kubectl -n {{ .Release.Namespace }} delete job gloo-ee-resource-rollout || true
+              fi
+              kubectl -n {{ .Release.Namespace }} delete job gloo-resource-rollout || true
+
               # If the resource has been applied, re-applying it should output something like this
               # gateway.gateway.solo.io/default unchanged
               # If not it will output

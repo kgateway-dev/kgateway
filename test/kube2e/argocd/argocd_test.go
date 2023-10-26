@@ -84,16 +84,13 @@ func uninstallGloo() {
 }
 
 func checkRolloutJobDeleted() {
-	// Wait until the resource rollout job has been deleted
-	fmt.Println("Waiting for the gloo-resource-rollout job to be cleaned up")
-	time.Sleep(60 * time.Second)
 	EventuallyWithOffset(1, func() string {
 		cmd := exec.Command("kubectl", "-n", "gloo-system", "get", "jobs", "-A")
 		b, err := cmd.Output()
 		Expect(err).To(BeNil())
 		return string(b)
 	}, "60s", "10s").ShouldNot(
-		ContainSubstring("gloo-resource-rollout"))
+		ContainSubstring("gloo-resource-rollout "))
 }
 
 func checkGlooHealthyAndSyncedInArgo() {
