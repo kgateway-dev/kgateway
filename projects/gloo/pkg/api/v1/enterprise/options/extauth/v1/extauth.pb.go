@@ -7143,7 +7143,7 @@ func (x *PassThroughHttp_Response) GetAllowedUpstreamHeadersToOverwrite() []stri
 }
 
 // Message to store Basic Auth Configuration.
-// "Extended" refers to this format allowing for selection of the hashing algorithm and user source.
+// "Internal" refers to this format allowing for selection of the hashing algorithm and user source.
 // If only the legacy "apr" field is defined, the existing public BasicAuth configuration will continue be used.
 type ExtAuthConfig_BasicAuthInternal struct {
 	state         protoimpl.MessageState

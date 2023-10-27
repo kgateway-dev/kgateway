@@ -1444,7 +1444,7 @@ message ExtAuthConfig {
     string auth_config_ref_name = 1;
 
     // Message to store Basic Auth Configuration.
-    // "Extended" refers to this format allowing for selection of the hashing algorithm and user source.
+    // "Internal" refers to this format allowing for selection of the hashing algorithm and user source.
     // If only the legacy "apr" field is defined, the existing public BasicAuth configuration will continue be used.
     message BasicAuthInternal {
         // Realm to use in the Basic Auth challenge.
