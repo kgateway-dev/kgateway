@@ -1,15 +1,18 @@
 package listener
 
 import (
+	"context"
 	"slices"
 
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 const NormalizedHTTPSTLSType = "HTTPS/TLS"
+const DefaultHostname = "*"
 const HTTPRouteKind = "HTTPRoute"
 
 // TODO: cross-listener validation
@@ -68,10 +71,10 @@ func validateSupportedRoutes(listeners []gwv1.Listener, reporter reports.Gateway
 		supportedRouteKindsForProtocol, ok := supportedProtocolToKinds[string(listener.Protocol)]
 		if !ok {
 			// todo: log?
-			reporter.Listener(&listener).SetCondition(metav1.Condition{
-				Type:   string(gwv1.ListenerConditionAccepted),
+			reporter.Listener(&listener).SetCondition(reports.ListenerCondition{
+				Type:   gwv1.ListenerConditionAccepted,
 				Status: metav1.ConditionFalse,
-				Reason: string(gwv1.ListenerReasonUnsupportedProtocol), //TODO: add message
+				Reason: gwv1.ListenerReasonUnsupportedProtocol, //TODO: add message
 			})
 			continue
 		}
@@ -102,10 +105,10 @@ func validateSupportedRoutes(listeners []gwv1.Listener, reporter reports.Gateway
 
 		reporter.Listener(&listener).SetSupportedKinds(foundSupportedRouteKinds)
 		if len(foundInvalidRouteKinds) > 0 {
-			reporter.Listener(&listener).SetCondition(metav1.Condition{
-				Type:   string(gwv1.ListenerConditionResolvedRefs),
+			reporter.Listener(&listener).SetCondition(reports.ListenerCondition{
+				Type:   gwv1.ListenerConditionResolvedRefs,
 				Status: metav1.ConditionFalse,
-				Reason: string(gwv1.ListenerReasonInvalidRouteKinds),
+				Reason: gwv1.ListenerReasonInvalidRouteKinds,
 			})
 		} else {
 			validListeners = append(validListeners, listener)
@@ -132,16 +135,22 @@ func validateListeners(listeners []gwv1.Listener, reporter reports.GatewayReport
 		if existingListener, ok := portListeners[listener.Port]; ok {
 			existingListener.protocol[protocol] = true
 			existingListener.listeners = append(existingListener.listeners, listener)
-			//TODO(Law): handle optional hostname for protocols that don't require it
-			if _, ok := existingListener.hostnames[*listener.Hostname]; ok {
+			//TODO(Law): handle validation that hostname empty for udp/tcp
+			if listener.Hostname != nil {
 				existingListener.hostnames[*listener.Hostname]++
 			} else {
-				existingListener.hostnames[*listener.Hostname] = 1
+				existingListener.hostnames[DefaultHostname]++
 			}
 		} else {
+			var hostname gwv1.Hostname
+			if listener.Hostname == nil {
+				hostname = DefaultHostname
+			} else {
+				hostname = *listener.Hostname
+			}
 			pp := portProtocol{
 				hostnames: map[gwv1.Hostname]int{
-					*listener.Hostname: 1,
+					hostname: 1,
 				},
 				protocol: map[gwv1.ProtocolType]bool{
 					protocol: true,
@@ -162,33 +171,33 @@ func validateListeners(listeners []gwv1.Listener, reporter reports.GatewayReport
 
 		for _, listener := range pp.listeners {
 			if protocolConflict {
-				reporter.Listener(&listener).SetCondition(metav1.Condition{
-					Type:    string(gwv1.ListenerConditionConflicted),
+				reporter.Listener(&listener).SetCondition(reports.ListenerCondition{
+					Type:    gwv1.ListenerConditionConflicted,
 					Status:  metav1.ConditionTrue,
-					Reason:  string(gwv1.ListenerReasonProtocolConflict),
+					Reason:  gwv1.ListenerReasonProtocolConflict,
 					Message: "Found conflicting protocols on listeners, a single port can only contain listeners with compatible protocols",
 				})
 
 				// continue as protocolConflict will take precedence over hostname conflicts
 				continue
 			}
-			if listener.Hostname != nil {
-				if count, ok := pp.hostnames[*listener.Hostname]; ok {
-					if count > 1 {
-						reporter.Listener(&listener).SetCondition(metav1.Condition{
-							Type:    string(gwv1.ListenerConditionConflicted),
-							Status:  metav1.ConditionTrue,
-							Reason:  string(gwv1.ListenerReasonHostnameConflict),
-							Message: "Found conflicting hostnames on listeners, all listeners on a single port must have unique hostnames",
-						})
-					} else {
-						// TODO should check this is exactly 1?
-						validListeners = append(validListeners, listener)
 
-					}
-				} else {
-					//TODO handle this case? how is this listener hostname not in the pp list?
-				}
+			var hostname gwv1.Hostname
+			if listener.Hostname == nil {
+				hostname = DefaultHostname
+			} else {
+				hostname = *listener.Hostname
+			}
+			if count := pp.hostnames[hostname]; count > 1 {
+				reporter.Listener(&listener).SetCondition(reports.ListenerCondition{
+					Type:    gwv1.ListenerConditionConflicted,
+					Status:  metav1.ConditionTrue,
+					Reason:  gwv1.ListenerReasonHostnameConflict,
+					Message: "Found conflicting hostnames on listeners, all listeners on a single port must have unique hostnames",
+				})
+			} else {
+				// TODO should check this is exactly 1?
+				validListeners = append(validListeners, listener)
 			}
 		}
 	}
@@ -199,4 +208,32 @@ func validateListeners(listeners []gwv1.Listener, reporter reports.GatewayReport
 func getGroupName() *gwv1.Group {
 	g := gwv1.Group(gwv1.GroupName)
 	return &g
+}
+
+func validateRoutes(
+	query controller.GatewayQueries,
+	reporter reports.Reporter,
+	routes []gwv1.HTTPRoute) {
+	for _, route := range routes {
+		for _, rule := range route.Spec.Rules {
+			for _, backendRef := range rule.BackendRefs {
+				_, err := query.GetBackendForRef(context.TODO(), &route, &backendRef)
+				if err != nil {
+					if err == controller.ErrMissingReferenceGrant {
+						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
+							Type:   gwv1.RouteConditionResolvedRefs,
+							Status: metav1.ConditionFalse,
+							Reason: gwv1.RouteReasonRefNotPermitted,
+						})
+					} else if errors.IsNotFound(err) {
+						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
+							Type:   gwv1.RouteConditionResolvedRefs,
+							Status: metav1.ConditionFalse,
+							Reason: gwv1.RouteReasonBackendNotFound,
+						})
+					}
+				}
+			}
+		}
+	}
 }

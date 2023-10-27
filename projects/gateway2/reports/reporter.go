@@ -2,18 +2,25 @@ package reports
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 type ReportMap struct {
 	Gateways map[string]*GatewayReport
+	Routes   map[types.NamespacedName]*RouteReport
 }
 
 type GatewayReport struct {
+	//TODO(Law): figure out what this should actually look like
 	// condition for the top-level gateway
 	Condition metav1.Condition
 	// listeners under this GW
 	Listeners map[string]*ListenerReport
+}
+
+type RouteReport struct {
+	Conditions []HTTPRouteCondition
 }
 
 type ListenerReport struct {
@@ -35,6 +42,24 @@ func (r *reporter) Gateway(gateway *gwv1.Gateway) GatewayReporter {
 	return gr
 }
 
+func (r *reporter) Route(route *gwv1.HTTPRoute) HTTPRouteReporter {
+	var rr *RouteReport
+	key := types.NamespacedName{
+		Namespace: route.Namespace,
+		Name:      route.Name,
+	}
+	rr, ok := r.report.Routes[key]
+	if !ok {
+		rr = &RouteReport{}
+		r.report.Routes[key] = rr
+	}
+	return rr
+}
+
+func (r *RouteReport) SetCondition(rc HTTPRouteCondition) {
+	r.Conditions = append(r.Conditions, rc)
+}
+
 func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
 	if r.Listeners == nil {
 		r.Listeners = make(map[string]*ListenerReport)
@@ -49,7 +74,13 @@ func (r *GatewayReport) Listener(listener *gwv1.Listener) ListenerReporter {
 	return lr
 }
 
-func (l *ListenerReport) SetCondition(condition metav1.Condition) {
+func (l *ListenerReport) SetCondition(lc ListenerCondition) {
+	condition := metav1.Condition{
+		Type:    string(lc.Type),
+		Status:  lc.Status,
+		Reason:  string(lc.Reason),
+		Message: lc.Message,
+	}
 	l.Status.Conditions = append(l.Status.Conditions, condition)
 }
 
@@ -67,7 +98,7 @@ type Reporter interface {
 	// TODO(Law): use string here instead of Gateway type
 	Gateway(gateway *gwv1.Gateway) GatewayReporter
 
-	// Route(route *gwv1.HTTPRoute) HTTPRouteReporter
+	Route(route *gwv1.HTTPRoute) HTTPRouteReporter
 }
 
 type GatewayReporter interface {
@@ -81,17 +112,31 @@ type GatewayReporter interface {
 	// SetCondition(condition gwv1.ListenerConditionType, status metav1.ConditionStatus, reason gwv1.ListenerConditionReason, message string)
 }
 
+type ListenerCondition struct {
+	Type    gwv1.ListenerConditionType
+	Status  metav1.ConditionStatus
+	Reason  gwv1.ListenerConditionReason
+	Message string
+}
+
 type ListenerReporter interface {
 	// report an error on the listener
 	// Err(format string, a ...any)
 
-	SetCondition(metav1.Condition)
+	SetCondition(ListenerCondition)
 
 	SetSupportedKinds([]gwv1.RouteGroupKind)
+}
+
+type HTTPRouteCondition struct {
+	Type    gwv1.RouteConditionType
+	Status  metav1.ConditionStatus
+	Reason  gwv1.RouteConditionReason
+	Message string
 }
 
 type HTTPRouteReporter interface {
 	// Err(format string, a ...any)
 
-	// SetCondition(condition gwv1.ListenerConditionType, status metav1.ConditionStatus, reason gwv1.ListenerConditionReason, message string)
+	SetCondition(condition HTTPRouteCondition)
 }
