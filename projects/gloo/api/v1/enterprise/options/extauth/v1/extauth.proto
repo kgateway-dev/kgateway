@@ -257,15 +257,61 @@ message AuthPlugin {
 message BasicAuth {
     string realm = 1;
 
+    // This is the legacy/simple basic auth config. It supports the APR hashing algorithm and an inline userlist.
+    // If 'apr' is defined, 'encryption' and 'user_source' must not be defined or the config will fail validation
     message Apr {
+        // Message to store the salt and salted hashed password for a user
         message SaltedHashedPassword {
+            // Salt used with the apr algorithm for the user
             string salt = 1;
+            // Salted and hashed password for the user
             string hashed_password = 2;
         }
+        // Map of authorized usernames to stored credentials
         map<string, SaltedHashedPassword> users = 2;
     }
     Apr apr = 2;
+
+    // Below here is the "extended" basic auth config. Hashing algorithm and user source are independent and configurable.
+    // It is required to define exactly one of 'apr' or ('encryption' and 'user_source') or the config will fail validation
+
+    // The encryption/hashing algorithm to use to store the password
+    message EncryptionType {
+        // Sha1 encryption type (https://datatracker.ietf.org/doc/html/rfc3174)
+        // Sha1 is considered insecure and is not recommended for production use
+        message Sha1 {}
+        // Apache specific iterated MD5 hashing: (https://httpd.apache.org/docs/2.4/misc/password_encryptions.html)
+        message Apr {}
+        oneof algorithm {
+            Apr apr = 1;
+            Sha1 sha1 = 2;
+        }
+    }
+
+    // The encryption type to use to store the password on the server
+    // If 'encryption' is defined, 'user_source' must be defined and the top level 'apr' field must not be defined or the config will fail validation
+    EncryptionType encryption = 3;
+
+    // Message to store user data. We need the salt and salted hashed password for each user
+    message User {
+        // Salt used with the hashing algorithm for the user
+        string salt = 1;
+        // Salted and hashed password for the user
+        string hashed_password = 2;
+    }
+
+     // Map of valid usernames to stored credentials
+    message UserList {
+        map<string, User> users= 1;
+    }
+
+     // Source of user credential data
+     // If 'user_source' is defined, 'encryption' must be defined and the top level 'apr'' field must not be defined or the config will fail validation
+    oneof user_source {
+        UserList user_list = 4;
+    }
 }
+
 
 // HMAC is a message authentication technique that can use multiple algorithms for finding credentials and generating signed messages.
 // It conforms to https://www.ietf.org/rfc/rfc2104.txt
@@ -1396,6 +1442,45 @@ message ExtAuthConfig {
     // Any request to the external auth server includes an identifier that is matched against this field to determine
     // which AuthConfig should be applied to it.
     string auth_config_ref_name = 1;
+
+    // Message to store Basic Auth Configuration.
+    // "Internal" refers to this format allowing for selection of the hashing algorithm and user source.
+    // If only the legacy "apr" field is defined, the existing public BasicAuth configuration will continue be used.
+    message BasicAuthInternal {
+        // Realm to use in the Basic Auth challenge.
+        string realm = 1;
+
+        // Selection of hashing algorithms to use for password hashing.
+        message EncryptionType {
+            message Sha1 {}
+            message Apr {}
+            oneof algorithm {
+                Apr apr = 1;
+                Sha1 sha1 = 2;
+            }
+        }
+    
+        // Hashing algorithm to use for password hashing.
+        EncryptionType encryption = 2;
+    
+        // To authenticate a user we need the salt and hashed password. The username is expected to be the key in a map of Users.
+        message User {
+            string salt = 1;
+            string hashed_password = 2;
+        }
+
+        // Map of valid usernames to stored credentials
+        message UserList {
+            map<string, User> users= 1;
+        }
+
+        // Source of user credential data.
+        oneof user_source {
+            UserList user_list = 3;
+        }
+    }
+
+
     // Deprecated, prefer OAuth2Config
     message OAuthConfig {
         // your client id as registered with the issuer
@@ -1929,6 +2014,7 @@ message ExtAuthConfig {
             OAuthConfig oauth = 3 [deprecated = true];
             OAuth2Config oauth2 = 9;
             BasicAuth basic_auth = 4;
+            BasicAuthInternal basic_auth_internal = 17;
             ApiKeyAuthConfig api_key_auth = 5;
             AuthPlugin plugin_auth = 6;
             OpaAuthConfig opa_auth = 7;
