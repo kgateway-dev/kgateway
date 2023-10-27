@@ -3509,6 +3509,23 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_PkJwtClientAuthenticationConf
 }
 
 // Clone function
+func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader) Clone() proto.Message {
+	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader
+	if m == nil {
+		return target
+	}
+	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader{}
+
+	target.Claim = m.GetClaim()
+
+	target.Header = m.GetHeader()
+
+	target.Append = m.GetAppend()
+
+	return target
+}
+
+// Clone function
 func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) Clone() proto.Message {
 	var target *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken
 	if m == nil {
@@ -3517,13 +3534,13 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken) Clone() proto.Me
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_AccessToken{}
 
 	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		target.ClaimsToHeaders = make([]*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
 		for idx, v := range m.GetClaimsToHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
 			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
 			}
 
 		}
@@ -3541,13 +3558,13 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken) Clone() proto.
 	target = &ExtAuthConfig_OidcAuthorizationCodeConfig_IdentityToken{}
 
 	if m.GetClaimsToHeaders() != nil {
-		target.ClaimsToHeaders = make([]*ClaimToHeader, len(m.GetClaimsToHeaders()))
+		target.ClaimsToHeaders = make([]*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader, len(m.GetClaimsToHeaders()))
 		for idx, v := range m.GetClaimsToHeaders() {
 
 			if h, ok := interface{}(v).(clone.Cloner); ok {
-				target.ClaimsToHeaders[idx] = h.Clone().(*ClaimToHeader)
+				target.ClaimsToHeaders[idx] = h.Clone().(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
 			} else {
-				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ClaimToHeader)
+				target.ClaimsToHeaders[idx] = proto.Clone(v).(*ExtAuthConfig_OidcAuthorizationCodeConfig_ClaimToHeader)
 			}
 
 		}

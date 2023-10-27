@@ -1567,6 +1567,18 @@ message ExtAuthConfig {
         // Only one of client_secret or pk_jwt_client_authentication_config should be set. pk_jwt_client_authentication_config takes precedence.
         PkJwtClientAuthenticationConfig pk_jwt_client_authentication_config = 21;
 
+        // Map a single claim from an OAuth2 or OIDC token to a header in the request to the upstream destination.
+        message ClaimToHeader {
+            // The claim name from the token, such as `sub`.
+            string claim = 1;
+
+            // The header to copy the claim to, such as `x-sub`.
+            string header = 2;
+
+            // If the header exists, append the claim value to the header (true), or overwrite any existing value (false). The default behavior is to overwrite any existing value (false).
+            bool append = 3;
+        }
+
         // Optional: Configuration specific to the OAuth2 access token received and processed by the ext-auth-service.
         AccessToken access_token = 22;
 
