@@ -192,6 +192,7 @@ var _ = Describe("plugin", func() {
 				},
 			},
 		}, out)
+		Expect(err).NotTo(HaveOccurred())
 
 		var cfg envoycsrf.CsrfPolicy
 		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
@@ -215,6 +216,7 @@ var _ = Describe("plugin", func() {
 				},
 			},
 		}, out)
+		Expect(err).NotTo(HaveOccurred())
 
 		var cfg envoycsrf.CsrfPolicy
 		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
@@ -238,6 +240,7 @@ var _ = Describe("plugin", func() {
 				},
 			},
 		}, out)
+		Expect(err).NotTo(HaveOccurred())
 
 		var cfg envoycsrf.CsrfPolicy
 		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
