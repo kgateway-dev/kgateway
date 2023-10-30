@@ -6,4 +6,7 @@ changelog:
   description: >-
     Bump grpc library to address fixes for HTTP/2 rapid reset vulnerability
     (https://github.com/advisories/GHSA-m425-mq94-257g)
-
+- type: DEPENDENCY_BUMP
+  dependencyOwner: jhump
+  dependencyRepo: protoreflect
+  dependencyTag: v1.15.3
