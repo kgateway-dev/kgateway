@@ -9,6 +9,10 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "validate/validate.proto";
 import "google/protobuf/duration.proto";
 
+// Tap filter: a filter that copies the contents of HTTP requests and responses
+// to an external tap server. The full HTTP headers and bodies are reported in
+// full to the configured address, and data can be reported using either over
+// HTTP or GRPC.
 message Tap {
   // Sinks to which tap data should be output. Currently, only a single sink
   // is supported.
