@@ -43,9 +43,10 @@ var once sync.Once
 
 // Main is the main entrypoint for running Gloo Edge components
 // It works by performing the following:
-//	1. Initialize a SettingsClient backed either by Kubernetes or a File
-// 	2. Run an event loop, watching events on the Settings resource, and executing the
-//		opts.SetupFunc whenever settings change
+//  1. Initialize a SettingsClient backed either by Kubernetes or a File
+//  2. Run an event loop, watching events on the Settings resource, and executing the
+//     opts.SetupFunc whenever settings change
+//
 // This allows Gloo components to automatically receive updates to Settings and reload their
 // configuration, without needing to restart the container
 func Main(opts SetupOpts) error {

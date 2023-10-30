@@ -148,6 +148,7 @@ type PathSegment struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Segment:
+	//
 	//	*PathSegment_Key
 	//	*PathSegment_Index
 	//	*PathSegment_All
@@ -291,15 +292,14 @@ type TemplatedPath struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	//
-	//If non-empty, Inserts named paths into a template string.
-	//For example, if the template is '/api/{apiVersionPath}/pet/{petIdPath}'
-	//and we have two named paths defined in `named_paths`, apiVersionPath and petIdPath, with extracted values 'v2' and '123' respectively,
-	//the final resulting value will be '/api/v2/pet/123'
-	//Use {PATH_NAME} as the interpolation notation (even repeated) regardless of the type of the
-	//provided value.
-	//If an undefined PATH_NAME is used in the template, this will nack during configuration.
-	//If this is empty, only the value of the first provider will be used as the resulting value.
+	// If non-empty, Inserts named paths into a template string.
+	// For example, if the template is '/api/{apiVersionPath}/pet/{petIdPath}'
+	// and we have two named paths defined in `named_paths`, apiVersionPath and petIdPath, with extracted values 'v2' and '123' respectively,
+	// the final resulting value will be '/api/v2/pet/123'
+	// Use {PATH_NAME} as the interpolation notation (even repeated) regardless of the type of the
+	// provided value.
+	// If an undefined PATH_NAME is used in the template, this will nack during configuration.
+	// If this is empty, only the value of the first provider will be used as the resulting value.
 	PathTemplate string           `protobuf:"bytes,1,opt,name=path_template,json=pathTemplate,proto3" json:"path_template,omitempty"`
 	NamedPaths   map[string]*Path `protobuf:"bytes,2,rep,name=named_paths,json=namedPaths,proto3" json:"named_paths,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
@@ -359,15 +359,14 @@ type ValueProvider struct {
 	// Map of provider name to provider definition.
 	// The name will be used to insert the provider value in the provider_template.
 	Providers map[string]*ValueProvider_Provider `protobuf:"bytes,3,rep,name=providers,proto3" json:"providers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	//
-	//If non-empty, Inserts named providers into a template string.
-	//For example, if the provider_template is '/api/{apiVersionProvider}/pet/{petIdProvider}'
-	//and we have two named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively,
-	//the final resulting value will be '/api/v2/pet/123'
-	//Use {PROVIDER_NAME} as the interpolation notation (even repeated) regardless of the type of the
-	//provided value.
-	//If an undefined PROVIDER_NAME is used in the provider_template, this will nack during configuration.
-	//If this is empty, only the value of the first provider will be used as the resulting value.
+	// If non-empty, Inserts named providers into a template string.
+	// For example, if the provider_template is '/api/{apiVersionProvider}/pet/{petIdProvider}'
+	// and we have two named providers defined in `providers`, apiVersionProvider and petIdProvider, with extracted values 'v2' and '123' respectively,
+	// the final resulting value will be '/api/v2/pet/123'
+	// Use {PROVIDER_NAME} as the interpolation notation (even repeated) regardless of the type of the
+	// provided value.
+	// If an undefined PROVIDER_NAME is used in the provider_template, this will nack during configuration.
+	// If this is empty, only the value of the first provider will be used as the resulting value.
 	ProviderTemplate string `protobuf:"bytes,4,opt,name=provider_template,json=providerTemplate,proto3" json:"provider_template,omitempty"`
 }
 
@@ -470,6 +469,7 @@ type JsonValue struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to JsonVal:
+	//
 	//	*JsonValue_Node
 	//	*JsonValue_ValueProvider
 	//	*JsonValue_List
@@ -763,45 +763,44 @@ type ResponseTemplate struct {
 	// If {"a": {"b": [1,2,3]}} is the response from the api, setting resultroot as `a.b`
 	// will pass on [1,2,3] to the execution engine rather than the whole api response
 	ResultRoot []*PathSegment `protobuf:"bytes,1,rep,name=result_root,json=resultRoot,proto3" json:"result_root,omitempty"`
+	// Example:
+	// ```
+	// type Query {
+	// getSimple: Simple
+	// }
 	//
-	//Example:
-	//```
-	//type Query {
-	//getSimple: Simple
-	//}
+	// type Simple {
+	// name String
+	// address String
+	// }```
 	//
-	//type Simple {
-	//name String
-	//address String
-	//}```
-	//
-	//if we do `getsimple` and the response we get back from the upstream is
-	//```
-	//{"data": {
-	//"people":
-	//{
-	//"name": "John Doe",
-	//"details": {
-	//"address": "123 Turnip Rd"
-	//}
-	//}
-	//}
-	//}
-	//```
-	//the following response transform would let the graphql execution engine correctly
-	//marshal the upstream resposne into the expected graphql response:
-	//`
-	//responseTransform:
-	//result_root:
-	//segments:
-	//- key: data
-	//- key: people
-	//setters:
-	//address:
-	//segments:
-	//- key: details
-	//- key: address
-	//`yaml
+	// if we do `getsimple` and the response we get back from the upstream is
+	// ```
+	// {"data": {
+	// "people":
+	// {
+	// "name": "John Doe",
+	// "details": {
+	// "address": "123 Turnip Rd"
+	// }
+	// }
+	// }
+	// }
+	// ```
+	// the following response transform would let the graphql execution engine correctly
+	// marshal the upstream resposne into the expected graphql response:
+	// `
+	// responseTransform:
+	// result_root:
+	// segments:
+	// - key: data
+	// - key: people
+	// setters:
+	// address:
+	// segments:
+	// - key: details
+	// - key: address
+	// `yaml
 	Setters map[string]*TemplatedPath `protobuf:"bytes,2,rep,name=setters,proto3" json:"setters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -864,7 +863,6 @@ type RESTResolver struct {
 	// Request flow: GraphQL request -> request_transform (instantiate REST request) ->
 	// REST API resp -> pre_execution_transform -> execution engine ->
 	// complete GraphQL field response
-	//
 	PreExecutionTransform *ResponseTemplate `protobuf:"bytes,3,opt,name=pre_execution_transform,json=preExecutionTransform,proto3" json:"pre_execution_transform,omitempty"`
 	SpanName              string            `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
 }
@@ -1071,7 +1069,7 @@ type GrpcResolver struct {
 	// gRPC API resp -> pre_execution_transform -> execution engine ->
 	// complete GraphQL field response
 	//
-	//ResponseTemplate pre_execution_transform = 3;
+	// ResponseTemplate pre_execution_transform = 3;
 	SpanName string `protobuf:"bytes,4,opt,name=span_name,json=spanName,proto3" json:"span_name,omitempty"`
 }
 
@@ -1135,6 +1133,7 @@ type StaticResolver struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Response:
+	//
 	//	*StaticResolver_SyncResponse
 	//	*StaticResolver_AsyncResponse_
 	//	*StaticResolver_ErrorResponse
@@ -1272,6 +1271,7 @@ type QueryMatcher struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Match:
+	//
 	//	*QueryMatcher_FieldMatcher_
 	Match isQueryMatcher_Match `protobuf_oneof:"match"`
 }
@@ -1739,6 +1739,7 @@ type Executor struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Executor:
+	//
 	//	*Executor_Local_
 	//	*Executor_Remote_
 	Executor isExecutor_Executor `protobuf_oneof:"executor"`
@@ -1936,6 +1937,7 @@ type ValueProvider_TypedValueProvider struct {
 	// this value will be cast to an int type.
 	Type ValueProvider_TypedValueProvider_Type `protobuf:"varint,1,opt,name=type,proto3,enum=envoy.config.filter.http.graphql.v2.ValueProvider_TypedValueProvider_Type" json:"type,omitempty"`
 	// Types that are assignable to ValProvider:
+	//
 	//	*ValueProvider_TypedValueProvider_Header
 	//	*ValueProvider_TypedValueProvider_Value
 	ValProvider isValueProvider_TypedValueProvider_ValProvider `protobuf_oneof:"val_provider"`
@@ -2025,6 +2027,7 @@ type ValueProvider_Provider struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Provider:
+	//
 	//	*ValueProvider_Provider_GraphqlArg
 	//	*ValueProvider_Provider_TypedProvider
 	//	*ValueProvider_Provider_GraphqlParent
@@ -2241,12 +2244,14 @@ type Executor_Local struct {
 	// The max amount of nesting a query can be executed against this schema.
 	// e.g. the following query has these depths:
 	// query {         # Depth: 0
-	//   me {          # Depth: 1
-	//     friends {   # Depth: 2
-	//        friends  # Depth: 3
-	//     }
-	//   }
-	// }
+	//
+	//	  me {          # Depth: 1
+	//	    friends {   # Depth: 2
+	//	       friends  # Depth: 3
+	//	    }
+	//	  }
+	//	}
+	//
 	// If the max_depth is set to 2, then the query at depth 3 will receive an error as a response.
 	// The max_depth value of 0 (set by default) will allow an unbounded query depth.
 	MaxDepth uint32 `protobuf:"varint,3,opt,name=max_depth,json=maxDepth,proto3" json:"max_depth,omitempty"`
@@ -2376,6 +2381,7 @@ type Executor_Remote_Extraction struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ExtractionType:
+	//
 	//	*Executor_Remote_Extraction_Value
 	//	*Executor_Remote_Extraction_Header
 	//	*Executor_Remote_Extraction_DynamicMetadata

@@ -45,12 +45,14 @@ type HelmClient interface {
 }
 
 // an interface around Helm's action.Install struct
+//
 //go:generate mockgen -destination mocks/mock_helm_installation.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmInstallation
 type HelmInstallation interface {
 	Run(chrt *chart.Chart, vals map[string]interface{}) (*release.Release, error)
 }
 
 // an interface around Helm's action.Uninstall struct
+//
 //go:generate mockgen -destination mocks/mock_helm_uninstallation.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmUninstallation
 type HelmUninstallation interface {
 	Run(name string) (*release.UninstallReleaseResponse, error)
@@ -60,6 +62,7 @@ var _ HelmInstallation = &action.Install{}
 var _ HelmUninstallation = &action.Uninstall{}
 
 // an interface around Helm's action.List struct
+//
 //go:generate mockgen -destination mocks/mock_helm_release_list.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmReleaseListRunner
 type HelmReleaseListRunner interface {
 	Run() ([]*release.Release, error)

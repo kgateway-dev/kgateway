@@ -82,11 +82,12 @@ type UpstreamSpec struct {
 	// A [Gloo Secret Ref](https://docs.solo.io/gloo-edge/latest/reference/cli/glooctl_create_secret_aws/) to an AWS Secret
 	// AWS Secrets can be created with `glooctl secret create aws ...`
 	// If the secret is created manually, it must conform to the following structure:
-	//  ```
-	//  access_key: <aws access key>
-	//  secret_key: <aws secret key>
-	//  session_token: <(optional) aws session token>
-	//  ```
+	//
+	//	```
+	//	access_key: <aws access key>
+	//	secret_key: <aws secret key>
+	//	session_token: <(optional) aws session token>
+	//	```
 	SecretRef *core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref,omitempty"`
 	// The list of Lambda Functions contained within this region.
 	// This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions

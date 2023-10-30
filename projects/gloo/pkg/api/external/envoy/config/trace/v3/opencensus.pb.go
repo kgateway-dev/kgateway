@@ -155,6 +155,7 @@ type OpenCensusConfig struct {
 	// Upstream to which trace data should be sent
 	//
 	// Types that are assignable to OcagentAddress:
+	//
 	//	*OpenCensusConfig_HttpAddress
 	//	*OpenCensusConfig_GrpcAddress
 	OcagentAddress isOpenCensusConfig_OcagentAddress `protobuf_oneof:"ocagent_address"`
@@ -269,6 +270,7 @@ type TraceConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Sampler:
+	//
 	//	*TraceConfig_ProbabilitySampler
 	//	*TraceConfig_ConstantSampler
 	//	*TraceConfig_RateLimitingSampler

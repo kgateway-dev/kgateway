@@ -253,6 +253,7 @@ type AWSLambdaConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to CredentialsFetcher:
+	//
 	//	*AWSLambdaConfig_UseDefaultCredentials
 	//	*AWSLambdaConfig_ServiceAccountCredentials_
 	CredentialsFetcher isAWSLambdaConfig_CredentialsFetcher `protobuf_oneof:"credentials_fetcher"`
@@ -357,8 +358,8 @@ type AWSLambdaConfig_ServiceAccountCredentials_ struct {
 	// https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 	//
 	// If the following environment values are not present, this option cannot be used.
-	//   1. AWS_WEB_IDENTITY_TOKEN_FILE
-	//   2. AWS_ROLE_ARN
+	//  1. AWS_WEB_IDENTITY_TOKEN_FILE
+	//  2. AWS_ROLE_ARN
 	//
 	// If they are not specified envoy will NACK the config update, which will show up in the logs when running OS Gloo.
 	// When running Gloo enterprise it will be reflected in the prometheus stat: "glooe.solo.io/xds/nack"

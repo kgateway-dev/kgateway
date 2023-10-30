@@ -40,6 +40,7 @@ type LoadBalancerConfig struct {
 	// Set to 0 to disable and have changes applied immediately.
 	UpdateMergeWindow *duration.Duration `protobuf:"bytes,2,opt,name=update_merge_window,json=updateMergeWindow,proto3" json:"update_merge_window,omitempty"`
 	// Types that are assignable to Type:
+	//
 	//	*LoadBalancerConfig_RoundRobin_
 	//	*LoadBalancerConfig_LeastRequest_
 	//	*LoadBalancerConfig_Random_
@@ -47,6 +48,7 @@ type LoadBalancerConfig struct {
 	//	*LoadBalancerConfig_Maglev_
 	Type isLoadBalancerConfig_Type `protobuf_oneof:"type"`
 	// Types that are assignable to LocalityConfig:
+	//
 	//	*LoadBalancerConfig_LocalityWeightedLbConfig
 	LocalityConfig isLoadBalancerConfig_LocalityConfig `protobuf_oneof:"locality_config"`
 }

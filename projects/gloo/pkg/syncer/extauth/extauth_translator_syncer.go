@@ -29,7 +29,8 @@ var (
 
 // translatorSyncerExtension is the Open Source variant of the Enterprise translatorSyncerExtension for ExtAuth
 // TODO (sam-heilbron)
-// 	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
+//
+//	This placeholder is solely used to detect Enterprise features being used in an Open Source installation
 //	Once https://github.com/solo-io/gloo/issues/6495 is implemented, we should be able to remove this placeholder altogether
 type translatorSyncerExtension struct{}
 

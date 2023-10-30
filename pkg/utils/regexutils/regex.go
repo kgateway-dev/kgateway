@@ -44,7 +44,7 @@ func NewRegexWithProgramSize(regex string, programsize *uint32) *envoy_type_matc
 	}
 }
 
-//ConvertRegexMatchAndSubstitute into safe variant consumable by envoy.
+// ConvertRegexMatchAndSubstitute into safe variant consumable by envoy.
 // By default we use the RegexMatcher_GoogleRe2 matcher which as of
 // envoy 1.21 is the only engine supported.
 func ConvertRegexMatchAndSubstitute(ctx context.Context, in *v32.RegexMatchAndSubstitute) (*envoy_type_matcher_v3.RegexMatchAndSubstitute, error) {

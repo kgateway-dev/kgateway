@@ -92,7 +92,7 @@ func NewSetupFunc() setuputils.SetupFunc {
 }
 
 // used outside of this repo
-//noinspection GoUnusedExportedFunction
+// noinspection GoUnusedExportedFunction
 func NewSetupFuncWithExtensions(extensions Extensions) setuputils.SetupFunc {
 	runWithExtensions := func(opts bootstrap.Opts) error {
 		return RunGlooWithExtensions(opts, extensions)

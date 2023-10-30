@@ -210,10 +210,11 @@ func (td *corsTestData) setupUpstream() *gloov1.Upstream {
 }
 
 // To test this with curl:
-// curl -H "Origin: http://example.com" \
-//   -H "Access-Control-Request-Method: POST" \
-//   -H "Access-Control-Request-Headers: X-Requested-With" \
-//   -X OPTIONS --verbose localhost:11082
+//
+//	curl -H "Origin: http://example.com" \
+//	  -H "Access-Control-Request-Method: POST" \
+//	  -H "Access-Control-Request-Headers: X-Requested-With" \
+//	  -X OPTIONS --verbose localhost:11082
 func (ptd *perCorsTestData) getOptions(origin, method string) http.Header {
 	h := http.Header{}
 	Eventually(func() error {

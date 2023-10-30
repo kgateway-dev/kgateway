@@ -577,23 +577,23 @@ func earlyHeaderMatchersShortCircuitLaterOnes(laterMatcher, earlyMatcher matcher
 }
 
 // special case to catch the following:
-//	- matchers:
-//	  - prefix: /foo
-//      headers:
-//	    - name: :method
-//        value: GET
-//        invertMatch: true
-//    directResponseAction:
-//      status: 405
-//      body: 'Invalid HTTP Method'
-//	...
-//	- matchers:
-//	  - methods:
-//	    - GET
-//	    - POST # this one cannot be reached
-//      prefix: /foo
-//    routeAction:
-//	    ....
+//   - matchers:
+//   - prefix: /foo
+//     headers:
+//   - name: :method
+//     value: GET
+//     invertMatch: true
+//     directResponseAction:
+//     status: 405
+//     body: 'Invalid HTTP Method'
+//     ...
+//   - matchers:
+//   - methods:
+//   - GET
+//   - POST # this one cannot be reached
+//     prefix: /foo
+//     routeAction:
+//     ....
 func laterOrRegexPartiallyShortCircuited(laterHeaderMatcher, earlyHeaderMatcher *matchers.HeaderMatcher) bool {
 
 	// regex matches simple OR regex, e.g. (GET|POST|...)

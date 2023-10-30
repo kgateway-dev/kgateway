@@ -34,7 +34,6 @@ func NewUpstreamRemovingSanitizer() *UpstreamRemovingSanitizer {
 // If there are any errors on upstreams, this function tries to remove the correspondent clusters and endpoints from
 // the xDS snapshot. If the snapshot is still consistent after these mutations and there are no errors related to other
 // resources, we are good to send it to Envoy.
-//
 func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(
 	ctx context.Context,
 	glooSnapshot *v1snap.ApiSnapshot,

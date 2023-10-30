@@ -62,7 +62,7 @@ func getImageVersion(container corev1.Container) (string, error) {
 	return img[1], nil
 }
 
-//getIstioMetaMeshID returns the set value or default value 'cluster.local' if unset
+// getIstioMetaMeshID returns the set value or default value 'cluster.local' if unset
 func getIstioMetaMeshID(istioMetaMeshID string) string {
 	var result = ""
 
@@ -75,7 +75,7 @@ func getIstioMetaMeshID(istioMetaMeshID string) string {
 	return result
 }
 
-//getIstioMetaClusterID returns the set value or default value 'Kubernetes' if unset
+// getIstioMetaClusterID returns the set value or default value 'Kubernetes' if unset
 func getIstioMetaClusterID(istioMetaClusterID string) string {
 	var result = ""
 

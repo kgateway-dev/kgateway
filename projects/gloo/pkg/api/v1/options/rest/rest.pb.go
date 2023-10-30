@@ -149,6 +149,7 @@ type ServiceSpec_SwaggerInfo struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to SwaggerSpec:
+	//
 	//	*ServiceSpec_SwaggerInfo_Url
 	//	*ServiceSpec_SwaggerInfo_Inline
 	SwaggerSpec isServiceSpec_SwaggerInfo_SwaggerSpec `protobuf_oneof:"swagger_spec"`

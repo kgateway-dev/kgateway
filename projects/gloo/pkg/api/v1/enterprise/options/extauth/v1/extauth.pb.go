@@ -340,6 +340,7 @@ type ExtAuthExtension struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Spec:
+	//
 	//	*ExtAuthExtension_Disable
 	//	*ExtAuthExtension_ConfigRef
 	//	*ExtAuthExtension_CustomAuth
@@ -411,7 +412,7 @@ type isExtAuthExtension_Spec interface {
 }
 
 type ExtAuthExtension_Disable struct {
-	//  Set to true to disable auth on the virtual host/route.
+	// Set to true to disable auth on the virtual host/route.
 	Disable bool `protobuf:"varint,1,opt,name=disable,proto3,oneof"`
 }
 
@@ -440,6 +441,7 @@ type Settings struct {
 	// The upstream to ask about auth decisions
 	ExtauthzServerRef *core.ResourceRef `protobuf:"bytes,1,opt,name=extauthz_server_ref,json=extauthzServerRef,proto3" json:"extauthz_server_ref,omitempty"`
 	// Types that are assignable to ServiceType:
+	//
 	//	*Settings_HttpService
 	//	*Settings_GrpcService
 	ServiceType isSettings_ServiceType `protobuf_oneof:"service_type"`
@@ -462,7 +464,6 @@ type Settings struct {
 	//
 	// 3. At least one *authorization response header* is added to the client request, or is used for
 	// altering another client request header.
-	//
 	ClearRouteCache bool `protobuf:"varint,7,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
 	// Sets the HTTP status that is returned to the client when there is a network error between the
 	// filter and the authorization server. The default status is HTTP 403 Forbidden.
@@ -1130,6 +1131,7 @@ type OAuth2 struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to OauthType:
+	//
 	//	*OAuth2_OidcAuthorizationCode
 	//	*OAuth2_AccessTokenValidation
 	//	*OAuth2_Oauth2
@@ -1332,6 +1334,7 @@ type UserSession struct {
 	// Set-Cookie options
 	CookieOptions *UserSession_CookieOptions `protobuf:"bytes,2,opt,name=cookie_options,json=cookieOptions,proto3" json:"cookie_options,omitempty"`
 	// Types that are assignable to Session:
+	//
 	//	*UserSession_Cookie
 	//	*UserSession_Redis
 	Session isUserSession_Session `protobuf_oneof:"session"`
@@ -1643,6 +1646,7 @@ type JwksOnDemandCacheRefreshPolicy struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Policy:
+	//
 	//	*JwksOnDemandCacheRefreshPolicy_Never
 	//	*JwksOnDemandCacheRefreshPolicy_Always
 	//	*JwksOnDemandCacheRefreshPolicy_MaxIdpReqPerPollingInterval
@@ -1880,25 +1884,26 @@ type OidcAuthorizationCode struct {
 	// OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
 	// The discovery override defines any properties that should override this discovery configuration
 	// For example, the following AuthConfig CRD could be defined as:
-	//    ```yaml
-	//    apiVersion: enterprise.gloo.solo.io/v1
-	//    kind: AuthConfig
-	//    metadata:
-	//      name: google-oidc
-	//      namespace: gloo-system
-	//    spec:
-	//      configs:
-	//      - oauth:
-	//          app_url: http://localhost:8080
-	//          callback_path: /callback
-	//          client_id: $CLIENT_ID
-	//          client_secret_ref:
-	//            name: google
-	//            namespace: gloo-system
-	//          issuer_url: https://accounts.google.com
-	//          discovery_override:
-	//            token_endpoint: "https://token.url/gettoken"
-	//    ```
+	//
+	//	```yaml
+	//	apiVersion: enterprise.gloo.solo.io/v1
+	//	kind: AuthConfig
+	//	metadata:
+	//	  name: google-oidc
+	//	  namespace: gloo-system
+	//	spec:
+	//	  configs:
+	//	  - oauth:
+	//	      app_url: http://localhost:8080
+	//	      callback_path: /callback
+	//	      client_id: $CLIENT_ID
+	//	      client_secret_ref:
+	//	        name: google
+	//	        namespace: gloo-system
+	//	      issuer_url: https://accounts.google.com
+	//	      discovery_override:
+	//	        token_endpoint: "https://token.url/gettoken"
+	//	```
 	//
 	// And this will ensure that regardless of what value is discovered at
 	// <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
@@ -2285,6 +2290,7 @@ type JwtValidation struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to JwksSourceSpecifier:
+	//
 	//	*JwtValidation_RemoteJwks_
 	//	*JwtValidation_LocalJwks_
 	JwksSourceSpecifier isJwtValidation_JwksSourceSpecifier `protobuf_oneof:"jwks_source_specifier"`
@@ -2467,6 +2473,7 @@ type AccessTokenValidation struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ValidationType:
+	//
 	//	*AccessTokenValidation_IntrospectionUrl
 	//	*AccessTokenValidation_Jwt
 	//	*AccessTokenValidation_Introspection
@@ -2484,6 +2491,7 @@ type AccessTokenValidation struct {
 	// Optional criteria for validating the scopes of a token.
 	//
 	// Types that are assignable to ScopeValidation:
+	//
 	//	*AccessTokenValidation_RequiredScopes
 	ScopeValidation isAccessTokenValidation_ScopeValidation `protobuf_oneof:"scope_validation"`
 }
@@ -2959,10 +2967,10 @@ func (x *OpaAuthOptions) GetFastInputConversion() bool {
 }
 
 // Authenticates and authorizes requests by querying an LDAP server. Gloo makes the following assumptions:
-//  * Requests provide credentials via the basic HTTP authentication header. Gloo will BIND to the LDAP server using the
-//    credentials extracted from the header.
-//  * Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
-//    memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
+//   - Requests provide credentials via the basic HTTP authentication header. Gloo will BIND to the LDAP server using the
+//     credentials extracted from the header.
+//   - Your LDAP server is configured so that each entry you want to authorize has an attribute that indicates its group
+//     memberships. A common way of achieving this is by using the [*memberof* overlay](http://www.openldap.org/software/man.cgi?query=slapo-memberof).
 type Ldap struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3080,13 +3088,16 @@ type PassThroughAuth struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to Protocol:
+	//
 	//	*PassThroughAuth_Grpc
 	//	*PassThroughAuth_Http
 	Protocol isPassThroughAuth_Protocol `protobuf_oneof:"protocol"`
 	// Custom config to be passed per request to the passthrough auth service.
 	Config *_struct.Struct `protobuf:"bytes,4,opt,name=config,proto3" json:"config,omitempty"`
 	// If set to true, the service will accept client request even if the communication with
-	//  the authorization service has failed, or if the authorization service has returned a server error.
+	//
+	//	the authorization service has failed, or if the authorization service has returned a server error.
+	//
 	// Defaults to false.
 	FailureModeAllow bool `protobuf:"varint,5,opt,name=failure_mode_allow,json=failureModeAllow,proto3" json:"failure_mode_allow,omitempty"`
 }
@@ -3313,9 +3324,8 @@ func (x *PassThroughHttp) GetConnectionTimeout() *duration.Duration {
 	return nil
 }
 
-//
-//@solo-kit:xds-service=ExtAuthDiscoveryService
-//@solo-kit:resource.no_references
+// @solo-kit:xds-service=ExtAuthDiscoveryService
+// @solo-kit:resource.no_references
 type ExtAuthConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3416,6 +3426,7 @@ type AuthConfig_Config struct {
 	// the name assigned on the plugin config itself.
 	Name *wrappers.StringValue `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to AuthConfig:
+	//
 	//	*AuthConfig_Config_BasicAuth
 	//	*AuthConfig_Config_Oauth
 	//	*AuthConfig_Config_Oauth2
@@ -4376,20 +4387,19 @@ func (x *Ldap_ConnectionPool) GetInitialSize() *wrappers.UInt32Value {
 }
 
 // The passthrough http request can be configured to pass through the incoming request body,
-//the ext-auth state (which is shared between different auth methods within one ext-auth instance), and
-//the [filterMetadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
-//The body of the passthrough auth request will be a JSON as follows:
-//{
-//"body" : string,
-//"state": object (map[string]interface{}),
-//"filterMetadata": object (map[string]protobuf.Struct),
-//"config": object (protobuf.Struct),
-//}
-//`config` is the struct block specified under the passthrough auth configuration.
-//If `passthrough_body`, `passthrough_state`, `passthrough_filter_metadata`, and `config` are all false/nil,
-//the body of the auth request will remain empty. Setting any of these will increase latency slightly due to
-//JSON marshalling.
-//
+// the ext-auth state (which is shared between different auth methods within one ext-auth instance), and
+// the [filterMetadata](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/advanced/data_sharing_between_filters#metadata)
+// The body of the passthrough auth request will be a JSON as follows:
+// {
+// "body" : string,
+// "state": object (map[string]interface{}),
+// "filterMetadata": object (map[string]protobuf.Struct),
+// "config": object (protobuf.Struct),
+// }
+// `config` is the struct block specified under the passthrough auth configuration.
+// If `passthrough_body`, `passthrough_state`, `passthrough_filter_metadata`, and `config` are all false/nil,
+// the body of the auth request will remain empty. Setting any of these will increase latency slightly due to
+// JSON marshalling.
 type PassThroughHttp_Request struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4509,9 +4519,11 @@ type PassThroughHttp_Response struct {
 	// If this is empty, by default, no authorization response headers will be added to the client response.
 	AllowedClientHeadersOnDenied []string `protobuf:"bytes,2,rep,name=allowed_client_headers_on_denied,json=allowedClientHeadersOnDenied,proto3" json:"allowed_client_headers_on_denied,omitempty"`
 	// If this is set to true, the body of the response from the http passthrough auth server is expected to have shape
-	// {
-	//   "state": object (map[string]interface{})
-	// }
+	//
+	//	{
+	//	  "state": object (map[string]interface{})
+	//	}
+	//
 	// The state will be marshalled from the response body and this is the state that will be passed on to other auth configs.
 	// Because of the marshalling from JSON to Go map, this will add some latency to the request.
 	// If the marshalling fails, the authorization check will fail and the request will be unauthorized after the ext-auth-service pod
@@ -4740,25 +4752,26 @@ type ExtAuthConfig_OidcAuthorizationCodeConfig struct {
 	// OIDC configuration is discovered at <issuerUrl>/.well-known/openid-configuration
 	// The configuration override defines any properties that should override this discovery configuration
 	// For example, the following AuthConfig CRD could be defined as:
-	//    ```yaml
-	//    apiVersion: enterprise.gloo.solo.io/v1
-	//    kind: AuthConfig
-	//    metadata:
-	//      name: google-oidc
-	//      namespace: gloo-system
-	//    spec:
-	//      configs:
-	//      - oauth:
-	//          app_url: http://localhost:8080
-	//          callback_path: /callback
-	//          client_id: $CLIENT_ID
-	//          client_secret_ref:
-	//            name: google
-	//            namespace: gloo-system
-	//          issuer_url: https://accounts.google.com
-	//          discovery_override:
-	//            token_endpoint: "https://token.url/gettoken"
-	//    ```
+	//
+	//	```yaml
+	//	apiVersion: enterprise.gloo.solo.io/v1
+	//	kind: AuthConfig
+	//	metadata:
+	//	  name: google-oidc
+	//	  namespace: gloo-system
+	//	spec:
+	//	  configs:
+	//	  - oauth:
+	//	      app_url: http://localhost:8080
+	//	      callback_path: /callback
+	//	      client_id: $CLIENT_ID
+	//	      client_secret_ref:
+	//	        name: google
+	//	        namespace: gloo-system
+	//	      issuer_url: https://accounts.google.com
+	//	      discovery_override:
+	//	        token_endpoint: "https://token.url/gettoken"
+	//	```
 	//
 	// And this will ensure that regardless of what value is discovered at
 	// <issuerUrl>/.well-known/openid-configuration, "https://token.url/gettoken" will be used as the token endpoint
@@ -4957,6 +4970,7 @@ type ExtAuthConfig_AccessTokenValidationConfig struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to ValidationType:
+	//
 	//	*ExtAuthConfig_AccessTokenValidationConfig_IntrospectionUrl
 	//	*ExtAuthConfig_AccessTokenValidationConfig_Jwt
 	//	*ExtAuthConfig_AccessTokenValidationConfig_Introspection
@@ -4974,6 +4988,7 @@ type ExtAuthConfig_AccessTokenValidationConfig struct {
 	// Optional criteria for validating the scopes of a token.
 	//
 	// Types that are assignable to ScopeValidation:
+	//
 	//	*ExtAuthConfig_AccessTokenValidationConfig_RequiredScopes
 	ScopeValidation isExtAuthConfig_AccessTokenValidationConfig_ScopeValidation `protobuf_oneof:"scope_validation"`
 }
@@ -5292,6 +5307,7 @@ type ExtAuthConfig_OAuth2Config struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to OauthType:
+	//
 	//	*ExtAuthConfig_OAuth2Config_OidcAuthorizationCode
 	//	*ExtAuthConfig_OAuth2Config_AccessTokenValidationConfig
 	//	*ExtAuthConfig_OAuth2Config_Oauth2Config
@@ -5544,6 +5560,7 @@ type ExtAuthConfig_Config struct {
 	// the name assigned on the plugin config itself.
 	Name *wrappers.StringValue `protobuf:"bytes,11,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are assignable to AuthConfig:
+	//
 	//	*ExtAuthConfig_Config_Oauth
 	//	*ExtAuthConfig_Config_Oauth2
 	//	*ExtAuthConfig_Config_BasicAuth
@@ -5752,6 +5769,7 @@ type ExtAuthConfig_AccessTokenValidationConfig_JwtValidation struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Types that are assignable to JwksSourceSpecifier:
+	//
 	//	*ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_RemoteJwks_
 	//	*ExtAuthConfig_AccessTokenValidationConfig_JwtValidation_LocalJwks_
 	JwksSourceSpecifier isExtAuthConfig_AccessTokenValidationConfig_JwtValidation_JwksSourceSpecifier `protobuf_oneof:"jwks_source_specifier"`
