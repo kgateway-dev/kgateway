@@ -553,7 +553,7 @@ message Settings {
     // or RouteOptions.
     extproc.options.gloo.solo.io.Settings ext_proc = 39;
 
-    // Enterprise-only: Tap filter settings.
+    // Enterprise-only: Tap filter settings. (experimental)
     tap.options.gloo.solo.io.Tap tap = 40;
 }
 
