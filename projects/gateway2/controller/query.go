@@ -53,7 +53,7 @@ type GatewayQueries interface {
 
 type RoutesForGwResult struct {
 	ListenerResults map[string]*ListenerResult
-	RouteErrors    []*RouteError
+	RouteErrors     []*RouteError
 }
 
 type ListenerResult struct {

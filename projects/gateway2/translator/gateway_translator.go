@@ -40,7 +40,7 @@ func (t *translator) TranslateProxy(
 		return nil
 	}
 
-	routes, err := queries.GetRoutesForGw(ctx, gateway)
+	routesForGw, err := queries.GetRoutesForGw(ctx, gateway)
 	if err != nil {
 		// TODO(ilackarms): fill in the specific error / validation
 		// reporter.Gateway(gateway).Err(err.Error())
@@ -49,7 +49,7 @@ func (t *translator) TranslateProxy(
 
 	listeners := listener.TranslateListeners(
 		gateway,
-		routes.ListenerResults,
+		routesForGw,
 		reporter,
 	)
 
@@ -64,7 +64,7 @@ func proxyMetadata(gateway *gwv1.Gateway) *core.Metadata {
 	// ROLE ON ENVOY MUST MATCH <proxy_namespace>~<proxy_name>
 	// equal to role: {{.Values.settings.writeNamespace | default .Release.Namespace }}~{{ $name | kebabcase }}
 	return &core.Metadata{
-		Name:      "",
-		Namespace: "",
+		Name:      gateway.Name,
+		Namespace: gateway.Namespace,
 	}
 }

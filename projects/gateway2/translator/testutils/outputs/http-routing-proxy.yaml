@@ -1,0 +1,53 @@
+---
+listeners:
+  - aggregateListener:
+      httpFilterChains:
+        - matcher: {}
+          virtualHostRefs:
+            - http~bar.example.com
+            - http~foo.example.com
+      httpResources:
+        virtualHosts:
+          http~bar.example.com:
+            domains:
+              - bar.example.com
+            name: http~bar.example.com
+            routes:
+              - routeAction:
+                  multi:
+                    destinations:
+                      - destination:
+                          kube:
+                            port: 8080
+                            ref:
+                              name: bar-svc-canary
+                              namespace: default
+              - routeAction:
+                  multi:
+                    destinations:
+                      - destination:
+                          kube:
+                            port: 8080
+                            ref:
+                              name: bar-svc
+                              namespace: default
+          http~foo.example.com:
+            domains:
+              - foo.example.com
+            name: http~foo.example.com
+            routes:
+              - routeAction:
+                  multi:
+                    destinations:
+                      - destination:
+                          kube:
+                            port: 8080
+                            ref:
+                              name: foo-svc
+                              namespace: default
+    bindAddress: '::'
+    bindPort: 80
+    name: http
+metadata:
+  name: example-gateway
+  namespace: default

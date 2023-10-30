@@ -297,7 +297,7 @@ var _ = Describe("Query", func() {
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNotAllowedByListeners))
-            Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNotAllowedByListeners))
+			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNotAllowedByListeners))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
 

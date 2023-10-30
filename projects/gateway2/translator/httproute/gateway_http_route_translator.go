@@ -8,61 +8,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
-	"sort"
-	"strings"
 )
 
-// TranslateHTTPRoutes translates the set of gloo VirtualHosts required to produce the routes needed by a Gloo HTTP Filter Chain (Envoy HCM)
-// the Routes passed in are assumed to be the entire set of HTTP routes intended to be exposed on a single HTTP Filter Chain.
-func TranslateGatewayHTTPRoutes(
-	parentName string,
-	parentNamespace string,
-	parentHost *gwv1.Hostname,
-	routeTables []gwv1.HTTPRoute,
-	reporter reports.Reporter,
-) map[string]*v1.VirtualHost {
-	routesByDomain := make(map[string][]*v1.Route)
-	for _, rt := range routeTables {
-		vhostDomains := mergeChildHosts(parentHost, rt.Spec.Hostnames)
-		vhostRoutes := translateGatewayHTTPRouteRules(parentNamespace, rt.Spec.Rules, reporter)
-
-		if len(vhostDomains) == 0 {
-			// TODO report
-			continue
-		}
-		if len(vhostRoutes) == 0 {
-			// TODO report
-			continue
-		}
-
-		for _, vhostDomain := range vhostDomains {
-			routesByDomain[vhostDomain] = append(routesByDomain[vhostDomain], vhostRoutes...)
-		}
-	}
-
-	vhostsForParent := make(map[string]*v1.VirtualHost)
-	for vhostDomain, vhostRoutes := range routesByDomain {
-		sortRoutes(vhostRoutes)
-		vhostName := makeVhostName(parentName, vhostDomain)
-		vhostsForParent[vhostName] = &v1.VirtualHost{
-			Name:    vhostName,
-			Domains: []string{vhostDomain},
-			Routes:  vhostRoutes,
-			Options: nil,
-		}
-	}
-
-	return nil
-}
-
-func sortRoutes(routes []*v1.Route) {
-	// TODO rout sorter
-	sort.SliceStable(routes, func(i, j int) bool {
-		return routes[i].Name < routes[j].Name
-	})
-}
-
-func translateGatewayHTTPRouteRules(
+func TranslateGatewayHTTPRouteRules(
 	parentNamespace string,
 	rules []gwv1.HTTPRouteRule,
 	reporter reports.Reporter,
@@ -234,79 +182,4 @@ func setAction(
 func translateGatewayGlooRouteOptions(rule gwv1.HTTPRouteRule) *v1.RouteOptions {
 	// TODO
 	return nil
-}
-
-// makeVhostName computes the name of a virtual host based on the parent name and domain.
-func makeVhostName(
-	parentName string,
-	domain string,
-) string {
-	// TODO is this a valid vh name?
-	return parentName + "~" + domain
-}
-
-// mergeChildHosts computes the set of domains that a set of child routes should be exposed on
-// based on the "most specific matches" between the parent domain and the child domains.
-func mergeChildHosts(
-	parentHost *gwv1.Hostname,
-	childHosts []gwv1.Hostname,
-) []string {
-	var parentHostnameVal string
-	if parentHost != nil {
-		parentHostnameVal = string(*parentHost)
-	}
-
-	// No child hostnames specified: use the listener hostname if specified,
-	// or else match all hostnames.
-	if len(childHosts) == 0 {
-		if len(parentHostnameVal) > 0 {
-			return []string{parentHostnameVal}
-		}
-
-		return []string{"*"}
-	}
-
-	var hostnames []string
-
-	for i := range childHosts {
-		// TODO ensure childHostname is a valid hostname
-		childHostname := string(childHosts[i])
-
-		switch {
-		// No listener hostname: use the route hostname.
-		case len(parentHostnameVal) == 0:
-			hostnames = append(hostnames, childHostname)
-
-		// Listener hostname matches the route hostname: use it.
-		case parentHostnameVal == childHostname:
-			hostnames = append(hostnames, childHostname)
-
-		// Listener has a wildcard hostname: check if the route hostname matches.
-		case strings.HasPrefix(parentHostnameVal, "*"):
-			if hostnameMatchesWildcardHostname(childHostname, parentHostnameVal) {
-				hostnames = append(hostnames, childHostname)
-			}
-
-		// Route has a wildcard hostname: check if the listener hostname matches.
-		case strings.HasPrefix(childHostname, "*"):
-			if hostnameMatchesWildcardHostname(parentHostnameVal, childHostname) {
-				hostnames = append(hostnames, parentHostnameVal)
-			}
-
-		}
-	}
-
-	return hostnames
-}
-
-// hostnameMatchesWildcardHostname returns true if hostname has the non-wildcard
-// portion of wildcardHostname as a suffix, plus at least one DNS label matching the
-// wildcard.
-func hostnameMatchesWildcardHostname(hostname, wildcardHostname string) bool {
-	if !strings.HasSuffix(hostname, strings.TrimPrefix(wildcardHostname, "*")) {
-		return false
-	}
-
-	wildcardMatch := strings.TrimSuffix(hostname, strings.TrimPrefix(wildcardHostname, "*"))
-	return len(wildcardMatch) > 0
 }

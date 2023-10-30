@@ -3,6 +3,7 @@ package listener
 import (
 	"sort"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
@@ -14,19 +15,30 @@ import (
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	gateway *gwv1.Gateway,
-	routes map[string]*controller.ListenerResult,
+	routesForGw controller.RoutesForGwResult,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway.Spec.Listeners, reporter.Gateway(gateway))
-	return mergeGWListeners(gateway.Namespace, validatedListeners).translateListeners(routes, reporter)
+
+	return mergeGWListeners(gateway.Namespace, validatedListeners, routesForGw, reporter).translateListeners(reporter)
 }
 
-func mergeGWListeners(gatewayNamespace string, listeners []gwv1.Listener) *mergedListeners {
+func mergeGWListeners(
+	gatewayNamespace string,
+	listeners []gwv1.Listener,
+	routesForGw controller.RoutesForGwResult,
+	reporter reports.Reporter,
+) *mergedListeners {
 	ml := &mergedListeners{
 		gatewayNamespace: gatewayNamespace,
 	}
 	for _, listener := range listeners {
-		ml.append(listener)
+		result, ok := routesForGw.ListenerResults[string(listener.Name)]
+		if !ok || result.Error != nil {
+			// TODO report
+			continue
+		}
+		ml.append(listener, result.Routes, reporter)
 	}
 	return ml
 }
@@ -36,10 +48,40 @@ type mergedListeners struct {
 	listeners        []*mergedListener
 }
 
-func (ml *mergedListeners) appendHttpListener(listener gwv1.Listener) {
+func (ml *mergedListeners) append(
+	listener gwv1.Listener,
+	routes []*controller.ListenerRouteResult,
+	reporter reports.Reporter,
+) error {
+
+	var routesWithHosts []routeWithChildHosts
+	for _, routeResult := range routes {
+		routesWithHosts = append(routesWithHosts, routeWithChildHosts{
+			childHosts: routeResult.Hostnames,
+			route:      routeResult.Route,
+		})
+	}
+
+	switch listener.Protocol {
+	case gwv1.HTTPProtocolType:
+		ml.appendHttpListener(listener, routesWithHosts)
+	case gwv1.HTTPSProtocolType:
+		ml.appendHttpsListener(listener, routesWithHosts)
+	// TODO default handling
+	default:
+		return eris.Errorf("unsupported protocol: %v", listener.Protocol)
+	}
+
+	return nil
+}
+
+func (ml *mergedListeners) appendHttpListener(
+	listener gwv1.Listener,
+	routesWithHosts []routeWithChildHosts,
+) {
 	parent := httpFilterChainParent{
 		gatewayListenerName: string(listener.Name),
-		host:                listener.Hostname,
+		routes:              routesWithHosts,
 	}
 
 	fc := &httpFilterChain{
@@ -70,15 +112,17 @@ func (ml *mergedListeners) appendHttpListener(listener gwv1.Listener) {
 
 }
 
-func (ml *mergedListeners) appendHttpsListener(listener gwv1.Listener) {
+func (ml *mergedListeners) appendHttpsListener(
+	listener gwv1.Listener,
+	routesWithHosts []routeWithChildHosts,
+) {
 
 	// create a new filter chain for the listener
 	//protocol:            listener.Protocol,
 	mfc := httpsFilterChain{
 		gatewayListenerName: string(listener.Name),
-		host:                listener.Hostname,
-		protocol:            listener.Protocol,
 		tls:                 listener.TLS,
+		routesWithHosts:     routesWithHosts,
 	}
 
 	listenerName := string(listener.Name)
@@ -98,22 +142,10 @@ func (ml *mergedListeners) appendHttpsListener(listener gwv1.Listener) {
 	})
 }
 
-func (ml *mergedListeners) append(listener gwv1.Listener) {
-
-	switch listener.Protocol {
-	case gwv1.HTTPProtocolType:
-		ml.appendHttpListener(listener)
-	case gwv1.HTTPSProtocolType:
-		ml.appendHttpsListener(listener)
-		// TODO default handling
-	}
-}
-
-func (ml *mergedListeners) translateListeners(routes map[string]*controller.ListenerResult,
-	reporter reports.Reporter) []*v1.Listener {
+func (ml *mergedListeners) translateListeners(reporter reports.Reporter) []*v1.Listener {
 	var listeners []*v1.Listener
 	for _, mergedListener := range ml.listeners {
-		listener := mergedListener.translateListener(routes, reporter)
+		listener := mergedListener.translateListener(reporter)
 		listeners = append(listeners, listener)
 	}
 	return listeners
@@ -129,7 +161,6 @@ type mergedListener struct {
 }
 
 func (ml *mergedListener) translateListener(
-	routes map[string]*controller.ListenerResult,
 	reporter reports.Reporter,
 ) *v1.Listener {
 
@@ -139,38 +170,27 @@ func (ml *mergedListener) translateListener(
 	)
 
 	if ml.httpFilterChain != nil {
-		var routesForFilterChain []gwv1.HTTPRoute
-		for _, hr := range routes[ml.name].Routes {
-			rt := hr.Route
-			routesForFilterChain = append(routesForFilterChain, rt)
-		}
+
 		httpFilterChain, vhostsForFilterchain := ml.httpFilterChain.translateHttpFilterChain(
 			ml.name,
 			ml.gatewayNamespace,
-			routesForFilterChain,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpFilterChain)
 		for vhostRef, vhost := range vhostsForFilterchain {
 			if _, ok := mergedVhosts[vhostRef]; ok {
-				// TODO handle internal error
+				// TODO handle internal error, should never overlap
 
 			}
 			mergedVhosts[vhostRef] = vhost
 		}
 	}
 	for _, mfc := range ml.httpsFilterChains {
-		var routesForFilterChain []gwv1.HTTPRoute
-		for _, hr := range routes[mfc.gatewayListenerName].Routes {
-			rt := hr.Route
-			routesForFilterChain = append(routesForFilterChain, rt)
-		}
 		// each virtual host name must be unique across all filter chains
 		// to prevent collisions because the vhosts have to be re-computed for each set
 		httpsFilterChain, vhostsForFilterchain := mfc.translateHttpsFilterChain(
 			mfc.gatewayListenerName,
 			ml.gatewayNamespace,
-			routesForFilterChain,
 			reporter,
 		)
 		httpFilterChains = append(httpFilterChains, httpsFilterChain)
@@ -213,27 +233,55 @@ type httpFilterChain struct {
 
 type httpFilterChainParent struct {
 	gatewayListenerName string
-	host                *gwv1.Hostname
+	routes              []routeWithChildHosts
+}
+
+type routeWithChildHosts struct {
+	// the resolved child hosts to translate for the route table
+	childHosts []string
+	// the route to translate
+	route gwv1.HTTPRoute
 }
 
 func (mfc *httpFilterChain) translateHttpFilterChain(
 	parentName string,
 	gatewayNamespace string,
-	routes []gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
+
+	var (
+		routesByHost = map[string][]*v1.Route{}
+	)
+	for _, parent := range mfc.parents {
+		for _, routeWithHosts := range parent.routes {
+			routes := httproute.TranslateGatewayHTTPRouteRules(gatewayNamespace, routeWithHosts.route.Spec.Rules, reporter)
+
+			if len(routes) == 0 {
+				// TODO report
+				continue
+			}
+
+			for _, host := range routeWithHosts.childHosts {
+				routesByHost[host] = append(routesByHost[host], routes...)
+			}
+		}
+	}
 
 	var (
 		virtualHostRefs []string
 		virtualHosts    = map[string]*v1.VirtualHost{}
 	)
-	for _, parent := range mfc.parents {
-		vhostsForParent := httproute.TranslateGatewayHTTPRoutes(parentName, gatewayNamespace, parent.host, routes, reporter)
-
-		for virtualHostRef, virtualHost := range vhostsForParent {
-			virtualHostRefs = append(virtualHostRefs, virtualHostRef)
-			virtualHosts[virtualHostRef] = virtualHost
+	for host, vhostRoutes := range routesByHost {
+		sortRoutes(vhostRoutes)
+		vhostName := makeVhostName(parentName, host)
+		virtualHosts[vhostName] = &v1.VirtualHost{
+			Name:    vhostName,
+			Domains: []string{host},
+			Routes:  vhostRoutes,
+			Options: nil,
 		}
+
+		virtualHostRefs = append(virtualHostRefs, vhostName)
 	}
 	sort.Strings(virtualHostRefs)
 
@@ -247,15 +295,13 @@ func (mfc *httpFilterChain) translateHttpFilterChain(
 // In the case where no GW Listener merging takes place, every listener will use a Gloo AggregatedListeener with 1 HTTP filter chain.
 type httpsFilterChain struct {
 	gatewayListenerName string
-	host                *gwv1.Hostname
-	protocol            gwv1.ProtocolType
 	tls                 *gwv1.GatewayTLSConfig
+	routesWithHosts     []routeWithChildHosts
 }
 
 func (mfc *httpsFilterChain) translateHttpsFilterChain(
 	parentName string,
 	gatewayNamespace string,
-	routes []gwv1.HTTPRoute,
 	reporter reports.Reporter,
 ) (*v1.AggregateListener_HttpFilterChain, map[string]*v1.VirtualHost) {
 
@@ -264,12 +310,38 @@ func (mfc *httpsFilterChain) translateHttpsFilterChain(
 		SourcePrefixRanges:      nil,
 		PassthroughCipherSuites: nil,
 	}
-	virtualHosts := httproute.TranslateGatewayHTTPRoutes(parentName, gatewayNamespace, mfc.host, routes, reporter)
 
-	var virtualHostRefs []string
-	for _, virtualHost := range virtualHosts {
-		virtualHostRef := virtualHost.GetName()
-		virtualHostRefs = append(virtualHostRefs, virtualHostRef)
+	var (
+		routesByHost = map[string][]*v1.Route{}
+	)
+	for _, routeWithHosts := range mfc.routesWithHosts {
+		routes := httproute.TranslateGatewayHTTPRouteRules(gatewayNamespace, routeWithHosts.route.Spec.Rules, reporter)
+
+		if len(routes) == 0 {
+			// TODO report
+			continue
+		}
+
+		for _, host := range routeWithHosts.childHosts {
+			routesByHost[host] = append(routesByHost[host], routes...)
+		}
+	}
+
+	var (
+		virtualHostRefs []string
+		virtualHosts    = map[string]*v1.VirtualHost{}
+	)
+	for host, vhostRoutes := range routesByHost {
+		sortRoutes(vhostRoutes)
+		vhostName := makeVhostName(parentName, host)
+		virtualHosts[vhostName] = &v1.VirtualHost{
+			Name:    vhostName,
+			Domains: []string{host},
+			Routes:  vhostRoutes,
+			Options: nil,
+		}
+
+		virtualHostRefs = append(virtualHostRefs, vhostName)
 	}
 	sort.Strings(virtualHostRefs)
 
@@ -294,4 +366,20 @@ func translateSslConfig(tls *gwv1.GatewayTLSConfig) *ssl.SslConfig {
 		TransportSocketConnectTimeout: nil,
 		OcspStaplePolicy:              0,
 	}
+}
+
+// makeVhostName computes the name of a virtual host based on the parent name and domain.
+func makeVhostName(
+	parentName string,
+	domain string,
+) string {
+	// TODO is this a valid vh name?
+	return parentName + "~" + domain
+}
+
+func sortRoutes(routes []*v1.Route) {
+	// TODO rout sorter
+	sort.SliceStable(routes, func(i, j int) bool {
+		return routes[i].Name < routes[j].Name
+	})
 }
