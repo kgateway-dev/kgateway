@@ -194,45 +194,51 @@ request includes a header `x-type: example`.
 
 ### Remote Address
 
-A common use case is to rate limit based on client IP address, also referred to as the downstream remote address. To utilize this, we
-can define a descriptor called `remote_address` in the settings: 
+A common use case is to rate limit based on client IP address, also referred to as the downstream remote address.
 
-```yaml
-spec:
-  ratelimit:
-    descriptors:
-      - key: remote_address
-        rateLimit:
-          requestsPerUnit: 2
-          unit: MINUTE
-```
+1. Define a descriptor called `remote_address` in the default Settings resource.
+   1. Create a file with your rate limit descriptors.
+      ```yaml
+      cat > settings-ra-patch.yaml - <<EOF
+      spec:
+        ratelimit:
+          descriptors:
+            - key: remote_address
+              rateLimit:
+                requestsPerUnit: 2
+                unit: MINUTE
+      EOF
+      ```
+   2. Patch the default settings in the `gloo-system` namespace.
+      ```sh
+      kubectl patch -n gloo-system settings default --type merge --patch "$(cat settings-ra-patch.yaml)"
+      ```
 
-On the route, we can define an action to count against this descriptor in the following way:
-
-{{< highlight yaml "hl_lines=18-22" >}}
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
-metadata:
-  name: example
-  namespace: gloo-system
-spec:
-  virtualHost:
-    domains:
-      - '*'
-    routes:
-      - matchers:
-          - prefix: /
-        routeAction:
-          single:
-            upstream:
-              name: default-example-80
-              namespace: gloo-system
-    options:
-      ratelimit:
-        rateLimits:
-          - actions:
-              - remoteAddress: {}
-{{< /highlight >}}
+2. On the route, define an action to count against the remote address descriptor.
+   {{< highlight yaml "hl_lines=18-22" >}}
+   apiVersion: gateway.solo.io/v1
+   kind: VirtualService
+   metadata:
+     name: example
+     namespace: gloo-system
+   spec:
+     virtualHost:
+       domains:
+         - '*'
+       routes:
+         - matchers:
+             - prefix: /
+           routeAction:
+             single:
+               upstream:
+                 name: default-example-80
+                 namespace: gloo-system
+       options:
+         ratelimit:
+           rateLimits:
+             - actions:
+                 - remoteAddress: {}
+   {{< /highlight >}}
 
 {{% notice warning %}}
 You may need to make additional configuration changes to Gloo Edge in order for the `remote_address` value to be the real 
