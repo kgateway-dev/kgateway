@@ -1,6 +1,11 @@
 changelog:
-- type: NEW_FEATURE
+- type: NON_USER_FACING
   issueLink: https://github.com/solo-io/solo-projects/issues/5315
   description: Implement the .proto API for the tap filter
   resolvesIssue: false
+- dependencyOwner: solo-io
+  dependencyRepo: go-control-plane-fork-v2
+  dependencyTag: v0.0.0-20231026174848-be784d54c527
+  description: Update go-control-plane to incorporate tap filter custom output sinks
+  type: DEPENDENCY_BUMP
 
