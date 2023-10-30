@@ -325,7 +325,7 @@ replace (
 	github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v0.0.0-20210511163231-5b2d2b5f6c34
 	github.com/docker/docker => github.com/moby/moby v24.0.4+incompatible
 	// Remove once we get to a version with extproc changes in upstream envoy 1.28
-	github.com/envoy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20231026170523-8a753ab9a184
+	github.com/envoy/go-control-plane => github.com/solo-io/go-control-plane-fork-v2 v0.0.0-20231026174848-be784d54c527
 
 	// Newer versions result in changes to the names of generated metrics
 	// remove this when we fix https://github.com/solo-io/solo-kit/issues/516
