@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -71,7 +72,7 @@ var _ = BeforeSuite(func() {
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
-	scheme := controller.NewScheme()
+	scheme := scheme.NewScheme()
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
@@ -92,7 +93,16 @@ var _ = BeforeSuite(func() {
 	mgr.GetLogger().Info("starting manager", "kubeconfig", kubeconfig)
 
 	var gatewayClassObjName api.ObjectName = api.ObjectName(gatewayClassName)
-	err = controller.NewBaseGatewayController(ctx, mgr, gatewayClassObjName, "", gatewayControllerName, true, "localhost", 0)
+	cfg := controller.GatewayConfig{
+		Mgr:            mgr,
+		ControllerName: gatewayControllerName,
+		GWClass:        gatewayClassObjName,
+		AutoProvision:  true,
+		XdsServer:      "localhost",
+		XdsPort:        0,
+        Kick: func(ctx context.Context) error {return nil},
+	}
+	err = controller.NewBaseGatewayController(ctx, cfg)
 	Expect(err).ToNot(HaveOccurred())
 
 	err = k8sClient.Create(ctx, &api.GatewayClass{

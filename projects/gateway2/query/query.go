@@ -1,4 +1,4 @@
-package controller
+package query
 
 import (
 	"context"
@@ -85,7 +85,7 @@ type gatewayQueries struct {
 func (r *gatewayQueries) referenceAllowed(ctx context.Context, from metav1.GroupKind, fromns string, to metav1.GroupKind, tons, toname string) (bool, error) {
 
 	var list apiv1beta1.ReferenceGrantList
-	err := r.client.List(ctx, &list, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(referenceGrantFromField, fromns)})
+	err := r.client.List(ctx, &list, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(ReferenceGrantFromField, fromns)})
 	if err != nil {
 		return false, err
 	}
@@ -112,7 +112,7 @@ func (r *gatewayQueries) GetRoutesForGw(ctx context.Context, gw *apiv1.Gateway) 
 	}
 
 	var hrlist apiv1.HTTPRouteList
-	err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(httpRouteTargetField, nns.String())})
+	err := r.client.List(ctx, &hrlist, client.MatchingFieldsSelector{Selector: fields.OneTermEqualSelector(HttpRouteTargetField, nns.String())})
 	if err != nil {
 		return ret, err
 	}
@@ -190,7 +190,7 @@ func (r *gatewayQueries) allowedRoutes(gw *apiv1.Gateway, l *apiv1.Listener) (fu
 	case apiv1.HTTPSProtocolType:
 		fallthrough
 	case apiv1.HTTPProtocolType:
-		allowedKinds = []metav1.GroupKind{{Kind: string(kind(&apiv1.HTTPRoute{})), Group: "gateway.networking.k8s.io"}}
+		allowedKinds = []metav1.GroupKind{{Kind: "HTTPRoute", Group: "gateway.networking.k8s.io"}}
 	case apiv1.TLSProtocolType:
 		fallthrough
 	case apiv1.TCPProtocolType:
@@ -249,7 +249,7 @@ func getParentRefsForGw(gw *apiv1.Gateway, hr *apiv1.HTTPRoute) []apiv1.ParentRe
 		if pRef.Group != nil && *pRef.Group != "gateway.networking.k8s.io" {
 			continue
 		}
-		if pRef.Kind != nil && *pRef.Kind != kind(&apiv1.Gateway{}) {
+		if pRef.Kind != nil && *pRef.Kind != "Gateway" {
 			continue
 		}
 		ns := hr.Namespace
@@ -391,7 +391,7 @@ func (r *gatewayQueries) getRef(ctx context.Context, from client.Object, backend
 }
 
 func isHttpRouteAllowed(allowedKinds []metav1.GroupKind) bool {
-	return isRouteAllowed("gateway.networking.k8s.io", string(kind(&apiv1.HTTPRoute{})), allowedKinds)
+	return isRouteAllowed("gateway.networking.k8s.io", "HTTPRoute", allowedKinds)
 }
 
 func isRouteAllowed(group, kind string, allowedKinds []metav1.GroupKind) bool {

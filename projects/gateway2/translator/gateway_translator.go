@@ -3,7 +3,7 @@ package translator
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/listener"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -19,7 +19,7 @@ type K8sGwTranslator interface {
 	TranslateProxy(
 		ctx context.Context,
 		gateway *gwv1.Gateway,
-		queries controller.GatewayQueries,
+		queries query.GatewayQueries,
 		reporter reports.Reporter,
 	) *v1.Proxy
 }
@@ -33,7 +33,7 @@ type translator struct{}
 func (t *translator) TranslateProxy(
 	ctx context.Context,
 	gateway *gwv1.Gateway,
-	queries controller.GatewayQueries,
+	queries query.GatewayQueries,
 	reporter reports.Reporter,
 ) *v1.Proxy {
 	if !listener.ValidateGateway(gateway, queries, reporter) {

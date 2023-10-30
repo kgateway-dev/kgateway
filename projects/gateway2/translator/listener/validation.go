@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +17,7 @@ const HTTPRouteKind = "HTTPRoute"
 
 // TODO: cross-listener validation
 // return valid for translation
-func ValidateGateway(gateway *gwv1.Gateway, inputs controller.GatewayQueries, reporter reports.Reporter) bool {
+func ValidateGateway(gateway *gwv1.Gateway, inputs query.GatewayQueries, reporter reports.Reporter) bool {
 
 	return true
 }
@@ -211,15 +211,15 @@ func getGroupName() *gwv1.Group {
 }
 
 func validateRoutes(
-	query controller.GatewayQueries,
+	queries query.GatewayQueries,
 	reporter reports.Reporter,
 	routes []gwv1.HTTPRoute) {
 	for _, route := range routes {
 		for _, rule := range route.Spec.Rules {
 			for _, backendRef := range rule.BackendRefs {
-				_, err := query.GetBackendForRef(context.TODO(), &route, &backendRef)
+				_, err := queries.GetBackendForRef(context.TODO(), &route, &backendRef)
 				if err != nil {
-					if err == controller.ErrMissingReferenceGrant {
+					if err == query.ErrMissingReferenceGrant {
 						reporter.Route(&route).SetCondition(reports.HTTPRouteCondition{
 							Type:   gwv1.RouteConditionResolvedRefs,
 							Status: metav1.ConditionFalse,

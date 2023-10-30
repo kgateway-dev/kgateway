@@ -1,4 +1,4 @@
-package controller_test
+package query_test
 
 import (
 	"context"
@@ -6,7 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	gwscheme "github.com/solo-io/gloo/projects/gateway2/controller/scheme"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,9 +26,9 @@ var _ = Describe("Query", func() {
 	)
 
 	BeforeEach(func() {
-		scheme = controller.NewScheme()
+		scheme = gwscheme.NewScheme()
 		builder = fake.NewClientBuilder().WithScheme(scheme)
-		controller.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
+		query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 			builder.WithIndex(o, f, fun)
 			return nil
 		})
@@ -36,7 +37,7 @@ var _ = Describe("Query", func() {
 		It("should get service from same namespace", func() {
 			fakeClient := fake.NewFakeClient(svc("default"))
 
-			gq := controller.NewData(fakeClient, controller.NewScheme())
+			gq := query.NewData(fakeClient, scheme)
 			ref := &apiv1.HTTPBackendRef{
 				BackendRef: apiv1.BackendRef{
 					BackendObjectReference: apiv1.BackendObjectReference{
@@ -54,7 +55,7 @@ var _ = Describe("Query", func() {
 		It("should get service from different ns if we have a ref grant", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default2"), rg).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			ref := &apiv1.HTTPBackendRef{
 				BackendRef: apiv1.BackendRef{
 					BackendObjectReference: apiv1.BackendObjectReference{
@@ -73,7 +74,7 @@ var _ = Describe("Query", func() {
 		It("should fail with service not found if we have a ref grant", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(rg).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			ref := &apiv1.HTTPBackendRef{
 				BackendRef: apiv1.BackendRef{
 					BackendObjectReference: apiv1.BackendObjectReference{
@@ -124,15 +125,15 @@ var _ = Describe("Query", func() {
 			}
 			fakeClient := builder.WithObjects(rg, svc("default2")).Build()
 
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			backend, err := gq.GetBackendForRef(context.Background(), httpRoute(), ref)
-			Expect(err).To(MatchError(controller.ErrMissingReferenceGrant))
+			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
 			Expect(backend).To(BeNil())
 		})
 
 		It("should fail getting a service with no ref grant", func() {
 			fakeClient := builder.WithObjects(svc("default3")).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			ref := &apiv1.HTTPBackendRef{
 				BackendRef: apiv1.BackendRef{
 					BackendObjectReference: apiv1.BackendObjectReference{
@@ -142,7 +143,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 			backend, err := gq.GetBackendForRef(context.Background(), httpRoute(), ref)
-			Expect(err).To(MatchError(controller.ErrMissingReferenceGrant))
+			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
 			Expect(backend).To(BeNil())
 		})
 
@@ -150,7 +151,7 @@ var _ = Describe("Query", func() {
 			rg := refGrant()
 			fakeClient := builder.WithObjects(svc("default3"), rg).Build()
 
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			ref := &apiv1.HTTPBackendRef{
 				BackendRef: apiv1.BackendRef{
 					BackendObjectReference: apiv1.BackendObjectReference{
@@ -160,7 +161,7 @@ var _ = Describe("Query", func() {
 				},
 			}
 			backend, err := gq.GetBackendForRef(context.Background(), httpRoute(), ref)
-			Expect(err).To(MatchError(controller.ErrMissingReferenceGrant))
+			Expect(err).To(MatchError(query.ErrMissingReferenceGrant))
 			Expect(backend).To(BeNil())
 		})
 	})
@@ -170,7 +171,7 @@ var _ = Describe("Query", func() {
 		It("should get secret from different ns if we have a ref grant", func() {
 			rg := refGrantSecret()
 			fakeClient := builder.WithObjects(secret("default2"), rg).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			ref := &apiv1.SecretObjectReference{
 				Name:      "foo",
 				Namespace: nsptr("default2"),
@@ -201,7 +202,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -234,7 +235,7 @@ var _ = Describe("Query", func() {
 			}
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 
 			Expect(err).NotTo(HaveOccurred())
@@ -263,7 +264,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.ListenerResults["foo"].Error).To(MatchError("selector must be set"))
@@ -293,10 +294,10 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNotAllowedByListeners))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNotAllowedByListeners))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNotAllowedByListeners))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
@@ -322,7 +323,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -352,10 +353,10 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
@@ -382,7 +383,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -415,10 +416,10 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNoMatchingListenerHostname))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingListenerHostname))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingListenerHostname))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
@@ -448,7 +449,7 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(BeEmpty())
@@ -477,13 +478,13 @@ var _ = Describe("Query", func() {
 			})
 
 			fakeClient := builder.WithObjects(hr).Build()
-			gq := controller.NewData(fakeClient, scheme)
+			gq := query.NewData(fakeClient, scheme)
 			routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(routes.RouteErrors).To(HaveLen(1))
 			Expect(routes.ListenerResults["foo"].Routes).To(HaveLen(1))
 			Expect(routes.ListenerResults["foo"].Routes[0].ParentRef).To(Equal(hr.Spec.ParentRefs[1]))
-			Expect(routes.RouteErrors[0].Error.E).To(MatchError(controller.ErrNoMatchingParent))
+			Expect(routes.RouteErrors[0].Error.E).To(MatchError(query.ErrNoMatchingParent))
 			Expect(routes.RouteErrors[0].Error.Reason).To(Equal(apiv1.RouteReasonNoMatchingParent))
 			Expect(routes.RouteErrors[0].ParentRef).To(Equal(hr.Spec.ParentRefs[0]))
 		})
@@ -514,7 +515,7 @@ var _ = Describe("Query", func() {
 				})
 
 				fakeClient := builder.WithObjects(hr).Build()
-				gq := controller.NewData(fakeClient, scheme)
+				gq := query.NewData(fakeClient, scheme)
 				routes, err := gq.GetRoutesForGw(context.Background(), gwWithListener)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(routes.ListenerResults["foo"].Routes[0].Hostnames).To(Equal(expectedHostnames))

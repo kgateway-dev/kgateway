@@ -5,7 +5,7 @@ jobs:
   test_gloo_gateway2:
     name: Build and Test Gloo Gateway 2
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     outputs:
       should-auto-succeed-regression-tests: ${{ steps.run-strategy.outputs.auto_succeed }}
     steps:

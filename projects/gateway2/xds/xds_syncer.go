@@ -67,7 +67,7 @@ func init() {
 	_ = view.Register(envoySnapshotOutView)
 }
 
-type xdsSyncer struct {
+type XdsSyncer struct {
 	translator translator.Translator
 	sanitizer  sanitizer.XdsSanitizer
 	xdsCache   envoycache.SnapshotCache
@@ -106,14 +106,14 @@ func NewXdsInputChannels() *XdsInputChannels {
 	}
 }
 
-func newXdsSyncer(
+func NewXdsSyncer(
 	translator translator.Translator,
 	sanitizer sanitizer.XdsSanitizer,
 	xdsCache envoycache.SnapshotCache,
 	xdsGarbageCollection bool,
 	inputs *XdsInputChannels,
-) *xdsSyncer {
-	return &xdsSyncer{
+) *XdsSyncer {
+	return &XdsSyncer{
 		translator:           translator,
 		sanitizer:            sanitizer,
 		xdsCache:             xdsCache,
@@ -123,7 +123,7 @@ func newXdsSyncer(
 }
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
-func (s *xdsSyncer) SyncXdsOnEvent(
+func (s *XdsSyncer) SyncXdsOnEvent(
 	ctx context.Context,
 	onXdsSynced func(XdsSyncResult),
 ) {
@@ -168,7 +168,7 @@ func (s *xdsSyncer) SyncXdsOnEvent(
 
 // syncEnvoy will translate, sanatize, and set the snapshot for each of the proxies, all while merging all the reports into allReports.
 // NOTE(ilackarms): the below code was copy-pasted (with some deletions) from projects/gloo/pkg/syncer/translator_syncer.go
-func (s *xdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
+func (s *XdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) reporter.ResourceReports {
 	ctx, span := trace.StartSpan(ctx, "gloo.syncer.Sync")
 	defer span.End()
 
@@ -274,7 +274,7 @@ func (s *xdsSyncer) syncEnvoy(ctx context.Context, snap *v1snap.ApiSnapshot) rep
 // ServeXdsSnapshots exposes Gloo configuration as an API when `devMode` in Settings is True.
 // TODO(ilackarms): move this somewhere else, make it part of dev-mode
 // https://github.com/solo-io/gloo/issues/6494
-func (s *xdsSyncer) ServeXdsSnapshots() error {
+func (s *XdsSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

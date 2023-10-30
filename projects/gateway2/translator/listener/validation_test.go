@@ -5,7 +5,8 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/query"
+	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 
 	corev1 "k8s.io/api/core/v1"
@@ -658,14 +659,14 @@ func httpRoute(routeNs, backendNs string) gwv1.HTTPRoute {
 }
 
 func TestRouteValidation(t *testing.T) {
-	scheme := controller.NewScheme()
+	scheme := scheme.NewScheme()
 	builder := fake.NewClientBuilder().WithScheme(scheme)
-	controller.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
+	query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 		builder.WithIndex(o, f, fun)
 		return nil
 	})
 	fakeClient := fake.NewFakeClient(svc("default"))
-	gq := controller.NewData(fakeClient, controller.NewScheme())
+	gq := query.NewData(fakeClient, scheme)
 
 	report, _, routeMap := buildReporter()
 
@@ -678,14 +679,14 @@ func TestRouteValidation(t *testing.T) {
 }
 
 func TestRouteValidationFailBackendNotFound(t *testing.T) {
-	scheme := controller.NewScheme()
+	scheme := scheme.NewScheme()
 	builder := fake.NewClientBuilder().WithScheme(scheme)
-	controller.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
+	query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 		builder.WithIndex(o, f, fun)
 		return nil
 	})
 	fakeClient := fake.NewFakeClient()
-	gq := controller.NewData(fakeClient, controller.NewScheme())
+	gq := query.NewData(fakeClient, scheme)
 
 	report, _, routeMap := buildReporter()
 
@@ -709,14 +710,14 @@ func TestRouteValidationFailBackendNotFound(t *testing.T) {
 }
 
 func TestRouteValidationFailRefNotPermitted(t *testing.T) {
-	scheme := controller.NewScheme()
+	scheme := scheme.NewScheme()
 	builder := fake.NewClientBuilder().WithScheme(scheme)
-	controller.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
+	query.IterateIndices(func(o client.Object, f string, fun client.IndexerFunc) error {
 		builder.WithIndex(o, f, fun)
 		return nil
 	})
 	fakeClient := builder.WithObjects(svc("default2")).Build()
-	gq := controller.NewData(fakeClient, controller.NewScheme())
+	gq := query.NewData(fakeClient, scheme)
 
 	report, _, routeMap := buildReporter()
 

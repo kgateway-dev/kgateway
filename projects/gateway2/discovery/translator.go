@@ -114,6 +114,7 @@ func (e *edgeLegacyTranslator) reconcileAll(ctx context.Context) (ctrl.Result, e
 func translateObjectList[T any](list []T) []*T {
 	var out []*T
 	for _, item := range list {
+		item := item
 		out = append(out, &item)
 	}
 	return out

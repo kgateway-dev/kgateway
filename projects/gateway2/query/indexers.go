@@ -1,4 +1,4 @@
-package controller
+package query
 
 import (
 	"errors"
@@ -11,14 +11,14 @@ import (
 )
 
 const (
-	httpRouteTargetField    = "http-route-target"
-	referenceGrantFromField = "ref-grant-from"
+	HttpRouteTargetField    = "http-route-target"
+	ReferenceGrantFromField = "ref-grant-from"
 )
 
 func IterateIndices(f func(client.Object, string, client.IndexerFunc) error) error {
 	return errors.Join(
-		f(&apiv1.HTTPRoute{}, httpRouteTargetField, httpRouteToTargetIndexer),
-		f(&apiv1beta1.ReferenceGrant{}, referenceGrantFromField, refGrantFromIndexer),
+		f(&apiv1.HTTPRoute{}, HttpRouteTargetField, httpRouteToTargetIndexer),
+		f(&apiv1beta1.ReferenceGrant{}, ReferenceGrantFromField, refGrantFromIndexer),
 	)
 }
 
@@ -29,10 +29,10 @@ func httpRouteToTargetIndexer(obj client.Object) []string {
 	}
 	var parents []string
 	for _, pRef := range hr.Spec.ParentRefs {
-		if pRef.Group != nil && *pRef.Group != "gateway.networking.k8s.io" {
+		if pRef.Group != nil && *pRef.Group != apiv1.GroupName {
 			continue
 		}
-		if pRef.Kind != nil && *pRef.Kind != kind(&apiv1.Gateway{}) {
+		if pRef.Kind != nil && *pRef.Kind != "Gateway" {
 			continue
 		}
 		ns := resolveNs(pRef.Namespace)
@@ -60,4 +60,11 @@ func refGrantFromIndexer(obj client.Object) []string {
 		}
 	}
 	return ns
+}
+
+func resolveNs(ns *apiv1.Namespace) string {
+	if ns == nil {
+		return ""
+	}
+	return string(*ns)
 }

@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	api "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/controller/scheme"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 )
 
@@ -56,7 +56,7 @@ var _ = Describe("Deployer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		d, err = deployer.NewDeployer(controller.NewScheme(), "gloo-gateway2", "foo", "xds", 8080)
+		d, err = deployer.NewDeployer(scheme.NewScheme(), "gloo-gateway2", "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -182,10 +182,10 @@ var _ = Describe("Deployer", func() {
 
 	It("support segmenting by release", func() {
 
-		d1, err := deployer.NewDeployer(controller.NewScheme(), "r1", "foo", "xds", 8080)
+		d1, err := deployer.NewDeployer(scheme.NewScheme(), "r1", "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 
-		d2, err := deployer.NewDeployer(controller.NewScheme(), "", "foo", "xds", 8080)
+		d2, err := deployer.NewDeployer(scheme.NewScheme(), "", "foo", "xds", 8080)
 		Expect(err).NotTo(HaveOccurred())
 
 		gw := &api.Gateway{

@@ -3,8 +3,8 @@ package controller
 import (
 	"context"
 	"fmt"
-	"reflect"
 
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/deployer"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -22,21 +22,34 @@ import (
 	apiv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func NewBaseGatewayController(ctx context.Context, mgr manager.Manager, gwclass apiv1.ObjectName, release, controllerName string, autoProvision bool, server string, port uint16) error {
+type GatewayConfig struct {
+	Mgr            manager.Manager
+	GWClass        apiv1.ObjectName
+	Release        string
+	ControllerName string
+	AutoProvision  bool
+	XdsServer      string
+	XdsPort        uint16
+	Kick           func(ctx context.Context) error
+}
+
+func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig) error {
 	log := log.FromContext(ctx)
-	log.V(5).Info("starting controller", "controllerName", controllerName, "gwclass", gwclass)
+	log.V(5).Info("starting controller", "controllerName", cfg.ControllerName, "gwclass", cfg.GWClass)
 
 	controllerBuilder := &controllerBuilder{
-		controllerName: controllerName,
-		release:        release,
-		autoProvision:  autoProvision,
-		server:         server,
-		port:           port,
-		mgr:            mgr,
-		gwclass:        gwclass,
+		cfg: cfg,
+		//		controllerName: cfg.ControllerName,
+		//		release:        cfg.Release,
+		//		autoProvision:  cfg.AutoProvision,
+		//		server:         cfg.XdsServer,
+		//		port:           cfg.XdsPort,
+		//		mgr:            cfg.Mgr,
+		//		gwclass:        cfg.GWClass,
 		reconciler: &controllerReconciler{
-			cli:    mgr.GetClient(),
-			scheme: mgr.GetScheme(),
+			cli:    cfg.Mgr.GetClient(),
+			scheme: cfg.Mgr.GetScheme(),
+			kick:   cfg.Kick,
 		},
 	}
 
@@ -61,20 +74,14 @@ func run(ctx context.Context, funcs ...func(ctx context.Context) error) error {
 }
 
 type controllerBuilder struct {
-	controllerName string
-	release        string
-	autoProvision  bool
-	server         string
-	port           uint16
-	mgr            manager.Manager
-	gwclass        apiv1.ObjectName
+	cfg GatewayConfig
 
 	reconciler *controllerReconciler
 }
 
 func (c *controllerBuilder) addIndexes(ctx context.Context) error {
-	return IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
-		return c.mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
+	return query.IterateIndices(func(obj client.Object, field string, indexer client.IndexerFunc) error {
+		return c.cfg.Mgr.GetFieldIndexer().IndexField(ctx, obj, field, indexer)
 	})
 }
 
@@ -82,8 +89,8 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	// setup a deployer
 	log := log.FromContext(ctx)
 
-	log.Info("creating deployer", "ctrlname", c.controllerName, "server", c.server, "port", c.port)
-	d, err := deployer.NewDeployer(c.mgr.GetScheme(), c.release, c.controllerName, c.server, c.port)
+	log.Info("creating deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.XdsServer, "port", c.cfg.XdsPort)
+	d, err := deployer.NewDeployer(c.cfg.Mgr.GetScheme(), c.cfg.Release, c.cfg.ControllerName, c.cfg.XdsServer, c.cfg.XdsPort)
 	if err != nil {
 		return err
 	}
@@ -93,17 +100,17 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		return err
 	}
 
-	buildr := ctrl.NewControllerManagedBy(c.mgr).
+	buildr := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		// Don't use WithEventFilter here as it also filters events for Owned objects.
 		For(&apiv1.Gateway{}, builder.WithPredicates(predicate.NewPredicateFuncs(func(object client.Object) bool {
 			if gw, ok := object.(*apiv1.Gateway); ok {
-				return gw.Spec.GatewayClassName == c.gwclass
+				return gw.Spec.GatewayClassName == c.cfg.GWClass
 			}
 			return false
 		}), predicate.GenerationChangedPredicate{}))
 
 	for _, gvk := range gvks {
-		obj, err := c.mgr.GetScheme().New(gvk)
+		obj, err := c.cfg.Mgr.GetScheme().New(gvk)
 		if err != nil {
 			return err
 		}
@@ -121,11 +128,12 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 	}
 
 	gwreconciler := &gatewayReconciler{
-		cli:           c.mgr.GetClient(),
-		scheme:        c.mgr.GetScheme(),
-		className:     c.gwclass,
-		autoProvision: c.autoProvision,
+		cli:           c.cfg.Mgr.GetClient(),
+		scheme:        c.cfg.Mgr.GetScheme(),
+		className:     c.cfg.GWClass,
+		autoProvision: c.cfg.AutoProvision,
 		deployer:      d,
+		kick:          c.cfg.Kick,
 	}
 	err = buildr.Complete(gwreconciler)
 	if err != nil {
@@ -140,13 +148,13 @@ func shouldIgnoreStatusChild(gvk schema.GroupVersionKind) bool {
 }
 
 func (c *controllerBuilder) watchGwClass(ctx context.Context) error {
-	return ctrl.NewControllerManagedBy(c.mgr).
+	return ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&apiv1.GatewayClass{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileGatewayClasses))
 }
 
 func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.mgr).
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&apiv1.HTTPRoute{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileHttpRoutes))
 	if err != nil {
@@ -156,7 +164,7 @@ func (c *controllerBuilder) watchHttpRoute(ctx context.Context) error {
 }
 
 func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.mgr).
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&apiv1beta1.ReferenceGrant{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileReferenceGrants))
 	if err != nil {
@@ -166,7 +174,7 @@ func (c *controllerBuilder) watchReferenceGrant(ctx context.Context) error {
 }
 
 func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
-	err := ctrl.NewControllerManagedBy(c.mgr).
+	err := ctrl.NewControllerManagedBy(c.cfg.Mgr).
 		For(&corev1.Namespace{}).
 		Complete(reconcile.Func(c.reconciler.ReconcileNamespaces))
 	if err != nil {
@@ -175,36 +183,29 @@ func (c *controllerBuilder) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
-func resolveNs(ns *apiv1.Namespace) string {
-	if ns == nil {
-		return ""
-	}
-	return string(*ns)
-}
-
-func kind(obj client.Object) apiv1.Kind {
-	t := reflect.TypeOf(obj)
-	if t.Kind() != reflect.Pointer {
-		panic("All types must be pointers to structs.")
-	}
-	t = t.Elem()
-	return apiv1.Kind(t.Name())
-}
-
 type controllerReconciler struct {
 	cli    client.Client
 	scheme *runtime.Scheme
+	kick   func(ctx context.Context) error
 }
 
 func (r *controllerReconciler) ReconcileNamespaces(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+
+	// reconcile all gateways with namespace selector
+	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileHttpRoutes(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// find impacted gateways and queue them
+	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 
 func (r *controllerReconciler) ReconcileReferenceGrants(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+
+	// reconcile all things?!
+	r.kick(ctx)
 	return ctrl.Result{}, nil
 }
 

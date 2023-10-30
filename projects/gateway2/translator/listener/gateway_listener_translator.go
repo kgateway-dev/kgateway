@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gateway2/controller"
+	"github.com/solo-io/gloo/projects/gateway2/query"
 	"github.com/solo-io/gloo/projects/gateway2/reports"
 	"github.com/solo-io/gloo/projects/gateway2/translator/httproute"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -15,7 +15,7 @@ import (
 // TranslateListeners translates the set of gloo listeners required to produce a full output proxy (either form one Gateway or multiple merged Gateways)
 func TranslateListeners(
 	gateway *gwv1.Gateway,
-	routesForGw controller.RoutesForGwResult,
+	routesForGw query.RoutesForGwResult,
 	reporter reports.Reporter,
 ) []*v1.Listener {
 	validatedListeners := validateListeners(gateway.Spec.Listeners, reporter.Gateway(gateway))
@@ -26,7 +26,7 @@ func TranslateListeners(
 func mergeGWListeners(
 	gatewayNamespace string,
 	listeners []gwv1.Listener,
-	routesForGw controller.RoutesForGwResult,
+	routesForGw query.RoutesForGwResult,
 	reporter reports.Reporter,
 ) *mergedListeners {
 	ml := &mergedListeners{
@@ -50,7 +50,7 @@ type mergedListeners struct {
 
 func (ml *mergedListeners) append(
 	listener gwv1.Listener,
-	routes []*controller.ListenerRouteResult,
+	routes []*query.ListenerRouteResult,
 	reporter reports.Reporter,
 ) error {
 

@@ -11,7 +11,6 @@ kind:
 	./kind.sh
 	kind load docker-image docker.io/soloio/gloo-gateway2:latest
 	helm upgrade -i gloo-gateway2 ./helm/gloo-gateway2/ --set controlPlane.image.tag=latest --set gateway.enabled=false --set develop=true
-	kubectl delete pod --all
 	kubectl delete rs --all
 
 conformance:
